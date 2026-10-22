@@ -1,0 +1,234 @@
+import { useState, type FormEvent } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { CheckCircle2, Mail } from 'lucide-react';
+import { AuthLayout } from '@/layouts/AuthLayout';
+import { Button, Input, Notice, Spinner } from '@/components/ui';
+import { api, ApiError } from '@/lib/api';
+import { errorMessage, useI18n } from '@/lib/i18n';
+import { homePathFor } from '@/lib/session';
+import { useDocumentMeta } from '@/lib/meta';
+import type { SessionUser } from '@/lib/types';
+
+export const DEMO_ACCOUNTS = [
+  { email: 'therapeut@praktijk-a.test', nl: 'Fysiotherapeut — praktijk A', en: 'Physiotherapist — practice A' },
+  { email: 'eigenaar@praktijk-a.test', nl: 'Praktijkeigenaar — praktijk A', en: 'Practice owner — practice A' },
+  { email: 'patient@praktijk-a.test', nl: 'Patiënt — praktijk A', en: 'Patient — practice A' },
+  { email: 'therapeut@praktijk-b.test', nl: 'Fysiotherapeut — praktijk B', en: 'Physiotherapist — practice B' },
+  { email: 'patient@praktijk-b.test', nl: 'Patiënt — praktijk B', en: 'Patient — practice B' },
+  { email: 'admin@fp-exercise.test', nl: 'Platformbeheerder', en: 'Platform administrator' },
+];
+export const DEMO_PASSWORD = 'Demo-wachtwoord-1';
+export const showDemoAccounts = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEMO_ACCOUNTS === '1';
+
+function safeNext(next: string | null) {
+  return next && next.startsWith('/') && !next.startsWith('//') ? next : null;
+}
+
+export function LoginPage() {
+  const { t, locale, setLocale } = useI18n();
+  useDocumentMeta(t('Inloggen', 'Log in'));
+  const [params] = useSearchParams();
+  const nav = useNavigate();
+  const qc = useQueryClient();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e?: FormEvent, creds?: { email: string; password: string }) => {
+    e?.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api.post<{ user: SessionUser }>('/auth/login', creds ?? { email, password });
+      qc.setQueryData(['me'], r.user);
+      if (r.user.locale !== locale) setLocale(r.user.locale);
+      nav(safeNext(params.get('next')) ?? homePathFor(r.user), { replace: true });
+    } catch (err) {
+      setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <AuthLayout
+      title={t('Welkom terug', 'Welcome back')}
+      description={t('Log in bij FP Exercise.', 'Log in to FP Exercise.')}
+      footer={
+        <>
+          {t('Nog geen account? Je fysiotherapeut of praktijk stuurt je een uitnodiging.', 'No account yet? Your physiotherapist or practice will send you an invitation.')}
+        </>
+      }
+    >
+      <form onSubmit={submit} className="space-y-4" noValidate>
+        {error && <Notice tone="bad">{error}</Notice>}
+        <Input label={t('E-mailadres', 'Email address')} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input label={t('Wachtwoord', 'Password')} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+        <div className="flex justify-end">
+          <Link to="/wachtwoord-vergeten" className="text-[13px] font-medium text-accent hover:underline">{t('Wachtwoord vergeten?', 'Forgot password?')}</Link>
+        </div>
+        <Button type="submit" size="lg" className="w-full" loading={busy}>{t('Inloggen', 'Log in')}</Button>
+      </form>
+      {showDemoAccounts && (
+        <div className="mt-6 border-t border-line pt-5">
+          <p className="mb-2 text-[12.5px] font-medium text-ink-500">{t('Demo-accounts (synthetische gegevens)', 'Demo accounts (synthetic data)')}</p>
+          <div className="grid gap-1.5">
+            {DEMO_ACCOUNTS.map((a) => (
+              <button key={a.email} type="button" disabled={busy} onClick={() => submit(undefined, { email: a.email, password: DEMO_PASSWORD })} className="flex items-center justify-between rounded-lg border border-line px-3 py-2 text-left text-[13px] hover:border-ink-300 hover:bg-ink-50">
+                <span className="font-medium text-ink-800">{locale === 'nl' ? a.nl : a.en}</span>
+                <span className="truncate pl-2 text-[12px] text-ink-400">{a.email}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </AuthLayout>
+  );
+}
+
+export function ForgotPasswordPage() {
+  const { t, locale } = useI18n();
+  useDocumentMeta(t('Wachtwoord vergeten', 'Forgot password'));
+  const [email, setEmail] = useState('');
+  const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <AuthLayout title={t('Wachtwoord vergeten', 'Forgot password')} description={t('We sturen je een link om een nieuw wachtwoord in te stellen.', 'We will email you a link to set a new password.')} footer={<Link className="link" to="/login">{t('Terug naar inloggen', 'Back to login')}</Link>}>
+      {done ? (
+        <Notice tone="ok" icon={<Mail className="h-4 w-4" />}>
+          {t('Als er een account bestaat voor dit adres, ontvang je binnen enkele minuten een e-mail.', 'If an account exists for this address, you will receive an email within a few minutes.')}
+        </Notice>
+      ) : (
+        <form
+          className="space-y-4"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            setError(null);
+            try {
+              await api.post('/auth/password/forgot', { email });
+              setDone(true);
+            } catch (err) {
+              setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale));
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {error && <Notice tone="bad">{error}</Notice>}
+          <Input label={t('E-mailadres', 'Email address')} type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Button type="submit" size="lg" className="w-full" loading={busy}>{t('Verstuur link', 'Send link')}</Button>
+        </form>
+      )}
+    </AuthLayout>
+  );
+}
+
+function PasswordForm({ onSubmit, cta, existingAccount }: { onSubmit: (pw: string) => Promise<void>; cta: string; existingAccount?: boolean }) {
+  const { t, locale } = useI18n();
+  const [pw, setPw] = useState('');
+  const [pw2, setPw2] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  return (
+    <form
+      className="space-y-4"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (!existingAccount && pw !== pw2) return setError(t('De wachtwoorden komen niet overeen.', 'Passwords do not match.'));
+        setBusy(true);
+        setError(null);
+        try {
+          await onSubmit(pw);
+        } catch (err) {
+          setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale));
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      {error && <Notice tone="bad">{error}</Notice>}
+      <Input
+        label={existingAccount ? t('Je huidige wachtwoord', 'Your current password') : t('Nieuw wachtwoord', 'New password')}
+        hint={existingAccount ? undefined : t('Minimaal 10 tekens, met letters en cijfers of leestekens.', 'At least 10 characters, with letters and numbers or symbols.')}
+        type="password"
+        autoComplete={existingAccount ? 'current-password' : 'new-password'}
+        required
+        value={pw}
+        onChange={(e) => setPw(e.target.value)}
+      />
+      {!existingAccount && <Input label={t('Herhaal wachtwoord', 'Repeat password')} type="password" autoComplete="new-password" required value={pw2} onChange={(e) => setPw2(e.target.value)} />}
+      <Button type="submit" size="lg" className="w-full" loading={busy}>{cta}</Button>
+    </form>
+  );
+}
+
+export function ResetPasswordPage() {
+  const { t } = useI18n();
+  useDocumentMeta(t('Nieuw wachtwoord', 'New password'));
+  const [params] = useSearchParams();
+  const [done, setDone] = useState(false);
+  const token = params.get('token') ?? '';
+  return (
+    <AuthLayout title={t('Nieuw wachtwoord instellen', 'Set a new password')} footer={<Link className="link" to="/login">{t('Naar inloggen', 'Go to login')}</Link>}>
+      {done ? (
+        <Notice tone="ok" icon={<CheckCircle2 className="h-4 w-4" />}>{t('Je wachtwoord is gewijzigd. Je kunt nu inloggen.', 'Your password has been changed. You can now log in.')}</Notice>
+      ) : (
+        <PasswordForm cta={t('Wachtwoord opslaan', 'Save password')} onSubmit={async (password) => { await api.post('/auth/password/reset', { token, password }); setDone(true); }} />
+      )}
+    </AuthLayout>
+  );
+}
+
+export function InvitePage() {
+  const { t, setLocale } = useI18n();
+  useDocumentMeta(t('Uitnodiging', 'Invitation'));
+  const { token = '' } = useParams();
+  const nav = useNavigate();
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ['invite', token], queryFn: () => api.get<{ email: string; fullName: string; locale: 'nl' | 'en'; hasPassword: boolean }>(`/auth/invite/${token}`), retry: false });
+  if (q.isLoading) return <Spinner className="min-h-screen" />;
+  if (q.isError || !q.data)
+    return (
+      <AuthLayout title={t('Uitnodiging ongeldig', 'Invalid invitation')}>
+        <Notice tone="warn">{t('Deze uitnodiging is verlopen of al gebruikt. Vraag je fysiotherapeut om een nieuwe uitnodiging.', 'This invitation has expired or was already used. Ask your physiotherapist for a new invitation.')}</Notice>
+      </AuthLayout>
+    );
+  const inv = q.data;
+  return (
+    <AuthLayout
+      title={t(`Welkom, ${inv.fullName.split(' ')[0]}`, `Welcome, ${inv.fullName.split(' ')[0]}`)}
+      description={inv.hasPassword ? t('Bevestig met je bestaande wachtwoord om de uitnodiging te accepteren.', 'Confirm with your existing password to accept the invitation.') : t('Kies een wachtwoord om je account te activeren.', 'Choose a password to activate your account.')}
+    >
+      <div className="mb-4 rounded-lg bg-ink-50 px-3 py-2 text-[13.5px] text-ink-600">{inv.email}</div>
+      <PasswordForm
+        existingAccount={inv.hasPassword}
+        cta={t('Account activeren', 'Activate account')}
+        onSubmit={async (password) => {
+          const r = await api.post<{ user: SessionUser }>('/auth/invite/accept', { token, password });
+          qc.setQueryData(['me'], r.user);
+          setLocale(r.user.locale);
+          nav(homePathFor(r.user), { replace: true });
+        }}
+      />
+      <p className="mt-5 text-[12.5px] leading-relaxed text-ink-500">
+        {t('Door je account te activeren ga je akkoord met de verwerking van je oefengegevens door je praktijk, zoals beschreven in de ', 'By activating your account you agree to your practice processing your exercise data as described in the ')}
+        <Link to="/privacy" className="link">{t('privacyverklaring', 'privacy notice')}</Link>.
+      </p>
+    </AuthLayout>
+  );
+}
+
+export function VerifyEmailPage() {
+  const { t } = useI18n();
+  const [params] = useSearchParams();
+  const q = useQuery({ queryKey: ['verify', params.get('token')], queryFn: () => api.post('/auth/verify-email', { token: params.get('token') }), retry: false });
+  return (
+    <AuthLayout title={t('E-mailadres bevestigen', 'Confirm email address')} footer={<Link className="link" to="/login">{t('Naar inloggen', 'Go to login')}</Link>}>
+      {q.isLoading ? <Spinner /> : q.isError ? <Notice tone="warn">{t('Deze link is ongeldig of verlopen.', 'This link is invalid or has expired.')}</Notice> : <Notice tone="ok">{t('Je e-mailadres is bevestigd.', 'Your email address is confirmed.')}</Notice>}
+    </AuthLayout>
+  );
+}

@@ -1,0 +1,44 @@
+@import '@fontsource-variable/inter';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* default accent: deep pine. Overridable per practice (branding.accent). */
+    --accent: 31 77 69;
+    --accent-strong: 22 58 52;
+    --accent-soft: 236 244 241;
+    --accent-ink: 255 255 255;
+    color-scheme: light;
+  }
+  html { -webkit-text-size-adjust: 100%; text-rendering: optimizeLegibility; }
+  body { @apply bg-canvas text-ink-900 antialiased; font-feature-settings: 'cv11', 'ss01', 'ss03'; }
+  h1, h2, h3, h4 { @apply tracking-tight text-ink-950; }
+  :focus-visible { @apply outline-none ring-2 ring-accent/60 ring-offset-2 ring-offset-white; }
+  ::selection { @apply bg-accent/15; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+}
+
+@layer components {
+  .card { @apply rounded-xl border border-line bg-white shadow-card; }
+  .label { @apply block text-[13px] font-medium text-ink-700; }
+  .input {
+    @apply block w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink-900 shadow-xs
+      placeholder:text-ink-400 transition-colors
+      hover:border-ink-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20
+      disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-400;
+  }
+  .input[aria-invalid='true'] { @apply border-bad focus:ring-bad/20; }
+  .muted { @apply text-ink-500; }
+  .link { @apply font-medium text-accent underline-offset-4 hover:underline; }
+  .skeleton { @apply relative overflow-hidden rounded-md bg-ink-100; }
+  .skeleton::after {
+    content: ''; @apply absolute inset-0 -translate-x-full;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent);
+    animation: shimmer 1.4s infinite;
+  }
+  .prose-app p + p { @apply mt-3; }
+}

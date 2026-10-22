@@ -13,7 +13,7 @@ const png = () => new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
 const mp4 = () => new Uint8Array([0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, ...new Array(2000).fill(7)]);
 const form = (bytes: Uint8Array, name: string, type: string) => {
   const f = new FormData();
-  f.append('file', new File([bytes], name, { type }));
+  f.append('file', new File([bytes as unknown as BlobPart], name, { type }));
   return f;
 };
 

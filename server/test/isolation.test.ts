@@ -95,6 +95,8 @@ describe('API-level tenant isolation (Practice A vs Practice B)', () => {
   });
 
   it('patients only see their own data', async () => {
+    expect((await patientA.get(`/patient/programs/${s.programs.emma}`)).status).toBe(200);
+    expect((await patientA.get(`/patient/programs/${s.programs.noah}`)).status).toBe(404);
     expect((await patientB.get(`/patient/programs/${s.programs.emma}`)).status).toBe(404);
     const home = await patientB.get('/patient/home');
     expect(home.body.programs.every((p: any) => p.patientId === s.patients.noah)).toBe(true);
