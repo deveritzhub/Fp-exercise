@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Archive, ArchiveRestore, Check, ChevronDown, Download, Layers, Mail, MessageSquareText, Pencil, Plus, Send } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
@@ -22,7 +22,8 @@ export function PatientDetailPage() {
   const [params, setParams] = useSearchParams();
   const tab = (params.get('tab') as Tab) || 'overzicht';
   const [editing, setEditing] = useState(false);
-  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const location = useLocation();
+  const [inviteUrl, setInviteUrl] = useState<string | null>((location.state as { inviteUrl?: string } | null)?.inviteUrl ?? null);
   const p = useQuery({ queryKey: ['patient', id], queryFn: () => api.get<PatientDetail>(`/patients/${id}`) });
   const prog = useQuery({ queryKey: ['patient', id, 'progress'], queryFn: () => api.get<Progress>(`/patients/${id}/progress?weeks=8`), enabled: !!p.data });
   useDocumentMeta(p.data ? `${p.data.firstName} ${p.data.lastName}` : t('Patiënt', 'Patient'));
@@ -102,8 +103,8 @@ export function PatientDetailPage() {
       </PageHeader>
 
       {inviteUrl && (
-        <Notice tone="info" className="mb-5" title={t('Ontwikkelomgeving: uitnodigingslink', 'Development: invitation link')}>
-          {t('In productie wordt deze link alleen per e-mail verstuurd.', 'In production this link is only sent by email.')}{' '}
+        <Notice tone="info" className="mb-5" title={t('Demo: uitnodigingslink voor de patiënt', 'Demo: patient invitation link')}>
+          {t('In de echte versie ontvangt de patiënt deze link per e-mail. Open hem bijvoorbeeld op je telefoon om de patiëntapp te proberen.', 'In the real version the patient receives this link by email. Open it, e.g. on your phone, to try the patient app.')}{' '}
           <a href={inviteUrl} className="link break-all">{inviteUrl}</a>
         </Notice>
       )}

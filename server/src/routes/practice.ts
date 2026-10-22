@@ -5,7 +5,7 @@ import { requireStaff, type AppEnv } from '../middleware';
 import { parse, uuidParam } from '../lib/validate';
 import { audit } from '../lib/audit';
 import { badRequest, notFound } from '../lib/errors';
-import { config } from '../config';
+import { exposeInviteLinks } from '../config';
 import { assertNotPatient, inviteUser } from '../auth/service';
 
 export const practice = new Hono<AppEnv>();
@@ -132,7 +132,7 @@ practice.post('/members', async (c) => {
       });
     },
   });
-  return c.json({ ok: true, userId: res.userId, ...(config.isProd ? {} : { inviteUrl: res.inviteUrl }) }, 201);
+  return c.json({ ok: true, userId: res.userId, ...(exposeInviteLinks ? { inviteUrl: res.inviteUrl } : {}) }, 201);
 });
 
 practice.patch('/members/:userId', async (c) => {

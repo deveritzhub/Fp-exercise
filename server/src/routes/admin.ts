@@ -6,7 +6,7 @@ import { parse, uuidParam } from '../lib/validate';
 import { audit } from '../lib/audit';
 import { HttpError, notFound } from '../lib/errors';
 import { uuid } from '../lib/crypto';
-import { config } from '../config';
+import { exposeInviteLinks } from '../config';
 import { assertNotPatient, inviteUser } from '../auth/service';
 
 /**
@@ -74,7 +74,7 @@ admin.post('/practices', async (c) => {
       );
     },
   });
-  return c.json({ id, ...(config.isProd ? {} : { inviteUrl: res.inviteUrl }) }, 201);
+  return c.json({ id, ...(exposeInviteLinks ? { inviteUrl: res.inviteUrl } : {}) }, 201);
 });
 
 admin.patch('/practices/:id', async (c) => {

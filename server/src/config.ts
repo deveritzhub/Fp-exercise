@@ -14,11 +14,16 @@ export const config = {
   isProd: process.env.NODE_ENV === 'production',
   isTest: process.env.NODE_ENV === 'test' || !!process.env.VITEST,
   port: Number(process.env.PORT ?? 8787),
-  appOrigin: process.env.APP_ORIGIN ?? 'http://localhost:5173',
+  appOrigin: process.env.APP_ORIGIN ?? process.env.RENDER_EXTERNAL_URL ?? 'http://localhost:5173',
   databaseUrl: required('DATABASE_URL'),
   authDatabaseUrl: required('DATABASE_AUTH_URL'),
   storageDir: path.resolve(process.env.STORAGE_DIR ?? './storage'),
   mailTransport: process.env.MAIL_TRANSPORT ?? 'outbox',
   sessionTtlHours: Number(process.env.SESSION_TTL_HOURS ?? 12),
+  /** Public demo deployment with synthetic data: invite links are shown on screen because no real e-mail is sent. */
+  demoMode: process.env.DEMO_MODE === '1',
   maxUploadBytes: Number(process.env.MAX_UPLOAD_MB ?? 200) * 1024 * 1024,
 };
+
+/** Invite links are returned in API responses only outside production, or on the synthetic-data demo. */
+export const exposeInviteLinks = !config.isProd || config.demoMode;

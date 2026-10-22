@@ -6,7 +6,7 @@ import { parse, uuidParam } from '../lib/validate';
 import { audit } from '../lib/audit';
 import { badRequest, notFound, HttpError } from '../lib/errors';
 import { uuid } from '../lib/crypto';
-import { config } from '../config';
+import { exposeInviteLinks } from '../config';
 import { inviteUser, linkPatientLogin, unlinkPendingPatientLogin } from '../auth/service';
 import { adherenceForPatient, loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
 
@@ -235,7 +235,7 @@ patients.post('/:id/invite', async (c) => {
     await audit(tx, user.id, p.practice_id, 'invite', 'patient', id);
   });
   // The link is only returned outside production (to support demo + automated tests).
-  return c.json({ ok: true, ...(config.isProd ? {} : { inviteUrl: res.inviteUrl }) });
+  return c.json({ ok: true, ...(exposeInviteLinks ? { inviteUrl: res.inviteUrl } : {}) });
 });
 
 patients.get('/:id/progress', async (c) => {

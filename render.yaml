@@ -1,0 +1,26 @@
+# Render Blueprint for the FP Exercise DEMO (synthetic data only).
+# Web service in Frankfurt (EU). Database: a free Neon Postgres project in Frankfurt (see DEPLOY.md).
+services:
+  - type: web
+    name: fp-exercise-demo
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start:hosted
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_ADMIN_URL
+        sync: false          # paste the Neon connection string when Render asks
+      - key: ROLE_PASSWORD_SECRET
+        generateValue: true
+      - key: DEMO_MODE
+        value: "1"
+      - key: VITE_SHOW_DEMO_ACCOUNTS
+        value: "1"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: MAIL_TRANSPORT
+        value: outbox

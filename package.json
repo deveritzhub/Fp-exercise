@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "FP Exercise — physiotherapy exercise prescription platform",
+  "description": "FP Exercise \u2014 physiotherapy exercise prescription platform",
   "scripts": {
     "dev": "concurrently -n api,web -c blue,magenta \"npm:dev:api\" \"npm:dev:web\"",
     "dev:api": "tsx watch server/src/index.ts",
@@ -16,7 +16,8 @@
     "db:reset": "tsx server/db/setup.ts --reset && tsx server/db/migrate.ts && tsx server/db/seed.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "start:hosted": "NODE_ENV=production tsx server/db/hosted.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -53,5 +54,8 @@
     "typescript": "^5.9.3",
     "vite": "^6.4.5",
     "vitest": "^3.2.7"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

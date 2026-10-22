@@ -130,10 +130,10 @@ export function PatientFormDialog({ open, onClose, patient }: { open: boolean; o
         onClose();
       } else {
         const r = await api.post<{ id: string }>('/patients', body);
-        if (invite && body.email) await api.post(`/patients/${r.id}/invite`);
+        const inv = invite && body.email ? await api.post<{ inviteUrl?: string }>(`/patients/${r.id}/invite`) : null;
         qc.invalidateQueries({ queryKey: ['patients'] });
         toast(invite && body.email ? t('Patiënt toegevoegd en uitgenodigd', 'Patient added and invited') : t('Patiënt toegevoegd', 'Patient added'));
-        nav(`/app/patienten/${r.id}`);
+        nav(`/app/patienten/${r.id}`, { state: { inviteUrl: inv?.inviteUrl ?? null } });
       }
     } catch (err) {
       setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale));
