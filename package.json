@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "FP Exercise \u2014 physiotherapy exercise prescription platform",
+  "description": "FP Exercise — physiotherapy exercise prescription platform",
   "scripts": {
     "dev": "concurrently -n api,web -c blue,magenta \"npm:dev:api\" \"npm:dev:web\"",
     "dev:api": "tsx watch server/src/index.ts",
@@ -23,7 +23,8 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^8.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource/nanum-gothic": "^5.3.0",
+    "@fontsource/proza-libre": "^5.3.0",
     "@hono/node-server": "^1.19.17",
     "@tanstack/react-query": "^5.104.5",
     "bcryptjs": "^2.4.3",

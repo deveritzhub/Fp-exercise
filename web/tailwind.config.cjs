@@ -5,27 +5,31 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Inter Variable"', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // Brand fonts: Nanum Gothic for body text, Proza Libre for headings (self-hosted, no Google Fonts requests)
+        sans: ['"Nanum Gothic"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"Proza Libre"', 'Georgia', 'ui-serif', 'serif'],
       },
       colors: {
-        ink: { 950: '#0b1210', 900: '#121b18', 800: '#1d2925', 700: '#2e3b36', 600: '#4a5651', 500: '#5c6662', 400: '#66706b', 300: '#b5bbb8', 200: '#d9ddda', 100: '#ebeeec', 50: '#f5f6f5' },
-        canvas: '#f7f7f5',
-        line: '#e6e7e3',
+        ink: { 950: '#1d1b10', 900: '#2b2819', 800: '#36331f', 700: '#413d28', 600: '#524e37', 500: '#5f5b47', 400: '#68644f', 300: '#bbb9a1', 200: '#dbd3c0', 100: '#e9e4db', 50: '#f3f0ea' },
+        canvas: '#f7f5f0',
+        // Functional Performance brand palette (brand sheet)
+        brand: { wood: '#5b432b', army: '#413d28', olive: '#64614d', sage: '#bbb9a1', beach: '#dbd3c0', pearl: '#e9e4db' },
+        line: '#e4dfd4',
         accent: {
           DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
           strong: 'rgb(var(--accent-strong) / <alpha-value>)',
           soft: 'rgb(var(--accent-soft) / <alpha-value>)',
           ink: 'rgb(var(--accent-ink) / <alpha-value>)',
         },
-        ok: { DEFAULT: '#2f7a57', soft: '#e8f3ed' },
-        warn: { DEFAULT: '#8a5507', soft: '#fbf1e1' },
-        bad: { DEFAULT: '#a3392f', soft: '#f9e9e7' },
-        info: { DEFAULT: '#33608f', soft: '#e8f0f8' },
+        ok: { DEFAULT: '#3f6b4a', soft: '#e8eee5' },
+        warn: { DEFAULT: '#7d5410', soft: '#f5ecdc' },
+        bad: { DEFAULT: '#9a3b2c', soft: '#f6e6e1' },
+        info: { DEFAULT: '#3c5a73', soft: '#e6edf1' },
       },
       boxShadow: {
-        xs: '0 1px 2px rgba(16, 24, 20, 0.05)',
-        card: '0 1px 2px rgba(16, 24, 20, 0.04), 0 1px 3px rgba(16, 24, 20, 0.04)',
-        pop: '0 12px 32px -8px rgba(16, 24, 20, 0.18), 0 2px 6px rgba(16, 24, 20, 0.06)',
+        xs: '0 1px 2px rgba(45, 40, 25, 0.05)',
+        card: '0 1px 2px rgba(45, 40, 25, 0.04), 0 1px 3px rgba(45, 40, 25, 0.04)',
+        pop: '0 12px 32px -8px rgba(45, 40, 25, 0.18), 0 2px 6px rgba(45, 40, 25, 0.06)',
       },
       borderRadius: { xl: '0.875rem', '2xl': '1.125rem' },
       fontSize: { '2xs': ['0.6875rem', { lineHeight: '1rem' }] },

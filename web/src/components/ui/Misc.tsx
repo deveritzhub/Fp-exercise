@@ -12,7 +12,7 @@ export function Avatar({ name, size = 32, className }: { name: string; size?: nu
     .join('') || name.slice(0, 1).toUpperCase();
   let hash = 0;
   for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
-  const hues = ['#dfe9e5', '#e5e3ef', '#efe6dc', '#dde7ef', '#ece1e4', '#e3ebdc'];
+  const hues = ['#e9e4db', '#dbd3c0', '#e2dfcf', '#e6dccd', '#d9d8c6', '#ebe2d4'];
   return (
     <span
       className={cn('inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold text-ink-700', className)}

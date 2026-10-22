@@ -127,9 +127,9 @@ function Settings() {
   const q = usePractice();
   const qc = useQueryClient();
   const toast = useToast();
-  const [f, setF] = useState({ name: '', city: '', defaultLocale: 'nl' as 'nl' | 'en', accent: '#1f4d45' });
+  const [f, setF] = useState({ name: '', city: '', defaultLocale: 'nl' as 'nl' | 'en', accent: '#413d28' });
   useEffect(() => {
-    if (q.data) setF({ name: q.data.name, city: q.data.city ?? '', defaultLocale: q.data.defaultLocale, accent: q.data.branding.accent ?? '#1f4d45' });
+    if (q.data) setF({ name: q.data.name, city: q.data.city ?? '', defaultLocale: q.data.defaultLocale, accent: q.data.branding.accent ?? '#413d28' });
   }, [q.data]);
   if (!q.data) return <Spinner />;
   return (

@@ -5,16 +5,16 @@ import { mediaUrl } from '@/lib/api';
 import { useLabels } from '@/lib/meta';
 
 const REGION_TINT: Record<string, string> = {
-  cervical_spine: 'from-[#e6eef0] to-[#d8e4e8]',
-  thoracic_spine: 'from-[#e9ebf1] to-[#dcdfe9]',
-  lumbar_spine: 'from-[#ece9e3] to-[#e2ddd3]',
-  shoulder: 'from-[#e5ece6] to-[#d6e2d9]',
-  elbow: 'from-[#efe9e6] to-[#e5dbd6]',
-  wrist_hand: 'from-[#ebe8ef] to-[#dfdbe8]',
-  hip: 'from-[#e7ebe4] to-[#dae1d4]',
-  knee: 'from-[#e4ecec] to-[#d4e2e1]',
-  ankle_foot: 'from-[#ece8e1] to-[#e3dccf]',
-  full_body: 'from-[#e8eaeb] to-[#dadfe1]',
+  cervical_spine: 'from-[#ece8df] to-[#dcd6c6]',
+  thoracic_spine: 'from-[#eae6dc] to-[#d6d3bf]',
+  lumbar_spine: 'from-[#ede6da] to-[#dccfbb]',
+  shoulder: 'from-[#e8e7dc] to-[#cfcdb6]',
+  elbow: 'from-[#ece5da] to-[#d9cbb6]',
+  wrist_hand: 'from-[#ebe7de] to-[#d8d2c1]',
+  hip: 'from-[#e6e5da] to-[#c9c7ae]',
+  knee: 'from-[#e9e6dc] to-[#d3cfb9]',
+  ankle_foot: 'from-[#ede7dc] to-[#dbd1bd]',
+  full_body: 'from-[#e9e4db] to-[#d5cfbf]',
 };
 
 /**
@@ -31,7 +31,7 @@ export function ExerciseThumb({ thumbnailId, videoId, region, className, showReg
         <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" onError={() => setFailed(true)} />
       ) : (
         <div className="flex h-full w-full items-center justify-center">
-          <PersonStanding className="h-[38%] w-[38%] min-h-5 min-w-5 text-ink-900/25" strokeWidth={1.5} aria-hidden />
+          <PersonStanding className="h-[38%] w-[38%] min-h-5 min-w-5 text-brand-olive/40" strokeWidth={1.5} aria-hidden />
         </div>
       )}
       {videoId && (

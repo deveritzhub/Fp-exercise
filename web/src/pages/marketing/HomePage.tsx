@@ -33,14 +33,14 @@ export function HomePage() {
     <>
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_70%_0%,rgba(31,77,69,0.07),transparent)]" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_70%_0%,rgba(65,61,40,0.08),transparent)]" />
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 pb-24 pt-16 lg:grid-cols-[1fr_1.15fr] lg:pt-24">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1 text-[13px] font-medium text-ink-600 shadow-xs">
               <Sparkles className="h-3.5 w-3.5 text-accent" /> {t('Gemaakt in Rotterdam, voor de Nederlandse fysiotherapie', 'Made in Rotterdam for Dutch physiotherapy')}
             </span>
-            <h1 className="mt-6 text-[40px] font-semibold leading-[1.05] tracking-[-0.03em] sm:text-[54px]">
-              {t('Oefentherapie die je patiënt', 'Exercise therapy your patients')} <span className="text-accent">{t('écht volhoudt', 'actually stick with')}</span>.
+            <h1 className="mt-6 text-[42px] font-normal leading-[1.08] tracking-[-0.02em] sm:text-[56px]">
+              {t('Oefentherapie die je patiënt', 'Exercise therapy your patients')} <span className="text-brand-wood">{t('écht volhoudt', 'actually stick with')}</span>.
             </h1>
             <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-ink-600">
               {t('Stel in een paar minuten een programma samen uit een doorzoekbare oefenbibliotheek, deel het via een rustige patiëntapp en zie direct hoe het gaat — inclusief pijn- en zwaarte-feedback.', 'Build a programme in minutes from a searchable exercise library, share it through a calm patient app and see straight away how it’s going — including pain and difficulty feedback.')}
@@ -126,7 +126,7 @@ export function HomePage() {
       {/* CTA */}
       <section className="mx-auto max-w-6xl px-5 py-24">
         <div className="relative overflow-hidden rounded-3xl bg-ink-950 px-8 py-14 text-white sm:px-14">
-          <div className="absolute inset-0 bg-[radial-gradient(50%_80%_at_90%_10%,rgba(159,211,196,0.18),transparent)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(50%_80%_at_90%_10%,rgba(187,185,161,0.22),transparent)]" />
           <div className="relative max-w-xl">
             <h2 className="text-[30px] font-semibold leading-tight text-white">{t('Zie het in actie in je eigen praktijk', 'See it in action in your own practice')}</h2>
             <p className="mt-3 text-[16px] text-ink-300">{t('Een persoonlijke demo van 30 minuten. Daarna kun je 30 dagen kosteloos proberen.', 'A personal 30-minute demo. Then try it free for 30 days.')}</p>

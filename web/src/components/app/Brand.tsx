@@ -5,13 +5,21 @@ import { Languages } from 'lucide-react';
 
 export function Logo({ className, to = '/', compact }: { className?: string; to?: string; compact?: boolean }) {
   return (
-    <Link to={to} className={cn('inline-flex items-center gap-2.5 font-semibold tracking-tight text-ink-950', className)} aria-label="FP Exercise">
-      <svg viewBox="0 0 32 32" className="h-7 w-7 shrink-0" aria-hidden>
-        <rect width="32" height="32" rx="8" className="fill-accent" />
-        <path d="M10 22V10h9M10 16h7" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        <circle cx="22.5" cy="20.5" r="2.5" fill="#9fd3c4" />
+    <Link to={to} className={cn('inline-flex items-center gap-2.5 text-ink-950', className)} aria-label={compact ? 'FP Exercise' : undefined}>
+      <svg viewBox="0 0 32 32" className="h-8 w-8 shrink-0 text-brand-army" aria-hidden>
+        {/* monogram after the Functional Performance brand mark */}
+        <g fill="none" stroke="currentColor" strokeWidth="1.6">
+          <path d="M11.2 9.9A10 10 0 1 0 20.8 9.9" />
+          <circle cx="16" cy="17.5" r="5.2" />
+          <circle cx="16" cy="9.6" r="3.2" />
+        </g>
       </svg>
-      {!compact && <span className="text-[15px]">FP Exercise</span>}
+      {!compact && (
+        <span className="flex flex-col leading-none">
+          <span className="font-display text-[16px] font-normal uppercase tracking-[0.14em] text-brand-army">FP Exercise</span>
+          <span className="mt-1 text-[8.5px] font-normal uppercase tracking-[0.32em] text-ink-500">Functional Performance</span>
+        </span>
+      )}
     </Link>
   );
 }

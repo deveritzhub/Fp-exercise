@@ -13,7 +13,7 @@ function Hero({ eyebrow, title, intro }: { eyebrow: string; title: string; intro
     <section className="border-b border-line bg-canvas">
       <div className="mx-auto max-w-6xl px-5 py-16 sm:py-20">
         <div className="text-[13px] font-semibold uppercase tracking-wider text-accent">{eyebrow}</div>
-        <h1 className="mt-3 max-w-3xl text-[36px] font-semibold leading-[1.1] tracking-[-0.025em] sm:text-[44px]">{title}</h1>
+        <h1 className="mt-3 max-w-3xl text-[36px] font-normal leading-[1.12] tracking-[-0.015em] sm:text-[46px]">{title}</h1>
         <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-ink-600">{intro}</p>
       </div>
     </section>

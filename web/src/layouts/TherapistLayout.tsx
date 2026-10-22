@@ -97,11 +97,11 @@ export function TherapistLayout() {
 
   return (
     <div className="min-h-screen lg:pl-64">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-line bg-[#f2f3f0] lg:block">{sidebar}</aside>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-line bg-[#efebe3] lg:block">{sidebar}</aside>
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-ink-950/30" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 w-72 animate-slide-up bg-[#f2f3f0] shadow-pop">{sidebar}</aside>
+          <aside className="absolute inset-y-0 left-0 w-72 animate-slide-up bg-[#efebe3] shadow-pop">{sidebar}</aside>
         </div>
       )}
       <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line bg-canvas/85 px-4 backdrop-blur sm:px-6">
