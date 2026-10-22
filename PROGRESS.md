@@ -55,6 +55,16 @@ Branch: `claude/fp-exercise-platform-bcak8k`.
 4. Retention period for exercise data after treatment ends.
 5. Who performs clinical review of the exercise library and records original videos.
 
+## Deployment status (hand-over)
+
+- Neon: project `fp-exercise` (Frankfurt) created by the owner; direct (non-pooled) connection string goes
+  into Render as `DATABASE_ADMIN_URL` (never commit or paste it in chat).
+- Render: Blueprint from `render.yaml` on branch `claude/fp-exercise-platform-bcak8k`, **free plan**.
+  First deploy **failed**; logs not yet seen. Build command was lightened to `npx vite build` afterwards.
+  Next: read the deploy logs (Render connector or a screenshot from the owner) and fix.
+- Videos: 13 Kling clips generated in Higgsfield (see docs/VIDEOS.md); owner approved the Kling style.
+  This environment cannot download from Higgsfield's CDN or reach *.onrender.com (network policy).
+
 ## Next actions
 
 See ROADMAP.md › Next priorities. Immediate next step: CI pipeline, then MFA.
