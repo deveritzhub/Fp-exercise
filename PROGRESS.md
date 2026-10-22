@@ -59,9 +59,10 @@ Branch: `claude/fp-exercise-platform-bcak8k`.
 
 - Neon: project `fp-exercise` (Frankfurt) created by the owner; direct (non-pooled) connection string goes
   into Render as `DATABASE_ADMIN_URL` (never commit or paste it in chat).
-- Render: Blueprint from `render.yaml` on branch `claude/fp-exercise-platform-bcak8k`, **free plan**.
-  First deploy **failed**; logs not yet seen. Build command was lightened to `npx vite build` afterwards.
-  Next: read the deploy logs (Render connector or a screenshot from the owner) and fix.
+- Render: service `fp-exercise` (srv-dbd4kgl9fdbs73af63b0), Frankfurt, **free plan**, auto-deploys from
+  branch `claude/fp-exercise-platform-bcak8k`. **LIVE at https://fp-exercise.onrender.com** (2026-10-22):
+  migrations 001–003 applied, synthetic demo data seeded. `DATABASE_ADMIN_URL` set via the Render connector.
+  The Neon owner password was shared in chat once: rotate it in Neon before any real data is used.
 - Videos: 13 Kling clips generated in Higgsfield (see docs/VIDEOS.md); owner approved the Kling style.
   This environment cannot download from Higgsfield's CDN or reach *.onrender.com (network policy).
 

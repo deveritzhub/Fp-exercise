@@ -21,6 +21,7 @@ No real patient data may be imported, and nothing may be published to production
 - [ ] Dependency audit clean; external penetration test passed, findings resolved
 - [ ] Intended-use statement confirmed; MDR qualification documented (see SECURITY.md)
 - [ ] Exercise library content reviewed by a registered physiotherapist (`review_status = reviewed`)
+- [ ] Rotate the Neon owner password (it was shared in a chat during demo setup) and update Render `DATABASE_ADMIN_URL`
 - [ ] Seed/demo accounts and `/api/dev/*` absent in production (dev route already disabled when `NODE_ENV=production`)
 - [ ] Monitoring/alerting with privacy-safe error reporting (no request bodies, EU region)
 
