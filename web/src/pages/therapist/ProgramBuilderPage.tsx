@@ -277,7 +277,13 @@ export function ProgramBuilderPage() {
               </div>
             )}
             <Textarea label={t('Instructies voor de patiënt', 'Instructions for the patient')} value={meta.patientInstructions} onChange={setM('patientInstructions')} placeholder={t('Algemene uitleg, bijv. hoe om te gaan met pijn tijdens het oefenen.', 'General guidance, e.g. how to handle pain during exercise.')} disabled={readOnlyGlobal} />
-            {asTemplate && <Textarea label={t('Omschrijving (intern)', 'Description (internal)')} value={meta.description} onChange={setM('description')} rows={2} disabled={readOnlyGlobal} />}
+            {asTemplate && <Textarea label={t('Omschrijving (intern)', 'Description (internal)')} value={meta.description} onChange={setM('description')} rows={meta.description.includes('\n') ? 8 : 2} disabled={readOnlyGlobal} />}
+            {!asTemplate && meta.description.includes('\n') && (
+              <details className="rounded-xl border border-line bg-ink-50/60 px-4 py-3 text-[13.5px]" open>
+                <summary className="cursor-pointer font-medium text-ink-800">{t('Uit het sjabloon: criteria, rode vlaggen en onderbouwing (alleen voor jou)', 'From the template: criteria, red flags and evidence (only for you)')}</summary>
+                <p className="mt-2 whitespace-pre-wrap leading-relaxed text-ink-700">{meta.description}</p>
+              </details>
+            )}
           </Card>
 
           <div className="flex items-center justify-between">

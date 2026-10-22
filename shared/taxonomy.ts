@@ -29,6 +29,7 @@ export const TRAINING_CATEGORIES: Labelled[] = [
   { key: 'eccentric', nl: 'Excentrische training', en: 'Eccentric training' },
   { key: 'concentric', nl: 'Concentrische training', en: 'Concentric training' },
   { key: 'neuromuscular', nl: 'Neuromusculaire oefeningen', en: 'Neuromuscular exercises' },
+  { key: 'neurodynamics', nl: 'Neurodynamiek', en: 'Neurodynamics' },
   { key: 'conditioning', nl: 'Algemene conditie', en: 'General conditioning' },
 ];
 

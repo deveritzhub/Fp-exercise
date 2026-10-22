@@ -71,4 +71,9 @@ await import('../src/index');
 // Demo videos: fetched in the background so start-up (and the health check) is not delayed.
 const { importLibraryVideos } = await import('./import-videos');
 const { config } = await import('../src/config');
-importLibraryVideos(process.env.DATABASE_OWNER_URL!, config.storageDir).catch((e) => console.error('[videos]', e.message));
+const { importFpLibrary } = await import('./import-library');
+importLibraryVideos(process.env.DATABASE_OWNER_URL!, config.storageDir)
+  .catch((e) => console.error('[videos]', e.message))
+  // The practice's own library (once), then reuse matching library videos.
+  .then(() => importFpLibrary(process.env.DATABASE_OWNER_URL!))
+  .catch((e) => console.error('[library]', e.message));

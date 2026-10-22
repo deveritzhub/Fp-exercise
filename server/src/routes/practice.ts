@@ -8,6 +8,7 @@ import { badRequest, notFound, HttpError } from '../lib/errors';
 import { exposeInviteLinks } from '../config';
 import { assertNotPatient, inviteUser } from '../auth/service';
 import { resetForMember } from '../auth/mfa';
+import { importLibrary, libraryFileSchema } from '../lib/libraryImport';
 
 export const practice = new Hono<AppEnv>();
 
@@ -169,6 +170,20 @@ practice.post('/members/:userId/mfa-reset', async (c) => {
   if (role === 'owner' && myRole !== 'owner') throw badRequest('only_owner_can_change_owner');
   await resetForMember(user.id, practiceId, target);
   return c.json({ ok: true });
+});
+
+/** Import (or update) the practice's own exercise library and phased templates from a JSON file. */
+practice.post('/library-import', async (c) => {
+  const { user, practiceId } = requireStaff(c, ['owner', 'admin']);
+  const len = Number(c.req.header('content-length') ?? 0);
+  if (len > 5 * 1024 * 1024) throw new HttpError(413, 'file_too_large');
+  const file = parse(libraryFileSchema, await c.req.json().catch(() => null));
+  const result = await withUser(user.id, async (tx) => {
+    const r = await importLibrary(tx, practiceId, user.id, file);
+    await audit(tx, user.id, practiceId, 'import', 'exercise_library', null, { exercises: r.exercises, templates: r.templates });
+    return r;
+  });
+  return c.json(result);
 });
 
 practice.get('/audit', async (c) => {

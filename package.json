@@ -13,6 +13,7 @@
     "db:setup": "tsx server/db/setup.ts",
     "db:migrate": "tsx server/db/migrate.ts",
     "db:seed": "tsx server/db/seed.ts",
+    "db:import-library": "tsx server/db/import-library.ts",
     "db:reset": "tsx server/db/setup.ts --reset && tsx server/db/migrate.ts && tsx server/db/seed.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",

@@ -109,15 +109,15 @@ test('therapist adds a practice video to a library exercise', async ({ page }) =
 test('therapist approves a library exercise for the practice', async ({ page }) => {
   await login(page, 'eigenaar@praktijk-a.test');
   await page.goto('/app/oefeningen');
-  await page.getByLabel('Oefeningen zoeken').fill('kat-koe');
-  await page.getByRole('heading', { name: 'Kat-koe' }).click();
+  await page.getByLabel('Oefeningen zoeken').fill('kinintrekking');
+  await page.getByRole('heading', { name: 'Kinintrekking', exact: true }).click();
   await expect(page.getByText('Nog niet klinisch gecontroleerd')).toBeVisible();
   await expectAccessible(page, 'exercise-detail');
   await page.getByRole('button', { name: 'Goedkeuren' }).click();
   await expect(page.getByText(/Goedgekeurd door Sanne Visser/)).toBeVisible();
   await page.goto('/app/oefeningen');
   await page.getByRole('tab', { name: 'Goedgekeurd' }).click();
-  await expect(page.getByRole('heading', { name: 'Kat-koe' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Kinintrekking', exact: true })).toBeVisible();
 });
 
 test('quick search (Ctrl+K) finds a patient and opens it', async ({ page }) => {

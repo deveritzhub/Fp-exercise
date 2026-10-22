@@ -46,6 +46,15 @@
   invites, assignments, programme create/update/status, uploads, session completion/review.
 - GDPR export endpoint per patient (JSON).
 
+## Practice library import
+
+- `POST /api/practice/library-import` (owner/admin, JSON ≤ 5 MB, zod-validated with length limits) runs
+  under RLS as the importing user; content becomes practice-owned and is invisible to other practices.
+- External references in the file (`video_url`, `physitrack_id`) are ignored; no third-party media is fetched.
+- Clinical remarks and phase criteria go into the template's internal description. Since this release the
+  internal description is no longer included in the patient API (`/api/patient/programs/:id`) — before,
+  it was sent along (not shown in the UI). Item notes, which patients do see, are left empty on import.
+
 ## Feedback, offline mode and push reminders
 
 - **Feedback** (`feedback` table): any signed-in user can write; only the platform admin and the

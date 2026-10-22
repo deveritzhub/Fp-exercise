@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ShieldCheck, UserPlus } from 'lucide-react';
+import { ShieldCheck, Upload, UserPlus } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { fmtDateTime, fmtDate } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
-import { Avatar, Badge, Button, Card, CardHeader, Dialog, EmptyState, Input, Notice, PageHeader, ProgressBar, Select, Spinner, Tabs, useToast } from '@/components/ui';
+import { Avatar, Badge, Button, buttonClass, Card, CardHeader, Dialog, EmptyState, Input, Notice, PageHeader, ProgressBar, Select, Spinner, Tabs, useToast } from '@/components/ui';
 import type { Member, Role } from '@/lib/types';
 import { FeedbackList } from '@/components/app/Feedback';
 
@@ -36,7 +36,7 @@ export function PracticePage() {
         ]}
       />
       {tab === 'team' && <Team isAdmin={isAdmin} myRole={practice?.role ?? 'therapist'} />}
-      {tab === 'settings' && <div className="space-y-6"><Security /><Settings /></div>}
+      {tab === 'settings' && <div className="space-y-6"><Security /><LibraryImport /><Settings /></div>}
       {tab === 'plan' && <Plan />}
       {tab === 'audit' && <Audit />}
       {tab === 'feedback' && <FeedbackList />}
@@ -228,6 +228,62 @@ function Security() {
             finally { setBusy(false); }
           }}>{on ? t('Niet meer verplichten', 'Stop requiring') : t('Verplicht maken voor iedereen', 'Require for everyone')}</Button>
         </div>
+      </div>
+    </Card>
+  );
+}
+
+function LibraryImport() {
+  const { t, locale } = useI18n();
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ exercises: number; created: number; updated: number; templates: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <Card className="max-w-2xl">
+      <CardHeader
+        title={t('Eigen oefenbibliotheek importeren', 'Import your own exercise library')}
+        description={t('JSON-bestand met oefeningen en gefaseerde programma’s (formaat Functional Performance). Alleen zichtbaar voor jouw praktijk.', 'JSON file with exercises and phased programmes (Functional Performance format). Only visible to your practice.')}
+      />
+      <div className="space-y-4 p-5">
+        {error && <Notice tone="bad">{error}</Notice>}
+        {result && (
+          <Notice tone="ok" title={t('Import gelukt', 'Import complete')}>
+            {t(
+              `${result.exercises} oefeningen (${result.created} nieuw, ${result.updated} bijgewerkt) en ${result.templates} sjablonen (één per fase). Oefeningen die niet als "gecheckt" gemarkeerd zijn, staan onder "Te controleren".`,
+              `${result.exercises} exercises (${result.created} new, ${result.updated} updated) and ${result.templates} templates (one per phase). Exercises not marked as checked are listed under "To review".`,
+            )}
+          </Notice>
+        )}
+        <p className="text-[13.5px] text-ink-600">
+          {t('Een nieuwe versie van hetzelfde bestand werkt de bestaande oefeningen en sjablonen bij (op basis van de id’s in het bestand). Er komen geen dubbele oefeningen.', 'A new version of the same file updates existing exercises and templates (matched on the ids in the file). No duplicates are created.')}
+        </p>
+        <label className={buttonClass('secondary', 'md', busy ? 'pointer-events-none opacity-60' : 'cursor-pointer')}>
+          <Upload className="h-4 w-4" />
+          {busy ? t('Bezig met importeren…', 'Importing…') : t('Kies JSON-bestand', 'Choose JSON file')}
+          <input
+            type="file"
+            accept="application/json,.json"
+            className="sr-only"
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              e.target.value = '';
+              if (!f) return;
+              setBusy(true); setError(null); setResult(null);
+              try {
+                let data: unknown;
+                try { data = JSON.parse(await f.text()); } catch { throw new ApiError(400, 'invalid_json'); }
+                setResult(await api.post('/practice/library-import', data));
+                qc.invalidateQueries();
+              } catch (err) {
+                const code = err instanceof ApiError ? err.code : undefined;
+                setError(code === 'invalid_json' || code === 'validation_failed'
+                  ? t('Dit bestand heeft niet het verwachte formaat (oefeningen met id, naam, regio, instructie en dosering).', 'This file does not have the expected format (exercises with id, name, region, instruction and dose).')
+                  : errorMessage(code, locale));
+              } finally { setBusy(false); }
+            }}
+          />
+        </label>
       </div>
     </Card>
   );

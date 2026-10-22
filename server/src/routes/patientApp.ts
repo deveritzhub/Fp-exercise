@@ -121,8 +121,10 @@ patientApp.get('/programs/:id', async (c) => {
             AND s.started_at > now() - interval '12 hours' ORDER BY s.started_at DESC LIMIT 1`,
         [id, patient.id],
       );
+      // The description is the therapists' internal note (criteria, evidence): never sent to patients.
+      const { description: _internal, ...program } = mapProgram(rows[0]);
       return {
-        ...mapProgram(rows[0]),
+        ...program,
         therapistName: rows[0].therapist_name,
         items: await loadItems(tx, id),
         openSession: open.rows[0] ? { id: open.rows[0].id, loggedItemIds: open.rows[0].logged } : null,
