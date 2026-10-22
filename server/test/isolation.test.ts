@@ -181,6 +181,8 @@ describe('database-level isolation (direct SQL as the runtime role)', () => {
     await expect(
       as(u, `INSERT INTO practice_members(practice_id, user_id, role) VALUES ($1,$2,'owner')`, [s.practices.A, u]),
     ).rejects.toThrow(/row-level security/);
+    // staff can never attach an arbitrary login to a patient record (even in their own practice)
+    await expect(as(u, `UPDATE patients SET user_id = $1`, [s.users.ownerB])).rejects.toThrow(/permission denied/);
   });
 
   it('patients cannot forge sessions for other patients or read clinical notes', async () => {

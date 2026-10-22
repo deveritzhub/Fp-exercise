@@ -9,3 +9,4 @@ playwright-report/
 *.log
 storage-test/
 e2e/.tmp/
+storage-e2e/

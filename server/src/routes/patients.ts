@@ -7,7 +7,7 @@ import { audit } from '../lib/audit';
 import { badRequest, notFound, HttpError } from '../lib/errors';
 import { uuid } from '../lib/crypto';
 import { config } from '../config';
-import { inviteUser, linkPatientLogin } from '../auth/service';
+import { inviteUser, linkPatientLogin, unlinkPendingPatientLogin } from '../auth/service';
 import { adherenceForPatient, loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
 
 export const patients = new Hono<AppEnv>();
@@ -21,7 +21,8 @@ export function mapPatient(r: Record<string, any>) {
     email: r.email,
     locale: r.locale,
     externalRef: r.external_ref,
-    hasAccount: !!r.user_id,
+    // true only once the patient has activated their login (set a password)
+    hasAccount: !!r.activated,
     invitedAt: r.invited_at,
     createdAt: r.created_at,
     archived: !!r.archived_at,
@@ -40,7 +41,7 @@ patients.get('/', async (c) => {
   return c.json(
     await withUser(user.id, async (tx) => {
       const { rows } = await tx.query(
-        `SELECT pt.*,
+        `SELECT pt.*, app.user_activated(pt.user_id) AS activated,
             (SELECT count(*) FROM programs p WHERE p.patient_id = pt.id AND p.status = 'active') AS active_programs,
             (SELECT max(completed_at) FROM workout_sessions s WHERE s.patient_id = pt.id) AS last_activity,
             (SELECT coalesce(json_agg(json_build_object('id', u.id, 'fullName', u.full_name)), '[]')
@@ -107,7 +108,7 @@ patients.post('/', async (c) => {
 });
 
 async function loadPatient(tx: Tx, id: string) {
-  const { rows } = await tx.query('SELECT * FROM patients WHERE id = $1', [id]);
+  const { rows } = await tx.query('SELECT *, app.user_activated(user_id) AS activated FROM patients WHERE id = $1', [id]);
   return rows[0] ?? null;
 }
 
@@ -152,17 +153,23 @@ patients.patch('/:id', async (c) => {
   const { user } = requireStaff(c);
   const id = parse(uuidParam, c.req.param('id'));
   const b = parse(patientBody, await c.req.json());
-  await withUser(user.id, async (tx) => {
+  const unlink = await withUser(user.id, async (tx) => {
     const p = await loadPatient(tx, id);
     if (!p) throw notFound();
-    if (p.user_id && b.email !== p.email) throw badRequest('email_locked_after_activation');
+    const emailChanged = (b.email || null) !== p.email;
+    if (p.activated && emailChanged) throw badRequest('email_locked_after_activation');
     const r = await tx.query(
-      'UPDATE patients SET first_name=$2, last_name=$3, email=$4, locale=$5, external_ref=$6 WHERE id = $1',
-      [id, b.firstName, b.lastName, b.email || null, b.locale, b.externalRef || null],
+      `UPDATE patients SET first_name=$2, last_name=$3, email=$4, locale=$5, external_ref=$6,
+         invited_at = CASE WHEN $7 THEN NULL ELSE invited_at END WHERE id = $1`,
+      [id, b.firstName, b.lastName, b.email || null, b.locale, b.externalRef || null, emailChanged],
     );
     if (!r.rowCount) throw notFound();
     await audit(tx, user.id, p.practice_id, 'update', 'patient', id, { fields: Object.keys(b) });
+    return emailChanged && !!p.user_id;
   });
+  // A pending (not yet activated) invite to the old address is withdrawn — after commit, so the
+  // auth service does not wait on this transaction's row lock.
+  if (unlink) await unlinkPendingPatientLogin(id);
   return c.json({ ok: true });
 });
 
@@ -214,6 +221,7 @@ patients.post('/:id/invite', async (c) => {
   if (!p) throw notFound();
   if (!p.email) throw badRequest('patient_email_required');
   if (p.archived_at) throw badRequest('patient_archived');
+  if (p.activated) throw badRequest('already_activated');
   const res = await inviteUser({
     email: p.email,
     fullName: `${p.first_name} ${p.last_name}`,

@@ -196,7 +196,8 @@ GRANT SELECT, INSERT, UPDATE ON practices TO fp_app;
 GRANT SELECT (id, email, full_name, locale, is_platform_admin, email_verified_at, mfa_enabled, created_at, disabled_at),
       UPDATE (full_name, locale) ON users TO fp_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON practice_members TO fp_app;
-GRANT SELECT, INSERT, UPDATE ON patients TO fp_app;
+-- user_id (login link) can only be changed by the auth service, never by practice staff.
+GRANT SELECT, INSERT, UPDATE (first_name, last_name, email, locale, external_ref, invited_at, archived_at) ON patients TO fp_app;
 GRANT SELECT, INSERT, DELETE ON patient_therapists TO fp_app;
 GRANT SELECT, INSERT, DELETE ON media TO fp_app;
 GRANT SELECT, INSERT, UPDATE ON exercises TO fp_app;

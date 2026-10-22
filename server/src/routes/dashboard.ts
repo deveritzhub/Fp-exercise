@@ -15,7 +15,7 @@ dashboard.get('/', async (c) => {
     await withUser(user.id, async (tx) => {
       // "My patients" = patients assigned to me in the active practice.
       const pts = await tx.query(
-        `SELECT pt.id, pt.first_name, pt.last_name, pt.user_id, pt.invited_at,
+        `SELECT pt.id, pt.first_name, pt.last_name, app.user_activated(pt.user_id) AS activated, pt.invited_at,
                 (SELECT count(*) FROM programs p WHERE p.patient_id = pt.id AND p.status = 'active') AS active_programs,
                 (SELECT min(p.end_date) FROM programs p WHERE p.patient_id = pt.id AND p.status = 'active' AND p.end_date >= current_date) AS next_end,
                 (SELECT max(completed_at) FROM workout_sessions s WHERE s.patient_id = pt.id) AS last_activity
@@ -50,7 +50,7 @@ dashboard.get('/', async (c) => {
         if (pain && pain.unreviewed > 0) reasons.push('new_feedback');
         if (p.active_programs > 0 && a.planned >= 2 && (a.rate ?? 0) < 0.5) reasons.push('low_adherence');
         if (p.next_end && p.next_end <= toISODate(soon)) reasons.push('program_ending');
-        if (!p.user_id && p.invited_at && Date.now() - new Date(p.invited_at).getTime() > 3 * 86400_000) reasons.push('not_activated');
+        if (!p.activated && p.invited_at && Date.now() - new Date(p.invited_at).getTime() > 3 * 86400_000) reasons.push('not_activated');
         if (p.active_programs === 0) reasons.push('no_active_program');
         if (reasons.length) attention.push({ patientId: p.id, name: `${p.first_name} ${p.last_name}`, reasons });
       }

@@ -21,28 +21,28 @@ export function ProductShot({ className }: { className?: string }) {
       <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_30px_80px_-20px_rgba(16,24,20,.25)]">
         <div className="flex items-center gap-1.5 border-b border-line bg-ink-50 px-4 py-2.5">
           <span className="h-2.5 w-2.5 rounded-full bg-ink-200" /><span className="h-2.5 w-2.5 rounded-full bg-ink-200" /><span className="h-2.5 w-2.5 rounded-full bg-ink-200" />
-          <span className="ml-3 rounded-md bg-white px-3 py-0.5 text-[11px] text-ink-400">app.fp-exercise.nl/programmas/nieuw</span>
+          <span className="ml-3 rounded-md bg-white px-3 py-0.5 text-[11px] text-ink-500">app.fp-exercise.nl/programmas/nieuw</span>
         </div>
         <div className="grid grid-cols-[200px_1fr] text-left sm:grid-cols-[240px_1fr]">
           <div className="border-r border-line bg-[#fafaf8] p-3">
-            <div className="flex items-center gap-2 rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] text-ink-400"><Search className="h-3 w-3" />{t('Zoek oefening…', 'Search exercise…')}</div>
+            <div className="flex items-center gap-2 rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] text-ink-500"><Search className="h-3 w-3" />{t('Zoek oefening…', 'Search exercise…')}</div>
             <div className="mt-3 space-y-1.5">
               {lib.map(([n, s], i) => (
                 <div key={n} className={cn('flex items-center gap-2 rounded-lg px-2 py-1.5', i === 0 && 'bg-accent-soft')}>
                   <div className="h-7 w-7 rounded-md bg-gradient-to-br from-[#e4ecec] to-[#d4e2e1]" />
-                  <div className="min-w-0"><div className="truncate text-[11px] font-medium text-ink-900">{n}</div><div className="truncate text-[10px] text-ink-400">{s}</div></div>
+                  <div className="min-w-0"><div className="truncate text-[11px] font-medium text-ink-900">{n}</div><div className="truncate text-[10px] text-ink-500">{s}</div></div>
                 </div>
               ))}
             </div>
           </div>
           <div className="p-4 sm:p-5">
-            <div className="text-[10px] text-ink-400">Emma de Jong</div>
+            <div className="text-[10px] text-ink-500">Emma de Jong</div>
             <div className="text-[14px] font-semibold text-ink-950">{t('Knie — patellapees opbouw', 'Knee — patellar tendon loading')}</div>
             <div className="mt-3 space-y-2">
               {prog.map(([n, d, days], i) => (
                 <div key={n} className="flex items-center gap-2.5 rounded-xl border border-line bg-white p-2.5 shadow-xs">
                   <GripVertical className="h-3 w-3 text-ink-300" />
-                  <span className="text-[10px] font-semibold text-ink-400">{i + 1}</span>
+                  <span className="text-[10px] font-semibold text-ink-500">{i + 1}</span>
                   <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#e4ecec] to-[#d4e2e1]" />
                   <div className="min-w-0 flex-1"><div className="truncate text-[11.5px] font-semibold">{n}</div><div className="text-[10px] text-ink-500">{d} · {days}</div></div>
                   <div className="hidden gap-1 sm:flex">{['3', '10', '45s'].map((v) => <span key={v} className="rounded-md border border-line px-1.5 py-0.5 text-[10px] tabular-nums text-ink-600">{v}</span>)}</div>

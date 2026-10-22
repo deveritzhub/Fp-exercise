@@ -8,7 +8,7 @@ module.exports = {
         sans: ['"Inter Variable"', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
-        ink: { 950: '#0b1210', 900: '#121b18', 800: '#1d2925', 700: '#2e3b36', 600: '#4a5651', 500: '#69736f', 400: '#8d9591', 300: '#b5bbb8', 200: '#d9ddda', 100: '#ebeeec', 50: '#f5f6f5' },
+        ink: { 950: '#0b1210', 900: '#121b18', 800: '#1d2925', 700: '#2e3b36', 600: '#4a5651', 500: '#5c6662', 400: '#66706b', 300: '#b5bbb8', 200: '#d9ddda', 100: '#ebeeec', 50: '#f5f6f5' },
         canvas: '#f7f7f5',
         line: '#e6e7e3',
         accent: {
@@ -18,8 +18,8 @@ module.exports = {
           ink: 'rgb(var(--accent-ink) / <alpha-value>)',
         },
         ok: { DEFAULT: '#2f7a57', soft: '#e8f3ed' },
-        warn: { DEFAULT: '#a86a12', soft: '#fbf1e1' },
-        bad: { DEFAULT: '#b2453b', soft: '#f9e9e7' },
+        warn: { DEFAULT: '#8a5507', soft: '#fbf1e1' },
+        bad: { DEFAULT: '#a3392f', soft: '#f9e9e7' },
         info: { DEFAULT: '#33608f', soft: '#e8f0f8' },
       },
       boxShadow: {

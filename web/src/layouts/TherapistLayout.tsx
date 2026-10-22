@@ -89,7 +89,7 @@ export function TherapistLayout() {
           </NavLink>
         ))}
       </nav>
-      <div className="border-t border-line p-3 text-2xs leading-relaxed text-ink-400">
+      <div className="border-t border-line p-3 text-2xs leading-relaxed text-ink-500">
         {t('Ontwikkelomgeving — alleen synthetische gegevens.', 'Development environment — synthetic data only.')}
       </div>
     </div>
@@ -113,9 +113,10 @@ export function TherapistLayout() {
         <NotificationBell />
         <Popover
           trigger={({ toggle }) => (
-            <button type="button" onClick={toggle} className="flex items-center gap-2 rounded-lg p-1 pr-2 hover:bg-ink-100" aria-label={t('Accountmenu', 'Account menu')}>
+            <button type="button" onClick={toggle} className="flex items-center gap-2 rounded-lg p-1 pr-2 hover:bg-ink-100" aria-haspopup="menu">
               <Avatar name={user.fullName} size={28} />
               <span className="hidden text-[13px] font-medium sm:inline">{user.fullName}</span>
+              <span className="sr-only sm:hidden">{user.fullName}</span>
             </button>
           )}
         >

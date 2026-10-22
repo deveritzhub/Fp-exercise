@@ -280,3 +280,14 @@ export async function assertNotPatient(userId: string) {
   const { rows } = await authPool.query('SELECT 1 FROM patients WHERE user_id = $1', [userId]);
   if (rows[0]) throw new HttpError(409, 'email_belongs_to_patient');
 }
+
+/** Withdraws a pending invite: unlinks the login and revokes open invite tokens (only if never activated). */
+export async function unlinkPendingPatientLogin(patientId: string) {
+  const { rows } = await authPool.query(
+    `SELECT u.id FROM patients p JOIN users u ON u.id = p.user_id WHERE p.id = $1 AND u.password_hash IS NULL`,
+    [patientId],
+  );
+  if (!rows[0]) return;
+  await authPool.query('UPDATE patients SET user_id = NULL WHERE id = $1', [patientId]);
+  await authPool.query(`UPDATE auth_tokens SET used_at = now() WHERE user_id = $1 AND kind = 'invite' AND used_at IS NULL`, [rows[0].id]);
+}

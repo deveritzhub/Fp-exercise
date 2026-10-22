@@ -23,7 +23,7 @@ export function LocaleSwitch({ className }: { className?: string }) {
       type="button"
       onClick={() => setLocale(locale === 'nl' ? 'en' : 'nl')}
       className={cn('inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-[13px] font-medium text-ink-600 hover:bg-ink-100 hover:text-ink-900', className)}
-      aria-label={t('Taal wijzigen naar Engels', 'Switch language to Dutch')}
+      aria-label={t('Taal wijzigen naar EN', 'Switch language to NL')}
     >
       <Languages className="h-4 w-4" />
       {locale === 'nl' ? 'EN' : 'NL'}

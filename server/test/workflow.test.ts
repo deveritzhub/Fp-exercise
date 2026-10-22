@@ -63,6 +63,8 @@ describe('therapist → patient → therapist workflow', () => {
     expect(inv.status).toBe(200);
     expect(inv.body.inviteUrl).toMatch(/\/uitnodiging\//);
     const token = inv.body.inviteUrl.split('/').pop();
+    // invited but not yet activated
+    expect((await therapist.get(`/patients/${patientId}`)).body.hasAccount).toBe(false);
     patient = new Client('newpatient');
     expect((await patient.get(`/auth/invite/${token}`)).body.email).toBe('test.patient@voorbeeld.test');
     expect((await patient.post('/auth/invite/accept', { token, password: 'kort' })).status).toBe(400);
@@ -70,6 +72,19 @@ describe('therapist → patient → therapist workflow', () => {
     expect(acc.status).toBe(200);
     expect(acc.body.user.patient.id).toBe(patientId);
     expect(acc.body.user.emailVerified).toBe(true);
+    expect((await therapist.get(`/patients/${patientId}`)).body.hasAccount).toBe(true);
+    expect((await therapist.post(`/patients/${patientId}/invite`)).body.error).toBe('already_activated');
+  });
+
+  it('changing the email of an invited (not activated) patient withdraws the pending invite', async () => {
+    const r = await therapist.post('/patients', { firstName: 'Fout', lastName: 'Adres', email: 'fout.adres@voorbeeld.test' });
+    const inv = await therapist.post(`/patients/${r.body.id}/invite`);
+    const token = inv.body.inviteUrl.split('/').pop();
+    expect((await therapist.patch(`/patients/${r.body.id}`, { firstName: 'Fout', lastName: 'Adres', email: 'goed.adres@voorbeeld.test' })).status).toBe(200);
+    expect((await new Client().get(`/auth/invite/${token}`)).status).toBe(404);
+    const p = (await therapist.get(`/patients/${r.body.id}`)).body;
+    expect(p.invitedAt).toBeNull();
+    expect(p.email).toBe('goed.adres@voorbeeld.test');
   });
 
   it('therapist builds and assigns a program', async () => {

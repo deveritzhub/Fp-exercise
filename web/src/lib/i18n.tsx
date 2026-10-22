@@ -69,6 +69,8 @@ const ERRORS: Record<string, [string, string]> = {
   last_owner: ['Een praktijk heeft minimaal één eigenaar nodig.', 'A practice needs at least one owner.'],
   slug_taken: ['Deze praktijk-URL is al in gebruik.', 'This practice slug is taken.'],
   too_fast: ['Probeer het opnieuw.', 'Please try again.'],
+  already_activated: ['Deze patiënt heeft het account al geactiveerd.', 'This patient has already activated their account.'],
+  email_locked_after_activation: ['Het e-mailadres kan na activatie niet meer worden gewijzigd.', 'The email address cannot be changed after activation.'],
   session_completed: ['Deze sessie is al afgerond.', 'This session is already completed.'],
 };
 

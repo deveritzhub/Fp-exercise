@@ -368,7 +368,8 @@ function LibraryPanel({ onAdd, addedIds, bare }: { onAdd: (e: Exercise) => void;
           <ul className="divide-y divide-line">
             {q.data.items.map((e) => (
               <li key={e.id}>
-                <button type="button" onClick={() => onAdd(e)} className="group flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-accent-soft/50" aria-label={t(`${e.nameNl} toevoegen`, `Add ${e.nameEn}`)}>
+                <button type="button" onClick={() => onAdd(e)} className="group flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-accent-soft/50">
+                  <span className="sr-only">{t('Toevoegen:', 'Add:')} </span>
                   <ExerciseThumb thumbnailId={e.thumbnailMediaId} videoId={e.videoMediaId} region={e.bodyRegion} className="h-11 w-11 shrink-0" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13.5px] font-medium text-ink-900">{locale === 'nl' ? e.nameNl : e.nameEn}</span>
