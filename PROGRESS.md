@@ -38,7 +38,7 @@ Branch: `claude/fp-exercise-platform-bcak8k`.
 
 ## Known issues / limitations
 
-- MFA not implemented (release blocker).
+- MFA (TOTP + recovery codes, per-practice enforcement) implemented; demo practices do not require it, new practices do.
 - Patient app has no offline queue; a failed save shows an error and can be retried.
 - Practice branding colour is stored but not yet applied in the UI.
 - Marketing pages are client-rendered (SEO meta set at runtime; pre-rendering planned).

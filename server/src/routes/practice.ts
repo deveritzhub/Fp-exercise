@@ -4,9 +4,10 @@ import { withUser } from '../db';
 import { requireStaff, type AppEnv } from '../middleware';
 import { parse, uuidParam } from '../lib/validate';
 import { audit } from '../lib/audit';
-import { badRequest, notFound } from '../lib/errors';
+import { badRequest, notFound, HttpError } from '../lib/errors';
 import { exposeInviteLinks } from '../config';
 import { assertNotPatient, inviteUser } from '../auth/service';
+import { resetForMember } from '../auth/mfa';
 
 export const practice = new Hono<AppEnv>();
 
@@ -47,18 +48,20 @@ practice.patch('/', async (c) => {
       city: z.string().trim().max(80).nullable().optional(),
       defaultLocale: z.enum(['nl', 'en']),
       branding: z.object({ accent: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional() }).default({}),
+      requireMfa: z.boolean().optional(),
     }),
     await c.req.json(),
   );
+  // Switching the requirement on while not using MFA yourself would lock you out of the practice.
+  if (b.requireMfa && !user.mfaEnabled) throw new HttpError(409, 'mfa_enable_yourself_first');
   await withUser(user.id, async (tx) => {
-    await tx.query('UPDATE practices SET name=$2, city=$3, default_locale=$4, branding=$5 WHERE id = $1', [
-      practiceId,
-      b.name,
-      b.city ?? null,
-      b.defaultLocale,
-      b.branding,
-    ]);
-    await audit(tx, user.id, practiceId, 'update', 'practice', practiceId);
+    await tx.query(
+      `UPDATE practices SET name=$2, city=$3, default_locale=$4, branding=$5,
+              settings = CASE WHEN $6::boolean IS NULL THEN settings ELSE settings || jsonb_build_object('requireMfa', $6::boolean) END
+        WHERE id = $1`,
+      [practiceId, b.name, b.city ?? null, b.defaultLocale, b.branding, b.requireMfa ?? null],
+    );
+    await audit(tx, user.id, practiceId, 'update', 'practice', practiceId, b.requireMfa === undefined ? undefined : { requireMfa: b.requireMfa });
   });
   return c.json({ ok: true });
 });
@@ -68,7 +71,7 @@ practice.get('/members', async (c) => {
   const rows = await withUser(user.id, async (tx) =>
     (
       await tx.query(
-        `SELECT m.user_id, m.role, m.title, m.active, m.created_at, u.full_name, u.email, app.user_activated(u.id) AS activated,
+        `SELECT m.user_id, m.role, m.title, m.active, m.created_at, u.full_name, u.email, u.mfa_enabled, app.user_activated(u.id) AS activated,
                 (SELECT count(*) FROM patient_therapists a JOIN patients p ON p.id = a.patient_id
                   WHERE a.therapist_id = m.user_id AND p.practice_id = m.practice_id AND p.archived_at IS NULL) AS patients
            FROM practice_members m JOIN users u ON u.id = m.user_id
@@ -87,6 +90,7 @@ practice.get('/members', async (c) => {
       active: r.active,
       patients: r.patients,
       activated: r.activated,
+      mfaEnabled: r.mfa_enabled,
       createdAt: r.created_at,
     })),
   });
@@ -151,6 +155,19 @@ practice.patch('/members/:userId', async (c) => {
     if (owners.rows[0].n < 1) throw badRequest('last_owner');
     await audit(tx, user.id, practiceId, 'update', 'member', target, b);
   });
+  return c.json({ ok: true });
+});
+
+practice.post('/members/:userId/mfa-reset', async (c) => {
+  const { user, practiceId, role: myRole } = requireStaff(c, ['owner', 'admin']);
+  const target = parse(uuidParam, c.req.param('userId'));
+  const role = await withUser(user.id, async (tx) => {
+    const { rows } = await tx.query('SELECT role FROM practice_members WHERE practice_id = $1 AND user_id = $2', [practiceId, target]);
+    return rows[0]?.role as string | undefined;
+  });
+  if (!role) throw notFound();
+  if (role === 'owner' && myRole !== 'owner') throw badRequest('only_owner_can_change_owner');
+  await resetForMember(user.id, practiceId, target);
   return c.json({ ok: true });
 });
 

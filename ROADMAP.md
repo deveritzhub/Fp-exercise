@@ -35,11 +35,11 @@ JSON-LD, robots, sitemap) · ⬜ pre-rendering/SSG for marketing pages · ⬜ fi
 ## Phase 7 — Quality & release readiness 🟡
 ✅ Automated unit/integration/isolation/e2e tests · ✅ axe a11y scans · ✅ security review (internal) ·
 ✅ documentation · ⬜ manual WCAG audit · ⬜ performance budget/load test · ⬜ real-device testing ·
-⬜ deployment (EU hosting, staging) · ⬜ CI pipeline · ⬜ MFA · ⬜ external pen test · ⬜ DPIA/DPA
+⬜ deployment (EU hosting, staging) · ⬜ CI pipeline · ✅ MFA (TOTP) · ⬜ external pen test · ⬜ DPIA/DPA
 
 ## Next priorities (proposed order)
 1. CI (GitHub Actions: typecheck, vitest with Postgres service, Playwright) — prerequisite for team work.
-2. MFA (TOTP) for staff + session management screen.
+2. ~~MFA (TOTP) for staff~~ ✅ · session management screen; passkeys (WebAuthn).
 3. Staging deployment in EU (needs hosting choice + approval of costs).
 4. Offline-tolerant patient app (service worker, queued log submissions) and reminders
    (in-app → opt-in e-mail/push with consent).

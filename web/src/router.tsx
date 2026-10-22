@@ -7,7 +7,7 @@ import { RequireAuth } from '@/layouts/Guards';
 import { HomePage } from '@/pages/marketing/HomePage';
 import { ContactPage, CookiesPage, FeaturesPage, HowItWorksPage, PricingPage, PrivacyPage, TermsPage } from '@/pages/marketing/MarketingPages';
 import { DemoPage } from '@/pages/marketing/DemoPage';
-import { ForgotPasswordPage, InvitePage, LoginPage, ResetPasswordPage, VerifyEmailPage } from '@/pages/auth/AuthPages';
+import { ForgotPasswordPage, InvitePage, LoginPage, MfaRequiredPage, ResetPasswordPage, VerifyEmailPage } from '@/pages/auth/AuthPages';
 
 // Authenticated areas are code-split so the public website stays light.
 const named = <K extends string>(loader: () => Promise<Record<K, React.ComponentType<any>>>, name: K) =>
@@ -77,6 +77,7 @@ export const router = createBrowserRouter([
       { path: '/wachtwoord-herstellen', element: <ResetPasswordPage /> },
       { path: '/uitnodiging/:token', element: <InvitePage /> },
       { path: '/verifieer-email', element: <VerifyEmailPage /> },
+      { path: '/tweestapsverificatie', element: <MfaRequiredPage /> },
       {
         path: '/app',
         element: <RequireAuth kind="staff"><S><TherapistLayout /></S></RequireAuth>,

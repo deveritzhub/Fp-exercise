@@ -19,7 +19,8 @@ PostgreSQL 16. Migrations in `server/db/migrations` (plain SQL, applied in order
 | `practices` | `id` | tenant; branding, settings, plan, subscription status |
 | `users` | — | one login per person; `is_platform_admin`; lockout counters |
 | `practice_members` | `practice_id` | role `owner` / `admin` / `therapist`, active flag |
-| `auth_sessions`, `auth_tokens` | — | hashed tokens only (sessions, verify_email, reset_password, invite) |
+| `auth_sessions`, `auth_tokens` | — | hashed tokens only (sessions, verify_email, reset_password, invite, mfa_login) |
+| `mfa_recovery_codes` | — | SHA-256 of single-use recovery codes; `fp_auth` only. `users.mfa_secret` / `mfa_last_step` (migration 006) are likewise not granted to `fp_app` |
 | `patients` | `practice_id` | minimal data: name, email, locale, optional external reference. No DOB/BSN/diagnosis. `user_id` = linked login |
 | `patient_therapists` | `practice_id` | assignment; drives therapist access |
 | `media` | `practice_id` (null = global) | metadata; bytes on private storage |

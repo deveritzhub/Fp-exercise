@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Mail } from 'lucide-react';
+import { CheckCircle2, Mail, ShieldCheck } from 'lucide-react';
+import { CodeInput, MfaSetup } from '@/components/app/Mfa';
 import { AuthLayout } from '@/layouts/AuthLayout';
-import { Button, Input, Notice, Spinner } from '@/components/ui';
+import { Button, Input, Notice, Spinner, useToast } from '@/components/ui';
 import { api, ApiError } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
-import { homePathFor } from '@/lib/session';
+import { homePathFor, useLogout, useSession } from '@/lib/session';
 import { useDocumentMeta } from '@/lib/meta';
 import type { SessionUser } from '@/lib/types';
 
@@ -35,22 +36,84 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [code, setCode] = useState('');
+  const [useRecovery, setUseRecovery] = useState(false);
+  const toast = useToast();
+
+  const signedIn = (user: SessionUser) => {
+    qc.setQueryData(['me'], user);
+    if (user.locale !== locale) setLocale(user.locale);
+    nav(safeNext(params.get('next')) ?? homePathFor(user), { replace: true });
+  };
 
   const submit = async (e?: FormEvent, creds?: { email: string; password: string }) => {
     e?.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      const r = await api.post<{ user: SessionUser }>('/auth/login', creds ?? { email, password });
-      qc.setQueryData(['me'], r.user);
-      if (r.user.locale !== locale) setLocale(r.user.locale);
-      nav(safeNext(params.get('next')) ?? homePathFor(r.user), { replace: true });
+      const r = await api.post<{ user: SessionUser } | { mfaRequired: true; mfaToken: string }>('/auth/login', creds ?? { email, password });
+      if ('mfaToken' in r) {
+        setMfaToken(r.mfaToken);
+        setCode('');
+      } else signedIn(r.user);
     } catch (err) {
       setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale));
     } finally {
       setBusy(false);
     }
   };
+
+  const submitCode = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api.post<{ user: SessionUser; recoveryCodesLeft?: number }>('/auth/login/mfa', { mfaToken, code: code.trim() });
+      if (r.recoveryCodesLeft !== undefined) {
+        toast(t(`Herstelcode gebruikt — nog ${r.recoveryCodesLeft} over. Maak nieuwe codes via Account.`, `Recovery code used — ${r.recoveryCodesLeft} left. Create new codes under Account.`), r.recoveryCodesLeft < 3 ? 'bad' : undefined);
+      }
+      signedIn(r.user);
+    } catch (err) {
+      const c = err instanceof ApiError ? err.code : undefined;
+      if (c === 'mfa_session_expired') setMfaToken(null);
+      setError(errorMessage(c, locale));
+      setCode('');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (mfaToken) {
+    return (
+      <AuthLayout
+        title={t('Bevestig dat jij het bent', 'Confirm it’s you')}
+        description={useRecovery
+          ? t('Voer één van je herstelcodes in.', 'Enter one of your recovery codes.')
+          : t('Open je authenticator-app en voer de 6-cijferige code in.', 'Open your authenticator app and enter the 6-digit code.')}
+        footer={<button type="button" className="link" onClick={() => { setMfaToken(null); setError(null); }}>{t('Terug naar inloggen', 'Back to login')}</button>}
+      >
+        <form onSubmit={submitCode} className="space-y-4" noValidate>
+          <div className="flex justify-center"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-soft text-accent"><ShieldCheck className="h-6 w-6" /></span></div>
+          {error && <Notice tone="bad">{error}</Notice>}
+          <CodeInput
+            key={useRecovery ? 'r' : 'c'}
+            id="mfa-code"
+            label={useRecovery ? t('Herstelcode', 'Recovery code') : t('Verificatiecode', 'Verification code')}
+            recovery={useRecovery}
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            autoFocus
+            required
+          />
+          <Button type="submit" size="lg" className="w-full" loading={busy} disabled={!code.trim()}>{t('Inloggen', 'Log in')}</Button>
+          <button type="button" className="block w-full text-center text-[13px] font-medium text-accent hover:underline" onClick={() => { setUseRecovery(!useRecovery); setCode(''); setError(null); }}>
+            {useRecovery ? t('Gebruik de code uit je app', 'Use the code from your app') : t('Telefoon kwijt? Gebruik een herstelcode', 'Lost your phone? Use a recovery code')}
+          </button>
+        </form>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout
@@ -208,7 +271,9 @@ export function InvitePage() {
         existingAccount={inv.hasPassword}
         cta={t('Account activeren', 'Activate account')}
         onSubmit={async (password) => {
-          const r = await api.post<{ user: SessionUser }>('/auth/invite/accept', { token, password });
+          const r = await api.post<{ user: SessionUser } | { mfaRequired: true }>('/auth/invite/accept', { token, password });
+          // Accounts with two-factor authentication finish by signing in normally.
+          if (!('user' in r)) return nav('/login', { replace: true });
           qc.setQueryData(['me'], r.user);
           setLocale(r.user.locale);
           nav(homePathFor(r.user), { replace: true });
@@ -229,6 +294,37 @@ export function VerifyEmailPage() {
   return (
     <AuthLayout title={t('E-mailadres bevestigen', 'Confirm email address')} footer={<Link className="link" to="/login">{t('Naar inloggen', 'Go to login')}</Link>}>
       {q.isLoading ? <Spinner /> : q.isError ? <Notice tone="warn">{t('Deze link is ongeldig of verlopen.', 'This link is invalid or has expired.')}</Notice> : <Notice tone="ok">{t('Je e-mailadres is bevestigd.', 'Your email address is confirmed.')}</Notice>}
+    </AuthLayout>
+  );
+}
+
+/** Shown when a practice requires two-factor authentication and this login has not set it up yet. */
+export function MfaRequiredPage() {
+  const { t } = useI18n();
+  useDocumentMeta(t('Tweestapsverificatie instellen', 'Set up two-factor authentication'));
+  const [params] = useSearchParams();
+  const nav = useNavigate();
+  const qc = useQueryClient();
+  const { user, loading } = useSession();
+  const logout = useLogout();
+  if (loading) return <Spinner className="min-h-screen" />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!user.mfaRequired) return <Navigate to={safeNext(params.get('next')) ?? homePathFor(user)} replace />;
+  return (
+    <AuthLayout
+      title={t('Beveilig je account', 'Secure your account')}
+      description={t(
+        'Je praktijk vereist tweestapsverificatie voor iedereen die patiëntgegevens kan zien. Stel het nu eenmalig in.',
+        'Your practice requires two-factor authentication for everyone who can see patient data. Set it up once now.',
+      )}
+      footer={<button type="button" className="link" onClick={logout}>{t('Uitloggen', 'Log out')}</button>}
+    >
+      <MfaSetup
+        onDone={async () => {
+          await qc.invalidateQueries({ queryKey: ['me'] });
+          nav(safeNext(params.get('next')) ?? '/app', { replace: true });
+        }}
+      />
     </AuthLayout>
   );
 }

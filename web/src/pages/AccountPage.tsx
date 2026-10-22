@@ -7,6 +7,7 @@ import { useLogout, useSession } from '@/lib/session';
 import { useDocumentMeta } from '@/lib/meta';
 import { Button, Card, CardHeader, Input, Notice, PageHeader, Select, useToast } from '@/components/ui';
 import { Link } from 'react-router-dom';
+import { MfaCard } from '@/components/app/Mfa';
 
 export function AccountPage({ patient }: { patient?: boolean }) {
   const { t, locale, setLocale } = useI18n();
@@ -59,11 +60,7 @@ export function AccountPage({ patient }: { patient?: boolean }) {
           <div className="flex justify-end"><Button type="submit" variant="secondary" size={patient ? 'lg' : 'md'}>{t('Wachtwoord wijzigen', 'Change password')}</Button></div>
         </form>
       </Card>
-      {!patient && (
-        <Notice tone="warn" title={t('Tweestapsverificatie', 'Two-factor authentication')}>
-          {t('Verplichte MFA voor zorgprofessionals wordt vóór productie geactiveerd (zie RELEASE_CHECKLIST.md).', 'Mandatory MFA for professionals will be enabled before production (see RELEASE_CHECKLIST.md).')}
-        </Notice>
-      )}
+      {!patient && <MfaCard />}
       {patient && (
         <>
           <Card className="p-5 text-[14px] leading-relaxed text-ink-600">

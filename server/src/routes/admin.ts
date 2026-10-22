@@ -52,7 +52,9 @@ admin.post('/practices', async (c) => {
   await withUser(u.id, async (tx) => {
     try {
       await tx.query(
-        `INSERT INTO practices(id, name, slug, city, plan_code, trial_ends_at) VALUES ($1,$2,$3,$4,$5, now() + interval '30 days')`,
+        // New practices start with two-factor authentication required for all staff.
+        `INSERT INTO practices(id, name, slug, city, plan_code, trial_ends_at, settings)
+         VALUES ($1,$2,$3,$4,$5, now() + interval '30 days', '{"requireMfa": true}')`,
         [id, b.name, b.slug, b.city ?? null, b.planCode],
       );
     } catch (e: any) {

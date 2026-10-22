@@ -37,14 +37,14 @@ npm run typecheck
 
 Also covered: CSRF header/Origin, httpOnly cookie, logout revocation, password reset single-use +
 session revocation, lockout, rate limiting, security headers, JSON 404 for unknown API paths,
-invite/activation semantics, adherence maths, search query building, file sniffing, contact form
+two-factor authentication (`mfa.test.ts`: RFC vectors, setup, login second step, replay, recovery codes, lockout, practice enforcement, reset rules, secrets unreadable by `fp_app`; `mfa.spec.ts`: setup with QR, enforcement redirect, code at login, axe scans), invite/activation semantics, adherence maths, search query building, file sniffing, contact form
 consent + anti-spam, platform admin has no patient access, WCAG 2.x A/AA automated scans on
 marketing pages, therapist workspace pages, builder, patient home/programme/progress and player.
 
 ## Latest results (2026-10-22)
 
-- `npm test`: **6 files, 61 tests passed**
-- `npm run test:e2e`: **19 tests passed** (16 desktop, 3 mobile)
+- `npm test`: **7 files, 71 tests passed**
+- `npm run test:e2e`: **22 tests passed** (19 desktop, 3 mobile)
 - `npm run typecheck`: clean; `npm run build`: success (main chunk 113 kB gzip)
 
 Issues found and fixed by the tests during development: runtime role could read password hashes

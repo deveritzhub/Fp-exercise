@@ -71,6 +71,7 @@ export function requireStaff(c: Context<AppEnv>, roles?: Array<'owner' | 'admin'
   const wanted = c.req.header('x-practice-id');
   const m = wanted ? user.memberships.find((x) => x.practiceId === wanted) : user.memberships[0];
   if (!m) throw new HttpError(403, 'forbidden');
+  if (user.mfaRequired) throw new HttpError(403, 'mfa_required');
   if (roles && !roles.includes(m.role)) throw new HttpError(403, 'forbidden');
   return { user, practiceId: m.practiceId, role: m.role, practiceName: m.practiceName };
 }
@@ -84,5 +85,6 @@ export function requirePatient(c: Context<AppEnv>) {
 export function requirePlatformAdmin(c: Context<AppEnv>) {
   const user = requireUser(c);
   if (!user.isPlatformAdmin) throw new HttpError(403, 'forbidden');
+  if (user.mfaRequired) throw new HttpError(403, 'mfa_required');
   return user;
 }

@@ -6,6 +6,8 @@ export type SessionUser = {
   locale: 'nl' | 'en';
   isPlatformAdmin: boolean;
   emailVerified: boolean;
+  mfaEnabled: boolean;
+  mfaRequired: boolean;
   memberships: { practiceId: string; practiceName: string; practiceSlug: string; role: Role }[];
   patient: { id: string; practiceId: string; practiceName: string } | null;
 };
@@ -135,6 +137,6 @@ export type Progress = {
   perExercise: { exerciseId: string; nameNl: string; nameEn: string; completed: number; logged: number; avgDifficulty: number | null; avgPain: number | null; maxPain: number | null }[];
 };
 
-export type Member = { userId: string; fullName: string; email: string; role: Role; title: string | null; active: boolean; patients: number; activated: boolean; createdAt: string };
+export type Member = { userId: string; fullName: string; email: string; role: Role; title: string | null; active: boolean; patients: number; activated: boolean; mfaEnabled: boolean; createdAt: string };
 export type Notification = { id: string; kind: string; title: string; body: string; link: string | null; readAt?: string | null; createdAt: string };
 export type Labelled = { key: string; nl: string; en: string };

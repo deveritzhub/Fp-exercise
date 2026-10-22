@@ -10,5 +10,8 @@ export function RequireAuth({ kind, children }: { kind: 'staff' | 'patient' | 'a
   if (!user) return <Navigate to={`/login?next=${encodeURIComponent(loc.pathname + loc.search)}`} replace />;
   const ok = kind === 'staff' ? user.memberships.length > 0 : kind === 'patient' ? !!user.patient : user.isPlatformAdmin;
   if (!ok) return <Navigate to={homePathFor(user)} replace />;
+  if (kind !== 'patient' && user.mfaRequired) {
+    return <Navigate to={`/tweestapsverificatie?next=${encodeURIComponent(loc.pathname + loc.search)}`} replace />;
+  }
   return <>{children}</>;
 }

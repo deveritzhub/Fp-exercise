@@ -8,7 +8,7 @@ No real patient data may be imported, and nothing may be published to production
 - [ ] Hosting selected in EU/EEA with NEN 7510 or ISO 27001 certification; processor agreements signed
 - [ ] Encryption at rest confirmed (database, backups, media storage)
 - [ ] TLS everywhere; HSTS; secure cookies verified on the production domain
-- [ ] MFA enforced for all professional accounts
+- [ ] MFA enforced for all professional accounts — *implemented; switch on "Verplicht maken voor iedereen" under Praktijk → Instellingen for each real practice*
 - [ ] Backups: automated, encrypted, PITR, restore drill performed and documented
 - [ ] Verwerkersovereenkomst between FP Exercise and each practice (starting with Functional Performance)
 - [ ] DPIA completed (practice as controller, with FP Exercise input) and risks accepted

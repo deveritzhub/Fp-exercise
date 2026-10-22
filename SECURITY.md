@@ -46,11 +46,34 @@
   invites, assignments, programme create/update/status, uploads, session completion/review.
 - GDPR export endpoint per patient (JSON).
 
+## Two-factor authentication (TOTP)
+
+- RFC 6238 codes (SHA-1, 6 digits, 30 s; ±1 step drift) from any authenticator app; implemented
+  in `server/src/auth/totp.ts` (tested against the RFC vectors), flows in `server/src/auth/mfa.ts`.
+- Setup: a fresh secret + QR code (rendered server-side as SVG, no third-party service), activated
+  only after the first valid code. 10 single-use recovery codes are shown once and stored as SHA-256.
+- Login: password first, then a 10-minute single-use `mfa_login` token + code. No session cookie is
+  set before the second step. Wrong codes count towards the account lockout, and a correct password
+  does **not** reset the counter for MFA accounts (prevents brute-forcing the code between retries).
+- Replay protection: the last accepted time step is stored and updated atomically; a code is
+  accepted at most once, also under concurrency.
+- Secrets and recovery codes are readable only by `fp_auth`; the runtime role `fp_app` has no grant
+  on `users.mfa_secret` or `mfa_recovery_codes` (tested by direct SQL).
+- Enforcement: practice setting `requireMfa` (owner/admin; may only be switched on by someone who
+  has MFA themselves). New practices created by the platform admin start with it **on**. Staff of
+  such a practice without MFA get `403 mfa_required` on every staff API and are routed to setup.
+  Platform admins must use MFA in production (outside the synthetic demo).
+- Turning MFA off needs password + code and signs out all other sessions; it is refused while a
+  practice requires it. Accepting an invite with an existing MFA account still requires the code.
+- Lost phone *and* recovery codes: an owner/admin can reset a colleague's MFA (audit-logged,
+  sessions revoked), only for people who work exclusively in that practice, never for themselves
+  or a platform admin.
+
 ## Known limitations / required before production
 
 | # | Gap | Notes |
 |---|---|---|
-| 1 | **MFA for professional accounts** not implemented | `users.mfa_enabled` placeholder. Implement TOTP/WebAuthn and enforce for staff. |
+| 1 | ~~MFA for professional accounts~~ **done** (TOTP) — see *Two-factor authentication* above | Remaining: WebAuthn/passkeys as a second option; encrypt `mfa_secret` with a key outside the database (KMS). |
 | 2 | Rate limiter is in-memory | Use a shared store (Redis/Postgres) when running >1 instance. |
 | 3 | Uploads buffered in memory | Move to streaming / presigned direct-to-object-storage uploads (EU bucket, SSE). Add virus scanning. |
 | 4 | No real mail provider | Configure EU-hosted provider with DPA; SPF/DKIM/DMARC. |

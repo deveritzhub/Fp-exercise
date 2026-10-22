@@ -13,6 +13,10 @@ export type SessionUser = {
   locale: 'nl' | 'en';
   isPlatformAdmin: boolean;
   emailVerified: boolean;
+  /** Two-factor authentication is switched on for this login. */
+  mfaEnabled: boolean;
+  /** A practice of this user (or the platform-admin role) demands MFA that is not set up yet: staff APIs are blocked. */
+  mfaRequired: boolean;
   memberships: Membership[];
   patient: { id: string; practiceId: string; practiceName: string } | null;
 };
@@ -22,14 +26,15 @@ const LOCK_MINUTES = 15;
 
 export async function loadUser(userId: string): Promise<SessionUser | null> {
   const { rows } = await authPool.query(
-    `SELECT id, email, full_name, locale, is_platform_admin, email_verified_at
+    `SELECT id, email, full_name, locale, is_platform_admin, email_verified_at, mfa_enabled
        FROM users WHERE id = $1 AND disabled_at IS NULL`,
     [userId],
   );
   const u = rows[0];
   if (!u) return null;
   const members = await authPool.query(
-    `SELECT m.practice_id, p.name, p.slug, m.role FROM practice_members m
+    `SELECT m.practice_id, p.name, p.slug, m.role, coalesce((p.settings->>'requireMfa')::boolean, false) AS require_mfa
+       FROM practice_members m
        JOIN practices p ON p.id = m.practice_id
       WHERE m.user_id = $1 AND m.active AND p.archived_at IS NULL ORDER BY m.created_at`,
     [userId],
@@ -39,6 +44,8 @@ export async function loadUser(userId: string): Promise<SessionUser | null> {
       WHERE pt.user_id = $1 AND pt.archived_at IS NULL AND p.archived_at IS NULL LIMIT 1`,
     [userId],
   );
+  const mfaDemanded =
+    members.rows.some((r) => r.require_mfa) || (u.is_platform_admin && config.isProd && !config.demoMode);
   return {
     id: u.id,
     email: u.email,
@@ -46,6 +53,8 @@ export async function loadUser(userId: string): Promise<SessionUser | null> {
     locale: u.locale,
     isPlatformAdmin: u.is_platform_admin,
     emailVerified: !!u.email_verified_at,
+    mfaEnabled: u.mfa_enabled,
+    mfaRequired: mfaDemanded && !u.mfa_enabled,
     memberships: members.rows.map((r) => ({ practiceId: r.practice_id, practiceName: r.name, practiceSlug: r.slug, role: r.role })),
     patient: patient.rows[0]
       ? { id: patient.rows[0].id, practiceId: patient.rows[0].practice_id, practiceName: patient.rows[0].name }
@@ -53,16 +62,18 @@ export async function loadUser(userId: string): Promise<SessionUser | null> {
   };
 }
 
-async function authAudit(actorId: string | null, action: string, meta: Record<string, unknown> = {}) {
+export async function authAudit(actorId: string | null, action: string, meta: Record<string, unknown> = {}) {
   await authPool.query(
     'INSERT INTO audit_log(actor_id, action, entity, entity_id, meta) VALUES ($1,$2,$3,$1,$4)',
     [actorId, action, 'user', meta],
   );
 }
 
-export async function login(email: string, password: string, userAgent?: string) {
+export type LoginResult = { token: string; userId: string } | { mfaToken: string };
+
+export async function login(email: string, password: string, userAgent?: string): Promise<LoginResult> {
   const { rows } = await authPool.query(
-    'SELECT id, password_hash, locked_until, failed_logins, disabled_at FROM users WHERE email = $1',
+    'SELECT id, password_hash, locked_until, failed_logins, disabled_at, mfa_enabled FROM users WHERE email = $1',
     [email.trim()],
   );
   const u = rows[0];
@@ -75,20 +86,29 @@ export async function login(email: string, password: string, userAgent?: string)
   }
   const ok = await verifyPassword(password, u.password_hash);
   if (!ok) {
-    const failed = u.failed_logins + 1;
-    await authPool.query(
-      `UPDATE users SET failed_logins = $2,
-         locked_until = CASE WHEN $2 >= ${MAX_FAILED} THEN now() + interval '${LOCK_MINUTES} minutes' ELSE locked_until END
-       WHERE id = $1`,
-      [u.id, failed],
-    );
-    await authAudit(u.id, 'login_failed');
+    await registerFailure(u.id, 'login_failed');
     throw new HttpError(401, 'invalid_credentials');
+  }
+  if (u.mfa_enabled) {
+    // Second step required. The failure counter is NOT reset here: otherwise someone who knows the
+    // password could retry it between guesses and brute-force the 6-digit code.
+    return { mfaToken: await issueToken(u.id, 'mfa_login', 0, 10) };
   }
   await authPool.query('UPDATE users SET failed_logins = 0, locked_until = NULL WHERE id = $1', [u.id]);
   const token = await createSession(u.id, userAgent);
   await authAudit(u.id, 'login');
   return { token, userId: u.id as string };
+}
+
+/** Counts a failed password or code; locks the account after MAX_FAILED attempts. */
+export async function registerFailure(userId: string, action: string) {
+  await authPool.query(
+    `UPDATE users SET failed_logins = failed_logins + 1,
+       locked_until = CASE WHEN failed_logins + 1 >= ${MAX_FAILED} THEN now() + interval '${LOCK_MINUTES} minutes' ELSE locked_until END
+     WHERE id = $1`,
+    [userId],
+  );
+  await authAudit(userId, action);
 }
 
 export async function createSession(userId: string, userAgent?: string) {
@@ -115,20 +135,22 @@ export async function logout(token: string) {
   await authPool.query('DELETE FROM auth_sessions WHERE token_hash = $1', [sha256(token)]);
 }
 
-async function issueToken(userId: string, kind: 'verify_email' | 'reset_password' | 'invite', hours: number) {
+type TokenKind = 'verify_email' | 'reset_password' | 'invite' | 'mfa_login';
+
+export async function issueToken(userId: string, kind: TokenKind, hours: number, minutes = 0) {
   const token = randomToken();
   await authPool.query(
     `UPDATE auth_tokens SET used_at = now() WHERE user_id = $1 AND kind = $2 AND used_at IS NULL`,
     [userId, kind],
   );
   await authPool.query(
-    `INSERT INTO auth_tokens(user_id, kind, token_hash, expires_at) VALUES ($1,$2,$3, now() + make_interval(hours => $4))`,
-    [userId, kind, sha256(token), hours],
+    `INSERT INTO auth_tokens(user_id, kind, token_hash, expires_at) VALUES ($1,$2,$3, now() + make_interval(hours => $4, mins => $5))`,
+    [userId, kind, sha256(token), hours, minutes],
   );
   return token;
 }
 
-async function peekToken(token: string, kind: string) {
+export async function peekToken(token: string, kind: string) {
   const { rows } = await authPool.query(
     `SELECT t.id, t.user_id, u.email, u.full_name, u.locale FROM auth_tokens t JOIN users u ON u.id = t.user_id
       WHERE t.token_hash = $1 AND t.kind = $2 AND t.used_at IS NULL AND t.expires_at > now()`,
@@ -137,7 +159,7 @@ async function peekToken(token: string, kind: string) {
   return rows[0] ?? null;
 }
 
-async function consumeToken(id: string) {
+export async function consumeToken(id: string) {
   const r = await authPool.query('UPDATE auth_tokens SET used_at = now() WHERE id = $1 AND used_at IS NULL', [id]);
   if (r.rowCount !== 1) throw badRequest('invalid_token');
 }
@@ -237,7 +259,7 @@ export async function getInvite(token: string) {
   return { email: t.email as string, fullName: t.full_name as string, locale: t.locale as string, hasPassword: rows[0].has_password as boolean };
 }
 
-export async function acceptInvite(token: string, password: string | undefined, userAgent?: string) {
+export async function acceptInvite(token: string, password: string | undefined, userAgent?: string): Promise<LoginResult> {
   const t = await peekToken(token, 'invite');
   if (!t) throw badRequest('invalid_token');
   const { rows } = await authPool.query('SELECT password_hash FROM users WHERE id = $1', [t.user_id]);
@@ -253,6 +275,9 @@ export async function acceptInvite(token: string, password: string | undefined, 
   // The invite link was delivered to this mailbox, which verifies the address.
   await authPool.query('UPDATE users SET email_verified_at = coalesce(email_verified_at, now()) WHERE id = $1', [t.user_id]);
   await authAudit(t.user_id, 'invite_accepted');
+  // An existing login with two-factor authentication still has to pass its second step.
+  const { rows: mfa } = await authPool.query('SELECT mfa_enabled FROM users WHERE id = $1', [t.user_id]);
+  if (mfa[0].mfa_enabled) return { mfaToken: await issueToken(t.user_id, 'mfa_login', 0, 10) };
   return { token: await createSession(t.user_id, userAgent), userId: t.user_id as string };
 }
 

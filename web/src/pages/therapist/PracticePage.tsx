@@ -11,6 +11,7 @@ import type { Member, Role } from '@/lib/types';
 
 type Practice = {
   id: string; name: string; slug: string; city: string | null; defaultLocale: 'nl' | 'en'; branding: { accent?: string };
+  settings: { requireMfa?: boolean };
   plan: { code: string; name: string; limits: { therapists?: number; active_patients?: number }; status: string; trialEndsAt: string | null };
   usage: { members: number; activePatients: number };
 };
@@ -34,7 +35,7 @@ export function PracticePage() {
         ]}
       />
       {tab === 'team' && <Team isAdmin={isAdmin} myRole={practice?.role ?? 'therapist'} />}
-      {tab === 'settings' && <Settings />}
+      {tab === 'settings' && <div className="space-y-6"><Security /><Settings /></div>}
       {tab === 'plan' && <Plan />}
       {tab === 'audit' && <Audit />}
     </>
@@ -55,6 +56,8 @@ function Team({ isAdmin, myRole }: { isAdmin: boolean; myRole: Role }) {
   const [form, setForm] = useState({ fullName: '', email: '', role: 'therapist' as Role, title: '' });
   const [error, setError] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
+  const [resetting, setResetting] = useState<Member | null>(null);
+  const { user: me } = useSession();
   const roleLabel = (r: Role) => ({ owner: t('Eigenaar', 'Owner'), admin: t('Beheerder', 'Admin'), therapist: t('Therapeut', 'Therapist') })[r];
   return (
     <Card>
@@ -66,7 +69,7 @@ function Team({ isAdmin, myRole }: { isAdmin: boolean; myRole: Role }) {
             <li key={m.userId} className="flex flex-wrap items-center gap-3 px-5 py-3">
               <Avatar name={m.fullName} />
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium">{m.fullName} {!m.active && <Badge>{t('Inactief', 'Inactive')}</Badge>} {!m.activated && <Badge tone="warn">{t('Uitnodiging open', 'Invite pending')}</Badge>}</span>
+                <span className="block text-sm font-medium">{m.fullName} {!m.active && <Badge>{t('Inactief', 'Inactive')}</Badge>} {!m.activated && <Badge tone="warn">{t('Uitnodiging open', 'Invite pending')}</Badge>} {m.activated && (m.mfaEnabled ? <Badge tone="ok"><ShieldCheck className="h-3 w-3" />2FA</Badge> : <Badge tone="outline">{t('Geen 2FA', 'No 2FA')}</Badge>)}</span>
                 <span className="text-[12.5px] text-ink-500">{m.email} · {m.title ?? roleLabel(m.role)} · {m.patients} {t('patiënten', 'patients')}</span>
               </span>
               {isAdmin ? (
@@ -78,6 +81,9 @@ function Team({ isAdmin, myRole }: { isAdmin: boolean; myRole: Role }) {
                     <option value="admin">{roleLabel('admin')}</option>
                     {myRole === 'owner' && <option value="owner">{roleLabel('owner')}</option>}
                   </Select>
+                  {m.mfaEnabled && m.userId !== me?.id && (
+                    <Button size="sm" variant="ghost" onClick={() => setResetting(m)}>{t('2FA resetten', 'Reset 2FA')}</Button>
+                  )}
                   <Button size="sm" variant="ghost" onClick={async () => {
                     try { await api.patch(`/practice/members/${m.userId}`, { active: !m.active }); qc.invalidateQueries({ queryKey: ['members'] }); } catch (err) { toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad'); }
                   }}>{m.active ? t('Deactiveren', 'Deactivate') : t('Activeren', 'Activate')}</Button>
@@ -87,6 +93,26 @@ function Team({ isAdmin, myRole }: { isAdmin: boolean; myRole: Role }) {
           ))}
         </ul>
       )}
+      <Dialog open={!!resetting} onClose={() => setResetting(null)} size="sm" title={t('Tweestapsverificatie resetten', 'Reset two-factor authentication')} footer={
+        <>
+          <Button variant="ghost" onClick={() => setResetting(null)}>{t('Annuleren', 'Cancel')}</Button>
+          <Button variant="danger" onClick={async () => {
+            try {
+              await api.post(`/practice/members/${resetting!.userId}/mfa-reset`);
+              toast(t('Gereset — je collega stelt het opnieuw in bij de volgende keer inloggen', 'Reset — your colleague sets it up again at next sign-in'));
+              qc.invalidateQueries({ queryKey: ['members'] });
+            } catch (err) { toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad'); }
+            setResetting(null);
+          }}>{t('Resetten', 'Reset')}</Button>
+        </>
+      }>
+        <p className="text-[14px] text-ink-700">
+          {t(
+            `Doe dit alleen als ${resetting?.fullName} de telefoon én de herstelcodes kwijt is, en je zeker weet dat het verzoek echt van die persoon komt (bel even). De reset wordt vastgelegd in het auditlog.`,
+            `Only do this if ${resetting?.fullName} lost both the phone and the recovery codes, and you are sure the request is genuine (give them a call). The reset is recorded in the audit log.`,
+          )}
+        </p>
+      </Dialog>
       <Dialog open={inviting} onClose={() => setInviting(false)} title={t('Teamlid uitnodigen', 'Invite team member')} footer={
         <>
           <Button variant="ghost" onClick={() => setInviting(false)}>{t('Annuleren', 'Cancel')}</Button>
@@ -159,6 +185,48 @@ function Settings() {
         </div>
         <div className="flex justify-end"><Button type="submit">{t('Opslaan', 'Save')}</Button></div>
       </form>
+    </Card>
+  );
+}
+
+function Security() {
+  const { t, locale } = useI18n();
+  const q = usePractice();
+  const { user } = useSession();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  if (!q.data) return null;
+  const on = !!q.data.settings?.requireMfa;
+  return (
+    <Card className="max-w-2xl">
+      <CardHeader
+        title={t('Beveiliging', 'Security')}
+        action={on ? <Badge tone="ok"><ShieldCheck className="h-3 w-3" />{t('Verplicht', 'Required')}</Badge> : <Badge tone="warn">{t('Niet verplicht', 'Not required')}</Badge>}
+      />
+      <div className="space-y-4 p-5">
+        <p className="text-[14px] leading-relaxed text-ink-700">
+          {t(
+            'Tweestapsverificatie verplichten: iedereen in je team moet bij het inloggen ook een code uit een app op de telefoon invullen. Sterk aanbevolen zodra je met echte patiëntgegevens werkt. Patiënten merken hier niets van.',
+            'Require two-factor authentication: everyone on your team must also enter a code from a phone app when signing in. Strongly recommended once you work with real patient data. Patients are not affected.',
+          )}
+        </p>
+        {!on && !user?.mfaEnabled && (
+          <Notice tone="info">{t('Zet het eerst voor jezelf aan via Account → Tweestapsverificatie.', 'First turn it on for yourself under Account → Two-factor authentication.')}</Notice>
+        )}
+        <div className="flex justify-end">
+          <Button variant={on ? 'secondary' : 'primary'} icon={<ShieldCheck className="h-4 w-4" />} loading={busy} disabled={!on && !user?.mfaEnabled} onClick={async () => {
+            setBusy(true);
+            try {
+              const p = q.data!;
+              await api.patch('/practice', { name: p.name, city: p.city, defaultLocale: p.defaultLocale, branding: p.branding, requireMfa: !on });
+              toast(on ? t('Niet meer verplicht', 'No longer required') : t('Tweestapsverificatie is nu verplicht voor je team', 'Two-factor authentication is now required for your team'));
+              qc.invalidateQueries();
+            } catch (err) { toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad'); }
+            finally { setBusy(false); }
+          }}>{on ? t('Niet meer verplichten', 'Stop requiring') : t('Verplicht maken voor iedereen', 'Require for everyone')}</Button>
+        </div>
+      </div>
     </Card>
   );
 }
