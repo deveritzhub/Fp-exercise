@@ -12,6 +12,12 @@ export const appPool = new pg.Pool({ connectionString: config.databaseUrl, max: 
 /** Auth service pool (fp_auth). Only used from server/src/auth. */
 export const authPool = new pg.Pool({ connectionString: config.authDatabaseUrl, max: 5, options: tz });
 
+// An idle connection can be closed by the database side (Neon scales to zero, restarts, failovers).
+// Without a listener, pg's 'error' event would crash the whole process; the pool reconnects by itself.
+for (const [name, pool] of [['app', appPool], ['auth', authPool]] as const) {
+  pool.on('error', (e) => console.error(`[db] idle ${name} connection closed: ${e.message}`));
+}
+
 export type Tx = pg.PoolClient;
 
 /**

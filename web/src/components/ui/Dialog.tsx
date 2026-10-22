@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useI18n } from '@/lib/i18n';
@@ -18,6 +18,8 @@ export function Dialog({ open, onClose, title, description, children, footer, si
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const { t } = useI18n();
+  const titleId = useId();
+  const descId = useId();
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -28,6 +30,8 @@ export function Dialog({ open, onClose, title, description, children, footer, si
   return (
     <dialog
       ref={ref}
+      aria-labelledby={titleId}
+      aria-describedby={description ? descId : undefined}
       onClose={onClose}
       onCancel={(e) => {
         e.preventDefault();
@@ -50,8 +54,8 @@ export function Dialog({ open, onClose, title, description, children, footer, si
         >
           <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
             <div>
-              <h2 className="text-base font-semibold">{title}</h2>
-              {description && <p className="mt-0.5 text-[13px] text-ink-500">{description}</p>}
+              <h2 id={titleId} className="text-base font-semibold">{title}</h2>
+              {description && <p id={descId} className="mt-0.5 text-[13px] text-ink-500">{description}</p>}
             </div>
             <button type="button" onClick={onClose} aria-label={t('Sluiten', 'Close')} className="-mr-1 rounded-md p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-800">
               <X className="h-4 w-4" />

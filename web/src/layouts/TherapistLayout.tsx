@@ -9,6 +9,7 @@ import { setActivePractice } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { NotificationBell } from './Notifications';
 import { CommandPalette } from '@/components/app/CommandPalette';
+import { FeedbackButton } from '@/components/app/Feedback';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function TherapistLayout() {
@@ -130,6 +131,7 @@ export function TherapistLayout() {
           <kbd className="hidden rounded border border-line bg-ink-50 px-1.5 text-2xs sm:block">Ctrl K</kbd>
         </button>
         <div className="flex-1" />
+        <FeedbackButton />
         <LocaleSwitch />
         <NotificationBell />
         <Popover

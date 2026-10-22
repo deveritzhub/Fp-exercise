@@ -39,7 +39,11 @@ Branch: `claude/fp-exercise-platform-bcak8k`.
 ## Known issues / limitations
 
 - MFA (TOTP + recovery codes, per-practice enforcement) implemented; demo practices do not require it, new practices do.
-- Patient app has no offline queue; a failed save shows an error and can be retried.
+- Patient app works offline: workouts are kept on the device and sent when back online (idempotent API).
+- Push reminders work while the server is awake. On the free Render plan the server sleeps after 15 min
+  without visitors, so reminders can be late or skipped; reliable on a paid plan.
+- In-app feedback button (therapists + patients); visible to practice owners/admins and the platform admin;
+  on the synthetic demo it is also written to the server log.
 - Practice branding colour is stored but not yet applied in the UI.
 - Marketing pages are client-rendered (SEO meta set at runtime; pre-rendering planned).
 - Only Chromium tested; mobile is emulated.

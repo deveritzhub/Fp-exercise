@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, CalendarClock, CheckCircle2, ChevronRight, Play, X } from 'lucide-react';
@@ -133,6 +134,8 @@ export function PatientHome() {
         </div>
       </section>
 
+      <ReminderNudge />
+
       <section>
         <h2 className="mb-3 text-lg font-semibold">{t('Mijn programma’s', 'My programmes')}</h2>
         <div className="space-y-2">
@@ -166,6 +169,30 @@ export function PatientHome() {
           </ul>
         </section>
       )}
+    </div>
+  );
+}
+
+/** One-time hint to turn on reminders; hidden once on or dismissed. */
+function ReminderNudge() {
+  const { t } = useI18n();
+  const KEY = 'fp.reminder-nudge-dismissed';
+  const [hidden, setHidden] = useState(() => {
+    try { return localStorage.getItem(KEY) === '1'; } catch { return false; }
+  });
+  const q = useQuery({ queryKey: ['reminders'], queryFn: () => api.get<{ enabled: boolean }>('/reminders'), enabled: !hidden });
+  if (hidden || !q.data || q.data.enabled) return null;
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-line bg-white p-4 shadow-card">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent"><Bell className="h-5 w-5" /></span>
+      <Link to="/p/account" className="min-w-0 flex-1">
+        <span className="block font-semibold">{t('Wil je een herinnering?', 'Want a reminder?')}</span>
+        <span className="block text-[14px] text-ink-500">{t('Een seintje op dagen met oefeningen.', 'A nudge on exercise days.')}</span>
+      </Link>
+      <button type="button" className="rounded-lg p-2 text-ink-400 hover:text-ink-700" aria-label={t('Niet meer tonen', 'Don’t show again')} onClick={() => {
+        try { localStorage.setItem(KEY, '1'); } catch { /* ignore */ }
+        setHidden(true);
+      }}><X className="h-5 w-5" /></button>
     </div>
   );
 }

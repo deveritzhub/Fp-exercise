@@ -29,3 +29,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </React.StrictMode>,
 );
+
+// Offline support and push reminders (production builds only; dev uses the plain network).
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      /* unsupported or blocked: the app works without it */
+    });
+  });
+}

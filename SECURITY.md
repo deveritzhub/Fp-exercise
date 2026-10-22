@@ -46,6 +46,25 @@
   invites, assignments, programme create/update/status, uploads, session completion/review.
 - GDPR export endpoint per patient (JSON).
 
+## Feedback, offline mode and push reminders
+
+- **Feedback** (`feedback` table): any signed-in user can write; only the platform admin and the
+  owners/admins of the sender's practice can read (RLS). The UI asks not to mention patients. Only the
+  page path is stored (query strings dropped). On the synthetic demo (`DEMO_MODE=1`) feedback is also
+  written to the server log; never in a real deployment.
+- **Offline**: the service worker caches the app shell, built assets, the patient's own API GETs
+  (`/api/patient/*`, `/api/auth/me`) and exercise images on the device, so the app opens without a
+  connection. Unsent workout steps are kept in `localStorage` (`fp.outbox`) and replayed in order.
+  On logout all of this is deleted (outbox, data cache, push subscription). Therapist screens and
+  videos are never cached. Server endpoints are idempotent; offline client ids/times are validated
+  (UUID, own patient, clamped to the last 7 days and never in the future).
+- **Push reminders**: opt-in per device by the patient. The payload is a fixed generic text (no
+  programme, exercise or health details) because it passes through Apple/Google/Mozilla push services
+  and appears on the lock screen. Subscription endpoints are restricted to known push-service hosts
+  (prevents SSRF). VAPID keys come from the environment or are generated once and stored in
+  `server_secrets` (auth role only). Subscriptions and settings are only reachable by `fp_auth`; the
+  scheduler uses a definer function returning user ids only, and claims each day's reminder atomically.
+
 ## Two-factor authentication (TOTP)
 
 - RFC 6238 codes (SHA-1, 6 digits, 30 s; ±1 step drift) from any authenticator app; implemented

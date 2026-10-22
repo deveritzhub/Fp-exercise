@@ -4,7 +4,7 @@ import { withUser, type Tx } from '../db';
 import { requirePatient, type AppEnv } from '../middleware';
 import { parse, uuidParam } from '../lib/validate';
 import { audit } from '../lib/audit';
-import { badRequest, notFound } from '../lib/errors';
+import { badRequest, notFound, HttpError } from '../lib/errors';
 import { uuid } from '../lib/crypto';
 import { loadItems, mapProgram } from './programs';
 import { notifyTherapists } from '../lib/notify';
@@ -133,7 +133,11 @@ patientApp.get('/programs/:id', async (c) => {
 
 patientApp.post('/sessions', async (c) => {
   const { user, patient } = requirePatient(c);
-  const { programId } = parse(z.object({ programId: z.string().uuid() }), await c.req.json());
+  // `id` + `startedAt` are sent when the workout was started offline and is synced later.
+  const { programId, id: clientId, startedAt } = parse(
+    z.object({ programId: z.string().uuid(), id: z.string().uuid().optional(), startedAt: z.string().datetime().optional() }),
+    await c.req.json(),
+  );
   return c.json(
     await withUser(user.id, async (tx) => {
       const p = await tx.query(`SELECT version, practice_id FROM programs WHERE id = $1 AND patient_id = $2 AND status = 'active'`, [
@@ -141,6 +145,20 @@ patientApp.post('/sessions', async (c) => {
         patient.id,
       ]);
       if (!p.rows[0]) throw notFound();
+      if (clientId) {
+        const ins = await tx.query(
+          `INSERT INTO workout_sessions(id, practice_id, patient_id, program_id, program_version, started_at)
+           VALUES ($1,$2,$3,$4,$5, least(now(), greatest(now() - interval '7 days', coalesce($6::timestamptz, now()))))
+           ON CONFLICT (id) DO NOTHING`,
+          [clientId, p.rows[0].practice_id, patient.id, programId, p.rows[0].version, startedAt ?? null],
+        );
+        if (ins.rowCount === 0) {
+          // Replayed sync: fine if it is this patient's session, otherwise the id is taken.
+          const own = await tx.query('SELECT 1 FROM workout_sessions WHERE id = $1 AND patient_id = $2 AND program_id = $3', [clientId, patient.id, programId]);
+          if (!own.rows[0]) throw new HttpError(409, 'conflict');
+        }
+        return { id: clientId, resumed: ins.rowCount === 0 };
+      }
       // Resume an unfinished session from the last 12 hours instead of creating duplicates.
       const open = await tx.query(
         `SELECT id FROM workout_sessions WHERE program_id = $1 AND patient_id = $2 AND completed_at IS NULL
@@ -202,15 +220,24 @@ patientApp.post('/sessions/:id/logs', async (c) => {
 patientApp.post('/sessions/:id/complete', async (c) => {
   const { user, patient } = requirePatient(c);
   const sid = parse(uuidParam, c.req.param('id'));
-  const b = parse(z.object({ difficulty: score, pain: score, feedback: z.string().trim().max(2000).nullable().optional() }), await c.req.json());
+  const b = parse(
+    z.object({
+      difficulty: score,
+      pain: score,
+      feedback: z.string().trim().max(2000).nullable().optional(),
+      completedAt: z.string().datetime().optional(), // when finished offline
+    }),
+    await c.req.json(),
+  );
   await withUser(user.id, async (tx) => {
+    const cur = await tx.query('SELECT completed_at FROM workout_sessions WHERE id = $1 AND patient_id = $2', [sid, patient.id]);
+    if (cur.rows[0]?.completed_at) return; // replayed sync: already done
     const s = await loadOpenSession(tx, sid, patient.id);
-    await tx.query('UPDATE workout_sessions SET completed_at = now(), difficulty = $2, pain = $3, feedback = $4 WHERE id = $1', [
-      sid,
-      b.difficulty ?? null,
-      b.pain ?? null,
-      b.feedback || null,
-    ]);
+    await tx.query(
+      `UPDATE workout_sessions SET completed_at = least(now(), greatest(started_at, coalesce($5::timestamptz, now()))),
+              difficulty = $2, pain = $3, feedback = $4 WHERE id = $1`,
+      [sid, b.difficulty ?? null, b.pain ?? null, b.feedback || null, b.completedAt ?? null],
+    );
     const maxPain = await tx.query('SELECT max(pain) AS m, bool_or(feedback IS NOT NULL) AS fb FROM exercise_logs WHERE session_id = $1', [sid]);
     const highPain = Math.max(b.pain ?? 0, maxPain.rows[0].m ?? 0) >= 6;
     if (highPain || b.feedback || maxPain.rows[0].fb) {

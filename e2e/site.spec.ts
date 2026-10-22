@@ -77,7 +77,7 @@ test('library search and filters', async ({ page }) => {
 test('platform admin sees practices but no patient data', async ({ page }) => {
   await login(page, 'admin@fp-exercise.test');
   await expect(page.getByRole('heading', { name: 'Praktijken', exact: true })).toBeVisible();
-  await expect(page.getByText('Functional Performance (demo)')).toBeVisible();
+  await expect(page.getByText('Functional Performance (demo)').first()).toBeVisible();
   const status = await page.evaluate(async () => (await fetch('/api/patients')).status);
   expect(status).toBe(403);
   await page.goto('/app/patienten');

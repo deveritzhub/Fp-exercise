@@ -46,6 +46,8 @@ HTTPS is set up automatically.
 - New versions: when new work is pushed to the branch, Render updates the site automatically. Data is kept.
 - The free plan sleeps after 15 minutes without visitors (first visit then takes ~1 minute) and does not keep
   uploaded videos after a restart. Patients, programmes and other data (in Neon) are kept.
+- Push reminders are sent by the server itself, so while it sleeps none go out (a reminder that is due
+  is still sent up to 3 hours late once someone opens the site). Reliable reminders need the paid plan.
 
 ## Upgrading to always-on (~$7.25/month)
 

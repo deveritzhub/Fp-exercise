@@ -37,14 +37,14 @@ npm run typecheck
 
 Also covered: CSRF header/Origin, httpOnly cookie, logout revocation, password reset single-use +
 session revocation, lockout, rate limiting, security headers, JSON 404 for unknown API paths,
-two-factor authentication (`mfa.test.ts`: RFC vectors, setup, login second step, replay, recovery codes, lockout, practice enforcement, reset rules, secrets unreadable by `fp_app`; `mfa.spec.ts`: setup with QR, enforcement redirect, code at login, axe scans), invite/activation semantics, adherence maths, search query building, file sniffing, contact form
+feedback/offline sync/push reminders (`engagement.test.ts`: feedback visibility per practice, offline session ids + clamped client times + idempotent replays, push endpoint allow-list (SSRF), once-per-day reminders only on training days, generic payloads, expired subscriptions; `engagement.spec.ts`: feedback dialog, a full workout with the browser offline and automatic sync), two-factor authentication (`mfa.test.ts`: RFC vectors, setup, login second step, replay, recovery codes, lockout, practice enforcement, reset rules, secrets unreadable by `fp_app`; `mfa.spec.ts`: setup with QR, enforcement redirect, code at login, axe scans), invite/activation semantics, adherence maths, search query building, file sniffing, contact form
 consent + anti-spam, platform admin has no patient access, WCAG 2.x A/AA automated scans on
 marketing pages, therapist workspace pages, builder, patient home/programme/progress and player.
 
 ## Latest results (2026-10-22)
 
-- `npm test`: **7 files, 71 tests passed**
-- `npm run test:e2e`: **22 tests passed** (19 desktop, 3 mobile)
+- `npm test`: **8 files, 78 tests passed**
+- `npm run test:e2e`: **25 tests passed** (22 desktop, 3 mobile)
 - `npm run typecheck`: clean; `npm run build`: success (main chunk 113 kB gzip)
 
 Issues found and fixed by the tests during development: runtime role could read password hashes

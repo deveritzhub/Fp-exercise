@@ -158,7 +158,9 @@ describe('therapist → patient → therapist workflow', () => {
     // item from another program is rejected
     expect((await patient.post(`/patient/sessions/${sid}/logs`, { programItemId: s.exercises.quad_set, completed: true })).status).toBe(400);
     expect((await patient.post(`/patient/sessions/${sid}/complete`, { difficulty: 5, pain: 3, feedback: 'Ging goed' })).status).toBe(200);
-    expect((await patient.post(`/patient/sessions/${sid}/complete`, {})).status).toBe(400);
+    // Completing again (e.g. an offline sync replay) is harmless and keeps the original answers.
+    expect((await patient.post(`/patient/sessions/${sid}/complete`, {})).status).toBe(200);
+    expect((await patient.post(`/patient/sessions/${sid}/logs`, { programItemId: itemIds[0], completed: true })).status).toBe(400);
     const hist = await patient.get('/patient/history');
     expect(hist.body.sessions[0].exercisesDone).toBe(2);
   });

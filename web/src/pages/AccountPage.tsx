@@ -8,6 +8,7 @@ import { useDocumentMeta } from '@/lib/meta';
 import { Button, Card, CardHeader, Input, Notice, PageHeader, Select, useToast } from '@/components/ui';
 import { Link } from 'react-router-dom';
 import { MfaCard } from '@/components/app/Mfa';
+import { ReminderCard } from '@/components/app/Reminders';
 
 export function AccountPage({ patient }: { patient?: boolean }) {
   const { t, locale, setLocale } = useI18n();
@@ -63,6 +64,7 @@ export function AccountPage({ patient }: { patient?: boolean }) {
       {!patient && <MfaCard />}
       {patient && (
         <>
+          <ReminderCard />
           <Card className="p-5 text-[14px] leading-relaxed text-ink-600">
             <h2 className="mb-1 font-semibold text-ink-900">{t('Privacy', 'Privacy')}</h2>
             {t('Je oefengegevens worden alleen gedeeld met je eigen praktijk. Vragen over je gegevens? Neem contact op met je fysiotherapeut.', 'Your exercise data is only shared with your own practice. Questions about your data? Contact your physiotherapist.')}{' '}

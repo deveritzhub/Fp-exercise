@@ -19,6 +19,8 @@ import { dashboard } from './routes/dashboard';
 import { practice } from './routes/practice';
 import { admin } from './routes/admin';
 import { publicRoutes } from './routes/public';
+import { feedback } from './routes/feedback';
+import { reminders } from './routes/reminders';
 
 export function createApp() {
   const app = new Hono<AppEnv>();
@@ -66,6 +68,8 @@ export function createApp() {
   api.route('/dashboard', dashboard);
   api.route('/practice', practice);
   api.route('/admin', admin);
+  api.route('/feedback', feedback);
+  api.route('/reminders', reminders);
 
   if (!config.isProd) {
     // Development helper: read the mail outbox (synthetic data only). Disabled in production.
@@ -89,6 +93,11 @@ export function createApp() {
     app.use('/assets/*', async (c, next) => {
       await next();
       c.header('Cache-Control', 'public, max-age=31536000, immutable');
+    });
+    // The service worker must always be revalidated, or app updates would get stuck.
+    app.use('/sw.js', async (c, next) => {
+      await next();
+      c.header('Cache-Control', 'no-cache');
     });
     app.use('*', serveStatic({ root }));
     app.get('*', serveStatic({ root, path: 'index.html' }));

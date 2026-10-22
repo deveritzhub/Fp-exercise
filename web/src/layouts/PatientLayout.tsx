@@ -1,6 +1,10 @@
+import { useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { CalendarCheck2, LineChart, UserRound } from 'lucide-react';
+import { CalendarCheck2, CloudOff, LineChart, RefreshCw, UserRound } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { usePendingCount, useOnline, useOutboxSync } from '@/lib/outbox';
 import { Logo } from '@/components/app/Brand';
+import { FeedbackButton } from '@/components/app/Feedback';
 import { useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { cn } from '@/lib/cn';
@@ -10,6 +14,21 @@ export function PatientLayout() {
   const { t } = useI18n();
   const { user } = useSession();
   const loc = useLocation();
+  const qc = useQueryClient();
+  const online = useOnline();
+  const pending = usePendingCount();
+  useOutboxSync(user?.id, () => {
+    qc.invalidateQueries({ queryKey: ['patient-home'] });
+    qc.invalidateQueries({ queryKey: ['patient-history'] });
+  });
+  // Load every patient screen up front, so all of them also open without internet later on
+  // (the service worker keeps the files).
+  useEffect(() => {
+    void import('@/pages/patient/PatientHome');
+    void import('@/pages/patient/SessionPlayer');
+    void import('@/pages/patient/PatientProgress');
+    void import('@/pages/AccountPage');
+  }, []);
   const inPlayer = loc.pathname.includes('/sessie');
   if (!user?.patient) return null;
   const tabs = [
@@ -23,9 +42,22 @@ export function PatientLayout() {
         <header className="sticky top-0 z-20 border-b border-line bg-canvas/90 backdrop-blur">
           <div className="mx-auto flex h-14 max-w-xl items-center justify-between px-4">
             <Logo to="/p" />
-            <span className="max-w-[50%] truncate text-[13px] text-ink-500">{user.patient.practiceName}</span>
+            <div className="flex min-w-0 items-center gap-1">
+              <span className="truncate text-[13px] text-ink-500">{user.patient.practiceName}</span>
+              <FeedbackButton big />
+            </div>
           </div>
         </header>
+      )}
+      {(!online || pending > 0) && (
+        <div role="status" className={cn('flex items-center justify-center gap-2 px-4 py-2 text-center text-[13.5px]', online ? 'bg-accent-soft text-accent' : 'bg-ink-900 text-white')}>
+          {online ? <RefreshCw className="h-4 w-4 shrink-0 animate-spin" /> : <CloudOff className="h-4 w-4 shrink-0" />}
+          {!online
+            ? pending > 0
+              ? t('Geen internet. Je training is bewaard en wordt later verstuurd.', 'No internet. Your workout is saved and will be sent later.')
+              : t('Geen internet. Je kunt gewoon trainen; we versturen het later.', 'No internet. You can still train; we will send it later.')
+            : t('Je training wordt verstuurd…', 'Sending your workout…')}
+        </div>
       )}
       <main className={cn('mx-auto max-w-xl', inPlayer ? '' : 'px-4 pb-28 pt-5')}>
         <Outlet />

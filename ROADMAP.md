@@ -15,7 +15,7 @@ email verification, lockout, rate limiting)
 ## Phase 3 — Patient application ✅ / 🟡
 ✅ Patient login via invite · ✅ today dashboard · ✅ programmes · ✅ exercise player (video, set tracker,
 rest timer) · ✅ completion + difficulty/pain/feedback · ✅ history · ✅ mobile layout ·
-🟡 PWA: manifest done; ⬜ service worker/offline queue for logs; ⬜ app icons (PNG sizes)
+✅ PWA: manifest, app icons, service worker (offline shell + patient data), offline outbox for workouts, push reminders
 
 ## Phase 4 — Progress monitoring ✅
 ✅ Dashboard with attention signals · ✅ adherence (weekly, 7/28 d) · ✅ session history with logs ·
@@ -41,7 +41,7 @@ JSON-LD, robots, sitemap) · ⬜ pre-rendering/SSG for marketing pages · ⬜ fi
 1. CI (GitHub Actions: typecheck, vitest with Postgres service, Playwright) — prerequisite for team work.
 2. ~~MFA (TOTP) for staff~~ ✅ · session management screen; passkeys (WebAuthn).
 3. Staging deployment in EU (needs hosting choice + approval of costs).
-4. Offline-tolerant patient app (service worker, queued log submissions) and reminders
+4. ~~Offline-tolerant patient app and reminders~~ ✅ (push; e-mail reminders once a mail provider is chosen)
    (in-app → opt-in e-mail/push with consent).
 5. Apply practice branding in patient app; practice logo upload.
 6. ✅ Clinical review per practice (approve/withdraw, reviewer + date, "Te controleren" tab). Next: recording/uploading videos.

@@ -1,3 +1,4 @@
+import { FeedbackList } from '@/components/app/Feedback';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, LogOut, Plus, ShieldCheck } from 'lucide-react';
@@ -85,6 +86,7 @@ export function AdminPage() {
             </div>
           )}
         </Card>
+        <div className="mt-6"><FeedbackList /></div>
       </main>
       <Dialog open={creating} onClose={() => setCreating(false)} title={t('Nieuwe praktijk', 'New practice')} footer={<><Button variant="ghost" onClick={() => setCreating(false)}>{t('Annuleren', 'Cancel')}</Button><Button type="submit" form="practice-form">{t('Aanmaken', 'Create')}</Button></>}>
         <form id="practice-form" className="space-y-4" onSubmit={async (e) => {

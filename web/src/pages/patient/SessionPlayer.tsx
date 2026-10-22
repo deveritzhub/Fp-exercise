@@ -8,6 +8,8 @@ import { dose } from '@/lib/format';
 import { isoWeekday } from '@shared/adherence';
 import { useDocumentMeta, useLabels } from '@/lib/meta';
 import { cn } from '@/lib/cn';
+import { isNetworkError, postOrQueue } from '@/lib/outbox';
+import { useSession } from '@/lib/session';
 import { Button, ErrorState, Notice, NumberStepper, ProgressRing, ScaleInput, Spinner, Textarea } from '@/components/ui';
 import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import type { Program, ProgramItem } from '@/lib/types';
@@ -76,6 +78,9 @@ export function SessionPlayer() {
   const [done, setDone] = useState<Record<string, Rating>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savedOffline, setSavedOffline] = useState(false);
+  const { user } = useSession();
+  const uid = user?.id ?? '';
 
   const items = useMemo(() => {
     if (!q.data) return [];
@@ -84,17 +89,26 @@ export function SessionPlayer() {
     return today.length ? today : q.data.items;
   }, [q.data]);
 
+  const begin = (sid: string) => {
+    setSessionId(sid);
+    const logged = new Set(q.data?.openSession?.id === sid ? q.data.openSession.loggedItemIds : []);
+    const first = items.findIndex((i) => !logged.has(i.id!));
+    setIdx(first === -1 ? 0 : first);
+    setPhase(first === -1 && logged.size ? 'summary' : 'exercise');
+  };
+
   const start = async () => {
     setError(null);
     try {
-      const r = await api.post<{ id: string }>('/patient/sessions', { programId: id });
-      setSessionId(r.id);
-      const logged = new Set(q.data?.openSession?.id === r.id ? q.data.openSession.loggedItemIds : []);
-      const first = items.findIndex((i) => !logged.has(i.id!));
-      setIdx(first === -1 ? 0 : first);
-      setPhase(first === -1 && logged.size ? 'summary' : 'exercise');
+      begin((await api.post<{ id: string }>('/patient/sessions', { programId: id })).id);
     } catch (e) {
-      setError(errorMessage(e instanceof ApiError ? e.code : undefined, locale));
+      if (!isNetworkError(e)) return setError(errorMessage(e instanceof ApiError ? e.code : undefined, locale));
+      // No connection: train anyway. The workout gets its id here and is sent later.
+      const open = q.data?.openSession?.id;
+      const sid = open ?? crypto.randomUUID();
+      if (!open) await postOrQueue(uid, '/patient/sessions', { programId: id, id: sid, startedAt: new Date().toISOString() });
+      setSavedOffline(true);
+      begin(sid);
     }
   };
 
@@ -102,9 +116,10 @@ export function SessionPlayer() {
     setSaving(true);
     setError(null);
     try {
-      await api.post(`/patient/sessions/${sessionId}/logs`, {
+      const how = await postOrQueue(uid, `/patient/sessions/${sessionId}/logs`, {
         programItemId: item.id, completed: r.completed, setsDone: r.setsDone, repsDone: r.repsDone, difficulty: r.difficulty, pain: r.pain, feedback: r.feedback.trim() || null,
       });
+      if (how === 'queued') setSavedOffline(true);
       setDone((d) => ({ ...d, [item.id!]: r }));
       if (idx + 1 < items.length) {
         setIdx(idx + 1);
@@ -168,7 +183,8 @@ export function SessionPlayer() {
               setSaving(true);
               setError(null);
               try {
-                await api.post(`/patient/sessions/${sessionId}/complete`, { ...s, feedback: s.feedback.trim() || null });
+                const how = await postOrQueue(uid, `/patient/sessions/${sessionId}/complete`, { ...s, feedback: s.feedback.trim() || null, completedAt: new Date().toISOString() });
+                if (how === 'queued') setSavedOffline(true);
                 setPhase('done');
                 qc.invalidateQueries({ queryKey: ['patient-home'] });
                 qc.invalidateQueries({ queryKey: ['patient-history'] });
@@ -188,7 +204,11 @@ export function SessionPlayer() {
               <PartyPopper className="h-10 w-10" />
             </div>
             <h1 className="text-[26px] font-semibold">{t('Training afgerond!', 'Workout complete!')}</h1>
-            <p className="mt-2 max-w-xs text-[16px] text-ink-600">{t('Goed bezig. Je fysiotherapeut kan je voortgang en feedback nu bekijken.', 'Great work. Your physiotherapist can now see your progress and feedback.')}</p>
+            <p className="mt-2 max-w-xs text-[16px] text-ink-600">
+              {savedOffline
+                ? t('Goed bezig! Je training is op je telefoon bewaard en wordt automatisch verstuurd zodra je weer internet hebt.', 'Great work! Your workout is saved on your phone and is sent automatically once you are back online.')
+                : t('Goed bezig. Je fysiotherapeut kan je voortgang en feedback nu bekijken.', 'Great work. Your physiotherapist can now see your progress and feedback.')}
+            </p>
             <Button size="xl" className="mt-8 w-full max-w-xs" onClick={() => nav('/p')}>{t('Terug naar overzicht', 'Back to overview')}</Button>
           </div>
         )}

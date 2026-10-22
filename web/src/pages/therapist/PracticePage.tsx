@@ -8,6 +8,7 @@ import { fmtDateTime, fmtDate } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
 import { Avatar, Badge, Button, Card, CardHeader, Dialog, EmptyState, Input, Notice, PageHeader, ProgressBar, Select, Spinner, Tabs, useToast } from '@/components/ui';
 import type { Member, Role } from '@/lib/types';
+import { FeedbackList } from '@/components/app/Feedback';
 
 type Practice = {
   id: string; name: string; slug: string; city: string | null; defaultLocale: 'nl' | 'en'; branding: { accent?: string };
@@ -21,7 +22,7 @@ export function PracticePage() {
   useDocumentMeta(t('Praktijk', 'Practice'));
   const { practice } = useSession();
   const isAdmin = practice?.role !== 'therapist';
-  const [tab, setTab] = useState<'team' | 'settings' | 'plan' | 'audit'>('team');
+  const [tab, setTab] = useState<'team' | 'settings' | 'plan' | 'audit' | 'feedback'>('team');
   return (
     <>
       <PageHeader title={practice?.practiceName ?? t('Praktijk', 'Practice')} description={t('Team, instellingen en abonnement van je praktijk.', 'Your practice’s team, settings and subscription.')} />
@@ -31,13 +32,14 @@ export function PracticePage() {
         onChange={setTab}
         tabs={[
           { value: 'team', label: t('Team', 'Team') },
-          ...(isAdmin ? [{ value: 'settings' as const, label: t('Instellingen', 'Settings') }, { value: 'plan' as const, label: t('Abonnement', 'Subscription') }, { value: 'audit' as const, label: t('Auditlog', 'Audit log') }] : []),
+          ...(isAdmin ? [{ value: 'settings' as const, label: t('Instellingen', 'Settings') }, { value: 'plan' as const, label: t('Abonnement', 'Subscription') }, { value: 'audit' as const, label: t('Auditlog', 'Audit log') }, { value: 'feedback' as const, label: t('Feedback', 'Feedback') }] : []),
         ]}
       />
       {tab === 'team' && <Team isAdmin={isAdmin} myRole={practice?.role ?? 'therapist'} />}
       {tab === 'settings' && <div className="space-y-6"><Security /><Settings /></div>}
       {tab === 'plan' && <Plan />}
       {tab === 'audit' && <Audit />}
+      {tab === 'feedback' && <FeedbackList />}
     </>
   );
 }
