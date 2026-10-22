@@ -43,7 +43,10 @@ export function mapExercise(r: Record<string, any>, opts: { includeNotes?: boole
     videoMediaId: r.ov_video ?? r.video_media_id,
     thumbnailMediaId: r.ov_thumb ?? r.thumbnail_media_id,
     practiceMedia: !!(r.ov_video || r.ov_thumb),
-    reviewStatus: r.review_status,
+    // Clinical review is per practice: content counts as reviewed once a therapist of this practice approved it.
+    reviewStatus: r.rv_at ? 'reviewed' : r.review_status,
+    reviewedAt: r.rv_at ?? null,
+    reviewedBy: r.rv_by ?? null,
     favorite: r.favorite ?? false,
     createdBy: r.created_by,
     updatedAt: r.updated_at,
@@ -84,9 +87,13 @@ export function mediaPracticeId(c: Context<AppEnv>): string | null {
   return m?.practiceId ?? user.patient?.practiceId ?? null;
 }
 
-const OV_JOIN = (param: string) =>
-  `LEFT JOIN exercise_media_overrides ov ON ov.exercise_id = e.id AND ov.practice_id = ${param}`;
-export const OV_COLS = 'ov.video_media_id AS ov_video, ov.thumbnail_media_id AS ov_thumb';
+/** Practice-specific layers on top of an exercise: own media and clinical review. */
+export const OV_JOIN = (param: string) =>
+  `LEFT JOIN exercise_media_overrides ov ON ov.exercise_id = e.id AND ov.practice_id = ${param}
+   LEFT JOIN exercise_reviews rv ON rv.exercise_id = e.id AND rv.practice_id = ${param}
+   LEFT JOIN users rvu ON rvu.id = rv.reviewed_by`;
+export const OV_COLS =
+  'ov.video_media_id AS ov_video, ov.thumbnail_media_id AS ov_thumb, rv.reviewed_at AS rv_at, rvu.full_name AS rv_by';
 
 const listQuery = z.object({
   q: z.string().max(100).optional().default(''),
@@ -94,7 +101,7 @@ const listQuery = z.object({
   category: z.string().max(40).optional(),
   equipment: z.string().max(40).optional(),
   difficulty: z.coerce.number().int().min(1).max(5).optional(),
-  scope: z.enum(['all', 'global', 'practice', 'favorites', 'mine']).optional().default('all'),
+  scope: z.enum(['all', 'global', 'practice', 'favorites', 'mine', 'unreviewed', 'reviewed']).optional().default('all'),
   limit: z.coerce.number().int().min(1).max(100).optional().default(48),
   offset: z.coerce.number().int().min(0).optional().default(0),
 });
@@ -123,6 +130,8 @@ exercises.get('/', async (c) => {
                  OR ($9 = 'global' AND e.practice_id IS NULL)
                  OR ($9 = 'practice' AND e.practice_id IS NOT NULL)
                  OR ($9 = 'mine' AND e.created_by = app.uid())
+                 OR ($9 = 'unreviewed' AND rv.exercise_id IS NULL)
+                 OR ($9 = 'reviewed' AND rv.exercise_id IS NOT NULL)
                  OR ($9 = 'favorites' AND fav.user_id IS NOT NULL))
           ORDER BY rank DESC, e.name_nl
           LIMIT $6 OFFSET $7`,
@@ -354,6 +363,34 @@ exercises.put('/:id/media', async (c) => {
       );
     }
     await audit(tx, user.id, practiceId, 'media', 'exercise', id, { video: !!b.videoMediaId, thumbnail: !!b.thumbnailMediaId });
+  });
+  return c.json({ ok: true });
+});
+
+/** A therapist of the active practice approves the exercise content for use in this practice. */
+exercises.post('/:id/review', async (c) => {
+  const { user, practiceId } = requireStaff(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  const b = parse(z.object({ note: z.string().trim().max(1000).default('') }), await c.req.json().catch(() => ({})));
+  await withUser(user.id, async (tx) => {
+    const ex = await tx.query('SELECT 1 FROM exercises WHERE id = $1', [id]);
+    if (!ex.rowCount) throw notFound();
+    await tx.query(
+      `INSERT INTO exercise_reviews(practice_id, exercise_id, reviewed_by, note) VALUES ($1,$2,app.uid(),$3)
+       ON CONFLICT (practice_id, exercise_id) DO UPDATE SET reviewed_by = EXCLUDED.reviewed_by, reviewed_at = now(), note = EXCLUDED.note`,
+      [practiceId, id, b.note],
+    );
+    await audit(tx, user.id, practiceId, 'review', 'exercise', id);
+  });
+  return c.json({ ok: true });
+});
+
+exercises.delete('/:id/review', async (c) => {
+  const { user, practiceId } = requireStaff(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  await withUser(user.id, async (tx) => {
+    await tx.query('DELETE FROM exercise_reviews WHERE practice_id = $1 AND exercise_id = $2', [practiceId, id]);
+    await audit(tx, user.id, practiceId, 'unreview', 'exercise', id);
   });
   return c.json({ ok: true });
 });

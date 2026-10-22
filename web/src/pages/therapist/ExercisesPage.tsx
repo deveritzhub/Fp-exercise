@@ -35,6 +35,8 @@ export function ExercisesPage() {
           { value: 'practice', label: t('Praktijk', 'Practice') },
           { value: 'mine', label: t('Door mij gemaakt', 'Created by me') },
           { value: 'global', label: t('Centrale bibliotheek', 'Central library') },
+          { value: 'unreviewed', label: t('Te controleren', 'To review') },
+          { value: 'reviewed', label: t('Goedgekeurd', 'Approved') },
         ]}
       />
       <ExerciseFilterBar value={f} onChange={setF} />
@@ -102,6 +104,7 @@ function ExerciseCard({ e }: { e: Exercise }) {
         <div className="mt-3 flex flex-wrap gap-1.5">
           {e.trainingCategories.slice(0, 2).map((c) => <Badge key={c}>{L.training(c)}</Badge>)}
           {e.scope === 'practice' && <Badge tone="accent">{t('Praktijk', 'Practice')}</Badge>}
+          {e.reviewStatus === 'reviewed' && <Badge tone="ok">✓ {t('Goedgekeurd', 'Approved')}</Badge>}
         </div>
         <div className="mt-auto flex items-center justify-between pt-4 text-[12px] text-ink-500">
           <span className="truncate">{e.equipment.map(L.equipment).join(' · ')}</span>

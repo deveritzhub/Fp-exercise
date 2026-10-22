@@ -44,7 +44,6 @@ JSON-LD, robots, sitemap) · ⬜ pre-rendering/SSG for marketing pages · ⬜ fi
 4. Offline-tolerant patient app (service worker, queued log submissions) and reminders
    (in-app → opt-in e-mail/push with consent).
 5. Apply practice branding in patient app; practice logo upload.
-6. Clinical review workflow for library content (`review_status` → reviewed, reviewer, date) and
-   recording original exercise videos.
+6. ✅ Clinical review per practice (approve/withdraw, reviewer + date, "Te controleren" tab). Next: recording/uploading videos.
 7. Patient hard-delete/retention jobs; data processing agreement + DPIA template.
 8. Self-service practice onboarding + Stripe billing (after authorisation).

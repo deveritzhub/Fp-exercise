@@ -41,6 +41,24 @@ describe('therapist → patient → therapist workflow', () => {
     expect(ex.body.reviewStatus).toBe('needs_clinical_review');
   });
 
+  it('clinical review is recorded per practice', async () => {
+    const id = s.exercises.bird_dog;
+    expect((await therapist.get(`/exercises/${id}`)).body.reviewStatus).toBe('needs_clinical_review');
+    expect((await therapist.post(`/exercises/${id}/review`)).status).toBe(200);
+    const ex = (await therapist.get(`/exercises/${id}`)).body;
+    expect(ex.reviewStatus).toBe('reviewed');
+    expect(ex.reviewedBy).toBe('Joris Bakker');
+    expect((await therapist.get('/exercises?scope=reviewed')).body.items.map((e: any) => e.id)).toEqual([id]);
+    expect((await therapist.get('/exercises?scope=unreviewed')).body.items.map((e: any) => e.id)).not.toContain(id);
+    // another practice's approval never counts for practice B
+    const B = await login('therapistB');
+    expect((await B.get(`/exercises/${id}`)).body.reviewStatus).toBe('needs_clinical_review');
+    expect((await B.get(`/exercises/${id}`)).body.reviewedBy).toBeNull();
+    // undo
+    expect((await therapist.del(`/exercises/${id}/review`)).status).toBe(200);
+    expect((await therapist.get(`/exercises/${id}`)).body.reviewStatus).toBe('needs_clinical_review');
+  });
+
   it('therapist creates a custom exercise', async () => {
     const r = await therapist.post('/exercises', {
       nameNl: 'Testoefening knie', nameEn: 'Test knee exercise', bodyRegion: 'knee', trainingCategories: ['strength'],

@@ -1,11 +1,11 @@
 import { Link, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Copy, Lock, Pencil, ShieldAlert, Video } from 'lucide-react';
+import { CheckCircle2, Copy, Lock, Pencil, ShieldAlert, Undo2, Video } from 'lucide-react';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
-import { dose } from '@/lib/format';
+import { dose, fmtDate } from '@/lib/format';
 import { useDocumentMeta, useLabels } from '@/lib/meta';
 import { Badge, Button, ButtonLink, Card, ErrorState, Notice, PageHeader, Spinner, useToast } from '@/components/ui';
 import { MediaUpload } from './ExerciseFormPage';
@@ -45,11 +45,7 @@ export function ExerciseDetailPage() {
           </>
         }
       />
-      {e.reviewStatus === 'needs_clinical_review' && (
-        <Notice tone="warn" icon={<ShieldAlert className="h-4 w-4" />} className="mb-6" title={t('Demonstratie-inhoud — klinische review vereist', 'Demonstration content — clinical review required')}>
-          {t('Deze oefening is opgesteld als voorbeeldinhoud en moet door een geregistreerd fysiotherapeut worden beoordeeld voor klinisch gebruik.', 'This exercise was written as sample content and must be reviewed by a registered physiotherapist before clinical use.')}
-        </Notice>
-      )}
+      <ReviewBanner e={e} />
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="space-y-6 lg:col-span-3">
           <Card className="overflow-hidden">
@@ -193,5 +189,55 @@ function PracticeMediaCard({ e }: { e: Exercise }) {
       </Button>
       <p className="text-[12px] text-ink-500">{t('Tip: liggend filmen, 10–20 seconden, 2–3 rustige herhalingen. Zie de filmchecklist.', 'Tip: film in landscape, 10–20 seconds, 2–3 calm repetitions. See the filming checklist.')}</p>
     </Card>
+  );
+}
+
+/** Clinical review status for this practice, with approve / undo actions. */
+function ReviewBanner({ e }: { e: Exercise }) {
+  const { t, locale } = useI18n();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const act = async (approve: boolean) => {
+    setBusy(true);
+    try {
+      if (approve) await api.post(`/exercises/${e.id}/review`);
+      else await api.del(`/exercises/${e.id}/review`);
+      toast(approve ? t('Oefening goedgekeurd', 'Exercise approved') : t('Goedkeuring ingetrokken', 'Approval withdrawn'));
+      qc.invalidateQueries({ queryKey: ['exercise', e.id] });
+      qc.invalidateQueries({ queryKey: ['exercises'] });
+    } catch (err) {
+      toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad');
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (e.reviewStatus === 'reviewed') {
+    return (
+      <Notice tone="ok" icon={<CheckCircle2 className="h-4 w-4" />} className="mb-6" title={t('Klinisch goedgekeurd', 'Clinically approved')}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span>
+            {e.reviewedBy
+              ? t(`Goedgekeurd door ${e.reviewedBy} op ${fmtDate(e.reviewedAt, locale)}.`, `Approved by ${e.reviewedBy} on ${fmtDate(e.reviewedAt, locale)}.`)
+              : t('Inhoud is gecontroleerd.', 'Content has been reviewed.')}
+          </span>
+          {e.reviewedBy && (
+            <Button size="sm" variant="ghost" icon={<Undo2 className="h-3.5 w-3.5" />} loading={busy} onClick={() => act(false)}>
+              {t('Intrekken', 'Withdraw')}
+            </Button>
+          )}
+        </div>
+      </Notice>
+    );
+  }
+  return (
+    <Notice tone="warn" icon={<ShieldAlert className="h-4 w-4" />} className="mb-6" title={t('Nog niet klinisch gecontroleerd', 'Not yet clinically reviewed')}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span>{t('Controleer startpositie, uitvoering, aandachtspunten en video. Klopt alles? Keur de oefening dan goed voor je praktijk.', 'Check starting position, movement, key points and video. All correct? Approve the exercise for your practice.')}</span>
+        <Button size="sm" icon={<CheckCircle2 className="h-3.5 w-3.5" />} loading={busy} onClick={() => act(true)}>
+          {t('Goedkeuren', 'Approve')}
+        </Button>
+      </div>
+    </Notice>
   );
 }

@@ -43,8 +43,8 @@ marketing pages, therapist workspace pages, builder, patient home/programme/prog
 
 ## Latest results (2026-10-22)
 
-- `npm test`: **6 files, 57 tests passed**
-- `npm run test:e2e`: **17 tests passed** (14 desktop, 3 mobile)
+- `npm test`: **6 files, 58 tests passed**
+- `npm run test:e2e`: **18 tests passed** (15 desktop, 3 mobile)
 - `npm run typecheck`: clean; `npm run build`: success (main chunk 113 kB gzip)
 
 Issues found and fixed by the tests during development: runtime role could read password hashes
