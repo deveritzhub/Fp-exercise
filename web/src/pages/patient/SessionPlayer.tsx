@@ -229,8 +229,9 @@ function ExerciseStep({ item, onDone, onSkip, saving }: { item: ProgramItem; onD
     <div className="animate-fade-in space-y-5">
       <div className="-mx-4 overflow-hidden bg-ink-950 sm:mx-0 sm:rounded-2xl">
         {video ? (
-          <video controls playsInline preload="metadata" loop className="aspect-video w-full" poster={mediaUrl(ex.thumbnailMediaId) ?? undefined}>
-            <source src={video} />
+          // Muted autoplay loop: the movement is visible immediately (also on iOS); sound is not needed.
+          <video key={video} controls autoPlay muted loop playsInline preload="auto" className="aspect-video w-full" poster={mediaUrl(ex.thumbnailMediaId) ?? undefined}>
+            <source src={`${video}#t=0.1`} type="video/mp4" />
           </video>
         ) : (
           <div className="flex aspect-video flex-col items-center justify-center gap-2 bg-gradient-to-br from-ink-100 to-ink-200 px-6 text-center text-ink-500">

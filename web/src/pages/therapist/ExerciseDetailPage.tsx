@@ -50,8 +50,8 @@ export function ExerciseDetailPage() {
         <div className="space-y-6 lg:col-span-3">
           <Card className="overflow-hidden">
             {video ? (
-              <video controls preload="metadata" className="aspect-video w-full bg-ink-950" poster={mediaUrl(e.thumbnailMediaId) ?? undefined}>
-                <source src={video} />
+              <video key={video} controls autoPlay muted loop playsInline preload="auto" className="aspect-video w-full bg-ink-950" poster={mediaUrl(e.thumbnailMediaId) ?? undefined}>
+                <source src={`${video}#t=0.1`} type="video/mp4" />
               </video>
             ) : (
               <div className="relative">

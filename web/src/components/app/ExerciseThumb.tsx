@@ -25,10 +25,14 @@ export function ExerciseThumb({ thumbnailId, videoId, region, className, showReg
   const L = useLabels();
   const [failed, setFailed] = useState(false);
   const src = mediaUrl(thumbnailId);
+  const videoSrc = mediaUrl(videoId);
   return (
     <div className={cn('relative overflow-hidden bg-gradient-to-br', REGION_TINT[region] ?? REGION_TINT.full_body, rounded, className)}>
       {src && !failed ? (
         <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" onError={() => setFailed(true)} />
+      ) : videoSrc && !failed ? (
+        // No thumbnail: show a frame of the video itself (the #t fragment makes browsers, incl. iOS, render it).
+        <video src={`${videoSrc}#t=1`} muted playsInline preload="metadata" className="h-full w-full object-cover" onError={() => setFailed(true)} aria-hidden />
       ) : (
         <div className="flex h-full w-full items-center justify-center">
           <PersonStanding className="h-[38%] w-[38%] min-h-5 min-w-5 text-brand-olive/40" strokeWidth={1.5} aria-hidden />
