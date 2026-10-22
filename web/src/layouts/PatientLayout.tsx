@@ -54,7 +54,7 @@ export function PatientLayout() {
           {online ? <RefreshCw className="h-4 w-4 shrink-0 animate-spin" /> : <CloudOff className="h-4 w-4 shrink-0" />}
           {!online
             ? pending > 0
-              ? t('Geen internet. Je training is bewaard en wordt later verstuurd.', 'No internet. Your workout is saved and will be sent later.')
+              ? t('Geen internet. Houd de app open: je training wordt verstuurd zodra er weer verbinding is.', 'No internet. Keep the app open: your workout is sent as soon as you are back online.')
               : t('Geen internet. Je kunt gewoon trainen; we versturen het later.', 'No internet. You can still train; we will send it later.')
             : t('Je training wordt verstuurd…', 'Sending your workout…')}
         </div>

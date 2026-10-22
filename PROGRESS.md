@@ -39,7 +39,7 @@ Branch: `claude/fp-exercise-platform-bcak8k`.
 ## Known issues / limitations
 
 - MFA (TOTP + recovery codes, per-practice enforcement) implemented; demo practices do not require it, new practices do.
-- Patient app works offline: workouts are kept on the device and sent when back online (idempotent API).
+- Patient app trains offline: unsent workouts are kept in memory only (no health data on the device, per FP rule) and sent when back online; closing the app before that loses them (the app warns).
 - Push reminders work while the server is awake. On the free Render plan the server sleeps after 15 min
   without visitors, so reminders can be late or skipped; reliable on a paid plan.
 - Phased programmes (W10 of the app update): templates grouped per programme with a phase picker; per phase

@@ -2,37 +2,33 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { api, ApiError } from './api';
 
 /**
- * Offline outbox for the patient app. Workout steps that cannot reach the server are kept on the
- * device (in order) and sent as soon as there is a connection again. The server endpoints are
- * idempotent, so sending something twice is harmless.
+ * Offline outbox for the patient app. Workout steps that cannot reach the server are kept (in order)
+ * and sent as soon as there is a connection again. The server endpoints are idempotent, so sending
+ * something twice is harmless.
  *
- * Only small workout answers live here (no names). The outbox is tied to the signed-in user and
- * wiped on logout.
+ * Health data is never written to the device: the outbox lives in memory only. Closing the app before
+ * the connection returns loses the unsent workout; the app warns about that while items are pending.
  */
 type Entry = { id: string; userId: string; path: string; body: unknown; at: string };
 
-const KEY = 'fp.outbox';
 const listeners = new Set<() => void>();
 let flushing = false;
+let items: Entry[] = [];
 
-function read(): Entry[] {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) ?? '[]');
-  } catch {
-    return [];
-  }
+// Earlier versions kept the outbox in localStorage: remove anything left behind.
+try {
+  localStorage.removeItem('fp.outbox');
+} catch {
+  /* storage unavailable */
 }
-function write(items: Entry[]) {
-  try {
-    if (items.length) localStorage.setItem(KEY, JSON.stringify(items));
-    else localStorage.removeItem(KEY);
-  } catch {
-    /* storage unavailable: nothing we can do */
-  }
-  snapshot = items.length;
+
+const read = () => items;
+function write(next: Entry[]) {
+  items = next;
+  snapshot = next.length;
   listeners.forEach((l) => l());
 }
-let snapshot = read().length;
+let snapshot = 0;
 
 export const isNetworkError = (e: unknown) => e instanceof ApiError && e.status === 0;
 
@@ -88,12 +84,7 @@ export function clearOutbox() {
 
 const subscribe = (l: () => void) => {
   listeners.add(l);
-  const onStorage = (e: StorageEvent) => e.key === KEY && ((snapshot = read().length), l());
-  window.addEventListener('storage', onStorage);
-  return () => {
-    listeners.delete(l);
-    window.removeEventListener('storage', onStorage);
-  };
+  return () => listeners.delete(l);
 };
 
 /** Number of workout steps waiting to be sent. */
@@ -116,9 +107,15 @@ export function useOutboxSync(userId: string | undefined, onSent?: () => void) {
     const run = () => flushOutbox(userId).then((n) => n > 0 && onSent?.());
     run();
     window.addEventListener('online', run);
+    // Unsent workouts only live in memory: ask before the page is closed or reloaded.
+    const warn = (e: BeforeUnloadEvent) => {
+      if (read().some((x) => x.userId === userId)) e.preventDefault();
+    };
+    window.addEventListener('beforeunload', warn);
     const timer = setInterval(() => read().length && run(), 30_000);
     return () => {
       window.removeEventListener('online', run);
+      window.removeEventListener('beforeunload', warn);
       clearInterval(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

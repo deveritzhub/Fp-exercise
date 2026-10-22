@@ -206,7 +206,7 @@ export function SessionPlayer() {
             <h1 className="text-[26px] font-semibold">{t('Training afgerond!', 'Workout complete!')}</h1>
             <p className="mt-2 max-w-xs text-[16px] text-ink-600">
               {savedOffline
-                ? t('Goed bezig! Je training is op je telefoon bewaard en wordt automatisch verstuurd zodra je weer internet hebt.', 'Great work! Your workout is saved on your phone and is sent automatically once you are back online.')
+                ? t('Goed bezig! Houd de app open: je training wordt automatisch verstuurd zodra je weer internet hebt.', 'Great work! Keep the app open: your workout is sent automatically once you are back online.')
                 : t('Goed bezig. Je fysiotherapeut kan je voortgang en feedback nu bekijken.', 'Great work. Your physiotherapist can now see your progress and feedback.')}
             </p>
             <Button size="xl" className="mt-8 w-full max-w-xs" onClick={() => nav('/p')}>{t('Terug naar overzicht', 'Back to overview')}</Button>

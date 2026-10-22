@@ -68,12 +68,13 @@
   owners/admins of the sender's practice can read (RLS). The UI asks not to mention patients. Only the
   page path is stored (query strings dropped). On the synthetic demo (`DEMO_MODE=1`) feedback is also
   written to the server log; never in a real deployment.
-- **Offline**: the service worker caches the app shell, built assets, the patient's own API GETs
-  (`/api/patient/*`, `/api/auth/me`) and exercise images on the device, so the app opens without a
-  connection. Unsent workout steps are kept in `localStorage` (`fp.outbox`) and replayed in order.
-  On logout all of this is deleted (outbox, data cache, push subscription). Therapist screens and
-  videos are never cached. Server endpoints are idempotent; offline client ids/times are validated
-  (UUID, own patient, clamped to the last 7 days and never in the future).
+- **Offline**: no health data is stored on the device. The service worker caches only the app shell,
+  built assets and exercise images (no personal data); patient API responses are never cached (v1 did;
+  the v2 worker deletes that cache). Unsent workout steps live in memory only and are replayed in order
+  once the connection returns; closing the app before that loses them, and the app warns (banner +
+  leave-page prompt). Left-over data from v1 (`fp.outbox` in localStorage, `fp-data` cache) is removed.
+  Server endpoints are idempotent; offline client ids/times are validated (UUID, own patient, clamped to
+  the last 7 days and never in the future).
 - **Push reminders**: opt-in per device by the patient. The payload is a fixed generic text (no
   programme, exercise or health details) because it passes through Apple/Google/Mozilla push services
   and appears on the lock screen. Subscription endpoints are restricted to known push-service hosts

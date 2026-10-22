@@ -13,7 +13,7 @@ async function forgetDevice() {
       await sub.unsubscribe();
     }
     reg?.active?.postMessage('clear-user-data');
-    if ('caches' in window) await caches.delete('fp-data');
+    if ('caches' in window) await Promise.all([caches.delete('fp-data'), caches.delete('fp-media')]);
   } catch {
     /* best effort */
   }

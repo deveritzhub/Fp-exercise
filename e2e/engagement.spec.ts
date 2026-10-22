@@ -40,17 +40,17 @@ test('patient trains without internet; the workout is sent once back online', as
     await page.getByRole('button', { name: 'Overslaan' }).click();
   }
   await page.getByRole('button', { name: 'Training afronden' }).click();
-  await expect(page.getByText(/op je telefoon bewaard/)).toBeVisible();
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('fp.outbox') ?? '[]').length)).toBeGreaterThan(2);
+  await expect(page.getByText(/Houd de app open: je training wordt automatisch verstuurd/)).toBeVisible();
+  // Nothing about the workout is stored on the device.
+  expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toMatch(/pain|sessions/);
 
   await page.getByRole('button', { name: 'Terug naar overzicht' }).click();
   await expect(page.getByText(/Geen internet/)).toBeVisible();
 
   await context.setOffline(false);
   await expect(page.getByText(/Geen internet/)).toBeHidden();
-  await expect.poll(() => page.evaluate(() => localStorage.getItem('fp.outbox'))).toBeNull();
-  const after = (await (await page.request.get('/api/patient/history')).json()).sessions.length;
-  expect(after).toBe(before + 1);
+  await expect(page.getByText(/Je training wordt verstuurd/)).toBeHidden();
+  await expect.poll(async () => (await (await page.request.get('/api/patient/history')).json()).sessions.length).toBe(before + 1);
 });
 
 test('patient sees the reminder option (needs the installed app on iPhone)', async ({ page }) => {
