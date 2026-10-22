@@ -139,9 +139,48 @@ const mobilityModule = z.object({
     .max(100),
 });
 
+/** Extension v2: only guideline/review-backed frameworks (vestibular, MS) and a mobility programme with measurement moments. */
+const extensionFile = z
+  .object({
+    vestibulair: z
+      .object({
+        status: str(1000).optional(),
+        onderdelen_van_VPT: z.array(str(200)).max(20).optional(),
+        begeleiding: str(1000).optional(),
+        dosering: str(1000).optional(),
+        rode_vlaggen: z.array(str(300)).max(30).optional(),
+        verwijzing: str(1000).optional(),
+      })
+      .optional(),
+    neurorevalidatie: z
+      .object({
+        ms: z.object({ status: str(1000).optional(), aerobic: str(1000).optional(), kracht: str(1000).optional(), let_op: str(1000).optional(), overleg: str(1000).optional() }).optional(),
+      })
+      .passthrough()
+      .optional(),
+    mobiliteit_uitbreiding: z
+      .object({
+        principe: str(1000).optional(),
+        frequentie: str(1000).optional(),
+        voor_kracht: str(1000).optional(),
+        programma: z
+          .object({
+            id: z.string().min(1).max(80),
+            naam: z.string().min(2).max(120),
+            indicatie: str(500).optional(),
+            oefening: z.object({ exercise_id: str(80), sets: numOrStr.optional(), hold_sec: num, reps: num, frequentie_per_week: z.number().int().min(1).max(7).optional(), opmerking: str(1000).optional() }),
+            meting: str(1000).optional(),
+          })
+          .optional(),
+      })
+      .optional(),
+  })
+  .refine((f) => f.vestibulair || f.neurorevalidatie || f.mobiliteit_uitbreiding, 'empty_extension');
+
 export const libraryFileSchema = z.union([
   z.object({ seed_data: z.object({ revalidatie: rehabModule.optional(), krachttraining: strengthModule.optional(), mobiliteit: mobilityModule.optional() }) }),
   rehabModule,
+  extensionFile,
 ]);
 export type LibraryFile = z.infer<typeof libraryFileSchema>;
 
@@ -481,13 +520,105 @@ function normaliseMobility(m: z.infer<typeof mobilityModule>, b: Bundle) {
   }
 }
 
+/**
+ * Frameworks without fixed exercises or doses (the source says the therapist decides): they carry the
+ * guideline, red flags and points of attention; the therapist adds exercises when using them.
+ */
+function normaliseExtension(f: z.infer<typeof extensionFile>, b: Bundle) {
+  const empty = { seriesKey: null, seriesTitle: null, phaseNo: null, phaseCount: null, phaseName: null, phaseWeeks: null, phaseGoal: null };
+  const v = f.vestibulair;
+  if (v) {
+    b.templates.push({
+      ...empty,
+      key: 'kader_vestibulair',
+      module: 'revalidatie',
+      title: 'Vestibulaire revalidatie bij perifere hypofunctie — kader',
+      indication: 'Perifere vestibulaire hypofunctie (eenzijdig of bilateraal).',
+      criteria: [],
+      redFlags: v.rode_vlaggen ?? [],
+      warnings: [
+        'Kader zonder vaste oefeningen of dosering: de fysiotherapeut kiest oefeningen en dosering (de literatuur rapporteert doseringen zelden volledig).',
+        v.verwijzing,
+      ].filter(Boolean) as string[],
+      evidence: clip([v.status, v.dosering, v.begeleiding].filter(Boolean).join('\n\n'), 2000),
+      description: clip([v.onderdelen_van_VPT?.length && `Onderdelen: ${v.onderdelen_van_VPT.join(', ')}.`, v.begeleiding].filter(Boolean).join('\n\n'), 4000),
+      instructions: v.rode_vlaggen?.length ? `Stop en neem direct contact op bij: ${v.rode_vlaggen.map((r) => r.charAt(0).toLowerCase() + r.slice(1)).join('; ')}.` : '',
+      items: [],
+    });
+  }
+  const ms = f.neurorevalidatie?.ms;
+  if (ms) {
+    b.templates.push({
+      ...empty,
+      key: 'kader_ms',
+      module: 'revalidatie',
+      title: 'MS — aerobe training en krachttraining (richtlijn)',
+      indication: 'Multipele sclerose met milde tot matige beperking (EDSS 0 tot 7).',
+      criteria: [],
+      redFlags: [],
+      warnings: [
+        'Kader: kies zelf de oefeningen (grote spiergroepen) en vul de dosering in volgens de richtlijn hieronder.',
+        ms.let_op,
+        ms.overleg,
+      ].filter(Boolean) as string[],
+      evidence: clip([ms.status, ms.aerobic && `Aerobe training: ${ms.aerobic}`, ms.kracht && `Kracht: ${ms.kracht}`].filter(Boolean).join('\n\n'), 2000),
+      description: clip([ms.aerobic && `Aerobe training: ${ms.aerobic}`, ms.kracht && `Kracht: ${ms.kracht}`].filter(Boolean).join('\n\n'), 4000),
+      instructions: 'Is het warm, verdeel de training dan in korte blokken en zorg voor verkoeling. Neem contact op bij een terugval (relapse).',
+      items: [],
+    });
+  }
+  const m = f.mobiliteit_uitbreiding;
+  if (m?.programma) {
+    const p = m.programma;
+    const o = p.oefening;
+    const ex = MOBILITY_SAME_AS[o.exercise_id] ?? o.exercise_id;
+    b.templates.push({
+      ...empty,
+      key: p.id,
+      module: 'mobiliteit',
+      title: p.naam,
+      indication: p.indicatie ?? '',
+      // Measurement moments only: the source deliberately gives no thresholds.
+      criteria: p.meting
+        ? [{
+            to: 'Evaluatie',
+            title: 'Meetmomenten (geen onderbouwde drempels)',
+            items: [
+              { label: 'Bewegingsbereik vastgelegd vóór de start', threshold: '', test: 'Goniometer of kniebuiging-test (cm)', source: '' },
+              { label: 'Bewegingsbereik opnieuw gemeten (regelmatig)', threshold: '', test: 'Goniometer of kniebuiging-test (cm)', source: '' },
+            ],
+          }]
+        : [],
+      redFlags: [],
+      warnings: [m.voor_kracht].filter(Boolean) as string[],
+      evidence: clip([m.principe, m.frequentie, p.meting].filter(Boolean).join('\n\n'), 2000),
+      description: p.meting ?? '',
+      instructions: 'Rek tot een lichte spanning, niet tot pijn. Houd 30 seconden vast en adem rustig door.',
+      items: [{
+        ex,
+        sets: firstInt(o.sets),
+        reps: o.reps || null,
+        holdS: o.hold_sec || null,
+        restS: null,
+        days: DAYS[o.frequentie_per_week ?? 5],
+        frequency: o.frequentie_per_week ? `${o.frequentie_per_week}× per week` : null,
+        notes: [typeof o.sets === 'string' && `${o.sets} sets`, o.opmerking].filter(Boolean).join(' · '),
+      }],
+    });
+  }
+}
+
 export function toBundle(file: LibraryFile): Bundle {
   const b: Bundle = { exercises: [], templates: [] };
+  if (!('seed_data' in file) && !('oefeningen' in file)) {
+    normaliseExtension(file, b);
+    return b;
+  }
   if ('seed_data' in file) {
     if (file.seed_data.revalidatie) normaliseRehab(file.seed_data.revalidatie, b);
     if (file.seed_data.krachttraining) normaliseStrength(file.seed_data.krachttraining, b);
     if (file.seed_data.mobiliteit) normaliseMobility(file.seed_data.mobiliteit, b);
-  } else normaliseRehab(file, b);
+  } else if ('oefeningen' in file) normaliseRehab(file, b);
   return b;
 }
 

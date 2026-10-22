@@ -13,6 +13,8 @@ const BUNDLES = [
   { name: 'fp-library-v1', file: 'seed-data/fp-library.json' },
   // Revalidatie (incl. criteria for shoulder/neck/low back), krachttraining and mobiliteit, with phases.
   { name: 'fp-app-update-v1', file: 'seed-data/fp-app-update.json' },
+  // Only guideline-backed frameworks: vestibular, MS, ankle dorsiflexion (measurement moments, no thresholds).
+  { name: 'fp-uitbreiding-v2', file: 'seed-data/fp-uitbreiding-v2.json' },
 ];
 
 export async function importFpLibrary(ownerUrl: string, slug = 'functional-performance-demo') {

@@ -282,7 +282,7 @@ function SingleTemplateCard({ tpl }: { tpl: Program }) {
           <Link to={`/app/programmas/${tpl.id}`} className="block font-sans text-[15.5px] font-semibold leading-snug text-ink-950 hover:underline">{tpl.title}</Link>
           <p className="mt-0.5 line-clamp-2 text-[13px] text-ink-500">{tpl.indication || tpl.description}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <Badge tone="outline">{tpl.itemCount} {t('oefeningen', 'exercises')}</Badge>
+            {tpl.itemCount ? <Badge tone="outline">{tpl.itemCount} {t('oefeningen', 'exercises')}</Badge> : <Badge tone="info">{t('Kader — jij kiest oefeningen en dosering', 'Framework — you choose exercises and dose')}</Badge>}
             {tpl.regions?.slice(0, 2).map((r) => <Badge key={r} tone="outline">{L.region(r)}</Badge>)}
             <Badge tone="outline">{tpl.scope === 'practice' ? t('Praktijk', 'Practice') : t('Centraal', 'Central')}</Badge>
             {(tpl.warnings ?? []).length > 0 && <Badge tone="warn">{t('Let op', 'Note')}</Badge>}

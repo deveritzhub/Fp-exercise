@@ -1,0 +1,69 @@
+{
+  "_meta": {
+    "naam": "Uitbreiding, alleen onderbouwde onderdelen",
+    "versie": "2.0",
+    "taal": "Nederlands",
+    "principe": "Alleen opgenomen wat in een richtlijn of systematische review is onderbouwd. Wat niet onderbouwd is, staat niet in dit bestand.",
+    "vervangt": "uitbreiding_modules.json v1.0. Bewegingspatronen, UCS-programma, heup-IR-programma, stroke, Parkinson-doseringen en de meeste oefeningen zijn verwijderd omdat ze niet onderbouwd zijn."
+  },
+  "vestibulair": {
+    "status": "Vestibulaire revalidatie wordt aanbevolen bij perifere vestibulaire hypofunctie (CPG APTA). Het bewijs voor de effectiviteit is sterker dan het bewijs voor exacte doseringen.",
+    "onderdelen_van_VPT": [
+      "Gaze stabilisatie",
+      "Habituatie",
+      "Balans en looptraining",
+      "Wandelen en conditie"
+    ],
+    "begeleiding": "Eenzijdige hypofunctie: ongeveer één keer per week begeleiding, 2 tot 6 weken. Bilaterale hypofunctie: 8 tot 12 weken, volgens de CPG.",
+    "dosering": "Niet vastgelegd. De fysiotherapeut bepaalt de dosering. De literatuur rapporteert doseringen zelden volledig (BMJ Open 2022).",
+    "rode_vlaggen": [
+      "Plotseling gehoorverlies",
+      "Nieuwe dubbelzien, slikklachten of spraakstoornis",
+      "Zware hoofdpijn of nekstijfheid",
+      "Nieuwe zwakte of uitvalsverschijnselen",
+      "Val met hoofdletsel"
+    ],
+    "verwijzing": "Positionele duizeligheid (BPPV) vraagt om gespecialiseerde manoeuvres en hoort niet in een thuisprogramma."
+  },
+  "neurorevalidatie": {
+    "ms": {
+      "status": "Aanbevolen: aerobe training en krachttraining bij MS met mild tot matige beperking (EDSS 0 tot 7). Richtlijn: Latimer-Cheung et al., Canadese richtlijn.",
+      "aerobic": "Minimaal 30 minuten matig intensief, 2 keer per week. Geschikt zijn fietsen, armergometer, elliptische trainer en water.",
+      "kracht": "Grote spiergroepen, 2 keer per week, 2 sets van 10 tot 15 herhalingen, 1 tot 2 minuten rust. Elastische banden en gewichten zijn geschikt.",
+      "let_op": "Hittegevoeligheid is bij MS bekend en kan symptomen verergeren. Verdeel de training bij warmte in korte blokken met koeling. Dit is een klinisch gegeven en geen dosisvoorschrift.",
+      "overleg": "Bij zwangerschap of extra aandoeningen eerst overleg met een zorgverlener. Overleg bij een relapse met de neuroloog."
+    },
+    "parkinson": {
+      "status": "Niet opgenomen. De aanbevelingen zijn consensus en niet voldoende onderbouwd voor een programma met doseringen."
+    },
+    "stroke": {
+      "status": "Niet opgenomen in deze versie."
+    }
+  },
+  "mobiliteit_uitbreiding": {
+    "principe": "Statisch rekken vergroot het bewegingsbereik. Dat is goed onderbouwd (Behm 2023, systematische review en meta-analyse). Een houd tijd van 30 seconden levert vergelijkbare winst als 60 seconden (Medeiros 2016).",
+    "frequentie": "Vijf of meer keer per week is in associatie met meer winst (Thomas et al.). Dit is een associatie en geen bewezen optimum.",
+    "voor_kracht": "Lang statisch rekken direct voor krachttraining verlaagt de kracht tijdelijk. Gebruik vóór kracht een dynamische warming-up en rek na de training.",
+    "programma": {
+      "id": "mb2_enkel_dorsiflexie",
+      "naam": "Enkel dorsaalflexie, verbetering van het bewegingsbereik",
+      "indicatie": "Beperkte dorsaalflexie",
+      "oefening": {
+        "exercise_id": "mb_kniebuiging_muur",
+        "sets": "2 tot 4",
+        "hold_sec": 30,
+        "frequentie_per_week": 5,
+        "opmerking": "Vijf of meer keer per week"
+      },
+      "meting": "Leg het bewegingsbereik vast met een goniometer of kniebuiging-test in cm, vóór de start en daarna regelmatig. Drempels voor klinisch relevante winst zijn in deze bron niet onderbouwd."
+    }
+  },
+  "verwijderd_en_waarom": [
+    "Bewegingspatronen en het keten-principe: onvoldoende bewijs voor patroon-gerichte training.",
+    "UCS-programma: meta-analyse van lage kwaliteit, en de uitkomst is houding, niet klachten of functie.",
+    "Heup-IR-programma en nieuwe rekoefeningen: niet onderbouwd gecheckt.",
+    "Parkinson- en strokeprogramma's: doseringen zijn consensus.",
+    "Vestibulaire dosering (aantal cycli, sets, rust) en neurorevalidatie-oefeningen zoals dubbeltaak en tandem lopen: niet onderbouwd gecheckt.",
+    "Alle criteria-drempels in deze uitbreiding: praktijkkeuzes, daarom verwijderd. Alleen meetmomenten blijven staan."
+  ]
+}

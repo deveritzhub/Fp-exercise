@@ -50,6 +50,10 @@ Branch: `claude/fp-exercise-platform-bcak8k`.
   and mobility (daily 10 min, 6-week phased) imported as templates. Not yet built from the update file: mode
   switch + consent per module (W01–W02), set logging / 1RM / PRs / progression advice / 1RM test screening
   (W04–W09), patient red-flag stop flow (W11).
+- Extension v2 (only guideline/review-backed parts): vestibular rehabilitation framework (CPG, red flags,
+  BPPV not in a home programme, dose decided by the therapist), MS framework (aerobic + strength per
+  guideline, heat sensitivity, consult on relapse) and an ankle dorsiflexion mobility programme with
+  measurement moments but no thresholds. Frameworks have no fixed exercises; nothing was invented.
 - Privacy fix: the patient home and programme API no longer include the internal description; criteria,
   evidence and warnings are therapist-only.
 - Exercise library redesign: compact list cards on phones (thumbnail left), grid on desktop; real video

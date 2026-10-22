@@ -4,6 +4,7 @@ import path from 'node:path';
 import { login, seedDb, type Seed } from './helpers';
 import { resetRateLimits } from '../src/lib/rateLimit';
 
+const extension = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '../db/seed-data/fp-uitbreiding-v2.json'), 'utf8'));
 const update = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '../db/seed-data/fp-app-update.json'), 'utf8'));
 let s: Seed;
 beforeAll(async () => {
@@ -101,5 +102,28 @@ describe('phased programmes with criteria (revalidatie, kracht, mobiliteit)', ()
     const mine = home.programs.find((x: any) => x.id === programId);
     for (const k of ['criteria', 'evidence', 'warnings', 'description']) expect(mine).not.toHaveProperty(k);
     expect(JSON.stringify(home)).not.toMatch(/VAS en dagboek/);
+  });
+
+  it('extension v2: guideline frameworks without invented exercises or thresholds', async () => {
+    const owner = await login('ownerA');
+    expect((await owner.post('/practice/library-import', { _meta: { naam: 'leeg' } })).status).toBe(400);
+    const r = await owner.post('/practice/library-import', extension);
+    expect(r.body).toMatchObject({ exercises: 0, templates: 3 });
+    const list = await templates(owner);
+    const vest = list.find((p) => p.title.startsWith('Vestibulaire revalidatie'));
+    expect(vest.itemCount).toBe(0);
+    expect(vest.redFlags).toHaveLength(5);
+    expect(vest.warnings.join(' ')).toMatch(/BPPV/);
+    const ms = list.find((p) => p.title.startsWith('MS'));
+    expect(ms.evidence).toMatch(/EDSS 0 tot 7/);
+    expect(ms.warnings.join(' ')).toMatch(/Hittegevoeligheid/);
+    const ankle = list.find((p) => p.title.startsWith('Enkel dorsaalflexie'));
+    expect(ankle.module).toBe('mobiliteit');
+    // Measurement moments only, no thresholds; the exercise is the practice's existing knee-to-wall.
+    expect(ankle.criteria[0].items.every((i: any) => i.threshold === '')).toBe(true);
+    const full = (await owner.get(`/programs/${ankle.id}`)).body;
+    expect(full.items).toHaveLength(1);
+    expect(full.items[0]).toMatchObject({ sets: 2, holdS: 30, days: [1, 2, 3, 4, 5], notes: '2 tot 4 sets · Vijf of meer keer per week' });
+    expect(full.items[0].exercise.nameNl).toBe('Kniebuiging tegen muur (dorsaalflexie)');
   });
 });

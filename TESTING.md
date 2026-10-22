@@ -43,7 +43,7 @@ marketing pages, therapist workspace pages, builder, patient home/programme/prog
 
 ## Latest results (2026-10-22)
 
-- `npm test`: **11 files, 94 tests passed**
+- `npm test`: **11 files, 95 tests passed**
 - `npm run test:e2e`: **35 tests passed** (30 desktop, 5 mobile); viewports 320–1440 px checked for horizontal overflow
 - `npm run typecheck`: clean; `npm run build`: success (main chunk 113 kB gzip)
 
