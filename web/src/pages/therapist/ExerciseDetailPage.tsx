@@ -1,12 +1,14 @@
 import { Link, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Copy, Lock, Pencil, ShieldAlert, Video } from 'lucide-react';
-import { api, mediaUrl } from '@/lib/api';
-import { useI18n } from '@/lib/i18n';
+import { api, ApiError, mediaUrl } from '@/lib/api';
+import { errorMessage, useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { dose } from '@/lib/format';
 import { useDocumentMeta, useLabels } from '@/lib/meta';
-import { Badge, ButtonLink, Card, ErrorState, Notice, PageHeader, Spinner } from '@/components/ui';
+import { Badge, Button, ButtonLink, Card, ErrorState, Notice, PageHeader, Spinner, useToast } from '@/components/ui';
+import { MediaUpload } from './ExerciseFormPage';
 import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import { Difficulty } from '@/components/app/StatusBadge';
 import { FavoriteButton } from './ExercisesPage';
@@ -59,7 +61,7 @@ export function ExerciseDetailPage() {
               <div className="relative">
                 <ExerciseThumb thumbnailId={e.thumbnailMediaId} region={e.bodyRegion} className="aspect-video w-full" rounded="rounded-none" />
                 <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/45 to-transparent px-4 pb-3 pt-10 text-[13px] text-white">
-                  <Video className="h-4 w-4" /> {t('Nog geen video. Upload een eigen instructievideo via een praktijkkopie.', 'No video yet. Upload your own instruction video via a practice copy.')}
+                  <Video className="h-4 w-4" /> {t('Nog geen video. Voeg hiernaast een instructievideo van je praktijk toe.', 'No video yet. Add your practice’s instruction video alongside.')}
                 </div>
               </div>
             )}
@@ -74,6 +76,7 @@ export function ExerciseDetailPage() {
           </Card>
         </div>
         <div className="space-y-6 lg:col-span-2">
+          <PracticeMediaCard e={e} />
           <Card className="p-5">
             <h2 className="text-[13px] font-semibold text-ink-900">{t('Standaarddosering', 'Default dosage')}</h2>
             <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
@@ -139,5 +142,56 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
       <dt className="text-ink-500">{k}</dt>
       <dd className="col-span-2 text-ink-900">{v}</dd>
     </div>
+  );
+}
+
+/** Upload the practice's own video/thumbnail for this exercise (also for central library exercises). */
+function PracticeMediaCard({ e }: { e: Exercise }) {
+  const { t, locale } = useI18n();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const own = e.scope === 'practice' || e.practiceMedia;
+  const [video, setVideo] = useState<string | null>(own ? e.videoMediaId : null);
+  const [thumb, setThumb] = useState<string | null>(own ? e.thumbnailMediaId : null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    setVideo(own ? e.videoMediaId : null);
+    setThumb(own ? e.thumbnailMediaId : null);
+  }, [e.videoMediaId, e.thumbnailMediaId, own]);
+  const dirty = video !== (own ? e.videoMediaId : null) || thumb !== (own ? e.thumbnailMediaId : null);
+  return (
+    <Card className="space-y-4 p-5">
+      <div>
+        <h2 className="text-[15px] font-semibold">{t('Video van je praktijk', 'Your practice’s video')}</h2>
+        <p className="mt-0.5 text-[12.5px] text-ink-500">
+          {e.scope === 'global'
+            ? t('Alleen jouw praktijk en haar patiënten zien deze video bij deze oefening.', 'Only your practice and its patients see this video with this exercise.')
+            : t('Wordt getoond aan de patiënten van je praktijk.', 'Shown to your practice’s patients.')}
+        </p>
+      </div>
+      <MediaUpload kind="video" value={video} onChange={setVideo} />
+      <MediaUpload kind="image" value={thumb} onChange={setThumb} />
+      <Button
+        className="w-full"
+        disabled={!dirty}
+        loading={busy}
+        onClick={async () => {
+          setBusy(true);
+          try {
+            await api.put(`/exercises/${e.id}/media`, { videoMediaId: video, thumbnailMediaId: thumb });
+            toast(t('Video opgeslagen', 'Video saved'));
+            qc.invalidateQueries({ queryKey: ['exercise', e.id] });
+            qc.invalidateQueries({ queryKey: ['exercises'] });
+          } catch (err) {
+            toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad');
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {t('Opslaan', 'Save')}
+      </Button>
+      <p className="text-[12px] text-ink-500">{t('Tip: liggend filmen, 10–20 seconden, 2–3 rustige herhalingen. Zie de filmchecklist.', 'Tip: film in landscape, 10–20 seconds, 2–3 calm repetitions. See the filming checklist.')}</p>
+    </Card>
   );
 }

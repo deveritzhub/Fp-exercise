@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import { withUser, type Tx } from '../db';
 import { requireStaff, requireUser, type AppEnv } from '../middleware';
@@ -39,8 +39,10 @@ export function mapExercise(r: Record<string, any>, opts: { includeNotes?: boole
       frequency: r.default_frequency,
     },
     tags: r.tags,
-    videoMediaId: r.video_media_id,
-    thumbnailMediaId: r.thumbnail_media_id,
+    // A practice's own video/thumbnail (exercise_media_overrides) takes precedence over the library's.
+    videoMediaId: r.ov_video ?? r.video_media_id,
+    thumbnailMediaId: r.ov_thumb ?? r.thumbnail_media_id,
+    practiceMedia: !!(r.ov_video || r.ov_thumb),
     reviewStatus: r.review_status,
     favorite: r.favorite ?? false,
     createdBy: r.created_by,
@@ -73,6 +75,19 @@ export function buildTsQuery(q: string): string | null {
   return groups.join(' & ');
 }
 
+/** Practice whose media overrides apply: the active practice for staff, the patient's practice for patients. */
+export function mediaPracticeId(c: Context<AppEnv>): string | null {
+  const user = c.get('user');
+  if (!user) return null;
+  const wanted = c.req.header('x-practice-id');
+  const m = (wanted && user.memberships.find((x) => x.practiceId === wanted)) || user.memberships[0];
+  return m?.practiceId ?? user.patient?.practiceId ?? null;
+}
+
+const OV_JOIN = (param: string) =>
+  `LEFT JOIN exercise_media_overrides ov ON ov.exercise_id = e.id AND ov.practice_id = ${param}`;
+export const OV_COLS = 'ov.video_media_id AS ov_video, ov.thumbnail_media_id AS ov_thumb';
+
 const listQuery = z.object({
   q: z.string().max(100).optional().default(''),
   region: z.string().max(40).optional(),
@@ -91,10 +106,11 @@ exercises.get('/', async (c) => {
   return c.json(
     await withUser(user.id, async (tx) => {
       const { rows } = await tx.query(
-        `SELECT e.*, (fav.user_id IS NOT NULL) AS favorite, count(*) OVER() AS total,
+        `SELECT e.*, ${OV_COLS}, (fav.user_id IS NOT NULL) AS favorite, count(*) OVER() AS total,
                 ${tsq ? "ts_rank(e.search, to_tsquery('simple', $1))" : '0'} AS rank
            FROM exercises e
            LEFT JOIN exercise_favorites fav ON fav.exercise_id = e.id AND fav.user_id = app.uid()
+           ${OV_JOIN('$10::uuid')}
           WHERE e.archived_at IS NULL
             AND ($1::text IS NULL OR e.search @@ to_tsquery('simple', $1)
                  OR e.name_nl ILIKE '%' || $8 || '%' OR e.name_en ILIKE '%' || $8 || '%'
@@ -110,21 +126,22 @@ exercises.get('/', async (c) => {
                  OR ($9 = 'favorites' AND fav.user_id IS NOT NULL))
           ORDER BY rank DESC, e.name_nl
           LIMIT $6 OFFSET $7`,
-        [tsq, f.region ?? null, f.category ?? null, f.equipment ?? null, f.difficulty ?? null, f.limit, f.offset, f.q.trim().slice(0, 60), f.scope],
+        [tsq, f.region ?? null, f.category ?? null, f.equipment ?? null, f.difficulty ?? null, f.limit, f.offset, f.q.trim().slice(0, 60), f.scope, mediaPracticeId(c)],
       );
       return { items: rows.map((r) => mapExercise(r)), total: rows[0]?.total ?? 0 };
     }),
   );
 });
 
-async function loadExercise(tx: Tx, id: string, includeNotes: boolean) {
+async function loadExercise(tx: Tx, id: string, includeNotes: boolean, practiceId: string | null) {
   const { rows } = await tx.query(
-    `SELECT e.*, (fav.user_id IS NOT NULL) AS favorite, n.notes AS clinical_notes
+    `SELECT e.*, ${OV_COLS}, (fav.user_id IS NOT NULL) AS favorite, n.notes AS clinical_notes
        FROM exercises e
        LEFT JOIN exercise_favorites fav ON fav.exercise_id = e.id AND fav.user_id = app.uid()
+       ${OV_JOIN('$2::uuid')}
        LEFT JOIN exercise_clinical_notes n ON n.exercise_id = e.id
       WHERE e.id = $1`,
-    [id],
+    [id, practiceId],
   );
   if (!rows[0]) return null;
   const rel = await tx.query(
@@ -150,7 +167,7 @@ async function loadExercise(tx: Tx, id: string, includeNotes: boolean) {
 exercises.get('/:id', async (c) => {
   const user = requireUser(c);
   const id = parse(uuidParam, c.req.param('id'));
-  const ex = await withUser(user.id, (tx) => loadExercise(tx, id, user.memberships.length > 0));
+  const ex = await withUser(user.id, (tx) => loadExercise(tx, id, user.memberships.length > 0, mediaPracticeId(c)));
   if (!ex) throw notFound();
   return c.json(ex);
 });
@@ -305,5 +322,38 @@ exercises.delete('/:id/favorite', async (c) => {
   const user = requireUser(c);
   const id = parse(uuidParam, c.req.param('id'));
   await withUser(user.id, (tx) => tx.query('DELETE FROM exercise_favorites WHERE user_id = app.uid() AND exercise_id = $1', [id]));
+  return c.json({ ok: true });
+});
+
+/**
+ * Set the practice's own video/thumbnail for an exercise. For library (global) exercises this is
+ * stored as a practice override; for the practice's own exercises the exercise itself is updated.
+ */
+exercises.put('/:id/media', async (c) => {
+  const { user, practiceId } = requireStaff(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  const b = parse(z.object({ videoMediaId: z.string().uuid().nullable(), thumbnailMediaId: z.string().uuid().nullable() }), await c.req.json());
+  await withUser(user.id, async (tx) => {
+    const cur = await tx.query('SELECT practice_id FROM exercises WHERE id = $1', [id]);
+    if (!cur.rows[0]) throw notFound();
+    await assertMediaKind(tx, b.videoMediaId, 'video', practiceId);
+    await assertMediaKind(tx, b.thumbnailMediaId, 'image', practiceId);
+    if (cur.rows[0].practice_id) {
+      if (cur.rows[0].practice_id !== practiceId) throw notFound();
+      const r = await tx.query('UPDATE exercises SET video_media_id = $2, thumbnail_media_id = $3 WHERE id = $1', [id, b.videoMediaId, b.thumbnailMediaId]);
+      if (!r.rowCount) throw notFound();
+    } else if (!b.videoMediaId && !b.thumbnailMediaId) {
+      await tx.query('DELETE FROM exercise_media_overrides WHERE practice_id = $1 AND exercise_id = $2', [practiceId, id]);
+    } else {
+      await tx.query(
+        `INSERT INTO exercise_media_overrides(practice_id, exercise_id, video_media_id, thumbnail_media_id, updated_by)
+         VALUES ($1,$2,$3,$4,app.uid())
+         ON CONFLICT (practice_id, exercise_id) DO UPDATE SET video_media_id = EXCLUDED.video_media_id,
+           thumbnail_media_id = EXCLUDED.thumbnail_media_id, updated_by = EXCLUDED.updated_by, updated_at = now()`,
+        [practiceId, id, b.videoMediaId, b.thumbnailMediaId],
+      );
+    }
+    await audit(tx, user.id, practiceId, 'media', 'exercise', id, { video: !!b.videoMediaId, thumbnail: !!b.thumbnailMediaId });
+  });
   return c.json({ ok: true });
 });

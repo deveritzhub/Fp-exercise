@@ -90,3 +90,18 @@ test('unauthenticated users are redirected to login', async ({ page }) => {
   await page.goto('/p');
   await expect(page).toHaveURL(/\/login/);
 });
+
+test('therapist adds a practice video to a library exercise', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto('/app/oefeningen');
+  await page.getByLabel('Oefeningen zoeken').fill('muurglijder');
+  await page.getByRole('heading', { name: 'Muurglijder' }).click();
+  await expect(page.getByRole('heading', { name: 'Video van je praktijk' })).toBeVisible();
+  // synthetic bytes with an MP4 signature (not a real recording)
+  const bytes = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftypisom'), Buffer.alloc(4000, 7)]);
+  await page.locator('input[type=file][accept^="video"]').setInputFiles({ name: 'muurglijder.mp4', mimeType: 'video/mp4', buffer: bytes });
+  await page.getByRole('button', { name: 'Opslaan', exact: true }).click();
+  await expect(page.getByText('Video opgeslagen')).toBeVisible();
+  await page.reload();
+  await expect(page.locator('video').first()).toBeVisible();
+});

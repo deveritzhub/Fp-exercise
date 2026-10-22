@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { withUser } from '../db';
 import { requireStaff, type AppEnv } from '../middleware';
-import { mapExercise } from './exercises';
+import { mapExercise, OV_COLS } from './exercises';
 import { adherenceForPatient, loadAdherenceInputs } from '../lib/progress';
 import { toISODate } from '../../../shared/adherence';
 
@@ -66,8 +66,10 @@ dashboard.get('/', async (c) => {
         [ids],
       );
       const favs = await tx.query(
-        `SELECT e.*, true AS favorite FROM exercise_favorites f JOIN exercises e ON e.id = f.exercise_id
+        `SELECT e.*, ${OV_COLS}, true AS favorite FROM exercise_favorites f JOIN exercises e ON e.id = f.exercise_id
+           LEFT JOIN exercise_media_overrides ov ON ov.exercise_id = e.id AND ov.practice_id = $1
           WHERE f.user_id = app.uid() AND e.archived_at IS NULL ORDER BY f.created_at DESC LIMIT 8`,
+        [practiceId],
       );
       const activePrograms = await tx.query(
         `SELECT count(*) AS n FROM programs p WHERE p.patient_id = ANY($1) AND p.status = 'active'`,

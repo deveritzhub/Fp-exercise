@@ -65,4 +65,27 @@ describe('private media storage', () => {
     expect((await B.post('/exercises', body)).status).toBe(400); // cannot reference Practice A media
     void s;
   });
+
+  it('a practice can add its own video to a library exercise; other practices never see it', async () => {
+    const id = s.exercises.glute_bridge;
+    const thumb = await A.req('POST', '/media', form(png(), 't.png', 'image/png'));
+    expect((await A.put(`/exercises/${id}/media`, { videoMediaId: videoId, thumbnailMediaId: thumb.body.id })).status).toBe(200);
+    const a = await A.get(`/exercises/${id}`);
+    expect(a.body.videoMediaId).toBe(videoId);
+    expect(a.body.practiceMedia).toBe(true);
+    expect((await A.get('/exercises?q=bekkenbrug')).body.items.find((e: any) => e.id === id).videoMediaId).toBe(videoId);
+    // practice B and its patient still see the library version (no video)
+    const B = await login('therapistB');
+    expect((await B.get(`/exercises/${id}`)).body.videoMediaId).toBeNull();
+    expect((await (await login('patientB')).get(`/exercises/${id}`)).body.videoMediaId).toBeNull();
+    // practice A's patient sees it inside their programme
+    const prog = await A.post('/programs', { patientId: s.patients.emma, title: 'Met video', status: 'active', items: [{ exerciseId: id, days: [1, 2, 3, 4, 5, 6, 7] }] });
+    const pa = await login('patientA');
+    const p = await pa.get(`/patient/programs/${prog.body.id}`);
+    expect(p.body.items[0].exercise.videoMediaId).toBe(videoId);
+    // B cannot attach A's media, and removing the override restores the library version
+    expect((await B.put(`/exercises/${id}/media`, { videoMediaId: videoId, thumbnailMediaId: null })).status).toBe(400);
+    await A.put(`/exercises/${id}/media`, { videoMediaId: null, thumbnailMediaId: null });
+    expect((await A.get(`/exercises/${id}`)).body.videoMediaId).toBeNull();
+  });
 });

@@ -36,6 +36,7 @@ export type Exercise = {
   videoMediaId: string | null;
   thumbnailMediaId: string | null;
   reviewStatus: 'needs_clinical_review' | 'reviewed';
+  practiceMedia?: boolean;
   favorite: boolean;
   createdBy: string | null;
   clinicalNotes?: string;

@@ -61,11 +61,14 @@ export function mapProgram(r: Record<string, any>) {
 
 export async function loadItems(tx: Tx, programId: string) {
   const { rows } = await tx.query(
-    `SELECT i.*, e.name_nl, e.name_en, e.body_region, e.thumbnail_media_id, e.video_media_id, e.difficulty,
+    `SELECT i.*, e.name_nl, e.name_en, e.body_region,
+            coalesce(ov.thumbnail_media_id, e.thumbnail_media_id) AS thumbnail_media_id,
+            coalesce(ov.video_media_id, e.video_media_id) AS video_media_id, e.difficulty,
             e.instructions_nl, e.instructions_en, e.starting_position_nl, e.starting_position_en,
             e.movement_nl, e.movement_en, e.equipment,
             alt.name_nl AS alt_name_nl, alt.name_en AS alt_name_en
        FROM program_items i JOIN exercises e ON e.id = i.exercise_id
+       LEFT JOIN exercise_media_overrides ov ON ov.exercise_id = e.id AND ov.practice_id = i.practice_id
        LEFT JOIN exercises alt ON alt.id = i.alternative_exercise_id
       WHERE i.program_id = $1 ORDER BY i.position`,
     [programId],

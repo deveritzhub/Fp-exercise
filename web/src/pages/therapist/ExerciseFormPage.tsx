@@ -193,7 +193,7 @@ function DoseField({ label, children }: { label: string; children: React.ReactNo
   return <div><div className="label mb-1.5">{label}</div>{children}</div>;
 }
 
-function MediaUpload({ kind, value, onChange }: { kind: 'video' | 'image'; value: string | null; onChange: (id: string | null) => void }) {
+export function MediaUpload({ kind, value, onChange }: { kind: 'video' | 'image'; value: string | null; onChange: (id: string | null) => void }) {
   const { t, locale } = useI18n();
   const ref = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
