@@ -2,7 +2,7 @@
  * Start-up for a hosted demo (e.g. Render web service + Neon Postgres) — SYNTHETIC DATA ONLY.
  *
  * Input: DATABASE_ADMIN_URL (the provider's owner role, needs CREATEROLE — Neon's default owner has it)
- *        ROLE_PASSWORD_SECRET (random string; role passwords are derived from it)
+ *        ROLE_PASSWORD_SECRET (optional random string; role passwords are derived from it)
  * It creates/updates the fp_owner / fp_app / fp_auth roles, runs migrations, seeds demo data once,
  * derives the runtime connection strings and then starts the API (which also serves the web app).
  * For a real production deployment use separately managed credentials instead (see SECURITY.md).
@@ -10,12 +10,18 @@
 import crypto from 'node:crypto';
 import pg from 'pg';
 
-const adminUrl = process.env.DATABASE_ADMIN_URL;
-const secret = process.env.ROLE_PASSWORD_SECRET;
-if (!adminUrl || !secret) {
-  console.error('DATABASE_ADMIN_URL and ROLE_PASSWORD_SECRET are required.');
+const adminUrl = process.env.DATABASE_ADMIN_URL?.trim();
+if (!adminUrl) {
+  console.error('DATABASE_ADMIN_URL is not set. Paste the Neon connection string in Render → Environment.');
   process.exit(1);
 }
+if (!/^postgres(ql)?:\/\//.test(adminUrl)) {
+  console.error('DATABASE_ADMIN_URL must start with postgresql:// (copy the full Neon connection string, without "psql" or quotes).');
+  process.exit(1);
+}
+// Role passwords are derived from ROLE_PASSWORD_SECRET, or (if unset) from the admin URL itself, which is
+// already a secret. Roles are re-synced on every start, so rotating either value is safe.
+const secret = process.env.ROLE_PASSWORD_SECRET?.trim() || adminUrl;
 
 const pw = (role: string) => crypto.createHmac('sha256', secret).update(role).digest('hex');
 const urlFor = (role: string) => {
