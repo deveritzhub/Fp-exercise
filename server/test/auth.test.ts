@@ -98,6 +98,12 @@ describe('authentication', () => {
     resetRateLimits();
   });
 
+  it('unknown API routes return a JSON 404', async () => {
+    const res = await app.request('/api/does-not-exist');
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: 'not_found' });
+  });
+
   it('sets security headers', async () => {
     const res = await app.request('/api/health');
     expect(res.headers.get('content-security-policy')).toContain("frame-ancestors 'none'");

@@ -79,8 +79,9 @@ export function createApp() {
     });
   }
 
-  api.notFound((c) => c.json({ error: 'not_found' }, 404));
   app.route('/api', api);
+  // Unknown API paths must never fall through to the SPA fallback below.
+  app.all('/api/*', (c) => c.json({ error: 'not_found' }, 404));
 
   const webDist = path.resolve(import.meta.dirname, '../../dist/web');
   if (config.isProd && fs.existsSync(webDist)) {
