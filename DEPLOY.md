@@ -1,9 +1,11 @@
-# Putting the demo online
+# Putting FP Exercise online (permanent version)
 
-This puts a **demo** of FP Exercise on the internet with made-up data. It is free.
+This puts FP Exercise permanently on the internet: always on, data and uploaded videos are kept.
+Cost: about **$7–8 per month** (Render). The Neon database plan is free and does not expire.
+It currently runs as a **demo with made-up data**.
 Do **not** enter real patient information in the demo.
 
-You need two free accounts. Both are in the EU (Frankfurt).
+You need two accounts. Both run in the EU (Frankfurt).
 
 ## Step 1 — Database (Neon), about 3 minutes
 
@@ -19,11 +21,18 @@ You need two free accounts. Both are in the EU (Frankfurt).
    `Fp-exercise` repository.
 2. Click **New +** → **Blueprint**.
 3. Choose the `Fp-exercise` repository and branch **`claude/fp-exercise-platform-bcak8k`**.
-4. Render shows one service, `fp-exercise-demo`, and asks for `DATABASE_ADMIN_URL`:
+4. Render shows one service, `fp-exercise` (plan *Starter* + a 1 GB disk), and asks for `DATABASE_ADMIN_URL`:
    paste the Neon connection string from step 1.
-5. Click **Apply**. The first build takes a few minutes.
+5. Add a payment card when Render asks (needed for the always-on plan), then click **Apply**.
+   The first build takes a few minutes.
 6. When it says **Live**, open the address Render shows (something like
-   `https://fp-exercise-demo.onrender.com`).
+   `https://fp-exercise.onrender.com`). This address stays the same.
+
+## Optional — your own web address
+
+In Render open the service → **Settings → Custom Domains** → add e.g. `app.functionalperformance.nl`.
+Render shows one DNS record; add it where your domain is managed (your website/domain provider).
+HTTPS is set up automatically.
 
 ## Using the demo
 
@@ -33,7 +42,8 @@ You need two free accounts. Both are in the EU (Frankfurt).
 
 ## Good to know
 
-- The free plan "sleeps" after 15 minutes without visitors; the first visit then takes ~1 minute.
-- Uploaded videos are not kept when the free service restarts.
+- New versions: when new work is pushed to the branch, Render updates the site automatically. Data is kept.
+- Want it free instead? Change `plan: starter` to `plan: free` and remove the `disk:` lines in `render.yaml`.
+  The free plan sleeps after 15 minutes without visitors and does not keep uploaded videos.
 - Anyone with the link can log in with the demo accounts — fine for fake data, not for real data.
 - Real patient data requires the steps in RELEASE_CHECKLIST.md first.

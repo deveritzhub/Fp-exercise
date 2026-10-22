@@ -1,14 +1,19 @@
-# Render Blueprint for the FP Exercise DEMO (synthetic data only).
-# Web service in Frankfurt (EU). Database: a free Neon Postgres project in Frankfurt (see DEPLOY.md).
+# Render Blueprint for FP Exercise (currently: demo with synthetic data only).
+# Always-on web service in Frankfurt (EU) with a persistent disk for uploaded videos/images.
+# Database: Neon Postgres project in Frankfurt (see DEPLOY.md).
 services:
   - type: web
-    name: fp-exercise-demo
+    name: fp-exercise
     runtime: node
     region: frankfurt
-    plan: free
+    plan: starter          # paid (~$7/month): always on, no sleeping
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start:hosted
     healthCheckPath: /api/health
+    disk:                  # uploads survive restarts and new deploys (~$0.25/GB/month)
+      name: media
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: "22"
@@ -24,3 +29,5 @@ services:
         value: "1"
       - key: MAIL_TRANSPORT
         value: outbox
+      - key: STORAGE_DIR
+        value: /var/data/storage
