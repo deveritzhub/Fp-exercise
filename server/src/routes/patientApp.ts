@@ -6,7 +6,7 @@ import { parse, uuidParam } from '../lib/validate';
 import { audit } from '../lib/audit';
 import { badRequest, notFound, HttpError } from '../lib/errors';
 import { uuid } from '../lib/crypto';
-import { loadItems, mapProgram } from './programs';
+import { loadItems, patientProgram } from './programs';
 import { notifyTherapists } from '../lib/notify';
 import { adherenceForPatient, loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
 import { isoWeekday, streak, toISODate, weekStrip } from '../../../shared/adherence';
@@ -60,7 +60,7 @@ patientApp.get('/home', async (c) => {
         const items = await loadItems(tx, p.id);
         const todayItems = runsOn(p, today) ? items.filter((i) => i.days.includes(weekday)) : [];
         programs.push({
-          ...mapProgram(p),
+          ...patientProgram(p),
           therapistName: p.therapist_name,
           itemCount: items.length,
           today: { scheduled: todayItems.length, done: doneSet.has(p.id), items: todayItems.map((i) => ({ id: i.id, exercise: i.exercise, sets: i.sets, reps: i.reps, holdS: i.holdS })) },
@@ -122,7 +122,7 @@ patientApp.get('/programs/:id', async (c) => {
         [id, patient.id],
       );
       // The description is the therapists' internal note (criteria, evidence): never sent to patients.
-      const { description: _internal, ...program } = mapProgram(rows[0]);
+      const program = patientProgram(rows[0]);
       return {
         ...program,
         therapistName: rows[0].therapist_name,

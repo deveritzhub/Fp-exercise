@@ -5,7 +5,7 @@ import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, us
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  Archive, ArrowDown, ArrowUp, BookCopy, CheckCircle2, ChevronDown, Copy, Eye, GripVertical, History, LayoutTemplate, Plus, Search, Trash2, X,
+  Archive, ArrowDown, ArrowRight, ArrowUp, BookCopy, CheckCircle2, ChevronDown, Copy, Eye, GripVertical, History, LayoutTemplate, Plus, Search, Trash2, X,
 } from 'lucide-react';
 import { api, ApiError, qs } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
@@ -17,7 +17,8 @@ import { Badge, Button, Card, Dialog, EmptyState, Input, MenuItem, Notice, Numbe
 import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import { ProgramStatusBadge } from '@/components/app/StatusBadge';
 import { ExerciseFilterBar, emptyFilters, useExerciseSearch, type ExerciseFilters } from '@/components/app/ExerciseSearch';
-import type { Exercise, PatientListItem, Program, ProgramItem } from '@/lib/types';
+import type { CriteriaCheck, Exercise, PatientListItem, Program, ProgramItem } from '@/lib/types';
+import { CriteriaList, Evidence, ModuleBadge, RedFlags, Warnings } from '@/components/app/PhaseInfo';
 
 type BItem = Omit<ProgramItem, 'exercise'> & { key: string; exercise: ProgramItem['exercise'] };
 type Meta = { title: string; description: string; patientInstructions: string; startDate: string; endDate: string };
@@ -96,7 +97,9 @@ export function ProgramBuilderPage() {
     setDirty(false);
   }, [existing.data]);
 
+  const [templateSource, setTemplateSource] = useState<Program | null>(null);
   const loadTemplate = (p: Program) => {
+    setTemplateSource(p);
     setMeta((m) => ({ ...m, title: m.title || p.title, description: p.description, patientInstructions: p.patientInstructions }));
     setItems((cur) => [...cur, ...fromProgramItems(p.items, false)]);
     setSourceTemplateId(p.id);
@@ -294,11 +297,13 @@ export function ProgramBuilderPage() {
             {asTemplate && <Textarea label={t('Omschrijving (intern)', 'Description (internal)')} value={meta.description} onChange={setM('description')} rows={meta.description.includes('\n') ? 8 : 2} disabled={readOnlyGlobal} />}
             {!asTemplate && meta.description.includes('\n') && (
               <details className="rounded-xl border border-line bg-ink-50/60 px-4 py-3 text-[13.5px]" open>
-                <summary className="cursor-pointer font-medium text-ink-800">{t('Uit het sjabloon: criteria, rode vlaggen en onderbouwing (alleen voor jou)', 'From the template: criteria, red flags and evidence (only for you)')}</summary>
+                <summary className="cursor-pointer font-medium text-ink-800">{t('Notities uit het sjabloon (alleen voor jou)', 'Notes from the template (only for you)')}</summary>
                 <p className="mt-2 whitespace-pre-wrap leading-relaxed text-ink-700">{meta.description}</p>
               </details>
             )}
           </Card>
+
+          <PhaseCard source={program ?? templateSource} programId={program && !program.isTemplate ? program.id : null} patientId={patientId} />
 
           <div className="flex items-center justify-between">
             <h2 className="text-[15px] font-semibold">
@@ -655,5 +660,96 @@ function VersionsDialog({ open, onClose, programId }: { open: boolean; onClose: 
         </ol>
       )}
     </Dialog>
+  );
+}
+
+/**
+ * Phase of this programme: goal, criteria for the next phase (test + threshold) and red flags.
+ * On a patient programme the therapist ticks criteria (name + date are kept). Moving on is always
+ * a deliberate choice: "Next phase" opens the next phase's template for this patient.
+ */
+function PhaseCard({ source, programId, patientId }: { source: Program | null; programId: string | null; patientId: string | null }) {
+  const { t, locale } = useI18n();
+  const nav = useNavigate();
+  const toast = useToast();
+  const qc = useQueryClient();
+  const [checks, setChecks] = useState<CriteriaCheck[]>(source?.criteriaChecks ?? []);
+  const [busy, setBusy] = useState<string | null>(null);
+  useEffect(() => setChecks(source?.criteriaChecks ?? []), [source?.id, source?.criteriaChecks]);
+  const next = useQuery({
+    queryKey: ['next-phase', programId],
+    queryFn: () => api.get<{ next: { id: string; title: string; phaseName: string; weeks: string | null } | null }>(`/programs/${programId}/next-phase`),
+    enabled: !!programId && !!source?.series,
+  });
+  if (!source) return null;
+  const criteria = source.criteria ?? [];
+  const has = !!source.series || criteria.length > 0 || (source.redFlags ?? []).length > 0 || (source.warnings ?? []).length > 0;
+  if (!has) return null;
+  const total = criteria.reduce((n, g) => n + g.items.length, 0);
+  const done = checks.length;
+  const s = source.series;
+
+  const toggle = async (key: string, on: boolean) => {
+    if (!programId) return;
+    setBusy(key);
+    try {
+      const r = on ? await api.put<{ items: CriteriaCheck[] }>(`/programs/${programId}/criteria/${key}`, {}) : await api.del<{ items: CriteriaCheck[] }>(`/programs/${programId}/criteria/${key}`);
+      setChecks(r.items);
+      qc.invalidateQueries({ queryKey: ['program', programId] });
+    } catch (err) {
+      toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <Card className="space-y-4 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            {source.module && <ModuleBadge module={source.module} />}
+            {s && <Badge tone="accent">{t(`${s.phaseName} van ${s.phaseCount}`, `${s.phaseName} of ${s.phaseCount}`)}{s.weeks ? ` · ${t('week', 'week')} ${s.weeks}` : ''}</Badge>}
+          </div>
+          {s && <h2 className="mt-1.5 font-sans text-[15px] font-semibold text-ink-950">{s.title}</h2>}
+          {s?.goal && <p className="mt-0.5 text-[13.5px] text-ink-600"><span className="font-medium text-ink-800">{t('Doel', 'Goal')}:</span> {s.goal}</p>}
+        </div>
+        {programId && total > 0 && (
+          <div className="text-right">
+            <div className={cn('text-[20px] font-semibold tabular-nums', done === total ? 'text-ok' : 'text-ink-900')}>{done}/{total}</div>
+            <div className="text-[11.5px] text-ink-500">{t('criteria behaald', 'criteria met')}</div>
+          </div>
+        )}
+      </div>
+      <Warnings items={source.warnings ?? []} />
+      {criteria.length > 0 && (
+        <div>
+          {!programId && <p className="mb-2 text-[12.5px] text-ink-500">{t('Na opslaan kun je deze criteria per patiënt afvinken.', 'After saving you can tick these criteria for this patient.')}</p>}
+          <CriteriaList groups={criteria} checks={programId ? checks : undefined} onToggle={programId ? toggle : undefined} busy={busy} />
+        </div>
+      )}
+      <RedFlags flags={source.redFlags ?? []} />
+      <Evidence text={source.evidence ?? ''} />
+      {programId && s && (
+        <div className="flex flex-wrap items-center gap-3 border-t border-line pt-4">
+          {next.data?.next ? (
+            <Button
+              variant={done === total ? 'primary' : 'secondary'}
+              icon={<ArrowRight className="h-4 w-4" />}
+              onClick={() => {
+                const open = total - done;
+                if (open > 0 && !confirm(t(`Nog ${open} criteria niet afgevinkt. Toch de volgende fase klaarzetten?`, `${open} criteria not ticked yet. Prepare the next phase anyway?`))) return;
+                nav(`/app/programmas/nieuw?sjabloon=${next.data!.next!.id}${patientId ? `&patient=${patientId}` : ''}`);
+              }}
+            >
+              {t(`${next.data.next.phaseName} klaarzetten`, `Prepare ${next.data.next.phaseName}`)}
+            </Button>
+          ) : (
+            <span className="text-[13px] text-ink-500">{t('Dit is de laatste fase van dit programma.', 'This is the last phase of this programme.')}</span>
+          )}
+          <span className="text-[12px] text-ink-500">{t('Fases gaan nooit automatisch door; jij beslist.', 'Phases never advance automatically; you decide.')}</span>
+        </div>
+      )}
+    </Card>
   );
 }

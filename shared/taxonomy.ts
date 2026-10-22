@@ -62,6 +62,7 @@ export const EQUIPMENT: Labelled[] = [
   { key: 'step', nl: 'Step / traptree', en: 'Step' },
   { key: 'wall', nl: 'Muur', en: 'Wall' },
   { key: 'towel', nl: 'Handdoek', en: 'Towel' },
+  { key: 'pullup_bar', nl: 'Optrekstang', en: 'Pull-up bar' },
 ];
 
 export const WEEKDAYS: Labelled[] = [

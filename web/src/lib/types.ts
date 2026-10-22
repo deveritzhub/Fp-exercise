@@ -101,7 +101,21 @@ export type Program = {
   items: ProgramItem[];
   itemCount?: number;
   regions?: string[];
+  module?: ProgramModule;
+  series?: ProgramSeries | null;
+  indication?: string;
+  criteria?: CriteriaGroup[];
+  redFlags?: string[];
+  warnings?: string[];
+  evidence?: string;
+  criteriaChecks?: CriteriaCheck[];
 };
+
+export type ProgramModule = 'revalidatie' | 'kracht' | 'mobiliteit';
+export type ProgramSeries = { key: string; title: string; phaseNo: number; phaseCount: number; phaseName: string; weeks: string | null; goal: string | null };
+/** Criteria to move on: per item the test (measurement method), threshold and source. */
+export type CriteriaGroup = { to: string; title: string; items: { label: string; threshold: string; test: string; source: string }[] };
+export type CriteriaCheck = { key: string; label: string; note: string; checkedAt: string; checkedBy: string | null };
 
 export type Adherence = { planned: number; completed: number; rate: number | null };
 

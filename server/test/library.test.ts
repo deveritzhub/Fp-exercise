@@ -45,7 +45,8 @@ describe('importing a practice library (Functional Performance JSON)', () => {
     );
     const fase1 = templates.find((t: any) => t.title.includes('Fase 1'));
     const tpl = (await owner.get(`/programs/${fase1.id}`)).body;
-    expect(tpl.description).toMatch(/Criteria voor Fase 2:\n☐ Pijn tijdens isometrie/);
+    expect(tpl.criteria[0]).toMatchObject({ to: 'Fase 2', items: expect.arrayContaining([expect.objectContaining({ label: 'Pijn tijdens isometrie', test: 'VAS en dagboek' })]) });
+    expect(tpl.series).toMatchObject({ phaseNo: 1, phaseCount: 3 });
     expect(tpl.patientInstructions).toMatch(/Stop en neem contact op/);
     expect(tpl.items[0]).toMatchObject({ sets: 5, reps: 1, holdS: 45, days: [1, 2, 3, 4, 5, 6, 7], frequency: '7× per week' });
     expect(tpl.items[1].days).toEqual([1, 3, 5]);

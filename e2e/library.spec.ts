@@ -21,7 +21,7 @@ test('owner imports the practice library; therapists build from the phased templ
   await page.getByRole('button', { name: 'Uit sjabloon' }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('button', { name: /VKB postoperatief, criteriegestuurd — Fase 1/ }).first().click();
-  await expect(page.getByText(/Uit het sjabloon: criteria, rode vlaggen/)).toBeVisible();
-  await expect(page.getByText(/Criteria voor Fase 2/)).toBeVisible();
+  await expect(page.getByText('Fase 1 van 4 · week 0-2')).toBeVisible();
+  await expect(page.getByText('Criteria voor Fase 2')).toBeVisible();
   await expect(page.getByText(/Oefeningen \(4\)/)).toBeVisible();
 });

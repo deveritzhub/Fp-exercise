@@ -37,6 +37,15 @@ const programFields = z.object({
 const refineDates = <T extends { startDate?: string | null; endDate?: string | null }>(v: T) =>
   !v.startDate || !v.endDate || v.endDate >= v.startDate;
 
+/**
+ * What a patient may see of a programme. The description, criteria, evidence, warnings and
+ * indication are the therapist's clinical notes and never leave the staff side.
+ */
+export function patientProgram(r: Record<string, any>) {
+  const { description: _d, criteria: _c, evidence: _e, warnings: _w, indication: _i, ...rest } = mapProgram(r);
+  return rest;
+}
+
 export function mapProgram(r: Record<string, any>) {
   return {
     id: r.id,
@@ -53,6 +62,15 @@ export function mapProgram(r: Record<string, any>) {
     version: r.version,
     activatedAt: r.activated_at,
     sourceTemplateId: r.source_template_id,
+    module: r.module ?? 'revalidatie',
+    series: r.series_key
+      ? { key: r.series_key, title: r.series_title, phaseNo: r.phase_no, phaseCount: r.phase_count, phaseName: r.phase_name, weeks: r.phase_weeks, goal: r.phase_goal }
+      : null,
+    indication: r.indication ?? '',
+    criteria: r.criteria ?? [],
+    redFlags: r.red_flags ?? [],
+    warnings: r.warnings ?? [],
+    evidence: r.evidence ?? '',
     createdBy: r.created_by,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
@@ -183,7 +201,19 @@ export async function loadProgram(tx: Tx, id: string) {
       ? { id: rows[0].patient_id, firstName: rows[0].patient_first_name, lastName: rows[0].patient_last_name }
       : null,
     items: await loadItems(tx, id),
+    criteriaChecks: rows[0].is_template ? [] : await loadChecks(tx, id),
   };
+}
+
+/** Ticked criteria of a patient programme (staff only; RLS hides them from everybody else). */
+async function loadChecks(tx: Tx, programId: string) {
+  const { rows } = await tx.query(
+    `SELECT c.item_key, c.label, c.note, c.checked_at, u.full_name
+       FROM program_criteria_checks c LEFT JOIN users u ON u.id = c.checked_by
+      WHERE c.program_id = $1 ORDER BY c.item_key`,
+    [programId],
+  );
+  return rows.map((r) => ({ key: r.item_key, label: r.label, note: r.note, checkedAt: r.checked_at, checkedBy: r.full_name }));
 }
 
 // ---------------------------------------------------------------------------
@@ -295,6 +325,16 @@ programs.post('/', async (c) => {
       ],
     );
     await writeItems(tx, id, progPractice, b.items);
+    if (b.sourceTemplateId) {
+      // A programme made from a phased template keeps its phase, criteria and red flags.
+      await tx.query(
+        `UPDATE programs p SET module = t.module, series_key = t.series_key, series_title = t.series_title, indication = t.indication,
+                phase_no = t.phase_no, phase_count = t.phase_count, phase_name = t.phase_name, phase_weeks = t.phase_weeks,
+                phase_goal = t.phase_goal, criteria = t.criteria, red_flags = t.red_flags, warnings = t.warnings, evidence = t.evidence
+           FROM programs t WHERE p.id = $1 AND t.id = $2 AND t.is_template`,
+        [id, b.sourceTemplateId],
+      );
+    }
     await snapshot(tx, id, 'created');
     if (b.patientId && b.status === 'active') await notifyPatientUser(tx, b.patientId, progPractice, 'program_assigned', b.title);
     await audit(tx, user.id, progPractice, 'create', b.isTemplate ? 'template' : 'program', id, { items: b.items.length, status: b.status });
@@ -353,6 +393,64 @@ programs.post('/:id/items', async (c) => {
     return { items: next.length, notifiedPatient: !!(p.patient_id && p.status === 'active') };
   });
   return c.json(result, 201);
+});
+
+const checkKey = z.string().regex(/^\d{1,2}\.\d{1,2}$/);
+
+/** Tick a criterion for the next phase (therapist, with name and date). Nothing moves automatically. */
+programs.put('/:id/criteria/:key', async (c) => {
+  const { user } = requireStaff(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  const key = parse(checkKey, c.req.param('key'));
+  const b = parse(z.object({ note: z.string().trim().max(300).default('') }), await c.req.json().catch(() => ({})));
+  const checks = await withUser(user.id, async (tx) => {
+    const { rows } = await tx.query('SELECT practice_id, is_template, criteria FROM programs WHERE id = $1', [id]);
+    const p = rows[0];
+    if (!p) throw notFound();
+    if (p.is_template) throw badRequest('not_a_patient_program');
+    const [g, i] = key.split('.').map(Number);
+    const item = p.criteria?.[g]?.items?.[i];
+    if (!item) throw notFound('criterion_not_found');
+    await tx.query(
+      `INSERT INTO program_criteria_checks(program_id, practice_id, item_key, label, note, checked_by) VALUES ($1,$2,$3,$4,$5,app.uid())
+       ON CONFLICT (program_id, item_key) DO UPDATE SET note = EXCLUDED.note, checked_by = app.uid(), checked_at = now()`,
+      [id, p.practice_id, key, String(item.label).slice(0, 300), b.note],
+    );
+    await audit(tx, user.id, p.practice_id, 'check', 'criterion', id, { key });
+    return loadChecks(tx, id);
+  });
+  return c.json({ items: checks });
+});
+
+programs.delete('/:id/criteria/:key', async (c) => {
+  const { user } = requireStaff(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  const key = parse(checkKey, c.req.param('key'));
+  const checks = await withUser(user.id, async (tx) => {
+    const { rows } = await tx.query('SELECT practice_id FROM programs WHERE id = $1', [id]);
+    if (!rows[0]) throw notFound();
+    await tx.query('DELETE FROM program_criteria_checks WHERE program_id = $1 AND item_key = $2', [id, key]);
+    await audit(tx, user.id, rows[0].practice_id, 'uncheck', 'criterion', id, { key });
+    return loadChecks(tx, id);
+  });
+  return c.json({ items: checks });
+});
+
+/** The template of the next phase in the same series (practice templates first). */
+programs.get('/:id/next-phase', async (c) => {
+  const { user } = requireStaff(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  const next = await withUser(user.id, async (tx) => {
+    const { rows } = await tx.query(
+      `SELECT t.id, t.title, t.phase_name, t.phase_weeks FROM programs p
+         JOIN programs t ON t.is_template AND t.series_key = p.series_key AND t.phase_no = p.phase_no + 1 AND t.status <> 'archived'
+        WHERE p.id = $1 AND p.series_key IS NOT NULL
+        ORDER BY (t.practice_id IS NOT NULL) DESC LIMIT 1`,
+      [id],
+    );
+    return rows[0] ?? null;
+  });
+  return c.json({ next: next && { id: next.id, title: next.title, phaseName: next.phase_name, weeks: next.phase_weeks } });
 });
 
 programs.post('/:id/status', async (c) => {

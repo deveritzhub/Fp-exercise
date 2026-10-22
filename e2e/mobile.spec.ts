@@ -50,3 +50,12 @@ test('exercise library on a phone: compact cards, filter sheet, preview', async 
   await page.getByRole('tab', { name: 'Door mij gemaakt' }).click();
   await expect(page.getByRole('tab', { name: 'Door mij gemaakt' })).toBeInViewport();
 });
+
+test('programmes page on a phone: module chips and phase picker fit', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto('/app/programmas');
+  await expect(page.getByRole('button', { name: /^Revalidatie/ })).toBeVisible();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+  await expectAccessible(page, 'programmes phone');
+});

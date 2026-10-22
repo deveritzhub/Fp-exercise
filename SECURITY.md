@@ -46,6 +46,13 @@
   invites, assignments, programme create/update/status, uploads, session completion/review.
 - GDPR export endpoint per patient (JSON).
 
+## Phases and criteria
+
+- Criteria, evidence, warnings, indication and the internal description are therapist-only; the patient API
+  uses one mapper (`patientProgram`) that removes them (tested for both patient endpoints).
+- Criteria checks (`program_criteria_checks`) are readable/writable only by professionals who may edit that
+  programme (RLS); each tick stores who and when, and is audit-logged. Phases never advance automatically.
+
 ## Practice library import
 
 - `POST /api/practice/library-import` (owner/admin, JSON ≤ 5 MB, zod-validated with length limits) runs

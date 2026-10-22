@@ -5,10 +5,16 @@ import pg from 'pg';
 import { importLibrary, libraryFileSchema, linkSharedVideos } from '../src/lib/libraryImport';
 
 /**
- * Loads the Functional Performance library (seed-data/fp-library.json) into the demo practice,
- * once: if that practice already has imported exercises, only missing library videos are linked.
- * Later versions of the file are imported by the practice itself (Praktijk → Instellingen).
+ * Loads the Functional Performance library bundles into the demo practice, each bundle once
+ * (recorded in library_imports). Later versions are imported by the practice itself
+ * (Praktijk → Instellingen) or by adding a new bundle name here.
  */
+const BUNDLES = [
+  { name: 'fp-library-v1', file: 'seed-data/fp-library.json' },
+  // Revalidatie (incl. criteria for shoulder/neck/low back), krachttraining and mobiliteit, with phases.
+  { name: 'fp-app-update-v1', file: 'seed-data/fp-app-update.json' },
+];
+
 export async function importFpLibrary(ownerUrl: string, slug = 'functional-performance-demo') {
   const db = new pg.Client({ connectionString: ownerUrl });
   await db.connect();
@@ -20,13 +26,21 @@ export async function importFpLibrary(ownerUrl: string, slug = 'functional-perfo
       [slug],
     )).rows[0];
     if (!p) return null;
-    if (!p.imported) {
-      const file = libraryFileSchema.parse(JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'seed-data/fp-library.json'), 'utf8')));
+    const done = new Set((await db.query('SELECT bundle FROM library_imports WHERE practice_id = $1', [p.id])).rows.map((r) => r.bundle));
+    // Imported before bundles were recorded: the first library is already there.
+    if (p.imported && !done.size) {
+      await db.query(`INSERT INTO library_imports(practice_id, bundle) VALUES ($1, 'fp-library-v1') ON CONFLICT DO NOTHING`, [p.id]);
+      done.add('fp-library-v1');
+    }
+    for (const b of BUNDLES) {
+      if (done.has(b.name)) continue;
+      const file = libraryFileSchema.parse(JSON.parse(fs.readFileSync(path.join(import.meta.dirname, b.file), 'utf8')));
       await db.query('BEGIN');
       try {
         const r = await importLibrary(db, p.id, p.owner, file);
+        await db.query('INSERT INTO library_imports(practice_id, bundle) VALUES ($1,$2)', [p.id, b.name]);
         await db.query('COMMIT');
-        console.log(`[library] imported ${r.exercises} exercises and ${r.templates} templates into ${slug}`);
+        console.log(`[library] ${b.name}: ${r.exercises} exercises and ${r.templates} templates into ${slug}`);
       } catch (e) {
         await db.query('ROLLBACK');
         throw e;

@@ -42,6 +42,16 @@ Branch: `claude/fp-exercise-platform-bcak8k`.
 - Patient app works offline: workouts are kept on the device and sent when back online (idempotent API).
 - Push reminders work while the server is awake. On the free Render plan the server sleeps after 15 min
   without visitors, so reminders can be late or skipped; reliable on a paid plan.
+- Phased programmes (W10 of the app update): templates grouped per programme with a phase picker; per phase
+  goal, exercises, criteria for the next phase (test, threshold, source), red flags, warnings and evidence;
+  filters per module (revalidatie / kracht / mobiliteit), region, phases, favourites; search includes tests.
+  Patient programmes keep their phase; the therapist ticks criteria (name + date, audit-logged) and prepares
+  the next phase deliberately (never automatic). Strength (PPL 6/3 days, transition criteria, volume warning)
+  and mobility (daily 10 min, 6-week phased) imported as templates. Not yet built from the update file: mode
+  switch + consent per module (W01–W02), set logging / 1RM / PRs / progression advice / 1RM test screening
+  (W04–W09), patient red-flag stop flow (W11).
+- Privacy fix: the patient home and programme API no longer include the internal description; criteria,
+  evidence and warnings are therapist-only.
 - Exercise library redesign: compact list cards on phones (thumbnail left), grid on desktop; real video
   frames as thumbnails (captured once in the browser, cached, lazy, max 2 at a time); quick preview sheet;
   dominant library search with clear button, NL/EN names and synonyms (shared/synonyms.ts); region chips,
