@@ -23,7 +23,8 @@ export const DEMO_PASSWORD = 'Demo-wachtwoord-1';
 export const showDemoAccounts = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEMO_ACCOUNTS === '1';
 
 function safeNext(next: string | null) {
-  return next && next.startsWith('/') && !next.startsWith('//') ? next : null;
+  // Same-site paths only. Backslashes are refused too: browsers treat "/\evil.example" as "//evil.example".
+  return next && next.startsWith('/') && !next.startsWith('//') && !next.includes('\\') ? next : null;
 }
 
 export function LoginPage() {
