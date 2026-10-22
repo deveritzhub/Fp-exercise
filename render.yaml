@@ -1,19 +1,20 @@
 # Render Blueprint for FP Exercise (currently: demo with synthetic data only).
-# Always-on web service in Frankfurt (EU) with a persistent disk for uploaded videos/images.
+# Web service in Frankfurt (EU). Currently on the FREE plan (sleeps after 15 min idle, uploads are not kept).
+# Upgrade later: set plan: starter and uncomment the disk + STORAGE_DIR lines below (~$7.25/month).
 # Database: Neon Postgres project in Frankfurt (see DEPLOY.md).
 services:
   - type: web
     name: fp-exercise
     runtime: node
     region: frankfurt
-    plan: starter          # paid (~$7/month): always on, no sleeping
+    plan: free             # upgrade: starter (~$7/month, always on)
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start:hosted
     healthCheckPath: /api/health
-    disk:                  # uploads survive restarts and new deploys (~$0.25/GB/month)
-      name: media
-      mountPath: /var/data
-      sizeGB: 1
+    # disk:                # with plan: starter — uploads survive restarts (~$0.25/GB/month)
+    #   name: media
+    #   mountPath: /var/data
+    #   sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: "22"
@@ -29,5 +30,5 @@ services:
         value: "1"
       - key: MAIL_TRANSPORT
         value: outbox
-      - key: STORAGE_DIR
-        value: /var/data/storage
+      # - key: STORAGE_DIR    # with the disk above
+      #   value: /var/data/storage
