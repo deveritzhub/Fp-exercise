@@ -67,3 +67,8 @@ if (!seeded) {
 }
 
 await import('../src/index');
+
+// Demo videos: fetched in the background so start-up (and the health check) is not delayed.
+const { importLibraryVideos } = await import('./import-videos');
+const { config } = await import('../src/config');
+importLibraryVideos(process.env.DATABASE_OWNER_URL!, config.storageDir).catch((e) => console.error('[videos]', e.message));

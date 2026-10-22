@@ -4,7 +4,9 @@ Style for the whole series: same woman in dark olive sportswear, beige mat, warm
 static camera, 8 s, 2 slow reps, no sound. Model `kling3_0`, mode `pro`, 16:9 (14 credits each).
 
 **Every video must be checked by a physiotherapist before it is uploaded** (see checklist below).
-Upload: open the exercise in FP Exercise → "Video van je praktijk" → choose file → Opslaan.
+In the hosted demo these 13 clips are imported automatically as central-library videos
+(server/db/import-videos.ts, list in server/db/seed-data/videos.ts) — re-downloaded on start if missing.
+Practices can still replace them with their own via "Video van je praktijk".
 
 | Exercise (app name) | Video (all generated ✅) | Checked? | Uploaded? |
 |---|---|---|---|
