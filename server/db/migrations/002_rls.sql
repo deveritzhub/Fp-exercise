@@ -134,6 +134,12 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
   SELECT patient_id FROM workout_sessions WHERE id = p_session
 $$;
 
+-- Whether a (visible) user has completed account activation; avoids exposing password_hash.
+CREATE FUNCTION app.user_activated(p_user uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
+  SELECT app.can_see_user(p_user) AND EXISTS (SELECT 1 FROM users WHERE id = p_user AND password_hash IS NOT NULL)
+$$;
+
 -- Aggregated, non-clinical statistics for the platform administrator.
 CREATE FUNCTION app.platform_practice_overview()
 RETURNS TABLE (id uuid, name text, slug text, city text, plan_code text, subscription_status text,
@@ -186,7 +192,9 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA app TO fp_app, fp_auth;
 
 GRANT SELECT ON plans TO fp_app;
 GRANT SELECT, INSERT, UPDATE ON practices TO fp_app;
-GRANT SELECT, UPDATE (full_name, locale) ON users TO fp_app;
+-- Column-level: the runtime role can never read password hashes or lockout state.
+GRANT SELECT (id, email, full_name, locale, is_platform_admin, email_verified_at, mfa_enabled, created_at, disabled_at),
+      UPDATE (full_name, locale) ON users TO fp_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON practice_members TO fp_app;
 GRANT SELECT, INSERT, UPDATE ON patients TO fp_app;
 GRANT SELECT, INSERT, DELETE ON patient_therapists TO fp_app;

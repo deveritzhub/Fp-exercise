@@ -68,7 +68,7 @@ practice.get('/members', async (c) => {
   const rows = await withUser(user.id, async (tx) =>
     (
       await tx.query(
-        `SELECT m.user_id, m.role, m.title, m.active, m.created_at, u.full_name, u.email, (u.password_hash IS NOT NULL) AS activated,
+        `SELECT m.user_id, m.role, m.title, m.active, m.created_at, u.full_name, u.email, app.user_activated(u.id) AS activated,
                 (SELECT count(*) FROM patient_therapists a JOIN patients p ON p.id = a.patient_id
                   WHERE a.therapist_id = m.user_id AND p.practice_id = m.practice_id AND p.archived_at IS NULL) AS patients
            FROM practice_members m JOIN users u ON u.id = m.user_id
@@ -86,6 +86,7 @@ practice.get('/members', async (c) => {
       title: r.title,
       active: r.active,
       patients: r.patients,
+      activated: r.activated,
       createdAt: r.created_at,
     })),
   });
