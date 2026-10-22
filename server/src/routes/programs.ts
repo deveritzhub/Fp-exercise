@@ -326,6 +326,35 @@ programs.put('/:id', async (c) => {
   return c.json({ ok: true });
 });
 
+/** Quick add from the library: append one exercise (with its dose) to an existing programme or template. */
+programs.post('/:id/items', async (c) => {
+  const { user } = requireStaff(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  const item = parse(itemSchema.omit({ id: true }), await c.req.json());
+  const result = await withUser(user.id, async (tx) => {
+    const cur = await tx.query('SELECT * FROM programs WHERE id = $1', [id]);
+    const p = cur.rows[0];
+    if (!p) throw notFound();
+    if (p.status === 'archived' || p.status === 'completed') throw badRequest('program_closed');
+    const items = (await loadItems(tx, id)).map((i) => ({
+      id: i.id, exerciseId: i.exerciseId, alternativeExerciseId: i.alternativeExerciseId, sets: i.sets, reps: i.reps, holdS: i.holdS,
+      restS: i.restS, tempo: i.tempo, load: i.load, frequency: i.frequency, days: i.days, notes: i.notes,
+    }));
+    if (items.length >= 60) throw badRequest('program_full');
+    const next = [...items, item];
+    await assertExercisesVisible(tx, [item], p.practice_id);
+    const r = await tx.query('UPDATE programs SET version = version + 1, updated_at = now() WHERE id = $1', [id]);
+    if (!r.rowCount) throw notFound(); // RLS: not editable by this user
+    await writeItems(tx, id, p.practice_id, next);
+    const name = (await tx.query('SELECT name_nl FROM exercises WHERE id = $1', [item.exerciseId])).rows[0]?.name_nl ?? '';
+    await snapshot(tx, id, `Oefening toegevoegd: ${name}`.slice(0, 300));
+    if (p.patient_id && p.status === 'active') await notifyPatientUser(tx, p.patient_id, p.practice_id, 'program_updated', p.title);
+    await audit(tx, user.id, p.practice_id, 'update', p.is_template ? 'template' : 'program', id, { version: p.version + 1, added: item.exerciseId });
+    return { items: next.length, notifiedPatient: !!(p.patient_id && p.status === 'active') };
+  });
+  return c.json(result, 201);
+});
+
 programs.post('/:id/status', async (c) => {
   const { user } = requireStaff(c);
   const id = parse(uuidParam, c.req.param('id'));

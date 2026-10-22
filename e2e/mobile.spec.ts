@@ -29,3 +29,24 @@ test('therapist workspace is usable on a phone', async ({ page }) => {
   await page.getByRole('link', { name: 'Oefeningen', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Oefenbibliotheek' })).toBeVisible();
 });
+
+test('exercise library on a phone: compact cards, filter sheet, preview', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto('/app/oefeningen');
+  await expect(page.getByRole('heading', { name: 'Bekkenbrug', exact: true })).toBeVisible();
+  // Compact rows: several exercises fit on one screen.
+  const box = await page.locator('article').first().boundingBox();
+  expect(box!.height).toBeLessThan(130);
+  await page.getByRole('button', { name: 'Filters' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Filters' });
+  await sheet.getByRole('combobox', { name: 'Niveau' }).selectOption('1');
+  await sheet.getByRole('button', { name: /Toon \d+ oefeningen/ }).click();
+  await expect(page.getByRole('button', { name: /Filters/ })).toContainText('1');
+  await expect(page.getByRole('button', { name: 'Filter Niveau 1 verwijderen' })).toBeVisible();
+  await expectAccessible(page, 'library phone');
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+  // Tabs scroll sideways instead of being cut off.
+  await page.getByRole('tab', { name: 'Door mij gemaakt' }).click();
+  await expect(page.getByRole('tab', { name: 'Door mij gemaakt' })).toBeInViewport();
+});

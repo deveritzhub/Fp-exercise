@@ -1,116 +1,220 @@
-import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import { BookOpen, Plus, Star } from 'lucide-react';
-import { api } from '@/lib/api';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { BookOpen, CheckCircle2, Dumbbell, Loader2, Play, Plus, SearchX } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta, useLabels } from '@/lib/meta';
 import { cn } from '@/lib/cn';
-import { Badge, ButtonLink, Card, EmptyState, ErrorState, PageHeader, Skeleton, Tabs } from '@/components/ui';
+import { Button, ButtonLink, Card, EmptyState, ErrorState, PageHeader, Skeleton, Tabs } from '@/components/ui';
 import { ExerciseThumb } from '@/components/app/ExerciseThumb';
-import { Difficulty } from '@/components/app/StatusBadge';
-import { ExerciseFilterBar, emptyFilters, useExerciseSearch, type ExerciseFilters } from '@/components/app/ExerciseSearch';
+import { ActiveFilters, ExerciseSearchField, FilterButton, InlineFilters, RegionChips, activeFilterCount, emptyFilters, useExercisePages, useUrlFilters } from '@/components/app/ExerciseSearch';
+import { FavoriteToggle, PreviewSheet, QuickAddSheet } from '@/components/app/QuickAdd';
 import type { Exercise } from '@/lib/types';
 
 export function ExercisesPage() {
   const { t } = useI18n();
   useDocumentMeta(t('Oefenbibliotheek', 'Exercise library'));
-  const [params] = useSearchParams();
-  const [f, setF] = useState<ExerciseFilters>({ ...emptyFilters, scope: params.get('scope') ?? 'all' });
-  const q = useExerciseSearch(f, 96);
+  const [f, setF] = useUrlFilters();
+  const q = useExercisePages(f);
+  const items = q.data?.pages.flatMap((p) => p.items) ?? [];
+  const total = q.data?.pages[0]?.total;
+  const [preview, setPreview] = useState<Exercise | null>(null);
+  const [adding, setAdding] = useState<Exercise | null>(null);
+  const onPreview = useCallback((e: Exercise) => setPreview(e), []);
+  const onAdd = useCallback((e: Exercise) => setAdding(e), []);
+  const filtered = !!f.q || activeFilterCount(f) > 0 || f.scope !== 'all';
+
+  // Load the next page shortly before the end of the list is reached.
+  const sentinel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el || !q.hasNextPage) return;
+    const io = new IntersectionObserver((e) => e[0].isIntersecting && !q.isFetchingNextPage && q.fetchNextPage(), { rootMargin: '600px 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [q.hasNextPage, q.isFetchingNextPage, q.fetchNextPage]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <>
       <PageHeader
         title={t('Oefenbibliotheek', 'Exercise library')}
-        description={t('Centrale bibliotheek plus de eigen oefeningen van je praktijk.', 'Central library plus your practice’s own exercises.')}
-        actions={<ButtonLink to="/app/oefeningen/nieuw" icon={<Plus className="h-4 w-4" />}>{t('Eigen oefening', 'Custom exercise')}</ButtonLink>}
+        description={<span className="hidden sm:inline">{t('Centrale bibliotheek plus de eigen oefeningen van je praktijk.', 'Central library plus your practice’s own exercises.')}</span>}
+        actions={
+          <ButtonLink to="/app/oefeningen/nieuw" variant="secondary" icon={<Plus className="h-4 w-4" />}>
+            <span className="hidden sm:inline">{t('Eigen oefening', 'Custom exercise')}</span>
+            <span className="sr-only min-[360px]:not-sr-only sm:hidden">{t('Nieuw', 'New')}</span>
+          </ButtonLink>
+        }
       />
+
+      {/* Search stays in reach while scrolling on phones. */}
+      <div className="sticky top-14 z-10 -mx-4 bg-canvas/95 px-4 pb-3 pt-1 backdrop-blur supports-[backdrop-filter]:bg-canvas/80 sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
+        <div className="flex gap-2">
+          <ExerciseSearchField value={f.q} onChange={(qv) => setF({ ...f, q: qv })} busy={q.isFetching && !q.isFetchingNextPage} />
+          <FilterButton value={f} onChange={setF} total={total} className="lg:hidden" />
+        </div>
+      </div>
+      <div className="space-y-3">
+        <RegionChips value={f.region} onChange={(region) => setF({ ...f, region })} />
+        <div className="hidden lg:block"><InlineFilters value={f} onChange={setF} /></div>
+        <div className="lg:hidden"><ActiveFilters value={{ ...f, region: '' }} onChange={(next) => setF({ ...next, region: f.region })} /></div>
+        <div className="hidden lg:block"><ActiveFilters value={f} onChange={setF} /></div>
+      </div>
+
       <Tabs
-        className="mb-4"
+        className="mb-3 mt-4"
         value={f.scope}
         onChange={(scope) => setF({ ...f, scope })}
         tabs={[
           { value: 'all', label: t('Alle', 'All') },
           { value: 'favorites', label: t('Favorieten', 'Favourites') },
           { value: 'practice', label: t('Praktijk', 'Practice') },
-          { value: 'mine', label: t('Door mij gemaakt', 'Created by me') },
-          { value: 'global', label: t('Centrale bibliotheek', 'Central library') },
           { value: 'unreviewed', label: t('Te controleren', 'To review') },
           { value: 'reviewed', label: t('Goedgekeurd', 'Approved') },
+          { value: 'global', label: t('Centrale bibliotheek', 'Central library') },
+          { value: 'mine', label: t('Door mij gemaakt', 'Created by me') },
         ]}
       />
-      <ExerciseFilterBar value={f} onChange={setF} />
-      <div className="mb-3 mt-5 text-[13px] text-ink-500" aria-live="polite">
-        {q.data ? t(`${q.data.total} oefeningen`, `${q.data.total} exercises`) : ' '}
+
+      <div className="mb-3 flex h-5 items-center gap-2 text-[13px] text-ink-500" aria-live="polite">
+        {total !== undefined && (
+          <span>
+            {f.q ? t(`${total} resultaten voor “${f.q}”`, `${total} results for “${f.q}”`) : t(`${total} oefeningen`, `${total} exercises`)}
+          </span>
+        )}
       </div>
+
       {q.isError ? (
         <Card><ErrorState error={q.error} onRetry={() => q.refetch()} /></Card>
       ) : !q.data ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="h-60 rounded-xl" />)}</div>
-      ) : q.data.items.length === 0 ? (
-        <Card><EmptyState icon={<BookOpen className="h-5 w-5" />} title={t('Geen oefeningen gevonden', 'No exercises found')} description={t('Pas je zoekterm of filters aan, of maak een eigen oefening.', 'Adjust your search or filters, or create a custom exercise.')} action={<ButtonLink to="/app/oefeningen/nieuw" variant="secondary">{t('Eigen oefening maken', 'Create custom exercise')}</ButtonLink>} /></Card>
+        <CardGrid>{Array.from({ length: 8 }, (_, i) => <CardSkeleton key={i} />)}</CardGrid>
+      ) : items.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={f.q ? <SearchX className="h-5 w-5" /> : <BookOpen className="h-5 w-5" />}
+            title={f.q ? t(`Niets gevonden voor “${f.q}”`, `Nothing found for “${f.q}”`) : t('Geen oefeningen gevonden', 'No exercises found')}
+            description={t('Probeer een ander woord (Nederlands of Engels), minder filters, of maak een eigen oefening.', 'Try another word (Dutch or English), fewer filters, or create a custom exercise.')}
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                {filtered && <Button variant="secondary" onClick={() => setF({ ...emptyFilters })}>{t('Alles wissen', 'Clear everything')}</Button>}
+                <ButtonLink to="/app/oefeningen/nieuw" variant="ghost">{t('Eigen oefening maken', 'Create custom exercise')}</ButtonLink>
+              </div>
+            }
+          />
+        </Card>
       ) : (
-        <div className={cn('grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4', q.isFetching && 'opacity-70 transition-opacity')}>
-          {q.data.items.map((e) => <ExerciseCard key={e.id} e={e} />)}
-        </div>
+        <>
+          <CardGrid className={cn(q.isFetching && !q.isFetchingNextPage && 'opacity-70')}>
+            {items.map((e) => <ExerciseCard key={e.id} e={e} onPreview={onPreview} onAdd={onAdd} />)}
+          </CardGrid>
+          <div ref={sentinel} className="flex h-16 items-center justify-center">
+            {q.isFetchingNextPage ? (
+              <Loader2 className="h-5 w-5 animate-spin text-ink-400" aria-label={t('Meer laden…', 'Loading more…')} />
+            ) : q.hasNextPage ? (
+              <Button variant="ghost" onClick={() => q.fetchNextPage()}>{t('Meer laden', 'Load more')}</Button>
+            ) : items.length > 12 ? (
+              <span className="text-[12.5px] text-ink-400">{t('Einde van de lijst', 'End of the list')}</span>
+            ) : null}
+          </div>
+        </>
       )}
+
+      <PreviewSheet exercise={preview} open={!!preview} onClose={() => setPreview(null)} onAdd={(e) => { setPreview(null); setAdding(e); }} />
+      <QuickAddSheet exercise={adding} open={!!adding} onClose={() => setAdding(null)} />
     </>
   );
 }
 
-export function FavoriteButton({ e, className }: { e: Pick<Exercise, 'id' | 'favorite'>; className?: string }) {
-  const { t } = useI18n();
-  const qc = useQueryClient();
-  const [fav, setFav] = useState(e.favorite);
+function CardGrid({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={cn('grid grid-cols-1 gap-2 transition-opacity sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4', className)}>{children}</div>;
+}
+
+function CardSkeleton() {
   return (
-    <button
-      type="button"
-      aria-pressed={fav}
-      aria-label={fav ? t('Verwijder uit favorieten', 'Remove from favourites') : t('Voeg toe aan favorieten', 'Add to favourites')}
-      className={cn('inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors', fav ? 'text-amber-500' : 'text-ink-400 hover:text-ink-700', className)}
-      onClick={async (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        setFav(!fav);
-        try {
-          if (fav) await api.del(`/exercises/${e.id}/favorite`);
-          else await api.post(`/exercises/${e.id}/favorite`);
-          qc.invalidateQueries({ queryKey: ['exercises'] });
-          qc.invalidateQueries({ queryKey: ['dashboard'] });
-        } catch {
-          setFav(fav);
-        }
-      }}
-    >
-      <Star className={cn('h-4 w-4', fav && 'fill-current')} />
-    </button>
+    <div className="card flex overflow-hidden sm:flex-col">
+      <Skeleton className="m-2 h-20 w-20 shrink-0 rounded-lg sm:m-0 sm:aspect-[16/10] sm:h-auto sm:w-full sm:rounded-none" />
+      <div className="flex-1 space-y-2 p-3 sm:p-4">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-3 w-1/2" />
+        <Skeleton className="h-3 w-1/3" />
+      </div>
+    </div>
   );
 }
 
-function ExerciseCard({ e }: { e: Exercise }) {
+// Only devices with a real pointer get hover-to-play (no accidental video loads on touch screens).
+const canHover = typeof window !== 'undefined' && !!window.matchMedia?.('(hover: hover) and (pointer: fine)').matches;
+
+/** Kept for other pages (exercise detail). */
+export { FavoriteToggle as FavoriteButton } from '@/components/app/QuickAdd';
+
+/**
+ * Phone: compact row (thumbnail left, info right). From `sm`: card with a larger image.
+ * The whole card opens the exercise; the thumbnail plays a quick preview; + adds to a programme.
+ */
+const ExerciseCard = memo(function ExerciseCard({ e, onPreview, onAdd }: { e: Exercise; onPreview: (e: Exercise) => void; onAdd: (e: Exercise) => void }) {
   const { locale, t } = useI18n();
   const L = useLabels();
+  const name = locale === 'nl' ? e.nameNl : e.nameEn;
+  const other = locale === 'nl' ? e.nameEn : e.nameNl;
+  const category = e.trainingCategories[0] ? L.training(e.trainingCategories[0]) : e.movementCategory ? L.movement(e.movementCategory) : null;
+  const equipment = e.equipment.filter((x) => x !== 'none').map(L.equipment);
+  const [hover, setHover] = useState(false);
   return (
-    <Link to={`/app/oefeningen/${e.id}`} className="group card flex flex-col overflow-hidden transition-shadow hover:shadow-pop">
-      <div className="relative">
-        <ExerciseThumb thumbnailId={e.thumbnailMediaId} videoId={e.videoMediaId} region={e.bodyRegion} className="aspect-[16/10] w-full" rounded="rounded-none" showRegion hoverPlay />
-        <FavoriteButton e={e} className="absolute right-2 top-2 bg-white/85 backdrop-blur" />
+    <article
+      onMouseEnter={canHover ? () => setHover(true) : undefined}
+      onMouseLeave={canHover ? () => setHover(false) : undefined}
+      className="cv-auto group relative flex overflow-hidden rounded-xl border border-line bg-white shadow-card transition-[box-shadow,border-color,transform] duration-150 hover:border-ink-200 hover:shadow-pop active:scale-[0.995] sm:flex-col">
+      <Link to={`/app/oefeningen/${e.id}`} className="tap absolute inset-0 z-0 rounded-xl" aria-label={name} />
+      {/* Image is part of the card link; only the play button opens the quick preview. */}
+      <div className="pointer-events-none relative m-2 h-20 w-20 shrink-0 overflow-hidden rounded-lg sm:m-0 sm:aspect-[16/10] sm:h-auto sm:w-full sm:rounded-none">
+        <ExerciseThumb thumbnailId={e.thumbnailMediaId} videoId={e.videoMediaId} region={e.bodyRegion} name={name} className="h-full w-full" rounded="rounded-none" active={hover} hideBadge />
+        {e.videoMediaId && (
+          <button
+            type="button"
+            onClick={() => onPreview(e)}
+            className="tap pointer-events-auto absolute bottom-1 left-1 z-10 flex h-8 min-w-8 items-center justify-center gap-1.5 rounded-full bg-ink-950/70 px-2 text-white backdrop-blur-sm transition-transform hover:bg-ink-950/85 active:scale-90 sm:bottom-2 sm:left-2 sm:px-3"
+            aria-label={t(`Bekijk preview: ${name}`, `Watch preview: ${name}`)}
+          >
+            <Play className="h-3.5 w-3.5 fill-current" aria-hidden />
+            <span className="hidden text-[12px] font-medium sm:inline">{t('Preview', 'Preview')}</span>
+          </button>
+        )}
       </div>
-      <div className="flex flex-1 flex-col p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-[14.5px] font-semibold leading-snug text-ink-950">{locale === 'nl' ? e.nameNl : e.nameEn}</h3>
-        </div>
-        <p className="mt-1 line-clamp-1 text-[12.5px] text-ink-500">{e.targetMuscles.slice(0, 3).join(', ')}</p>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {e.trainingCategories.slice(0, 2).map((c) => <Badge key={c}>{L.training(c)}</Badge>)}
-          {e.scope === 'practice' && <Badge tone="accent">{t('Praktijk', 'Practice')}</Badge>}
-          {e.reviewStatus === 'reviewed' && <Badge tone="ok">✓ {t('Goedgekeurd', 'Approved')}</Badge>}
-        </div>
-        <div className="mt-auto flex items-center justify-between pt-4 text-[12px] text-ink-500">
-          <span className="truncate">{e.equipment.map(L.equipment).join(' · ')}</span>
-          <Difficulty value={e.difficulty} />
+
+      <div className="pointer-events-none relative flex min-w-0 flex-1 flex-col py-2 pr-1 sm:p-4 sm:pt-3">
+        <h3 className="line-clamp-2 font-sans text-[15px] font-semibold leading-snug tracking-normal text-ink-950">{name}</h3>
+        {other && other !== name && <p className="truncate text-[12px] text-ink-400">{other}</p>}
+        <p className="mt-1 truncate text-[12.5px] text-ink-600">
+          {L.region(e.bodyRegion)}
+          {category && <span className="text-ink-400"> · </span>}
+          {category}
+        </p>
+        <p className="mt-0.5 flex min-w-0 items-center gap-1 text-[12px] text-ink-500">
+          <Dumbbell className="h-3.5 w-3.5 shrink-0 text-ink-400" aria-hidden />
+          <span className="truncate">{equipment.length ? equipment.join(', ') : t('Geen materiaal', 'No equipment')}</span>
+        </p>
+        <div className="mt-auto flex items-center gap-1.5 pt-1.5 sm:pt-3">
+          {e.scope === 'practice' && <span className="rounded-md bg-accent-soft px-1.5 py-0.5 text-[11px] font-medium text-accent">{t('Praktijk', 'Practice')}</span>}
+          {e.reviewStatus === 'reviewed' && (
+            <span className="inline-flex items-center gap-1 text-[11.5px] font-medium text-ok">
+              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+              {t('Goedgekeurd', 'Approved')}
+            </span>
+          )}
         </div>
       </div>
-    </Link>
+
+      <div className="relative z-10 flex shrink-0 flex-col items-center justify-between py-1.5 pr-1.5 sm:absolute sm:right-2 sm:top-2 sm:flex-row sm:gap-1.5 sm:p-0">
+        <FavoriteToggle e={e} className="bg-white/90 backdrop-blur sm:shadow-xs" />
+        <button
+          type="button"
+          onClick={() => onAdd(e)}
+          className="tap inline-flex h-9 w-9 items-center justify-center rounded-full bg-accent text-white shadow-xs transition-transform hover:bg-accent-strong active:scale-90"
+          aria-label={t(`${name} toevoegen aan programma`, `Add ${name} to programme`)}
+        >
+          <Plus className="h-[18px] w-[18px]" />
+        </button>
+      </div>
+    </article>
   );
-}
+});

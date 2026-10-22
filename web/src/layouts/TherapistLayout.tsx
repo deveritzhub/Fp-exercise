@@ -121,14 +121,16 @@ export function TherapistLayout() {
         <button type="button" className="-ml-1 rounded-md p-1.5 text-ink-600 lg:hidden" onClick={() => setMobileOpen(true)} aria-label={t('Menu openen', 'Open menu')}>
           <Menu className="h-5 w-5" />
         </button>
+        {/* Global "jump to" search (patients, exercises, actions) — distinct from the library's own search field. */}
         <button
           type="button"
           onClick={() => setPalette(true)}
-          className="flex h-9 w-full max-w-sm items-center gap-2 rounded-lg border border-line bg-white px-3 text-[13.5px] text-ink-500 shadow-xs transition-colors hover:border-ink-200"
+          className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-line bg-white px-2.5 text-[13.5px] text-ink-500 shadow-xs transition-colors hover:border-ink-200 sm:w-full sm:max-w-xs sm:px-3"
         >
           <Search className="h-4 w-4" />
-          <span className="flex-1 truncate text-left">{t('Zoek patiënt of oefening…', 'Search patient or exercise…')}</span>
-          <kbd className="hidden rounded border border-line bg-ink-50 px-1.5 text-2xs sm:block">Ctrl K</kbd>
+          <span className="sr-only sm:not-sr-only sm:flex-1 sm:truncate sm:text-left">{t('Snel naar…', 'Jump to…')}</span>
+          <span className="sr-only">{t(' patiënt, oefening of actie', ' patient, exercise or action')}</span>
+          <kbd className="hidden rounded border border-line bg-ink-50 px-1.5 text-2xs md:block">Ctrl K</kbd>
         </button>
         <div className="flex-1" />
         <FeedbackButton />

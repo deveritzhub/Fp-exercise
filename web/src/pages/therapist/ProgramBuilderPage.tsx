@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
@@ -105,6 +105,20 @@ export function ProgramBuilderPage() {
   useEffect(() => {
     if (tmpl.data) loadTemplate(tmpl.data);
   }, [tmpl.data]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Arriving from the library's quick add ("Nieuw programma"): start with that exercise and its dose.
+  const exParam = params.get('oefening');
+  const startEx = useQuery({ queryKey: ['exercise', exParam], queryFn: () => api.get<Exercise>(`/exercises/${exParam}`), enabled: isNew && !!exParam });
+  const startAdded = useRef(false);
+  useEffect(() => {
+    const e = startEx.data;
+    if (!e || startAdded.current) return;
+    startAdded.current = true;
+    const num = (k: string) => (params.get(k) ? Number(params.get(k)) : undefined);
+    const days = (params.get('days') ?? '').split(',').map(Number).filter((d) => d >= 1 && d <= 7);
+    const base = fromExercise(e);
+    update((x) => [...x, { ...base, sets: num('sets') ?? base.sets, reps: num('reps') ?? base.reps, holdS: num('holdS') ?? base.holdS, restS: num('restS') ?? base.restS, days: days.length ? days : base.days }]);
+  }, [startEx.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!dirty) return;

@@ -44,7 +44,7 @@ export type Exercise = {
   favorite: boolean;
   createdBy: string | null;
   clinicalNotes?: string;
-  relations?: { kind: 'regression' | 'progression' | 'alternative'; id: string; nameNl: string; nameEn: string; difficulty: number; thumbnailMediaId: string | null; bodyRegion: string }[];
+  relations?: { kind: 'regression' | 'progression' | 'alternative'; id: string; nameNl: string; nameEn: string; difficulty: number; thumbnailMediaId: string | null; videoMediaId?: string | null; bodyRegion: string }[];
 };
 
 export type ProgramItem = {

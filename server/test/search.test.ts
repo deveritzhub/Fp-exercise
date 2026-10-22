@@ -4,8 +4,15 @@ import { sniff } from '../src/routes/media';
 
 describe('search query builder', () => {
   it('builds prefix queries and strips operators', () => {
-    expect(buildTsQuery('brug')).toBe('(brug:*)');
+    expect(buildTsQuery('zwemvlies')).toBe('(zwemvlies:*)');
     expect(buildTsQuery("a & b | !c ' :*")).toBeNull();
+  });
+  it('adds Dutch/English synonyms as prefix alternatives', () => {
+    const q = buildTsQuery('brug')!;
+    expect(q.startsWith('(brug:* | ')).toBe(true);
+    expect(q).toContain('bridge:*');
+    expect(buildTsQuery('calf')).toContain('kuit:*');
+    expect(buildTsQuery('kuitheffen')).toContain('calf:*');
   });
   it('expands Dutch taxonomy labels to stored keys', () => {
     expect(buildTsQuery('knie')).toContain('(knee)');

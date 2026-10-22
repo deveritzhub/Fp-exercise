@@ -19,10 +19,10 @@ export function CardHeader({ title, description, action, className }: { title: R
 
 export function PageHeader({ title, description, actions, eyebrow, children }: { title: ReactNode; description?: ReactNode; actions?: ReactNode; eyebrow?: ReactNode; children?: ReactNode }) {
   return (
-    <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div className="min-w-0">
+    <header className="mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-3 sm:mb-6">
+      <div className="min-w-0 flex-1">
         {eyebrow && <div className="mb-1.5 text-[13px] text-ink-500">{eyebrow}</div>}
-        <h1 className="text-2xl font-semibold leading-tight sm:text-[26px]">{title}</h1>
+        <h1 className="break-words text-[22px] font-semibold leading-tight [hyphens:auto] min-[360px]:text-2xl sm:text-[26px]">{title}</h1>
         {description && <p className="mt-1.5 max-w-2xl text-[14.5px] text-ink-500">{description}</p>}
         {children}
       </div>

@@ -14,7 +14,7 @@ test('owner imports the practice library; therapists build from the phased templ
   await expect(page.getByText(/39 oefeningen \(39 nieuw, 0 bijgewerkt\) en 16 sjablonen/)).toBeVisible();
 
   await page.goto('/app/oefeningen');
-  await page.getByRole('textbox', { name: 'Oefeningen zoeken' }).fill('Nordic hamstring');
+  await page.getByRole('searchbox', { name: 'Oefeningen zoeken' }).fill('Nordic hamstring');
   await expect(page.getByRole('link', { name: /Nordic hamstring/ }).first()).toBeVisible();
 
   await page.goto('/app/programmas/nieuw');

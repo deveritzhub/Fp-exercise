@@ -52,4 +52,10 @@
     animation: shimmer 1.4s infinite;
   }
   .prose-app p + p { @apply mt-3; }
+  /* Horizontal scrollers (tabs, chips): swipeable, no visible scrollbar. */
+  .no-scrollbar { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  /* Long lists: let the browser skip rendering off-screen cards (smooth scrolling with many items). */
+  .cv-auto { content-visibility: auto; contain-intrinsic-size: auto 112px; }
+  .tap { -webkit-tap-highlight-color: transparent; }
 }

@@ -42,6 +42,13 @@ Branch: `claude/fp-exercise-platform-bcak8k`.
 - Patient app works offline: workouts are kept on the device and sent when back online (idempotent API).
 - Push reminders work while the server is awake. On the free Render plan the server sleeps after 15 min
   without visitors, so reminders can be late or skipped; reliable on a paid plan.
+- Exercise library redesign: compact list cards on phones (thumbnail left), grid on desktop; real video
+  frames as thumbnails (captured once in the browser, cached, lazy, max 2 at a time); quick preview sheet;
+  dominant library search with clear button, NL/EN names and synonyms (shared/synonyms.ts); region chips,
+  "Filters (n)" bottom sheet on phones, active filter chips; filters kept in the URL; scrollable tabs with
+  edge fades; quick add to an existing or new programme with dose (POST /api/programs/:id/items);
+  favourites with feedback; detail page with video first, parameter tiles, sticky "add" button on phones,
+  regressions/progressions and similar exercises; paged loading for large libraries.
 - Practice library import: Functional Performance's own library (39 exercises, 5 phased programmes =
   16 templates with criteria, red flags and evidence notes) is loaded into the demo practice; owners/admins
   can import new versions (JSON) under Praktijk → Instellingen. Matching exercises reuse our demo videos.

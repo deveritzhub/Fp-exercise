@@ -68,8 +68,9 @@ test('library search and filters', async ({ page }) => {
   await page.goto('/app/oefeningen');
   await page.getByLabel('Oefeningen zoeken').fill('kuit');
   await expect(page.getByRole('heading', { name: 'Hielheffen staand' })).toBeVisible();
-  await page.getByLabel('Oefeningen zoeken').fill('');
-  await page.getByLabel('Lichaamsregio').selectOption('shoulder');
+  await page.getByRole('button', { name: 'Zoekopdracht wissen' }).click();
+  await expect(page.getByLabel('Oefeningen zoeken')).toHaveValue('');
+  await page.getByRole('button', { name: 'Schouder', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Slingeroefening' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Bekkenbrug' })).toHaveCount(0);
 });
@@ -95,7 +96,7 @@ test('therapist adds a practice video to a library exercise', async ({ page }) =
   await login(page, 'therapeut@praktijk-a.test');
   await page.goto('/app/oefeningen');
   await page.getByLabel('Oefeningen zoeken').fill('muurglijder');
-  await page.getByRole('heading', { name: 'Muurglijder' }).click();
+  await page.getByRole('link', { name: 'Muurglijder', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Video van je praktijk' })).toBeVisible();
   // synthetic bytes with an MP4 signature (not a real recording)
   const bytes = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftypisom'), Buffer.alloc(4000, 7)]);
@@ -110,7 +111,7 @@ test('therapist approves a library exercise for the practice', async ({ page }) 
   await login(page, 'eigenaar@praktijk-a.test');
   await page.goto('/app/oefeningen');
   await page.getByLabel('Oefeningen zoeken').fill('kinintrekking');
-  await page.getByRole('heading', { name: 'Kinintrekking', exact: true }).click();
+  await page.getByRole('link', { name: 'Kinintrekking', exact: true }).click();
   await expect(page.getByText('Nog niet klinisch gecontroleerd')).toBeVisible();
   await expectAccessible(page, 'exercise-detail');
   await page.getByRole('button', { name: 'Goedkeuren' }).click();

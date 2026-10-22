@@ -7,6 +7,7 @@ import { audit } from '../lib/audit';
 import { notFound, badRequest } from '../lib/errors';
 import { uuid } from '../lib/crypto';
 import { BODY_REGIONS, EQUIPMENT, MOVEMENT_CATEGORIES, TRAINING_CATEGORIES, isKey } from '../../../shared/taxonomy';
+import { synonymsFor } from '../../../shared/synonyms';
 
 export const exercises = new Hono<AppEnv>();
 
@@ -68,6 +69,8 @@ export function buildTsQuery(q: string): string | null {
   const all = [...BODY_REGIONS, ...TRAINING_CATEGORIES, ...MOVEMENT_CATEGORIES, ...EQUIPMENT];
   const groups = words.map((w) => {
     const alts = new Set<string>([`${w}:*`]);
+    // Everyday/clinical synonyms in both languages ("kuit" → calf, hielheffen; "bridge" → brug).
+    for (const syn of synonymsFor(w)) if (/^[\p{L}\p{N}]+$/u.test(syn)) alts.add(`${syn}:*`);
     for (const l of all) {
       const nl = l.nl.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
       const en = l.en.toLowerCase();
@@ -133,7 +136,9 @@ exercises.get('/', async (c) => {
                  OR ($9 = 'unreviewed' AND rv.exercise_id IS NULL)
                  OR ($9 = 'reviewed' AND rv.exercise_id IS NOT NULL)
                  OR ($9 = 'favorites' AND fav.user_id IS NOT NULL))
-          ORDER BY rank DESC, e.name_nl
+          ORDER BY ($8 <> '' AND (e.name_nl ILIKE $8 || '%' OR e.name_en ILIKE $8 || '%')) DESC,
+                   ($8 <> '' AND (e.name_nl ILIKE '%' || $8 || '%' OR e.name_en ILIKE '%' || $8 || '%')) DESC,
+                   rank DESC, e.name_nl
           LIMIT $6 OFFSET $7`,
         [tsq, f.region ?? null, f.category ?? null, f.equipment ?? null, f.difficulty ?? null, f.limit, f.offset, f.q.trim().slice(0, 60), f.scope, mediaPracticeId(c)],
       );
@@ -154,10 +159,13 @@ async function loadExercise(tx: Tx, id: string, includeNotes: boolean, practiceI
   );
   if (!rows[0]) return null;
   const rel = await tx.query(
-    `SELECT r.kind, x.id, x.name_nl, x.name_en, x.difficulty, x.thumbnail_media_id, x.body_region
+    `SELECT r.kind, x.id, x.name_nl, x.name_en, x.difficulty, x.body_region,
+            coalesce(rov.thumbnail_media_id, x.thumbnail_media_id) AS thumbnail_media_id,
+            coalesce(rov.video_media_id, x.video_media_id) AS video_media_id
        FROM exercise_relations r JOIN exercises x ON x.id = r.related_id
+       LEFT JOIN exercise_media_overrides rov ON rov.exercise_id = x.id AND rov.practice_id = $2::uuid
       WHERE r.exercise_id = $1 AND x.archived_at IS NULL ORDER BY x.difficulty`,
-    [id],
+    [id, practiceId],
   );
   return {
     ...mapExercise(rows[0], { includeNotes }),
@@ -168,6 +176,7 @@ async function loadExercise(tx: Tx, id: string, includeNotes: boolean, practiceI
       nameEn: r.name_en,
       difficulty: r.difficulty,
       thumbnailMediaId: r.thumbnail_media_id,
+      videoMediaId: r.video_media_id,
       bodyRegion: r.body_region,
     })),
   };

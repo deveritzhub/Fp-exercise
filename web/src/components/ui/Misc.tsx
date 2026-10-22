@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
@@ -24,25 +24,60 @@ export function Avatar({ name, size = 32, className }: { name: string; size?: nu
   );
 }
 
+/**
+ * Tabs that scroll horizontally on small screens. Soft edge fades show there is more to the left or
+ * right, and the active tab is scrolled into view.
+ */
 export function Tabs<T extends string>({ tabs, value, onChange, className }: { tabs: { value: T; label: ReactNode; count?: number }[]; value: T; onChange: (v: T) => void; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+  const measure = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    setEdges({ left: el.scrollLeft > 4, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 });
+  }, []);
+  useEffect(() => {
+    measure();
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measure, tabs.length]);
+  useEffect(() => {
+    const el = ref.current?.querySelector<HTMLElement>('[aria-selected="true"]');
+    el?.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+  }, [value]);
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const i = tabs.findIndex((t) => t.value === value);
+    const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+    onChange(next.value);
+    requestAnimationFrame(() => ref.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.focus());
+  };
   return (
-    <div role="tablist" className={cn('flex gap-1 overflow-x-auto border-b border-line', className)}>
-      {tabs.map((t) => (
-        <button
-          key={t.value}
-          role="tab"
-          type="button"
-          aria-selected={value === t.value}
-          onClick={() => onChange(t.value)}
-          className={cn(
-            '-mb-px inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors',
-            value === t.value ? 'border-accent text-ink-950' : 'border-transparent text-ink-500 hover:text-ink-800',
-          )}
-        >
-          {t.label}
-          {t.count !== undefined && <span className="rounded-md bg-ink-100 px-1.5 text-2xs tabular-nums text-ink-600">{t.count}</span>}
-        </button>
-      ))}
+    <div className={cn('relative border-b border-line', className)}>
+      <div ref={ref} role="tablist" onScroll={measure} onKeyDown={onKeyDown} className="no-scrollbar -mb-px flex gap-1 overflow-x-auto overscroll-x-contain scroll-smooth">
+        {tabs.map((t) => (
+          <button
+            key={t.value}
+            role="tab"
+            type="button"
+            aria-selected={value === t.value}
+            tabIndex={value === t.value ? 0 : -1}
+            onClick={() => onChange(t.value)}
+            className={cn(
+              'inline-flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 text-sm transition-colors',
+              value === t.value ? 'border-accent font-semibold text-ink-950' : 'border-transparent font-medium text-ink-500 hover:text-ink-800 active:text-ink-950',
+            )}
+          >
+            {t.label}
+            {t.count !== undefined && <span className={cn('rounded-md px-1.5 text-2xs tabular-nums', value === t.value ? 'bg-accent text-white' : 'bg-ink-100 text-ink-600')}>{t.count}</span>}
+          </button>
+        ))}
+      </div>
+      <span aria-hidden className={cn('pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-canvas to-transparent transition-opacity', edges.left ? 'opacity-100' : 'opacity-0')} />
+      <span aria-hidden className={cn('pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-canvas to-transparent transition-opacity', edges.right ? 'opacity-100' : 'opacity-0')} />
     </div>
   );
 }
@@ -87,17 +122,17 @@ export function Chip({ active, onClick, children, className }: { active?: boolea
   );
 }
 
-export function NumberStepper({ value, onChange, min = 0, max = 999, label, suffix, compact }: { value: number | null; onChange: (v: number | null) => void; min?: number; max?: number; label: string; suffix?: string; compact?: boolean }) {
+export function NumberStepper({ value, onChange, min = 0, max = 999, label, suffix, compact, large }: { value: number | null; onChange: (v: number | null) => void; min?: number; max?: number; label: string; suffix?: string; compact?: boolean; /** Touch-friendly, full width. */ large?: boolean }) {
   const set = (v: number | null) => onChange(v === null ? null : Math.max(min, Math.min(max, v)));
   return (
-    <div className={cn('flex items-center rounded-lg border border-line bg-white shadow-xs', compact ? 'h-8' : 'h-9')}>
-      <button type="button" aria-label={`${label} −`} className="flex h-full w-7 items-center justify-center text-ink-400 hover:text-ink-900" onClick={() => set((value ?? min + 1) - 1)}>
-        <Minus className="h-3 w-3" />
+    <div className={cn('flex items-center rounded-lg border border-line bg-white shadow-xs', large ? 'h-11 w-full' : compact ? 'h-8' : 'h-9')}>
+      <button type="button" aria-label={`${label} −`} className={cn('tap flex h-full items-center justify-center text-ink-400 hover:text-ink-900 active:bg-ink-50', large ? 'w-11 rounded-l-lg' : 'w-7')} onClick={() => set((value ?? min + 1) - 1)}>
+        <Minus className={large ? 'h-4 w-4' : 'h-3 w-3'} />
       </button>
       <input
         aria-label={label}
         inputMode="numeric"
-        className="h-full w-10 min-w-0 border-0 bg-transparent p-0 text-center text-sm tabular-nums text-ink-900 focus:outline-none focus:ring-0"
+        className={cn('h-full min-w-0 border-0 bg-transparent p-0 text-center tabular-nums text-ink-900 focus:outline-none focus:ring-0', large ? 'flex-1 text-[15px] font-medium' : 'w-10 text-sm')}
         value={value ?? ''}
         placeholder="–"
         onChange={(e) => {
@@ -106,8 +141,8 @@ export function NumberStepper({ value, onChange, min = 0, max = 999, label, suff
         }}
       />
       {suffix && <span className="-ml-1 pr-1 text-2xs text-ink-400">{suffix}</span>}
-      <button type="button" aria-label={`${label} +`} className="flex h-full w-7 items-center justify-center text-ink-400 hover:text-ink-900" onClick={() => set((value ?? min - 1) + 1)}>
-        <Plus className="h-3 w-3" />
+      <button type="button" aria-label={`${label} +`} className={cn('tap flex h-full items-center justify-center text-ink-400 hover:text-ink-900 active:bg-ink-50', large ? 'w-11 rounded-r-lg' : 'w-7')} onClick={() => set((value ?? min - 1) + 1)}>
+        <Plus className={large ? 'h-4 w-4' : 'h-3 w-3'} />
       </button>
     </div>
   );
