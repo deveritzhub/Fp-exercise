@@ -8,6 +8,9 @@ import { useDocumentMeta } from '@/lib/meta';
 import { ButtonLink, ErrorState, ProgressRing, Skeleton } from '@/components/ui';
 import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import type { Adherence, Notification, Program } from '@/lib/types';
+import type { DayState } from '@shared/adherence';
+import { cn } from '@/lib/cn';
+import { Check, Flame } from 'lucide-react';
 
 export type PatientHomeData = {
   patient: { firstName: string; practiceName: string };
@@ -18,7 +21,7 @@ export type PatientHomeData = {
     nextSession: string | null;
     upcoming: boolean;
   })[];
-  stats: { completedSessions: number; adherence7d: Adherence; weekly: (Adherence & { weekStart: string })[] };
+  stats: { completedSessions: number; adherence7d: Adherence; weekly: (Adherence & { weekStart: string })[]; week: { date: string; weekday: number; state: DayState }[]; streak: number };
   recent: { id: string; completedAt: string; programTitle: string; difficulty: number | null; pain: number | null; exercisesDone: number }[];
   notifications: Notification[];
 };
@@ -86,7 +89,7 @@ export function PatientHome() {
               </p>
               <div className="mt-4 flex -space-x-2">
                 {p.today.items.slice(0, 5).map((i) => (
-                  <ExerciseThumb key={i.id} thumbnailId={i.exercise.thumbnailMediaId} region={i.exercise.bodyRegion} className="h-12 w-12 border-2 border-white" rounded="rounded-xl" />
+                  <ExerciseThumb key={i.id} thumbnailId={i.exercise.thumbnailMediaId} videoId={i.exercise.videoMediaId} region={i.exercise.bodyRegion} className="h-12 w-12 border-2 border-white" rounded="rounded-xl" />
                 ))}
               </div>
             </div>
@@ -106,16 +109,27 @@ export function PatientHome() {
         ))
       )}
 
-      <section className="flex items-center gap-5 rounded-2xl border border-line bg-white p-5 shadow-card">
-        <ProgressRing value={d.stats.adherence7d.rate} size={84} label={t('Voortgang deze week', 'Progress this week')}>
-          <span className="text-lg font-semibold tabular-nums">{pct(d.stats.adherence7d.rate)}</span>
-        </ProgressRing>
-        <div>
-          <h2 className="font-semibold">{t('Afgelopen 7 dagen', 'Last 7 days')}</h2>
-          <p className="text-[15px] text-ink-500">
-            {t(`${d.stats.adherence7d.completed} van ${d.stats.adherence7d.planned} geplande trainingen gedaan`, `${d.stats.adherence7d.completed} of ${d.stats.adherence7d.planned} planned workouts done`)}
-          </p>
-          <Link to="/p/voortgang" className="mt-1 inline-flex items-center gap-1 text-[15px] font-medium text-accent">{t('Bekijk voortgang', 'View progress')}<ChevronRight className="h-4 w-4" /></Link>
+      <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="week-title">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="week-title" className="font-semibold">{t('Deze week', 'This week')}</h2>
+          {d.stats.streak > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f3e9dc] px-3 py-1 text-[14px] font-semibold text-brand-wood">
+              <Flame className="h-4 w-4" />
+              {t(`${d.stats.streak} ${d.stats.streak === 1 ? 'training' : 'trainingen'} op rij`, `${d.stats.streak} in a row`)}
+            </span>
+          )}
+        </div>
+        <WeekStrip days={d.stats.week} />
+        <div className="mt-4 flex items-center gap-4 border-t border-line pt-4">
+          <ProgressRing value={d.stats.adherence7d.rate} size={56} stroke={6} label={t('Voortgang afgelopen 7 dagen', 'Progress last 7 days')}>
+            <span className="text-[13px] font-semibold tabular-nums">{pct(d.stats.adherence7d.rate)}</span>
+          </ProgressRing>
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] text-ink-600">
+              {t(`${d.stats.adherence7d.completed} van ${d.stats.adherence7d.planned} geplande trainingen gedaan (7 dagen)`, `${d.stats.adherence7d.completed} of ${d.stats.adherence7d.planned} planned workouts done (7 days)`)}
+            </p>
+            <Link to="/p/voortgang" className="mt-0.5 inline-flex items-center gap-1 text-[15px] font-medium text-accent">{t('Bekijk voortgang', 'View progress')}<ChevronRight className="h-4 w-4" /></Link>
+          </div>
         </div>
       </section>
 
@@ -153,5 +167,44 @@ export function PatientHome() {
         </section>
       )}
     </div>
+  );
+}
+
+function WeekStrip({ days }: { days: { date: string; weekday: number; state: DayState }[] }) {
+  const { t, locale } = useI18n();
+  const names = locale === 'nl' ? ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'] : ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const label: Record<DayState, string> = {
+    done: t('gedaan', 'done'),
+    'today-done': t('vandaag gedaan', 'done today'),
+    today: t('vandaag gepland', 'planned today'),
+    planned: t('gepland', 'planned'),
+    missed: t('niet gedaan', 'missed'),
+    rest: t('rustdag', 'rest day'),
+  };
+  return (
+    <ol className="mt-4 grid grid-cols-7 gap-1.5">
+      {days.map((d) => {
+        const isToday = d.state === 'today' || d.state === 'today-done';
+        const done = d.state === 'done' || d.state === 'today-done';
+        return (
+          <li key={d.date} className="flex flex-col items-center gap-1.5" aria-label={`${names[d.weekday - 1]}: ${label[d.state]}`}>
+            <span className={cn('text-[12.5px] font-medium', isToday ? 'text-ink-950' : 'text-ink-500')}>{names[d.weekday - 1]}</span>
+            <span
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-full text-[13px] font-semibold transition-all',
+                done && 'bg-accent text-white',
+                d.state === 'today' && 'border-2 border-accent text-accent',
+                d.state === 'planned' && 'border-2 border-dashed border-ink-300 text-ink-500',
+                d.state === 'missed' && 'bg-ink-100 text-ink-400',
+                d.state === 'rest' && 'text-ink-300',
+                isToday && 'ring-4 ring-accent/10',
+              )}
+            >
+              {done ? <Check className="h-5 w-5" strokeWidth={3} /> : d.state === 'rest' ? '·' : new Date(d.date + 'T12:00:00').getDate()}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }

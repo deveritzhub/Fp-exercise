@@ -85,3 +85,47 @@ export function weeklyAdherence(
   }
   return out;
 }
+
+export type DayState = 'done' | 'missed' | 'planned' | 'rest' | 'today' | 'today-done';
+
+/** Mon–Sun of the current ISO week with a state per day, for the patient's week strip. */
+export function weekStrip(programs: ProgramSchedule[], completedDays: Map<string, Set<string>>, today: Date) {
+  const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  monday.setDate(monday.getDate() - (isoWeekday(monday) - 1));
+  const sunday = new Date(monday);
+  sunday.setDate(sunday.getDate() + 6);
+  const planned = new Set(programs.flatMap((p) => plannedDays(p, monday, sunday)));
+  const done = new Set([...completedDays.values()].flatMap((s) => [...s]));
+  const todayIso = toISODate(today);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(d.getDate() + i);
+    const iso = toISODate(d);
+    let state: DayState;
+    if (iso === todayIso) state = done.has(iso) ? 'today-done' : planned.has(iso) ? 'today' : 'rest';
+    else if (done.has(iso)) state = 'done';
+    else if (!planned.has(iso)) state = 'rest';
+    else state = iso < todayIso ? 'missed' : 'planned';
+    return { date: iso, weekday: i + 1, state };
+  });
+}
+
+/**
+ * Streak = number of consecutive planned training days completed, counting back from today.
+ * Rest days do not break a streak; a planned day today that is not done yet does not break it either.
+ */
+export function streak(programs: ProgramSchedule[], completedDays: Map<string, Set<string>>, today: Date, lookbackDays = 120) {
+  const from = new Date(today);
+  from.setDate(from.getDate() - lookbackDays);
+  const planned = programs.flatMap((p) => plannedDays(p, from, today));
+  const plannedSet = [...new Set(planned)].sort().reverse();
+  const done = new Set([...completedDays.values()].flatMap((s) => [...s]));
+  const todayIso = toISODate(today);
+  let n = 0;
+  for (const day of plannedSet) {
+    if (done.has(day)) n++;
+    else if (day === todayIso) continue;
+    else break;
+  }
+  return n;
+}

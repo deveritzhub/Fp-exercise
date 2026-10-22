@@ -3,7 +3,9 @@ import { z } from 'zod';
 import { withUser } from '../db';
 import { rateLimit, type AppEnv } from '../middleware';
 import { parse } from '../lib/validate';
-import { badRequest } from '../lib/errors';
+import { badRequest, notFound } from '../lib/errors';
+import { streamFile } from './media';
+import { uuidParam } from '../lib/validate';
 import { BODY_REGIONS, EQUIPMENT, MOVEMENT_CATEGORIES, TRAINING_CATEGORIES, WEEKDAYS } from '../../../shared/taxonomy';
 
 export const publicRoutes = new Hono<AppEnv>();
@@ -56,4 +58,18 @@ publicRoutes.post('/contact', rateLimit('contact', 5, 60 * 60_000), async (c) =>
     ]),
   );
   return c.json({ ok: true }, 201);
+});
+
+/** Central-library demonstration videos for the public website (never practice or patient media). */
+publicRoutes.get('/showcase', async (c) => {
+  const rows = await withUser(null, async (tx) => (await tx.query('SELECT * FROM app.public_showcase(6)')).rows);
+  c.header('Cache-Control', 'public, max-age=300');
+  return c.json({ items: rows.map((r) => ({ mediaId: r.media_id, nameNl: r.name_nl, nameEn: r.name_en, bodyRegion: r.body_region })) });
+});
+
+publicRoutes.get('/media/:id', async (c) => {
+  const id = parse(uuidParam, c.req.param('id'));
+  const row = await withUser(null, async (tx) => (await tx.query('SELECT * FROM app.public_library_video($1)', [id])).rows[0]);
+  if (!row) throw notFound();
+  return streamFile(c, row.storage_key, row.mime_type, 'public, max-age=86400');
 });

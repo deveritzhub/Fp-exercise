@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, CheckCircle2, ChevronDown, Info, MessageCircle, PartyPopper, Repeat, SkipForward, Timer, VideoOff, X } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, ChevronDown, Info, MessageCircle, PartyPopper, Repeat, SkipForward, VideoOff, X } from 'lucide-react';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
 import { dose } from '@/lib/format';
 import { isoWeekday } from '@shared/adherence';
 import { useDocumentMeta, useLabels } from '@/lib/meta';
 import { cn } from '@/lib/cn';
-import { Button, ErrorState, Notice, NumberStepper, ScaleInput, Spinner, Textarea } from '@/components/ui';
+import { Button, ErrorState, Notice, NumberStepper, ProgressRing, ScaleInput, Spinner, Textarea } from '@/components/ui';
+import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import type { Program, ProgramItem } from '@/lib/types';
 
 type PatientProgram = Program & { therapistName: string; openSession: { id: string; loggedItemIds: string[] } | null };
@@ -154,7 +155,7 @@ export function SessionPlayer() {
           </div>
         )}
 
-        {phase === 'exercise' && item && <ExerciseStep key={item.id} item={item} onDone={() => setPhase('rate')} onSkip={() => saveLog(item, { completed: false, setsDone: 0, repsDone: null, difficulty: null, pain: null, feedback: '' })} saving={saving} />}
+        {phase === 'exercise' && item && <ExerciseStep key={item.id} item={item} next={items[idx + 1]} onDone={() => setPhase('rate')} onSkip={() => saveLog(item, { completed: false, setsDone: 0, repsDone: null, difficulty: null, pain: null, feedback: '' })} saving={saving} />}
 
         {phase === 'rate' && item && <RateStep key={`r-${item.id}`} item={item} saving={saving} onSave={(r) => saveLog(item, r)} onBack={() => setPhase('exercise')} />}
 
@@ -181,7 +182,8 @@ export function SessionPlayer() {
         )}
 
         {phase === 'done' && (
-          <div className="flex flex-col items-center py-10 text-center">
+          <div className="relative flex flex-col items-center py-10 text-center">
+            <Confetti />
             <div className="mb-5 flex h-20 w-20 animate-scale-in items-center justify-center rounded-full bg-ok-soft text-ok">
               <PartyPopper className="h-10 w-10" />
             </div>
@@ -195,7 +197,7 @@ export function SessionPlayer() {
   );
 }
 
-function ExerciseStep({ item, onDone, onSkip, saving }: { item: ProgramItem; onDone: () => void; onSkip: () => void; saving: boolean }) {
+function ExerciseStep({ item, next, onDone, onSkip, saving }: { item: ProgramItem; next?: ProgramItem; onDone: () => void; onSkip: () => void; saving: boolean }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const ex = item.exercise;
@@ -203,6 +205,7 @@ function ExerciseStep({ item, onDone, onSkip, saving }: { item: ProgramItem; onD
   const sets = item.sets ?? 1;
   const [setsDone, setSetsDone] = useState(0);
   const [rest, setRest] = useState<number | null>(null);
+  const [restTotal, setRestTotal] = useState(1);
   const [open, setOpen] = useState<string>('movement');
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => () => { if (timer.current) clearInterval(timer.current); }, []);
@@ -210,6 +213,7 @@ function ExerciseStep({ item, onDone, onSkip, saving }: { item: ProgramItem; onD
     if (!item.restS) return;
     if (timer.current) clearInterval(timer.current);
     setRest(item.restS);
+    setRestTotal(item.restS);
     timer.current = setInterval(() => setRest((r) => {
       if (r === null || r <= 1) {
         if (timer.current) clearInterval(timer.current);
@@ -281,7 +285,7 @@ function ExerciseStep({ item, onDone, onSkip, saving }: { item: ProgramItem; onD
         <div className="rounded-2xl border border-line p-4">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-[16px] font-semibold">{t('Sets', 'Sets')}</span>
-            {rest !== null && <span className="inline-flex items-center gap-1.5 rounded-full bg-info-soft px-3 py-1 text-[15px] font-semibold tabular-nums text-info" aria-live="polite"><Timer className="h-4 w-4" />{t('Rust', 'Rest')} {rest}s</span>}
+
           </div>
           <div className="flex flex-wrap gap-2">
             {Array.from({ length: sets }, (_, i) => (
@@ -300,6 +304,35 @@ function ExerciseStep({ item, onDone, onSkip, saving }: { item: ProgramItem; onD
                 {i < setsDone ? <Check className="h-6 w-6" /> : i + 1}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {next && (
+        <div className="flex items-center gap-3 rounded-2xl bg-ink-50 p-3">
+          <ExerciseThumb thumbnailId={next.exercise.thumbnailMediaId} videoId={next.exercise.videoMediaId} region={next.exercise.bodyRegion} className="h-12 w-12 shrink-0" rounded="rounded-xl" />
+          <div className="min-w-0">
+            <div className="text-[13px] font-medium uppercase tracking-wide text-ink-500">{t('Hierna', 'Up next')}</div>
+            <div className="truncate font-semibold">{nl ? next.exercise.nameNl : next.exercise.nameEn}</div>
+          </div>
+        </div>
+      )}
+
+      {rest !== null && (
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink-950/40 backdrop-blur-sm animate-fade-in sm:items-center" role="dialog" aria-modal="true" aria-label={t('Rustpauze', 'Rest break')}>
+          <div className="w-full max-w-md animate-slide-up rounded-t-3xl bg-white px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 text-center shadow-pop sm:rounded-3xl">
+            <div className="text-[13px] font-semibold uppercase tracking-widest text-accent">{t('Even rusten', 'Take a rest')}</div>
+            <div className="my-5 flex justify-center">
+              <ProgressRing value={rest / restTotal} size={168} stroke={10} label={t(`Nog ${rest} seconden rust`, `${rest} seconds of rest left`)}>
+                <span className="text-[44px] font-semibold tabular-nums leading-none" aria-live="polite">{rest}</span>
+                <span className="mt-1 text-[13px] text-ink-500">{t('seconden', 'seconds')}</span>
+              </ProgressRing>
+            </div>
+            <p className="text-[15px] text-ink-600">{t(`Volgende: set ${Math.min(setsDone + 1, sets)} van ${sets}`, `Next: set ${Math.min(setsDone + 1, sets)} of ${sets}`)}</p>
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <Button variant="secondary" size="lg" onClick={() => { setRest((r) => (r ?? 0) + 15); setRestTotal((x) => x + 15); }}>+15 s</Button>
+              <Button size="lg" onClick={() => { if (timer.current) clearInterval(timer.current); setRest(null); }}>{t('Verder', 'Continue')}</Button>
+            </div>
           </div>
         </div>
       )}
@@ -370,6 +403,34 @@ function SummaryStep({ completed, total, saving, onFinish }: { completed: number
       <div className="sticky bottom-0 -mx-4 border-t border-line bg-white/95 px-4 py-3 backdrop-blur">
         <Button size="xl" className="w-full" loading={saving} onClick={() => onFinish(s)}>{t('Training afronden', 'Finish workout')}</Button>
       </div>
+    </div>
+  );
+}
+
+/** Lightweight CSS confetti in brand colours (disabled automatically with prefers-reduced-motion). */
+function Confetti() {
+  const colors = ['#413d28', '#5b432b', '#64614d', '#bbb9a1', '#dbd3c0', '#9a3b2c'];
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-30 overflow-hidden">
+      {Array.from({ length: 48 }, (_, i) => {
+        const left = (i * 37) % 100;
+        const delay = (i % 12) * 0.08;
+        const dur = 2.2 + ((i * 13) % 10) / 10;
+        const size = 6 + (i % 4) * 2;
+        return (
+          <span
+            key={i}
+            className="absolute top-[-20px] block rounded-[2px]"
+            style={{
+              left: `${left}%`,
+              width: size,
+              height: size * 0.45,
+              background: colors[i % colors.length],
+              animation: `confetti-fall ${dur}s cubic-bezier(.2,.6,.4,1) ${delay}s forwards`,
+            }}
+          />
+        );
+      })}
     </div>
   );
 }

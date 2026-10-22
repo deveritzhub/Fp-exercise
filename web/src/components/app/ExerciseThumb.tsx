@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { PersonStanding, Play } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { mediaUrl } from '@/lib/api';
@@ -21,14 +21,28 @@ const REGION_TINT: Record<string, string> = {
  * Exercise thumbnail. When no real media exists we show a neutral, clearly-labelled placeholder
  * (never a fake photo/video).
  */
-export function ExerciseThumb({ thumbnailId, videoId, region, className, showRegion = false, rounded = 'rounded-lg' }: { thumbnailId: string | null; videoId?: string | null; region: string; className?: string; showRegion?: boolean; rounded?: string }) {
+export function ExerciseThumb({ thumbnailId, videoId, region, className, showRegion = false, rounded = 'rounded-lg', hoverPlay = false }: { thumbnailId: string | null; videoId?: string | null; region: string; className?: string; showRegion?: boolean; rounded?: string; hoverPlay?: boolean }) {
   const L = useLabels();
   const [failed, setFailed] = useState(false);
   const src = mediaUrl(thumbnailId);
   const videoSrc = mediaUrl(videoId);
+  const ref = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+  // Hover preview (desktop): play the video muted while the pointer is over the card.
+  const hover = hoverPlay && videoSrc && !failed
+    ? {
+        onMouseEnter: () => ref.current?.play().then(() => setPlaying(true)).catch(() => {}),
+        onMouseLeave: () => {
+          ref.current?.pause();
+          setPlaying(false);
+        },
+      }
+    : {};
   return (
-    <div className={cn('relative overflow-hidden bg-gradient-to-br', REGION_TINT[region] ?? REGION_TINT.full_body, rounded, className)}>
-      {src && !failed ? (
+    <div className={cn('relative overflow-hidden bg-gradient-to-br', REGION_TINT[region] ?? REGION_TINT.full_body, rounded, className)} {...hover}>
+      {hoverPlay && videoSrc && !failed ? (
+        <video ref={ref} src={`${videoSrc}#t=1`} muted loop playsInline preload="metadata" className="h-full w-full object-cover" onError={() => setFailed(true)} aria-hidden />
+      ) : src && !failed ? (
         <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" onError={() => setFailed(true)} />
       ) : videoSrc && !failed ? (
         // No thumbnail: show a frame of the video itself (the #t fragment makes browsers, incl. iOS, render it).
@@ -38,7 +52,7 @@ export function ExerciseThumb({ thumbnailId, videoId, region, className, showReg
           <PersonStanding className="h-[38%] w-[38%] min-h-5 min-w-5 text-brand-olive/40" strokeWidth={1.5} aria-hidden />
         </div>
       )}
-      {videoId && (
+      {videoId && !playing && (
         <span className="absolute bottom-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink-950/70 text-white">
           <Play className="h-2.5 w-2.5 fill-current" aria-hidden />
         </span>

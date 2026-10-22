@@ -93,7 +93,7 @@ function ExerciseCard({ e }: { e: Exercise }) {
   return (
     <Link to={`/app/oefeningen/${e.id}`} className="group card flex flex-col overflow-hidden transition-shadow hover:shadow-pop">
       <div className="relative">
-        <ExerciseThumb thumbnailId={e.thumbnailMediaId} videoId={e.videoMediaId} region={e.bodyRegion} className="aspect-[16/10] w-full" rounded="rounded-none" showRegion />
+        <ExerciseThumb thumbnailId={e.thumbnailMediaId} videoId={e.videoMediaId} region={e.bodyRegion} className="aspect-[16/10] w-full" rounded="rounded-none" showRegion hoverPlay />
         <FavoriteButton e={e} className="absolute right-2 top-2 bg-white/85 backdrop-blur" />
       </div>
       <div className="flex flex-1 flex-col p-4">

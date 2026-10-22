@@ -9,7 +9,7 @@ import { uuid } from '../lib/crypto';
 import { loadItems, mapProgram } from './programs';
 import { notifyTherapists } from '../lib/notify';
 import { adherenceForPatient, loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
-import { isoWeekday, toISODate } from '../../../shared/adherence';
+import { isoWeekday, streak, toISODate, weekStrip } from '../../../shared/adherence';
 
 /** Endpoints for the patient app. Everything is scoped to the logged-in patient by RLS. */
 export const patientApp = new Hono<AppEnv>();
@@ -84,6 +84,8 @@ patientApp.get('/home', async (c) => {
         patient: { firstName: user.fullName.split(' ')[0], practiceName: patient.practiceName },
         programs,
         stats: {
+          week: weekStrip(inputs.schedules.get(patient.id) ?? [], inputs.done.get(patient.id) ?? new Map(), new Date()),
+          streak: streak(inputs.schedules.get(patient.id) ?? [], inputs.done.get(patient.id) ?? new Map(), new Date()),
           completedSessions: total.rows[0].n,
           adherence7d: adherenceForPatient(inputs, patient.id, 7),
           weekly: weeklyForPatient(inputs, patient.id, 4),

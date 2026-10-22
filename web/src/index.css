@@ -28,6 +28,11 @@
   }
 }
 
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate3d(30px, 105vh, 0) rotate(720deg); opacity: 0.9; }
+}
+
 @layer components {
   .card { @apply rounded-xl border border-line bg-white shadow-card; }
   .label { @apply block text-[13px] font-medium text-ink-700; }

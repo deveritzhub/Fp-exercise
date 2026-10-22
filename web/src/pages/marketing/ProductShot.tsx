@@ -1,10 +1,24 @@
-import { Check, GripVertical, Play, Search } from 'lucide-react';
+import { Check, GripVertical, Search } from 'lucide-react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 
 /** Static product illustration built from real UI primitives with synthetic data (no screenshots of real patients). */
 export function ProductShot({ className }: { className?: string }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  // Real (central-library) exercise videos, cycled in the phone. Falls back to a static screen.
+  const showcase = useQuery({
+    queryKey: ['showcase'],
+    queryFn: () => api.get<{ items: { mediaId: string; nameNl: string; nameEn: string }[] }>('/public/showcase'),
+    staleTime: 300_000,
+  });
+  const vids = showcase.data?.items ?? [];
+  const [vi, setVi] = useState(0);
+  const cur = vids.length ? vids[vi % vids.length] : null;
+  const video = cur ? { src: `/api/public/media/${cur.mediaId}`, name: locale === 'nl' ? cur.nameNl : cur.nameEn } : null;
+  const onVideoEnd = () => setVi((x) => x + 1);
   const lib = [
     [t('Spaanse squat', 'Spanish squat'), t('Knie · Isometrisch', 'Knee · Isometric')],
     [t('Excentrisch hielzakken', 'Eccentric heel drop'), t('Enkel · Excentrisch', 'Ankle · Eccentric')],
@@ -56,18 +70,33 @@ export function ProductShot({ className }: { className?: string }) {
           </div>
         </div>
       </div>
-      <div className="absolute -bottom-10 -right-2 hidden w-[180px] rounded-[26px] border-[5px] border-ink-900 bg-canvas p-3 shadow-pop sm:block lg:-right-8">
-        <div className="text-[9px] font-medium uppercase tracking-wide text-accent">{t('Vandaag', 'Today')}</div>
-        <div className="text-[12px] font-semibold leading-tight">{t('Knie — patellapees', 'Knee — patellar tendon')}</div>
-        <div className="mt-2 space-y-1.5">
-          {prog.map(([n], i) => (
-            <div key={n} className="flex items-center gap-1.5 rounded-lg bg-white p-1.5">
-              <span className={cn('flex h-4 w-4 items-center justify-center rounded-full', i === 0 ? 'bg-ok text-white' : 'border border-line')}>{i === 0 && <Check className="h-2.5 w-2.5" />}</span>
-              <span className="truncate text-[9.5px] font-medium">{n}</span>
+      <div className="absolute -bottom-12 -right-2 hidden w-[200px] rounded-[30px] border-[6px] border-ink-900 bg-canvas shadow-pop sm:block lg:-right-10">
+        {video ? (
+          <div className="overflow-hidden rounded-t-[24px]">
+            <video key={video.src} src={video.src} autoPlay muted playsInline onEnded={onVideoEnd} className="aspect-video w-full bg-ink-900 object-cover" />
+          </div>
+        ) : null}
+        <div className="p-3">
+          <div className="text-[9px] font-medium uppercase tracking-wide text-accent">{t('Vandaag', 'Today')}</div>
+          <div className="text-[12px] font-semibold leading-tight">{video ? video.name : t('Knie — patellapees', 'Knee — patellar tendon')}</div>
+          {video ? (
+            <div className="mt-2 flex gap-1">
+              {[['Sets', '3'], [t('Herh.', 'Reps'), '12'], [t('Rust', 'Rest'), '45s']].map(([k, v]) => (
+                <div key={k} className="flex-1 rounded-md bg-white px-1.5 py-1"><div className="text-[7.5px] text-ink-500">{k}</div><div className="text-[11px] font-semibold">{v}</div></div>
+              ))}
             </div>
-          ))}
+          ) : (
+            <div className="mt-2 space-y-1.5">
+              {prog.map(([n], i) => (
+                <div key={n} className="flex items-center gap-1.5 rounded-lg bg-white p-1.5">
+                  <span className={cn('flex h-4 w-4 items-center justify-center rounded-full', i === 0 ? 'bg-ok text-white' : 'border border-line')}>{i === 0 && <Check className="h-2.5 w-2.5" />}</span>
+                  <span className="truncate text-[9.5px] font-medium">{n}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="mt-2 flex items-center justify-center gap-1 rounded-lg bg-accent py-1.5 text-[10px] font-semibold text-white"><Check className="h-2.5 w-2.5" />{t('Oefening gedaan', 'Exercise done')}</div>
         </div>
-        <div className="mt-2 flex items-center justify-center gap-1 rounded-lg bg-accent py-1.5 text-[10px] font-semibold text-white"><Play className="h-2.5 w-2.5 fill-current" />{t('Verder', 'Continue')}</div>
       </div>
     </div>
   );

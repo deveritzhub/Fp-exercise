@@ -6,12 +6,13 @@ import { useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { fmtRelative, greeting, pct } from '@/lib/format';
 import { useDocumentMeta, useLabels } from '@/lib/meta';
-import { Avatar, Badge, ButtonLink, Card, CardHeader, EmptyState, ErrorState, PageHeader, Skeleton, Stat } from '@/components/ui';
+import { Avatar, Badge, Bars, ButtonLink, Card, CardHeader, EmptyState, ErrorState, PageHeader, Skeleton, Stat } from '@/components/ui';
 import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import { ProgramStatusBadge, useReasonLabel } from '@/components/app/StatusBadge';
 import type { Exercise, Program } from '@/lib/types';
 
 type Dashboard = {
+  daily: { day: string; sessions: number }[];
   stats: { patients: number; activePrograms: number; adherence7d: number | null; sessions7d: number; attention: number };
   attention: { patientId: string; name: string; reasons: string[] }[];
   activity: { id: string; patientId: string; patientName: string; programTitle: string; completedAt: string; pain: number | null; difficulty: number | null; hasFeedback: boolean }[];
@@ -58,6 +59,30 @@ export function DashboardPage() {
             Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[112px] rounded-xl" />)
           )}
         </div>
+      )}
+
+      {d && d.daily.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader
+            title={t('Activiteit van je patiënten', 'Your patients’ activity')}
+            description={t('Afgeronde trainingen per dag, laatste 14 dagen', 'Completed workouts per day, last 14 days')}
+            action={<span className="text-[13px] tabular-nums text-ink-500">{d.daily.reduce((a, x) => a + x.sessions, 0)} {t('totaal', 'total')}</span>}
+          />
+          <div className="px-5 pb-4 pt-5">
+            <Bars
+              height={110}
+              highlightLast
+              data={(() => {
+                const max = Math.max(1, ...d.daily.map((x) => x.sessions));
+                return d.daily.map((x) => ({
+                  label: new Intl.DateTimeFormat(locale === 'nl' ? 'nl-NL' : 'en-GB', { weekday: 'narrow' }).format(new Date(x.day + 'T12:00:00')),
+                  value: x.sessions ? x.sessions / max : 0,
+                  display: String(x.sessions),
+                }));
+              })()}
+            />
+          </div>
+        </Card>
       )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-5">

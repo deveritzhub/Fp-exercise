@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
@@ -69,7 +69,12 @@ media.get('/:id', async (c) => {
     return rows[0];
   });
   if (!row) throw notFound();
-  const file = path.join(config.storageDir, row.storage_key);
+  return streamFile(c, row.storage_key, row.mime_type, 'private, max-age=3600');
+});
+
+/** Stream a stored file with HTTP Range support (needed for video seeking, and by Safari/iOS). */
+export async function streamFile(c: Context, storageKey: string, mime: string, cacheControl: string) {
+  const file = path.join(config.storageDir, storageKey);
   if (!file.startsWith(config.storageDir + path.sep)) throw notFound();
   let size: number;
   try {
@@ -77,20 +82,24 @@ media.get('/:id', async (c) => {
   } catch {
     throw notFound('media_missing');
   }
-  c.header('Content-Type', row.mime_type);
-  c.header('Cache-Control', 'private, max-age=3600');
+  c.header('Content-Type', mime);
+  c.header('Cache-Control', cacheControl);
   c.header('Accept-Ranges', 'bytes');
   c.header('Content-Disposition', 'inline');
   const range = c.req.header('range');
   const m = range && /^bytes=(\d*)-(\d*)$/.exec(range);
-  if (m) {
-    let start = m[1] ? Number(m[1]) : size - Number(m[2]);
-    let end = m[1] && m[2] ? Number(m[2]) : size - 1;
-    if (!m[1] && !m[2]) {
-      start = 0;
+  if (m && (m[1] || m[2])) {
+    let start: number;
+    let end: number;
+    if (m[1]) {
+      start = Number(m[1]);
+      // An end beyond the file is clamped (RFC 9110), not rejected.
+      end = m[2] ? Math.min(Number(m[2]), size - 1) : size - 1;
+    } else {
+      start = Math.max(0, size - Number(m[2]));
       end = size - 1;
     }
-    if (start < 0 || start >= size || end >= size || start > end) {
+    if (start >= size || start > end) {
       c.header('Content-Range', `bytes */${size}`);
       return c.body(null, 416);
     }
@@ -100,4 +109,4 @@ media.get('/:id', async (c) => {
   }
   c.header('Content-Length', String(size));
   return c.body(Readable.toWeb(fs.createReadStream(file)) as ReadableStream, 200);
-});
+}

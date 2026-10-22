@@ -88,4 +88,28 @@ describe('private media storage', () => {
     await A.put(`/exercises/${id}/media`, { videoMediaId: null, thumbnailMediaId: null });
     expect((await A.get(`/exercises/${id}`)).body.videoMediaId).toBeNull();
   });
+
+  it('public showcase streams only central-library exercise videos, never practice media', async () => {
+    const fsp = await import('node:fs/promises');
+    const path = await import('node:path');
+    const pg = (await import('pg')).default;
+    const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
+    await db.connect();
+    const key = 'global/showcase-test.mp4';
+    const file = path.resolve(process.env.STORAGE_DIR!, key);
+    await fsp.mkdir(path.dirname(file), { recursive: true });
+    await fsp.writeFile(file, mp4());
+    const m = await db.query(`INSERT INTO media(practice_id, kind, mime_type, size_bytes, storage_key) VALUES (NULL,'video','video/mp4',2012,$1) RETURNING id`, [key]);
+    await db.query('UPDATE exercises SET video_media_id = $2 WHERE id = $1', [s.exercises.cat_camel, m.rows[0].id]);
+    await db.end();
+    const anon = new Client();
+    const show = await anon.get('/public/showcase');
+    expect(show.body.items.map((x: any) => x.mediaId)).toContain(m.rows[0].id);
+    expect((await anon.get(`/public/media/${m.rows[0].id}`)).status).toBe(200);
+    const part = await anon.get(`/public/media/${m.rows[0].id}`, { range: 'bytes=0-999999' });
+    expect(part.status).toBe(206); // end beyond file size is clamped, not rejected (Safari)
+    expect(part.headers.get('content-range')).toBe('bytes 0-2011/2012');
+    // practice A's private video is not reachable through the public endpoint
+    expect((await anon.get(`/public/media/${videoId}`)).status).toBe(404);
+  });
 });

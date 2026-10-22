@@ -30,3 +30,25 @@ describe('adherence', () => {
     expect(w[1].planned).toBe(2); // Mon 12 + Wed 14 (Fri 16 is in the future)
   });
 });
+
+import { weekStrip, streak } from './adherence';
+
+describe('week strip and streak', () => {
+  const p = { id: 'p', startDate: '2026-10-01', endDate: null, weekdays: [1, 3, 5] }; // Mon/Wed/Fri
+  const today = parseDate('2026-10-14'); // Wednesday
+
+  it('labels each day of the current week', () => {
+    const done = new Map([['p', new Set(['2026-10-12'])]]);
+    const w = weekStrip([p], done, today);
+    expect(w.map((d) => d.state)).toEqual(['done', 'rest', 'today', 'rest', 'planned', 'rest', 'rest']);
+  });
+
+  it('counts consecutive completed planned days, ignoring rest days and an unfinished today', () => {
+    const done = new Map([['p', new Set(['2026-10-07', '2026-10-09', '2026-10-12'])]]);
+    expect(streak([p], done, today)).toBe(3);
+    const withGap = new Map([['p', new Set(['2026-10-07', '2026-10-12'])]]); // Fri 9th missed
+    expect(streak([p], withGap, today)).toBe(1);
+    const todayDone = new Map([['p', new Set(['2026-10-09', '2026-10-12', '2026-10-14'])]]);
+    expect(streak([p], todayDone, today)).toBe(3);
+  });
+});

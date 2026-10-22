@@ -79,7 +79,15 @@ dashboard.get('/', async (c) => {
         `SELECT count(*) AS n FROM workout_sessions WHERE patient_id = ANY($1) AND completed_at > now() - interval '7 days'`,
         [ids],
       );
+      const daily = await tx.query(
+        `SELECT d::date AS day,
+                (SELECT count(*) FROM workout_sessions w
+                  WHERE w.patient_id = ANY($1) AND w.completed_at IS NOT NULL AND w.completed_at::date = d::date) AS n
+           FROM generate_series(current_date - 13, current_date, interval '1 day') d ORDER BY d`,
+        [ids],
+      );
       return {
+        daily: daily.rows.map((r) => ({ day: r.day, sessions: r.n })),
         stats: {
           patients: ids.length,
           activePrograms: activePrograms.rows[0].n,

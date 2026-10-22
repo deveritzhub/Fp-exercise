@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { BookOpen, Building2, ChevronsUpDown, LayoutDashboard, LogOut, Menu, Plus, Settings, Users, Layers, X, UserRound, Check } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { BookOpen, Building2, ChevronsUpDown, LayoutDashboard, LogOut, Menu, Plus, Search, Settings, Users, Layers, X, UserRound, Check } from 'lucide-react';
 import { Logo, LocaleSwitch } from '@/components/app/Brand';
 import { Avatar, Popover, MenuItem, Button } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
@@ -8,6 +8,7 @@ import { useLogout, useSession } from '@/lib/session';
 import { setActivePractice } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { NotificationBell } from './Notifications';
+import { CommandPalette } from '@/components/app/CommandPalette';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function TherapistLayout() {
@@ -17,6 +18,17 @@ export function TherapistLayout() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [palette, setPalette] = useState(false);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPalette((p) => !p);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   if (!user || !practice) return null;
   const isAdmin = practice.role !== 'therapist';
   const links = [
@@ -108,6 +120,15 @@ export function TherapistLayout() {
         <button type="button" className="-ml-1 rounded-md p-1.5 text-ink-600 lg:hidden" onClick={() => setMobileOpen(true)} aria-label={t('Menu openen', 'Open menu')}>
           <Menu className="h-5 w-5" />
         </button>
+        <button
+          type="button"
+          onClick={() => setPalette(true)}
+          className="flex h-9 w-full max-w-sm items-center gap-2 rounded-lg border border-line bg-white px-3 text-[13.5px] text-ink-500 shadow-xs transition-colors hover:border-ink-200"
+        >
+          <Search className="h-4 w-4" />
+          <span className="flex-1 truncate text-left">{t('Zoek patiënt of oefening…', 'Search patient or exercise…')}</span>
+          <kbd className="hidden rounded border border-line bg-ink-50 px-1.5 text-2xs sm:block">Ctrl K</kbd>
+        </button>
         <div className="flex-1" />
         <LocaleSwitch />
         <NotificationBell />
@@ -138,6 +159,7 @@ export function TherapistLayout() {
       <main className="mx-auto w-full max-w-[1280px] px-4 py-6 sm:px-6 sm:py-8">
         <Outlet />
       </main>
+      <CommandPalette open={palette} onClose={() => setPalette(false)} />
     </div>
   );
 }

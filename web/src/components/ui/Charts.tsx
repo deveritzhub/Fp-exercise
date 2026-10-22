@@ -26,16 +26,16 @@ export function ProgressRing({ value, size = 88, stroke = 8, children, label }: 
 }
 
 /** Simple accessible vertical bar chart (0..1 values). */
-export function Bars({ data, height = 120, format }: { data: { label: string; value: number | null; sub?: string }[]; height?: number; format?: (v: number | null) => string }) {
+export function Bars({ data, height = 120, format, highlightLast }: { data: { label: string; value: number | null; sub?: string; display?: string }[]; height?: number; format?: (v: number | null) => string; highlightLast?: boolean }) {
   return (
     <div className="w-full">
       <div className="flex items-end gap-2" style={{ height }} role="list">
         {data.map((d, i) => {
           const v = d.value === null ? 0 : Math.max(0.02, Math.min(1, d.value));
           return (
-            <div key={i} className="group flex h-full flex-1 flex-col items-center justify-end" role="listitem" aria-label={`${d.label}: ${format ? format(d.value) : d.value}`}>
-              <div className="mb-1 text-2xs font-medium tabular-nums text-ink-500 opacity-0 transition-opacity group-hover:opacity-100">{format ? format(d.value) : d.value}</div>
-              <div className={cn('w-full max-w-10 rounded-t-md transition-all duration-500', d.value === null ? 'bg-ink-100' : 'bg-accent/85 group-hover:bg-accent')} style={{ height: `${d.value === null ? 4 : v * 100}%` }} />
+            <div key={i} className="group flex h-full flex-1 flex-col items-center justify-end" role="listitem" aria-label={`${d.label}: ${d.display ?? (format ? format(d.value) : d.value)}`}>
+              <div className="mb-1 text-2xs font-medium tabular-nums text-ink-500 opacity-0 transition-opacity group-hover:opacity-100">{d.display ?? (format ? format(d.value) : d.value)}</div>
+              <div className={cn('w-full max-w-10 rounded-t-md transition-all duration-500', d.value === null ? 'bg-ink-100' : highlightLast && i === data.length - 1 ? 'bg-brand-wood' : 'bg-accent/85 group-hover:bg-accent')} style={{ height: `${d.value === null ? 4 : v * 100}%` }} />
             </div>
           );
         })}

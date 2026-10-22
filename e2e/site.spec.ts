@@ -119,3 +119,14 @@ test('therapist approves a library exercise for the practice', async ({ page }) 
   await page.getByRole('tab', { name: 'Goedgekeurd' }).click();
   await expect(page.getByRole('heading', { name: 'Kat-koe' })).toBeVisible();
 });
+
+test('quick search (Ctrl+K) finds a patient and opens it', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await expect(page.getByRole('heading', { name: /Joris/ })).toBeVisible();
+  await page.keyboard.press('Control+k');
+  await page.keyboard.type('emma');
+  await expect(page.getByRole('option', { name: /Emma de Jong/ })).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/app\/patienten\//);
+  await expect(page.getByRole('heading', { name: 'Emma de Jong' })).toBeVisible();
+});
