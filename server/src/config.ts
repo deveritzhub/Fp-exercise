@@ -23,6 +23,11 @@ export const config = {
   /** Public demo deployment with synthetic data: invite links are shown on screen because no real e-mail is sent. */
   demoMode: process.env.DEMO_MODE === '1',
   maxUploadBytes: Number(process.env.MAX_UPLOAD_MB ?? 200) * 1024 * 1024,
+  /** Google Play app (Trusted Web Activity): package name and SHA-256 fingerprints of its signing certificates. */
+  android: {
+    packageName: process.env.ANDROID_PACKAGE_NAME ?? '',
+    fingerprints: (process.env.ANDROID_CERT_SHA256 ?? '').split(',').map((s) => s.trim().toUpperCase()).filter((s) => /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/.test(s)),
+  },
 };
 
 /** Invite links are returned in API responses only outside production, or on the synthetic-data demo. */

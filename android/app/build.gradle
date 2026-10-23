@@ -1,0 +1,59 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Values from gradle.properties; the version comes from CI (each build gets a higher versionCode).
+def pkg = project.property('fpPackageName')
+def host = project.property('fpHost')
+def startUrl = "https://${host}${project.property('fpStartPath')}"
+def versionCodeFromCi = (System.getenv('FP_VERSION_CODE') ?: '1') as int
+def versionNameFromCi = System.getenv('FP_VERSION_NAME') ?: '1.0.0'
+
+android {
+    namespace pkg
+    compileSdk 35
+
+    defaultConfig {
+        applicationId pkg
+        minSdk 23
+        targetSdk 35
+        versionCode versionCodeFromCi
+        versionName versionNameFromCi
+
+        resValue 'string', 'appName', project.property('fpAppName')
+        resValue 'string', 'launchUrl', startUrl
+        resValue 'string', 'hostName', host
+        resValue 'color', 'colorPrimary', project.property('fpThemeColor')
+        resValue 'color', 'backgroundColor', project.property('fpBackgroundColor')
+        // Must match /.well-known/assetlinks.json on the site (served by the FP Exercise server).
+        resValue 'string', 'assetStatements',
+            "[{\\\"relation\\\": [\\\"delegate_permission/common.handle_all_urls\\\"], \\\"target\\\": {\\\"namespace\\\": \\\"web\\\", \\\"site\\\": \\\"https://${host}\\\"}}]"
+    }
+
+    // Release signing with the upload key, only when the CI secrets are present.
+    signingConfigs {
+        release {
+            def ks = System.getenv('FP_KEYSTORE_PATH')
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv('FP_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('FP_KEY_ALIAS')
+                keyPassword System.getenv('FP_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (System.getenv('FP_KEYSTORE_PATH')) signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

@@ -10,3 +10,10 @@ playwright-report/
 storage-test/
 e2e/.tmp/
 storage-e2e/
+# Android build output and signing keys (never commit a keystore)
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+*.jks
+*.keystore

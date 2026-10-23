@@ -88,6 +88,18 @@ export function createApp() {
     });
   }
 
+  // Digital Asset Links: proves the Google Play app belongs to this site, so it opens full screen
+  // (without address bar). Empty until the app's signing certificate is configured.
+  app.get('/.well-known/assetlinks.json', (c) => {
+    const { packageName, fingerprints } = config.android;
+    c.header('Cache-Control', 'public, max-age=3600');
+    return c.json(
+      packageName && fingerprints.length
+        ? [{ relation: ['delegate_permission/common.handle_all_urls'], target: { namespace: 'android_app', package_name: packageName, sha256_cert_fingerprints: fingerprints } }]
+        : [],
+    );
+  });
+
   app.route('/api', api);
   // Unknown API paths must never fall through to the SPA fallback below.
   app.all('/api/*', (c) => c.json({ error: 'not_found' }, 404));
