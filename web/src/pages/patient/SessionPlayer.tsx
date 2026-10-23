@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, CheckCircle2, ChevronDown, Info, MessageCircle, PartyPopper, Repeat, SkipForward, VideoOff, X } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X } from 'lucide-react';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
 import { toISODate } from '@shared/adherence';
 import { itemsForDate } from '@shared/schedule';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
+import { useCountdown } from '@/lib/useCountdown';
 import { isNetworkError, postOrQueue } from '@/lib/outbox';
 import { useSession } from '@/lib/session';
-import { Button, ErrorState, Notice, NumberStepper, ProgressRing, ScaleInput, Spinner, Textarea } from '@/components/ui';
+import { Button, Dialog, ErrorState, Notice, NumberStepper, ProgressRing, ScaleInput, Spinner, Textarea } from '@/components/ui';
 import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import { ProgramItemsList } from '@/components/patient/TodayCard';
 import type { Program, ProgramItem } from '@/lib/types';
@@ -33,10 +34,38 @@ export function PatientProgramPage() {
         <h1 className="text-2xl font-semibold">{p.title}</h1>
         <p className="mt-1 text-ink-500">{t('Van', 'From')} {p.therapistName}</p>
       </div>
-      <ProgramItemsList items={p.items} instructions={p.patientInstructions} />
+      <ProgramItemsList
+        items={p.items}
+        instructions={p.patientInstructions}
+        renderLink={(i, content) => (
+          <Link to={`/p/programma/${p.id}/oefening/${i.id}`} className="flex items-center gap-4 rounded-2xl border border-line bg-white p-3 shadow-card focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50">
+            {content}
+            <ChevronRight className="h-5 w-5 shrink-0 text-ink-400" aria-hidden />
+          </Link>
+        )}
+      />
       {p.status === 'active' && (
         <Link to={`/p/sessie/${p.id}`} className="flex h-14 w-full items-center justify-center rounded-xl bg-accent text-base font-semibold text-white shadow-xs">{t('Start training', 'Start workout')}</Link>
       )}
+    </div>
+  );
+}
+
+/** One exercise from the programme, to look at without starting (or registering) a workout. */
+export function PatientExercisePage() {
+  const { id = '', itemId = '' } = useParams();
+  const { t, locale } = useI18n();
+  const q = useQuery({ queryKey: ['patient-program', id], queryFn: () => api.get<PatientProgram>(`/patient/programs/${id}`) });
+  const item = q.data?.items.find((i) => i.id === itemId);
+  useDocumentMeta(item ? (locale === 'nl' ? item.exercise.nameNl : item.exercise.nameEn) : t('Oefening', 'Exercise'));
+  if (q.isError) return <ErrorState error={q.error} />;
+  if (!q.data) return <Spinner />;
+  if (!item) return <ErrorState error={new ApiError(404, 'not_found')} />;
+  return (
+    <div className="space-y-5">
+      <Link to={`/p/programma/${id}`} className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" />{q.data.title}</Link>
+      <ExerciseInfo item={item} />
+      <p className="text-[14px] text-ink-600">{t('Je bekijkt deze oefening alleen; er wordt geen training geregistreerd.', 'You are only viewing this exercise; no workout is recorded.')}</p>
     </div>
   );
 }
@@ -57,6 +86,7 @@ export function SessionPlayer() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedOffline, setSavedOffline] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const { user } = useSession();
   const uid = user?.id ?? '';
 
@@ -115,6 +145,8 @@ export function SessionPlayer() {
   if (q.isError) return <div className="p-4"><ErrorState error={q.error} /></div>;
   if (!q.data) return <Spinner className="min-h-screen" />;
   const item = items[idx];
+  // Filled in so far, including what was saved before a reload or an earlier interruption.
+  const filled = new Set([...(q.data.openSession?.id === sessionId ? q.data.openSession.loggedItemIds : []), ...Object.keys(done)]).size;
   const progress = phase === 'summary' || phase === 'done' ? 1 : idx / items.length;
 
   return (
@@ -122,7 +154,7 @@ export function SessionPlayer() {
       {/* top bar */}
       <div className="sticky top-0 z-20 border-b border-line bg-white/95 backdrop-blur">
         <div className="flex h-14 items-center gap-3 px-4">
-          <button type="button" onClick={() => (phase === 'done' || confirm(t('Training onderbreken? Je voortgang is opgeslagen.', 'Pause workout? Your progress is saved.'))) && nav('/p')} className="-ml-1 rounded-lg p-2 text-ink-600" aria-label={t('Training sluiten', 'Close workout')}>
+          <button type="button" onClick={() => (phase === 'done' || phase === 'intro' ? nav('/p') : setLeaving(true))} className="-ml-1 flex h-11 w-11 items-center justify-center rounded-lg text-ink-600" aria-label={t('Training sluiten', 'Close workout')}>
             <X className="h-6 w-6" />
           </button>
           <div className="flex-1">
@@ -177,6 +209,26 @@ export function SessionPlayer() {
           />
         )}
 
+        <Dialog
+          open={leaving}
+          onClose={() => setLeaving(false)}
+          title={t('Training onderbreken?', 'Pause workout?')}
+          description={t(
+            `Je hebt ${filled} van ${items.length} oefeningen ingevuld. Dat is bewaard. Via “Training hervatten” op je overzicht ga je later verder waar je was.`,
+            `You filled in ${filled} of ${items.length} exercises. That is saved. Use “Resume workout” on your overview to continue later where you left off.`,
+          )}
+          size="sm"
+          footer={
+            <div className="grid w-full grid-cols-2 gap-2">
+              <Button size="lg" variant="secondary" onClick={() => nav('/p')}>{t('Onderbreken', 'Pause')}</Button>
+              <Button size="lg" autoFocus onClick={() => setLeaving(false)}>{t('Doorgaan', 'Continue')}</Button>
+            </div>
+          }
+        >
+          {savedOffline && <Notice tone="warn">{t('Je hebt geen internet. Houd de app open tot je training is verstuurd.', 'You are offline. Keep the app open until your workout has been sent.')}</Notice>}
+          {phase === 'exercise' && <p className="text-[14.5px] text-ink-700">{t('De oefening waar je nu mee bezig bent is nog niet ingevuld en wordt niet meegeteld.', 'The exercise you are doing now has not been filled in yet and is not counted.')}</p>}
+        </Dialog>
+
         {phase === 'done' && (
           <div className="relative flex flex-col items-center py-10 text-center">
             <Confetti />
@@ -197,53 +249,36 @@ export function SessionPlayer() {
   );
 }
 
-function ExerciseStep({ item, next, onDone, onSkip, saving }: { item: ProgramItem; next?: ProgramItem; onDone: () => void; onSkip: () => void; saving: boolean }) {
+/** Video, dose and instructions of one exercise: used in the workout and in the programme overview. */
+export function ExerciseInfo({ item }: { item: ProgramItem }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const ex = item.exercise;
   const video = mediaUrl(ex.videoMediaId);
-  const sets = item.sets ?? 1;
-  const [setsDone, setSetsDone] = useState(0);
-  const [rest, setRest] = useState<number | null>(null);
-  const [restTotal, setRestTotal] = useState(1);
+  const image = mediaUrl(ex.thumbnailMediaId);
   const [open, setOpen] = useState<string>('movement');
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-  useEffect(() => () => { if (timer.current) clearInterval(timer.current); }, []);
-  const startRest = () => {
-    if (!item.restS) return;
-    if (timer.current) clearInterval(timer.current);
-    setRest(item.restS);
-    setRestTotal(item.restS);
-    timer.current = setInterval(() => setRest((r) => {
-      if (r === null || r <= 1) {
-        if (timer.current) clearInterval(timer.current);
-        if (navigator.vibrate) navigator.vibrate(200);
-        return null;
-      }
-      return r - 1;
-    }), 1000);
-  };
   const sections = [
     ['start', t('Startpositie', 'Starting position'), nl ? ex.startingPositionNl : ex.startingPositionEn],
     ['movement', t('Uitvoering', 'How to do it'), nl ? ex.movementNl : ex.movementEn],
     ['tips', t('Let op', 'Remember'), nl ? ex.instructionsNl : ex.instructionsEn],
   ].filter(([, , v]) => v) as [string, string, string][];
-
   return (
-    <div className="animate-fade-in space-y-5">
-      <div className="-mx-4 overflow-hidden bg-ink-950 sm:mx-0 sm:rounded-2xl">
-        {video ? (
-          // Muted autoplay loop: the movement is visible immediately (also on iOS); sound is not needed.
-          <video key={video} controls autoPlay muted loop playsInline preload="auto" className="aspect-video w-full" poster={mediaUrl(ex.thumbnailMediaId) ?? undefined}>
+    <>
+      {video ? (
+        <div className="-mx-4 overflow-hidden bg-ink-950 sm:mx-0 sm:rounded-2xl">
+          {/* Muted autoplay loop: the movement is visible immediately (also on iOS); sound is not needed. */}
+          <video key={video} controls autoPlay muted loop playsInline preload="auto" className="aspect-video w-full" poster={image ?? undefined}>
             <source src={`${video}#t=0.1`} type="video/mp4" />
           </video>
-        ) : (
-          <div className="flex aspect-video flex-col items-center justify-center gap-2 bg-gradient-to-br from-ink-100 to-ink-200 px-6 text-center text-ink-500">
-            <VideoOff className="h-8 w-8" />
-            <span className="text-[14px]">{t('Voor deze oefening is nog geen video beschikbaar. Volg de beschrijving hieronder.', 'No video is available for this exercise yet. Follow the description below.')}</span>
-          </div>
-        )}
-      </div>
+        </div>
+      ) : image ? (
+        <img src={image} alt="" className="-mx-4 aspect-video w-[calc(100%+2rem)] max-w-none object-cover sm:mx-0 sm:w-full sm:rounded-2xl" />
+      ) : (
+        <div className="flex items-center gap-3 rounded-2xl border border-dashed border-ink-300 px-4 py-3 text-[14.5px] text-ink-700">
+          <VideoOff className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />
+          {t('Voor deze oefening is nog geen video. Volg de beschrijving hieronder.', 'There is no video for this exercise yet. Follow the description below.')}
+        </div>
+      )}
 
       <div>
         <h1 className="text-[24px] font-semibold leading-tight">{nl ? ex.nameNl : ex.nameEn}</h1>
@@ -255,6 +290,7 @@ function ExerciseStep({ item, next, onDone, onSkip, saving }: { item: ProgramIte
           {item.tempo && <Pill label={t('Tempo', 'Tempo')} value={item.tempo} />}
           {item.load && <Pill label={t('Belasting', 'Load')} value={item.load} />}
         </div>
+        {item.frequency && <p className="mt-2 text-[15px] text-ink-700">{item.frequency}</p>}
       </div>
 
       {item.notes && (
@@ -267,7 +303,7 @@ function ExerciseStep({ item, next, onDone, onSkip, saving }: { item: ProgramIte
       <div className="divide-y divide-line rounded-2xl border border-line">
         {sections.map(([key, title, text]) => (
           <div key={key}>
-            <button type="button" className="flex w-full items-center justify-between px-4 py-3.5 text-left text-[16px] font-semibold" aria-expanded={open === key} onClick={() => setOpen(open === key ? '' : key)}>
+            <button type="button" className="flex min-h-[48px] w-full items-center justify-between px-4 py-3 text-left text-[16px] font-semibold" aria-expanded={open === key} onClick={() => setOpen(open === key ? '' : key)}>
               {title}
               <ChevronDown className={cn('h-5 w-5 text-ink-400 transition-transform', open === key && 'rotate-180')} />
             </button>
@@ -277,15 +313,77 @@ function ExerciseStep({ item, next, onDone, onSkip, saving }: { item: ProgramIte
       </div>
 
       {item.alternative && (
-        <p className="flex items-start gap-2 text-[14.5px] text-ink-600"><Repeat className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />{t('Lukt deze oefening niet? Alternatief:', 'Can’t do this exercise? Alternative:')} <strong className="font-semibold">{nl ? item.alternative.nameNl : item.alternative.nameEn}</strong></p>
+        <p className="flex items-start gap-2 text-[14.5px] text-ink-700"><Repeat className="mt-0.5 h-4 w-4 shrink-0 text-ink-500" />{t('Lukt deze oefening niet? Doe dan:', 'Can’t do this exercise? Do this instead:')} <strong className="font-semibold">{nl ? item.alternative.nameNl : item.alternative.nameEn}</strong></p>
       )}
+    </>
+  );
+}
+
+const buzz = () => {
+  try {
+    navigator.vibrate?.(200);
+  } catch {
+    /* not supported */
+  }
+};
+
+function ExerciseStep({ item, next, onDone, onSkip, saving }: { item: ProgramItem; next?: ProgramItem; onDone: () => void; onSkip: () => void; saving: boolean }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const sets = item.sets ?? 1;
+  const [setsDone, setSetsDone] = useState(0);
+  const [holdEnded, setHoldEnded] = useState(false);
+  // Timers only inform: ending a timer never ticks off a set or the exercise.
+  const hold = useCountdown(() => { buzz(); setHoldEnded(true); });
+  const rest = useCountdown(buzz);
+  const [restOpen, setRestOpen] = useState(false);
+  const tick = (i: number) => {
+    const n = i < setsDone ? i : i + 1;
+    setSetsDone(n);
+    hold.stop();
+    setHoldEnded(false);
+    if (n > setsDone && n < sets && item.restS) {
+      rest.start(item.restS);
+      setRestOpen(true);
+    }
+  };
+
+  return (
+    <div className="animate-fade-in space-y-5">
+      <ExerciseInfo item={item} />
+
+      {item.holdS ? (
+        <div className="rounded-2xl border border-line p-4">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[16px] font-semibold">{t('Vasthouden', 'Hold')}</span>
+            <span className="text-[28px] font-semibold tabular-nums" aria-live="polite" aria-atomic="true">
+              {hold.left ?? item.holdS}<span className="text-[15px] font-normal text-ink-600"> s</span>
+            </span>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {hold.left === null || hold.left === 0 ? (
+              <Button size="lg" className="col-span-2" icon={<Timer className="h-5 w-5" />} onClick={() => { setHoldEnded(false); hold.start(item.holdS!); }}>
+                {holdEnded ? t('Opnieuw starten', 'Start again') : t(`Start ${item.holdS} seconden`, `Start ${item.holdS} seconds`)}
+              </Button>
+            ) : (
+              <>
+                {hold.running
+                  ? <Button size="lg" variant="secondary" icon={<Pause className="h-5 w-5" />} onClick={hold.pause}>{t('Pauzeren', 'Pause')}</Button>
+                  : <Button size="lg" variant="secondary" icon={<Play className="h-5 w-5" />} onClick={hold.resume}>{t('Hervatten', 'Resume')}</Button>}
+                <Button size="lg" variant="ghost" onClick={() => { hold.stop(); setHoldEnded(false); }}>{t('Stoppen', 'Stop')}</Button>
+              </>
+            )}
+          </div>
+          {holdEnded && <p className="mt-2 text-[14.5px] text-ink-700" role="status">{sets > 1 ? t('Tijd! Tik de set af als je hem hebt gedaan.', 'Time! Tick off the set if you did it.') : t('Tijd! Tik op “Oefening gedaan” als je klaar bent.', 'Time! Tap “Exercise done” when you are finished.')}</p>}
+        </div>
+      ) : null}
 
       {/* set tracker */}
       {sets > 1 && (
         <div className="rounded-2xl border border-line p-4">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-[16px] font-semibold">{t('Sets', 'Sets')}</span>
-
+            <span className="text-[15px] tabular-nums text-ink-700" aria-live="polite">{t(`${setsDone} van ${sets} gedaan`, `${setsDone} of ${sets} done`)}</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {Array.from({ length: sets }, (_, i) => (
@@ -294,17 +392,16 @@ function ExerciseStep({ item, next, onDone, onSkip, saving }: { item: ProgramIte
                 type="button"
                 aria-pressed={i < setsDone}
                 aria-label={t(`Set ${i + 1} gedaan`, `Set ${i + 1} done`)}
-                onClick={() => {
-                  const next = i < setsDone ? i : i + 1;
-                  setSetsDone(next);
-                  if (next > setsDone && next < sets) startRest();
-                }}
-                className={cn('flex h-14 w-14 items-center justify-center rounded-2xl border-2 text-lg font-semibold transition-all', i < setsDone ? 'border-accent bg-accent text-white' : 'border-line text-ink-600')}
+                onClick={() => tick(i)}
+                className={cn('flex h-14 w-14 items-center justify-center rounded-2xl border-2 text-lg font-semibold transition-all', i < setsDone ? 'border-accent bg-accent text-white' : 'border-line text-ink-700')}
               >
                 {i < setsDone ? <Check className="h-6 w-6" /> : i + 1}
               </button>
             ))}
           </div>
+          {item.restS && !restOpen && setsDone > 0 && setsDone < sets ? (
+            <Button size="sm" variant="ghost" className="mt-2" icon={<Timer className="h-4 w-4" />} onClick={() => { rest.start(item.restS!); setRestOpen(true); }}>{t(`Rust ${item.restS} s`, `Rest ${item.restS} s`)}</Button>
+          ) : null}
         </div>
       )}
 
@@ -312,26 +409,29 @@ function ExerciseStep({ item, next, onDone, onSkip, saving }: { item: ProgramIte
         <div className="flex items-center gap-3 rounded-2xl bg-ink-50 p-3">
           <ExerciseThumb thumbnailId={next.exercise.thumbnailMediaId} videoId={next.exercise.videoMediaId} region={next.exercise.bodyRegion} className="h-12 w-12 shrink-0" rounded="rounded-xl" />
           <div className="min-w-0">
-            <div className="text-[13px] font-medium uppercase tracking-wide text-ink-500">{t('Hierna', 'Up next')}</div>
+            <div className="text-[13px] font-medium uppercase tracking-wide text-ink-600">{t('Hierna', 'Up next')}</div>
             <div className="truncate font-semibold">{nl ? next.exercise.nameNl : next.exercise.nameEn}</div>
           </div>
         </div>
       )}
 
-      {rest !== null && (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink-950/40 backdrop-blur-sm animate-fade-in sm:items-center" role="dialog" aria-modal="true" aria-label={t('Rustpauze', 'Rest break')}>
+      {restOpen && (
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink-950/40 backdrop-blur-sm animate-fade-in sm:items-center" role="dialog" aria-modal="true" aria-label={t('Rustpauze', 'Rest break')} onKeyDown={(e) => e.key === 'Escape' && (rest.stop(), setRestOpen(false))}>
           <div className="w-full max-w-md animate-slide-up rounded-t-3xl bg-white px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 text-center shadow-pop sm:rounded-3xl">
-            <div className="text-[13px] font-semibold uppercase tracking-widest text-accent">{t('Even rusten', 'Take a rest')}</div>
+            <div className="text-[13px] font-semibold uppercase tracking-widest text-accent">{rest.left === 0 ? t('Rust voorbij', 'Rest over') : t('Even rusten', 'Take a rest')}</div>
             <div className="my-5 flex justify-center">
-              <ProgressRing value={rest / restTotal} size={168} stroke={10} label={t(`Nog ${rest} seconden rust`, `${rest} seconds of rest left`)}>
-                <span className="text-[44px] font-semibold tabular-nums leading-none" aria-live="polite">{rest}</span>
-                <span className="mt-1 text-[13px] text-ink-500">{t('seconden', 'seconds')}</span>
+              <ProgressRing value={(rest.left ?? 0) / Math.max(1, rest.total)} size={168} stroke={10} label={t(`Nog ${rest.left ?? 0} seconden rust`, `${rest.left ?? 0} seconds of rest left`)}>
+                <span className="text-[44px] font-semibold tabular-nums leading-none">{rest.left ?? 0}</span>
+                <span className="mt-1 text-[13px] text-ink-600">{rest.paused ? t('gepauzeerd', 'paused') : t('seconden', 'seconds')}</span>
               </ProgressRing>
             </div>
-            <p className="text-[15px] text-ink-600">{t(`Volgende: set ${Math.min(setsDone + 1, sets)} van ${sets}`, `Next: set ${Math.min(setsDone + 1, sets)} of ${sets}`)}</p>
-            <div className="mt-5 grid grid-cols-2 gap-2">
-              <Button variant="secondary" size="lg" onClick={() => { setRest((r) => (r ?? 0) + 15); setRestTotal((x) => x + 15); }}>+15 s</Button>
-              <Button size="lg" onClick={() => { if (timer.current) clearInterval(timer.current); setRest(null); }}>{t('Verder', 'Continue')}</Button>
+            <p className="text-[15px] text-ink-700">{t(`Volgende: set ${Math.min(setsDone + 1, sets)} van ${sets}`, `Next: set ${Math.min(setsDone + 1, sets)} of ${sets}`)}</p>
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              {rest.running
+                ? <Button variant="secondary" size="lg" onClick={rest.pause} icon={<Pause className="h-4 w-4" />}>{t('Pauze', 'Pause')}</Button>
+                : <Button variant="secondary" size="lg" onClick={rest.resume} disabled={rest.left === 0} icon={<Play className="h-4 w-4" />}>{t('Verder', 'Resume')}</Button>}
+              <Button variant="secondary" size="lg" onClick={() => rest.add(15)}>+15 s</Button>
+              <Button size="lg" autoFocus onClick={() => { rest.stop(); setRestOpen(false); }}>{t('Klaar', 'Done')}</Button>
             </div>
           </div>
         </div>

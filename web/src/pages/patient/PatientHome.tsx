@@ -21,6 +21,7 @@ export type PatientHomeData = {
     today: { scheduled: number; done: boolean; items: { id: string; exercise: Program['items'][number]['exercise']; sets: number | null; reps: number | null; holdS: number | null }[] };
     nextSession: string | null;
     upcoming: boolean;
+    openSession: { id: string; startedAt: string; logged: number } | null;
   })[];
   stats: { completedSessions: number; adherence7d: Adherence; weekly: (Adherence & { weekStart: string })[]; week: { date: string; weekday: number; state: DayState }[]; streak: number };
   recent: { id: string; completedAt: string; programTitle: string; difficulty: number | null; pain: number | null; exercisesDone: number }[];
@@ -36,6 +37,8 @@ export function PatientHome() {
   if (!q.data) return <div className="space-y-4"><Skeleton className="h-8 w-2/3" /><Skeleton className="h-56 rounded-2xl" /><Skeleton className="h-28 rounded-2xl" /></div>;
   const d = q.data;
   const todo = d.programs.filter((p) => p.today.scheduled > 0);
+  // A workout started on a day without planned exercises (all exercises) can be resumed as well.
+  const resumeOther = d.programs.filter((p) => p.openSession && p.today.scheduled === 0);
   return (
     <div className="space-y-6">
       <div>
@@ -87,14 +90,16 @@ export function PatientHome() {
             title={p.title}
             items={p.today.items}
             done={p.today.done}
-            action={
-              <ButtonLink to={`/p/sessie/${p.id}`} size="xl" className="w-full" icon={<Play className="h-5 w-5 fill-current" />}>
-                {t('Start training', 'Start workout')}
-              </ButtonLink>
-            }
+            action={<StartOrResume programId={p.id} open={p.openSession} total={p.today.scheduled} />}
           />
         ))
       )}
+      {resumeOther.map((p) => (
+        <div key={p.id} className="rounded-2xl border border-line bg-white p-4 shadow-card">
+          <p className="mb-3 font-semibold">{p.title}</p>
+          <StartOrResume programId={p.id} open={p.openSession} total={p.itemCount} />
+        </div>
+      ))}
 
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="week-title">
         <div className="flex items-center justify-between gap-3">
@@ -155,6 +160,35 @@ export function PatientHome() {
           </ul>
         </section>
       )}
+    </div>
+  );
+}
+
+/** "Start training", or "Training hervatten" with how far the patient got. */
+function StartOrResume({ programId, open, total }: { programId: string; open: { logged: number } | null; total: number }) {
+  const { t } = useI18n();
+  if (!open) {
+    return (
+      <ButtonLink to={`/p/sessie/${programId}`} size="xl" className="w-full" icon={<Play className="h-5 w-5 fill-current" />}>
+        {t('Start training', 'Start workout')}
+      </ButtonLink>
+    );
+  }
+  const done = Math.min(open.logged, total);
+  return (
+    <div className="space-y-3">
+      <div>
+        <div className="mb-1 flex justify-between text-[14px] text-ink-700">
+          <span>{t('Je was al begonnen', 'You already started')}</span>
+          <span className="tabular-nums">{t(`${done} van ${total} oefeningen`, `${done} of ${total} exercises`)}</span>
+        </div>
+        <div className="h-2 overflow-hidden rounded-full bg-ink-100" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label={t('Voortgang training', 'Workout progress')}>
+          <div className="h-full rounded-full bg-accent" style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
+        </div>
+      </div>
+      <ButtonLink to={`/p/sessie/${programId}`} size="xl" className="w-full" icon={<Play className="h-5 w-5 fill-current" />}>
+        {t('Training hervatten', 'Resume workout')}
+      </ButtonLink>
     </div>
   );
 }

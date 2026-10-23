@@ -27,6 +27,7 @@ const AccountPage = named(() => import('@/pages/AccountPage'), 'AccountPage');
 const PatientHome = named(() => import('@/pages/patient/PatientHome'), 'PatientHome');
 const PatientProgramPage = named(() => import('@/pages/patient/SessionPlayer'), 'PatientProgramPage');
 const SessionPlayer = named(() => import('@/pages/patient/SessionPlayer'), 'SessionPlayer');
+const PatientExercisePage = named(() => import('@/pages/patient/SessionPlayer'), 'PatientExercisePage');
 const PatientProgress = named(() => import('@/pages/patient/PatientProgress'), 'PatientProgress');
 const AdminPage = named(() => import('@/pages/admin/AdminPage'), 'AdminPage');
 
@@ -102,6 +103,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <S><PatientHome /></S> },
           { path: 'programma/:id', element: <S><PatientProgramPage /></S> },
+          { path: 'programma/:id/oefening/:itemId', element: <S><PatientExercisePage /></S> },
           { path: 'sessie/:id', element: <S><SessionPlayer /></S> },
           { path: 'voortgang', element: <S><PatientProgress /></S> },
           { path: 'account', element: <S><AccountPage patient /></S> },

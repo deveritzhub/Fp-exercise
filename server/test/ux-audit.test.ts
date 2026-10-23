@@ -79,3 +79,27 @@ describe('library filters and variants (P1)', () => {
     expect(theirs.variantCount).toBe(0);
   });
 });
+
+describe('resuming a workout (P1)', () => {
+  it('reload and resume never duplicate the session or its results', async () => {
+    const patient = await login('patientA');
+    const a = (await patient.post('/patient/sessions', { programId: s.programs.emma })).body;
+    const b = (await patient.post('/patient/sessions', { programId: s.programs.emma })).body;
+    expect(b).toEqual({ id: a.id, resumed: true });
+    const prog = (await patient.get(`/patient/programs/${s.programs.emma}`)).body;
+    const item = prog.items[0];
+    for (let i = 0; i < 2; i++) {
+      expect((await patient.post(`/patient/sessions/${a.id}/logs`, { programItemId: item.id, completed: true, setsDone: 2 })).status).toBe(200);
+    }
+    const again = (await patient.get(`/patient/programs/${s.programs.emma}`)).body;
+    expect(again.openSession).toEqual({ id: a.id, loggedItemIds: [item.id] });
+    const home = (await patient.get('/patient/home')).body.programs.find((p: any) => p.id === s.programs.emma);
+    expect(home.openSession).toMatchObject({ id: a.id, logged: 1 });
+    // Completing twice (e.g. a replayed offline sync) records one finished workout.
+    const before = (await patient.get('/patient/history')).body.sessions.length;
+    expect((await patient.post(`/patient/sessions/${a.id}/complete`, {})).status).toBe(200);
+    expect((await patient.post(`/patient/sessions/${a.id}/complete`, {})).status).toBe(200);
+    expect((await patient.get('/patient/history')).body.sessions.length).toBe(before + 1);
+    expect((await patient.get('/patient/home')).body.programs.find((p: any) => p.id === s.programs.emma).openSession).toBeNull();
+  });
+});

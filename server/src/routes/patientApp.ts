@@ -38,6 +38,18 @@ patientApp.get('/home', async (c) => {
         (await tx.query('SELECT DISTINCT program_id FROM red_flag_reports WHERE patient_id = $1 AND handled_at IS NULL', [patient.id])).rows.map((r) => r.program_id),
       );
       const mode = (await tx.query('SELECT active_mode FROM patients WHERE id = $1', [patient.id])).rows[0]?.active_mode ?? 'revalidatie';
+      // Unfinished workouts (same 12-hour window as the session start, so resuming never duplicates).
+      const open = new Map(
+        (
+          await tx.query(
+            `SELECT DISTINCT ON (s.program_id) s.program_id, s.id, s.started_at,
+                    (SELECT count(*) FROM exercise_logs l WHERE l.session_id = s.id)::int AS logged
+               FROM workout_sessions s WHERE s.patient_id = $1 AND s.completed_at IS NULL AND s.started_at > now() - interval '12 hours'
+              ORDER BY s.program_id, s.started_at DESC`,
+            [patient.id],
+          )
+        ).rows.map((r) => [r.program_id, { id: r.id, startedAt: r.started_at, logged: r.logged }]),
+      );
       const programs = [];
       for (const p of progs.rows) {
         const items = await loadItems(tx, p.id);
@@ -51,6 +63,7 @@ patientApp.get('/home', async (c) => {
           itemCount: items.length,
           today: { scheduled: todayItems.length, done: doneSet.has(p.id), items: todayItems.map((i) => ({ id: i.id, exercise: i.exercise, sets: i.sets, reps: i.reps, holdS: i.holdS })) },
           nextSession: nextSessionDate(win, items, today),
+          openSession: open.get(p.id) ?? null,
           upcoming: p.start_date && p.start_date > today,
         });
       }
