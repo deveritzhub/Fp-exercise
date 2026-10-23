@@ -8,8 +8,8 @@ export type SessionUser = {
   emailVerified: boolean;
   mfaEnabled: boolean;
   mfaRequired: boolean;
-  memberships: { practiceId: string; practiceName: string; practiceSlug: string; role: Role }[];
-  patient: { id: string; practiceId: string; practiceName: string } | null;
+  memberships: { practiceId: string; practiceName: string; practiceSlug: string; role: Role; accent?: string | null }[];
+  patient: { id: string; practiceId: string; practiceName: string; accent?: string | null } | null;
 };
 
 export type Defaults = { sets: number | null; reps: number | null; holdS: number | null; restS: number | null; tempo: string | null; frequency: string | null };

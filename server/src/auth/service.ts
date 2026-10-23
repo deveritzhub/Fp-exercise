@@ -5,7 +5,7 @@ import { HttpError, badRequest } from '../lib/errors';
 import { dummyVerify, hashPassword, validatePassword, verifyPassword } from './password';
 import { sendMail } from './mailer';
 
-export type Membership = { practiceId: string; practiceName: string; practiceSlug: string; role: 'owner' | 'admin' | 'therapist' };
+export type Membership = { practiceId: string; practiceName: string; practiceSlug: string; role: 'owner' | 'admin' | 'therapist'; accent?: string | null };
 export type SessionUser = {
   id: string;
   email: string;
@@ -18,7 +18,7 @@ export type SessionUser = {
   /** A practice of this user (or the platform-admin role) demands MFA that is not set up yet: staff APIs are blocked. */
   mfaRequired: boolean;
   memberships: Membership[];
-  patient: { id: string; practiceId: string; practiceName: string } | null;
+  patient: { id: string; practiceId: string; practiceName: string; accent?: string | null } | null;
 };
 
 const MAX_FAILED = 8;
@@ -33,14 +33,14 @@ export async function loadUser(userId: string): Promise<SessionUser | null> {
   const u = rows[0];
   if (!u) return null;
   const members = await authPool.query(
-    `SELECT m.practice_id, p.name, p.slug, m.role, coalesce((p.settings->>'requireMfa')::boolean, false) AS require_mfa
+    `SELECT m.practice_id, p.name, p.slug, m.role, p.branding->>'accent' AS accent, coalesce((p.settings->>'requireMfa')::boolean, false) AS require_mfa
        FROM practice_members m
        JOIN practices p ON p.id = m.practice_id
       WHERE m.user_id = $1 AND m.active AND p.archived_at IS NULL ORDER BY m.created_at`,
     [userId],
   );
   const patient = await authPool.query(
-    `SELECT pt.id, pt.practice_id, p.name FROM patients pt JOIN practices p ON p.id = pt.practice_id
+    `SELECT pt.id, pt.practice_id, p.name, p.branding->>'accent' AS accent FROM patients pt JOIN practices p ON p.id = pt.practice_id
       WHERE pt.user_id = $1 AND pt.archived_at IS NULL AND p.archived_at IS NULL LIMIT 1`,
     [userId],
   );
@@ -55,9 +55,9 @@ export async function loadUser(userId: string): Promise<SessionUser | null> {
     emailVerified: !!u.email_verified_at,
     mfaEnabled: u.mfa_enabled,
     mfaRequired: mfaDemanded && !u.mfa_enabled,
-    memberships: members.rows.map((r) => ({ practiceId: r.practice_id, practiceName: r.name, practiceSlug: r.slug, role: r.role })),
+    memberships: members.rows.map((r) => ({ practiceId: r.practice_id, practiceName: r.name, practiceSlug: r.slug, role: r.role, accent: r.accent ?? null })),
     patient: patient.rows[0]
-      ? { id: patient.rows[0].id, practiceId: patient.rows[0].practice_id, practiceName: patient.rows[0].name }
+      ? { id: patient.rows[0].id, practiceId: patient.rows[0].practice_id, practiceName: patient.rows[0].name, accent: patient.rows[0].accent ?? null }
       : null,
   };
 }
