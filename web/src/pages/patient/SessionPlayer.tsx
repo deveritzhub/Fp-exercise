@@ -4,14 +4,15 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Check, CheckCircle2, ChevronDown, Info, MessageCircle, PartyPopper, Repeat, SkipForward, VideoOff, X } from 'lucide-react';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
-import { dose } from '@/lib/format';
-import { isoWeekday } from '@shared/adherence';
-import { useDocumentMeta, useLabels } from '@/lib/meta';
+import { toISODate } from '@shared/adherence';
+import { itemsForDate } from '@shared/schedule';
+import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
 import { isNetworkError, postOrQueue } from '@/lib/outbox';
 import { useSession } from '@/lib/session';
 import { Button, ErrorState, Notice, NumberStepper, ProgressRing, ScaleInput, Spinner, Textarea } from '@/components/ui';
 import { ExerciseThumb } from '@/components/app/ExerciseThumb';
+import { ProgramItemsList } from '@/components/patient/TodayCard';
 import type { Program, ProgramItem } from '@/lib/types';
 
 type PatientProgram = Program & { therapistName: string; openSession: { id: string; loggedItemIds: string[] } | null };
@@ -19,8 +20,7 @@ type Phase = 'intro' | 'exercise' | 'rate' | 'summary' | 'done';
 
 export function PatientProgramPage() {
   const { id = '' } = useParams();
-  const { t, locale } = useI18n();
-  const L = useLabels();
+  const { t } = useI18n();
   const q = useQuery({ queryKey: ['patient-program', id], queryFn: () => api.get<PatientProgram>(`/patient/programs/${id}`) });
   useDocumentMeta(q.data?.title ?? t('Programma', 'Programme'));
   if (q.isError) return <ErrorState error={q.error} />;
@@ -33,34 +33,12 @@ export function PatientProgramPage() {
         <h1 className="text-2xl font-semibold">{p.title}</h1>
         <p className="mt-1 text-ink-500">{t('Van', 'From')} {p.therapistName}</p>
       </div>
-      {p.patientInstructions && (
-        <div className="rounded-2xl border border-accent/15 bg-accent-soft p-4 text-[15.5px] leading-relaxed text-ink-800">
-          <div className="mb-1 flex items-center gap-2 font-semibold text-accent"><MessageCircle className="h-5 w-5" />{t('Van je fysiotherapeut', 'From your physiotherapist')}</div>
-          {p.patientInstructions}
-        </div>
-      )}
-      <ol className="space-y-2">
-        {p.items.map((i, n) => (
-          <li key={i.id} className="flex items-center gap-4 rounded-2xl border border-line bg-white p-3 shadow-card">
-            <ExerciseVisualSmall item={i} />
-            <div className="min-w-0 flex-1">
-              <div className="font-semibold">{n + 1}. {locale === 'nl' ? i.exercise.nameNl : i.exercise.nameEn}</div>
-              <div className="text-[14.5px] text-ink-500">{dose(i, locale)}</div>
-              <div className="text-[13px] text-ink-400">{i.days.length === 7 ? t('Elke dag', 'Every day') : i.days.map(L.weekday).join(', ')}</div>
-            </div>
-          </li>
-        ))}
-      </ol>
+      <ProgramItemsList items={p.items} instructions={p.patientInstructions} />
       {p.status === 'active' && (
         <Link to={`/p/sessie/${p.id}`} className="flex h-14 w-full items-center justify-center rounded-xl bg-accent text-base font-semibold text-white shadow-xs">{t('Start training', 'Start workout')}</Link>
       )}
     </div>
   );
-}
-
-function ExerciseVisualSmall({ item }: { item: ProgramItem }) {
-  const thumb = mediaUrl(item.exercise.thumbnailMediaId);
-  return thumb ? <img src={thumb} alt="" className="h-16 w-16 shrink-0 rounded-xl object-cover" /> : <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-ink-100 to-ink-200 text-ink-400"><VideoOff className="h-5 w-5" /></div>;
 }
 
 type Rating = { completed: boolean; setsDone: number | null; repsDone: number | null; difficulty: number | null; pain: number | null; feedback: string };
@@ -84,10 +62,11 @@ export function SessionPlayer() {
 
   const items = useMemo(() => {
     if (!q.data) return [];
-    const wd = isoWeekday(new Date());
-    const today = q.data.items.filter((i) => i.days.includes(wd));
+    const today = itemsForDate({ startDate: q.data.startDate, endDate: q.data.endDate }, q.data.items, toISODate(new Date()));
+    // Not a planned day: the patient may still train, then with every exercise (said on the intro).
     return today.length ? today : q.data.items;
   }, [q.data]);
+  const unplanned = !!q.data && items.length === q.data.items.length && !itemsForDate({ startDate: q.data.startDate, endDate: q.data.endDate }, q.data.items, toISODate(new Date())).length;
 
   const begin = (sid: string) => {
     setSessionId(sid);
@@ -162,6 +141,7 @@ export function SessionPlayer() {
           <div className="space-y-5">
             <h1 className="text-[26px] font-semibold leading-tight">{q.data.title}</h1>
             <p className="text-[16px] text-ink-600">{t(`${items.length} oefeningen. Neem de tijd en luister naar je lichaam.`, `${items.length} exercises. Take your time and listen to your body.`)}</p>
+            {unplanned && <Notice tone="info">{t('Vandaag staat er geen training gepland. Wil je toch oefenen, dan doe je alle oefeningen van dit programma.', 'No workout is planned today. If you want to exercise anyway, you do all exercises of this programme.')}</Notice>}
             {q.data.patientInstructions && <div className="rounded-2xl bg-accent-soft p-4 text-[15.5px] leading-relaxed text-ink-800">{q.data.patientInstructions}</div>}
             <Notice tone="info" icon={<Info className="h-4 w-4" />}>
               {t('Stop een oefening als je scherpe of toenemende pijn voelt en neem contact op met je fysiotherapeut. Deze app vervangt geen medisch advies.', 'Stop an exercise if you feel sharp or increasing pain and contact your physiotherapist. This app does not replace medical advice.')}

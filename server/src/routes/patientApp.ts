@@ -9,40 +9,19 @@ import { uuid } from '../lib/crypto';
 import { loadItems, patientProgram } from './programs';
 import { notifyTherapists } from '../lib/notify';
 import { adherenceForPatient, loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
-import { isoWeekday, streak, toISODate, weekStrip } from '../../../shared/adherence';
+import { streak, toISODate, weekStrip } from '../../../shared/adherence';
+import { itemsForDate, nextSessionDate } from '../../../shared/schedule';
 
 /** Endpoints for the patient app. Everything is scoped to the logged-in patient by RLS. */
 export const patientApp = new Hono<AppEnv>();
 
 const todayISO = () => toISODate(new Date());
 
-function runsOn(p: { start_date: string | null; end_date: string | null }, day: string) {
-  return (!p.start_date || p.start_date <= day) && (!p.end_date || p.end_date >= day);
-}
-
-async function nextSessionDate(tx: Tx, programId: string, from: Date, endDate: string | null) {
-  const { rows } = await tx.query(
-    'SELECT coalesce(array_agg(DISTINCT d), \'{}\') AS days FROM program_items i, unnest(i.days) d WHERE i.program_id = $1',
-    [programId],
-  );
-  const days = new Set<number>(rows[0].days.map(Number));
-  if (!days.size) return null;
-  const d = new Date(from);
-  for (let k = 1; k <= 7; k++) {
-    d.setDate(d.getDate() + 1);
-    const iso = toISODate(d);
-    if (endDate && iso > endDate) return null;
-    if (days.has(isoWeekday(d))) return iso;
-  }
-  return null;
-}
-
 patientApp.get('/home', async (c) => {
   const { user, patient } = requirePatient(c);
   return c.json(
     await withUser(user.id, async (tx) => {
       const today = todayISO();
-      const weekday = isoWeekday(new Date());
       const progs = await tx.query(
         `SELECT p.*, u.full_name AS therapist_name FROM programs p LEFT JOIN users u ON u.id = p.created_by
           WHERE p.patient_id = $1 AND p.status = 'active' ORDER BY p.activated_at DESC NULLS LAST`,
@@ -62,7 +41,8 @@ patientApp.get('/home', async (c) => {
       const programs = [];
       for (const p of progs.rows) {
         const items = await loadItems(tx, p.id);
-        const todayItems = runsOn(p, today) ? items.filter((i) => i.days.includes(weekday)) : [];
+        const win = { startDate: p.start_date, endDate: p.end_date };
+        const todayItems = itemsForDate(win, items, today);
         programs.push({
           ...patientProgram(p),
           therapistName: p.therapist_name,
@@ -70,7 +50,7 @@ patientApp.get('/home', async (c) => {
           selfStarted: p.created_by === user.id,
           itemCount: items.length,
           today: { scheduled: todayItems.length, done: doneSet.has(p.id), items: todayItems.map((i) => ({ id: i.id, exercise: i.exercise, sets: i.sets, reps: i.reps, holdS: i.holdS })) },
-          nextSession: await nextSessionDate(tx, p.id, new Date(), p.end_date),
+          nextSession: nextSessionDate(win, items, today),
           upcoming: p.start_date && p.start_date > today,
         });
       }

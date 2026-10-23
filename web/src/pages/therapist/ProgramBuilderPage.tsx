@@ -10,7 +10,7 @@ import {
 import { api, ApiError, qs } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
-import { dose, fmtDateTime, todayISO } from '@/lib/format';
+import { dose, fmtDate, fmtDateTime, todayISO } from '@/lib/format';
 import { taxonomy, useDocumentMeta, useLabels } from '@/lib/meta';
 import { cn } from '@/lib/cn';
 import { Badge, Button, Card, Dialog, EmptyState, Input, MenuItem, Notice, NumberStepper, Popover, Select, Spinner, Textarea, useDebounced, useToast } from '@/components/ui';
@@ -19,6 +19,8 @@ import { ProgramStatusBadge } from '@/components/app/StatusBadge';
 import { ExerciseFilterBar, emptyFilters, useExerciseSearch, type ExerciseFilters } from '@/components/app/ExerciseSearch';
 import type { CriteriaCheck, Exercise, PatientListItem, Program, ProgramItem } from '@/lib/types';
 import { CriteriaList, Evidence, ModuleBadge, RedFlags, Warnings } from '@/components/app/PhaseInfo';
+import { ProgramItemsList, RestDayCard, TodayProgramCard } from '@/components/patient/TodayCard';
+import { dayStatus, itemsForDate, nextSessionDate } from '@shared/schedule';
 
 type BItem = Omit<ProgramItem, 'exercise'> & { key: string; exercise: ProgramItem['exercise'] };
 type Meta = { title: string; description: string; patientInstructions: string; startDate: string; endDate: string };
@@ -360,7 +362,7 @@ export function ProgramBuilderPage() {
         <LibraryPanel onAdd={addExercise} addedIds={items.map((i) => i.exerciseId)} bare />
       </Dialog>
       <TemplatePicker open={pickTemplate} onClose={() => setPickTemplate(false)} onPick={(p) => { loadTemplate(p); setPickTemplate(false); }} />
-      <PreviewDialog open={preview} onClose={() => setPreview(false)} meta={meta} items={items} />
+      <PreviewDialog open={preview} onClose={() => setPreview(false)} meta={meta} items={items} unsaved={dirty} />
       {id && <VersionsDialog open={history} onClose={() => setHistory(false)} programId={id} />}
     </div>
   );
@@ -545,16 +547,98 @@ function ItemDetails({ item, onChange, readOnly }: { item: BItem; onChange: (p: 
         <Input label={t('Belasting', 'Load')} placeholder={t('bijv. 8 kg / rode band', 'e.g. 8 kg / red band')} value={item.load ?? ''} onChange={(e) => onChange({ load: e.target.value || null })} maxLength={60} />
         <Input label={t('Frequentie', 'Frequency')} placeholder={t('bijv. 2x per dag', 'e.g. twice daily')} value={item.frequency ?? ''} onChange={(e) => onChange({ frequency: e.target.value || null })} maxLength={80} />
       </div>
-      <Select label={t('Alternatieve oefening', 'Alternative exercise')} hint={t('Getoond aan de patiënt als de oefening niet lukt.', 'Shown to the patient if the exercise is not possible.')} value={item.alternativeExerciseId ?? ''} onChange={(e) => onChange({ alternativeExerciseId: e.target.value || null })}>
-        <option value="">{t('Geen', 'None')}</option>
-        {detail.data?.relations?.map((r) => (
-          <option key={r.id + r.kind} value={r.id}>
-            {(locale === 'nl' ? r.nameNl : r.nameEn) + ' — ' + (r.kind === 'regression' ? t('regressie', 'regression') : r.kind === 'progression' ? t('progressie', 'progression') : t('alternatief', 'alternative'))}
-          </option>
-        ))}
-      </Select>
+      <SubstitutePicker item={item} relations={detail.data?.relations ?? []} onChange={(id) => onChange({ alternativeExerciseId: id })} />
       <Textarea label={t('Persoonlijke notitie voor de patiënt', 'Personal note for the patient')} rows={2} value={item.notes} onChange={(e) => onChange({ notes: e.target.value })} maxLength={2000} />
     </fieldset>
+  );
+}
+
+/**
+ * Substitute shown to the patient when the exercise does not work out ("Lukt het niet?").
+ * Only easier variants (regressions) and equivalent alternatives are offered, never a progression;
+ * the therapist chooses explicitly, also from the whole library.
+ */
+function SubstitutePicker({ item, relations, onChange }: { item: BItem; relations: NonNullable<Exercise['relations']>; onChange: (id: string | null) => void }) {
+  const { t, locale } = useI18n();
+  const [searching, setSearching] = useState(false);
+  const [q, setQ] = useState('');
+  const results = useExerciseSearch({ ...emptyFilters, q }, 8);
+  const name = (x: { nameNl: string; nameEn: string }) => (locale === 'nl' ? x.nameNl : x.nameEn);
+  const easier = relations.filter((r) => r.kind === 'regression');
+  const equal = relations.filter((r) => r.kind === 'alternative');
+  const progression = relations.find((r) => r.kind === 'progression' && r.id === item.alternativeExerciseId);
+  const known = relations.some((r) => r.kind !== 'progression' && r.id === item.alternativeExerciseId);
+  const [picked, setPicked] = useState<{ id: string; nameNl: string; nameEn: string } | null>(null);
+  const current = item.alternativeExerciseId && !known && !progression ? (picked?.id === item.alternativeExerciseId ? picked : item.alternative ?? null) : null;
+  return (
+    <div>
+      <Select
+        label={t('Vervangende oefening als het niet lukt', 'Substitute if the exercise does not work out')}
+        hint={t('De patiënt ziet deze oefening bij “Lukt het niet?”. Alleen makkelijkere varianten en gelijkwaardige alternatieven; een progressie nooit.', 'The patient sees this under “Can’t do it?”. Only easier variants and equivalent alternatives; never a progression.')}
+        value={progression ? '' : item.alternativeExerciseId ?? ''}
+        onChange={(e) => {
+          if (e.target.value === '__search') return setSearching(true);
+          onChange(e.target.value || null);
+        }}
+      >
+        <option value="">{t('Geen vervangende oefening', 'No substitute')}</option>
+        {easier.length > 0 && (
+          <optgroup label={t('Makkelijker (regressie)', 'Easier (regression)')}>
+            {easier.map((r) => <option key={'r' + r.id} value={r.id}>{name(r)}</option>)}
+          </optgroup>
+        )}
+        {equal.length > 0 && (
+          <optgroup label={t('Gelijkwaardig alternatief', 'Equivalent alternative')}>
+            {equal.map((r) => <option key={'a' + r.id} value={r.id}>{name(r)}</option>)}
+          </optgroup>
+        )}
+        {item.alternativeExerciseId && !known && !progression && (
+          <option value={item.alternativeExerciseId}>{current ? name(current) : t('Zelf gekozen oefening', 'Exercise chosen by you')}</option>
+        )}
+        <option value="__search">{t('Andere oefening zoeken…', 'Search another exercise…')}</option>
+      </Select>
+      {!easier.length && !equal.length && (
+        <p className="mt-1 text-[12.5px] text-ink-600">{t('Voor deze oefening zijn geen regressies of alternatieven vastgelegd. Zoek zelf een passende oefening.', 'No regressions or alternatives are recorded for this exercise. Search for a suitable exercise yourself.')}</p>
+      )}
+      {progression && (
+        <Notice tone="warn" className="mt-2">
+          {t(`“${name(progression)}” is een progressie (zwaarder) en wordt daarom niet als vervangende oefening getoond. Kies een regressie of alternatief.`, `“${name(progression)}” is a progression (harder) and is therefore not shown as a substitute. Choose a regression or alternative.`)}
+          <Button variant="secondary" size="sm" className="mt-2" onClick={() => onChange(null)}>{t('Verwijderen als vervanger', 'Remove as substitute')}</Button>
+        </Notice>
+      )}
+      {searching && (
+        <div className="mt-2 rounded-lg border border-line p-2">
+          <Input autoFocus leading={<Search className="h-4 w-4" />} aria-label={t('Zoek vervangende oefening', 'Search substitute')} placeholder={t('Zoek op naam…', 'Search by name…')} value={q} onChange={(e) => setQ(e.target.value)} />
+          <ul className="mt-2 max-h-56 overflow-auto">
+            {q.trim().length < 2 ? (
+              <li className="px-2 py-1.5 text-[12.5px] text-ink-600">{t('Typ minstens 2 letters.', 'Type at least 2 letters.')}</li>
+            ) : results.isFetching && results.isPlaceholderData ? (
+              <li className="px-2 py-1.5 text-[12.5px] text-ink-600">{t('Zoeken…', 'Searching…')}</li>
+            ) : (
+              (results.data?.items ?? [])
+                .filter((x) => x.id !== item.exerciseId)
+                .map((x) => {
+                  const isProg = relations.some((r) => r.kind === 'progression' && r.id === x.id);
+                  return (
+                    <li key={x.id}>
+                      <button type="button" disabled={isProg} className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-md px-2 text-left text-[13px] hover:bg-ink-50 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => {
+                        setPicked(x);
+                        onChange(x.id);
+                        setSearching(false);
+                        setQ('');
+                      }}>
+                        <span>{name(x)}</span>
+                        {isProg && <span className="text-[11.5px] text-ink-600">{t('progressie', 'progression')}</span>}
+                      </button>
+                    </li>
+                  );
+                })
+            )}
+          </ul>
+          <Button variant="ghost" size="sm" onClick={() => setSearching(false)}>{t('Annuleren', 'Cancel')}</Button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -602,27 +686,64 @@ function TemplatePicker({ open, onClose, onPick }: { open: boolean; onClose: () 
   );
 }
 
-function PreviewDialog({ open, onClose, meta, items }: { open: boolean; onClose: () => void; meta: Meta; items: BItem[] }) {
+/**
+ * Patient preview: the same planning rules (shared/schedule) and the same screens as the patient
+ * app, for a chosen date. Purely visual: it registers, sends and stores nothing.
+ */
+function PreviewDialog({ open, onClose, meta, items, unsaved }: { open: boolean; onClose: () => void; meta: Meta; items: BItem[]; unsaved: boolean }) {
   const { t, locale } = useI18n();
+  const win = { startDate: meta.startDate || null, endDate: meta.endDate || null };
+  const initial = win.startDate && win.startDate > todayISO() ? win.startDate : todayISO();
+  const [date, setDate] = useState(initial);
+  const [view, setView] = useState<'today' | 'program'>('today');
+  useEffect(() => {
+    if (open) setDate(initial);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  const dayItems = itemsForDate(win, items, date);
+  const status = dayStatus(win, items, date);
+  const title = meta.title || t('Programma', 'Programme');
   return (
-    <Dialog open={open} onClose={onClose} title={t('Voorbeeld voor de patiënt', 'Patient preview')} description={t('Zo ziet de patiënt het programma in de app.', 'This is how the patient sees the programme in the app.')} size="md">
-      <div className="mx-auto max-w-sm rounded-[28px] border-[6px] border-ink-900 bg-canvas p-4 shadow-pop">
-        <div className="mb-3 text-[12px] text-ink-500">{t('Vandaag', 'Today')}</div>
-        <h3 className="text-lg font-semibold">{meta.title || t('Programma', 'Programme')}</h3>
-        {meta.patientInstructions && <p className="mt-1 text-[13px] text-ink-600">{meta.patientInstructions}</p>}
-        <ol className="mt-4 space-y-2">
-          {items.map((i, n) => (
-            <li key={i.key} className="flex items-center gap-3 rounded-xl bg-white p-2.5 shadow-xs">
-              <ExerciseThumb thumbnailId={i.exercise.thumbnailMediaId} region={i.exercise.bodyRegion} className="h-12 w-12 shrink-0" />
-              <span className="min-w-0">
-                <span className="block text-[14px] font-semibold">{n + 1}. {locale === 'nl' ? i.exercise.nameNl : i.exercise.nameEn}</span>
-                <span className="block text-[12.5px] text-ink-500">{dose(i, locale)}</span>
-                {i.notes && <span className="block truncate text-[12px] italic text-accent">{i.notes}</span>}
-              </span>
-            </li>
+    <Dialog open={open} onClose={onClose} title={t('Voorbeeld voor de patiënt', 'Patient preview')} description={t('Dezelfde planning en schermen als de patiëntapp. Er wordt niets opgeslagen of verstuurd.', 'Same planning and screens as the patient app. Nothing is saved or sent.')} size="md">
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1 text-[13px] font-medium text-ink-700">
+          {t('Voorbeelddatum', 'Preview date')}
+          <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} className="h-11 rounded-lg border border-line bg-white px-3 text-[14px] focus:outline-none focus:ring-2 focus:ring-accent/40" />
+        </label>
+        <div role="tablist" aria-label={t('Scherm', 'Screen')} className="flex rounded-lg bg-ink-100 p-1">
+          {(['today', 'program'] as const).map((v) => (
+            <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)} className={cn('min-h-[36px] rounded-md px-3 text-[13px] font-medium', view === v ? 'bg-white text-ink-950 shadow-xs' : 'text-ink-600')}>
+              {v === 'today' ? t('Vandaag', 'Today') : t('Programma', 'Programme')}
+            </button>
           ))}
-        </ol>
-        <div className="mt-4 rounded-xl bg-accent py-3 text-center text-[15px] font-semibold text-white">{t('Start training', 'Start workout')}</div>
+        </div>
+      </div>
+      <p className="mb-3 text-[12.5px] text-ink-600">
+        {fmtDate(date, locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {t(`${dayItems.length} van ${items.length} oefeningen gepland`, `${dayItems.length} of ${items.length} exercises planned`)}
+        {unsaved && <> · <span className="font-medium text-warn">{t('niet-opgeslagen wijzigingen', 'unsaved changes')}</span></>}
+      </p>
+      <div className="mx-auto max-w-sm rounded-[28px] border-[6px] border-ink-900 bg-canvas p-4 shadow-pop">
+        {view === 'today' ? (
+          status === 'training' ? (
+            <TodayProgramCard
+              id="preview"
+              title={title}
+              items={dayItems}
+              done={false}
+              action={
+                <div aria-disabled="true" className="flex h-14 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-accent/90 text-base font-semibold text-white">
+                  {t('Start training', 'Start workout')}
+                </div>
+              }
+            />
+          ) : (
+            <RestDayCard status={status} startDate={win.startDate} nextSession={nextSessionDate(win, items, date)} />
+          )
+        ) : (
+          <div>
+            <h3 className="mb-3 text-xl font-semibold">{title}</h3>
+            <ProgramItemsList items={items} instructions={meta.patientInstructions} />
+          </div>
+        )}
       </div>
       <div className="mt-4 flex justify-center"><Button variant="ghost" icon={<X className="h-4 w-4" />} onClick={onClose}>{t('Sluiten', 'Close')}</Button></div>
     </Dialog>

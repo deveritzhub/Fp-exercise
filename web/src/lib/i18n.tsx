@@ -72,6 +72,7 @@ const ERRORS: Record<string, [string, string]> = {
   email_belongs_to_patient: ['Dit e-mailadres hoort bij een patiëntaccount.', 'This email belongs to a patient account.'],
   program_empty: ['Voeg minimaal één oefening toe voordat je het programma activeert.', 'Add at least one exercise before activating.'],
   invalid_exercise: ['Een of meer oefeningen zijn niet beschikbaar.', 'One or more exercises are not available.'],
+  alternative_is_progression: ['Een progressie (zwaardere variant) kan geen vervangende oefening zijn. Kies een regressie of gelijkwaardig alternatief.', 'A progression (harder variant) cannot be a substitute. Choose a regression or an equivalent alternative.'],
   unsupported_file_type: ['Bestandstype niet ondersteund. Gebruik MP4, WebM, JPG, PNG of WebP.', 'Unsupported file type. Use MP4, WebM, JPG, PNG or WebP.'],
   file_too_large: ['Bestand is te groot.', 'File is too large.'],
   global_exercise_readonly: ['Oefeningen uit de centrale bibliotheek kun je dupliceren, maar niet wijzigen.', 'Library exercises can be duplicated but not edited.'],

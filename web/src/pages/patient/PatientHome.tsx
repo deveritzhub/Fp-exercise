@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, CalendarClock, CheckCircle2, ChevronRight, Play, X } from 'lucide-react';
+import { Bell, CheckCircle2, ChevronRight, Play, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtRelative, greeting, pct } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
 import { ButtonLink, ErrorState, ProgressRing, Skeleton } from '@/components/ui';
-import { ExerciseThumb } from '@/components/app/ExerciseThumb';
+import { RestDayCard, TodayProgramCard } from '@/components/patient/TodayCard';
 import type { Adherence, Notification, Program } from '@/lib/types';
 import type { DayState } from '@shared/adherence';
 import { cn } from '@/lib/cn';
@@ -74,39 +74,25 @@ export function PatientHome() {
           <p className="mt-1 text-ink-500">{t('Je fysiotherapeut zet je oefenprogramma hier voor je klaar.', 'Your physiotherapist will set up your exercise programme here.')}</p>
         </div>
       ) : todo.length === 0 ? (
-        <div className="rounded-2xl border border-line bg-white p-6 shadow-card">
-          <h2 className="text-lg font-semibold">{t('Vandaag een rustdag', 'Rest day today')}</h2>
-          <p className="mt-1 text-ink-500">{t('Er staan vandaag geen oefeningen gepland.', 'No exercises are scheduled today.')}</p>
-          {d.programs[0].nextSession && <p className="mt-3 flex items-center gap-2 text-[15px] text-ink-700"><CalendarClock className="h-5 w-5 text-accent" />{t('Volgende sessie', 'Next session')}: {fmtDate(d.programs[0].nextSession, locale, { weekday: 'long', day: 'numeric', month: 'long' })}</p>}
-        </div>
+        <RestDayCard
+          status={d.programs.every((p) => p.upcoming) ? 'not_started' : 'rest'}
+          startDate={d.programs[0].startDate}
+          nextSession={d.programs.map((p) => p.nextSession).filter(Boolean).sort()[0] ?? null}
+        />
       ) : (
         todo.map((p) => (
-          <section key={p.id} className="overflow-hidden rounded-2xl border border-line bg-white shadow-card" aria-labelledby={`today-${p.id}`}>
-            <div className="p-5">
-              <div className="text-[13px] font-medium uppercase tracking-wide text-accent">{t('Vandaag', 'Today')}</div>
-              <h2 id={`today-${p.id}`} className="mt-1 text-xl font-semibold">{p.title}</h2>
-              <p className="mt-1 text-[15px] text-ink-500">
-                {p.today.scheduled} {t('oefeningen', 'exercises')} · ±{Math.max(5, Math.round(p.today.scheduled * 4))} {t('minuten', 'minutes')}
-              </p>
-              <div className="mt-4 flex -space-x-2">
-                {p.today.items.slice(0, 5).map((i) => (
-                  <ExerciseThumb key={i.id} thumbnailId={i.exercise.thumbnailMediaId} videoId={i.exercise.videoMediaId} region={i.exercise.bodyRegion} className="h-12 w-12 border-2 border-white" rounded="rounded-xl" />
-                ))}
-              </div>
-            </div>
-            {p.today.done ? (
-              <div className="flex items-center gap-3 border-t border-line bg-ok-soft px-5 py-4 text-ok">
-                <CheckCircle2 className="h-6 w-6" />
-                <span className="font-semibold">{t('Klaar voor vandaag — goed gedaan!', 'Done for today — well done!')}</span>
-              </div>
-            ) : (
-              <div className="border-t border-line p-4">
-                <ButtonLink to={`/p/sessie/${p.id}`} size="xl" className="w-full" icon={<Play className="h-5 w-5 fill-current" />}>
-                  {t('Start training', 'Start workout')}
-                </ButtonLink>
-              </div>
-            )}
-          </section>
+          <TodayProgramCard
+            key={p.id}
+            id={p.id}
+            title={p.title}
+            items={p.today.items}
+            done={p.today.done}
+            action={
+              <ButtonLink to={`/p/sessie/${p.id}`} size="xl" className="w-full" icon={<Play className="h-5 w-5 fill-current" />}>
+                {t('Start training', 'Start workout')}
+              </ButtonLink>
+            }
+          />
         ))
       )}
 

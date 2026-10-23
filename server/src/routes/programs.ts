@@ -84,7 +84,9 @@ export async function loadItems(tx: Tx, programId: string) {
             coalesce(ov.video_media_id, e.video_media_id) AS video_media_id, e.difficulty,
             e.instructions_nl, e.instructions_en, e.starting_position_nl, e.starting_position_en,
             e.movement_nl, e.movement_en, e.equipment,
-            alt.name_nl AS alt_name_nl, alt.name_en AS alt_name_en
+            alt.name_nl AS alt_name_nl, alt.name_en AS alt_name_en,
+            EXISTS (SELECT 1 FROM exercise_relations r WHERE r.exercise_id = i.exercise_id AND r.related_id = i.alternative_exercise_id
+                     AND r.kind = 'progression') AS alt_is_progression
        FROM program_items i JOIN exercises e ON e.id = i.exercise_id
        LEFT JOIN exercise_media_overrides ov ON ov.exercise_id = e.id AND ov.practice_id = i.practice_id
        LEFT JOIN exercises alt ON alt.id = i.alternative_exercise_id
@@ -95,7 +97,8 @@ export async function loadItems(tx: Tx, programId: string) {
     id: r.id,
     exerciseId: r.exercise_id,
     alternativeExerciseId: r.alternative_exercise_id,
-    alternative: r.alternative_exercise_id ? { nameNl: r.alt_name_nl, nameEn: r.alt_name_en } : null,
+    // A progression is never presented as the easier substitute (older programmes may still hold one).
+    alternative: r.alternative_exercise_id && !r.alt_is_progression ? { nameNl: r.alt_name_nl, nameEn: r.alt_name_en } : null,
     position: r.position,
     sets: r.sets,
     reps: r.reps,
@@ -135,6 +138,16 @@ async function assertExercisesVisible(tx: Tx, items: z.infer<typeof itemSchema>[
     [ids, practiceId],
   );
   if (rows.length !== ids.length) throw badRequest('invalid_exercise');
+  // The substitute is shown when an exercise does not work out, so it must never be a progression.
+  const pairs = items.filter((i) => i.alternativeExerciseId);
+  if (pairs.length) {
+    const bad = await tx.query(
+      `SELECT 1 FROM exercise_relations r JOIN unnest($1::uuid[], $2::uuid[]) AS x(ex, alt) ON r.exercise_id = x.ex AND r.related_id = x.alt
+        WHERE r.kind = 'progression' LIMIT 1`,
+      [pairs.map((i) => i.exerciseId), pairs.map((i) => i.alternativeExerciseId)],
+    );
+    if (bad.rows[0]) throw badRequest('alternative_is_progression');
+  }
 }
 
 async function writeItems(tx: Tx, programId: string, practiceId: string | null, items: z.infer<typeof itemSchema>[]) {
