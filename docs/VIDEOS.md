@@ -24,6 +24,25 @@ Practices can still replace them with their own via "Video van je praktijk".
 | Eenbeensstand | [26107ea4](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261022_171151_26107ea4-c345-42b9-afff-539b258dbe79.mp4) | ⬜ | ⬜ |
 | Opstappen | [7b16c0a5](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261022_171152_7b16c0a5-7515-4cc2-bd13-eb548fbd76c2.mp4) | ⬜ | ⬜ |
 
+## Batch 2 (2026-10-23) — vooral de eigen FP-bibliotheek
+
+Zelfde stijl en model, zonder geluid (14 credits per stuk, 168 in totaal). Gekoppeld via `source_key` (praktijkbibliotheek) en/of naam (centraal). **Nog niet klinisch gecontroleerd.**
+
+| Oefening | Video | Gecontroleerd? |
+|---|---|---|
+| Kniebuiging tegen muur (dorsaalflexie) — praktijk | [58b999b7](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261023_105522_58b999b7-66cd-4a40-92b1-7abc566be8b8.mp4) | ⬜ |
+| Externe rotatie met band — praktijk (beide armen; niet gekoppeld aan centrale eenarmige variant) | [fe941100](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261023_105525_fe941100-86db-4558-bbe5-2bc677f71fa5.mp4) | ⬜ |
+| Thoracale rotatie in zijligging — praktijk + centraal "Open boek" | [071c25b2](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261023_105524_071c25b2-89dd-4793-89a3-7d572cb367a2.mp4) | ⬜ |
+| Schouderbladen samentrekken — praktijk | [ca3ae2da](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261023_105522_ca3ae2da-b75a-481f-acd9-cb88e63dcf74.mp4) | ⬜ |
+| Diepe squat hold — praktijk | [3aff1ffc](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261023_105523_3aff1ffc-c853-4b8f-8930-5b8ea9d258aa.mp4) | ⬜ |
+| Nordic hamstring — praktijk | [9c2afc44](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261023_105523_9c2afc44-366b-421b-a1c0-8426a9c02f9c.mp4) | ⬜ |
+| Eenbenige romp-heup — praktijk + centraal "Eenbenige Roemeense deadlift" (video zonder gewicht) | [b8092411](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261023_105524_b8092411-ae64-41f1-bd51-32873f33f876.mp4) | ⬜ |
+| Medianus slider — praktijk | [ab6cecf9](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261023_105523_ab6cecf9-d068-4282-9716-1626ed705b03.mp4) | ⬜ |
+| Borstspier rek in deuropening — praktijk | [8416ce1a](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261023_105525_8416ce1a-f736-45c3-84da-825e6aafe820.mp4) | ⬜ |
+| Zittend hielheffen (soleus) — centraal | [db421f11](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261023_105524_db421f11-e8c5-45ef-8c47-b98b06bd1527.mp4) | ⬜ |
+| Eenbenige bekkenbrug — centraal | [fa00b9bd](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261023_105524_fa00b9bd-f313-496c-80de-4e6e7a8337fa.mp4) | ⬜ |
+| Roeien met weerstandsband — centraal (video: band om de voeten; tekst: band vast voor je) | [7f149475](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261023_105524_7f149475-045d-41e9-bfd3-40e98765bc8a.mp4) | ⬜ |
+
 Rejected / not used: Seedance 2.5 glute bridge test (90b675b2-90b8-4bfb-b263-137f9a20b354).
 
 ## Check per video

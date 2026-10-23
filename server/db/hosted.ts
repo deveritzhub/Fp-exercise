@@ -76,4 +76,11 @@ importLibraryVideos(process.env.DATABASE_OWNER_URL!, config.storageDir)
   .catch((e) => console.error('[videos]', e.message))
   // The practice's own library (once), then reuse matching library videos.
   .then(() => importFpLibrary(process.env.DATABASE_OWNER_URL!))
+  .catch((e) => console.error('[library]', e.message))
+  // Fill empty texts of the practice library, then link videos to practice exercises (they exist now).
+  .then(async () => {
+    const { completeExerciseTexts } = await import('./complete-exercises');
+    await completeExerciseTexts(process.env.DATABASE_OWNER_URL!);
+    await importLibraryVideos(process.env.DATABASE_OWNER_URL!, config.storageDir);
+  })
   .catch((e) => console.error('[library]', e.message));
