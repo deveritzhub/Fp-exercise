@@ -1,14 +1,16 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { login, seedDb, type Seed } from './helpers';
 import { resetRateLimits } from '../src/lib/rateLimit';
+import { beforeEach } from 'vitest';
 import { itemsForDate } from '../../shared/schedule';
 import { toISODate } from '../../shared/adherence';
 
 let s: Seed;
 beforeAll(async () => {
   s = await seedDb();
-  resetRateLimits();
 });
+// Many logins in one file: keep the login rate limit out of the way.
+beforeEach(() => resetRateLimits());
 
 describe('patient preview equals the patient app (P0)', () => {
   it('the app shows exactly the exercises the shared planning gives for today', async () => {
@@ -101,5 +103,37 @@ describe('resuming a workout (P1)', () => {
     expect((await patient.post(`/patient/sessions/${a.id}/complete`, {})).status).toBe(200);
     expect((await patient.get('/patient/history')).body.sessions.length).toBe(before + 1);
     expect((await patient.get('/patient/home')).body.programs.find((p: any) => p.id === s.programs.emma).openSession).toBeNull();
+  });
+});
+
+describe('dashboard and programme overview (P2)', () => {
+  it('gives every signal a date or numbers, and separates not activated from missing registration', async () => {
+    const c = await login('therapistA');
+    const d = (await c.get('/dashboard')).body;
+    expect(d.stats.adherence).toEqual(expect.objectContaining({ days: 7 }));
+    expect(d.stats.adherence.completed).toBeLessThanOrEqual(d.stats.adherence.planned);
+    for (const a of d.attention) {
+      expect(a.signals.map((x: any) => x.reason)).toEqual(a.reasons);
+      for (const sig of a.signals) {
+        if (['low_adherence', 'no_registration'].includes(sig.reason)) expect(sig.planned).toBeGreaterThan(0);
+        if (['high_pain', 'new_feedback', 'not_activated', 'program_ending'].includes(sig.reason)) expect(sig.date).toBeTruthy();
+      }
+      // A patient without an activated account never gets an adherence signal.
+      if (a.reasons.includes('not_activated')) expect(a.reasons).not.toContain('low_adherence');
+    }
+    expect(d.daily).toHaveLength(14);
+    expect(Array.isArray(d.daily[0].list)).toBe(true);
+  });
+
+  it('searches patient programmes by patient name and filters by status and therapist', async () => {
+    const c = await login('therapistA');
+    const all = (await c.get('/programs/overview?status=all')).body;
+    expect(all.items.every((p: any) => !p.isTemplate && p.patient)).toBe(true);
+    const emma = (await c.get('/programs/overview?q=Emma&status=all')).body.items;
+    expect(emma.map((p: any) => p.id)).toContain(s.programs.emma);
+    expect((await c.get('/programs/overview?status=draft')).body.items.every((p: any) => p.status === 'draft')).toBe(true);
+    // Other practice: nothing of practice A.
+    const other = (await (await login('therapistB')).get('/programs/overview?q=Emma&status=all')).body.items;
+    expect(other).toEqual([]);
   });
 });

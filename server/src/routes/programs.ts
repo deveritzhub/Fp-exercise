@@ -278,6 +278,50 @@ programs.get('/recent', async (c) => {
   );
 });
 
+/**
+ * Searchable overview of the practice's patient programmes (RLS: only patients the user may see),
+ * filtered by status, patient and therapist (who made it).
+ */
+programs.get('/overview', async (c) => {
+  const { user, practiceId } = requireStaff(c);
+  const f = parse(
+    z.object({
+      q: z.string().trim().max(80).default(''),
+      status: z.enum(['all', 'draft', 'active', 'completed', 'archived']).default('all'),
+      patientId: z.string().uuid().optional(),
+      therapist: z.union([z.literal('all'), z.literal('me'), z.string().uuid()]).default('all'),
+      limit: z.coerce.number().int().min(1).max(100).default(50),
+      offset: z.coerce.number().int().min(0).default(0),
+    }),
+    c.req.query(),
+  );
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const { rows } = await tx.query(
+        `SELECT p.*, pt.first_name, pt.last_name, u.full_name AS therapist_name, count(*) OVER() AS total,
+                (SELECT count(*) FROM program_items i WHERE i.program_id = p.id) AS item_count
+           FROM programs p JOIN patients pt ON pt.id = p.patient_id LEFT JOIN users u ON u.id = p.created_by
+          WHERE p.practice_id = $1 AND NOT p.is_template
+            AND ($2 = 'all' OR p.status = $2)
+            AND ($3::uuid IS NULL OR p.patient_id = $3)
+            AND ($4 = 'all' OR ($4 = 'me' AND p.created_by = app.uid()) OR p.created_by::text = $4)
+            AND ($5 = '' OR p.title ILIKE '%' || $5 || '%' OR (pt.first_name || ' ' || pt.last_name) ILIKE '%' || $5 || '%')
+          ORDER BY p.updated_at DESC LIMIT $6 OFFSET $7`,
+        [practiceId, f.status, f.patientId ?? null, f.therapist, f.q, f.limit, f.offset],
+      );
+      return {
+        total: rows[0]?.total ?? 0,
+        items: rows.map((r) => ({
+          ...mapProgram(r),
+          itemCount: r.item_count,
+          therapistName: r.therapist_name,
+          patient: { id: r.patient_id, firstName: r.first_name, lastName: r.last_name },
+        })),
+      };
+    }),
+  );
+});
+
 programs.get('/:id', async (c) => {
   const { user } = requireStaff(c);
   const id = parse(uuidParam, c.req.param('id'));

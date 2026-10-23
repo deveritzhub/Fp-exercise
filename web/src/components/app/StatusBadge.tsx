@@ -20,6 +20,7 @@ export function useReasonLabel() {
       case 'high_pain': return { text: t('Hoge pijnscore', 'High pain score'), tone: 'bad' };
       case 'new_feedback': return { text: t('Nieuwe feedback', 'New feedback'), tone: 'info' };
       case 'low_adherence': return { text: t('Lage therapietrouw', 'Low adherence'), tone: 'warn' };
+      case 'no_registration': return { text: t('Geen registratie', 'Nothing registered'), tone: 'warn' };
       case 'program_ending': return { text: t('Programma eindigt binnenkort', 'Programme ending soon'), tone: 'neutral' };
       case 'not_activated': return { text: t('Account niet geactiveerd', 'Account not activated'), tone: 'neutral' };
       case 'no_active_program': return { text: t('Geen actief programma', 'No active programme'), tone: 'neutral' };

@@ -253,7 +253,7 @@ patients.get('/:id/progress', async (c) => {
                 (SELECT coalesce(json_agg(json_build_object(
                     'exerciseId', l.exercise_id, 'nameNl', e.name_nl, 'nameEn', e.name_en, 'completed', l.completed,
                     'setsDone', l.sets_done, 'repsDone', l.reps_done, 'difficulty', l.difficulty, 'pain', l.pain,
-                    'feedback', l.feedback) ORDER BY i.position), '[]')
+                    'feedback', l.feedback, 'plannedHoldS', i.hold_s, 'plannedSets', i.sets) ORDER BY i.position), '[]')
                    FROM exercise_logs l JOIN exercises e ON e.id = l.exercise_id
                    LEFT JOIN program_items i ON i.id = l.program_item_id
                   WHERE l.session_id = s.id) AS logs

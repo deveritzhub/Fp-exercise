@@ -26,27 +26,51 @@ export function ProgressRing({ value, size = 88, stroke = 8, children, label }: 
 }
 
 /** Simple accessible vertical bar chart (0..1 values). */
-export function Bars({ data, height = 120, format, highlightLast }: { data: { label: string; value: number | null; sub?: string; display?: string }[]; height?: number; format?: (v: number | null) => string; highlightLast?: boolean }) {
+/**
+ * Bar chart. With `onSelect` every bar is a button (keyboard and touch) that opens its details;
+ * `axisMax` prints the scale so heights can be read without hovering.
+ */
+export function Bars({ data, height = 120, format, highlightLast, onSelect, selected, axisMax, showValues }: { data: { label: string; value: number | null; sub?: string; display?: string; ariaLabel?: string }[]; height?: number; format?: (v: number | null) => string; highlightLast?: boolean; onSelect?: (i: number) => void; selected?: number | null; axisMax?: string; showValues?: boolean }) {
   return (
-    <div className="w-full">
-      <div className="flex items-end gap-2" style={{ height }} role="list">
-        {data.map((d, i) => {
-          const v = d.value === null ? 0 : Math.max(0.02, Math.min(1, d.value));
-          return (
-            <div key={i} className="group flex h-full flex-1 flex-col items-center justify-end" role="listitem" aria-label={`${d.label}: ${d.display ?? (format ? format(d.value) : d.value)}`}>
-              <div className="mb-1 text-2xs font-medium tabular-nums text-ink-500 opacity-0 transition-opacity group-hover:opacity-100">{d.display ?? (format ? format(d.value) : d.value)}</div>
-              <div className={cn('w-full max-w-10 rounded-t-md transition-all duration-500', d.value === null ? 'bg-ink-100' : highlightLast && i === data.length - 1 ? 'bg-brand-wood' : 'bg-accent/85 group-hover:bg-accent')} style={{ height: `${d.value === null ? 4 : v * 100}%` }} />
+    <div className="flex w-full gap-2">
+      {axisMax !== undefined && (
+        <div className="flex shrink-0 flex-col justify-between pb-0 text-right text-2xs tabular-nums text-ink-600" style={{ height }} aria-hidden>
+          <span>{axisMax}</span>
+          <span>0</span>
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-end gap-1 border-b border-line sm:gap-2" style={{ height }} role="list">
+          {data.map((d, i) => {
+            const v = d.value === null ? 0 : Math.max(0.02, Math.min(1, d.value));
+            const shown = d.display ?? (format ? format(d.value) : d.value);
+            const bar = (
+              <>
+                <div className={cn('mb-1 text-2xs font-medium tabular-nums text-ink-600', !showValues && 'opacity-0 transition-opacity group-hover:opacity-100')}>{shown}</div>
+                <div className={cn('w-full max-w-10 rounded-t-md transition-all duration-500', d.value === null ? 'bg-ink-100' : selected === i ? 'bg-ink-900' : highlightLast && i === data.length - 1 ? 'bg-brand-wood' : 'bg-accent/85 group-hover:bg-accent')} style={{ height: `${d.value === null ? 4 : v * 100}%` }} />
+              </>
+            );
+            return onSelect ? (
+              <div key={i} className="flex h-full flex-1" role="listitem">
+                <button type="button" onClick={() => onSelect(i)} aria-pressed={selected === i} aria-label={d.ariaLabel ?? `${d.label}: ${shown}`} className="group flex h-full w-full flex-col items-center justify-end rounded-t-md focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
+                  {bar}
+                </button>
+              </div>
+            ) : (
+              <div key={i} className="group flex h-full flex-1 flex-col items-center justify-end" role="listitem" aria-label={d.ariaLabel ?? `${d.label}: ${shown}`}>
+                {bar}
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-2 flex gap-1 sm:gap-2" aria-hidden>
+          {data.map((d, i) => (
+            <div key={i} className={cn('min-w-0 flex-1 text-center text-2xs text-ink-600', selected === i && 'font-semibold text-ink-900')}>
+              {d.label}
+              {d.sub && <div className="text-ink-500">{d.sub}</div>}
             </div>
-          );
-        })}
-      </div>
-      <div className="mt-2 flex gap-2 border-t border-line pt-2">
-        {data.map((d, i) => (
-          <div key={i} className="flex-1 text-center text-2xs text-ink-500">
-            {d.label}
-            {d.sub && <div className="text-ink-400">{d.sub}</div>}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

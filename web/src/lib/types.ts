@@ -143,7 +143,7 @@ export type PatientDetail = Omit<PatientListItem, 'activePrograms' | 'lastActivi
   programs: { id: string; title: string; status: ProgramStatus; startDate: string | null; endDate: string | null; version: number; updatedAt: string; itemCount: number }[];
 };
 
-export type SessionLog = { exerciseId: string; nameNl: string; nameEn: string; completed: boolean; setsDone: number | null; repsDone: number | null; difficulty: number | null; pain: number | null; feedback: string | null };
+export type SessionLog = { exerciseId: string; nameNl: string; nameEn: string; completed: boolean; setsDone: number | null; repsDone: number | null; difficulty: number | null; pain: number | null; feedback: string | null; plannedHoldS?: number | null; plannedSets?: number | null };
 export type Progress = {
   weekly: (Adherence & { weekStart: string })[];
   adherence7d: Adherence;

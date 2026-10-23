@@ -116,7 +116,7 @@ export function PatientDetailPage() {
         tabs={[
           { value: 'overzicht', label: t('Overzicht', 'Overview') },
           { value: 'programmas', label: t('Programma’s', 'Programmes'), count: pt.programs.length },
-          { value: 'sessies', label: t('Sessies & feedback', 'Sessions & feedback'), count: unreviewed || undefined },
+          { value: 'sessies', label: unreviewed ? <>{t('Sessies & feedback', 'Sessions & feedback')} <span className="ml-1 rounded-full bg-warn-soft px-2 py-0.5 text-[11.5px] font-semibold text-warn">{t(`${unreviewed} te beoordelen`, `${unreviewed} to review`)}</span></> : t('Sessies & feedback', 'Sessions & feedback') },
           { value: 'gegevens', label: t('Gegevens', 'Details') },
         ]}
       />
@@ -139,37 +139,29 @@ function Overview({ progress, programs }: { progress?: Progress; programs: Patie
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label={t('Therapietrouw 7 d', 'Adherence 7 d')} value={pct(progress.adherence7d.rate)} hint={`${progress.adherence7d.completed}/${progress.adherence7d.planned} ${t('sessies', 'sessions')}`} />
-        <Stat label={t('Therapietrouw 28 d', 'Adherence 28 d')} value={pct(progress.adherence28d.rate)} hint={`${progress.adherence28d.completed}/${progress.adherence28d.planned} ${t('sessies', 'sessions')}`} />
+        <Stat label={t('Therapietrouw 7 d', 'Adherence 7 d')} value={pct(progress.adherence7d.rate)} hint={t(`${progress.adherence7d.completed} van ${progress.adherence7d.planned} geplande trainingsdagen`, `${progress.adherence7d.completed} of ${progress.adherence7d.planned} planned training days`)} />
+        <Stat label={t('Therapietrouw 28 d', 'Adherence 28 d')} value={pct(progress.adherence28d.rate)} hint={t(`${progress.adherence28d.completed} van ${progress.adherence28d.planned} geplande trainingsdagen`, `${progress.adherence28d.completed} of ${progress.adherence28d.planned} planned training days`)} />
         <Stat label={t('Afgeronde sessies', 'Completed sessions')} value={progress.completedSessions} hint={t('totaal', 'total')} />
         <Stat label={t('Actieve programma’s', 'Active programmes')} value={active.length} hint={active[0]?.title} />
       </div>
       <div className="grid gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-3">
-          <CardHeader title={t('Therapietrouw per week', 'Weekly adherence')} description={t('Uitgevoerde ten opzichte van geplande sessiedagen.', 'Completed versus planned session days.')} />
+          <CardHeader title={t('Therapietrouw per week', 'Weekly adherence')} description={t('Gedane ten opzichte van geplande trainingsdagen per week (start op maandag). Zelfde berekening als op het dashboard en in de patiëntapp.', 'Completed versus planned training days per week (starting Monday). Same calculation as the dashboard and the patient app.')} />
           <div className="p-5">
             <Bars
               format={pct}
+              axisMax="100%"
+              showValues
               data={progress.weekly.map((w) => ({ label: fmtDate(w.weekStart, locale, { day: 'numeric', month: 'short' }), value: w.planned ? w.rate : null, sub: w.planned ? `${w.completed}/${w.planned}` : '' }))}
             />
           </div>
         </Card>
         <Card className="lg:col-span-2">
-          <CardHeader title={t('Gemelde scores', 'Reported scores')} description={t('Per sessie, 0–10. Indicatief, geen klinische meting.', 'Per session, 0–10. Indicative, not a clinical measure.')} />
-          <div className="space-y-4 p-5">
-            <div>
-              <div className="mb-1 flex justify-between text-[12.5px]"><span className="font-medium text-ink-700">{t('Pijn / ongemak', 'Pain / discomfort')}</span><span className="text-ink-500">{chronological.at(-1)?.pain ?? '—'}</span></div>
-              <Sparkline values={chronological.map((s) => s.pain)} tone="bad" />
-            </div>
-            <div>
-              <div className="mb-1 flex justify-between text-[12.5px]"><span className="font-medium text-ink-700">{t('Ervaren zwaarte', 'Perceived difficulty')}</span><span className="text-ink-500">{chronological.at(-1)?.difficulty ?? '—'}</span></div>
-              <Sparkline values={chronological.map((s) => s.difficulty)} />
-            </div>
-          </div>
+          <SessionScores sessions={chronological} />
         </Card>
       </div>
       <Card>
-        <CardHeader title={t('Per oefening (laatste 8 weken)', 'Per exercise (last 8 weeks)')} />
+        <CardHeader title={t('Oefenscores per oefening (laatste 8 weken)', 'Exercise scores per exercise (last 8 weeks)')} description={t('Ingevuld na elke oefening, 0–10. Los van de sessiescore na de hele training.', 'Filled in after each exercise, 0–10. Separate from the session score after the whole workout.')} />
         {progress.perExercise.length === 0 ? (
           <EmptyState title={t('Nog geen geregistreerde oefeningen', 'No logged exercises yet')} />
         ) : (
@@ -247,8 +239,8 @@ function Sessions({ progress, onReviewed }: { progress?: Progress; onReviewed: (
                   <span className="text-[12.5px] text-ink-500">{s.programTitle} · {completed}/{s.logs.length} {t('oefeningen', 'exercises')}</span>
                 </span>
                 <span className="flex flex-wrap items-center gap-1.5">
-                  {s.difficulty !== null && <Badge tone="neutral">{t('Zwaarte', 'Difficulty')} {s.difficulty}</Badge>}
-                  {s.pain !== null && <Badge tone={s.pain >= 6 ? 'bad' : 'neutral'}>{t('Pijn', 'Pain')} {s.pain}</Badge>}
+                  {s.difficulty !== null && <Badge tone="neutral">{t('Sessie-zwaarte', 'Session difficulty')} {s.difficulty}/10</Badge>}
+                  {s.pain !== null && <Badge tone={s.pain >= 6 ? 'bad' : 'neutral'}>{t('Sessiepijn', 'Session pain')} {s.pain}/10</Badge>}
                   {(s.feedback || s.logs.some((l) => l.feedback)) && <Badge tone="info"><MessageSquareText className="h-3 w-3" />{t('Feedback', 'Feedback')}</Badge>}
                   {needsReview ? <Badge tone="warn">{t('Te beoordelen', 'To review')}</Badge> : s.reviewedAt ? <Badge tone="ok"><Check className="h-3 w-3" />{t('Gezien', 'Seen')}</Badge> : null}
                 </span>
@@ -260,7 +252,8 @@ function Sessions({ progress, onReviewed }: { progress?: Progress; onReviewed: (
                     <blockquote className="mb-4 rounded-lg border-l-2 border-info bg-white px-4 py-3 text-sm text-ink-800 shadow-xs">“{s.feedback}”</blockquote>
                   )}
                   <table className="w-full text-[13px]">
-                    <thead className="text-left text-[12px] text-ink-500"><tr><th className="py-1 font-medium">{t('Oefening', 'Exercise')}</th><th className="py-1 font-medium">{t('Uitgevoerd', 'Done')}</th><th className="py-1 font-medium">{t('Sets × herh.', 'Sets × reps')}</th><th className="py-1 font-medium">{t('Zwaarte', 'Difficulty')}</th><th className="py-1 font-medium">{t('Pijn', 'Pain')}</th></tr></thead>
+                    <caption className="pb-2 text-left text-[12.5px] text-ink-600">{t('Oefenscores: ingevuld na elke oefening (0–10).', 'Exercise scores: filled in after each exercise (0–10).')}</caption>
+                    <thead className="text-left text-[12px] text-ink-600"><tr><th className="py-1 font-medium">{t('Oefening', 'Exercise')}</th><th className="py-1 font-medium">{t('Uitgevoerd', 'Done')}</th><th className="py-1 font-medium">{t('Gedaan', 'Done')}</th><th className="py-1 font-medium">{t('Zwaarte', 'Difficulty')}</th><th className="py-1 font-medium">{t('Pijn', 'Pain')}</th></tr></thead>
                     <tbody>
                       {s.logs.map((l, i) => (
                         <tr key={i} className="border-t border-line/70 align-top">
@@ -269,7 +262,11 @@ function Sessions({ progress, onReviewed }: { progress?: Progress; onReviewed: (
                             {l.feedback && <div className="mt-0.5 text-[12.5px] italic text-info">“{l.feedback}”</div>}
                           </td>
                           <td className="py-2">{l.completed ? <Check className="h-4 w-4 text-ok" aria-label={t('ja', 'yes')} /> : <span className="text-ink-400">{t('overgeslagen', 'skipped')}</span>}</td>
-                          <td className="py-2 tabular-nums">{l.setsDone ?? '—'} × {l.repsDone ?? '—'}</td>
+                          <td className="py-2 tabular-nums">
+                            {l.plannedHoldS
+                              ? t(`${l.setsDone ?? '—'} sets × ${l.plannedHoldS} s vasthouden`, `${l.setsDone ?? '—'} sets × ${l.plannedHoldS} s hold`)
+                              : t(`${l.setsDone ?? '—'} sets × ${l.repsDone ?? '—'} herh.`, `${l.setsDone ?? '—'} sets × ${l.repsDone ?? '—'} reps`)}
+                          </td>
                           <td className="py-2 tabular-nums">{l.difficulty ?? '—'}</td>
                           <td className="py-2">{l.pain === null ? '—' : <span className={l.pain >= 6 ? 'font-semibold text-bad' : ''}>{l.pain}</span>}</td>
                         </tr>
@@ -370,5 +367,45 @@ function Details({ pt, onEdit }: { pt: PatientDetail; onEdit: () => void }) {
         )}
       </Dialog>
     </div>
+  );
+}
+
+/** Session scores (after the whole workout) over time, with dates, scale and the values as a list. */
+function SessionScores({ sessions }: { sessions: Progress['sessions'] }) {
+  const { t, locale } = useI18n();
+  const first = sessions[0]?.completedAt;
+  const last = sessions.at(-1)?.completedAt;
+  const range = first && last ? `${fmtDate(first, locale, { day: 'numeric', month: 'short' })} – ${fmtDate(last, locale, { day: 'numeric', month: 'short' })}` : '';
+  return (
+    <>
+      <CardHeader title={t('Sessiescores', 'Session scores')} description={t(`Na de hele training gemeld, schaal 0–10${range ? `, ${range}` : ''}. Indicatief, geen klinische meting.`, `Reported after the whole workout, scale 0–10${range ? `, ${range}` : ''}. Indicative, not a clinical measure.`)} />
+      <div className="space-y-4 p-5">
+        {[
+          [t('Pijn / ongemak', 'Pain / discomfort'), sessions.map((s) => s.pain), 'bad'] as const,
+          [t('Ervaren zwaarte', 'Perceived difficulty'), sessions.map((s) => s.difficulty), 'accent'] as const,
+        ].map(([label, values, tone]) => (
+          <div key={label}>
+            <div className="mb-1 flex justify-between text-[12.5px]"><span className="font-medium text-ink-800">{label}</span><span className="text-ink-600">{t('laatste', 'latest')}: {values.at(-1) ?? '—'}/10</span></div>
+            <div className="flex gap-2">
+              <div className="flex h-14 flex-col justify-between text-2xs text-ink-600" aria-hidden><span>10</span><span>0</span></div>
+              <Sparkline values={values} tone={tone} />
+            </div>
+          </div>
+        ))}
+        {sessions.length > 0 && (
+          <details className="text-[12.5px]">
+            <summary className="min-h-[44px] cursor-pointer py-2 font-medium text-accent">{t('Toon per sessie', 'Show per session')}</summary>
+            <table className="w-full">
+              <thead className="text-left text-ink-600"><tr><th className="py-1 font-medium">{t('Datum', 'Date')}</th><th className="py-1 font-medium">{t('Pijn', 'Pain')}</th><th className="py-1 font-medium">{t('Zwaarte', 'Difficulty')}</th></tr></thead>
+              <tbody>
+                {[...sessions].reverse().map((s) => (
+                  <tr key={s.id} className="border-t border-line"><td className="py-1">{fmtDateTime(s.completedAt, locale)}</td><td className="py-1 tabular-nums">{s.pain ?? '—'}</td><td className="py-1 tabular-nums">{s.difficulty ?? '—'}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
+        )}
+      </div>
+    </>
   );
 }

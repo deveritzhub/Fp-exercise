@@ -1,25 +1,23 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, Layers3, LayoutTemplate, Plus, Search, Star, X } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, qs } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
-import { dose, fmtRelative } from '@/lib/format';
+import { dose, fmtDate } from '@/lib/format';
 import { useDocumentMeta, useLabels } from '@/lib/meta';
 import { cn } from '@/lib/cn';
-import { Badge, ButtonLink, Card, CardHeader, EmptyState, ErrorState, PageHeader, Select, Skeleton, Tabs, useDebounced } from '@/components/ui';
+import { Badge, ButtonLink, Card, EmptyState, ErrorState, Input, PageHeader, Select, Skeleton, Tabs, useDebounced } from '@/components/ui';
 import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import { CriteriaList, Evidence, RedFlags, Warnings, useModules } from '@/components/app/PhaseInfo';
 import { ProgramStatusBadge } from '@/components/app/StatusBadge';
 import type { Program, ProgramModule } from '@/lib/types';
 
 export function ProgramsPage() {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   useDocumentMeta(t('Programma’s & sjablonen', 'Programmes & templates'));
-  const { practice } = useSession();
   const [tab, setTab] = useState<'templates' | 'recent'>('templates');
-  const recent = useQuery({ queryKey: ['programs-recent', practice?.practiceId], queryFn: () => api.get<{ items: Program[] }>('/programs/recent'), enabled: tab === 'recent' });
 
   return (
     <>
@@ -33,32 +31,80 @@ export function ProgramsPage() {
           </>
         }
       />
-      <Tabs className="mb-5" value={tab} onChange={setTab} tabs={[{ value: 'templates', label: t('Sjablonen', 'Templates') }, { value: 'recent', label: t('Mijn recente programma’s', 'My recent programmes') }]} />
+      <Tabs className="mb-5" value={tab} onChange={setTab} tabs={[{ value: 'templates', label: t('Sjablonen', 'Templates') }, { value: 'recent', label: t('Patiëntprogramma’s', 'Patient programmes') }]} />
       {tab === 'templates' ? (
         <TemplateBrowser />
       ) : (
-        <Card>
-          <CardHeader title={t('Mijn recente programma’s', 'My recent programmes')} />
-          {!recent.data ? <div className="space-y-3 p-5">{Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-10" />)}</div> : recent.data.items.length === 0 ? (
-            <EmptyState title={t('Nog geen programma’s', 'No programmes yet')} />
-          ) : (
-            <ul className="divide-y divide-line">
-              {recent.data.items.map((p) => (
-                <li key={p.id}>
-                  <Link to={`/app/programmas/${p.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-ink-50/60">
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-medium">{p.title}</span>
-                      <span className="text-[12.5px] text-ink-500">{p.isTemplate ? t('Sjabloon', 'Template') : p.patient ? `${p.patient.firstName} ${p.patient.lastName}` : ''} · {fmtRelative(p.updatedAt, locale)}</span>
-                    </span>
-                    {p.isTemplate ? <Badge tone="accent">{t('Sjabloon', 'Template')}</Badge> : <ProgramStatusBadge status={p.status} />}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
+        <ProgramOverview />
       )}
     </>
+  );
+}
+
+/** All patient programmes of the practice: search title or patient, filter on status and therapist. */
+function ProgramOverview() {
+  const { t, locale } = useI18n();
+  const { practice, user } = useSession();
+  const [q, setQ] = useState('');
+  const [status, setStatus] = useState('active');
+  const [therapist, setTherapist] = useState('me');
+  const dq = useDebounced(q.trim(), 200);
+  const members = useQuery({ queryKey: ['members'], queryFn: () => api.get<{ items: { userId: string; fullName: string; active: boolean }[] }>('/practice/members'), staleTime: 60_000 });
+  const list = useQuery({
+    queryKey: ['programs-overview', practice?.practiceId, dq, status, therapist],
+    queryFn: ({ signal }) => api.get<{ total: number; items: (Program & { therapistName: string | null })[] }>(`/programs/overview${qs({ q: dq, status, therapist })}`, signal),
+    placeholderData: keepPreviousData,
+  });
+  const pending = q.trim() !== dq || list.isPlaceholderData || (!list.data && list.isFetching);
+  const sel = 'h-11 rounded-lg border border-line bg-white px-3 text-[13.5px] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50';
+  return (
+    <Card>
+      <div className="flex flex-wrap items-end gap-2 border-b border-line p-4">
+        <div className="min-w-[14rem] flex-1">
+          <Input leading={<Search className="h-4 w-4" />} aria-label={t('Zoek op programma of patiënt', 'Search programme or patient')} placeholder={t('Zoek op programma of patiënt…', 'Search programme or patient…')} value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <label className="sr-only" htmlFor="po-status">{t('Status', 'Status')}</label>
+        <select id="po-status" className={sel} value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="all">{t('Alle statussen', 'All statuses')}</option>
+          <option value="active">{t('Actief', 'Active')}</option>
+          <option value="draft">{t('Concept', 'Draft')}</option>
+          <option value="completed">{t('Afgerond', 'Completed')}</option>
+          <option value="archived">{t('Gearchiveerd', 'Archived')}</option>
+        </select>
+        <label className="sr-only" htmlFor="po-therapist">{t('Therapeut', 'Therapist')}</label>
+        <select id="po-therapist" className={sel} value={therapist} onChange={(e) => setTherapist(e.target.value)}>
+          <option value="me">{t('Door mij gemaakt', 'Made by me')}</option>
+          <option value="all">{t('Alle therapeuten', 'All therapists')}</option>
+          {members.data?.items.filter((m) => m.active && m.userId !== user?.id).map((m) => <option key={m.userId} value={m.userId}>{m.fullName}</option>)}
+        </select>
+      </div>
+      <div className="flex min-h-[2.25rem] items-center px-5 pt-3 text-[13px] text-ink-600" aria-live="polite">
+        {pending ? t('Zoeken…', 'Searching…') : list.data ? t(`${list.data.total} programma’s`, `${list.data.total} programmes`) : null}
+      </div>
+      {list.isError ? (
+        <ErrorState error={list.error} onRetry={() => list.refetch()} />
+      ) : !list.data || (pending && !list.data.items.length) ? (
+        <div className="space-y-3 p-5">{Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-10" />)}</div>
+      ) : list.data.items.length === 0 ? (
+        <EmptyState title={t('Geen programma’s gevonden', 'No programmes found')} description={t('Pas de zoekterm of filters aan.', 'Adjust the search or filters.')} />
+      ) : (
+        <ul className={cn('divide-y divide-line', pending && 'opacity-60')}>
+          {list.data.items.map((p) => (
+            <li key={p.id}>
+              <Link to={`/app/programmas/${p.id}`} className="flex min-h-[56px] flex-wrap items-center gap-3 px-5 py-3 hover:bg-ink-50/60">
+                <span className="min-w-0 flex-1">
+                  <span className="block font-medium">{p.title}</span>
+                  <span className="text-[12.5px] text-ink-600">
+                    {p.patient ? `${p.patient.firstName} ${p.patient.lastName}` : ''} · {p.itemCount} {t('oefeningen', 'exercises')}{p.therapistName ? ` · ${p.therapistName}` : ''} · {t('bijgewerkt', 'updated')} {fmtDate(p.updatedAt, locale)}
+                  </span>
+                </span>
+                <ProgramStatusBadge status={p.status} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }
 
@@ -191,7 +237,7 @@ function SeriesCard({ title, phases }: { title: string; phases: Program[] }) {
             <Badge tone="accent">{t(`${phases.length} fases`, `${phases.length} phases`)}</Badge>
             {totalWeeks && <Badge tone="outline">{t(`${totalWeeks} weken`, `${totalWeeks} weeks`)}</Badge>}
             {first.scope === 'practice' ? <Badge tone="outline">{t('Praktijk', 'Practice')}</Badge> : <Badge tone="outline">{t('Centraal', 'Central')}</Badge>}
-            {(first.warnings ?? []).length > 0 && <Badge tone="warn">{t('Let op', 'Note')}</Badge>}
+            <WarningBadge warnings={first.warnings} />
           </span>
         </span>
         <ChevronDown className={cn('mt-2 h-5 w-5 shrink-0 text-ink-400 transition-transform', open && 'rotate-180')} aria-hidden />
@@ -285,7 +331,7 @@ function SingleTemplateCard({ tpl }: { tpl: Program }) {
             {tpl.itemCount ? <Badge tone="outline">{tpl.itemCount} {t('oefeningen', 'exercises')}</Badge> : <Badge tone="info">{t('Kader — jij kiest oefeningen en dosering', 'Framework — you choose exercises and dose')}</Badge>}
             {tpl.regions?.slice(0, 2).map((r) => <Badge key={r} tone="outline">{L.region(r)}</Badge>)}
             <Badge tone="outline">{tpl.scope === 'practice' ? t('Praktijk', 'Practice') : t('Centraal', 'Central')}</Badge>
-            {(tpl.warnings ?? []).length > 0 && <Badge tone="warn">{t('Let op', 'Note')}</Badge>}
+            <WarningBadge warnings={tpl.warnings} />
           </div>
         </div>
         <button type="button" onClick={toggleFav} aria-pressed={!!tpl.favorite} aria-label={tpl.favorite ? t('Verwijder uit favorieten', 'Remove from favourites') : t('Voeg toe aan favorieten', 'Add to favourites')} className={cn('tap rounded-full p-2', tpl.favorite ? 'text-amber-500' : 'text-ink-300 hover:text-ink-600')}>
@@ -309,5 +355,21 @@ function SingleTemplateCard({ tpl }: { tpl: Program }) {
         </div>
       )}
     </article>
+  );
+}
+
+/** The concrete warning instead of a bare "Let op" (full text on hover and for screen readers). */
+function WarningBadge({ warnings }: { warnings?: string[] | null }) {
+  const { t } = useI18n();
+  const w = (warnings ?? []).filter(Boolean);
+  if (!w.length) return null;
+  const first = w[0].replace(/\.$/, '');
+  const short = first.length > 60 ? `${first.slice(0, 57).trimEnd()}…` : first;
+  return (
+    <span title={w.join('\n')} className="inline-flex max-w-full items-center gap-1 rounded-md bg-warn-soft px-1.5 py-0.5 text-[11.5px] font-medium text-warn">
+      <span className="truncate" aria-hidden>{t('Let op', 'Note')}: {short}</span>
+      {w.length > 1 && <span className="shrink-0" aria-hidden>+{w.length - 1}</span>}
+      <span className="sr-only">{w.join('. ')}</span>
+    </span>
   );
 }

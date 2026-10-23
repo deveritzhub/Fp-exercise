@@ -7,7 +7,9 @@ import { toISODate } from '../../../shared/adherence';
 
 export const dashboard = new Hono<AppEnv>();
 
-type Attention = { patientId: string; name: string; reasons: string[] };
+/** One reason to look at a patient, with its date and numbers so the next step is clear. */
+type Signal = { reason: string; date: string | null; value?: number; planned?: number; completed?: number };
+type Attention = { patientId: string; name: string; reasons: string[]; signals: Signal[] };
 
 dashboard.get('/', async (c) => {
   const { user, practiceId } = requireStaff(c);
@@ -26,12 +28,16 @@ dashboard.get('/', async (c) => {
       const ids = pts.rows.map((r) => r.id);
       const inputs = await loadAdherenceInputs(tx, ids);
       const recentPain = await tx.query(
-        `SELECT patient_id, max(greatest(coalesce(s.pain,0), coalesce((SELECT max(l.pain) FROM exercise_logs l WHERE l.session_id = s.id),0))) AS max_pain,
-                count(*) FILTER (WHERE s.reviewed_at IS NULL AND (s.feedback IS NOT NULL OR EXISTS (
-                   SELECT 1 FROM exercise_logs l WHERE l.session_id = s.id AND l.feedback IS NOT NULL))) AS unreviewed
-           FROM workout_sessions s
-          WHERE s.patient_id = ANY($1) AND s.completed_at > now() - interval '14 days'
-          GROUP BY patient_id`,
+        `WITH x AS (
+           SELECT s.patient_id, s.completed_at, s.reviewed_at,
+                  greatest(coalesce(s.pain,0), coalesce((SELECT max(l.pain) FROM exercise_logs l WHERE l.session_id = s.id),0)) AS pain,
+                  (s.feedback IS NOT NULL OR EXISTS (SELECT 1 FROM exercise_logs l WHERE l.session_id = s.id AND l.feedback IS NOT NULL)) AS has_feedback
+             FROM workout_sessions s
+            WHERE s.patient_id = ANY($1) AND s.completed_at > now() - interval '14 days')
+         SELECT patient_id, max(pain) AS max_pain, max(completed_at) FILTER (WHERE pain >= 6) AS pain_at,
+                count(*) FILTER (WHERE reviewed_at IS NULL AND has_feedback) AS unreviewed,
+                max(completed_at) FILTER (WHERE reviewed_at IS NULL AND has_feedback) AS feedback_at
+           FROM x GROUP BY patient_id`,
         [ids],
       );
       const painBy = new Map(recentPain.rows.map((r) => [r.patient_id, r]));
@@ -41,20 +47,26 @@ dashboard.get('/', async (c) => {
       let planned = 0;
       let completed = 0;
       for (const p of pts.rows) {
-        const reasons: string[] = [];
+        const signals: Signal[] = [];
         const a = adherenceForPatient(inputs, p.id, 7);
         planned += a.planned;
         completed += a.completed;
         const pain = painBy.get(p.id);
-        if (pain && pain.max_pain >= 6) reasons.push('high_pain');
-        if (pain && pain.unreviewed > 0) reasons.push('new_feedback');
-        if (p.active_programs > 0 && a.planned >= 2 && (a.rate ?? 0) < 0.5) reasons.push('low_adherence');
-        if (p.next_end && p.next_end <= toISODate(soon)) reasons.push('program_ending');
-        if (!p.activated && p.invited_at && Date.now() - new Date(p.invited_at).getTime() > 3 * 86400_000) reasons.push('not_activated');
-        if (p.active_programs === 0) reasons.push('no_active_program');
-        if (reasons.length) attention.push({ patientId: p.id, name: `${p.first_name} ${p.last_name}`, reasons });
+        if (pain && pain.max_pain >= 6) signals.push({ reason: 'high_pain', date: pain.pain_at, value: pain.max_pain });
+        if (pain && pain.unreviewed > 0) signals.push({ reason: 'new_feedback', date: pain.feedback_at, value: pain.unreviewed });
+        if (!p.activated) {
+          // Without an activated account a patient cannot register anything: say that, not "low adherence".
+          if (p.invited_at && Date.now() - new Date(p.invited_at).getTime() > 3 * 86400_000) signals.push({ reason: 'not_activated', date: p.invited_at });
+        } else if (p.active_programs > 0 && a.planned >= 2 && a.completed === 0) {
+          signals.push({ reason: 'no_registration', date: p.last_activity, planned: a.planned, completed: 0 });
+        } else if (p.active_programs > 0 && a.planned >= 2 && (a.rate ?? 0) < 0.5) {
+          signals.push({ reason: 'low_adherence', date: p.last_activity, planned: a.planned, completed: a.completed });
+        }
+        if (p.next_end && p.next_end <= toISODate(soon)) signals.push({ reason: 'program_ending', date: p.next_end });
+        if (p.active_programs === 0) signals.push({ reason: 'no_active_program', date: null });
+        if (signals.length) attention.push({ patientId: p.id, name: `${p.first_name} ${p.last_name}`, reasons: signals.map((x) => x.reason), signals });
       }
-      const order = ['high_pain', 'new_feedback', 'low_adherence', 'program_ending', 'not_activated', 'no_active_program'];
+      const order = ['high_pain', 'new_feedback', 'no_registration', 'low_adherence', 'program_ending', 'not_activated', 'no_active_program'];
       attention.sort((x, y) => order.indexOf(x.reasons[0]) - order.indexOf(y.reasons[0]));
 
       const activity = await tx.query(
@@ -82,7 +94,12 @@ dashboard.get('/', async (c) => {
       const daily = await tx.query(
         `SELECT d::date AS day,
                 (SELECT count(*) FROM workout_sessions w
-                  WHERE w.patient_id = ANY($1) AND w.completed_at IS NOT NULL AND w.completed_at::date = d::date) AS n
+                  WHERE w.patient_id = ANY($1) AND w.completed_at IS NOT NULL AND w.completed_at::date = d::date) AS n,
+                (SELECT coalesce(json_agg(json_build_object('id', w.id, 'patientId', w.patient_id, 'name', pt.first_name || ' ' || pt.last_name,
+                          'at', w.completed_at, 'pain', w.pain, 'program', pr.title) ORDER BY w.completed_at), '[]')
+                   FROM (SELECT * FROM workout_sessions w WHERE w.patient_id = ANY($1) AND w.completed_at IS NOT NULL
+                          AND w.completed_at::date = d::date ORDER BY w.completed_at LIMIT 25) w
+                   JOIN patients pt ON pt.id = w.patient_id JOIN programs pr ON pr.id = w.program_id) AS list
            FROM generate_series(current_date - 13, current_date, interval '1 day') d ORDER BY d`,
         [ids],
       );
@@ -97,11 +114,13 @@ dashboard.get('/', async (c) => {
       );
       return {
         alerts: alerts.rows.map((r) => ({ kind: r.kind, createdAt: r.created_at, patientId: r.patient_id, name: `${r.first_name} ${r.last_name}` })),
-        daily: daily.rows.map((r) => ({ day: r.day, sessions: r.n })),
+        daily: daily.rows.map((r) => ({ day: r.day, sessions: r.n, list: r.list })),
         stats: {
           patients: ids.length,
           activePrograms: activePrograms.rows[0].n,
           adherence7d: planned ? completed / planned : null,
+          // Same definition as the patient record and the patient app: completed / planned training days.
+          adherence: { completed, planned, days: 7 },
           sessions7d: sessions7d.rows[0].n,
           attention: attention.length,
         },
