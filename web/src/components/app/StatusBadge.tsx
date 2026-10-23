@@ -36,6 +36,7 @@ export function Difficulty({ value }: { value: number }) {
       {[1, 2, 3, 4, 5].map((i) => (
         <span key={i} className={i <= value ? 'h-2.5 w-1 rounded-full bg-accent' : 'h-2.5 w-1 rounded-full bg-ink-200'} />
       ))}
+      <span className="ml-1.5 text-[12.5px] font-medium tabular-nums text-ink-600" aria-hidden>{value}/5</span>
     </span>
   );
 }

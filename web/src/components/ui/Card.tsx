@@ -34,9 +34,9 @@ export function PageHeader({ title, description, actions, eyebrow, children }: {
 export function Stat({ label, value, hint, icon, tone }: { label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode; tone?: 'default' | 'warn' }) {
   return (
     <div className="card p-4 sm:p-5">
-      <div className="flex items-center justify-between text-[13px] text-ink-500">
-        <span>{label}</span>
-        {icon && <span className={cn('text-ink-400', tone === 'warn' && 'text-warn')}>{icon}</span>}
+      <div className="flex items-start justify-between gap-3 text-[13.5px] font-medium text-ink-600">
+        <span className="pt-1">{label}</span>
+        {icon && <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', tone === 'warn' ? 'bg-warn-soft text-warn' : 'bg-sage text-accent')} aria-hidden>{icon}</span>}
       </div>
       <div className="mt-2 font-display text-[28px] font-bold leading-none tabular-nums tracking-tight text-ink-950">{value}</div>
       {hint && <div className="mt-1 text-[12.5px] text-ink-500">{hint}</div>}

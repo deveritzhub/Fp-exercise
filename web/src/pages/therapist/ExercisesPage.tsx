@@ -73,20 +73,20 @@ export function ExercisesPage() {
       />
 
       {/* Search stays in reach while scrolling on phones. */}
-      <div className="sticky top-14 z-10 -mx-4 bg-canvas/95 px-4 pb-3 pt-1 backdrop-blur supports-[backdrop-filter]:bg-canvas/80 sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
+      <div className="sticky top-16 z-10 -mx-4 bg-canvas/95 px-4 pb-3 pt-1 backdrop-blur supports-[backdrop-filter]:bg-canvas/80 sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
         <div className="flex gap-2">
           <ExerciseSearchField value={f.q} onChange={(qv) => setF({ ...f, q: qv })} busy={q.isFetching && !q.isFetchingNextPage} />
           <FilterButton value={f} onChange={setF} total={total} className="lg:hidden" />
         </div>
       </div>
-      <div className="space-y-3">
+      {/* Desktop: search refinements in one calm white panel. */}
+      <div className="mb-4 space-y-3 lg:mt-1 lg:rounded-xl lg:border lg:border-line lg:bg-white lg:p-4 lg:shadow-card">
         <RegionChips value={f.region} onChange={(region) => setF({ ...f, region })} />
         <div className="hidden lg:block"><InlineFilters value={f} onChange={setF} /></div>
         <div className="lg:hidden"><ActiveFilters value={{ ...f, region: '' }} onChange={(next) => setF({ ...next, region: f.region })} /></div>
         <div className="hidden lg:block"><ActiveFilters value={f} onChange={setF} /></div>
+        <ScopeFilters value={f} onChange={setF} />
       </div>
-
-      <ScopeFilters value={f} onChange={setF} />
 
       <div className="mb-3 flex h-5 items-center gap-2 text-[13px] text-ink-500" aria-live="polite">
         {q.pending && !q.isError ? (
@@ -177,7 +177,7 @@ const ExerciseCard = memo(function ExerciseCard({ e, onPreview, onAdd }: { e: Ex
     <article
       onMouseEnter={canHover ? () => setHover(true) : undefined}
       onMouseLeave={canHover ? () => setHover(false) : undefined}
-      className="cv-auto group relative flex overflow-hidden rounded-xl border border-line bg-white shadow-card transition-[box-shadow,border-color,transform] duration-150 hover:border-ink-200 hover:shadow-pop active:scale-[0.995] sm:flex-col">
+      className="cv-auto group relative flex overflow-hidden rounded-xl border border-line bg-white shadow-card transition-[box-shadow,border-color,transform] duration-150 hover:border-ink-300 hover:shadow-lift sm:flex-col">
       <Link to={`/app/oefeningen/${e.id}`} className="tap absolute inset-0 z-0 rounded-xl" aria-label={name} />
       {/* Image is part of the card link; only the play button opens the quick preview. */}
       <div className="pointer-events-none relative m-2 h-20 w-20 shrink-0 overflow-hidden rounded-lg sm:m-0 sm:aspect-[16/10] sm:h-auto sm:w-full sm:rounded-none">
@@ -196,27 +196,27 @@ const ExerciseCard = memo(function ExerciseCard({ e, onPreview, onAdd }: { e: Ex
       </div>
 
       <div className="pointer-events-none relative flex min-w-0 flex-1 flex-col py-2 pr-1 sm:p-4 sm:pt-3">
-        <h3 className="line-clamp-2 font-sans text-[15px] font-semibold leading-snug tracking-normal text-ink-950">{name}</h3>
-        {other && other !== name && <p className="truncate text-[12px] text-ink-400">{other}</p>}
-        <p className="mt-1 truncate text-[12.5px] text-ink-600">
+        <h3 className="line-clamp-2 font-display text-[15.5px] font-bold leading-snug tracking-[-0.01em] text-ink-950">{name}</h3>
+        {other && other !== name && <p className="truncate text-[12.5px] text-ink-500">{other}</p>}
+        <p className="mt-1 truncate text-[13px] text-ink-600">
           {L.region(e.bodyRegion)}
           {category && <span className="text-ink-400"> · </span>}
           {category}
         </p>
-        <p className="mt-0.5 flex min-w-0 items-center gap-1 text-[12px] text-ink-500">
+        <p className="mt-0.5 flex min-w-0 items-center gap-1 text-[12.5px] text-ink-500">
           <Dumbbell className="h-3.5 w-3.5 shrink-0 text-ink-400" aria-hidden />
           <span className="truncate">{L.equipmentList(e.equipment)}</span>
         </p>
         <div className="mt-auto flex items-center gap-1.5 pt-1.5 sm:pt-3">
-          <span className={cn('rounded-md px-1.5 py-0.5 text-[11px] font-medium', e.scope === 'practice' ? 'bg-accent-soft text-accent' : 'bg-ink-100 text-ink-700')}>{e.scope === 'practice' ? t('Praktijk', 'Practice') : t('Centraal', 'Central')}</span>
+          <span className={cn('rounded-md px-2 py-0.5 text-[12px] font-semibold', e.scope === 'practice' ? 'bg-accent-soft text-accent' : 'bg-ink-100 text-ink-700')}>{e.scope === 'practice' ? t('Praktijk', 'Practice') : t('Centraal', 'Central')}</span>
           {e.reviewStatus === 'reviewed' && (
-            <span className="inline-flex items-center gap-1 text-[11.5px] font-medium text-ok">
+            <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-ok">
               <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
               {t('Goedgekeurd', 'Approved')}
             </span>
           )}
           {!!e.variantCount && (
-            <span className="rounded-md border border-line px-1.5 py-0.5 text-[11px] font-medium text-ink-600" title={t('Zelfde oefening in een andere bron; vergelijk op de detailpagina', 'Same exercise in another source; compare on the detail page')}>
+            <span className="rounded-md border border-line px-2 py-0.5 text-[12px] font-medium text-ink-600" title={t('Zelfde oefening in een andere bron; vergelijk op de detailpagina', 'Same exercise in another source; compare on the detail page')}>
               +{e.variantCount} {e.variantCount === 1 ? t('variant', 'variant') : t('varianten', 'variants')}
             </span>
           )}
@@ -228,7 +228,7 @@ const ExerciseCard = memo(function ExerciseCard({ e, onPreview, onAdd }: { e: Ex
         <button
           type="button"
           onClick={() => onAdd(e)}
-          className="tap inline-flex h-9 w-9 items-center justify-center rounded-full bg-accent text-white shadow-xs transition-transform hover:bg-accent-strong active:scale-90"
+          className="tap inline-flex h-9 w-9 items-center justify-center rounded-full bg-accent text-white shadow-xs transition-colors hover:bg-accent-strong"
           aria-label={t(`${name} toevoegen aan programma`, `Add ${name} to programme`)}
         >
           <Plus className="h-[18px] w-[18px]" />

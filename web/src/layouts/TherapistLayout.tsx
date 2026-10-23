@@ -44,9 +44,9 @@ export function TherapistLayout() {
 
   const sidebar = (
     <div className="flex h-full flex-col">
-      <div className="flex h-14 items-center justify-between px-4">
+      <div className="flex h-16 items-center justify-between px-5">
         <Logo to="/app" />
-        <button type="button" className="rounded-md p-1 text-ink-500 lg:hidden" onClick={() => setMobileOpen(false)} aria-label={t('Menu sluiten', 'Close menu')}>
+        <button type="button" className="-mr-2 flex h-11 w-11 items-center justify-center rounded-lg text-ink-500 hover:bg-white/70 lg:hidden" onClick={() => setMobileOpen(false)} aria-label={t('Menu sluiten', 'Close menu')}>
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -55,13 +55,13 @@ export function TherapistLayout() {
           align="left"
           className="w-60"
           trigger={({ toggle }) => (
-            <button type="button" onClick={toggle} className="flex w-full items-center gap-2.5 rounded-lg border border-line bg-white px-2.5 py-2 text-left shadow-xs hover:border-ink-200">
-              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent-soft text-[11px] font-bold text-accent">{practice.practiceName[0]}</span>
+            <button type="button" onClick={toggle} className="flex w-full items-center gap-3 rounded-xl border border-line bg-white px-3 py-2.5 text-left shadow-xs transition-colors hover:border-ink-300">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-[13px] font-bold text-accent-ink">{practice.practiceName[0]}</span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-medium">{practice.practiceName}</span>
-                <span className="block text-2xs text-ink-500">{{ owner: t('Eigenaar', 'Owner'), admin: t('Beheerder', 'Admin'), therapist: t('Therapeut', 'Therapist') }[practice.role]}</span>
+                <span className="block truncate text-[13.5px] font-semibold text-ink-900">{practice.practiceName}</span>
+                <span className="block text-[12px] text-ink-500">{{ owner: t('Eigenaar', 'Owner'), admin: t('Beheerder', 'Admin'), therapist: t('Therapeut', 'Therapist') }[practice.role]}</span>
               </span>
-              <ChevronsUpDown className="h-3.5 w-3.5 text-ink-400" />
+              <ChevronsUpDown className="h-4 w-4 text-ink-400" aria-hidden />
             </button>
           )}
         >
@@ -83,12 +83,13 @@ export function TherapistLayout() {
           }
         </Popover>
       </div>
-      <div className="px-3 pb-2">
-        <Button className="w-full" icon={<Plus className="h-4 w-4" />} onClick={() => { setMobileOpen(false); nav('/app/programmas/nieuw'); }}>
+      <div className="px-3 pb-3">
+        <Button className="h-10 w-full" icon={<Plus className="h-4 w-4" />} onClick={() => { setMobileOpen(false); nav('/app/programmas/nieuw'); }}>
           {t('Nieuw programma', 'New programme')}
         </Button>
       </div>
-      <nav className="flex-1 space-y-0.5 px-3 py-2" aria-label={t('Hoofdmenu', 'Main menu')}>
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2" aria-label={t('Hoofdmenu', 'Main menu')}>
+        <div className="t-label px-3 pb-1 pt-1">{t('Menu', 'Menu')}</div>
         {links.map((l) => (
           <NavLink
             key={l.to}
@@ -96,15 +97,23 @@ export function TherapistLayout() {
             end={l.end}
             onClick={() => setMobileOpen(false)}
             className={({ isActive }) =>
-              cn('flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] font-medium transition-colors', isActive ? 'bg-white text-ink-950 shadow-xs ring-1 ring-line' : 'text-ink-600 hover:bg-ink-100/70 hover:text-ink-900')
+              cn(
+                'group relative flex min-h-[42px] items-center gap-3 rounded-lg px-3 py-2 text-[14px] transition-colors',
+                // Active: white tile, green icon and a bar on the left (not colour alone: weight and shape change too).
+                isActive ? 'bg-white font-semibold text-ink-950 shadow-xs ring-1 ring-line before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-accent' : 'font-medium text-ink-600 hover:bg-white/60 hover:text-ink-900',
+              )
             }
           >
-            <l.icon className="h-4 w-4 shrink-0" />
-            {l.label}
+            {({ isActive }) => (
+              <>
+                <l.icon className={cn('h-[18px] w-[18px] shrink-0', isActive ? 'text-accent' : 'text-ink-500 group-hover:text-ink-700')} aria-hidden />
+                <span className="min-w-0">{l.label}</span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
-      <div className="border-t border-line p-3 text-2xs leading-relaxed text-ink-500">
+      <div className="m-3 rounded-lg border border-line bg-white/60 px-3 py-2.5 text-[12px] leading-relaxed text-ink-500">
         {t('Ontwikkelomgeving — alleen synthetische gegevens.', 'Development environment — synthetic data only.')}
       </div>
     </div>
@@ -112,27 +121,27 @@ export function TherapistLayout() {
 
   return (
     <div className="min-h-screen lg:pl-64">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-line bg-[#efebe3] lg:block">{sidebar}</aside>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-line bg-mist lg:block">{sidebar}</aside>
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-ink-950/30" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 w-72 animate-slide-up bg-[#efebe3] shadow-pop">{sidebar}</aside>
+          <div className="absolute inset-0 bg-ink-950/35" onClick={() => setMobileOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 w-72 max-w-[85vw] animate-fade-in bg-mist shadow-pop">{sidebar}</aside>
         </div>
       )}
-      <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line bg-canvas/85 px-4 backdrop-blur sm:px-6">
-        <button type="button" className="-ml-1 rounded-md p-1.5 text-ink-600 lg:hidden" onClick={() => setMobileOpen(true)} aria-label={t('Menu openen', 'Open menu')}>
+      <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-line bg-white/90 px-4 backdrop-blur sm:gap-3 sm:px-6">
+        <button type="button" className="-ml-2 flex h-11 w-11 items-center justify-center rounded-lg text-ink-600 hover:bg-ink-100 lg:hidden" onClick={() => setMobileOpen(true)} aria-label={t('Menu openen', 'Open menu')}>
           <Menu className="h-5 w-5" />
         </button>
         {/* Global "jump to" search (patients, exercises, actions) — distinct from the library's own search field. */}
         <button
           type="button"
           onClick={() => setPalette(true)}
-          className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-line bg-white px-2.5 text-[13.5px] text-ink-500 shadow-xs transition-colors hover:border-ink-200 sm:w-full sm:max-w-xs sm:px-3"
+          className="flex h-10 shrink-0 items-center gap-2 rounded-lg border border-line bg-canvas px-3 text-[14px] text-ink-500 transition-colors hover:border-ink-300 hover:bg-white sm:w-full sm:max-w-sm"
         >
           <Search className="h-4 w-4" />
           <span className="sr-only sm:not-sr-only sm:flex-1 sm:truncate sm:text-left">{t('Snel naar…', 'Jump to…')}</span>
           <span className="sr-only">{t(' patiënt, oefening of actie', ' patient, exercise or action')}</span>
-          <kbd className="hidden rounded border border-line bg-ink-50 px-1.5 text-2xs md:block">Ctrl K</kbd>
+          <kbd className="hidden rounded-md border border-line bg-white px-1.5 font-sans text-2xs text-ink-500 md:block">Ctrl K</kbd>
         </button>
         <div className="flex-1" />
         <FeedbackButton />
@@ -142,7 +151,7 @@ export function TherapistLayout() {
           trigger={({ toggle }) => (
             <button type="button" onClick={toggle} className="flex items-center gap-2 rounded-lg p-1 pr-2 hover:bg-ink-100" aria-haspopup="menu">
               <Avatar name={user.fullName} size={28} />
-              <span className="hidden text-[13px] font-medium sm:inline">{user.fullName}</span>
+              <span className="hidden text-[13.5px] font-medium text-ink-800 sm:inline">{user.fullName}</span>
               <span className="sr-only sm:hidden">{user.fullName}</span>
             </button>
           )}
@@ -162,7 +171,7 @@ export function TherapistLayout() {
           )}
         </Popover>
       </header>
-      <main className="mx-auto w-full max-w-[1280px] px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto w-full max-w-[1320px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <Outlet />
       </main>
       <CommandPalette open={palette} onClose={() => setPalette(false)} />

@@ -14,7 +14,8 @@ module.exports = {
         ink: { 950: '#141c18', 900: '#202b26', 800: '#2a3731', 700: '#34433c', 600: '#46554e', 500: '#55635c', 400: '#5d6a64', 300: '#b5c1ba', 200: '#d3dcd6', 100: '#e8eee9', 50: '#f1f5f2' },
         canvas: '#f7f9f7', // Clinical Off-White page background
         line: '#e1e8e2', // Soft Sage borders
-        sage: '#e6eee8', // Clinical Sage soft surfaces (sidebar, selected rows)
+        sage: '#e6eee8', // Clinical Sage soft surfaces (selected rows, icon tiles)
+        mist: '#eef3ef', // light sage sidebar
         sand: { DEFAULT: '#d8ccb6', soft: '#f3efe7', ink: '#5b4a2e' }, // subtle brand accent, never for status
         // Functional Performance brand palette (brand sheet), for brand surfaces only
         brand: { forest: '#29483c', dark: '#1d362d', wood: '#5b432b', army: '#413d28', olive: '#64614d', sand: '#d8ccb6' },

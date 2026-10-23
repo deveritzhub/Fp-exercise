@@ -9,7 +9,7 @@ const triplet = (s: string) => s.split(' ').map(Number) as [number, number, numb
 const ratio = (a: string, b: string) => contrast(rgb(a), rgb(b));
 
 describe('design tokens (WCAG 2.2 AA)', () => {
-  const surfaces = { white: '#ffffff', canvas: tw.canvas, sage: tw.sage };
+  const surfaces = { white: '#ffffff', canvas: tw.canvas, sage: tw.sage, mist: tw.mist };
   it.each(['900', '800', '700', '600', '500', '400'])('ink-%s text is readable on every surface', (k) => {
     for (const bg of Object.values(surfaces)) expect(ratio(tw.ink[k], bg)).toBeGreaterThanOrEqual(4.5);
   });
