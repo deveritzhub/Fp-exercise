@@ -4,8 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Check, CheckCircle2, ChevronDown, Info, MessageCircle, PartyPopper, Repeat, SkipForward, VideoOff, X } from 'lucide-react';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
-import { dose } from '@/lib/format';
-import { isoWeekday } from '@shared/adherence';
+import { dose, todayISO } from '@/lib/format';
+import { workoutItemsForDay } from '@shared/workout-schedule';
 import { useDocumentMeta, useLabels } from '@/lib/meta';
 import { cn } from '@/lib/cn';
 import { isNetworkError, postOrQueue } from '@/lib/outbox';
@@ -84,9 +84,7 @@ export function SessionPlayer() {
 
   const items = useMemo(() => {
     if (!q.data) return [];
-    const wd = isoWeekday(new Date());
-    const today = q.data.items.filter((i) => i.days.includes(wd));
-    return today.length ? today : q.data.items;
+    return workoutItemsForDay(q.data.items, todayISO());
   }, [q.data]);
 
   const begin = (sid: string) => {
