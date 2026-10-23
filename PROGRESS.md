@@ -1,5 +1,14 @@
 # Progress log
 
+## ChatGPT UX audit — 2026-10-23 (isolated branch)
+
+- Branch: `chatgpt/ux-audit-p0-20261023`, based on `claude/fp-exercise-platform-bcak8k`. No production deployment or live patient changes.
+- Programme preview now includes a selectable local training date and uses the **same** workout-item selector as the patient session player. Prescribed sets, repetitions, and notes still come from the actual programme items.
+- The patient app's pre-existing manual-start behaviour is preserved: on a day without scheduled exercises, manually starting a workout shows all programme exercises; the preview now explicitly explains this.
+- The programme editor offers regressions/equivalent alternatives, not progressions, as new fallbacks. Historical selected progressions stay visible in a disabled legacy option, so they are not silently erased.
+- Added four focused Vitest regression cases covering weekday filtering, rest-day fallback, stable order, and empty programmes.
+- Validation status: edits checked by reading the GitHub branch back; full typecheck, Vitest, and Playwright must be verified by CI before merge. No production data used.
+
 _Resume point for any new working session. Last updated: 2026-10-22._
 
 ## Current status
