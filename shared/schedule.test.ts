@@ -25,6 +25,15 @@ describe('planning shared by patient app and preview', () => {
     expect(dayStatus(p, items, '2026-10-25')).toBe('rest');
     expect(dayStatus(p, items, '2026-10-19')).toBe('training');
   });
+  it('keeps the programme order, never changes the input and handles an empty programme', () => {
+    // Edge cases taken over from the review of PR #1.
+    const before = items.map((i) => i.id);
+    expect(itemsForDate(p, [...items].reverse(), '2026-10-19').map((i) => i.id)).toEqual(['b', 'a']);
+    expect(items.map((i) => i.id)).toEqual(before);
+    expect(itemsForDate(p, [], '2026-10-19')).toEqual([]);
+    expect(nextSessionDate(p, [], '2026-10-19')).toBeNull();
+    expect(dayStatus(p, [], '2026-10-19')).toBe('rest');
+  });
   it('finds the next session, also before the start date', () => {
     expect(nextSessionDate(p, items, '2026-10-24')).toBe('2026-10-26');
     expect(nextSessionDate(p, items, '2026-10-10')).toBe('2026-10-19');
