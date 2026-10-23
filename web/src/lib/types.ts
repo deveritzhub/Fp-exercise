@@ -46,6 +46,8 @@ export type Exercise = {
   variantCount?: number;
   createdBy: string | null;
   clinicalNotes?: string;
+  physitrackId?: string | null;
+  externalVideoUrl?: string | null;
   relations?: { kind: 'regression' | 'progression' | 'alternative'; id: string; nameNl: string; nameEn: string; difficulty: number; thumbnailMediaId: string | null; videoMediaId?: string | null; bodyRegion: string }[];
 };
 

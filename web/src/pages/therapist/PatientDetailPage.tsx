@@ -10,9 +10,10 @@ import { cn } from '@/lib/cn';
 import { Avatar, Badge, Bars, Button, ButtonLink, Card, CardHeader, Dialog, EmptyState, ErrorState, Notice, PageHeader, Popover, MenuItem, Skeleton, Sparkline, Spinner, Stat, Tabs, useToast } from '@/components/ui';
 import { ProgramStatusBadge } from '@/components/app/StatusBadge';
 import { PatientFormDialog } from './PatientsPage';
+import { OpenRedFlagsBanner, PatientModulesTab } from './PatientModulesTab';
 import type { Member, PatientDetail, Progress } from '@/lib/types';
 
-type Tab = 'overzicht' | 'programmas' | 'sessies' | 'gegevens';
+type Tab = 'overzicht' | 'programmas' | 'sessies' | 'modules' | 'gegevens';
 
 export function PatientDetailPage() {
   const { id = '' } = useParams();
@@ -109,6 +110,7 @@ export function PatientDetailPage() {
         </Notice>
       )}
 
+      {tab !== 'modules' && <OpenRedFlagsBanner patientId={pt.id} onOpen={() => setParams({ tab: 'modules' })} />}
       <Tabs
         className="mb-6"
         value={tab}
@@ -117,10 +119,12 @@ export function PatientDetailPage() {
           { value: 'overzicht', label: t('Overzicht', 'Overview') },
           { value: 'programmas', label: t('Programma’s', 'Programmes'), count: pt.programs.length },
           { value: 'sessies', label: unreviewed ? <>{t('Sessies & feedback', 'Sessions & feedback')} <span className="ml-1 rounded-full bg-warn-soft px-2 py-0.5 text-[11.5px] font-semibold text-warn">{t(`${unreviewed} te beoordelen`, `${unreviewed} to review`)}</span></> : t('Sessies & feedback', 'Sessions & feedback') },
+          { value: 'modules', label: t('Veiligheid & modules', 'Safety & modules') },
           { value: 'gegevens', label: t('Gegevens', 'Details') },
         ]}
       />
 
+      {tab === 'modules' && <PatientModulesTab patientId={pt.id} />}
       {tab === 'overzicht' && <Overview progress={prog.data} programs={pt.programs} />}
       {tab === 'programmas' && <Programs pt={pt} />}
       {tab === 'sessies' && <Sessions progress={prog.data} onReviewed={() => qc.invalidateQueries({ queryKey: ['patient', id, 'progress'] })} />}

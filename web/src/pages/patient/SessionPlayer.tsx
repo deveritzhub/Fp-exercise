@@ -11,12 +11,14 @@ import { cn } from '@/lib/cn';
 import { useCountdown } from '@/lib/useCountdown';
 import { isNetworkError, postOrQueue } from '@/lib/outbox';
 import { useSession } from '@/lib/session';
-import { Button, Dialog, ErrorState, Notice, NumberStepper, ProgressRing, ScaleInput, Spinner, Textarea } from '@/components/ui';
+import { Button, Dialog, ErrorState, Notice, NumberStepper, ProgressRing, ScaleInput, Spinner, Textarea, useToast } from '@/components/ui';
 import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import { ProgramItemsList } from '@/components/patient/TodayCard';
+import { PausedNotice, RedFlagButton } from '@/components/patient/Safety';
+import { StrengthLogger } from '@/components/patient/Strength';
 import type { Program, ProgramItem } from '@/lib/types';
 
-type PatientProgram = Program & { therapistName: string; openSession: { id: string; loggedItemIds: string[] } | null };
+type PatientProgram = Program & { therapistName: string; paused?: boolean; selfStarted?: boolean; openSession: { id: string; loggedItemIds: string[] } | null };
 type Phase = 'intro' | 'exercise' | 'rate' | 'summary' | 'done';
 
 export function PatientProgramPage() {
@@ -44,10 +46,37 @@ export function PatientProgramPage() {
           </Link>
         )}
       />
-      {p.status === 'active' && (
+      {p.status === 'active' && (p.paused ? <PausedNotice /> : (
         <Link to={`/p/sessie/${p.id}`} className="flex h-14 w-full items-center justify-center rounded-xl bg-accent text-base font-semibold text-white shadow-xs">{t('Start training', 'Start workout')}</Link>
-      )}
+      ))}
+      {p.status === 'active' && !p.paused && <RedFlagButton programId={p.id} redFlags={p.redFlags ?? []} className="w-full justify-center" />}
+      {p.status === 'active' && p.selfStarted && <StopProgramButton programId={p.id} />}
     </div>
+  );
+}
+
+/** A programme the patient started themselves can be stopped (kept in the history, never deleted). */
+function StopProgramButton({ programId }: { programId: string }) {
+  const { t, locale } = useI18n();
+  const nav = useNavigate();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="ghost" size="lg" className="w-full" onClick={() => setOpen(true)}>{t('Programma stoppen', 'Stop programme')}</Button>
+      <Dialog open={open} onClose={() => setOpen(false)} title={t('Programma stoppen?', 'Stop programme?')} description={t('Je trainingen en resultaten blijven bewaard.', 'Your workouts and results are kept.')} size="sm"
+        footer={<div className="grid w-full grid-cols-2 gap-2"><Button size="lg" variant="secondary" data-autofocus onClick={() => setOpen(false)}>{t('Doorgaan', 'Continue')}</Button><Button size="lg" onClick={async () => {
+          try {
+            await api.post(`/patient/programs/${programId}/stop`);
+            qc.invalidateQueries({ queryKey: ['patient-home'] });
+            nav('/p');
+          } catch (e) {
+            toast(errorMessage(e instanceof ApiError ? e.code : undefined, locale), 'bad');
+          }
+        }}>{t('Stoppen', 'Stop')}</Button></div>}
+      >{null}</Dialog>
+    </>
   );
 }
 
@@ -178,11 +207,16 @@ export function SessionPlayer() {
             <Notice tone="info" icon={<Info className="h-4 w-4" />}>
               {t('Stop een oefening als je scherpe of toenemende pijn voelt en neem contact op met je fysiotherapeut. Deze app vervangt geen medisch advies.', 'Stop an exercise if you feel sharp or increasing pain and contact your physiotherapist. This app does not replace medical advice.')}
             </Notice>
-            <Button size="xl" className="w-full" onClick={start}>{q.data.openSession ? t('Verder met training', 'Continue workout') : t('Beginnen', 'Begin')}</Button>
+            {q.data.paused ? <PausedNotice /> : <Button size="xl" className="w-full" onClick={start}>{q.data.openSession ? t('Verder met training', 'Continue workout') : t('Beginnen', 'Begin')}</Button>}
           </div>
         )}
 
-        {phase === 'exercise' && item && <ExerciseStep key={item.id} item={item} next={items[idx + 1]} onDone={() => setPhase('rate')} onSkip={() => saveLog(item, { completed: false, setsDone: 0, repsDone: null, difficulty: null, pain: null, feedback: '' })} saving={saving} />}
+        {(phase === 'exercise' || phase === 'rate') && !q.data.paused && (
+          <div className="mb-4 flex justify-end">
+            <RedFlagButton programId={q.data.id} redFlags={q.data.redFlags ?? []} sessionId={sessionId} onReported={() => nav('/p')} className="min-h-[44px] border-transparent px-2 text-[14px]" />
+          </div>
+        )}
+        {phase === 'exercise' && item && <ExerciseStep key={item.id} item={item} next={items[idx + 1]} onDone={() => setPhase('rate')} onSkip={() => saveLog(item, { completed: false, setsDone: 0, repsDone: null, difficulty: null, pain: null, feedback: '' })} saving={saving} strength={q.data.module === 'kracht' ? { sessionId, userId: uid } : null} />}
 
         {phase === 'rate' && item && <RateStep key={`r-${item.id}`} item={item} saving={saving} onSave={(r) => saveLog(item, r)} onBack={() => setPhase('exercise')} />}
 
@@ -327,7 +361,7 @@ const buzz = () => {
   }
 };
 
-function ExerciseStep({ item, next, onDone, onSkip, saving }: { item: ProgramItem; next?: ProgramItem; onDone: () => void; onSkip: () => void; saving: boolean }) {
+function ExerciseStep({ item, next, onDone, onSkip, saving, strength }: { item: ProgramItem; next?: ProgramItem; onDone: () => void; onSkip: () => void; saving: boolean; strength: { sessionId: string | null; userId: string } | null }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const sets = item.sets ?? 1;
@@ -378,8 +412,9 @@ function ExerciseStep({ item, next, onDone, onSkip, saving }: { item: ProgramIte
         </div>
       ) : null}
 
-      {/* set tracker */}
-      {sets > 1 && (
+      {/* Strength module: weight and reps per set (W04); otherwise the simple set tracker. */}
+      {strength && <StrengthLogger item={item} sessionId={strength.sessionId} userId={strength.userId} onSetSaved={(n) => { setSetsDone(n); if (n < sets && item.restS) { rest.start(item.restS); setRestOpen(true); } }} />}
+      {!strength && sets > 1 && (
         <div className="rounded-2xl border border-line p-4">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-[16px] font-semibold">{t('Sets', 'Sets')}</span>

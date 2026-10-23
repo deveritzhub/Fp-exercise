@@ -6,6 +6,7 @@ import { fmtDate, fmtDateTime, pct } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
 import { Bars, ErrorState, Skeleton } from '@/components/ui';
 import type { Adherence } from '@/lib/types';
+import { StrengthProgress } from '@/components/patient/Strength';
 
 type History = {
   weekly: (Adherence & { weekStart: string })[];
@@ -37,6 +38,7 @@ export function PatientProgress() {
         <p className="mb-4 text-[14px] text-ink-500">{t('Gedaan ten opzichte van gepland', 'Done compared with planned')}</p>
         <Bars height={140} format={pct} data={d.weekly.map((w) => ({ label: fmtDate(w.weekStart, locale, { day: 'numeric', month: 'short' }), value: w.planned ? w.rate : null }))} />
       </section>
+      <StrengthProgress />
       <section>
         <h2 className="mb-3 text-lg font-semibold">{t('Geschiedenis', 'History')}</h2>
         {d.sessions.length === 0 ? (

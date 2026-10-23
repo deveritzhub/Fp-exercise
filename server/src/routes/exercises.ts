@@ -52,7 +52,7 @@ export function mapExercise(r: Record<string, any>, opts: { includeNotes?: boole
     createdBy: r.created_by,
     updatedAt: r.updated_at,
     archived: !!r.archived_at,
-    ...(opts.includeNotes ? { clinicalNotes: r.clinical_notes ?? '' } : {}),
+    ...(opts.includeNotes ? { clinicalNotes: r.clinical_notes ?? '', physitrackId: r.physitrack_id ?? null, externalVideoUrl: r.external_video_url ?? null } : {}),
   };
 }
 
@@ -231,6 +231,9 @@ const keyArray = (kind: 'training' | 'equipment') =>
   z.array(z.string()).max(12).refine((a) => a.every((k) => isKey(kind, k)), 'unknown_key');
 
 const exerciseBody = z.object({
+  // W14: external references, stored only (no integration, no media copied).
+  physitrackId: z.string().trim().max(80).nullable().optional(),
+  externalVideoUrl: z.string().trim().max(500).regex(/^https:\/\//, 'https_only').nullable().optional().or(z.literal('').transform(() => null)),
   nameNl: z.string().trim().min(2).max(160),
   nameEn: z.string().trim().min(2).max(160),
   altNames: z.array(z.string().trim().min(1).max(80)).max(10).default([]),
@@ -298,14 +301,14 @@ exercises.post('/', async (c) => {
       `INSERT INTO exercises(id, practice_id, created_by, name_nl, name_en, alt_names, body_region, target_muscles,
          movement_category, training_categories, equipment, difficulty, starting_position_nl, starting_position_en,
          movement_nl, movement_en, instructions_nl, instructions_en, default_sets, default_reps, default_hold_s,
-         default_rest_s, default_tempo, default_frequency, tags, video_media_id, thumbnail_media_id)
-       VALUES ($1,$2,app.uid(),$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)`,
+         default_rest_s, default_tempo, default_frequency, tags, video_media_id, thumbnail_media_id, physitrack_id, external_video_url)
+       VALUES ($1,$2,app.uid(),$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28)`,
       [
         id, practiceId, b.nameNl, b.nameEn, b.altNames, b.bodyRegion, b.targetMuscles, b.movementCategory ?? null,
         b.trainingCategories, b.equipment, b.difficulty, b.startingPositionNl, b.startingPositionEn, b.movementNl,
         b.movementEn, b.instructionsNl, b.instructionsEn, b.defaults.sets ?? null, b.defaults.reps ?? null,
         b.defaults.holdS ?? null, b.defaults.restS ?? null, b.defaults.tempo ?? null, b.defaults.frequency ?? null,
-        b.tags, b.videoMediaId ?? null, b.thumbnailMediaId ?? null,
+        b.tags, b.videoMediaId ?? null, b.thumbnailMediaId ?? null, b.physitrackId || null, b.externalVideoUrl || null,
       ],
     );
     await tx.query('INSERT INTO exercise_clinical_notes(exercise_id, practice_id, notes) VALUES ($1,$2,$3)', [id, practiceId, b.clinicalNotes]);
@@ -330,13 +333,14 @@ exercises.patch('/:id', async (c) => {
          training_categories=$8, equipment=$9, difficulty=$10, starting_position_nl=$11, starting_position_en=$12,
          movement_nl=$13, movement_en=$14, instructions_nl=$15, instructions_en=$16, default_sets=$17, default_reps=$18,
          default_hold_s=$19, default_rest_s=$20, default_tempo=$21, default_frequency=$22, tags=$23,
-         video_media_id=$24, thumbnail_media_id=$25
+         video_media_id=$24, thumbnail_media_id=$25, physitrack_id=$26, external_video_url=$27
        WHERE id = $1`,
       [
         id, b.nameNl, b.nameEn, b.altNames, b.bodyRegion, b.targetMuscles, b.movementCategory ?? null, b.trainingCategories,
         b.equipment, b.difficulty, b.startingPositionNl, b.startingPositionEn, b.movementNl, b.movementEn, b.instructionsNl,
         b.instructionsEn, b.defaults.sets ?? null, b.defaults.reps ?? null, b.defaults.holdS ?? null, b.defaults.restS ?? null,
         b.defaults.tempo ?? null, b.defaults.frequency ?? null, b.tags, b.videoMediaId ?? null, b.thumbnailMediaId ?? null,
+        b.physitrackId || null, b.externalVideoUrl || null,
       ],
     );
     if (!r.rowCount) throw notFound(); // RLS: not creator and not practice admin

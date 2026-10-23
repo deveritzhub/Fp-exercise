@@ -8,6 +8,8 @@ import { fmtDate, fmtRelative, greeting, pct } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
 import { ButtonLink, ErrorState, ProgressRing, Skeleton } from '@/components/ui';
 import { RestDayCard, TodayProgramCard } from '@/components/patient/TodayCard';
+import { PausedNotice } from '@/components/patient/Safety';
+import { ConsentToggle, ModeSwitch, StartTemplates, useModes, type Mode } from '@/components/patient/Modules';
 import type { Adherence, Notification, Program } from '@/lib/types';
 import type { DayState } from '@shared/adherence';
 import { cn } from '@/lib/cn';
@@ -22,6 +24,8 @@ export type PatientHomeData = {
     nextSession: string | null;
     upcoming: boolean;
     openSession: { id: string; startedAt: string; logged: number } | null;
+    paused: boolean;
+    selfStarted: boolean;
   })[];
   stats: { completedSessions: number; adherence7d: Adherence; weekly: (Adherence & { weekStart: string })[]; week: { date: string; weekday: number; state: DayState }[]; streak: number };
   recent: { id: string; completedAt: string; programTitle: string; difficulty: number | null; pain: number | null; exercisesDone: number }[];
@@ -32,19 +36,43 @@ export function PatientHome() {
   const { t, locale } = useI18n();
   useDocumentMeta(t('Vandaag', 'Today'));
   const q = useQuery({ queryKey: ['patient-home'], queryFn: () => api.get<PatientHomeData>('/patient/home') });
+  const modes = useModes();
   const qc = useQueryClient();
+  const [modeChoice, setModeChoice] = useState<Mode | null>(null);
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
   if (!q.data) return <div className="space-y-4"><Skeleton className="h-8 w-2/3" /><Skeleton className="h-56 rounded-2xl" /><Skeleton className="h-28 rounded-2xl" /></div>;
-  const d = q.data;
+  const all = q.data;
+  // W01: rehabilitation, strength or mobility. Shown when the patient has more than rehabilitation.
+  const moduleOf = (p: { module?: string | null }) => (p.module === 'kracht' || p.module === 'mobiliteit' ? p.module : 'revalidatie');
+  const showModes = !!modes.data && (modes.data.templates.length > 0 || all.programs.some((p) => moduleOf(p) !== 'revalidatie'));
+  const mode: Mode = showModes ? modeChoice ?? modes.data!.active : 'revalidatie';
+  const pickMode = (m: Mode) => {
+    setModeChoice(m);
+    api.put('/patient/mode', { mode: m }).then(() => qc.invalidateQueries({ queryKey: ['patient-modes'] })).catch(() => undefined);
+  };
+  const d = { ...all, programs: all.programs.filter((p) => moduleOf(p) === mode) };
   const todo = d.programs.filter((p) => p.today.scheduled > 0);
   // A workout started on a day without planned exercises (all exercises) can be resumed as well.
-  const resumeOther = d.programs.filter((p) => p.openSession && p.today.scheduled === 0);
+  const resumeOther = d.programs.filter((p) => (p.openSession || p.paused) && p.today.scheduled === 0);
   return (
     <div className="space-y-6">
       <div>
         <p className="text-[15px] text-ink-500">{new Intl.DateTimeFormat(locale === 'nl' ? 'nl-NL' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</p>
         <h1 className="mt-0.5 text-[28px] font-semibold leading-tight">{greeting(locale)}, {d.patient.firstName}</h1>
       </div>
+
+      {showModes && <ModeSwitch value={mode} onChange={pickMode} />}
+      {showModes && mode !== 'revalidatie' && modes.data && (
+        <div className="space-y-3">
+          <ConsentToggle module={mode} since={modes.data.consents[mode]} />
+          {d.programs.length === 0 && (
+            <section aria-labelledby="start-title">
+              <h2 id="start-title" className="mb-2 text-lg font-semibold">{mode === 'kracht' ? t('Start een krachtprogramma', 'Start a strength programme') : t('Start een mobiliteitsprogramma', 'Start a mobility programme')}</h2>
+              <StartTemplates modes={modes.data} module={mode} />
+            </section>
+          )}
+        </div>
+      )}
 
       {d.notifications.length > 0 && (
         <div className="space-y-2">
@@ -71,7 +99,7 @@ export function PatientHome() {
         </div>
       )}
 
-      {d.programs.length === 0 ? (
+      {d.programs.length === 0 && mode !== 'revalidatie' ? null : d.programs.length === 0 ? (
         <div className="rounded-2xl border border-line bg-white p-6 text-center shadow-card">
           <h2 className="text-lg font-semibold">{t('Nog geen programma', 'No programme yet')}</h2>
           <p className="mt-1 text-ink-500">{t('Je fysiotherapeut zet je oefenprogramma hier voor je klaar.', 'Your physiotherapist will set up your exercise programme here.')}</p>
@@ -89,15 +117,15 @@ export function PatientHome() {
             id={p.id}
             title={p.title}
             items={p.today.items}
-            done={p.today.done && !p.openSession}
-            action={<StartOrResume programId={p.id} open={p.openSession} total={p.today.scheduled} />}
+            done={p.today.done && !p.openSession && !p.paused}
+            action={p.paused ? <PausedNotice /> : <StartOrResume programId={p.id} open={p.openSession} total={p.today.scheduled} />}
           />
         ))
       )}
       {resumeOther.map((p) => (
         <div key={p.id} className="rounded-2xl border border-line bg-white p-4 shadow-card">
           <p className="mb-3 font-semibold">{p.title}</p>
-          <StartOrResume programId={p.id} open={p.openSession} total={p.itemCount} />
+          {p.paused ? <PausedNotice /> : <StartOrResume programId={p.id} open={p.openSession} total={p.itemCount} />}
         </div>
       ))}
 

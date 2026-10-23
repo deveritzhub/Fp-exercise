@@ -2,6 +2,13 @@
 
 _Resume point for any new working session. Last updated: 2026-10-23._
 
+**2026-10-23 — Schermen voor de FP-app-update (lokaal, nog niet gedeployed):** alarmsignaal melden + programma
+stil tot afhandeling (W11), modus-schakelaar, toestemming per module en zelf starten (W01/W02), krachtlog per set
+met geschatte 1RM, PR en advies, krachtprogressie en 1RM-test met screening, overgangschecklist (W04–W09),
+externe verwijzingen op oefeningen (W14), eigen gegevens downloaden en verwijdering aanvragen/afhandelen (W15).
+Migratie 011: patiënten konden de start-sjablonen niet lezen (RLS); alleen-lezen functie toegevoegd.
+Tests: 120 Vitest (o.a. `server/test/modules.test.ts`), 48 Playwright (o.a. `e2e/modules.spec.ts`).
+
 **2026-10-23 — UX-audit uitgevoerd (lokaal, niet gedeployed):** zie `docs/UX_AUDIT_2026-10.md` en
 `docs/KLINISCHE_REVIEW.md`. 113 Vitest + 45 Playwright groen. Openstaand: schermen voor de "Doe alles"-backend
 (migratie 010: modi/toestemming, krachtlog/1RM, alarmsignalen, export/verwijderverzoek).

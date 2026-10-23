@@ -199,7 +199,7 @@ function WorkList({ d }: { d?: Dashboard }) {
                     : t(`Verzoek tot verwijdering van gegevens op ${fmtDate(a.createdAt, locale)}.`, `Data deletion request on ${fmtDate(a.createdAt, locale)}.`)}
                 </span>
               </span>
-              <ButtonLink to={`/app/patienten/${a.patientId}`} size="sm">{a.kind === 'red_flag' ? t('Melding afhandelen', 'Handle report') : t('Verzoek bekijken', 'View request')}</ButtonLink>
+              <ButtonLink to={`/app/patienten/${a.patientId}?tab=modules`} size="sm">{a.kind === 'red_flag' ? t('Melding afhandelen', 'Handle report') : t('Verzoek bekijken', 'View request')}</ButtonLink>
             </li>
           ))}
           {d.attention.map((a) => (

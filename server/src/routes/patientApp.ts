@@ -123,8 +123,11 @@ patientApp.get('/programs/:id', async (c) => {
       );
       // The description is the therapists' internal note (criteria, evidence): never sent to patients.
       const program = patientProgram(rows[0]);
+      const paused = (await tx.query('SELECT 1 FROM red_flag_reports WHERE program_id = $1 AND handled_at IS NULL', [id])).rows.length > 0;
       return {
         ...program,
+        paused,
+        selfStarted: rows[0].created_by === user.id,
         therapistName: rows[0].therapist_name,
         items: await loadItems(tx, id),
         openSession: open.rows[0] ? { id: open.rows[0].id, loggedItemIds: open.rows[0].logged } : null,

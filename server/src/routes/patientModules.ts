@@ -24,21 +24,21 @@ patientModules.get('/modes', async (c) => {
     await withUser(user.id, async (tx) => {
       const p = (await tx.query('SELECT active_mode, strength_cleared_at FROM patients WHERE id = $1', [patient.id])).rows[0];
       const consents = (await tx.query('SELECT module, granted_at FROM patient_module_consents WHERE patient_id = $1 AND revoked_at IS NULL', [patient.id])).rows;
-      const templates = (
-        await tx.query(
-          `SELECT p.*, (SELECT count(*) FROM program_items i WHERE i.program_id = p.id) AS item_count
-             FROM programs p
-            WHERE p.is_template AND p.status <> 'archived' AND p.module IN ('kracht','mobiliteit')
-              AND p.practice_id = $1 AND (p.series_key IS NULL OR p.phase_no = 1)
-            ORDER BY p.module, p.title`,
-          [patient.practiceId],
-        )
-      ).rows;
+      // Start templates of the own practice via a definer function (patients cannot read templates under RLS).
+      const templates = (await tx.query('SELECT * FROM app.patient_module_templates()')).rows;
       return {
         active: p.active_mode,
         strengthCleared: !!p.strength_cleared_at,
         consents: Object.fromEntries(SHARED.map((m) => [m, consents.find((x) => x.module === m)?.granted_at ?? null])),
-        templates: templates.map((t) => ({ ...patientProgram(t), itemCount: t.item_count })),
+        templates: templates.map((t) => ({
+          id: t.id,
+          title: t.title,
+          patientInstructions: t.patient_instructions,
+          module: t.module,
+          phase: t.phase_no ? { seriesTitle: t.series_title, no: t.phase_no, count: t.phase_count, name: t.phase_name, weeks: t.phase_weeks, goal: t.phase_goal } : null,
+          redFlags: t.red_flags ?? [],
+          itemCount: t.item_count,
+        })),
       };
     }),
   );
@@ -131,7 +131,7 @@ patientModules.post('/programs/:id/red-flag', async (c) => {
     for (const t of ther.rows) {
       await tx.query(
         `INSERT INTO notifications(user_id, practice_id, kind, title, body, link) VALUES ($1,$2,'red_flag',$3,$4,$5)`,
-        [t.therapist_id, patient.practiceId, `Rode vlag gemeld door ${user.fullName}`, 'Het programma staat stil tot je de melding afhandelt. Neem contact op met de patiënt.', `/app/patienten/${patient.id}`],
+        [t.therapist_id, patient.practiceId, `Rode vlag gemeld door ${user.fullName}`, 'Het programma staat stil tot je de melding afhandelt. Neem contact op met de patiënt.', `/app/patienten/${patient.id}?tab=modules`],
       );
     }
     await audit(tx, user.id, patient.practiceId, 'red_flag', 'program', id);
@@ -256,7 +256,7 @@ patientModules.post('/deletion-request', async (c) => {
     for (const t of ther.rows) {
       await tx.query(
         `INSERT INTO notifications(user_id, practice_id, kind, title, body, link) VALUES ($1,$2,'deletion_request',$3,$4,$5)`,
-        [t.therapist_id, patient.practiceId, `Verwijderverzoek van ${user.fullName}`, 'De praktijkeigenaar of -beheerder handelt dit af.', `/app/patienten/${patient.id}`],
+        [t.therapist_id, patient.practiceId, `Verwijderverzoek van ${user.fullName}`, 'De praktijkeigenaar of -beheerder handelt dit af.', `/app/patienten/${patient.id}?tab=modules`],
       );
     }
     await audit(tx, user.id, patient.practiceId, 'deletion_requested', 'patient', patient.id);

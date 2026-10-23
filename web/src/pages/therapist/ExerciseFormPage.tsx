@@ -14,12 +14,14 @@ type Form = {
   startingPositionNl: string; startingPositionEn: string; movementNl: string; movementEn: string; instructionsNl: string; instructionsEn: string;
   sets: number | null; reps: number | null; holdS: number | null; restS: number | null; tempo: string; frequency: string;
   tags: string; clinicalNotes: string; videoMediaId: string | null; thumbnailMediaId: string | null;
+  physitrackId: string; externalVideoUrl: string;
 };
 
 const empty: Form = {
   nameNl: '', nameEn: '', altNames: '', bodyRegion: 'knee', targetMuscles: '', movementCategory: '', trainingCategories: [], equipment: ['none'], difficulty: 2,
   startingPositionNl: '', startingPositionEn: '', movementNl: '', movementEn: '', instructionsNl: '', instructionsEn: '',
   sets: 3, reps: 10, holdS: null, restS: 60, tempo: '', frequency: '', tags: '', clinicalNotes: '', videoMediaId: null, thumbnailMediaId: null,
+  physitrackId: '', externalVideoUrl: '',
 };
 
 const toForm = (e: Exercise, copy: boolean): Form => ({
@@ -29,6 +31,7 @@ const toForm = (e: Exercise, copy: boolean): Form => ({
   instructionsNl: e.instructionsNl, instructionsEn: e.instructionsEn, sets: e.defaults.sets, reps: e.defaults.reps, holdS: e.defaults.holdS, restS: e.defaults.restS,
   tempo: e.defaults.tempo ?? '', frequency: e.defaults.frequency ?? '', tags: e.tags.join(', '), clinicalNotes: e.clinicalNotes ?? '',
   videoMediaId: copy && e.scope === 'global' ? null : e.videoMediaId, thumbnailMediaId: copy && e.scope === 'global' ? null : e.thumbnailMediaId,
+  physitrackId: e.physitrackId ?? '', externalVideoUrl: e.externalVideoUrl ?? '',
 });
 
 const list = (s: string) => s.split(',').map((x) => x.trim()).filter(Boolean);
@@ -67,6 +70,7 @@ export function ExerciseFormPage() {
       instructionsNl: f.instructionsNl, instructionsEn: f.instructionsEn,
       defaults: { sets: f.sets, reps: f.reps, holdS: f.holdS, restS: f.restS, tempo: f.tempo || null, frequency: f.frequency || null },
       tags: list(f.tags), clinicalNotes: f.clinicalNotes, videoMediaId: f.videoMediaId, thumbnailMediaId: f.thumbnailMediaId,
+      physitrackId: f.physitrackId.trim() || null, externalVideoUrl: f.externalVideoUrl.trim() || null,
       ...(!id && src.data?.relations ? { relations: src.data.relations.map((r) => ({ kind: r.kind, id: r.id })) } : {}),
     };
     try {
@@ -182,6 +186,14 @@ export function ExerciseFormPage() {
           <Card className="space-y-4 p-5">
             <Input label={t('Trefwoorden', 'Tags')} hint={t('Gescheiden door komma’s', 'Comma-separated')} value={f.tags} onChange={text('tags')} />
             <Textarea label={<span className="inline-flex items-center gap-1.5"><Lock className="h-3.5 w-3.5" />{t('Klinische notities', 'Clinical notes')}</span>} hint={t('Alleen zichtbaar voor zorgprofessionals in je praktijk.', 'Only visible to professionals in your practice.')} value={f.clinicalNotes} onChange={text('clinicalNotes')} />
+          </Card>
+          <Card className="space-y-4 p-5">
+            <div>
+              <h2 className="text-[15px] font-semibold">{t('Externe verwijzingen', 'External references')}</h2>
+              <p className="mt-0.5 text-[12.5px] text-ink-600">{t('Alleen opgeslagen ter referentie, zonder koppeling. Er wordt niets opgehaald of gekopieerd; patiënten zien dit niet.', 'Stored for reference only, without integration. Nothing is fetched or copied; patients do not see this.')}</p>
+            </div>
+            <Input label={t('Physitrack-ID', 'Physitrack ID')} optional={t('optioneel', 'optional')} value={f.physitrackId} onChange={text('physitrackId')} maxLength={80} />
+            <Input label={t('Externe video-URL', 'External video URL')} optional={t('optioneel', 'optional')} type="url" placeholder="https://" value={f.externalVideoUrl} onChange={text('externalVideoUrl')} maxLength={500} error={f.externalVideoUrl && !/^https:\/\//.test(f.externalVideoUrl) ? t('Moet met https:// beginnen', 'Must start with https://') : undefined} />
           </Card>
         </div>
       </div>
