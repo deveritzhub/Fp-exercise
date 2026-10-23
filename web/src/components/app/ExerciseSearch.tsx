@@ -149,11 +149,11 @@ export const RegionChips = memo(function RegionChips({ value, onChange }: { valu
   const L = useLabels();
   const chip = (active: boolean) =>
     cn(
-      'tap inline-flex h-9 shrink-0 items-center rounded-full border px-3.5 text-[13px] font-medium transition-colors',
+      'tap inline-flex h-11 shrink-0 items-center rounded-full border px-3.5 text-[13px] font-medium transition-colors md:h-9',
       active ? 'border-accent bg-accent text-white' : 'border-line bg-white text-ink-700 hover:border-ink-300 active:bg-ink-50',
     );
   return (
-    <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 [mask-image:linear-gradient(to_right,black_88%,transparent)] sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0 lg:pr-10" role="group" aria-label={t('Lichaamsregio', 'Body region')}>
+    <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 [mask-image:linear-gradient(to_right,black_88%,transparent)] sm:-mx-6 sm:px-6 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:[mask-image:none]" role="group" aria-label={t('Lichaamsregio', 'Body region')}>
       <button type="button" aria-pressed={!value} className={chip(!value)} onClick={() => onChange('')}>{t('Alle regio’s', 'All regions')}</button>
       {QUICK_REGIONS.map((r) => (
         <button key={r} type="button" aria-pressed={value === r} className={chip(value === r)} onClick={() => onChange(value === r ? '' : r)}>

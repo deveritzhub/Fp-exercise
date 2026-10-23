@@ -65,8 +65,8 @@ export function DashboardPage() {
 
       <WorkList d={d} />
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">{d && <ActivityChart daily={d.daily} />}</div>
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-5">
+        <div className="min-w-0 lg:col-span-3">{d && <ActivityChart daily={d.daily} />}</div>
 
         <Card className="lg:col-span-2">
           <CardHeader title={t('Recente activiteit', 'Recent activity')} />
@@ -98,7 +98,7 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader title={t('Recent gebruikte programma’s', 'Recently used programmes')} action={<Link to="/app/programmas" className="text-[13px] font-medium text-accent hover:underline">{t('Alles bekijken', 'View all')}</Link>} />
           {!recent.data ? (
@@ -212,9 +212,9 @@ function WorkList({ d }: { d?: Dashboard }) {
                     const x = reason(s.reason);
                     const e = explain(s, a.patientId);
                     return (
-                      <li key={s.reason} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <li key={s.reason} className="flex flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2">
                         <Badge tone={x.tone}>{x.text}</Badge>
-                        <span className="min-w-0 flex-1 text-[13px] text-ink-700">{e.text}</span>
+                        <span className="min-w-0 text-[13px] text-ink-700 sm:flex-1">{e.text}</span>
                         <Link to={e.action.to} className="inline-flex min-h-[44px] items-center gap-1 text-[13px] font-medium text-accent hover:underline sm:min-h-0">{e.action.label}<ArrowRight className="h-3.5 w-3.5" /></Link>
                       </li>
                     );

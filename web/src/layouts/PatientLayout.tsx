@@ -37,11 +37,11 @@ export function PatientLayout() {
     { to: '/p/account', icon: UserRound, label: t('Account', 'Account') },
   ];
   return (
-    <div className="min-h-screen bg-canvas text-[16px]">
+    <div className="patient-app min-h-screen bg-canvas text-[16px]">
       {!inPlayer && (
         <header className="sticky top-0 z-20 border-b border-line bg-canvas/90 backdrop-blur">
           <div className="mx-auto flex h-14 max-w-xl items-center justify-between px-4">
-            <Logo to="/p" />
+            <Logo to="/p" className="min-h-[44px]" />
             <div className="flex min-w-0 items-center gap-1">
               <span className="truncate text-[13px] text-ink-500">{user.patient.practiceName}</span>
               <FeedbackButton big />

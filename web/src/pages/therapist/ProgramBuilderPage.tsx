@@ -291,11 +291,11 @@ export function ProgramBuilderPage() {
       )}
       {!readOnlyGlobal && <StateStrip isNew={isNew} program={program} asTemplate={asTemplate} dirty={dirty} />}
 
-      <div className="grid items-start gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
         {/* library (desktop) */}
         {!readOnlyGlobal && <aside className="sticky top-20 hidden max-h-[calc(100vh-6rem)] lg:block">{library}</aside>}
 
-        <div className={cn('space-y-5', readOnlyGlobal && 'lg:col-span-2')}>
+        <div className={cn('min-w-0 space-y-5', readOnlyGlobal && 'lg:col-span-2')}>
           <Card className="space-y-4 p-5">
             {isNew && (
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end">

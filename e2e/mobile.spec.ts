@@ -46,9 +46,9 @@ test('exercise library on a phone: compact cards, filter sheet, preview', async 
   await expectAccessible(page, 'library phone');
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(1);
-  // Tabs scroll sideways instead of being cut off.
-  await page.getByRole('tab', { name: 'Door mij gemaakt' }).click();
-  await expect(page.getByRole('tab', { name: 'Door mij gemaakt' })).toBeInViewport();
+  // Source, status and favourites are reachable on a phone.
+  await expect(page.getByRole('combobox', { name: 'Bron' })).toBeInViewport();
+  await expect(page.getByRole('button', { name: 'Favorieten', exact: true })).toBeInViewport();
 });
 
 test('programmes page on a phone: module chips and phase picker fit', async ({ page }) => {

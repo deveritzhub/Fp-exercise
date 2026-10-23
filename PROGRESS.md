@@ -1,6 +1,10 @@
 # Progress log
 
-_Resume point for any new working session. Last updated: 2026-10-22._
+_Resume point for any new working session. Last updated: 2026-10-23._
+
+**2026-10-23 — UX-audit uitgevoerd (lokaal, niet gedeployed):** zie `docs/UX_AUDIT_2026-10.md` en
+`docs/KLINISCHE_REVIEW.md`. 113 Vitest + 45 Playwright groen. Openstaand: schermen voor de "Doe alles"-backend
+(migratie 010: modi/toestemming, krachtlog/1RM, alarmsignalen, export/verwijderverzoek).
 
 ## Current status
 

@@ -43,6 +43,8 @@
       disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-400;
   }
   .input[aria-invalid='true'] { @apply border-bad focus:ring-bad/20; }
+  /* Patient app: every field is a comfortable touch target (44 px). */
+  .patient-app .input { min-height: 44px; font-size: 16px; }
   .muted { @apply text-ink-500; }
   .link { @apply font-medium text-accent underline-offset-4 hover:underline; }
   .skeleton { @apply relative overflow-hidden rounded-md bg-ink-100; }

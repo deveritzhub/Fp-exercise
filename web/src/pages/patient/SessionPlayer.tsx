@@ -29,7 +29,7 @@ export function PatientProgramPage() {
   const p = q.data;
   return (
     <div className="space-y-5">
-      <Link to="/p" className="inline-flex items-center gap-1 text-[15px] font-medium text-ink-600"><ArrowLeft className="h-4 w-4" />{t('Terug', 'Back')}</Link>
+      <Link to="/p" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" />{t('Terug', 'Back')}</Link>
       <div>
         <h1 className="text-2xl font-semibold">{p.title}</h1>
         <p className="mt-1 text-ink-500">{t('Van', 'From')} {p.therapistName}</p>
@@ -221,7 +221,7 @@ export function SessionPlayer() {
           footer={
             <div className="grid w-full grid-cols-2 gap-2">
               <Button size="lg" variant="secondary" onClick={() => nav('/p')}>{t('Onderbreken', 'Pause')}</Button>
-              <Button size="lg" autoFocus onClick={() => setLeaving(false)}>{t('Doorgaan', 'Continue')}</Button>
+              <Button size="lg" data-autofocus onClick={() => setLeaving(false)}>{t('Doorgaan', 'Continue')}</Button>
             </div>
           }
         >

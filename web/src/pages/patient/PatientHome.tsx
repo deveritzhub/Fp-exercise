@@ -58,7 +58,7 @@ export function PatientHome() {
               <button
                 type="button"
                 aria-label={t('Melding sluiten', 'Dismiss notification')}
-                className="-mr-1 -mt-1 rounded-lg p-2 text-ink-500 hover:bg-white/60"
+                className="-mr-2 -mt-2 flex h-11 w-11 items-center justify-center rounded-lg text-ink-500 hover:bg-white/60"
                 onClick={async () => {
                   await api.post(`/me/notifications/${n.id}/read`);
                   qc.invalidateQueries({ queryKey: ['patient-home'] });
@@ -89,7 +89,7 @@ export function PatientHome() {
             id={p.id}
             title={p.title}
             items={p.today.items}
-            done={p.today.done}
+            done={p.today.done && !p.openSession}
             action={<StartOrResume programId={p.id} open={p.openSession} total={p.today.scheduled} />}
           />
         ))
@@ -120,7 +120,7 @@ export function PatientHome() {
             <p className="text-[15px] text-ink-600">
               {t(`${d.stats.adherence7d.completed} van ${d.stats.adherence7d.planned} geplande trainingen gedaan (7 dagen)`, `${d.stats.adherence7d.completed} of ${d.stats.adherence7d.planned} planned workouts done (7 days)`)}
             </p>
-            <Link to="/p/voortgang" className="mt-0.5 inline-flex items-center gap-1 text-[15px] font-medium text-accent">{t('Bekijk voortgang', 'View progress')}<ChevronRight className="h-4 w-4" /></Link>
+            <Link to="/p/voortgang" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-accent">{t('Bekijk voortgang', 'View progress')}<ChevronRight className="h-4 w-4" /></Link>
           </div>
         </div>
       </section>
@@ -209,7 +209,7 @@ function ReminderNudge() {
         <span className="block font-semibold">{t('Wil je een herinnering?', 'Want a reminder?')}</span>
         <span className="block text-[14px] text-ink-500">{t('Een seintje op dagen met oefeningen.', 'A nudge on exercise days.')}</span>
       </Link>
-      <button type="button" className="rounded-lg p-2 text-ink-400 hover:text-ink-700" aria-label={t('Niet meer tonen', 'Don’t show again')} onClick={() => {
+      <button type="button" className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ink-500 hover:text-ink-700" aria-label={t('Niet meer tonen', 'Don’t show again')} onClick={() => {
         try { localStorage.setItem(KEY, '1'); } catch { /* ignore */ }
         setHidden(true);
       }}><X className="h-5 w-5" /></button>

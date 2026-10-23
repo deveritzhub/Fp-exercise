@@ -97,12 +97,15 @@ test('therapist adds a practice video to a library exercise', async ({ page }) =
   await page.goto('/app/oefeningen');
   await page.getByLabel('Oefeningen zoeken').fill('muurglijder');
   await page.getByRole('link', { name: 'Muurglijder', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Video van je praktijk' })).toBeVisible();
+  // No media yet: said compactly, no stand-in video.
+  await expect(page.getByText('Geen video of afbeelding beschikbaar.')).toBeVisible();
+  await page.getByRole('button', { name: 'Media beheren' }).first().click();
+  await expect(page.getByRole('dialog', { name: 'Media beheren' })).toBeVisible();
   // synthetic bytes with an MP4 signature (not a real recording)
   const bytes = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftypisom'), Buffer.alloc(4000, 7)]);
   await page.locator('input[type=file][accept^="video"]').setInputFiles({ name: 'muurglijder.mp4', mimeType: 'video/mp4', buffer: bytes });
   await page.getByRole('button', { name: 'Opslaan', exact: true }).click();
-  await expect(page.getByText('Video opgeslagen')).toBeVisible();
+  await expect(page.getByText('Media opgeslagen')).toBeVisible();
   await page.reload();
   await expect(page.locator('video').first()).toBeVisible();
 });
@@ -117,7 +120,7 @@ test('therapist approves a library exercise for the practice', async ({ page }) 
   await page.getByRole('button', { name: 'Goedkeuren' }).click();
   await expect(page.getByText(/Goedgekeurd door Sanne Visser/)).toBeVisible();
   await page.goto('/app/oefeningen');
-  await page.getByRole('tab', { name: 'Goedgekeurd' }).click();
+  await page.getByRole('combobox', { name: 'Reviewstatus' }).selectOption('reviewed');
   await expect(page.getByRole('heading', { name: 'Kinintrekking', exact: true })).toBeVisible();
 });
 

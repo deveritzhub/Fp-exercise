@@ -33,8 +33,14 @@ test('favourite gives feedback and shows up under Favourites', async ({ page }) 
   await page.getByRole('button', { name: 'Muurzit als favoriet bewaren' }).click();
   await expect(page.getByText('Bewaard bij je favorieten')).toBeVisible();
   await page.getByRole('button', { name: 'Zoekopdracht wissen' }).click();
-  await page.getByRole('tab', { name: 'Favorieten' }).click();
+  await page.getByRole('button', { name: 'Favorieten', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Favorieten', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('heading', { name: 'Muurzit', exact: true })).toBeVisible();
+  // Combined with a source filter (independent filters).
+  await page.getByRole('combobox', { name: 'Bron' }).selectOption('global');
+  await expect(page.getByRole('heading', { name: 'Muurzit', exact: true })).toBeVisible();
+  await page.getByRole('combobox', { name: 'Bron' }).selectOption('practice');
+  await expect(page.getByText(/Geen oefeningen gevonden/)).toBeVisible();
 });
 
 test('search: English names, synonyms, empty state and clear', async ({ page }) => {

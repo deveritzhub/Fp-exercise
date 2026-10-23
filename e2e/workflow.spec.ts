@@ -103,9 +103,18 @@ test('therapist reviews progress and modifies the programme', async ({ page }) =
   await expect(page.getByText('Gezien').first()).toBeVisible();
 
   await page.goto(programUrl);
+  await expect(page.getByText('Actief — de patiënt ziet versie 1.')).toBeVisible();
   await page.getByRole('button', { name: 'Herhalingen +' }).nth(1).click();
-  await page.getByLabel('Wijzigingsnotitie').fill('Herhalingen opgehoogd');
-  await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
+  await expect(page.getByText(/Je wijzigingen zijn nog niet gepubliceerd/)).toBeVisible();
+  // Publishing an active programme first shows what changes and who is notified.
+  await page.getByRole('button', { name: 'Wijzigingen publiceren…' }).click();
+  const publish = page.getByRole('dialog', { name: 'Wijzigingen publiceren' });
+  await expect(publish.getByText(/Gewijzigd:/).first()).toBeVisible();
+  await expect(publish.getByText(/herhalingen \d+ → \d+/)).toBeVisible();
+  await expect(publish.getByText(/Wie krijgt een melding/)).toBeVisible();
+  await expectAccessible(page, 'publish dialog');
+  await publish.getByLabel(/Wijzigingsnotitie/).fill('Herhalingen opgehoogd');
+  await publish.getByRole('button', { name: 'Publiceren' }).click();
   await expect(page.getByText('Wijzigingen opgeslagen')).toBeVisible();
   await expect(page.getByText('v2', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Meer', exact: true }).click();

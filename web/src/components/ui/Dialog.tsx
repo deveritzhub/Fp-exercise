@@ -25,7 +25,11 @@ export function Dialog({ open, onClose, title, description, children, footer, si
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
-    if (open && !d.open) d.showModal();
+    if (open && !d.open) {
+      d.showModal();
+      // showModal() focuses the first control; a dialog can name a safer default (e.g. "Doorgaan").
+      d.querySelector<HTMLElement>('[data-autofocus]')?.focus();
+    }
     if (!open && d.open) d.close();
   }, [open]);
   const widths = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' };
@@ -69,8 +73,8 @@ export function Dialog({ open, onClose, title, description, children, footer, si
               <h2 id={titleId} className="text-base font-semibold">{title}</h2>
               {description && <p id={descId} className="mt-0.5 text-[13px] text-ink-500">{description}</p>}
             </div>
-            <button type="button" onClick={onClose} aria-label={t('Sluiten', 'Close')} className="-mr-1 rounded-md p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-800">
-              <X className="h-4 w-4" />
+            <button type="button" onClick={onClose} aria-label={t('Sluiten', 'Close')} className="-mr-3 -mt-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-ink-500 hover:bg-ink-100 hover:text-ink-800">
+              <X className="h-5 w-5" />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-5 py-5">{children}</div>

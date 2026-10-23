@@ -37,7 +37,7 @@ export function FeedbackButton({ big }: { big?: boolean }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={cn('flex items-center gap-1.5 rounded-lg text-ink-600 hover:bg-ink-100 hover:text-ink-900', big ? 'p-2' : 'px-2 py-1.5 text-[13px] font-medium')}
+        className={cn('flex items-center gap-1.5 rounded-lg text-ink-600 hover:bg-ink-100 hover:text-ink-900', big ? 'h-11 w-11 shrink-0 justify-center' : 'px-2 py-1.5 text-[13px] font-medium')}
         aria-label={t('Feedback geven', 'Give feedback')}
       >
         <MessageSquarePlus className={big ? 'h-6 w-6' : 'h-4 w-4'} strokeWidth={big ? 1.8 : 2} />

@@ -5,8 +5,9 @@ const loc = (l: Locale) => (l === 'nl' ? 'nl-NL' : 'en-GB');
 export const fmtDate = (d: string | Date | null | undefined, l: Locale, opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }) =>
   d ? new Intl.DateTimeFormat(loc(l), opts).format(typeof d === 'string' && d.length === 10 ? new Date(d + 'T12:00:00') : new Date(d)) : '—';
 
+/** "23 okt. 14:05"; the year is added when it is not this year, so a date is never ambiguous. */
 export const fmtDateTime = (d: string | Date | null | undefined, l: Locale) =>
-  fmtDate(d, l, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  fmtDate(d, l, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', ...(d && new Date(d).getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) });
 
 export function fmtRelative(d: string | Date | null | undefined, l: Locale) {
   if (!d) return l === 'nl' ? 'nog niet' : 'never';
