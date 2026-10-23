@@ -38,12 +38,12 @@ export function ProductShot({ className }: { className?: string }) {
           <span className="ml-3 rounded-md bg-white px-3 py-0.5 text-[11px] text-ink-500">app.fp-exercise.nl/programmas/nieuw</span>
         </div>
         <div className="grid grid-cols-[200px_1fr] text-left sm:grid-cols-[240px_1fr]">
-          <div className="border-r border-line bg-[#f7f5f0] p-3">
+          <div className="border-r border-line bg-sage/60 p-3">
             <div className="flex items-center gap-2 rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] text-ink-500"><Search className="h-3 w-3" />{t('Zoek oefening…', 'Search exercise…')}</div>
             <div className="mt-3 space-y-1.5">
               {lib.map(([n, s], i) => (
                 <div key={n} className={cn('flex items-center gap-2 rounded-lg px-2 py-1.5', i === 0 && 'bg-accent-soft')}>
-                  <div className="h-7 w-7 rounded-md bg-gradient-to-br from-[#e9e4db] to-[#d3cfb9]" />
+                  <div className="h-7 w-7 rounded-md bg-gradient-to-br from-[#eef3ef] to-[#d9e4dc]" />
                   <div className="min-w-0"><div className="truncate text-[11px] font-medium text-ink-900">{n}</div><div className="truncate text-[10px] text-ink-500">{s}</div></div>
                 </div>
               ))}
@@ -57,7 +57,7 @@ export function ProductShot({ className }: { className?: string }) {
                 <div key={n} className="flex items-center gap-2.5 rounded-xl border border-line bg-white p-2.5 shadow-xs">
                   <GripVertical className="h-3 w-3 text-ink-300" />
                   <span className="text-[10px] font-semibold text-ink-500">{i + 1}</span>
-                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#e9e4db] to-[#d3cfb9]" />
+                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#eef3ef] to-[#d9e4dc]" />
                   <div className="min-w-0 flex-1"><div className="truncate text-[11.5px] font-semibold">{n}</div><div className="text-[10px] text-ink-500">{d} · {days}</div></div>
                   <div className="hidden gap-1 sm:flex">{['3', '10', '45s'].map((v) => <span key={v} className="rounded-md border border-line px-1.5 py-0.5 text-[10px] tabular-nums text-ink-600">{v}</span>)}</div>
                 </div>

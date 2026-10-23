@@ -40,7 +40,7 @@ export function HomePage() {
               <Sparkles className="h-3.5 w-3.5 text-accent" /> {t('Gemaakt in Rotterdam, voor de Nederlandse fysiotherapie', 'Made in Rotterdam for Dutch physiotherapy')}
             </span>
             <h1 className="mt-6 text-[42px] font-normal leading-[1.08] tracking-[-0.02em] sm:text-[56px]">
-              {t('Oefentherapie die je patiënt', 'Exercise therapy your patients')} <span className="text-brand-wood">{t('écht volhoudt', 'actually stick with')}</span>.
+              {t('Oefentherapie die je patiënt', 'Exercise therapy your patients')} <span className="text-accent">{t('écht volhoudt', 'actually stick with')}</span>.
             </h1>
             <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-ink-600">
               {t('Stel in een paar minuten een programma samen uit een doorzoekbare oefenbibliotheek, deel het via een rustige patiëntapp en zie direct hoe het gaat — inclusief pijn- en zwaarte-feedback.', 'Build a programme in minutes from a searchable exercise library, share it through a calm patient app and see straight away how it’s going — including pain and difficulty feedback.')}

@@ -133,7 +133,7 @@ export function PatientHome() {
         <div className="flex items-center justify-between gap-3">
           <h2 id="week-title" className="font-semibold">{t('Deze week', 'This week')}</h2>
           {d.stats.streak > 0 && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f3e9dc] px-3 py-1 text-[14px] font-semibold text-brand-wood">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-sand-soft px-3 py-1 text-[14px] font-semibold text-sand-ink">
               <Flame className="h-4 w-4" />
               {t(`${d.stats.streak} ${d.stats.streak === 1 ? 'training' : 'trainingen'} op rij`, `${d.stats.streak} in a row`)}
             </span>

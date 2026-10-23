@@ -544,7 +544,7 @@ function SummaryStep({ completed, total, saving, onFinish }: { completed: number
 
 /** Lightweight CSS confetti in brand colours (disabled automatically with prefers-reduced-motion). */
 function Confetti() {
-  const colors = ['#413d28', '#5b432b', '#64614d', '#bbb9a1', '#dbd3c0', '#9a3b2c'];
+  const colors = ['#29483c', '#1d362d', '#5b8a74', '#a9c4b2', '#d8ccb6', '#e6eee8'];
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-30 overflow-hidden">
       {Array.from({ length: 48 }, (_, i) => {

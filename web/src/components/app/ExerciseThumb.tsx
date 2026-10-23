@@ -4,17 +4,18 @@ import { cn } from '@/lib/cn';
 import { mediaUrl } from '@/lib/api';
 import { useLabels } from '@/lib/meta';
 
+// Calm sage tints (a few with a hint of sand) while there is no image.
 const REGION_TINT: Record<string, string> = {
-  cervical_spine: 'from-[#ece8df] to-[#dcd6c6]',
-  thoracic_spine: 'from-[#eae6dc] to-[#d6d3bf]',
-  lumbar_spine: 'from-[#ede6da] to-[#dccfbb]',
-  shoulder: 'from-[#e8e7dc] to-[#cfcdb6]',
-  elbow: 'from-[#ece5da] to-[#d9cbb6]',
-  wrist_hand: 'from-[#ebe7de] to-[#d8d2c1]',
-  hip: 'from-[#e6e5da] to-[#c9c7ae]',
-  knee: 'from-[#e9e6dc] to-[#d3cfb9]',
-  ankle_foot: 'from-[#ede7dc] to-[#dbd1bd]',
-  full_body: 'from-[#e9e4db] to-[#d5cfbf]',
+  cervical_spine: 'from-[#eef3ef] to-[#dbe5de]',
+  thoracic_spine: 'from-[#edf2ee] to-[#d8e3db]',
+  lumbar_spine: 'from-[#f1f1ea] to-[#e0dccd]',
+  shoulder: 'from-[#ecf2ee] to-[#d5e1d8]',
+  elbow: 'from-[#f2f0ea] to-[#e2dacb]',
+  wrist_hand: 'from-[#eef2ee] to-[#dae3dc]',
+  hip: 'from-[#ebf1ec] to-[#d2dfd5]',
+  knee: 'from-[#eef3ef] to-[#d9e4dc]',
+  ankle_foot: 'from-[#f2f1ea] to-[#e1dbcc]',
+  full_body: 'from-[#edf2ee] to-[#d6e1d9]',
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -187,7 +188,7 @@ export const ExerciseThumb = memo(function ExerciseThumb({ thumbnailId, videoId,
         <video src={`${videoSrc}#t=1`} muted playsInline preload="metadata" className="h-full w-full object-cover" aria-hidden />
       ) : !videoSrc && !(img && !imgFailed) ? (
         <div className="flex h-full w-full items-center justify-center" aria-hidden>
-          <span className="font-display text-[clamp(14px,30%,40px)] font-semibold tracking-wide text-brand-olive/45">{monogram(name)}</span>
+          <span className="font-display text-[clamp(14px,30%,40px)] font-semibold tracking-wide text-brand-forest/35">{monogram(name)}</span>
         </div>
       ) : null}
       {hovering && videoSrc && (

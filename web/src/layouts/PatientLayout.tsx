@@ -6,6 +6,7 @@ import { usePendingCount, useOnline, useOutboxSync } from '@/lib/outbox';
 import { Logo } from '@/components/app/Brand';
 import { FeedbackButton } from '@/components/app/Feedback';
 import { useI18n } from '@/lib/i18n';
+import { usePracticeAccent } from '@/lib/accent';
 import { useSession } from '@/lib/session';
 import { cn } from '@/lib/cn';
 
@@ -13,6 +14,7 @@ import { cn } from '@/lib/cn';
 export function PatientLayout() {
   const { t } = useI18n();
   const { user } = useSession();
+  usePracticeAccent(user?.patient?.accent);
   const loc = useLocation();
   const qc = useQueryClient();
   const online = useOnline();

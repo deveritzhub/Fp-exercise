@@ -6,6 +6,7 @@ import { errorMessage, useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { fmtDateTime, fmtDate } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
+import { accentVars, DEFAULT_ACCENT } from '@/lib/accent';
 import { Avatar, Badge, Button, buttonClass, Card, CardHeader, Dialog, EmptyState, Input, Notice, PageHeader, ProgressBar, Select, Spinner, Tabs, useToast } from '@/components/ui';
 import type { Member, Role } from '@/lib/types';
 import { FeedbackList } from '@/components/app/Feedback';
@@ -155,9 +156,9 @@ function Settings() {
   const q = usePractice();
   const qc = useQueryClient();
   const toast = useToast();
-  const [f, setF] = useState({ name: '', city: '', defaultLocale: 'nl' as 'nl' | 'en', accent: '#413d28' });
+  const [f, setF] = useState({ name: '', city: '', defaultLocale: 'nl' as 'nl' | 'en', accent: DEFAULT_ACCENT });
   useEffect(() => {
-    if (q.data) setF({ name: q.data.name, city: q.data.city ?? '', defaultLocale: q.data.defaultLocale, accent: q.data.branding.accent ?? '#413d28' });
+    if (q.data) setF({ name: q.data.name, city: q.data.city ?? '', defaultLocale: q.data.defaultLocale, accent: accentVars(q.data.branding.accent) ? q.data.branding.accent! : DEFAULT_ACCENT });
   }, [q.data]);
   if (!q.data) return <Spinner />;
   return (
@@ -166,7 +167,7 @@ function Settings() {
       <form className="space-y-4 p-5" onSubmit={async (e) => {
         e.preventDefault();
         try {
-          await api.patch('/practice', { name: f.name, city: f.city || null, defaultLocale: f.defaultLocale, branding: { accent: f.accent } });
+          await api.patch('/practice', { name: f.name, city: f.city || null, defaultLocale: f.defaultLocale, branding: accentVars(f.accent) ? { accent: f.accent } : {} });
           toast(t('Instellingen opgeslagen', 'Settings saved'));
           qc.invalidateQueries();
         } catch (err) { toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad'); }
@@ -182,7 +183,8 @@ function Settings() {
           <label className="label mb-1.5 block" htmlFor="accent">{t('Accentkleur (huisstijl)', 'Accent colour (branding)')}</label>
           <div className="flex items-center gap-3">
             <input id="accent" type="color" value={f.accent} onChange={(e) => setF({ ...f, accent: e.target.value })} className="h-9 w-14 cursor-pointer rounded-lg border border-line" />
-            <span className="text-[13px] text-ink-500">{t('Wordt gebruikt in de patiëntapp. Kies een donkere kleur voor voldoende contrast.', 'Used in the patient app. Choose a dark colour for sufficient contrast.')}</span>
+            <span className="min-w-0 flex-1 text-[13px] text-ink-500">{t('Voor knoppen en accenten in de app en de patiëntapp. Een te lichte kleur wordt automatisch donkerder gemaakt voor voldoende contrast.', 'For buttons and accents in the app and the patient app. A colour that is too light is darkened automatically for sufficient contrast.')}</span>
+            {f.accent.toLowerCase() !== DEFAULT_ACCENT && <Button size="sm" variant="ghost" onClick={() => setF({ ...f, accent: DEFAULT_ACCENT })}>{t('Standaardkleur', 'Default colour')}</Button>}
           </div>
         </div>
         <div className="flex justify-end"><Button type="submit">{t('Opslaan', 'Save')}</Button></div>

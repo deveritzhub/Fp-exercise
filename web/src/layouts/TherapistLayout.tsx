@@ -4,6 +4,7 @@ import { BookOpen, Building2, ChevronsUpDown, LayoutDashboard, LogOut, Menu, Plu
 import { Logo, LocaleSwitch } from '@/components/app/Brand';
 import { Avatar, Popover, MenuItem, Button } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
+import { usePracticeAccent } from '@/lib/accent';
 import { useLogout, useSession } from '@/lib/session';
 import { setActivePractice } from '@/lib/api';
 import { cn } from '@/lib/cn';
@@ -15,6 +16,7 @@ import { useQueryClient } from '@tanstack/react-query';
 export function TherapistLayout() {
   const { t } = useI18n();
   const { user, practice } = useSession();
+  usePracticeAccent(practice?.accent);
   const logout = useLogout();
   const nav = useNavigate();
   const qc = useQueryClient();
