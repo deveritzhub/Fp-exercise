@@ -316,3 +316,21 @@ export async function unlinkPendingPatientLogin(patientId: string) {
   await authPool.query('UPDATE patients SET user_id = NULL WHERE id = $1', [patientId]);
   await authPool.query(`UPDATE auth_tokens SET used_at = now() WHERE user_id = $1 AND kind = 'invite' AND used_at IS NULL`, [rows[0].id]);
 }
+
+/**
+ * AVG erasure of a patient's login after the practice carried out a deletion request: personal data
+ * is removed from the account and it can no longer sign in. Staff logins are never touched here.
+ */
+export async function eraseLogin(userId: string) {
+  const { rows } = await authPool.query('SELECT 1 FROM practice_members WHERE user_id = $1', [userId]);
+  if (rows[0]) return;
+  await authPool.query(
+    `UPDATE users SET email = 'verwijderd-' || id || '@invalid', full_name = 'Verwijderd', password_hash = NULL,
+       mfa_enabled = false, mfa_secret = NULL, disabled_at = now() WHERE id = $1`,
+    [userId],
+  );
+  await authPool.query('DELETE FROM auth_sessions WHERE user_id = $1', [userId]);
+  await authPool.query('DELETE FROM auth_tokens WHERE user_id = $1', [userId]);
+  await authPool.query('DELETE FROM push_subscriptions WHERE user_id = $1', [userId]);
+  await authPool.query('DELETE FROM reminder_settings WHERE user_id = $1', [userId]);
+}

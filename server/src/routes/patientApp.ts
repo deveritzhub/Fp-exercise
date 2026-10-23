@@ -55,6 +55,10 @@ patientApp.get('/home', async (c) => {
         [patient.id, today],
       );
       const doneSet = new Set(doneToday.rows.map((r) => r.program_id));
+      const paused = new Set(
+        (await tx.query('SELECT DISTINCT program_id FROM red_flag_reports WHERE patient_id = $1 AND handled_at IS NULL', [patient.id])).rows.map((r) => r.program_id),
+      );
+      const mode = (await tx.query('SELECT active_mode FROM patients WHERE id = $1', [patient.id])).rows[0]?.active_mode ?? 'revalidatie';
       const programs = [];
       for (const p of progs.rows) {
         const items = await loadItems(tx, p.id);
@@ -62,6 +66,8 @@ patientApp.get('/home', async (c) => {
         programs.push({
           ...patientProgram(p),
           therapistName: p.therapist_name,
+          paused: paused.has(p.id),
+          selfStarted: p.created_by === user.id,
           itemCount: items.length,
           today: { scheduled: todayItems.length, done: doneSet.has(p.id), items: todayItems.map((i) => ({ id: i.id, exercise: i.exercise, sets: i.sets, reps: i.reps, holdS: i.holdS })) },
           nextSession: await nextSessionDate(tx, p.id, new Date(), p.end_date),
@@ -82,6 +88,7 @@ patientApp.get('/home', async (c) => {
       const total = await tx.query('SELECT count(*) AS n FROM workout_sessions WHERE patient_id = $1 AND completed_at IS NOT NULL', [patient.id]);
       return {
         patient: { firstName: user.fullName.split(' ')[0], practiceName: patient.practiceName },
+        mode,
         programs,
         stats: {
           week: weekStrip(inputs.schedules.get(patient.id) ?? [], inputs.done.get(patient.id) ?? new Map(), new Date()),
@@ -147,6 +154,9 @@ patientApp.post('/sessions', async (c) => {
         patient.id,
       ]);
       if (!p.rows[0]) throw notFound();
+      // Red flag reported (W11): no exercising until the therapist has handled it.
+      const flagged = await tx.query('SELECT 1 FROM red_flag_reports WHERE program_id = $1 AND handled_at IS NULL', [programId]);
+      if (flagged.rows[0]) throw new HttpError(409, 'paused_red_flag');
       if (clientId) {
         const ins = await tx.query(
           `INSERT INTO workout_sessions(id, practice_id, patient_id, program_id, program_version, started_at)

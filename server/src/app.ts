@@ -21,6 +21,8 @@ import { admin } from './routes/admin';
 import { publicRoutes } from './routes/public';
 import { feedback } from './routes/feedback';
 import { reminders } from './routes/reminders';
+import { patientModules } from './routes/patientModules';
+import { patientCare, redFlags } from './routes/patientCare';
 
 export function createApp() {
   const app = new Hono<AppEnv>();
@@ -63,8 +65,11 @@ export function createApp() {
   api.route('/exercises', exercises);
   api.route('/media', media);
   api.route('/patients', patients);
+  api.route('/patients', patientCare);
+  api.route('/red-flags', redFlags);
   api.route('/programs', programs);
   api.route('/patient', patientApp);
+  api.route('/patient', patientModules);
   api.route('/dashboard', dashboard);
   api.route('/practice', practice);
   api.route('/admin', admin);

@@ -86,7 +86,17 @@ dashboard.get('/', async (c) => {
            FROM generate_series(current_date - 13, current_date, interval '1 day') d ORDER BY d`,
         [ids],
       );
+      // Safety and AVG first: open red-flag reports and deletion requests (RLS limits them to my patients / admins).
+      const alerts = await tx.query(
+        `SELECT 'red_flag' AS kind, r.created_at, p.id AS patient_id, p.first_name, p.last_name
+           FROM red_flag_reports r JOIN patients p ON p.id = r.patient_id WHERE r.handled_at IS NULL
+         UNION ALL
+         SELECT 'deletion_request', d.created_at, p.id, p.first_name, p.last_name
+           FROM deletion_requests d JOIN patients p ON p.id = d.patient_id WHERE d.handled_at IS NULL
+         ORDER BY created_at DESC LIMIT 20`,
+      );
       return {
+        alerts: alerts.rows.map((r) => ({ kind: r.kind, createdAt: r.created_at, patientId: r.patient_id, name: `${r.first_name} ${r.last_name}` })),
         daily: daily.rows.map((r) => ({ day: r.day, sessions: r.n })),
         stats: {
           patients: ids.length,
