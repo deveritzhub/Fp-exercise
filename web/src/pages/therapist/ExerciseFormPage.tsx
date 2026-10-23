@@ -148,7 +148,7 @@ export function ExerciseFormPage() {
 
           <Card className="p-5">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-[15px] font-semibold">{t('Instructies voor de patiënt', 'Patient instructions')}</h2>
+              <h2 className="text-[15px] font-bold">{t('Instructies voor de patiënt', 'Patient instructions')}</h2>
               <div className="flex rounded-lg border border-line bg-ink-50 p-0.5 text-[13px]">
                 {(['nl', 'en'] as const).map((l) => (
                   <button key={l} type="button" onClick={() => setLang(l)} aria-pressed={lang === l} className={lang === l ? 'rounded-md bg-white px-2.5 py-1 font-medium shadow-xs' : 'px-2.5 py-1 text-ink-500'}>
@@ -167,13 +167,13 @@ export function ExerciseFormPage() {
 
         <div className="space-y-6">
           <Card className="space-y-4 p-5">
-            <h2 className="text-[15px] font-semibold">{t('Media', 'Media')}</h2>
+            <h2 className="text-[15px] font-bold">{t('Media', 'Media')}</h2>
             <MediaUpload kind="video" value={f.videoMediaId} onChange={(v) => set('videoMediaId', v)} />
             <MediaUpload kind="image" value={f.thumbnailMediaId} onChange={(v) => set('thumbnailMediaId', v)} />
             <p className="text-[12px] text-ink-500">{t('Bestanden worden privé opgeslagen en alleen getoond aan je praktijk en haar patiënten. Upload geen herkenbare patiëntbeelden.', 'Files are stored privately and only shown to your practice and its patients. Do not upload identifiable patient footage.')}</p>
           </Card>
           <Card className="space-y-4 p-5">
-            <h2 className="text-[15px] font-semibold">{t('Standaarddosering', 'Default dosage')}</h2>
+            <h2 className="text-[15px] font-bold">{t('Standaarddosering', 'Default dosage')}</h2>
             <div className="grid grid-cols-2 gap-3">
               <DoseField label={t('Sets', 'Sets')}><NumberStepper label={t('Sets', 'Sets')} value={f.sets} onChange={(v) => set('sets', v)} min={1} max={20} /></DoseField>
               <DoseField label={t('Herhalingen', 'Reps')}><NumberStepper label={t('Herhalingen', 'Reps')} value={f.reps} onChange={(v) => set('reps', v)} min={1} max={200} /></DoseField>
@@ -189,7 +189,7 @@ export function ExerciseFormPage() {
           </Card>
           <Card className="space-y-4 p-5">
             <div>
-              <h2 className="text-[15px] font-semibold">{t('Externe verwijzingen', 'External references')}</h2>
+              <h2 className="text-[15px] font-bold">{t('Externe verwijzingen', 'External references')}</h2>
               <p className="mt-0.5 text-[12.5px] text-ink-600">{t('Alleen opgeslagen ter referentie, zonder koppeling. Er wordt niets opgehaald of gekopieerd; patiënten zien dit niet.', 'Stored for reference only, without integration. Nothing is fetched or copied; patients do not see this.')}</p>
             </div>
             <Input label={t('Physitrack-ID', 'Physitrack ID')} optional={t('optioneel', 'optional')} value={f.physitrackId} onChange={text('physitrackId')} maxLength={80} />

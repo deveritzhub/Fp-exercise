@@ -69,7 +69,7 @@ export function ExerciseDetailPage() {
         <div className="min-w-0 space-y-5 lg:col-span-3">
           <header className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <h1 className="text-[24px] font-semibold leading-tight sm:text-[28px]">{name}</h1>
+              <h1 className="text-[24px] font-bold leading-tight sm:text-[28px]">{name}</h1>
               <p className="mt-1 text-[13.5px] text-ink-500">{[nl ? e.nameEn : e.nameNl, ...e.altNames].filter((x) => x && x !== name).join(' · ')}</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 <Badge>{L.region(e.bodyRegion)}</Badge>
@@ -141,7 +141,7 @@ export function ExerciseDetailPage() {
                   <Link key={r.kind + r.id} to={`/app/oefeningen/${r.id}`} className="tap w-40 shrink-0 snap-start overflow-hidden rounded-xl border border-line bg-white shadow-xs transition-shadow hover:shadow-card sm:w-auto">
                     <ExerciseThumb thumbnailId={r.thumbnailMediaId} videoId={r.videoMediaId} region={r.bodyRegion} name={nl ? r.nameNl : r.nameEn} className="aspect-[16/10] w-full" rounded="rounded-none" hideBadge />
                     <div className="p-2.5">
-                      <span className={cn('inline-flex items-center gap-1 text-[11.5px] font-semibold', r.kind === 'progression' ? 'text-accent' : r.kind === 'regression' ? 'text-info' : 'text-ink-500')}>
+                      <span className={cn('inline-flex items-center gap-1 text-[12px] font-semibold', r.kind === 'progression' ? 'text-accent' : r.kind === 'regression' ? 'text-info' : 'text-ink-500')}>
                         {r.kind === 'progression' ? <TrendingUp className="h-3.5 w-3.5" /> : r.kind === 'regression' ? <TrendingDown className="h-3.5 w-3.5" /> : <Shuffle className="h-3.5 w-3.5" />}
                         {kindLabel(r.kind)}
                       </span>

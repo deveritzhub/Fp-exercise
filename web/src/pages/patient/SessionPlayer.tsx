@@ -33,7 +33,7 @@ export function PatientProgramPage() {
     <div className="space-y-5">
       <Link to="/p" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" />{t('Terug', 'Back')}</Link>
       <div>
-        <h1 className="text-2xl font-semibold">{p.title}</h1>
+        <h1 className="text-2xl font-bold">{p.title}</h1>
         <p className="mt-1 text-ink-500">{t('Van', 'From')} {p.therapistName}</p>
       </div>
       <ProgramItemsList
@@ -200,7 +200,7 @@ export function SessionPlayer() {
 
         {phase === 'intro' && (
           <div className="space-y-5">
-            <h1 className="text-[26px] font-semibold leading-tight">{q.data.title}</h1>
+            <h1 className="text-[26px] font-bold leading-tight">{q.data.title}</h1>
             <p className="text-[16px] text-ink-600">{t(`${items.length} oefeningen. Neem de tijd en luister naar je lichaam.`, `${items.length} exercises. Take your time and listen to your body.`)}</p>
             {unplanned && <Notice tone="info">{t('Vandaag staat er geen training gepland. Wil je toch oefenen, dan doe je alle oefeningen van dit programma.', 'No workout is planned today. If you want to exercise anyway, you do all exercises of this programme.')}</Notice>}
             {q.data.patientInstructions && <div className="rounded-2xl bg-accent-soft p-4 text-[15.5px] leading-relaxed text-ink-800">{q.data.patientInstructions}</div>}
@@ -269,7 +269,7 @@ export function SessionPlayer() {
             <div className="mb-5 flex h-20 w-20 animate-scale-in items-center justify-center rounded-full bg-ok-soft text-ok">
               <PartyPopper className="h-10 w-10" />
             </div>
-            <h1 className="text-[26px] font-semibold">{t('Training afgerond!', 'Workout complete!')}</h1>
+            <h1 className="text-[26px] font-bold">{t('Training afgerond!', 'Workout complete!')}</h1>
             <p className="mt-2 max-w-xs text-[16px] text-ink-600">
               {savedOffline
                 ? t('Goed bezig! Houd de app open: je training wordt automatisch verstuurd zodra je weer internet hebt.', 'Great work! Keep the app open: your workout is sent automatically once you are back online.')
@@ -315,7 +315,7 @@ export function ExerciseInfo({ item }: { item: ProgramItem }) {
       )}
 
       <div>
-        <h1 className="text-[24px] font-semibold leading-tight">{nl ? ex.nameNl : ex.nameEn}</h1>
+        <h1 className="text-[24px] font-bold leading-tight">{nl ? ex.nameNl : ex.nameEn}</h1>
         <div className="mt-3 flex flex-wrap gap-2">
           {item.sets && <Pill label={t('Sets', 'Sets')} value={String(item.sets)} />}
           {item.reps && <Pill label={t('Herhalingen', 'Repetitions')} value={String(item.reps)} />}
@@ -497,7 +497,7 @@ function RateStep({ item, saving, onSave, onBack }: { item: ProgramItem; saving:
     <div className="animate-slide-up space-y-7">
       <div>
         <button type="button" onClick={onBack} className="mb-3 inline-flex items-center gap-1 text-[15px] font-medium text-ink-600"><ArrowLeft className="h-4 w-4" />{t('Terug', 'Back')}</button>
-        <h1 className="text-[24px] font-semibold leading-tight">{t('Hoe ging het?', 'How did it go?')}</h1>
+        <h1 className="text-[24px] font-bold leading-tight">{t('Hoe ging het?', 'How did it go?')}</h1>
         <p className="mt-1 text-ink-500">{locale === 'nl' ? item.exercise.nameNl : item.exercise.nameEn} · {t('alles is optioneel', 'everything is optional')}</p>
       </div>
       {(item.sets || item.reps) && (
@@ -529,7 +529,7 @@ function SummaryStep({ completed, total, saving, onFinish }: { completed: number
   return (
     <div className="animate-slide-up space-y-7">
       <div>
-        <h1 className="text-[24px] font-semibold leading-tight">{t('Bijna klaar', 'Almost done')}</h1>
+        <h1 className="text-[24px] font-bold leading-tight">{t('Bijna klaar', 'Almost done')}</h1>
         <p className="mt-1 text-[16px] text-ink-600">{t(`Je hebt ${completed} van de ${total} oefeningen gedaan.`, `You completed ${completed} of ${total} exercises.`)}</p>
       </div>
       <ScaleInput label={t('Hoe zwaar was de hele training?', 'How hard was the whole workout?')} lowLabel={t('0 = heel licht', '0 = very easy')} highLabel={t('10 = maximaal', '10 = maximal')} value={s.difficulty} onChange={(v) => setS({ ...s, difficulty: v })} />

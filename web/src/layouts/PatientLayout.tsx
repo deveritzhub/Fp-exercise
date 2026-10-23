@@ -43,9 +43,11 @@ export function PatientLayout() {
       {!inPlayer && (
         <header className="sticky top-0 z-20 border-b border-line bg-white/90 backdrop-blur">
           <div className="mx-auto flex h-16 max-w-xl items-center justify-between gap-3 px-4">
-            <Logo to="/p" className="min-h-[44px]" />
+            {/* Narrow phones: logo mark only, so the practice name fits in full. */}
+            <Logo to="/p" compact className="min-h-[44px] min-[430px]:hidden" />
+            <Logo to="/p" className="hidden min-h-[44px] min-[430px]:inline-flex" />
             <div className="flex min-w-0 items-center gap-1">
-              <span className="truncate text-[13.5px] font-medium text-ink-600">{user.patient.practiceName}</span>
+              <span className="min-w-0 text-right text-[13.5px] font-medium leading-tight text-ink-600">{user.patient.practiceName}</span>
               <FeedbackButton big />
             </div>
           </div>

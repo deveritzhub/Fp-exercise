@@ -92,7 +92,7 @@ export function MarketingLayout() {
 function FooterCol({ title, links }: { title: string; links: [string, string][] }) {
   return (
     <div>
-      <h2 className="text-[13px] font-semibold text-ink-900">{title}</h2>
+      <h2 className="text-[13px] font-bold text-ink-900">{title}</h2>
       <ul className="mt-3 space-y-2">
         {links.map(([to, label]) => (
           <li key={to}>

@@ -25,7 +25,7 @@ export function AccountPage({ patient }: { patient?: boolean }) {
   if (!user) return null;
   return (
     <div className={patient ? 'space-y-5' : 'max-w-2xl space-y-6'}>
-      {patient ? <h1 className="text-2xl font-semibold">{t('Account', 'Account')}</h1> : <PageHeader title={t('Account', 'Account')} />}
+      {patient ? <h1 className="text-2xl font-bold">{t('Account', 'Account')}</h1> : <PageHeader title={t('Account', 'Account')} />}
       <Card>
         <CardHeader title={t('Profiel', 'Profile')} />
         <form className="space-y-4 p-5" onSubmit={async (e) => {
@@ -68,7 +68,7 @@ export function AccountPage({ patient }: { patient?: boolean }) {
           <ReminderCard />
           <MyDataCard />
           <Card className="p-5 text-[14px] leading-relaxed text-ink-600">
-            <h2 className="mb-1 font-semibold text-ink-900">{t('Privacy', 'Privacy')}</h2>
+            <h2 className="mb-1 font-bold text-ink-900">{t('Privacy', 'Privacy')}</h2>
             {t('Je oefengegevens worden alleen gedeeld met je eigen praktijk. Vragen over je gegevens? Neem contact op met je fysiotherapeut.', 'Your exercise data is only shared with your own practice. Questions about your data? Contact your physiotherapist.')}{' '}
             <Link to="/privacy" className="link">{t('Privacyverklaring', 'Privacy notice')}</Link>
           </Card>

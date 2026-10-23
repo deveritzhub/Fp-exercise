@@ -11,7 +11,7 @@ export function AuthLayout({ title, description, children, footer }: { title: st
       <div className="flex flex-1 items-start justify-center px-4 pb-16 pt-6 sm:pt-16">
         <div className="w-full max-w-[400px]">
           <div className="card px-6 py-7 sm:px-8 sm:py-8">
-            <h1 className="text-xl font-semibold">{title}</h1>
+            <h1 className="text-xl font-bold">{title}</h1>
             {description && <p className="mt-1.5 text-[14px] text-ink-500">{description}</p>}
             <div className="mt-6">{children}</div>
           </div>

@@ -118,7 +118,7 @@ export function PatientDetailPage() {
         tabs={[
           { value: 'overzicht', label: t('Overzicht', 'Overview') },
           { value: 'programmas', label: t('Programma’s', 'Programmes'), count: pt.programs.length },
-          { value: 'sessies', label: unreviewed ? <>{t('Sessies & feedback', 'Sessions & feedback')} <span className="ml-1 rounded-full bg-warn-soft px-2 py-0.5 text-[11.5px] font-semibold text-warn">{t(`${unreviewed} te beoordelen`, `${unreviewed} to review`)}</span></> : t('Sessies & feedback', 'Sessions & feedback') },
+          { value: 'sessies', label: unreviewed ? <>{t('Sessies & feedback', 'Sessions & feedback')} <span className="ml-1 rounded-full bg-warn-soft px-2 py-0.5 text-[12px] font-semibold text-warn">{t(`${unreviewed} te beoordelen`, `${unreviewed} to review`)}</span></> : t('Sessies & feedback', 'Sessions & feedback') },
           { value: 'modules', label: t('Veiligheid & modules', 'Safety & modules') },
           { value: 'gegevens', label: t('Gegevens', 'Details') },
         ]}
