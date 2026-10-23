@@ -21,27 +21,21 @@ import type { CriteriaCheck, Exercise, PatientListItem, Program, ProgramItem } f
 import { CriteriaList, Evidence, ModuleBadge, RedFlags, Warnings } from '@/components/app/PhaseInfo';
 import { ProgramItemsList, RestDayCard, TodayProgramCard } from '@/components/patient/TodayCard';
 import { dayStatus, itemsForDate, nextSessionDate } from '@shared/schedule';
+import { ALL_DAYS, defaultDose, doseProblems, type DoseProblem } from '@/lib/dose';
 
 type BItem = Omit<ProgramItem, 'exercise'> & { key: string; exercise: ProgramItem['exercise'] };
 type Meta = { title: string; description: string; patientInstructions: string; startDate: string; endDate: string };
 
 let keySeq = 0;
 const newKey = () => `k${++keySeq}`;
-const ALL_DAYS = [1, 2, 3, 4, 5, 6, 7];
 
 function fromExercise(e: Exercise): BItem {
   return {
     key: newKey(),
     exerciseId: e.id,
     alternativeExerciseId: null,
-    sets: e.defaults.sets,
-    reps: e.defaults.reps,
-    holdS: e.defaults.holdS,
-    restS: e.defaults.restS,
-    tempo: e.defaults.tempo,
+    ...defaultDose(e),
     load: null,
-    frequency: e.defaults.frequency,
-    days: ALL_DAYS,
     notes: '',
     exercise: {
       id: e.id, nameNl: e.nameNl, nameEn: e.nameEn, bodyRegion: e.bodyRegion, thumbnailMediaId: e.thumbnailMediaId, videoMediaId: e.videoMediaId,
@@ -86,6 +80,7 @@ export function ProgramBuilderPage() {
   const [history, setHistory] = useState(false);
   const [pickTemplate, setPickTemplate] = useState(false);
   const [libOpen, setLibOpen] = useState(false); // mobile library sheet
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   useDocumentMeta(isNew ? t('Nieuw programma', 'New programme') : existing.data?.title ?? t('Programma', 'Programme'));
 
@@ -158,15 +153,33 @@ export function ProgramBuilderPage() {
     })),
   });
 
+  // Per exercise: what is missing (empty stays empty, never silently 0).
+  const problems = useMemo(() => Object.fromEntries(items.map((i) => [i.key, doseProblems(i)])), [items]);
+  const [showProblems, setShowProblems] = useState(false);
   const validate = () => {
-    if (meta.title.trim().length < 2) return t('Geef het programma een titel.', 'Give the programme a title.');
-    if (isNew && !asTemplate && !patientId) return t('Kies een patiënt of sla op als sjabloon.', 'Choose a patient or save as template.');
-    return null;
+    const out: string[] = [];
+    if (meta.title.trim().length < 2) out.push(t('Geef het programma een titel.', 'Give the programme a title.'));
+    if (isNew && !asTemplate && !patientId) out.push(t('Kies een patiënt of sla op als sjabloon.', 'Choose a patient or save as template.'));
+    if (!asTemplate && meta.startDate && meta.endDate && meta.endDate < meta.startDate) out.push(t('De einddatum ligt vóór de startdatum.', 'The end date is before the start date.'));
+    items.forEach((i, n) => {
+      const nm = locale === 'nl' ? i.exercise.nameNl : i.exercise.nameEn;
+      for (const p of problems[i.key] ?? []) {
+        out.push(p === 'no_dose'
+          ? t(`Oefening ${n + 1} (${nm}): vul sets, herhalingen of vasthoudtijd in.`, `Exercise ${n + 1} (${nm}): enter sets, reps or hold time.`)
+          : t(`Oefening ${n + 1} (${nm}): kies minstens één trainingsdag.`, `Exercise ${n + 1} (${nm}): choose at least one training day.`));
+      }
+    });
+    return out.length ? out : null;
   };
 
-  const save = async (mode: 'draft' | 'active' | 'save') => {
+  const [publishOpen, setPublishOpen] = useState(false);
+  const save = async (mode: 'draft' | 'active' | 'save', confirmed = false) => {
     const v = validate();
-    if (v) return setError(v);
+    setShowProblems(!!v);
+    if (v) return setError(v.join('\n'));
+    // Changing an active programme: first show what changes and who is notified.
+    if (!confirmed && !isNew && program?.status === 'active' && !program.isTemplate) return setPublishOpen(true);
+    setPublishOpen(false);
     setBusy(mode);
     setError(null);
     try {
@@ -271,7 +284,12 @@ export function ProgramBuilderPage() {
           </div>
         </Notice>
       )}
-      {error && <Notice tone="bad" className="mb-5">{error}</Notice>}
+      {error && (
+        <Notice tone="bad" className="mb-5" title={error.includes('\n') ? t('Controleer deze punten', 'Please check these points') : undefined}>
+          {error.includes('\n') ? <ul className="list-disc space-y-0.5 pl-5">{error.split('\n').map((x) => <li key={x}>{x}</li>)}</ul> : error}
+        </Notice>
+      )}
+      {!readOnlyGlobal && <StateStrip isNew={isNew} program={program} asTemplate={asTemplate} dirty={dirty} />}
 
       <div className="grid items-start gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
         {/* library (desktop) */}
@@ -292,7 +310,7 @@ export function ProgramBuilderPage() {
             {!asTemplate && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input label={t('Startdatum', 'Start date')} type="date" value={meta.startDate} onChange={setM('startDate')} />
-                <Input label={t('Einddatum', 'End date')} type="date" value={meta.endDate} min={meta.startDate} onChange={setM('endDate')} optional={t('optioneel', 'optional')} />
+                <Input label={t('Einddatum', 'End date')} type="date" value={meta.endDate} min={meta.startDate} onChange={setM('endDate')} optional={t('optioneel', 'optional')} error={meta.startDate && meta.endDate && meta.endDate < meta.startDate ? t('Ligt vóór de startdatum', 'Is before the start date') : undefined} />
               </div>
             )}
             <Textarea label={t('Instructies voor de patiënt', 'Instructions for the patient')} value={meta.patientInstructions} onChange={setM('patientInstructions')} placeholder={t('Algemene uitleg, bijv. hoe om te gaan met pijn tijdens het oefenen.', 'General guidance, e.g. how to handle pain during exercise.')} disabled={readOnlyGlobal} />
@@ -329,7 +347,11 @@ export function ProgramBuilderPage() {
               />
             </Card>
           ) : (
-            <SortableItems items={items} update={update} readOnly={!!readOnlyGlobal} />
+            <>
+              {!readOnlyGlobal && <SelectionBar items={items} selected={selected} setSelected={setSelected} update={update} />}
+              <SortableItems items={items} update={update} readOnly={!!readOnlyGlobal} selected={selected} setSelected={setSelected} problems={showProblems ? problems : {}} />
+              <WeekOverview items={items} />
+            </>
           )}
         </div>
       </div>
@@ -338,10 +360,9 @@ export function ProgramBuilderPage() {
       {!readOnlyGlobal && (
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/95 backdrop-blur lg:left-64">
           <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
-            <span className="text-[13px] text-ink-500">{dirty ? t('Niet-opgeslagen wijzigingen', 'Unsaved changes') : program ? t(`Opgeslagen · ${fmtDateTime(program.updatedAt, locale)}`, `Saved · ${fmtDateTime(program.updatedAt, locale)}`) : ''}</span>
-            {!isNew && program?.status === 'active' && (
-              <Input className="h-9 max-w-xs" placeholder={t('Wijzigingsnotitie (optioneel)', 'Change note (optional)')} value={changeNote} onChange={(e) => setChangeNote(e.target.value)} aria-label={t('Wijzigingsnotitie', 'Change note')} />
-            )}
+            <span className={cn('text-[13px]', dirty ? 'font-medium text-warn' : 'text-ink-600')} role="status">
+              {dirty ? t('Niet-opgeslagen wijzigingen', 'Unsaved changes') : program ? t(`Opgeslagen · ${fmtDateTime(program.updatedAt, locale)}`, `Saved · ${fmtDateTime(program.updatedAt, locale)}`) : t('Nog niet opgeslagen', 'Not saved yet')}
+            </span>
             <div className="ml-auto flex gap-2">
               {asTemplate || program?.isTemplate ? (
                 <Button loading={busy === 'save'} onClick={() => save('save')}>{t('Sjabloon opslaan', 'Save template')}</Button>
@@ -351,7 +372,7 @@ export function ProgramBuilderPage() {
                   <Button loading={busy === 'active'} onClick={() => save('active')} disabled={!items.length}>{t('Opslaan & toewijzen', 'Save & assign')}</Button>
                 </>
               ) : (
-                <Button loading={busy === 'save'} onClick={() => save('save')} disabled={!dirty}>{t('Wijzigingen opslaan', 'Save changes')}</Button>
+                <Button loading={busy === 'save'} onClick={() => save('save')} disabled={!dirty}>{program?.status === 'active' ? t('Wijzigingen publiceren…', 'Publish changes…') : t('Wijzigingen opslaan', 'Save changes')}</Button>
               )}
             </div>
           </div>
@@ -364,6 +385,19 @@ export function ProgramBuilderPage() {
       <TemplatePicker open={pickTemplate} onClose={() => setPickTemplate(false)} onPick={(p) => { loadTemplate(p); setPickTemplate(false); }} />
       <PreviewDialog open={preview} onClose={() => setPreview(false)} meta={meta} items={items} unsaved={dirty} />
       {id && <VersionsDialog open={history} onClose={() => setHistory(false)} programId={id} />}
+      {program && (
+        <PublishDialog
+          open={publishOpen}
+          onClose={() => setPublishOpen(false)}
+          program={program}
+          meta={meta}
+          items={items}
+          changeNote={changeNote}
+          setChangeNote={setChangeNote}
+          busy={busy === 'save'}
+          onConfirm={() => save('save', true)}
+        />
+      )}
     </div>
   );
 }
@@ -428,7 +462,7 @@ function PatientPicker({ value, onChange }: { value: string | null; onChange: (v
   );
 }
 
-function SortableItems({ items, update, readOnly }: { items: BItem[]; update: (fn: (x: BItem[]) => BItem[]) => void; readOnly: boolean }) {
+function SortableItems({ items, update, readOnly, selected, setSelected, problems }: { items: BItem[]; update: (fn: (x: BItem[]) => BItem[]) => void; readOnly: boolean; selected: Set<string>; setSelected: (s: Set<string>) => void; problems: Record<string, DoseProblem[]> }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
   const onDragEnd = (e: DragEndEvent) => {
     if (!e.over || e.active.id === e.over.id) return;
@@ -445,8 +479,19 @@ function SortableItems({ items, update, readOnly }: { items: BItem[]; update: (f
               index={idx}
               count={items.length}
               readOnly={readOnly}
+              selected={selected.has(item.key)}
+              onSelect={(on) => {
+                const next = new Set(selected);
+                if (on) next.add(item.key);
+                else next.delete(item.key);
+                setSelected(next);
+              }}
+              problems={problems[item.key] ?? []}
               onChange={(patch) => update((x) => x.map((i) => (i.key === item.key ? { ...i, ...patch } : i)))}
-              onRemove={() => update((x) => x.filter((i) => i.key !== item.key))}
+              onRemove={() => {
+                update((x) => x.filter((i) => i.key !== item.key));
+                if (selected.has(item.key)) setSelected(new Set([...selected].filter((k) => k !== item.key)));
+              }}
               onMove={(dir) => update((x) => arrayMove(x, idx, idx + dir))}
             />
           ))}
@@ -456,7 +501,7 @@ function SortableItems({ items, update, readOnly }: { items: BItem[]; update: (f
   );
 }
 
-function SortableRow({ item, index, count, readOnly, onChange, onRemove, onMove }: { item: BItem; index: number; count: number; readOnly: boolean; onChange: (p: Partial<BItem>) => void; onRemove: () => void; onMove: (d: -1 | 1) => void }) {
+function SortableRow({ item, index, count, readOnly, selected, onSelect, problems, onChange, onRemove, onMove }: { item: BItem; index: number; count: number; readOnly: boolean; selected: boolean; onSelect: (on: boolean) => void; problems: DoseProblem[]; onChange: (p: Partial<BItem>) => void; onRemove: () => void; onMove: (d: -1 | 1) => void }) {
   const { t, locale } = useI18n();
   const L = useLabels();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.key, disabled: readOnly });
@@ -464,8 +509,13 @@ function SortableRow({ item, index, count, readOnly, onChange, onRemove, onMove 
   const name = locale === 'nl' ? item.exercise.nameNl : item.exercise.nameEn;
   const daysLabel = item.days.length === 7 ? t('Dagelijks', 'Daily') : item.days.map(L.weekday).join(' ');
   return (
-    <li ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn('card relative', isDragging && 'z-10 shadow-pop ring-2 ring-accent/30')}>
+    <li ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn('card relative', isDragging && 'z-10 shadow-pop ring-2 ring-accent/30', selected && 'ring-2 ring-accent/40', problems.length > 0 && 'border-bad ring-1 ring-bad/40')}>
       <div className="flex items-start gap-2 p-3 sm:p-4">
+        {!readOnly && (
+          <label className="-m-1 mt-1 flex h-11 w-8 shrink-0 cursor-pointer items-start justify-center pt-2">
+            <input type="checkbox" className="h-4 w-4 accent-[rgb(var(--accent))]" checked={selected} onChange={(e) => onSelect(e.target.checked)} aria-label={t(`Selecteer ${name}`, `Select ${name}`)} />
+          </label>
+        )}
         {!readOnly && (
           <button type="button" className="mt-2 hidden cursor-grab touch-none rounded p-1 text-ink-300 hover:bg-ink-100 hover:text-ink-600 active:cursor-grabbing sm:block" aria-label={t(`Verplaats ${name}`, `Move ${name}`)} {...attributes} {...listeners}>
             <GripVertical className="h-4 w-4" />
@@ -477,7 +527,7 @@ function SortableRow({ item, index, count, readOnly, onChange, onRemove, onMove 
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <Link to={`/app/oefeningen/${item.exerciseId}`} target="_blank" className="block truncate text-[14px] font-semibold text-ink-950 hover:underline">{name}</Link>
-              <div className="text-[12.5px] text-ink-500">{[dose(item, locale), daysLabel, item.load].filter(Boolean).join(' · ')}</div>
+              <ItemSummary item={item} daysLabel={daysLabel} />
             </div>
             {!readOnly && (
               <div className="flex shrink-0 items-center">
@@ -497,11 +547,200 @@ function SortableRow({ item, index, count, readOnly, onChange, onRemove, onMove 
               <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-180')} />
             </button>
           </fieldset>
-          {!open && item.notes && <p className="mt-2 line-clamp-1 text-[12.5px] italic text-ink-500">“{item.notes}”</p>}
+          {problems.length > 0 && (
+            <p className="mt-2 text-[12.5px] font-medium text-bad" role="alert">
+              {problems.includes('no_dose') ? t('Vul sets, herhalingen of vasthoudtijd in. Leeg betekent “niet ingevuld”, niet 0.', 'Enter sets, reps or hold time. Empty means “not set”, not 0.') : t('Kies minstens één trainingsdag.', 'Choose at least one training day.')}
+            </p>
+          )}
+          {!open && item.notes && <p className="mt-2 line-clamp-2 text-[12.5px] italic text-ink-600">{t('Notitie', 'Note')}: “{item.notes}”</p>}
           {open && <ItemDetails item={item} onChange={onChange} readOnly={readOnly} />}
         </div>
       </div>
     </li>
+  );
+}
+
+/** Collapsed row: everything filled in is visible without opening the row. */
+function ItemSummary({ item, daysLabel }: { item: BItem; daysLabel: string }) {
+  const { t, locale } = useI18n();
+  const parts = [
+    dose(item, locale) || null,
+    item.restS != null ? t(`rust ${item.restS} s`, `rest ${item.restS} s`) : null,
+    item.tempo ? t(`tempo ${item.tempo}`, `tempo ${item.tempo}`) : null,
+    item.load ? t(`belasting ${item.load}`, `load ${item.load}`) : null,
+    item.frequency ? item.frequency : null,
+    daysLabel,
+  ].filter(Boolean);
+  return (
+    <div className="text-[12.5px] text-ink-600">
+      {parts.join(' · ')}
+      {item.alternative && item.alternativeExerciseId && <span className="block text-ink-600">{t('Vervanger', 'Substitute')}: {locale === 'nl' ? item.alternative.nameNl : item.alternative.nameEn}</span>}
+    </div>
+  );
+}
+
+/** Actions on several selected exercises: copy one dose to all, set days, remove. */
+function SelectionBar({ items, selected, setSelected, update }: { items: BItem[]; selected: Set<string>; setSelected: (s: Set<string>) => void; update: (fn: (x: BItem[]) => BItem[]) => void }) {
+  const { t, locale } = useI18n();
+  const toast = useToast();
+  const n = selected.size;
+  const allOn = n === items.length && n > 0;
+  const name = (i: BItem) => (locale === 'nl' ? i.exercise.nameNl : i.exercise.nameEn);
+  const apply = (patch: (i: BItem) => Partial<BItem>, msg: string) => {
+    update((x) => x.map((i) => (selected.has(i.key) ? { ...i, ...patch(i) } : i)));
+    toast(msg);
+  };
+  return (
+    <div className={cn('flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2', n ? 'border-accent/40 bg-accent-soft/60' : 'border-line bg-white')}>
+      <label className="flex min-h-[44px] items-center gap-2 text-[13px] font-medium text-ink-800">
+        <input type="checkbox" className="h-4 w-4 accent-[rgb(var(--accent))]" checked={allOn} onChange={(e) => setSelected(e.target.checked ? new Set(items.map((i) => i.key)) : new Set())} />
+        {n ? t(`${n} geselecteerd`, `${n} selected`) : t('Selecteer oefeningen om samen aan te passen', 'Select exercises to edit together')}
+      </label>
+      {n > 0 && (
+        <>
+          <select
+            aria-label={t('Dosering kopiëren van', 'Copy dose from')}
+            className="h-11 max-w-[16rem] rounded-lg border border-line bg-white px-2 text-[13px]"
+            value=""
+            onChange={(e) => {
+              const src = items.find((i) => i.key === e.target.value);
+              if (!src) return;
+              apply(() => ({ sets: src.sets, reps: src.reps, holdS: src.holdS, restS: src.restS, tempo: src.tempo, load: src.load, frequency: src.frequency }), t(`Dosering van ${name(src)} gekopieerd naar ${n} oefening(en)`, `Dose of ${name(src)} copied to ${n} exercise(s)`));
+            }}
+          >
+            <option value="">{t('Dosering kopiëren van…', 'Copy dose from…')}</option>
+            {items.map((i, k) => <option key={i.key} value={i.key}>{k + 1}. {name(i)} — {dose(i, locale) || '—'}</option>)}
+          </select>
+          <select
+            aria-label={t('Trainingsdagen instellen', 'Set training days')}
+            className="h-11 rounded-lg border border-line bg-white px-2 text-[13px]"
+            value=""
+            onChange={(e) => {
+              const days = e.target.value.split(',').map(Number).filter(Boolean);
+              if (days.length) apply(() => ({ days }), t('Trainingsdagen aangepast', 'Training days updated'));
+            }}
+          >
+            <option value="">{t('Dagen instellen…', 'Set days…')}</option>
+            <option value="1,2,3,4,5,6,7">{t('Dagelijks', 'Daily')}</option>
+            <option value="1,3,5">{t('ma/wo/vr', 'Mon/Wed/Fri')}</option>
+            <option value="2,4,6">{t('di/do/za', 'Tue/Thu/Sat')}</option>
+          </select>
+          <Button size="sm" variant="ghost" className="h-11 text-bad" icon={<Trash2 className="h-4 w-4" />} onClick={() => { update((x) => x.filter((i) => !selected.has(i.key))); setSelected(new Set()); }}>{t('Verwijderen', 'Remove')}</Button>
+          <Button size="sm" variant="ghost" className="h-11" onClick={() => setSelected(new Set())}>{t('Selectie opheffen', 'Clear selection')}</Button>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Which exercises fall on which weekday (the same rule the patient app uses). */
+function WeekOverview({ items }: { items: BItem[] }) {
+  const { t, locale } = useI18n();
+  const L = useLabels();
+  return (
+    <details className="rounded-xl border border-line bg-white" open>
+      <summary className="flex min-h-[44px] cursor-pointer items-center px-4 text-[14px] font-semibold text-ink-900">{t('Weekoverzicht', 'Week overview')}</summary>
+      <ol className="grid grid-cols-1 gap-px border-t border-line bg-line sm:grid-cols-7">
+        {[1, 2, 3, 4, 5, 6, 7].map((d) => {
+          const day = items.filter((i) => i.days.includes(d));
+          return (
+            <li key={d} className="bg-white p-3">
+              <div className="flex items-baseline justify-between gap-2 sm:block">
+                <span className="text-[13px] font-semibold capitalize text-ink-900">{L.weekday(d)}</span>
+                <span className="text-[12px] text-ink-600">{day.length ? t(`${day.length} oef.`, `${day.length} ex.`) : t('rustdag', 'rest day')}</span>
+              </div>
+              <ul className="mt-1 space-y-0.5 text-[12px] text-ink-700">
+                {day.map((i) => <li key={i.key} className="truncate">{locale === 'nl' ? i.exercise.nameNl : i.exercise.nameEn}</li>)}
+              </ul>
+            </li>
+          );
+        })}
+      </ol>
+    </details>
+  );
+}
+
+/** Draft, active (published) or template: what the patient sees right now. */
+function StateStrip({ isNew, program, asTemplate, dirty }: { isNew: boolean; program?: Program; asTemplate: boolean; dirty: boolean }) {
+  const { t } = useI18n();
+  let text: string;
+  let tone: 'info' | 'ok' | 'warn' = 'info';
+  if (asTemplate || program?.isTemplate) text = t('Sjabloon — patiënten zien dit pas als je het voor een patiënt gebruikt.', 'Template — patients only see it once you use it for a patient.');
+  else if (isNew) text = t('Nieuw programma — nog niet opgeslagen. “Opslaan als concept” is niet zichtbaar voor de patiënt; “Opslaan & toewijzen” wel.', 'New programme — not saved yet. “Save as draft” is not visible to the patient; “Save & assign” is.');
+  else if (program?.status === 'draft') text = t('Concept — niet zichtbaar voor de patiënt.', 'Draft — not visible to the patient.');
+  else if (program?.status === 'active') {
+    tone = dirty ? 'warn' : 'ok';
+    text = dirty
+      ? t(`Actief — de patiënt ziet nog versie ${program.version}. Je wijzigingen zijn nog niet gepubliceerd.`, `Active — the patient still sees version ${program.version}. Your changes are not published yet.`)
+      : t(`Actief — de patiënt ziet versie ${program.version}.`, `Active — the patient sees version ${program.version}.`);
+  } else text = t('Afgerond of gearchiveerd — niet meer actief voor de patiënt.', 'Completed or archived — no longer active for the patient.');
+  return <Notice tone={tone} className="mb-5">{text}</Notice>;
+}
+
+type Change = { kind: 'added' | 'removed' | 'changed'; name: string; detail?: string };
+
+/** What changes compared to the published version (items and programme details). */
+function diffProgram(saved: Program, meta: Meta, items: BItem[], locale: 'nl' | 'en', t: (nl: string, en: string) => string): Change[] {
+  const nm = (x: { exercise: ProgramItem['exercise'] }) => (locale === 'nl' ? x.exercise.nameNl : x.exercise.nameEn);
+  const out: Change[] = [];
+  const ids = new Set(items.map((i) => i.id).filter(Boolean));
+  for (const i of items) if (!i.id) out.push({ kind: 'added', name: nm(i) });
+  for (const o of saved.items) if (!ids.has(o.id)) out.push({ kind: 'removed', name: nm(o) });
+  const fields: [keyof BItem, string][] = [['sets', t('sets', 'sets')], ['reps', t('herhalingen', 'reps')], ['holdS', t('vasthouden', 'hold')], ['restS', t('rust', 'rest')], ['tempo', 'tempo'], ['load', t('belasting', 'load')], ['frequency', t('frequentie', 'frequency')], ['notes', t('notitie', 'note')], ['alternativeExerciseId', t('vervanger', 'substitute')]];
+  for (const i of items) {
+    const o = saved.items.find((x) => x.id === i.id);
+    if (!o) continue;
+    const diff = fields.filter(([k]) => (o[k as keyof ProgramItem] ?? null) !== (i[k] ?? null)).map(([k, l]) => (k === 'notes' || k === 'alternativeExerciseId' ? l : `${l} ${o[k as keyof ProgramItem] ?? '–'} → ${i[k] ?? '–'}`));
+    if (o.days.join() !== i.days.join()) diff.push(t('trainingsdagen', 'training days'));
+    if (diff.length) out.push({ kind: 'changed', name: nm(i), detail: diff.join(', ') });
+  }
+  const order = items.filter((i) => i.id).map((i) => i.id).join();
+  const savedOrder = saved.items.filter((o) => ids.has(o.id)).map((o) => o.id).join();
+  if (order !== savedOrder) out.push({ kind: 'changed', name: t('Volgorde', 'Order'), detail: t('oefeningen anders gesorteerd', 'exercises reordered') });
+  if (meta.title !== saved.title) out.push({ kind: 'changed', name: t('Titel', 'Title') });
+  if ((meta.startDate || null) !== (saved.startDate ?? null) || (meta.endDate || null) !== (saved.endDate ?? null)) out.push({ kind: 'changed', name: t('Periode', 'Period') });
+  if (meta.patientInstructions !== saved.patientInstructions) out.push({ kind: 'changed', name: t('Instructies voor de patiënt', 'Instructions for the patient') });
+  return out;
+}
+
+function PublishDialog({ open, onClose, program, meta, items, changeNote, setChangeNote, busy, onConfirm }: { open: boolean; onClose: () => void; program: Program; meta: Meta; items: BItem[]; changeNote: string; setChangeNote: (s: string) => void; busy: boolean; onConfirm: () => void }) {
+  const { t, locale } = useI18n();
+  const changes = open ? diffProgram(program, meta, items, locale, t) : [];
+  const who = program.patient ? `${program.patient.firstName} ${program.patient.lastName}` : t('de patiënt', 'the patient');
+  const label = { added: t('Toegevoegd', 'Added'), removed: t('Verwijderd', 'Removed'), changed: t('Gewijzigd', 'Changed') };
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={t('Wijzigingen publiceren', 'Publish changes')}
+      description={t(`Dit programma is actief. Na publiceren ziet ${who} direct versie ${program.version + 1}.`, `This programme is active. After publishing ${who} sees version ${program.version + 1} right away.`)}
+      size="md"
+      footer={
+        <div className="flex w-full flex-wrap justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>{t('Terug naar bewerken', 'Back to editing')}</Button>
+          <Button loading={busy} onClick={onConfirm}>{t('Publiceren', 'Publish')}</Button>
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <h3 className="mb-1.5 text-[13px] font-semibold text-ink-900">{t('Wat verandert', 'What changes')}</h3>
+          {changes.length ? (
+            <ul className="space-y-1 text-[13.5px]">
+              {changes.map((c, n) => (
+                <li key={n}><span className={cn('font-medium', c.kind === 'removed' ? 'text-bad' : c.kind === 'added' ? 'text-ok' : 'text-ink-900')}>{label[c.kind]}:</span> {c.name}{c.detail ? <span className="text-ink-600"> — {c.detail}</span> : null}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-[13.5px] text-ink-600">{t('Geen inhoudelijke wijzigingen gevonden.', 'No changes in content found.')}</p>
+          )}
+        </div>
+        <div className="rounded-lg bg-ink-50 px-3 py-2 text-[13px] text-ink-700">
+          <strong className="font-semibold">{t('Wie krijgt een melding', 'Who is notified')}:</strong> {t(`${who}: een melding in de app, als het account geactiveerd is (geen e-mail). Afgeronde trainingen en resultaten blijven gekoppeld aan de versie waarmee ze zijn gedaan; versie ${program.version} blijft in de versiegeschiedenis.`, `${who}: an in-app notification, if the account is activated (no email). Completed workouts and results stay linked to the version they were done with; version ${program.version} stays in the version history.`)}
+        </div>
+        <Input label={t('Wijzigingsnotitie', 'Change note')} optional={t('optioneel', 'optional')} placeholder={t('bijv. volume squat verlaagd na pijnmelding', 'e.g. squat volume lowered after pain report')} value={changeNote} onChange={(e) => setChangeNote(e.target.value)} maxLength={300} />
+      </div>
+    </Dialog>
   );
 }
 

@@ -9,11 +9,13 @@ import { cn } from '@/lib/cn';
 import { Badge, Button, Dialog, NumberStepper, Spinner, useToast } from '@/components/ui';
 import { ExerciseThumb } from './ExerciseThumb';
 import type { Exercise, Program } from '@/lib/types';
+import { defaultDose } from '@/lib/dose';
 
 type Recent = Program & { itemCount: number; patient: { id: string; firstName: string; lastName: string } | null };
-type Dose = { sets: number | null; reps: number | null; holdS: number | null; restS: number | null; days: number[] };
+type Dose = { sets: number | null; reps: number | null; holdS: number | null; restS: number | null; tempo?: string | null; frequency?: string | null; days: number[] };
 
-const doseFrom = (e: Exercise): Dose => ({ sets: e.defaults.sets, reps: e.defaults.reps, holdS: e.defaults.holdS, restS: e.defaults.restS, days: [1, 2, 3, 4, 5, 6, 7] });
+// Same defaults as the programme editor (tempo and frequency included).
+const doseFrom = (e: Exercise): Dose => defaultDose(e);
 
 /** Sets / reps / hold / rest / days, editable right away. */
 export function DoseEditor({ dose, onChange }: { dose: Dose; onChange: (d: Dose) => void }) {
