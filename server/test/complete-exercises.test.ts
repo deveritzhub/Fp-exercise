@@ -55,8 +55,8 @@ describe('library videos for the practice library (by source key)', () => {
     const fs = await import('node:fs/promises');
     const path = await import('node:path');
     const { importLibraryVideos } = await import('../db/import-videos');
-    const { LIBRARY_VIDEOS } = await import('../db/seed-data/videos');
-    const v = LIBRARY_VIDEOS.find((x) => x.sourceKeys?.includes('ex_kniebuiging_muur'))!;
+    // A synthetic entry: the real list only holds approved videos.
+    const v = { sourceKeys: ['ex_kniebuiging_muur'], file: 'https://voorbeeld.test/videos/kniebuiging.mp4' };
     const dir = await fs.mkdtemp(path.join((await import('node:os')).tmpdir(), 'fpvid-'));
     // The file is already "on disk", so nothing is downloaded (this test needs no network).
     const key = `global/${path.basename(new URL(v.file).pathname)}`;
@@ -71,13 +71,7 @@ describe('library videos for the practice library (by source key)', () => {
       `INSERT INTO exercises(practice_id, created_by, source_key, name_nl, name_en, body_region, video_media_id) VALUES ($1,$2,'ex_kniebuiging_muur','Kniebuiging tegen muur','Knee to wall','ankle_foot',$3) RETURNING id`,
       [s.practices.B, s.users.therapistB, own.id],
     );
-    const origError = console.error;
-    console.error = () => undefined; // the other entries cannot be fetched offline
-    try {
-      await importLibraryVideos(url(), dir);
-    } finally {
-      console.error = origError;
-    }
+    await importLibraryVideos(url(), dir, [v]);
     const [a] = await q('SELECT e.video_media_id, m.storage_key FROM exercises e JOIN media m ON m.id = e.video_media_id WHERE e.id = $1', [ex.id]);
     expect(a.storage_key).toBe(key);
     const [b] = await q('SELECT video_media_id FROM exercises WHERE id = $1', [other.id]);

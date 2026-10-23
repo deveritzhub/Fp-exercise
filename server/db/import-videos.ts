@@ -9,12 +9,12 @@ import pg from 'pg';
 import { LIBRARY_VIDEOS } from './seed-data/videos';
 import { sniff } from '../src/routes/media';
 
-export async function importLibraryVideos(ownerUrl: string, storageDir: string) {
+export async function importLibraryVideos(ownerUrl: string, storageDir: string, videos: typeof LIBRARY_VIDEOS = LIBRARY_VIDEOS) {
   const db = new pg.Client({ connectionString: ownerUrl });
   await db.connect();
   let ok = 0;
   try {
-    for (const v of LIBRARY_VIDEOS) {
+    for (const v of videos) {
       const key = `global/${path.basename(new URL(v.file).pathname)}`;
       const target = path.join(storageDir, key);
       try {
@@ -54,5 +54,5 @@ export async function importLibraryVideos(ownerUrl: string, storageDir: string) 
   } finally {
     await db.end();
   }
-  console.log(`[videos] ${ok}/${LIBRARY_VIDEOS.length} library videos available`);
+  console.log(`[videos] ${ok}/${videos.length} library videos available`);
 }
