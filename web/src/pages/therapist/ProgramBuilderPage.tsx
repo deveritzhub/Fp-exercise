@@ -19,6 +19,7 @@ import { ProgramStatusBadge } from '@/components/app/StatusBadge';
 import { ExerciseFilterBar, emptyFilters, useExerciseSearch, type ExerciseFilters } from '@/components/app/ExerciseSearch';
 import type { CriteriaCheck, Exercise, PatientListItem, Program, ProgramItem } from '@/lib/types';
 import { CriteriaList, Evidence, ModuleBadge, RedFlags, Warnings } from '@/components/app/PhaseInfo';
+import { plannedWorkoutItemsForDay, workoutItemsForDay } from '@shared/workout-schedule';
 
 type BItem = Omit<ProgramItem, 'exercise'> & { key: string; exercise: ProgramItem['exercise'] };
 type Meta = { title: string; description: string; patientInstructions: string; startDate: string; endDate: string };
@@ -545,11 +546,11 @@ function ItemDetails({ item, onChange, readOnly }: { item: BItem; onChange: (p: 
         <Input label={t('Belasting', 'Load')} placeholder={t('bijv. 8 kg / rode band', 'e.g. 8 kg / red band')} value={item.load ?? ''} onChange={(e) => onChange({ load: e.target.value || null })} maxLength={60} />
         <Input label={t('Frequentie', 'Frequency')} placeholder={t('bijv. 2x per dag', 'e.g. twice daily')} value={item.frequency ?? ''} onChange={(e) => onChange({ frequency: e.target.value || null })} maxLength={80} />
       </div>
-      <Select label={t('Alternatieve oefening', 'Alternative exercise')} hint={t('Getoond aan de patiënt als de oefening niet lukt.', 'Shown to the patient if the exercise is not possible.')} value={item.alternativeExerciseId ?? ''} onChange={(e) => onChange({ alternativeExerciseId: e.target.value || null })}>
+      <Select label={t('Alternatieve oefening', 'Alternative exercise')} hint={t('Kies een regressie of gelijkwaardig alternatief; progressies zijn geen terugvaloptie.', 'Choose a regression or equivalent alternative; progressions are not fallback options.')} value={item.alternativeExerciseId ?? ''} onChange={(e) => onChange({ alternativeExerciseId: e.target.value || null })}>
         <option value="">{t('Geen', 'None')}</option>
-        {detail.data?.relations?.map((r) => (
-          <option key={r.id + r.kind} value={r.id}>
-            {(locale === 'nl' ? r.nameNl : r.nameEn) + ' — ' + (r.kind === 'regression' ? t('regressie', 'regression') : r.kind === 'progression' ? t('progressie', 'progression') : t('alternatief', 'alternative'))}
+        {detail.data?.relations?.filter((r) => r.kind !== 'progression' || r.id === item.alternativeExerciseId).map((r) => (
+          <option key={r.id + r.kind} value={r.id} disabled={r.kind === 'progression'}>
+            {(locale === 'nl' ? r.nameNl : r.nameEn) + ' — ' + (r.kind === 'regression' ? t('regressie', 'regression') : r.kind === 'progression' ? t('bestaande progressie (wijzigen aanbevolen)', 'existing progression (change recommended)') : t('alternatief', 'alternative'))}
           </option>
         ))}
       </Select>
@@ -604,14 +605,24 @@ function TemplatePicker({ open, onClose, onPick }: { open: boolean; onClose: () 
 
 function PreviewDialog({ open, onClose, meta, items }: { open: boolean; onClose: () => void; meta: Meta; items: BItem[] }) {
   const { t, locale } = useI18n();
+  const [day, setDay] = useState(todayISO());
+  useEffect(() => { if (open) setDay(todayISO()); }, [open]);
+  const plannedItems = plannedWorkoutItemsForDay(items, day);
+  const visibleItems = workoutItemsForDay(items, day);
   return (
-    <Dialog open={open} onClose={onClose} title={t('Voorbeeld voor de patiënt', 'Patient preview')} description={t('Zo ziet de patiënt het programma in de app.', 'This is how the patient sees the programme in the app.')} size="md">
+    <Dialog open={open} onClose={onClose} title={t('Voorbeeld voor de patiënt', 'Patient preview')} description={t('Bekijk de oefeningen die in een training op een gekozen dag verschijnen.', 'Preview the exercises shown in a workout on the selected day.')} size="md">
+      <div className="mb-4">
+        <Input label={t('Trainingsdatum voor voorbeeld', 'Preview workout date')} type="date" value={day} onChange={(e) => setDay(e.target.value || todayISO())} />
+        {plannedItems.length === 0 && items.length > 0 && (
+          <p className="mt-2 text-[13px] text-ink-600">{t('Rustdag: geen oefeningen ingepland. Bij handmatig starten toont de patiëntapp het volledige programma.', 'Rest day: no exercises scheduled. A manually started workout shows the full programme in the patient app.')}</p>
+        )}
+      </div>
       <div className="mx-auto max-w-sm rounded-[28px] border-[6px] border-ink-900 bg-canvas p-4 shadow-pop">
-        <div className="mb-3 text-[12px] text-ink-500">{t('Vandaag', 'Today')}</div>
+        <div className="mb-3 text-[12px] text-ink-500">{t('Training voor geselecteerde dag', 'Workout for selected day')} · {visibleItems.length} {t('oefeningen', 'exercises')}</div>
         <h3 className="text-lg font-semibold">{meta.title || t('Programma', 'Programme')}</h3>
         {meta.patientInstructions && <p className="mt-1 text-[13px] text-ink-600">{meta.patientInstructions}</p>}
         <ol className="mt-4 space-y-2">
-          {items.map((i, n) => (
+          {visibleItems.map((i, n) => (
             <li key={i.key} className="flex items-center gap-3 rounded-xl bg-white p-2.5 shadow-xs">
               <ExerciseThumb thumbnailId={i.exercise.thumbnailMediaId} region={i.exercise.bodyRegion} className="h-12 w-12 shrink-0" />
               <span className="min-w-0">
