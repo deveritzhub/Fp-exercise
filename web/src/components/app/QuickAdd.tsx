@@ -182,7 +182,7 @@ export function PreviewSheet({ exercise, open, onClose, onAdd }: { exercise: Exe
       <div className="flex flex-wrap gap-1.5">
         <Badge>{L.region(exercise.bodyRegion)}</Badge>
         {exercise.trainingCategories.slice(0, 2).map((c) => <Badge key={c}>{L.training(c)}</Badge>)}
-        {exercise.equipment.filter((x) => x !== 'none').map((x) => <Badge key={x} tone="outline">{L.equipment(x)}</Badge>)}
+        <Badge tone="outline">{L.equipmentList(exercise.equipment)}</Badge>
       </div>
       {how && <p className="mt-3 text-[14.5px] leading-relaxed text-ink-800">{how}</p>}
       {cues && <p className="mt-2 text-[13.5px] leading-relaxed text-ink-600">{cues}</p>}

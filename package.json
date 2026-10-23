@@ -18,7 +18,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "start:hosted": "NODE_ENV=production tsx server/db/hosted.ts"
+    "start:hosted": "NODE_ENV=production tsx server/db/hosted.ts",
+    "db:review-report": "tsx server/db/review-report.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

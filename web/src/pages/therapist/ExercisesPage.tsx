@@ -4,9 +4,9 @@ import { BookOpen, CheckCircle2, Dumbbell, Loader2, Play, Plus, SearchX } from '
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta, useLabels } from '@/lib/meta';
 import { cn } from '@/lib/cn';
-import { Button, ButtonLink, Card, EmptyState, ErrorState, PageHeader, Skeleton, Tabs } from '@/components/ui';
+import { Button, ButtonLink, Card, EmptyState, ErrorState, PageHeader, Skeleton } from '@/components/ui';
 import { ExerciseThumb } from '@/components/app/ExerciseThumb';
-import { ActiveFilters, ExerciseSearchField, FilterButton, InlineFilters, RegionChips, activeFilterCount, emptyFilters, useExercisePages, useUrlFilters } from '@/components/app/ExerciseSearch';
+import { ActiveFilters, ExerciseSearchField, FilterButton, InlineFilters, RegionChips, ScopeFilters, activeFilterCount, emptyFilters, scopeFiltered, useExercisePages, useUrlFilters } from '@/components/app/ExerciseSearch';
 import { FavoriteToggle, PreviewSheet, QuickAddSheet } from '@/components/app/QuickAdd';
 import type { Exercise } from '@/lib/types';
 
@@ -16,12 +16,38 @@ export function ExercisesPage() {
   const [f, setF] = useUrlFilters();
   const q = useExercisePages(f);
   const items = q.data?.pages.flatMap((p) => p.items) ?? [];
-  const total = q.data?.pages[0]?.total;
+  // Never show a count that belongs to the previous search.
+  const total = q.pending ? undefined : q.data?.pages[0]?.total;
   const [preview, setPreview] = useState<Exercise | null>(null);
   const [adding, setAdding] = useState<Exercise | null>(null);
   const onPreview = useCallback((e: Exercise) => setPreview(e), []);
   const onAdd = useCallback((e: Exercise) => setAdding(e), []);
-  const filtered = !!f.q || activeFilterCount(f) > 0 || f.scope !== 'all';
+  const filtered = !!f.q || activeFilterCount(f) > 0 || scopeFiltered(f);
+
+  // Coming back from an exercise: same search, filters (URL) and scroll position.
+  const SCROLL_KEY = 'fp.library.scroll';
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current || !q.data) return;
+    restored.current = true;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(SCROLL_KEY) ?? 'null') as { key: string; y: number } | null;
+      if (saved && saved.key === window.location.search && saved.y > 0) requestAnimationFrame(() => window.scrollTo({ top: saved.y }));
+    } catch {
+      /* ignore */
+    }
+  }, [q.data]);
+  useEffect(() => {
+    const save = () => {
+      try {
+        sessionStorage.setItem(SCROLL_KEY, JSON.stringify({ key: window.location.search, y: window.scrollY }));
+      } catch {
+        /* ignore */
+      }
+    };
+    window.addEventListener('scroll', save, { passive: true });
+    return () => window.removeEventListener('scroll', save);
+  }, []);
 
   // Load the next page shortly before the end of the list is reached.
   const sentinel = useRef<HTMLDivElement>(null);
@@ -60,23 +86,12 @@ export function ExercisesPage() {
         <div className="hidden lg:block"><ActiveFilters value={f} onChange={setF} /></div>
       </div>
 
-      <Tabs
-        className="mb-3 mt-4"
-        value={f.scope}
-        onChange={(scope) => setF({ ...f, scope })}
-        tabs={[
-          { value: 'all', label: t('Alle', 'All') },
-          { value: 'favorites', label: t('Favorieten', 'Favourites') },
-          { value: 'practice', label: t('Praktijk', 'Practice') },
-          { value: 'unreviewed', label: t('Te controleren', 'To review') },
-          { value: 'reviewed', label: t('Goedgekeurd', 'Approved') },
-          { value: 'global', label: t('Centrale bibliotheek', 'Central library') },
-          { value: 'mine', label: t('Door mij gemaakt', 'Created by me') },
-        ]}
-      />
+      <ScopeFilters value={f} onChange={setF} />
 
       <div className="mb-3 flex h-5 items-center gap-2 text-[13px] text-ink-500" aria-live="polite">
-        {total !== undefined && (
+        {q.pending && !q.isError ? (
+          <span className="inline-flex items-center gap-1.5"><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />{f.q.trim() ? t(`Zoeken naar “${f.q.trim()}”…`, `Searching for “${f.q.trim()}”…`) : t('Oefeningen laden…', 'Loading exercises…')}</span>
+        ) : total !== undefined && (
           <span>
             {f.q ? t(`${total} resultaten voor “${f.q}”`, `${total} results for “${f.q}”`) : t(`${total} oefeningen`, `${total} exercises`)}
           </span>
@@ -85,8 +100,8 @@ export function ExercisesPage() {
 
       {q.isError ? (
         <Card><ErrorState error={q.error} onRetry={() => q.refetch()} /></Card>
-      ) : !q.data ? (
-        <CardGrid>{Array.from({ length: 8 }, (_, i) => <CardSkeleton key={i} />)}</CardGrid>
+      ) : !q.data || (q.pending && items.length === 0) ? (
+        <CardGrid aria-busy="true">{Array.from({ length: 8 }, (_, i) => <CardSkeleton key={i} />)}</CardGrid>
       ) : items.length === 0 ? (
         <Card>
           <EmptyState
@@ -103,7 +118,7 @@ export function ExercisesPage() {
         </Card>
       ) : (
         <>
-          <CardGrid className={cn(q.isFetching && !q.isFetchingNextPage && 'opacity-70')}>
+          <CardGrid className={cn(q.pending && 'opacity-60')} aria-busy={q.pending}>
             {items.map((e) => <ExerciseCard key={e.id} e={e} onPreview={onPreview} onAdd={onAdd} />)}
           </CardGrid>
           <div ref={sentinel} className="flex h-16 items-center justify-center">
@@ -124,8 +139,8 @@ export function ExercisesPage() {
   );
 }
 
-function CardGrid({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('grid grid-cols-1 gap-2 transition-opacity sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4', className)}>{children}</div>;
+function CardGrid({ children, className, ...rest }: { children: React.ReactNode; className?: string; 'aria-busy'?: boolean | 'true' }) {
+  return <div {...rest} className={cn('grid grid-cols-1 gap-2 transition-opacity sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4', className)}>{children}</div>;
 }
 
 function CardSkeleton() {
@@ -157,7 +172,6 @@ const ExerciseCard = memo(function ExerciseCard({ e, onPreview, onAdd }: { e: Ex
   const name = locale === 'nl' ? e.nameNl : e.nameEn;
   const other = locale === 'nl' ? e.nameEn : e.nameNl;
   const category = e.trainingCategories[0] ? L.training(e.trainingCategories[0]) : e.movementCategory ? L.movement(e.movementCategory) : null;
-  const equipment = e.equipment.filter((x) => x !== 'none').map(L.equipment);
   const [hover, setHover] = useState(false);
   return (
     <article
@@ -191,14 +205,19 @@ const ExerciseCard = memo(function ExerciseCard({ e, onPreview, onAdd }: { e: Ex
         </p>
         <p className="mt-0.5 flex min-w-0 items-center gap-1 text-[12px] text-ink-500">
           <Dumbbell className="h-3.5 w-3.5 shrink-0 text-ink-400" aria-hidden />
-          <span className="truncate">{equipment.length ? equipment.join(', ') : t('Geen materiaal', 'No equipment')}</span>
+          <span className="truncate">{L.equipmentList(e.equipment)}</span>
         </p>
         <div className="mt-auto flex items-center gap-1.5 pt-1.5 sm:pt-3">
-          {e.scope === 'practice' && <span className="rounded-md bg-accent-soft px-1.5 py-0.5 text-[11px] font-medium text-accent">{t('Praktijk', 'Practice')}</span>}
+          <span className={cn('rounded-md px-1.5 py-0.5 text-[11px] font-medium', e.scope === 'practice' ? 'bg-accent-soft text-accent' : 'bg-ink-100 text-ink-700')}>{e.scope === 'practice' ? t('Praktijk', 'Practice') : t('Centraal', 'Central')}</span>
           {e.reviewStatus === 'reviewed' && (
             <span className="inline-flex items-center gap-1 text-[11.5px] font-medium text-ok">
               <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
               {t('Goedgekeurd', 'Approved')}
+            </span>
+          )}
+          {!!e.variantCount && (
+            <span className="rounded-md border border-line px-1.5 py-0.5 text-[11px] font-medium text-ink-600" title={t('Zelfde oefening in een andere bron; vergelijk op de detailpagina', 'Same exercise in another source; compare on the detail page')}>
+              +{e.variantCount} {e.variantCount === 1 ? t('variant', 'variant') : t('varianten', 'variants')}
             </span>
           )}
         </div>

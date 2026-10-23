@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { BODY_REGIONS, EQUIPMENT, MOVEMENT_CATEGORIES, TRAINING_CATEGORIES, WEEKDAYS, label } from '@shared/taxonomy';
+import { BODY_REGIONS, EQUIPMENT, MOVEMENT_CATEGORIES, TRAINING_CATEGORIES, WEEKDAYS, equipmentText, label } from '@shared/taxonomy';
 import { useI18n } from './i18n';
 
 export const taxonomy = { BODY_REGIONS, EQUIPMENT, MOVEMENT_CATEGORIES, TRAINING_CATEGORIES, WEEKDAYS };
@@ -12,6 +12,8 @@ export function useLabels() {
     training: (k: string) => label('training', k, locale),
     movement: (k: string | null | undefined) => label('movement', k, locale),
     equipment: (k: string) => label('equipment', k, locale),
+    /** Whole equipment list with required vs optional (see splitEquipment). */
+    equipmentList: (list: string[]) => equipmentText(list, locale),
     weekday: (n: number) => WEEKDAYS[n - 1]?.[locale] ?? String(n),
   };
 }

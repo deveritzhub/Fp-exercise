@@ -98,13 +98,21 @@ export const OV_JOIN = (param: string) =>
 export const OV_COLS =
   'ov.video_media_id AS ov_video, ov.thumbnail_media_id AS ov_thumb, rv.reviewed_at AS rv_at, rvu.full_name AS rv_by';
 
+const NORM = (col: string) => `lower(regexp_replace(${col}, '[^[:alnum:]]', '', 'g'))`;
+const VARIANT_COUNT = `(SELECT count(*) FROM exercises v WHERE v.id <> e.id AND v.archived_at IS NULL
+   AND (${NORM('v.name_nl')} = ${NORM('e.name_nl')} OR ${NORM('v.name_en')} = ${NORM('e.name_en')}))::int`;
+
 const listQuery = z.object({
   q: z.string().max(100).optional().default(''),
   region: z.string().max(40).optional(),
   category: z.string().max(40).optional(),
   equipment: z.string().max(40).optional(),
   difficulty: z.coerce.number().int().min(1).max(5).optional(),
+  // Legacy single filter (old links); the three filters below combine freely.
   scope: z.enum(['all', 'global', 'practice', 'favorites', 'mine', 'unreviewed', 'reviewed']).optional().default('all'),
+  source: z.enum(['all', 'global', 'practice', 'mine']).optional().default('all'),
+  review: z.enum(['all', 'reviewed', 'unreviewed']).optional().default('all'),
+  favorites: z.enum(['0', '1']).optional().default('0'),
   limit: z.coerce.number().int().min(1).max(100).optional().default(48),
   offset: z.coerce.number().int().min(0).optional().default(0),
 });
@@ -113,10 +121,13 @@ exercises.get('/', async (c) => {
   const user = requireUser(c);
   const f = parse(listQuery, c.req.query());
   const tsq = buildTsQuery(f.q);
+  const source = ['global', 'practice', 'mine'].includes(f.scope) ? f.scope : f.source;
+  const review = ['reviewed', 'unreviewed'].includes(f.scope) ? f.scope : f.review;
+  const favorites = f.scope === 'favorites' || f.favorites === '1';
   return c.json(
     await withUser(user.id, async (tx) => {
       const { rows } = await tx.query(
-        `SELECT e.*, ${OV_COLS}, (fav.user_id IS NOT NULL) AS favorite, count(*) OVER() AS total,
+        `SELECT e.*, ${OV_COLS}, (fav.user_id IS NOT NULL) AS favorite, count(*) OVER() AS total, ${VARIANT_COUNT} AS variant_count,
                 ${tsq ? "ts_rank(e.search, to_tsquery('simple', $1))" : '0'} AS rank
            FROM exercises e
            LEFT JOIN exercise_favorites fav ON fav.exercise_id = e.id AND fav.user_id = app.uid()
@@ -132,17 +143,18 @@ exercises.get('/', async (c) => {
             AND ($9 = 'all'
                  OR ($9 = 'global' AND e.practice_id IS NULL)
                  OR ($9 = 'practice' AND e.practice_id IS NOT NULL)
-                 OR ($9 = 'mine' AND e.created_by = app.uid())
-                 OR ($9 = 'unreviewed' AND rv.exercise_id IS NULL)
-                 OR ($9 = 'reviewed' AND rv.exercise_id IS NOT NULL)
-                 OR ($9 = 'favorites' AND fav.user_id IS NOT NULL))
+                 OR ($9 = 'mine' AND e.created_by = app.uid()))
+            AND ($11 = 'all'
+                 OR ($11 = 'unreviewed' AND rv.exercise_id IS NULL)
+                 OR ($11 = 'reviewed' AND rv.exercise_id IS NOT NULL))
+            AND (NOT $12 OR fav.user_id IS NOT NULL)
           ORDER BY ($8 <> '' AND (e.name_nl ILIKE $8 || '%' OR e.name_en ILIKE $8 || '%')) DESC,
                    ($8 <> '' AND (e.name_nl ILIKE '%' || $8 || '%' OR e.name_en ILIKE '%' || $8 || '%')) DESC,
                    rank DESC, e.name_nl
           LIMIT $6 OFFSET $7`,
-        [tsq, f.region ?? null, f.category ?? null, f.equipment ?? null, f.difficulty ?? null, f.limit, f.offset, f.q.trim().slice(0, 60), f.scope, mediaPracticeId(c)],
+        [tsq, f.region ?? null, f.category ?? null, f.equipment ?? null, f.difficulty ?? null, f.limit, f.offset, f.q.trim().slice(0, 60), source, mediaPracticeId(c), review, favorites],
       );
-      return { items: rows.map((r) => mapExercise(r)), total: rows[0]?.total ?? 0 };
+      return { items: rows.map((r) => ({ ...mapExercise(r), variantCount: r.variant_count })), total: rows[0]?.total ?? 0 };
     }),
   );
 });
@@ -181,6 +193,31 @@ async function loadExercise(tx: Tx, id: string, includeNotes: boolean, practiceI
     })),
   };
 }
+
+/**
+ * Variants: other visible exercises with the same Dutch or English name (e.g. a central "Dead bug"
+ * and a practice "Dead bug", or "Bilbrug" and "Bekkenbrug" = "Glute bridge"). Shown side by side
+ * with their differences; nothing is merged or deleted.
+ */
+exercises.get('/:id/variants', async (c) => {
+  const user = requireUser(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const { rows } = await tx.query(
+        `SELECT e.*, ${OV_COLS}, (fav.user_id IS NOT NULL) AS favorite
+           FROM exercises e JOIN exercises me ON me.id = $1
+           LEFT JOIN exercise_favorites fav ON fav.exercise_id = e.id AND fav.user_id = app.uid()
+           ${OV_JOIN('$2::uuid')}
+          WHERE e.archived_at IS NULL AND (${NORM('e.name_nl')} = ${NORM('me.name_nl')} OR ${NORM('e.name_en')} = ${NORM('me.name_en')})
+          ORDER BY e.id = $1 DESC, e.practice_id IS NULL, e.name_nl`,
+        [id, mediaPracticeId(c)],
+      );
+      if (!rows.length) throw notFound();
+      return { items: rows.map((r) => mapExercise(r)) };
+    }),
+  );
+});
 
 exercises.get('/:id', async (c) => {
   const user = requireUser(c);

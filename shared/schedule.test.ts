@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dayStatus, itemsForDate, nextSessionDate } from './schedule';
+import { equipmentText, splitEquipment } from './taxonomy';
 
 // 2026-10-19 is a Monday.
 const items = [
@@ -28,5 +29,14 @@ describe('planning shared by patient app and preview', () => {
     expect(nextSessionDate(p, items, '2026-10-24')).toBe('2026-10-26');
     expect(nextSessionDate(p, items, '2026-10-10')).toBe('2026-10-19');
     expect(nextSessionDate({ startDate: null, endDate: '2026-10-24' }, items, '2026-10-23')).toBeNull();
+  });
+});
+
+describe('equipment labels match the filters', () => {
+  it('treats items next to "none" as optional', () => {
+    expect(splitEquipment(['none', 'dumbbell'])).toEqual({ required: [], optional: ['dumbbell'] });
+    expect(equipmentText(['none', 'dumbbell'], 'nl')).toBe('Geen materiaal nodig (optioneel: Dumbbell)');
+    expect(equipmentText(['none'], 'nl')).toBe('Geen materiaal nodig');
+    expect(equipmentText(['bench'], 'en')).toMatch(/bench/i);
   });
 });

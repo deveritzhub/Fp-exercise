@@ -262,7 +262,7 @@ const MOBILITY_SAME_AS: Record<string, string> = {
   mb_cat_camel: 'ex_cat_camel',
 };
 const STRENGTH_EN: Record<string, string> = { kr_leg_curl: 'Lying leg curl', kr_standing_calf_raise: 'Standing calf raise', kr_lateral_raise: 'Dumbbell lateral raise' };
-const STRENGTH_REGION: Record<string, string> = {
+export const STRENGTH_REGION: Record<string, string> = {
   kr_back_squat: 'knee', kr_leg_press: 'knee', kr_leg_curl: 'knee', kr_leg_extension: 'knee', kr_rdl: 'hip', kr_conventional_deadlift: 'hip',
   kr_hip_thrust: 'hip', kr_standing_calf_raise: 'ankle_foot', kr_core_plank: 'lumbar_spine',
 };

@@ -9,8 +9,9 @@ import { Button, Dialog, Select, useDebounced } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import type { Exercise } from '@/lib/types';
 
-export type ExerciseFilters = { q: string; region: string; category: string; equipment: string; difficulty: string; scope: string };
-export const emptyFilters: ExerciseFilters = { q: '', region: '', category: '', equipment: '', difficulty: '', scope: 'all' };
+/** source (central/practice/mine), review status and favourites combine freely. */
+export type ExerciseFilters = { q: string; region: string; category: string; equipment: string; difficulty: string; source: string; review: string; favorites: string };
+export const emptyFilters: ExerciseFilters = { q: '', region: '', category: '', equipment: '', difficulty: '', source: 'all', review: 'all', favorites: '' };
 const KEYS = Object.keys(emptyFilters) as (keyof ExerciseFilters)[];
 const LAST_SEARCH = 'fp.library.search';
 
@@ -24,26 +25,38 @@ export function libraryHref() {
   }
 }
 
-const toQuery = (f: ExerciseFilters) => ({ ...f, scope: f.scope === 'all' ? undefined : f.scope });
+const toQuery = (f: ExerciseFilters) => ({
+  ...f,
+  source: f.source === 'all' ? undefined : f.source,
+  review: f.review === 'all' ? undefined : f.review,
+  favorites: f.favorites === '1' ? '1' : undefined,
+});
+export const scopeFiltered = (f: ExerciseFilters) => f.source !== 'all' || f.review !== 'all' || f.favorites === '1';
 
+/**
+ * Search results never show a count or an empty state that belongs to an earlier search:
+ * `pending` is true while typing (debounce) and while the previous results are still on screen.
+ * Superseded requests are cancelled.
+ */
 export function useExerciseSearch(f: ExerciseFilters, limit = 48) {
   const dq = useDebounced(f.q, 120);
   const params = { ...f, q: dq.trim() };
-  return useQuery({
+  const query = useQuery({
     queryKey: ['exercises', params, limit],
-    queryFn: () => api.get<{ items: Exercise[]; total: number }>(`/exercises${qs({ ...toQuery(params), limit })}`),
+    queryFn: ({ signal }) => api.get<{ items: Exercise[]; total: number }>(`/exercises${qs({ ...toQuery(params), limit })}`, signal),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
+  return { ...query, pending: f.q.trim() !== dq.trim() || query.isPlaceholderData || (!query.data && query.isFetching) };
 }
 
 /** Paged results for the library page ("show more" / endless lists stay fast with thousands of exercises). */
 export function useExercisePages(f: ExerciseFilters, pageSize = 36) {
   const dq = useDebounced(f.q, 120);
   const params = { ...f, q: dq.trim() };
-  return useInfiniteQuery({
+  const query = useInfiniteQuery({
     queryKey: ['exercises', 'pages', params, pageSize],
-    queryFn: ({ pageParam }) => api.get<{ items: Exercise[]; total: number }>(`/exercises${qs({ ...toQuery(params), limit: pageSize, offset: pageParam })}`),
+    queryFn: ({ pageParam, signal }) => api.get<{ items: Exercise[]; total: number }>(`/exercises${qs({ ...toQuery(params), limit: pageSize, offset: pageParam })}`, signal),
     initialPageParam: 0,
     getNextPageParam: (last, all) => {
       const loaded = all.reduce((n, p) => n + p.items.length, 0);
@@ -52,6 +65,7 @@ export function useExercisePages(f: ExerciseFilters, pageSize = 36) {
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
+  return { ...query, pending: f.q.trim() !== dq.trim() || query.isPlaceholderData || (!query.data && query.isFetching) };
 }
 
 /**
@@ -63,6 +77,11 @@ export function useUrlFilters(): [ExerciseFilters, (f: ExerciseFilters) => void]
   const f = useMemo(() => {
     const out = { ...emptyFilters };
     for (const k of KEYS) out[k] = params.get(k) ?? emptyFilters[k];
+    // Old links used one ?scope= filter.
+    const legacy = params.get('scope');
+    if (legacy === 'favorites') out.favorites = '1';
+    else if (legacy === 'reviewed' || legacy === 'unreviewed') out.review = legacy;
+    else if (legacy && legacy !== 'all') out.source = legacy;
     return out;
   }, [params]);
   useEffect(() => {
@@ -206,7 +225,7 @@ export function FilterButton({ value, onChange, total, className }: { value: Exe
         title={t('Filters', 'Filters')}
         footer={
           <div className="flex w-full items-center gap-2">
-            <Button variant="ghost" disabled={!n} onClick={() => onChange({ ...emptyFilters, q: value.q, scope: value.scope })}>{t('Wis filters', 'Clear filters')}</Button>
+            <Button variant="ghost" disabled={!n} onClick={() => onChange({ ...emptyFilters, q: value.q, source: value.source, review: value.review, favorites: value.favorites })}>{t('Wis filters', 'Clear filters')}</Button>
             <Button className="flex-1" size="lg" onClick={() => setOpen(false)}>
               {total !== undefined ? t(`Toon ${total} oefeningen`, `Show ${total} exercises`) : t('Klaar', 'Done')}
             </Button>
@@ -230,6 +249,40 @@ export function InlineFilters({ value, onChange }: { value: ExerciseFilters; onC
   );
 }
 
+/**
+ * Source, review status and favourites as three independent filters (e.g. "practice + to review +
+ * favourites"). Native selects keep it compact and keyboard friendly on every width.
+ */
+export function ScopeFilters({ value, onChange }: { value: ExerciseFilters; onChange: (f: ExerciseFilters) => void }) {
+  const { t } = useI18n();
+  const sel = 'h-11 rounded-lg border border-line bg-white px-3 pr-8 text-[13.5px] font-medium text-ink-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50';
+  return (
+    <div className="mb-3 mt-4 flex flex-wrap items-center gap-2" role="group" aria-label={t('Bron, status en favorieten', 'Source, status and favourites')}>
+      <label className="sr-only" htmlFor="flt-source">{t('Bron', 'Source')}</label>
+      <select id="flt-source" className={sel} value={value.source} onChange={(e) => onChange({ ...value, source: e.target.value })}>
+        <option value="all">{t('Alle bronnen', 'All sources')}</option>
+        <option value="global">{t('Centrale bibliotheek', 'Central library')}</option>
+        <option value="practice">{t('Praktijk', 'Practice')}</option>
+        <option value="mine">{t('Door mij gemaakt', 'Created by me')}</option>
+      </select>
+      <label className="sr-only" htmlFor="flt-review">{t('Reviewstatus', 'Review status')}</label>
+      <select id="flt-review" className={sel} value={value.review} onChange={(e) => onChange({ ...value, review: e.target.value })}>
+        <option value="all">{t('Elke status', 'Any status')}</option>
+        <option value="unreviewed">{t('Te controleren', 'To review')}</option>
+        <option value="reviewed">{t('Goedgekeurd', 'Approved')}</option>
+      </select>
+      <button
+        type="button"
+        aria-pressed={value.favorites === '1'}
+        onClick={() => onChange({ ...value, favorites: value.favorites === '1' ? '' : '1' })}
+        className={cn('inline-flex h-11 items-center gap-1.5 rounded-lg border px-3 text-[13.5px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50', value.favorites === '1' ? 'border-ink-900 bg-ink-900 text-white' : 'border-line bg-white text-ink-800 hover:border-ink-300')}
+      >
+        <span aria-hidden>★</span>{t('Favorieten', 'Favourites')}
+      </button>
+    </div>
+  );
+}
+
 /** Removable chips for every active filter, plus "Clear filters". */
 export function ActiveFilters({ value, onChange }: { value: ExerciseFilters; onChange: (f: ExerciseFilters) => void }) {
   const { t } = useI18n();
@@ -249,7 +302,7 @@ export function ActiveFilters({ value, onChange }: { value: ExerciseFilters; onC
           <X className="h-3.5 w-3.5 opacity-80" />
         </button>
       ))}
-      <button type="button" onClick={() => onChange({ ...emptyFilters, q: value.q, scope: value.scope })} className="tap h-8 rounded-full px-2 text-[12.5px] font-medium text-ink-600 underline-offset-4 hover:text-ink-900 hover:underline">
+      <button type="button" onClick={() => onChange({ ...emptyFilters, q: value.q, source: value.source, review: value.review, favorites: value.favorites })} className="tap h-8 rounded-full px-2 text-[12.5px] font-medium text-ink-600 underline-offset-4 hover:text-ink-900 hover:underline">
         {t('Wis filters', 'Clear filters')}
       </button>
     </div>

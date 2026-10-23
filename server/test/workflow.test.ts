@@ -115,7 +115,8 @@ describe('therapist → patient → therapist workflow', () => {
       items: [
         { exerciseId: s.exercises.quad_set, sets: 3, reps: 10, holdS: 5, days: [1, 2, 3, 4, 5, 6, 7], notes: 'Let op volledige strekking' },
         { exerciseId: s.exercises.box_squat, sets: 3, reps: 8, load: 'lichaamsgewicht', tempo: '3-0-2', days: [1, 2, 3, 4, 5, 6, 7] },
-        { exerciseId: s.exercises.sl_stance, sets: 3, holdS: 30, days: [1, 2, 3, 4, 5, 6, 7], alternativeExerciseId: s.exercises.balance_pad_reach },
+        // The substitute is a therapist's explicit choice; a progression (e.g. balance_pad_reach) is refused.
+        { exerciseId: s.exercises.sl_stance, sets: 3, holdS: 30, days: [1, 2, 3, 4, 5, 6, 7], alternativeExerciseId: s.exercises.ankle_arom },
       ],
     });
     expect(r.status).toBe(201);

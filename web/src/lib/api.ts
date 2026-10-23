@@ -24,7 +24,7 @@ export const setActivePractice = (id: string) => {
   }
 };
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   const headers: Record<string, string> = { 'x-requested-with': 'fp' };
   const practice = getActivePractice();
   if (practice) headers['x-practice-id'] = practice;
@@ -36,8 +36,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
   let res: Response;
   try {
-    res = await fetch('/api' + path, { method, headers, body: payload, credentials: 'same-origin' });
-  } catch {
+    res = await fetch('/api' + path, { method, headers, body: payload, credentials: 'same-origin', signal });
+  } catch (e) {
+    if (signal?.aborted) throw e; // superseded request (e.g. a newer search): not a network problem
     throw new ApiError(0, 'network_error');
   }
   const text = await res.text();
@@ -55,7 +56,7 @@ function safeJson(t: string) {
 }
 
 export const api = {
-  get: <T>(p: string) => request<T>('GET', p),
+  get: <T>(p: string, signal?: AbortSignal) => request<T>('GET', p, undefined, signal),
   post: <T = { ok: boolean }>(p: string, b: unknown = {}) => request<T>('POST', p, b),
   put: <T = { ok: boolean }>(p: string, b: unknown = {}) => request<T>('PUT', p, b),
   patch: <T = { ok: boolean }>(p: string, b: unknown = {}) => request<T>('PATCH', p, b),

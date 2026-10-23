@@ -42,6 +42,8 @@ export type Exercise = {
   reviewedAt?: string | null;
   reviewedBy?: string | null;
   favorite: boolean;
+  /** Other exercises with the same name (central/practice variants); list endpoint only. */
+  variantCount?: number;
   createdBy: string | null;
   clinicalNotes?: string;
   relations?: { kind: 'regression' | 'progression' | 'alternative'; id: string; nameNl: string; nameEn: string; difficulty: number; thumbnailMediaId: string | null; videoMediaId?: string | null; bodyRegion: string }[];

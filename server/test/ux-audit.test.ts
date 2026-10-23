@@ -50,3 +50,32 @@ describe('substitute exercise (P0)', () => {
     expect(prog.items.find((i: any) => i.exerciseId === s.exercises.decline_squat_ecc).alternative.nameNl).toBe('Spaanse squat');
   });
 });
+
+describe('library filters and variants (P1)', () => {
+  it('combines source, review status and favourites independently', async () => {
+    const c = await login('therapistA');
+    const created = await c.post('/exercises', { nameNl: 'Dead bug', nameEn: 'Dead bug', bodyRegion: 'lumbar_spine', equipment: ['none'] });
+    expect(created.status).toBe(201);
+    const practice = (await c.get('/exercises?source=practice&limit=100')).body.items;
+    expect(practice.every((e: any) => e.scope === 'practice')).toBe(true);
+    const unreviewedPractice = (await c.get('/exercises?source=practice&review=unreviewed&limit=100')).body.items;
+    expect(unreviewedPractice.map((e: any) => e.id)).toContain(created.body.id);
+    expect((await c.post(`/exercises/${created.body.id}/favorite`)).status).toBeLessThan(300);
+    const favPractice = (await c.get('/exercises?source=practice&review=unreviewed&favorites=1')).body.items;
+    expect(favPractice.map((e: any) => e.id)).toEqual([created.body.id]);
+    expect((await c.get('/exercises?source=global&favorites=1')).body.items.some((e: any) => e.id === created.body.id)).toBe(false);
+  });
+
+  it('shows the central and the practice "Dead bug" as variants', async () => {
+    const c = await login('therapistA');
+    const list = (await c.get('/exercises?q=dead bug')).body.items.filter((e: any) => e.nameNl === 'Dead bug');
+    expect(list.length).toBe(2);
+    expect(list.every((e: any) => e.variantCount === 1)).toBe(true);
+    const v = (await c.get(`/exercises/${list[0].id}/variants`)).body.items;
+    expect(v.map((e: any) => e.scope).sort()).toEqual(['global', 'practice']);
+    // Another practice does not see practice A's variant.
+    const other = await login('therapistB');
+    const theirs = (await other.get('/exercises?q=dead bug')).body.items.find((e: any) => e.nameNl === 'Dead bug');
+    expect(theirs.variantCount).toBe(0);
+  });
+});

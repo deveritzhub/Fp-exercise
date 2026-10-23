@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, BookOpen, CornerDownLeft, LayoutDashboard, Layers, Plus, Search, UserPlus, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, CornerDownLeft, LayoutDashboard, Layers, Loader2, Plus, Search, UserPlus, Users } from 'lucide-react';
 import { api, qs } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useLabels } from '@/lib/meta';
@@ -31,12 +31,12 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   const patients = useQuery({
     queryKey: ['palette-patients', dq],
-    queryFn: () => api.get<{ items: PatientListItem[] }>(`/patients${qs({ q: dq })}`),
+    queryFn: ({ signal }) => api.get<{ items: PatientListItem[] }>(`/patients${qs({ q: dq })}`, signal),
     enabled: open && dq.length > 0,
   });
   const exercises = useQuery({
     queryKey: ['palette-exercises', dq],
-    queryFn: () => api.get<{ items: Exercise[] }>(`/exercises${qs({ q: dq, limit: 6 })}`),
+    queryFn: ({ signal }) => api.get<{ items: Exercise[] }>(`/exercises${qs({ q: dq, limit: 6 })}`, signal),
     enabled: open && dq.length > 1,
   });
 
@@ -68,6 +68,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     return [...out, ...actions.filter((a) => !ql || a.label.toLowerCase().includes(ql))];
   }, [patients.data, exercises.data, dq, locale, t, L]);
 
+  // Still typing or waiting for an answer: show that, never a premature "nothing found".
+  const searching = q.trim() !== dq || patients.isFetching || exercises.isFetching;
   useEffect(() => setActive(0), [items.length]);
   if (!open) return null;
 
@@ -117,7 +119,12 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           <kbd className="hidden rounded border border-line bg-ink-50 px-1.5 py-0.5 text-2xs text-ink-500 sm:block">Esc</kbd>
         </div>
         <ul id="palette-list" role="listbox" className="max-h-[50vh] overflow-y-auto p-2">
-          {items.length === 0 && <li className="px-3 py-8 text-center text-[13.5px] text-ink-500">{t('Niets gevonden', 'Nothing found')}</li>}
+          {searching && (
+            <li className="flex items-center justify-center gap-2 px-3 py-3 text-[13px] text-ink-500" role="status">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />{t('Zoeken…', 'Searching…')}
+            </li>
+          )}
+          {items.length === 0 && !searching && <li className="px-3 py-8 text-center text-[13.5px] text-ink-500">{t('Niets gevonden', 'Nothing found')}</li>}
           {items.map((it, i) => {
             const header = it.group !== lastGroup ? it.group : null;
             lastGroup = it.group;

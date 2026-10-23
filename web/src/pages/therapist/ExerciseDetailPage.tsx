@@ -1,14 +1,14 @@
 import { Link, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, ChevronLeft, ChevronRight, Copy, Lock, Pencil, Plus, ShieldAlert, Shuffle, TrendingDown, TrendingUp, Undo2, Video } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, Copy, Film, Layers, Lock, Pencil, Plus, ShieldAlert, Shuffle, TrendingDown, TrendingUp, Undo2, VideoOff } from 'lucide-react';
 import { api, ApiError, mediaUrl, qs } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { fmtDate } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { useDocumentMeta, useLabels } from '@/lib/meta';
-import { Badge, Button, ButtonLink, Card, ErrorState, Notice, Skeleton, useToast } from '@/components/ui';
+import { Badge, Button, ButtonLink, Card, Dialog, ErrorState, Notice, Skeleton, useToast } from '@/components/ui';
 import { MediaUpload } from './ExerciseFormPage';
 import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import { Difficulty } from '@/components/app/StatusBadge';
@@ -22,6 +22,7 @@ export function ExerciseDetailPage() {
   const { user, practice } = useSession();
   const L = useLabels();
   const [adding, setAdding] = useState(false);
+  const [mediaOpen, setMediaOpen] = useState(false);
   const q = useQuery({ queryKey: ['exercise', id], queryFn: () => api.get<Exercise>(`/exercises/${id}`) });
   const e0 = q.data;
   const similar = useQuery({
@@ -66,20 +67,6 @@ export function ExerciseDetailPage() {
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-5">
         <div className="min-w-0 space-y-5 lg:col-span-3">
-          {/* Video first: edge to edge on phones. */}
-          <div className="-mx-4 overflow-hidden bg-ink-950 sm:mx-0 sm:rounded-xl sm:border sm:border-line">
-            {video ? (
-              <video key={video} src={`${video}#t=0.1`} controls autoPlay muted loop playsInline preload="auto" className="aspect-video w-full" poster={mediaUrl(e.thumbnailMediaId) ?? undefined} aria-label={t(`Video: ${name}`, `Video: ${name}`)} />
-            ) : (
-              <div className="relative">
-                <ExerciseThumb thumbnailId={e.thumbnailMediaId} region={e.bodyRegion} name={name} className="aspect-video w-full" rounded="rounded-none" />
-                <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/50 to-transparent px-4 pb-3 pt-10 text-[13px] text-white">
-                  <Video className="h-4 w-4" /> {t('Nog geen video. Voeg hieronder een instructievideo van je praktijk toe.', 'No video yet. Add your practice’s instruction video below.')}
-                </div>
-              </div>
-            )}
-          </div>
-
           <header className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <h1 className="text-[24px] font-semibold leading-tight sm:text-[28px]">{name}</h1>
@@ -87,7 +74,7 @@ export function ExerciseDetailPage() {
               <div className="mt-3 flex flex-wrap gap-1.5">
                 <Badge>{L.region(e.bodyRegion)}</Badge>
                 {e.trainingCategories.map((c) => <Badge key={c}>{L.training(c)}</Badge>)}
-                {e.equipment.filter((x) => x !== 'none').map((x) => <Badge key={x} tone="outline">{L.equipment(x)}</Badge>)}
+                <Badge tone="outline">{L.equipmentList(e.equipment)}</Badge>
                 {e.scope === 'practice' && <Badge tone="accent">{t('Praktijk', 'Practice')}</Badge>}
               </div>
             </div>
@@ -98,6 +85,7 @@ export function ExerciseDetailPage() {
             <Button size="lg" icon={<Plus className="h-4 w-4" />} onClick={() => setAdding(true)}>{t('Toevoegen aan programma', 'Add to programme')}</Button>
             <ButtonLink to={`/app/oefeningen/nieuw?van=${e.id}`} size="lg" variant="secondary" icon={<Copy className="h-4 w-4" />}>{t('Dupliceren', 'Duplicate')}</ButtonLink>
             {canEdit && <ButtonLink to={`/app/oefeningen/${e.id}/bewerken`} size="lg" variant="secondary" icon={<Pencil className="h-4 w-4" />}>{t('Bewerken', 'Edit')}</ButtonLink>}
+            <Button size="lg" variant="ghost" icon={<Film className="h-4 w-4" />} onClick={() => setMediaOpen(true)}>{t('Media beheren', 'Manage media')}</Button>
           </div>
 
           {params.length > 0 && (
@@ -112,6 +100,21 @@ export function ExerciseDetailPage() {
                 ))}
               </dl>
             </section>
+          )}
+
+
+          {/* Real media only; when there is none, say so compactly instead of a large placeholder. */}
+          {video ? (
+            <div className="-mx-4 overflow-hidden bg-ink-950 sm:mx-0 sm:rounded-xl sm:border sm:border-line">
+              <video key={video} src={`${video}#t=0.1`} controls autoPlay muted loop playsInline preload="auto" className="aspect-video w-full" poster={mediaUrl(e.thumbnailMediaId) ?? undefined} aria-label={t(`Video: ${name}`, `Video: ${name}`)} />
+            </div>
+          ) : e.thumbnailMediaId ? (
+            <div className="space-y-2">
+              <img src={mediaUrl(e.thumbnailMediaId)!} alt={name} className="aspect-video w-full rounded-xl border border-line object-cover" />
+              <MissingMedia what="video" onManage={() => setMediaOpen(true)} />
+            </div>
+          ) : (
+            <MissingMedia what="all" onManage={() => setMediaOpen(true)} />
           )}
 
           <ReviewBanner e={e} />
@@ -148,6 +151,7 @@ export function ExerciseDetailPage() {
               </div>
             </section>
           )}
+          <Variants e={e} />
         </div>
 
         <div className="min-w-0 space-y-5 lg:col-span-2">
@@ -162,7 +166,7 @@ export function ExerciseDetailPage() {
             <dl className="space-y-3 text-sm">
               <Row k={t('Doelspieren', 'Target muscles')} v={e.targetMuscles.join(', ') || '—'} />
               <Row k={t('Bewegingspatroon', 'Movement')} v={L.movement(e.movementCategory) || '—'} />
-              <Row k={t('Materiaal', 'Equipment')} v={e.equipment.map(L.equipment).join(', ')} />
+              <Row k={t('Materiaal', 'Equipment')} v={L.equipmentList(e.equipment)} />
               <Row k={t('Niveau', 'Level')} v={<Difficulty value={e.difficulty} />} />
               {e.tags.length > 0 && <Row k={t('Trefwoorden', 'Tags')} v={<span className="flex flex-wrap gap-1">{e.tags.map((x) => <Badge key={x} tone="outline">{x}</Badge>)}</span>} />}
               <Row k={t('Bron', 'Source')} v={e.scope === 'global' ? t('Centrale bibliotheek', 'Central library') : t('Praktijk', 'Practice')} />
@@ -187,10 +191,10 @@ export function ExerciseDetailPage() {
               </ul>
             </Card>
           )}
-          <PracticeMediaCard e={e} />
-          <div className="flex gap-2 lg:hidden">
+          <div className="flex flex-wrap gap-2 lg:hidden">
             <ButtonLink to={`/app/oefeningen/nieuw?van=${e.id}`} variant="secondary" className="flex-1" icon={<Copy className="h-4 w-4" />}>{t('Dupliceren', 'Duplicate')}</ButtonLink>
             {canEdit && <ButtonLink to={`/app/oefeningen/${e.id}/bewerken`} variant="secondary" className="flex-1" icon={<Pencil className="h-4 w-4" />}>{t('Bewerken', 'Edit')}</ButtonLink>}
+            <Button variant="secondary" className="flex-1" icon={<Film className="h-4 w-4" />} onClick={() => setMediaOpen(true)}>{t('Media beheren', 'Manage media')}</Button>
           </div>
         </div>
       </div>
@@ -200,6 +204,9 @@ export function ExerciseDetailPage() {
         <Button size="lg" className="w-full" icon={<Plus className="h-5 w-5" />} onClick={() => setAdding(true)}>{t('Toevoegen aan programma', 'Add to programme')}</Button>
       </div>
       <QuickAddSheet exercise={e} open={adding} onClose={() => setAdding(false)} />
+      <Dialog open={mediaOpen} onClose={() => setMediaOpen(false)} title={t('Media beheren', 'Manage media')} description={t('Video en afbeelding van je praktijk voor deze oefening.', 'Your practice’s video and image for this exercise.')} size="md">
+        <PracticeMediaCard e={e} onSaved={() => setMediaOpen(false)} />
+      </Dialog>
     </div>
   );
 }
@@ -228,7 +235,7 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
 }
 
 /** Upload the practice's own video/thumbnail for this exercise (also for central library exercises). */
-function PracticeMediaCard({ e }: { e: Exercise }) {
+function PracticeMediaCard({ e, onSaved }: { e: Exercise; onSaved?: () => void }) {
   const { t, locale } = useI18n();
   const qc = useQueryClient();
   const toast = useToast();
@@ -242,10 +249,9 @@ function PracticeMediaCard({ e }: { e: Exercise }) {
   }, [e.videoMediaId, e.thumbnailMediaId, own]);
   const dirty = video !== (own ? e.videoMediaId : null) || thumb !== (own ? e.thumbnailMediaId : null);
   return (
-    <Card className="space-y-4 p-5">
+    <div className="space-y-4">
       <div>
-        <h2 className="text-[15px] font-semibold">{t('Video van je praktijk', 'Your practice’s video')}</h2>
-        <p className="mt-0.5 text-[12.5px] text-ink-500">
+        <p className="text-[13px] text-ink-600">
           {e.scope === 'global'
             ? t('Alleen jouw praktijk en haar patiënten zien deze video bij deze oefening.', 'Only your practice and its patients see this video with this exercise.')
             : t('Wordt getoond aan de patiënten van je praktijk.', 'Shown to your practice’s patients.')}
@@ -261,7 +267,8 @@ function PracticeMediaCard({ e }: { e: Exercise }) {
           setBusy(true);
           try {
             await api.put(`/exercises/${e.id}/media`, { videoMediaId: video, thumbnailMediaId: thumb });
-            toast(t('Video opgeslagen', 'Video saved'));
+            toast(t('Media opgeslagen', 'Media saved'));
+            onSaved?.();
             qc.invalidateQueries({ queryKey: ['exercise', e.id] });
             qc.invalidateQueries({ queryKey: ['exercises'] });
           } catch (err) {
@@ -273,8 +280,8 @@ function PracticeMediaCard({ e }: { e: Exercise }) {
       >
         {t('Opslaan', 'Save')}
       </Button>
-      <p className="text-[12px] text-ink-500">{t('Tip: liggend filmen, 10–20 seconden, 2–3 rustige herhalingen. Zie de filmchecklist.', 'Tip: film in landscape, 10–20 seconds, 2–3 calm repetitions. See the filming checklist.')}</p>
-    </Card>
+      <p className="text-[12px] text-ink-600">{t('Tip: liggend filmen, 10–20 seconden, 2–3 rustige herhalingen. Zie de filmchecklist.', 'Tip: film in landscape, 10–20 seconds, 2–3 calm repetitions. See the filming checklist.')}</p>
+    </div>
   );
 }
 
@@ -325,5 +332,75 @@ function ReviewBanner({ e }: { e: Exercise }) {
         </Button>
       </div>
     </Notice>
+  );
+}
+
+/** Compact, explicit note that real media is missing (no stand-in video is ever shown). */
+function MissingMedia({ what, onManage }: { what: 'video' | 'all'; onManage: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-ink-300 bg-white px-4 py-3">
+      <VideoOff className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />
+      <p className="min-w-0 flex-1 text-[13.5px] text-ink-700">
+        {what === 'all' ? t('Geen video of afbeelding beschikbaar.', 'No video or image available.') : t('Geen video beschikbaar.', 'No video available.')}{' '}
+        <span className="text-ink-600">{t('De patiënt ziet dan alleen de beschrijving.', 'The patient then only sees the description.')}</span>
+      </p>
+      <Button size="sm" variant="secondary" onClick={onManage}>{t('Media beheren', 'Manage media')}</Button>
+    </div>
+  );
+}
+
+/**
+ * Other versions of the same exercise (same Dutch or English name), e.g. a central and a practice
+ * "Dead bug". Differences are shown side by side; nothing is merged or deleted.
+ */
+function Variants({ e }: { e: Exercise }) {
+  const { t, locale } = useI18n();
+  const L = useLabels();
+  const q = useQuery({ queryKey: ['exercise-variants', e.id], queryFn: () => api.get<{ items: Exercise[] }>(`/exercises/${e.id}/variants`), staleTime: 60_000 });
+  const all = q.data?.items ?? [];
+  if (all.length < 2) return null;
+  const nl = locale === 'nl';
+  const doseOf = (x: Exercise) => [x.defaults.sets && `${x.defaults.sets}×`, x.defaults.reps && `${x.defaults.reps}`, x.defaults.holdS && `${x.defaults.holdS} s`].filter(Boolean).join(' ') || '—';
+  const rows: [string, (x: Exercise) => React.ReactNode][] = [
+    [t('Bron', 'Source'), (x) => (x.scope === 'global' ? t('Centraal', 'Central') : t('Praktijk', 'Practice'))],
+    [t('Regio', 'Region'), (x) => L.region(x.bodyRegion)],
+    [t('Materiaal', 'Equipment'), (x) => L.equipmentList(x.equipment)],
+    [t('Standaarddosering', 'Default dose'), doseOf],
+    [t('Niveau', 'Level'), (x) => `${x.difficulty}/5`],
+    [t('Video', 'Video'), (x) => (x.videoMediaId ? t('ja', 'yes') : t('nee', 'no'))],
+    [t('Status', 'Status'), (x) => (x.reviewStatus === 'reviewed' ? t('Goedgekeurd', 'Approved') : t('Te controleren', 'To review'))],
+  ];
+  const differs = (fn: (x: Exercise) => React.ReactNode) => new Set(all.map((x) => String(fn(x)))).size > 1;
+  return (
+    <section aria-labelledby="variants-title">
+      <h2 id="variants-title" className="mb-1 flex items-center gap-1.5 font-sans text-[15px] font-semibold text-ink-900"><Layers className="h-4 w-4" />{t(`Varianten van deze oefening (${all.length})`, `Variants of this exercise (${all.length})`)}</h2>
+      <p className="mb-2 text-[12.5px] text-ink-600">{t('Zelfde naam, andere bron of invulling. Verschillen zijn gemarkeerd; er wordt niets samengevoegd.', 'Same name, different source or content. Differences are highlighted; nothing is merged.')}</p>
+      <div className="overflow-x-auto rounded-xl border border-line bg-white">
+        <table className="w-full min-w-[28rem] text-left text-[13px]">
+          <thead>
+            <tr className="border-b border-line">
+              <th className="px-3 py-2 font-medium text-ink-600" scope="col"><span className="sr-only">{t('Kenmerk', 'Attribute')}</span></th>
+              {all.map((x) => (
+                <th key={x.id} scope="col" className="px-3 py-2 font-semibold text-ink-900">
+                  {x.id === e.id ? <span>{nl ? x.nameNl : x.nameEn} <span className="font-normal text-ink-600">({t('deze', 'this one')})</span></span> : <Link className="text-accent underline-offset-2 hover:underline" to={`/app/oefeningen/${x.id}`}>{nl ? x.nameNl : x.nameEn}</Link>}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(([k, fn]) => {
+              const d = differs(fn);
+              return (
+                <tr key={k} className="border-b border-line last:border-0">
+                  <th scope="row" className="px-3 py-2 font-medium text-ink-600">{k}</th>
+                  {all.map((x) => <td key={x.id} className={cn('px-3 py-2 text-ink-900', d && 'bg-warn-soft/50 font-medium')}>{fn(x)}</td>)}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

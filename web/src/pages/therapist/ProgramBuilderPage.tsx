@@ -381,18 +381,17 @@ function LibraryPanel({ onAdd, addedIds, bare }: { onAdd: (e: Exercise) => void;
       <div className="border-b border-line p-3">
         <ExerciseFilterBar value={f} onChange={setF} compact />
         <div className="mt-2 flex gap-1 text-[12.5px]">
-          {[['all', t('Alle', 'All')], ['favorites', t('Favorieten', 'Favourites')], ['practice', t('Praktijk', 'Practice')]].map(([v, l]) => (
-            <button key={v} type="button" onClick={() => setF({ ...f, scope: v })} aria-pressed={f.scope === v} className={cn('rounded-md px-2 py-1 font-medium', f.scope === v ? 'bg-ink-900 text-white' : 'text-ink-500 hover:bg-ink-100')}>{l}</button>
-          ))}
+          <button type="button" onClick={() => setF({ ...f, favorites: f.favorites === '1' ? '' : '1' })} aria-pressed={f.favorites === '1'} className={cn('min-h-[32px] rounded-md px-2 py-1 font-medium', f.favorites === '1' ? 'bg-ink-900 text-white' : 'text-ink-600 hover:bg-ink-100')}>★ {t('Favorieten', 'Favourites')}</button>
+          <button type="button" onClick={() => setF({ ...f, source: f.source === 'practice' ? 'all' : 'practice' })} aria-pressed={f.source === 'practice'} className={cn('min-h-[32px] rounded-md px-2 py-1 font-medium', f.source === 'practice' ? 'bg-ink-900 text-white' : 'text-ink-600 hover:bg-ink-100')}>{t('Praktijk', 'Practice')}</button>
         </div>
       </div>
       <div className={cn('overflow-y-auto', bare ? '' : 'flex-1')}>
-        {!q.data ? (
+        {!q.data || (q.pending && !q.data.items.length) ? (
           <Spinner />
         ) : q.data.items.length === 0 ? (
           <p className="px-4 py-8 text-center text-[13px] text-ink-500">{t('Geen oefeningen gevonden', 'No exercises found')}</p>
         ) : (
-          <ul className="divide-y divide-line">
+          <ul className={cn('divide-y divide-line transition-opacity', q.pending && 'opacity-60')} aria-busy={q.pending}>
             {q.data.items.map((e) => (
               <li key={e.id}>
                 <button type="button" onClick={() => onAdd(e)} className="group flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-accent-soft/50">
@@ -400,7 +399,7 @@ function LibraryPanel({ onAdd, addedIds, bare }: { onAdd: (e: Exercise) => void;
                   <ExerciseThumb thumbnailId={e.thumbnailMediaId} videoId={e.videoMediaId} region={e.bodyRegion} className="h-11 w-11 shrink-0" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13.5px] font-medium text-ink-900">{locale === 'nl' ? e.nameNl : e.nameEn}</span>
-                    <span className="block truncate text-[12px] text-ink-500">{L.region(e.bodyRegion)} · {e.equipment.map(L.equipment).join(', ')}</span>
+                    <span className="block truncate text-[12px] text-ink-500">{L.region(e.bodyRegion)} · {L.equipmentList(e.equipment)}</span>
                   </span>
                   {added.has(e.id) && <CheckCircle2 className="h-4 w-4 shrink-0 text-ok" aria-label={t('al toegevoegd', 'already added')} />}
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-white text-ink-500 group-hover:border-accent group-hover:bg-accent group-hover:text-white">
@@ -612,7 +611,7 @@ function SubstitutePicker({ item, relations, onChange }: { item: BItem; relation
           <ul className="mt-2 max-h-56 overflow-auto">
             {q.trim().length < 2 ? (
               <li className="px-2 py-1.5 text-[12.5px] text-ink-600">{t('Typ minstens 2 letters.', 'Type at least 2 letters.')}</li>
-            ) : results.isFetching && results.isPlaceholderData ? (
+            ) : results.pending ? (
               <li className="px-2 py-1.5 text-[12.5px] text-ink-600">{t('Zoeken…', 'Searching…')}</li>
             ) : (
               (results.data?.items ?? [])

@@ -49,7 +49,7 @@ export const MOVEMENT_CATEGORIES: Labelled[] = [
 ];
 
 export const EQUIPMENT: Labelled[] = [
-  { key: 'none', nl: 'Geen materiaal', en: 'No equipment' },
+  { key: 'none', nl: 'Geen materiaal nodig', en: 'No equipment needed' },
   { key: 'resistance_band', nl: 'Weerstandsband', en: 'Resistance band' },
   { key: 'dumbbell', nl: 'Dumbbell', en: 'Dumbbell' },
   { key: 'kettlebell', nl: 'Kettlebell', en: 'Kettlebell' },
@@ -89,3 +89,20 @@ export function label(kind: keyof typeof maps, key: string | null | undefined, l
 }
 
 export const isKey = (kind: keyof typeof maps, key: string) => key in maps[kind];
+
+/**
+ * Equipment as stored: 'none' next to other items means the exercise needs nothing and the other
+ * items are optional (e.g. split squat, optionally with dumbbells). Filters and labels both use this.
+ */
+export function splitEquipment(list: string[]) {
+  const others = list.filter((x) => x !== 'none');
+  return list.includes('none') ? { required: [] as string[], optional: others } : { required: others, optional: [] as string[] };
+}
+
+export function equipmentText(list: string[], locale: Locale) {
+  const { required, optional } = splitEquipment(list);
+  const l = (k: string) => label('equipment', k, locale);
+  if (required.length) return required.map(l).join(', ');
+  const none = locale === 'nl' ? 'Geen materiaal nodig' : 'No equipment needed';
+  return optional.length ? `${none} (${locale === 'nl' ? 'optioneel' : 'optional'}: ${optional.map(l).join(', ')})` : none;
+}
