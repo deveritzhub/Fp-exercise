@@ -136,7 +136,7 @@ export function TherapistLayout() {
         <button
           type="button"
           onClick={() => setPalette(true)}
-          className="flex h-10 shrink-0 items-center gap-2 rounded-lg border border-line bg-canvas px-3 text-[14px] text-ink-500 transition-colors hover:border-ink-300 hover:bg-white sm:w-full sm:max-w-sm"
+          className="flex h-10 min-w-0 shrink-0 items-center gap-2 rounded-lg border border-line bg-canvas px-3 sm:shrink text-[14px] text-ink-500 transition-colors hover:border-ink-300 hover:bg-white sm:w-full sm:max-w-sm"
         >
           <Search className="h-4 w-4" />
           <span className="sr-only sm:not-sr-only sm:flex-1 sm:truncate sm:text-left">{t('Snel naar…', 'Jump to…')}</span>
