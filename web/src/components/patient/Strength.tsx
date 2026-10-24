@@ -134,7 +134,7 @@ export function StrengthProgress() {
   if (!q.data || q.data.exercises.length === 0) return null;
   return (
     <section aria-labelledby="strength-title" className="space-y-3">
-      <h2 id="strength-title" className="text-lg font-semibold">{t('Kracht', 'Strength')}</h2>
+      <h2 id="strength-title" className="text-lg font-bold">{t('Kracht', 'Strength')}</h2>
       <p className="text-[14px] text-ink-600">{t('Geschatte 1RM per training (gemiddelde van Epley en Brzycki, alleen sets tot 10 herhalingen). Een schatting, geen meting.', 'Estimated 1RM per workout (average of Epley and Brzycki, only sets up to 10 reps). An estimate, not a measurement.')}</p>
       {q.data.exercises.map((e) => (
         <div key={e.exerciseId} className="rounded-2xl border border-line bg-white p-4 shadow-card">

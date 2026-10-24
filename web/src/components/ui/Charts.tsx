@@ -47,7 +47,7 @@ export function Bars({ data, height = 120, format, highlightLast, onSelect, sele
             const bar = (
               <>
                 <div className={cn('mb-1 text-2xs font-medium tabular-nums text-ink-600', !showValues && 'opacity-0 transition-opacity group-hover:opacity-100')}>{shown}</div>
-                <div className={cn('w-full max-w-10 rounded-t-md transition-all duration-500', d.value === null ? 'bg-ink-100' : selected === i ? 'bg-ink-900' : highlightLast && i === data.length - 1 ? 'bg-brand-wood' : 'bg-accent/85 group-hover:bg-accent')} style={{ height: `${d.value === null ? 4 : v * 100}%` }} />
+                <div className={cn('w-full max-w-10 rounded-t-md transition-all duration-500', d.value === null ? 'bg-ink-100' : selected === i ? 'bg-ink-900' : highlightLast && i === data.length - 1 ? 'bg-accent-strong' : 'bg-accent/70 group-hover:bg-accent')} style={{ height: `${d.value === null ? 4 : v * 100}%` }} />
               </>
             );
             return onSelect ? (

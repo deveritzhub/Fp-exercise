@@ -39,8 +39,8 @@ export function HomePage() {
             <span className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1 text-[13px] font-medium text-ink-600 shadow-xs">
               <Sparkles className="h-3.5 w-3.5 text-accent" /> {t('Gemaakt in Rotterdam, voor de Nederlandse fysiotherapie', 'Made in Rotterdam for Dutch physiotherapy')}
             </span>
-            <h1 className="mt-6 text-[42px] font-normal leading-[1.08] tracking-[-0.02em] sm:text-[56px]">
-              {t('Oefentherapie die je patiënt', 'Exercise therapy your patients')} <span className="text-brand-wood">{t('écht volhoudt', 'actually stick with')}</span>.
+            <h1 className="mt-6 text-[42px] font-bold leading-[1.08] tracking-[-0.02em] sm:text-[56px]">
+              {t('Oefentherapie die je patiënt', 'Exercise therapy your patients')} <span className="text-accent">{t('écht volhoudt', 'actually stick with')}</span>.
             </h1>
             <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-ink-600">
               {t('Stel in een paar minuten een programma samen uit een doorzoekbare oefenbibliotheek, deel het via een rustige patiëntapp en zie direct hoe het gaat — inclusief pijn- en zwaarte-feedback.', 'Build a programme in minutes from a searchable exercise library, share it through a calm patient app and see straight away how it’s going — including pain and difficulty feedback.')}
@@ -71,7 +71,7 @@ export function HomePage() {
             return (
               <div key={title as string}>
                 <I className="h-5 w-5 text-accent" />
-                <h2 className="mt-3 text-[16px] font-semibold">{title as string}</h2>
+                <h2 className="mt-3 text-[16px] font-bold">{title as string}</h2>
                 <p className="mt-1 text-[14.5px] leading-relaxed text-ink-500">{text as string}</p>
               </div>
             );
@@ -82,7 +82,7 @@ export function HomePage() {
       {/* Features */}
       <section className="mx-auto max-w-6xl px-5 py-24">
         <div className="max-w-2xl">
-          <h2 className="text-[32px] font-semibold leading-tight tracking-tight">{t('Alles wat je nodig hebt. Niets wat je afleidt.', 'Everything you need. Nothing that distracts.')}</h2>
+          <h2 className="text-[32px] font-bold leading-tight tracking-tight">{t('Alles wat je nodig hebt. Niets wat je afleidt.', 'Everything you need. Nothing that distracts.')}</h2>
           <p className="mt-3 text-[16px] text-ink-500">{t('Ontworpen rond de spreekkamer: snel tijdens het consult, rustig voor de patiënt thuis.', 'Designed around the treatment room: fast during the session, calm for the patient at home.')}</p>
         </div>
         <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
@@ -98,7 +98,7 @@ export function HomePage() {
             return (
               <div key={title as string} className="bg-white p-7">
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-soft text-accent"><I className="h-[18px] w-[18px]" /></span>
-                <h3 className="mt-4 text-[16px] font-semibold">{title as string}</h3>
+                <h3 className="mt-4 text-[16px] font-bold">{title as string}</h3>
                 <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-500">{text as string}</p>
               </div>
             );
@@ -114,7 +114,7 @@ export function HomePage() {
             [t('Voor patiënten', 'For patients'), [t('Altijd weten wat en hoe — met video', 'Always know what and how — with video'), t('Eén oefening tegelijk, grote knoppen', 'One exercise at a time, large buttons'), t('Zie je eigen voortgang groeien', 'See your own progress grow'), t('Laat makkelijk weten hoe het ging', 'Easily share how it went')]],
           ].map(([title, points]) => (
             <div key={title as string} className="rounded-2xl border border-line bg-white p-8 shadow-card">
-              <h2 className="text-[22px] font-semibold">{title as string}</h2>
+              <h2 className="text-[22px] font-bold">{title as string}</h2>
               <ul className="mt-5 space-y-3">
                 {(points as string[]).map((p) => <li key={p} className="flex gap-3 text-[15px] text-ink-700"><Check className="mt-0.5 h-5 w-5 shrink-0 text-accent" />{p}</li>)}
               </ul>
@@ -128,7 +128,7 @@ export function HomePage() {
         <div className="relative overflow-hidden rounded-3xl bg-ink-950 px-8 py-14 text-white sm:px-14">
           <div className="absolute inset-0 bg-[radial-gradient(50%_80%_at_90%_10%,rgba(187,185,161,0.22),transparent)]" />
           <div className="relative max-w-xl">
-            <h2 className="text-[30px] font-semibold leading-tight text-white">{t('Zie het in actie in je eigen praktijk', 'See it in action in your own practice')}</h2>
+            <h2 className="text-[30px] font-bold leading-tight text-white">{t('Zie het in actie in je eigen praktijk', 'See it in action in your own practice')}</h2>
             <p className="mt-3 text-[16px] text-ink-300">{t('Een persoonlijke demo van 30 minuten. Daarna kun je 30 dagen kosteloos proberen.', 'A personal 30-minute demo. Then try it free for 30 days.')}</p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/contact?onderwerp=demo" className="inline-flex h-11 items-center rounded-lg bg-white px-5 text-[15px] font-medium text-ink-950 hover:bg-ink-100">{t('Plan een demo', 'Book a demo')}</Link>

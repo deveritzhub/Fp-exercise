@@ -7,12 +7,12 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'subtle';
 type Size = 'sm' | 'md' | 'lg' | 'xl';
 
 const base =
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium transition-[background,box-shadow,color,transform] duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 select-none';
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-semibold transition-[background,box-shadow,color,transform] duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 select-none';
 const variants: Record<Variant, string> = {
   primary: 'bg-accent text-accent-ink shadow-xs hover:bg-accent-strong',
-  secondary: 'border border-line bg-white text-ink-900 shadow-xs hover:bg-ink-50 hover:border-ink-200',
+  secondary: 'border border-line bg-white text-ink-900 shadow-xs hover:bg-canvas hover:border-ink-300',
   ghost: 'text-ink-700 hover:bg-ink-100/70 hover:text-ink-900',
-  subtle: 'bg-accent-soft text-accent hover:bg-accent/10',
+  subtle: 'bg-accent-soft text-accent hover:bg-accent/15',
   danger: 'bg-bad text-white shadow-xs hover:bg-bad/90',
 };
 const sizes: Record<Size, string> = {

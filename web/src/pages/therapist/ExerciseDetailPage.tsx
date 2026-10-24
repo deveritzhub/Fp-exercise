@@ -69,7 +69,7 @@ export function ExerciseDetailPage() {
         <div className="min-w-0 space-y-5 lg:col-span-3">
           <header className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <h1 className="text-[24px] font-semibold leading-tight sm:text-[28px]">{name}</h1>
+              <h1 className="text-[24px] font-bold leading-tight sm:text-[28px]">{name}</h1>
               <p className="mt-1 text-[13.5px] text-ink-500">{[nl ? e.nameEn : e.nameNl, ...e.altNames].filter((x) => x && x !== name).join(' · ')}</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 <Badge>{L.region(e.bodyRegion)}</Badge>
@@ -91,11 +91,12 @@ export function ExerciseDetailPage() {
           {params.length > 0 && (
             <section aria-labelledby="params-title">
               <h2 id="params-title" className="sr-only">{t('Standaarddosering', 'Default dosage')}</h2>
-              <dl className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              <dl className="flex flex-wrap gap-2">
                 {params.map(([k, v]) => (
-                  <div key={String(k)} className="rounded-xl border border-line bg-white px-3 py-2.5 text-center shadow-xs">
-                    <dd className={cn('truncate font-semibold tabular-nums text-ink-950', String(v).length > 6 ? 'text-[14px] leading-[25px]' : 'text-[17px]')} title={String(v)}>{v}</dd>
-                    <dt className="text-[11.5px] text-ink-500">{k}</dt>
+                  // Grows with its value (e.g. "3x per week"), so nothing is cut off.
+                  <div key={String(k)} className="flex min-w-[88px] flex-[1_1_88px] flex-col rounded-xl border border-line bg-white px-3 py-2.5 text-center shadow-xs sm:flex-none sm:px-4">
+                    <dd className={cn('font-display font-bold tabular-nums text-ink-950 [overflow-wrap:anywhere]', String(v).length > 6 ? 'text-[15px] leading-[25px]' : 'text-[18px]')}>{v}</dd>
+                    <dt className="text-[12px] font-medium text-ink-500">{k}</dt>
                   </div>
                 ))}
               </dl>
@@ -140,7 +141,7 @@ export function ExerciseDetailPage() {
                   <Link key={r.kind + r.id} to={`/app/oefeningen/${r.id}`} className="tap w-40 shrink-0 snap-start overflow-hidden rounded-xl border border-line bg-white shadow-xs transition-shadow hover:shadow-card sm:w-auto">
                     <ExerciseThumb thumbnailId={r.thumbnailMediaId} videoId={r.videoMediaId} region={r.bodyRegion} name={nl ? r.nameNl : r.nameEn} className="aspect-[16/10] w-full" rounded="rounded-none" hideBadge />
                     <div className="p-2.5">
-                      <span className={cn('inline-flex items-center gap-1 text-[11.5px] font-semibold', r.kind === 'progression' ? 'text-accent' : r.kind === 'regression' ? 'text-info' : 'text-ink-500')}>
+                      <span className={cn('inline-flex items-center gap-1 text-[12px] font-semibold', r.kind === 'progression' ? 'text-accent' : r.kind === 'regression' ? 'text-info' : 'text-ink-500')}>
                         {r.kind === 'progression' ? <TrendingUp className="h-3.5 w-3.5" /> : r.kind === 'regression' ? <TrendingDown className="h-3.5 w-3.5" /> : <Shuffle className="h-3.5 w-3.5" />}
                         {kindLabel(r.kind)}
                       </span>

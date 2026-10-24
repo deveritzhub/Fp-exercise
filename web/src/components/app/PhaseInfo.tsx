@@ -71,7 +71,7 @@ export function CriteriaList({ groups, checks, onToggle, busy }: { groups: Crite
                           )}
                         </span>
                       )}
-                      {c.source && <span className="mt-0.5 block text-[11.5px] text-ink-400">{t('Bron', 'Source')}: {c.source}</span>}
+                      {c.source && <span className="mt-0.5 block text-[12px] text-ink-500">{t('Bron', 'Source')}: {c.source}</span>}
                       {check && (
                         <span className="mt-1 block text-[12px] font-medium text-ok">
                           ✓ {check.checkedBy ?? '—'} · {fmtDate(check.checkedAt, locale)}
@@ -153,5 +153,40 @@ export function Evidence({ text }: { text: string }) {
       </button>
       {open && <p className="mt-1.5 whitespace-pre-line leading-relaxed text-ink-600">{text}</p>}
     </div>
+  );
+}
+
+/**
+ * Calm phase timeline: earlier phases ticked, the active phase marked "now", later phases muted.
+ * Display only — phases never advance automatically.
+ */
+export function PhaseTimeline({ phaseNo, phaseCount, className }: { phaseNo: number; phaseCount: number; className?: string }) {
+  const { t } = useI18n();
+  if (phaseCount < 2) return null;
+  return (
+    <ol className={cn('flex items-center gap-1.5', className)} aria-label={t(`Fase ${phaseNo} van ${phaseCount}`, `Phase ${phaseNo} of ${phaseCount}`)}>
+      {Array.from({ length: phaseCount }, (_, i) => {
+        const n = i + 1;
+        const state = n < phaseNo ? 'done' : n === phaseNo ? 'active' : 'next';
+        return (
+          <li key={n} className="flex min-w-0 flex-1 items-center gap-1.5" aria-current={state === 'active' ? 'step' : undefined}>
+            <span
+              className={cn(
+                'flex h-7 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-[12.5px] font-semibold tabular-nums',
+                state === 'active' && 'bg-accent text-accent-ink',
+                state === 'done' && 'bg-accent-soft text-accent',
+                state === 'next' && 'border border-line bg-white text-ink-500',
+              )}
+            >
+              {state === 'done' && <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />}
+              {t('Fase', 'Phase')} {n}
+              {state === 'active' && <span className="font-medium opacity-90">· {t('nu', 'now')}</span>}
+              <span className="sr-only">{state === 'done' ? t(' (afgerond)', ' (done)') : state === 'next' ? t(' (later)', ' (later)') : ''}</span>
+            </span>
+            {n < phaseCount && <span className={cn('h-0.5 min-w-3 flex-1 rounded-full', n < phaseNo ? 'bg-accent/40' : 'bg-line')} aria-hidden />}
+          </li>
+        );
+      })}
+    </ol>
   );
 }

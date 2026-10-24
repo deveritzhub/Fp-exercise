@@ -47,7 +47,7 @@ function NotFound() {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
       <div className="text-[13px] font-semibold text-accent">404</div>
-      <h1 className="mt-2 text-2xl font-semibold">{t('Pagina niet gevonden', 'Page not found')}</h1>
+      <h1 className="mt-2 text-2xl font-bold">{t('Pagina niet gevonden', 'Page not found')}</h1>
       <Link to="/" className="link mt-4">{t('Naar de homepage', 'Go to homepage')}</Link>
     </div>
   );

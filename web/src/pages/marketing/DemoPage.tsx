@@ -30,13 +30,13 @@ export function DemoPage() {
       <section className="border-b border-line bg-canvas">
         <div className="mx-auto max-w-6xl px-5 py-14">
           <div className="text-[13px] font-semibold uppercase tracking-wider text-accent">Demo</div>
-          <h1 className="mt-3 text-[36px] font-semibold tracking-tight">{t('Probeer het zelf', 'Try it yourself')}</h1>
+          <h1 className="mt-3 text-[36px] font-bold tracking-tight">{t('Probeer het zelf', 'Try it yourself')}</h1>
           <p className="mt-3 max-w-2xl text-[17px] text-ink-600">{t('Links bouw je als fysiotherapeut een programma; rechts zie je direct wat de patiënt ziet. Alle gegevens zijn fictief.', 'On the left you build a programme as a physiotherapist; on the right you instantly see what the patient sees. All data is fictional.')}</p>
         </div>
       </section>
       <section className="mx-auto grid max-w-6xl gap-10 px-5 py-14 lg:grid-cols-[1.2fr_1fr]">
         <div>
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold"><Stethoscope className="h-5 w-5 text-accent" />{t('Fysiotherapeut', 'Physiotherapist')}</h2>
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold"><Stethoscope className="h-5 w-5 text-accent" />{t('Fysiotherapeut', 'Physiotherapist')}</h2>
           <div className="rounded-2xl border border-line bg-white p-4 shadow-card">
             <div className="mb-2 text-[13px] font-medium text-ink-500">{t('Bibliotheek — klik om toe te voegen', 'Library — click to add')}</div>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -64,7 +64,7 @@ export function DemoPage() {
           </div>
         </div>
         <div>
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold"><Smartphone className="h-5 w-5 text-accent" />{t('Patiënt', 'Patient')}</h2>
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold"><Smartphone className="h-5 w-5 text-accent" />{t('Patiënt', 'Patient')}</h2>
           <div className="mx-auto max-w-[340px] rounded-[34px] border-[7px] border-ink-900 bg-canvas p-5 shadow-pop">
             <div className="text-[13px] text-ink-500">{t('Goedemorgen, Sam', 'Good morning, Sam')}</div>
             <div className="mt-3 flex items-center gap-4 rounded-2xl bg-white p-4 shadow-xs">
@@ -91,7 +91,7 @@ export function DemoPage() {
       <section className="mx-auto max-w-6xl px-5 pb-20">
         {showDemoAccounts ? (
           <div className="rounded-2xl border border-line bg-canvas p-6">
-            <h2 className="text-lg font-semibold">{t('Volledige demo-omgeving', 'Full demo environment')}</h2>
+            <h2 className="text-lg font-bold">{t('Volledige demo-omgeving', 'Full demo environment')}</h2>
             <p className="mt-1 text-[14.5px] text-ink-600">{t('Log in met een van deze fictieve accounts (wachtwoord:', 'Log in with one of these fictional accounts (password:')} <code className="rounded bg-white px-1.5 py-0.5 text-[13px]">{DEMO_PASSWORD}</code>).</p>
             <div className="mt-4 flex flex-wrap gap-2">
               {DEMO_ACCOUNTS.map((a) => <Badge key={a.email} tone="outline" className="py-1 text-[13px]">{locale === 'nl' ? a.nl : a.en}: {a.email}</Badge>)}

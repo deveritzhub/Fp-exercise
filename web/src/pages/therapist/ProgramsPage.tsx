@@ -193,7 +193,7 @@ function TemplateBrowser() {
             <button key={m} type="button" aria-pressed={mod === m} className={chip(mod === m)} onClick={() => setMod(mod === m ? '' : m)}>
               <M.icon className="h-4 w-4" aria-hidden />
               {M.label}
-              {counts[m] ? <span className={cn('text-[11.5px] tabular-nums', mod === m ? 'text-white/80' : 'text-ink-400')}>{counts[m]}</span> : null}
+              {counts[m] ? <span className={cn('text-[12px] tabular-nums', mod === m ? 'text-white/80' : 'text-ink-400')}>{counts[m]}</span> : null}
             </button>
           );
         })}
@@ -255,7 +255,7 @@ function SeriesCard({ title, phases }: { title: string; phases: Program[] }) {
                 className={cn('tap shrink-0 rounded-lg px-3 py-2 text-left transition-colors', phase === i ? 'bg-ink-900 text-white' : 'bg-ink-50 text-ink-700 hover:bg-ink-100')}
               >
                 <span className="block text-[13px] font-semibold">{p.series?.phaseName}</span>
-                {p.series?.weeks && <span className={cn('block text-[11.5px]', phase === i ? 'text-white/75' : 'text-ink-500')}>{t(`week ${p.series.weeks}`, `week ${p.series.weeks}`)}</span>}
+                {p.series?.weeks && <span className={cn('block text-[12px]', phase === i ? 'text-white/75' : 'text-ink-500')}>{t(`week ${p.series.weeks}`, `week ${p.series.weeks}`)}</span>}
               </button>
             ))}
           </div>
@@ -366,7 +366,7 @@ function WarningBadge({ warnings }: { warnings?: string[] | null }) {
   const first = w[0].replace(/\.$/, '');
   const short = first.length > 60 ? `${first.slice(0, 57).trimEnd()}…` : first;
   return (
-    <span title={w.join('\n')} className="inline-flex max-w-full items-center gap-1 rounded-md bg-warn-soft px-1.5 py-0.5 text-[11.5px] font-medium text-warn">
+    <span title={w.join('\n')} className="inline-flex max-w-full items-center gap-1 rounded-md bg-warn-soft px-1.5 py-0.5 text-[12px] font-medium text-warn">
       <span className="truncate" aria-hidden>{t('Let op', 'Note')}: {short}</span>
       {w.length > 1 && <span className="shrink-0" aria-hidden>+{w.length - 1}</span>}
       <span className="sr-only">{w.join('. ')}</span>

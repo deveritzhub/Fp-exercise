@@ -125,7 +125,7 @@ export function ExerciseSearchField({ value, onChange, busy, size = 'lg', autoFo
         title={t('Zoek op naam (Nederlands of Engels), spier, regio, materiaal of synoniem', 'Search by name (Dutch or English), muscle, region, equipment or synonym')}
         className={cn(
           'input appearance-none pr-20 [&::-webkit-search-cancel-button]:hidden',
-          size === 'lg' ? 'h-12 rounded-xl pl-11 text-[15px] shadow-card' : 'h-9 pl-9',
+          size === 'lg' ? 'h-[52px] rounded-xl pl-11 text-[15.5px] shadow-card' : 'h-10 pl-9',
         )}
       />
       <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
@@ -150,7 +150,7 @@ export const RegionChips = memo(function RegionChips({ value, onChange }: { valu
   const chip = (active: boolean) =>
     cn(
       'tap inline-flex h-11 shrink-0 items-center rounded-full border px-3.5 text-[13px] font-medium transition-colors md:h-9',
-      active ? 'border-accent bg-accent text-white' : 'border-line bg-white text-ink-700 hover:border-ink-300 active:bg-ink-50',
+      active ? 'border-accent bg-accent font-semibold text-accent-ink' : 'border-line bg-white text-ink-700 hover:border-ink-300 hover:bg-canvas',
     );
   return (
     <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 [mask-image:linear-gradient(to_right,black_88%,transparent)] sm:-mx-6 sm:px-6 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:[mask-image:none]" role="group" aria-label={t('Lichaamsregio', 'Body region')}>
@@ -215,7 +215,7 @@ export function FilterButton({ value, onChange, total, className }: { value: Exe
       >
         <SlidersHorizontal className="h-[18px] w-[18px]" />
         <span className="sr-only min-[360px]:not-sr-only">{t('Filters', 'Filters')}</span>
-        {n > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[11px] font-semibold text-white" aria-label={t(`${n} actief`, `${n} active`)}>{n}</span>}
+        {n > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[12px] font-semibold text-white" aria-label={t(`${n} actief`, `${n} active`)}>{n}</span>}
       </button>
       <Dialog
         open={open}
@@ -257,7 +257,7 @@ export function ScopeFilters({ value, onChange }: { value: ExerciseFilters; onCh
   const { t } = useI18n();
   const sel = 'h-11 rounded-lg border border-line bg-white px-3 pr-8 text-[13.5px] font-medium text-ink-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50';
   return (
-    <div className="mb-3 mt-4 flex flex-wrap items-center gap-2" role="group" aria-label={t('Bron, status en favorieten', 'Source, status and favourites')}>
+    <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('Bron, status en favorieten', 'Source, status and favourites')}>
       <label className="sr-only" htmlFor="flt-source">{t('Bron', 'Source')}</label>
       <select id="flt-source" className={sel} value={value.source} onChange={(e) => onChange({ ...value, source: e.target.value })}>
         <option value="all">{t('Alle bronnen', 'All sources')}</option>
@@ -275,7 +275,7 @@ export function ScopeFilters({ value, onChange }: { value: ExerciseFilters; onCh
         type="button"
         aria-pressed={value.favorites === '1'}
         onClick={() => onChange({ ...value, favorites: value.favorites === '1' ? '' : '1' })}
-        className={cn('inline-flex h-11 items-center gap-1.5 rounded-lg border px-3 text-[13.5px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50', value.favorites === '1' ? 'border-ink-900 bg-ink-900 text-white' : 'border-line bg-white text-ink-800 hover:border-ink-300')}
+        className={cn('inline-flex h-11 items-center gap-1.5 rounded-lg border px-3 text-[13.5px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50', value.favorites === '1' ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-white text-ink-800 hover:border-ink-300')}
       >
         <span aria-hidden>★</span>{t('Favorieten', 'Favourites')}
       </button>
@@ -297,7 +297,7 @@ export function ActiveFilters({ value, onChange }: { value: ExerciseFilters; onC
   return (
     <div className="flex flex-wrap items-center gap-2">
       {chips.map((c) => (
-        <button key={c.k} type="button" onClick={() => onChange({ ...value, [c.k]: '' })} className="tap inline-flex h-8 items-center gap-1.5 rounded-full bg-ink-900 pl-3 pr-2 text-[12.5px] font-medium text-white hover:bg-ink-800" aria-label={t(`Filter ${c.label} verwijderen`, `Remove filter ${c.label}`)}>
+        <button key={c.k} type="button" onClick={() => onChange({ ...value, [c.k]: '' })} className="tap inline-flex h-8 items-center gap-1.5 rounded-full border border-accent/25 bg-accent-soft pl-3 pr-2 text-[13px] font-semibold text-accent hover:bg-accent/15" aria-label={t(`Filter ${c.label} verwijderen`, `Remove filter ${c.label}`)}>
           {c.label}
           <X className="h-3.5 w-3.5 opacity-80" />
         </button>

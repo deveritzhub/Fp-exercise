@@ -22,7 +22,7 @@ export function PatientProgress() {
   const d = q.data;
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">{t('Mijn voortgang', 'My progress')}</h1>
+      <h1 className="text-2xl font-bold">{t('Mijn voortgang', 'My progress')}</h1>
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl border border-line bg-white p-4 shadow-card">
           <div className="text-[14px] text-ink-500">{t('Trainingen gedaan', 'Workouts done')}</div>
@@ -34,13 +34,13 @@ export function PatientProgress() {
         </div>
       </div>
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card">
-        <h2 className="mb-1 font-semibold">{t('Per week', 'Per week')}</h2>
+        <h2 className="mb-1 font-bold">{t('Per week', 'Per week')}</h2>
         <p className="mb-4 text-[14px] text-ink-500">{t('Gedaan ten opzichte van gepland', 'Done compared with planned')}</p>
         <Bars height={140} format={pct} data={d.weekly.map((w) => ({ label: fmtDate(w.weekStart, locale, { day: 'numeric', month: 'short' }), value: w.planned ? w.rate : null }))} />
       </section>
       <StrengthProgress />
       <section>
-        <h2 className="mb-3 text-lg font-semibold">{t('Geschiedenis', 'History')}</h2>
+        <h2 className="mb-3 text-lg font-bold">{t('Geschiedenis', 'History')}</h2>
         {d.sessions.length === 0 ? (
           <p className="rounded-2xl border border-line bg-white p-5 text-ink-500">{t('Nog geen afgeronde trainingen.', 'No completed workouts yet.')}</p>
         ) : (

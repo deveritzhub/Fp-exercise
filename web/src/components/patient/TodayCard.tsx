@@ -19,7 +19,7 @@ export function TodayProgramCard({ id, title, items, done, action }: { id: strin
     <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-card" aria-labelledby={`today-${id}`}>
       <div className="p-5">
         <div className="text-[13px] font-medium uppercase tracking-wide text-accent">{t('Vandaag', 'Today')}</div>
-        <h2 id={`today-${id}`} className="mt-1 text-xl font-semibold">{title}</h2>
+        <h2 id={`today-${id}`} className="mt-1 text-xl font-bold">{title}</h2>
         <p className="mt-1 text-[15px] text-ink-500">
           {items.length} {items.length === 1 ? t('oefening', 'exercise') : t('oefeningen', 'exercises')} · ±{Math.max(5, Math.round(items.length * 4))} {t('minuten', 'minutes')}
         </p>
@@ -52,7 +52,7 @@ export function RestDayCard({ status = 'rest', nextSession, startDate }: { statu
         : t('Er staan vandaag geen oefeningen gepland.', 'No exercises are scheduled today.');
   return (
     <div className="rounded-2xl border border-line bg-white p-6 shadow-card">
-      <h2 className="text-lg font-semibold">{title}</h2>
+      <h2 className="text-lg font-bold">{title}</h2>
       <p className="mt-1 text-ink-500">{body}</p>
       {nextSession && status !== 'ended' && (
         <p className="mt-3 flex items-center gap-2 text-[15px] text-ink-700">

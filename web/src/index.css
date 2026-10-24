@@ -1,25 +1,24 @@
-@import '@fontsource/nanum-gothic/latin-400.css';
-@import '@fontsource/nanum-gothic/latin-700.css';
-@import '@fontsource/nanum-gothic/latin-800.css';
-@import '@fontsource/proza-libre/latin-400.css';
-@import '@fontsource/proza-libre/latin-500.css';
-@import '@fontsource/proza-libre/latin-600.css';
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource-variable/manrope/wght.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* default accent: Functional Performance "army green". Overridable per practice (branding.accent). */
-    --accent: 65 61 40;
-    --accent-strong: 47 44 28;
-    --accent-soft: 236 232 223;
+    /* Primary interaction colour: Deep Forest Green, hover Dark Forest, soft Clinical Sage.
+       Overridable per practice (branding.accent, see lib/accent.ts). RGB triplets for alpha support. */
+    --accent: 41 72 60;
+    --accent-strong: 29 54 45;
+    --accent-soft: 230 238 232;
     --accent-ink: 255 255 255;
     color-scheme: light;
   }
-  html { -webkit-text-size-adjust: 100%; text-rendering: optimizeLegibility; }
+  html { -webkit-text-size-adjust: 100%; text-rendering: optimizeLegibility; font-feature-settings: 'cv11', 'ss01'; }
   body { @apply bg-canvas text-ink-900 antialiased; }
-  h1, h2, h3 { @apply font-display font-medium tracking-[-0.01em] text-ink-950; }
+  h1, h2, h3 { @apply font-display font-bold tracking-[-0.015em] text-ink-950; }
+  /* Numbers line up in tables, stats and timers. */
+  table, .tabular { font-variant-numeric: tabular-nums; }
   h4 { @apply text-ink-950; }
   :focus-visible { @apply outline-none ring-2 ring-accent/60 ring-offset-2 ring-offset-white; }
   ::selection { @apply bg-accent/15; }
@@ -35,11 +34,20 @@
 
 @layer components {
   .card { @apply rounded-xl border border-line bg-white shadow-card; }
-  .label { @apply block text-[13px] font-medium text-ink-700; }
+  /* Clickable card: calm lift on hover, no movement. */
+  .card-hover { @apply transition-[box-shadow,border-color] duration-150 hover:border-ink-200 hover:shadow-lift; }
+  /* Type scale: page title, section heading, card title, body, small label, help text. */
+  .t-page { @apply font-display text-[24px] font-bold leading-tight tracking-[-0.02em] text-ink-950 sm:text-[28px]; }
+  .t-section { @apply font-display text-[18px] font-bold leading-snug text-ink-950; }
+  .t-card { @apply font-display text-[15.5px] font-bold leading-snug text-ink-950; }
+  .t-body { @apply text-[14.5px] leading-relaxed text-ink-800; }
+  .t-label { @apply text-[12.5px] font-semibold uppercase tracking-[0.06em] text-ink-500; }
+  .t-help { @apply text-[13px] leading-snug text-ink-500; }
+  .label { @apply block text-[13.5px] font-medium text-ink-800; }
   .input {
     @apply block w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink-900 shadow-xs
       placeholder:text-ink-400 transition-colors
-      hover:border-ink-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20
+      hover:border-ink-300 focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-accent/15
       disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-400;
   }
   .input[aria-invalid='true'] { @apply border-bad focus:ring-bad/20; }

@@ -18,7 +18,7 @@ import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import { ProgramStatusBadge } from '@/components/app/StatusBadge';
 import { ExerciseFilterBar, emptyFilters, useExerciseSearch, type ExerciseFilters } from '@/components/app/ExerciseSearch';
 import type { CriteriaCheck, Exercise, PatientListItem, Program, ProgramItem } from '@/lib/types';
-import { CriteriaList, Evidence, ModuleBadge, RedFlags, Warnings } from '@/components/app/PhaseInfo';
+import { CriteriaList, Evidence, ModuleBadge, RedFlags, Warnings, PhaseTimeline } from '@/components/app/PhaseInfo';
 import { ProgramItemsList, RestDayCard, TodayProgramCard } from '@/components/patient/TodayCard';
 import { dayStatus, itemsForDate, nextSessionDate } from '@shared/schedule';
 import { ALL_DAYS, defaultDose, doseProblems, type DoseProblem } from '@/lib/dose';
@@ -246,7 +246,7 @@ export function ProgramBuilderPage() {
               {program?.patient ? `${program.patient.firstName} ${program.patient.lastName}` : t('Programma’s', 'Programmes')}
             </Link>
           </div>
-          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold">
+          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">
             {isNew ? (asTemplate ? t('Nieuw sjabloon', 'New template') : t('Nieuw programma', 'New programme')) : meta.title || t('Programma', 'Programme')}
             {program && !program.isTemplate && <ProgramStatusBadge status={program.status} />}
             {program?.isTemplate && <Badge tone="accent">{program.scope === 'global' ? t('Centraal sjabloon', 'Central template') : t('Praktijksjabloon', 'Practice template')}</Badge>}
@@ -326,7 +326,7 @@ export function ProgramBuilderPage() {
           <PhaseCard source={program ?? templateSource} programId={program && !program.isTemplate ? program.id : null} patientId={patientId} />
 
           <div className="flex items-center justify-between">
-            <h2 className="text-[15px] font-semibold">
+            <h2 className="text-[15px] font-bold">
               {t('Oefeningen', 'Exercises')} <span className="font-normal text-ink-500">({items.length})</span>
             </h2>
             {!readOnlyGlobal && (
@@ -724,7 +724,7 @@ function PublishDialog({ open, onClose, program, meta, items, changeNote, setCha
     >
       <div className="space-y-4">
         <div>
-          <h3 className="mb-1.5 text-[13px] font-semibold text-ink-900">{t('Wat verandert', 'What changes')}</h3>
+          <h3 className="mb-1.5 text-[13px] font-bold text-ink-900">{t('Wat verandert', 'What changes')}</h3>
           {changes.length ? (
             <ul className="space-y-1 text-[13.5px]">
               {changes.map((c, n) => (
@@ -866,7 +866,7 @@ function SubstitutePicker({ item, relations, onChange }: { item: BItem; relation
                         setQ('');
                       }}>
                         <span>{name(x)}</span>
-                        {isProg && <span className="text-[11.5px] text-ink-600">{t('progressie', 'progression')}</span>}
+                        {isProg && <span className="text-[12px] text-ink-600">{t('progressie', 'progression')}</span>}
                       </button>
                     </li>
                   );
@@ -978,7 +978,7 @@ function PreviewDialog({ open, onClose, meta, items, unsaved }: { open: boolean;
           )
         ) : (
           <div>
-            <h3 className="mb-3 text-xl font-semibold">{title}</h3>
+            <h3 className="mb-3 text-xl font-bold">{title}</h3>
             <ProgramItemsList items={items} instructions={meta.patientInstructions} />
           </div>
         )}
@@ -1070,16 +1070,17 @@ function PhaseCard({ source, programId, patientId }: { source: Program | null; p
             {source.module && <ModuleBadge module={source.module} />}
             {s && <Badge tone="accent">{t(`${s.phaseName} van ${s.phaseCount}`, `${s.phaseName} of ${s.phaseCount}`)}{s.weeks ? ` · ${t('week', 'week')} ${s.weeks}` : ''}</Badge>}
           </div>
-          {s && <h2 className="mt-1.5 font-sans text-[15px] font-semibold text-ink-950">{s.title}</h2>}
-          {s?.goal && <p className="mt-0.5 text-[13.5px] text-ink-600"><span className="font-medium text-ink-800">{t('Doel', 'Goal')}:</span> {s.goal}</p>}
+          {s && <h2 className="t-card mt-2">{s.title}</h2>}
+          {s?.goal && <p className="mt-1 text-[14px] text-ink-700"><span className="font-semibold text-ink-900">{t('Doel', 'Goal')}:</span> {s.goal}</p>}
         </div>
         {programId && total > 0 && (
           <div className="text-right">
-            <div className={cn('text-[20px] font-semibold tabular-nums', done === total ? 'text-ok' : 'text-ink-900')}>{done}/{total}</div>
-            <div className="text-[11.5px] text-ink-500">{t('criteria behaald', 'criteria met')}</div>
+            <div className={cn('font-display text-[22px] font-bold tabular-nums', done === total ? 'text-ok' : 'text-ink-900')}>{done}/{total}</div>
+            <div className="text-[12px] text-ink-500">{done === total ? t('criteria behaald', 'criteria met') : t(`nog ${total - done} te beoordelen`, `${total - done} still to assess`)}</div>
           </div>
         )}
       </div>
+      {s && <PhaseTimeline phaseNo={s.phaseNo} phaseCount={s.phaseCount} />}
       <Warnings items={source.warnings ?? []} />
       {criteria.length > 0 && (
         <div>

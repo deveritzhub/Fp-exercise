@@ -58,7 +58,7 @@ export function PatientHome() {
     <div className="space-y-6">
       <div>
         <p className="text-[15px] text-ink-500">{new Intl.DateTimeFormat(locale === 'nl' ? 'nl-NL' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</p>
-        <h1 className="mt-0.5 text-[28px] font-semibold leading-tight">{greeting(locale)}, {d.patient.firstName}</h1>
+        <h1 className="mt-0.5 text-[28px] font-bold leading-tight">{greeting(locale)}, {d.patient.firstName}</h1>
       </div>
 
       {showModes && <ModeSwitch value={mode} onChange={pickMode} />}
@@ -67,7 +67,7 @@ export function PatientHome() {
           <ConsentToggle module={mode} since={modes.data.consents[mode]} />
           {d.programs.length === 0 && (
             <section aria-labelledby="start-title">
-              <h2 id="start-title" className="mb-2 text-lg font-semibold">{mode === 'kracht' ? t('Start een krachtprogramma', 'Start a strength programme') : t('Start een mobiliteitsprogramma', 'Start a mobility programme')}</h2>
+              <h2 id="start-title" className="mb-2 text-lg font-bold">{mode === 'kracht' ? t('Start een krachtprogramma', 'Start a strength programme') : t('Start een mobiliteitsprogramma', 'Start a mobility programme')}</h2>
               <StartTemplates modes={modes.data} module={mode} />
             </section>
           )}
@@ -101,7 +101,7 @@ export function PatientHome() {
 
       {d.programs.length === 0 && mode !== 'revalidatie' ? null : d.programs.length === 0 ? (
         <div className="rounded-2xl border border-line bg-white p-6 text-center shadow-card">
-          <h2 className="text-lg font-semibold">{t('Nog geen programma', 'No programme yet')}</h2>
+          <h2 className="text-lg font-bold">{t('Nog geen programma', 'No programme yet')}</h2>
           <p className="mt-1 text-ink-500">{t('Je fysiotherapeut zet je oefenprogramma hier voor je klaar.', 'Your physiotherapist will set up your exercise programme here.')}</p>
         </div>
       ) : todo.length === 0 ? (
@@ -131,9 +131,9 @@ export function PatientHome() {
 
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="week-title">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="week-title" className="font-semibold">{t('Deze week', 'This week')}</h2>
+          <h2 id="week-title" className="font-bold">{t('Deze week', 'This week')}</h2>
           {d.stats.streak > 0 && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f3e9dc] px-3 py-1 text-[14px] font-semibold text-brand-wood">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-sand-soft px-3 py-1 text-[14px] font-semibold text-sand-ink">
               <Flame className="h-4 w-4" />
               {t(`${d.stats.streak} ${d.stats.streak === 1 ? 'training' : 'trainingen'} op rij`, `${d.stats.streak} in a row`)}
             </span>
@@ -156,7 +156,7 @@ export function PatientHome() {
       <ReminderNudge />
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold">{t('Mijn programma’s', 'My programmes')}</h2>
+        <h2 className="mb-3 text-lg font-bold">{t('Mijn programma’s', 'My programmes')}</h2>
         <div className="space-y-2">
           {d.programs.map((p) => (
             <Link key={p.id} to={`/p/programma/${p.id}`} className="flex items-center gap-4 rounded-2xl border border-line bg-white p-4 shadow-card">
@@ -173,7 +173,7 @@ export function PatientHome() {
 
       {d.recent.length > 0 && (
         <section>
-          <h2 className="mb-3 text-lg font-semibold">{t('Eerdere trainingen', 'Previous workouts')}</h2>
+          <h2 className="mb-3 text-lg font-bold">{t('Eerdere trainingen', 'Previous workouts')}</h2>
           <ul className="divide-y divide-line rounded-2xl border border-line bg-white shadow-card">
             {d.recent.map((r) => (
               <li key={r.id} className="flex items-center gap-3 px-4 py-3">

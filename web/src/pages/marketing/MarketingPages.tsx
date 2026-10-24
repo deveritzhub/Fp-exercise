@@ -13,7 +13,7 @@ function Hero({ eyebrow, title, intro }: { eyebrow: string; title: string; intro
     <section className="border-b border-line bg-canvas">
       <div className="mx-auto max-w-6xl px-5 py-16 sm:py-20">
         <div className="text-[13px] font-semibold uppercase tracking-wider text-accent">{eyebrow}</div>
-        <h1 className="mt-3 max-w-3xl text-[36px] font-normal leading-[1.12] tracking-[-0.015em] sm:text-[46px]">{title}</h1>
+        <h1 className="mt-3 max-w-3xl text-[36px] font-bold leading-[1.12] tracking-[-0.015em] sm:text-[46px]">{title}</h1>
         <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-ink-600">{intro}</p>
       </div>
     </section>
@@ -37,7 +37,7 @@ export function FeaturesPage() {
           <div key={title} className="grid gap-8 rounded-2xl border border-line p-8 shadow-card lg:grid-cols-2">
             <div>
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-accent"><Icon className="h-5 w-5" /></span>
-              <h2 className="mt-4 text-[24px] font-semibold">{title}</h2>
+              <h2 className="mt-4 text-[24px] font-bold">{title}</h2>
               <p className="mt-2 text-[15.5px] leading-relaxed text-ink-600">{text}</p>
             </div>
             <ul className="space-y-3 self-center">
@@ -46,8 +46,8 @@ export function FeaturesPage() {
           </div>
         ))}
         <div className="grid gap-6 sm:grid-cols-2">
-          <div className="rounded-2xl border border-line p-8"><Users className="h-5 w-5 text-accent" /><h3 className="mt-3 text-lg font-semibold">{t('Meerdere praktijken, strikt gescheiden', 'Multiple practices, strictly separated')}</h3><p className="mt-1.5 text-[15px] text-ink-600">{t('Elke praktijk heeft eigen therapeuten, patiënten, oefeningen, sjablonen en instellingen. Afscherming gebeurt op database-niveau.', 'Each practice has its own therapists, patients, exercises, templates and settings. Isolation is enforced at database level.')}</p></div>
-          <div className="rounded-2xl border border-line p-8"><Lock className="h-5 w-5 text-accent" /><h3 className="mt-3 text-lg font-semibold">{t('Gebouwd met privacy by design', 'Built with privacy by design')}</h3><p className="mt-1.5 text-[15px] text-ink-600">{t('Minimale gegevens, rolgebaseerde toegang, audit logging en export van patiëntgegevens. Geen tracking-cookies.', 'Minimal data, role-based access, audit logging and patient data export. No tracking cookies.')}</p></div>
+          <div className="rounded-2xl border border-line p-8"><Users className="h-5 w-5 text-accent" /><h3 className="mt-3 text-lg font-bold">{t('Meerdere praktijken, strikt gescheiden', 'Multiple practices, strictly separated')}</h3><p className="mt-1.5 text-[15px] text-ink-600">{t('Elke praktijk heeft eigen therapeuten, patiënten, oefeningen, sjablonen en instellingen. Afscherming gebeurt op database-niveau.', 'Each practice has its own therapists, patients, exercises, templates and settings. Isolation is enforced at database level.')}</p></div>
+          <div className="rounded-2xl border border-line p-8"><Lock className="h-5 w-5 text-accent" /><h3 className="mt-3 text-lg font-bold">{t('Gebouwd met privacy by design', 'Built with privacy by design')}</h3><p className="mt-1.5 text-[15px] text-ink-600">{t('Minimale gegevens, rolgebaseerde toegang, audit logging en export van patiëntgegevens. Geen tracking-cookies.', 'Minimal data, role-based access, audit logging and patient data export. No tracking cookies.')}</p></div>
         </div>
       </section>
     </>
@@ -63,7 +63,7 @@ export function HowItWorksPage() {
         <li key={title} className="flex gap-4 rounded-2xl border border-line bg-white p-5 shadow-card">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-[14px] font-semibold text-white">{i + 1}</span>
           <div>
-            <h3 className="flex items-center gap-2 font-semibold"><Icon className="h-4 w-4 text-accent" />{title}</h3>
+            <h3 className="flex items-center gap-2 font-bold"><Icon className="h-4 w-4 text-accent" />{title}</h3>
             <p className="mt-1 text-[15px] text-ink-600">{text}</p>
           </div>
         </li>
@@ -75,7 +75,7 @@ export function HowItWorksPage() {
       <Hero eyebrow={t('Hoe het werkt', 'How it works')} title={t('Drie minuten in de spreekkamer, weken resultaat thuis', 'Three minutes in the treatment room, weeks of results at home')} intro={t('Zo ziet een gemiddelde dag eruit voor de fysiotherapeut en de patiënt.', 'This is what an average day looks like for the physiotherapist and the patient.')} />
       <section className="mx-auto grid max-w-6xl gap-12 px-5 py-20 lg:grid-cols-2">
         <div>
-          <h2 className="mb-6 text-[24px] font-semibold">{t('Fysiotherapeut', 'Physiotherapist')}</h2>
+          <h2 className="mb-6 text-[24px] font-bold">{t('Fysiotherapeut', 'Physiotherapist')}</h2>
           {steps([
             [Users, t('Patiënt toevoegen', 'Add patient'), t('Alleen naam en e-mailadres. De patiënt krijgt een veilige uitnodigingslink.', 'Just a name and email address. The patient receives a secure invitation link.')],
             [Search, t('Oefeningen kiezen', 'Choose exercises'), t('Zoek in de bibliotheek of start vanuit een sjabloon of favoriet.', 'Search the library or start from a template or favourite.')],
@@ -84,7 +84,7 @@ export function HowItWorksPage() {
           ])}
         </div>
         <div>
-          <h2 className="mb-6 text-[24px] font-semibold">{t('Patiënt', 'Patient')}</h2>
+          <h2 className="mb-6 text-[24px] font-bold">{t('Patiënt', 'Patient')}</h2>
           {steps([
             [Send, t('Account activeren', 'Activate account'), t('Via de link in de e-mail een wachtwoord kiezen — klaar.', 'Choose a password via the email link — done.')],
             [Smartphone, t('Vandaag openen', 'Open today'), t('Eén scherm met de oefeningen van vandaag en een grote startknop.', 'One screen with today’s exercises and a large start button.')],
@@ -124,7 +124,7 @@ export function PricingPage() {
             return (
               <div key={p.code} className={cn('relative flex flex-col rounded-2xl border bg-white p-7 shadow-card', featured ? 'border-accent ring-1 ring-accent' : 'border-line')}>
                 {featured && <Badge tone="accent" className="absolute -top-2.5 left-7"><Star className="h-3 w-3 fill-current" />{t('Meest gekozen', 'Most popular')}</Badge>}
-                <h2 className="text-lg font-semibold">{p.name}</h2>
+                <h2 className="text-lg font-bold">{p.name}</h2>
                 <div className="mt-4 flex items-baseline gap-1">
                   {cents === null ? <span className="text-3xl font-semibold">{t('Op maat', 'Custom')}</span> : (
                     <>
@@ -206,7 +206,7 @@ export function ContactPage() {
         )}
         <aside className="space-y-4">
           <div className="rounded-2xl border border-line bg-canvas p-6">
-            <h2 className="font-semibold">{t('Wat je kunt verwachten', 'What to expect')}</h2>
+            <h2 className="font-bold">{t('Wat je kunt verwachten', 'What to expect')}</h2>
             <ul className="mt-3 space-y-2 text-[14.5px] text-ink-600">
               {[t('Demo van 30 minuten, online of in Rotterdam', '30-minute demo, online or in Rotterdam'), t('Advies over overstap en het opzetten van je bibliotheek', 'Advice on switching and setting up your library'), t('Antwoord op vragen over privacy en beveiliging', 'Answers to privacy and security questions')].map((x) => <li key={x} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" />{x}</li>)}
             </ul>
@@ -225,7 +225,7 @@ function LegalDraft({ title, children }: { title: string; children: ReactNode })
       <Notice tone="warn" icon={<FileWarning className="h-4 w-4" />} className="mb-8" title={t('Concept — juridische review vereist', 'Draft — legal review required')}>
         {t('Deze tekst is een conceptstructuur en moet vóór publicatie door een jurist/privacy-specialist worden beoordeeld en aangevuld.', 'This text is a draft structure and must be reviewed and completed by a lawyer/privacy specialist before publication.')}
       </Notice>
-      <h1 className="text-[34px] font-semibold tracking-tight">{title}</h1>
+      <h1 className="text-[34px] font-bold tracking-tight">{title}</h1>
       <div className="prose-legal mt-8 space-y-6 text-[15.5px] leading-relaxed text-ink-700 [&_h2]:mt-10 [&_h2]:text-[19px] [&_h2]:font-semibold [&_h2]:text-ink-950 [&_li]:ml-5 [&_li]:list-disc">{children}</div>
     </div>
   );

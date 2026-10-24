@@ -26,6 +26,7 @@ export function DashboardPage() {
   const { t, locale } = useI18n();
   const { user, practice } = useSession();
   const L = useLabels();
+  const [showAll, setShowAll] = useState(false);
   useDocumentMeta(t('Dashboard', 'Dashboard'));
   const q = useQuery({ queryKey: ['dashboard', practice?.practiceId], queryFn: () => api.get<Dashboard>('/dashboard') });
   const recent = useQuery({ queryKey: ['programs-recent', practice?.practiceId], queryFn: () => api.get<{ items: Program[] }>('/programs/recent') });
@@ -76,9 +77,9 @@ export function DashboardPage() {
             <EmptyState title={t('Nog geen activiteit', 'No activity yet')} description={t('Afgeronde sessies van je patiënten verschijnen hier.', 'Completed sessions from your patients appear here.')} />
           ) : (
             <ul className="divide-y divide-line">
-              {d.activity.map((a) => (
+              {(showAll ? d.activity : d.activity.slice(0, 6)).map((a) => (
                 <li key={a.id}>
-                  <Link to={`/app/patienten/${a.patientId}?tab=sessies`} className="flex gap-3 px-5 py-3 hover:bg-ink-50/60">
+                  <Link to={`/app/patienten/${a.patientId}?tab=sessies`} className="flex gap-3 px-5 py-3 hover:bg-canvas">
                     <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ok-soft text-ok"><Activity className="h-3.5 w-3.5" /></span>
                     <span className="min-w-0 flex-1 text-[13.5px]">
                       <span className="font-medium">{a.patientName}</span>{' '}
@@ -93,6 +94,13 @@ export function DashboardPage() {
                   </Link>
                 </li>
               ))}
+              {d.activity.length > 6 && (
+                <li>
+                  <button type="button" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll} className="flex min-h-[44px] w-full items-center justify-center px-5 py-2.5 text-[13.5px] font-semibold text-accent hover:bg-canvas">
+                    {showAll ? t('Minder tonen', 'Show less') : t(`Alle ${d.activity.length} tonen`, `Show all ${d.activity.length}`)}
+                  </button>
+                </li>
+              )}
             </ul>
           )}
         </Card>
@@ -109,7 +117,7 @@ export function DashboardPage() {
             <ul className="divide-y divide-line">
               {recent.data.items.map((p) => (
                 <li key={p.id}>
-                  <Link to={`/app/programmas/${p.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-ink-50/60">
+                  <Link to={`/app/programmas/${p.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-canvas">
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">{p.title}</span>
                       <span className="text-[12.5px] text-ink-500">
@@ -130,10 +138,10 @@ export function DashboardPage() {
           ) : d.favorites.length === 0 ? (
             <EmptyState icon={<Star className="h-5 w-5" />} title={t('Nog geen favorieten', 'No favourites yet')} description={t('Markeer oefeningen met een ster om ze hier snel terug te vinden.', 'Star exercises to find them here quickly.')} />
           ) : (
-            <ul className="grid grid-cols-1 gap-px bg-line sm:grid-cols-2">
+            <ul className="grid grid-cols-1 gap-px bg-line sm:grid-cols-2 sm:[&>li:last-child:nth-child(odd)]:col-span-2">
               {d.favorites.map((e) => (
                 <li key={e.id} className="bg-white">
-                  <Link to={`/app/oefeningen/${e.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-ink-50/60">
+                  <Link to={`/app/oefeningen/${e.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-canvas">
                     <ExerciseThumb thumbnailId={e.thumbnailMediaId} videoId={e.videoMediaId} region={e.bodyRegion} className="h-10 w-10 shrink-0" />
                     <span className="min-w-0">
                       <span className="block truncate text-[13.5px] font-medium">{locale === 'nl' ? e.nameNl : e.nameEn}</span>

@@ -93,7 +93,7 @@ export function ReminderCard() {
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="font-semibold text-ink-900">{t('Herinnering', 'Reminder')}</h2>
+            <h2 className="font-bold text-ink-900">{t('Herinnering', 'Reminder')}</h2>
             {on ? <Badge tone="ok">{t('Aan', 'On')}</Badge> : <Badge>{t('Uit', 'Off')}</Badge>}
           </div>
           <p className="mt-1 text-[14px] leading-relaxed text-ink-600">
