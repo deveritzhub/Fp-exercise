@@ -5,8 +5,7 @@ import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, us
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  Archive, ArrowDown, ArrowRight, ArrowUp, BookCopy, CheckCircle2, ChevronDown, Copy, Eye, GripVertical, History, LayoutTemplate, Plus, Search, Trash2, X,
-} from 'lucide-react';
+  Archive, ArrowDown, ArrowRight, ArrowUp, BookCopy, CheckCircle2, ChevronDown, Copy, Eye, GripVertical, History, LayoutTemplate, Plus, Search, Trash2, X, Printer } from 'lucide-react';
 import { api, ApiError, qs } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
@@ -259,6 +258,7 @@ export function ProgramBuilderPage() {
             <Popover trigger={({ toggle }) => <Button variant="secondary" onClick={toggle} icon={<ChevronDown className="h-4 w-4" />}>{t('Meer', 'More')}</Button>}>
               {(close) => (
                 <>
+                  <MenuItem icon={<Printer className="h-4 w-4" />} onClick={() => { close(); nav(`/app/programmas/${program.id}/afdrukken`); }}>{t('Afdrukken / PDF', 'Print / PDF')}</MenuItem>
                   {!readOnlyGlobal && <MenuItem icon={<History className="h-4 w-4" />} onClick={() => { close(); setHistory(true); }}>{t('Versiegeschiedenis', 'Version history')}</MenuItem>}
                   <MenuItem icon={<BookCopy className="h-4 w-4" />} onClick={() => { close(); duplicate(true); }}>{program.isTemplate ? t('Kopiëren naar praktijksjabloon', 'Copy to practice template') : t('Opslaan als sjabloon', 'Save as template')}</MenuItem>
                   {program.isTemplate && <MenuItem icon={<Copy className="h-4 w-4" />} onClick={() => { close(); nav(`/app/programmas/nieuw?sjabloon=${program.id}`); }}>{t('Gebruiken voor patiënt', 'Use for patient')}</MenuItem>}

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X, Printer } from 'lucide-react';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
 import { toISODate } from '@shared/adherence';
@@ -51,6 +51,10 @@ export function PatientProgramPage() {
       ))}
       {p.status === 'active' && !p.paused && <RedFlagButton programId={p.id} redFlags={p.redFlags ?? []} className="w-full justify-center" />}
       {p.status === 'active' && p.selfStarted && <StopProgramButton programId={p.id} />}
+      <Link to={`/p/programma/${p.id}/afdrukken`} className="flex min-h-[44px] items-center justify-center gap-2 text-[15px] font-medium text-ink-700 hover:text-ink-950">
+        <Printer className="h-4 w-4" aria-hidden />
+        {t('Afdrukken of opslaan als PDF', 'Print or save as PDF')}
+      </Link>
     </div>
   );
 }

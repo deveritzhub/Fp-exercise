@@ -120,15 +120,15 @@ export function TherapistLayout() {
   );
 
   return (
-    <div className="min-h-screen lg:pl-64">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-line bg-mist lg:block">{sidebar}</aside>
+    <div className="min-h-screen lg:pl-64 print:bg-white print:pl-0">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-line bg-mist lg:block print:!hidden">{sidebar}</aside>
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-ink-950/35" onClick={() => setMobileOpen(false)} />
           <aside className="absolute inset-y-0 left-0 w-72 max-w-[85vw] animate-fade-in bg-mist shadow-pop">{sidebar}</aside>
         </div>
       )}
-      <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-line bg-white/90 px-4 backdrop-blur sm:gap-3 sm:px-6">
+      <header className="sticky top-0 z-20 flex h-16 print:hidden items-center gap-2 border-b border-line bg-white/90 px-4 backdrop-blur sm:gap-3 sm:px-6">
         <button type="button" className="-ml-2 flex h-11 w-11 items-center justify-center rounded-lg text-ink-600 hover:bg-ink-100 lg:hidden" onClick={() => setMobileOpen(true)} aria-label={t('Menu openen', 'Open menu')}>
           <Menu className="h-5 w-5" />
         </button>
@@ -171,7 +171,7 @@ export function TherapistLayout() {
           )}
         </Popover>
       </header>
-      <main className="mx-auto w-full max-w-[1320px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <main className="mx-auto w-full max-w-[1320px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 print:max-w-none print:p-0">
         <Outlet />
       </main>
       <CommandPalette open={palette} onClose={() => setPalette(false)} />

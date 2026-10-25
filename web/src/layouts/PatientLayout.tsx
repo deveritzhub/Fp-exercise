@@ -39,9 +39,9 @@ export function PatientLayout() {
     { to: '/p/account', icon: UserRound, label: t('Account', 'Account') },
   ];
   return (
-    <div className="patient-app min-h-screen bg-canvas text-[16px]">
+    <div className="patient-app min-h-screen bg-canvas text-[16px] print:bg-white">
       {!inPlayer && (
-        <header className="sticky top-0 z-20 border-b border-line bg-white/90 backdrop-blur">
+        <header className="sticky top-0 z-20 border-b print:hidden border-line bg-white/90 backdrop-blur">
           <div className="mx-auto flex h-16 max-w-xl items-center justify-between gap-3 px-4">
             {/* Narrow phones: logo mark only, so the practice name fits in full. */}
             <Logo to="/p" compact className="min-h-[44px] min-w-[44px] justify-center min-[430px]:hidden" />
@@ -54,7 +54,7 @@ export function PatientLayout() {
         </header>
       )}
       {(!online || pending > 0) && (
-        <div role="status" className={cn('flex items-center justify-center gap-2 px-4 py-2 text-center text-[13.5px]', online ? 'bg-accent-soft text-accent' : 'bg-ink-900 text-white')}>
+        <div role="status" className={cn('flex items-center justify-center gap-2 px-4 py-2 print:hidden text-center text-[13.5px]', online ? 'bg-accent-soft text-accent' : 'bg-ink-900 text-white')}>
           {online ? <RefreshCw className="h-4 w-4 shrink-0 animate-spin" /> : <CloudOff className="h-4 w-4 shrink-0" />}
           {!online
             ? pending > 0
@@ -63,11 +63,11 @@ export function PatientLayout() {
             : t('Je training wordt verstuurd…', 'Sending your workout…')}
         </div>
       )}
-      <main className={cn('mx-auto max-w-xl', inPlayer ? '' : 'px-4 pb-28 pt-5')}>
+      <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : 'px-4 pb-28 pt-5')}>
         <Outlet />
       </main>
       {!inPlayer && (
-        <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label={t('Navigatie', 'Navigation')}>
+        <nav className="fixed inset-x-0 bottom-0 z-30 print:hidden border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label={t('Navigatie', 'Navigation')}>
           <div className="mx-auto grid max-w-xl grid-cols-3">
             {tabs.map((tab) => (
               <NavLink key={tab.to} to={tab.to} end={tab.end} className={({ isActive }) => cn('tap group flex min-h-[60px] flex-col items-center justify-center gap-1 py-2 text-[13px]', isActive ? 'font-semibold text-accent' : 'font-medium text-ink-500 hover:text-ink-800')}>

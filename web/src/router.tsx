@@ -29,6 +29,8 @@ const PatientProgramPage = named(() => import('@/pages/patient/SessionPlayer'), 
 const SessionPlayer = named(() => import('@/pages/patient/SessionPlayer'), 'SessionPlayer');
 const PatientExercisePage = named(() => import('@/pages/patient/SessionPlayer'), 'PatientExercisePage');
 const PatientProgress = named(() => import('@/pages/patient/PatientProgress'), 'PatientProgress');
+const ProgramPrintPage = named(() => import('@/pages/PrintPages'), 'ProgramPrintPage');
+const PatientProgramPrintPage = named(() => import('@/pages/PrintPages'), 'PatientProgramPrintPage');
 const AdminPage = named(() => import('@/pages/admin/AdminPage'), 'AdminPage');
 
 const S = ({ children }: { children: ReactNode }) => <Suspense fallback={<Spinner className="min-h-[50vh]" />}>{children}</Suspense>;
@@ -93,6 +95,7 @@ export const router = createBrowserRouter([
           { path: 'programmas', element: <S><ProgramsPage /></S> },
           { path: 'programmas/nieuw', element: <S><ProgramBuilderPage key="new" /></S> },
           { path: 'programmas/:id', element: <S><ProgramBuilderPage /></S> },
+          { path: 'programmas/:id/afdrukken', element: <S><ProgramPrintPage /></S> },
           { path: 'praktijk', element: <S><PracticePage /></S> },
           { path: 'account', element: <S><AccountPage /></S> },
         ],
@@ -103,6 +106,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <S><PatientHome /></S> },
           { path: 'programma/:id', element: <S><PatientProgramPage /></S> },
+          { path: 'programma/:id/afdrukken', element: <S><PatientProgramPrintPage /></S> },
           { path: 'programma/:id/oefening/:itemId', element: <S><PatientExercisePage /></S> },
           { path: 'sessie/:id', element: <S><SessionPlayer /></S> },
           { path: 'voortgang', element: <S><PatientProgress /></S> },
