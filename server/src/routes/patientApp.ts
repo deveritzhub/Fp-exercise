@@ -154,9 +154,10 @@ patientApp.post('/sessions', async (c) => {
       const flagged = await tx.query('SELECT 1 FROM red_flag_reports WHERE program_id = $1 AND handled_at IS NULL', [programId]);
       if (flagged.rows[0]) throw new HttpError(409, 'paused_red_flag');
       if (clientId) {
+        // 168 hours, not '7 days': a calendar interval spans 7 days + 1 h across a DST change.
         const ins = await tx.query(
           `INSERT INTO workout_sessions(id, practice_id, patient_id, program_id, program_version, started_at)
-           VALUES ($1,$2,$3,$4,$5, least(now(), greatest(now() - interval '7 days', coalesce($6::timestamptz, now()))))
+           VALUES ($1,$2,$3,$4,$5, least(now(), greatest(now() - interval '168 hours', coalesce($6::timestamptz, now()))))
            ON CONFLICT (id) DO NOTHING`,
           [clientId, p.rows[0].practice_id, patient.id, programId, p.rows[0].version, startedAt ?? null],
         );
