@@ -75,3 +75,46 @@ test('a patient cannot print someone else’s programme', async ({ page }) => {
   await expect(page.getByRole('alert')).toBeVisible();
   await expect(page.getByRole('article')).toHaveCount(0);
 });
+
+test('therapist prints a progress report; patient comments only when chosen', async ({ page }) => {
+  const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
+  await db.connect();
+  const { rows } = await db.query(`SELECT s.patient_id, s.feedback FROM workout_sessions s JOIN patients pt ON pt.id = s.patient_id
+     WHERE pt.email = 'patient@praktijk-a.test' AND s.completed_at > now() - interval '8 weeks' AND coalesce(s.feedback, '') <> '' ORDER BY s.completed_at DESC LIMIT 1`);
+  const [pt] = (await db.query(`SELECT id FROM patients WHERE email = 'patient@praktijk-a.test'`)).rows;
+  await db.end();
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto(`/app/patienten/${pt.id}`);
+  await page.getByRole('button', { name: 'Acties' }).click();
+  await page.getByRole('button', { name: 'Voortgangsrapport (PDF)' }).click();
+  await expect(page).toHaveURL(new RegExp(`/app/patienten/${pt.id}/rapport$`));
+  await expect(page.getByRole('heading', { level: 1, name: 'Emma de Jong' })).toBeVisible();
+  for (const h of ['Samenvatting', 'Therapietrouw per week', 'Sessies', 'Actieve programma’s']) await expect(page.getByRole('heading', { name: h })).toBeVisible();
+  await expect(page.getByText(/geplande dagen/).first()).toBeVisible();
+  const comment = rows[0]?.feedback as string | undefined;
+  if (comment) {
+    const quote = page.getByText(comment.slice(0, 30), { exact: false });
+    await expect(quote).toHaveCount(0);
+    await page.getByLabel('Opmerkingen van de patiënt opnemen').check();
+    await expect(quote.first()).toBeVisible();
+  }
+  await page.getByLabel('Periode').selectOption('4');
+  await expect(page).toHaveURL(/weken=4/);
+  await expect(page.getByText('(4 weken)')).toBeVisible();
+  await expectAccessible(page, 'progress report');
+  await page.screenshot({ path: `${SHOTS}/progress-report.png`, fullPage: true });
+  await page.emulateMedia({ media: 'print' });
+  await expect(page.getByRole('button', { name: 'Afdrukken of PDF' })).toBeHidden();
+  fs.writeFileSync(`${SHOTS}/voortgangsrapport.pdf`, await page.pdf({ format: 'A4' }));
+});
+
+test('a therapist of another practice cannot open the report', async ({ page }) => {
+  const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
+  await db.connect();
+  const [pt] = (await db.query(`SELECT id FROM patients WHERE email = 'patient@praktijk-a.test'`)).rows;
+  await db.end();
+  await login(page, 'eigenaar@praktijk-b.test');
+  await page.goto(`/app/patienten/${pt.id}/rapport`);
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Emma de Jong' })).toHaveCount(0);
+});

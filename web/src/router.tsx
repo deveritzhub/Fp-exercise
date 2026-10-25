@@ -31,6 +31,7 @@ const PatientExercisePage = named(() => import('@/pages/patient/SessionPlayer'),
 const PatientProgress = named(() => import('@/pages/patient/PatientProgress'), 'PatientProgress');
 const ProgramPrintPage = named(() => import('@/pages/PrintPages'), 'ProgramPrintPage');
 const PatientProgramPrintPage = named(() => import('@/pages/PrintPages'), 'PatientProgramPrintPage');
+const ProgressReportPage = named(() => import('@/pages/therapist/ProgressReportPage'), 'ProgressReportPage');
 const AdminPage = named(() => import('@/pages/admin/AdminPage'), 'AdminPage');
 
 const S = ({ children }: { children: ReactNode }) => <Suspense fallback={<Spinner className="min-h-[50vh]" />}>{children}</Suspense>;
@@ -88,6 +89,7 @@ export const router = createBrowserRouter([
           { index: true, element: <S><DashboardPage /></S> },
           { path: 'patienten', element: <S><PatientsPage /></S> },
           { path: 'patienten/:id', element: <S><PatientDetailPage /></S> },
+          { path: 'patienten/:id/rapport', element: <S><ProgressReportPage /></S> },
           { path: 'oefeningen', element: <S><ExercisesPage /></S> },
           { path: 'oefeningen/nieuw', element: <S><ExerciseFormPage /></S> },
           { path: 'oefeningen/:id', element: <S><ExerciseDetailPage /></S> },

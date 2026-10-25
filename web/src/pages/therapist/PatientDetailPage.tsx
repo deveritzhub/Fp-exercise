@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Archive, ArchiveRestore, Check, ChevronDown, Download, Layers, Mail, MessageSquareText, Pencil, Plus, Send } from 'lucide-react';
+import { Archive, ArchiveRestore, Check, ChevronDown, Download, Layers, Mail, MessageSquareText, Pencil, Plus, Send, FileText } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
 import { fmtDate, fmtDateTime, fmtRelative, pct } from '@/lib/format';
@@ -17,6 +17,7 @@ type Tab = 'overzicht' | 'programmas' | 'sessies' | 'modules' | 'gegevens';
 
 export function PatientDetailPage() {
   const { id = '' } = useParams();
+  const nav = useNavigate();
   const { t, locale } = useI18n();
   const toast = useToast();
   const qc = useQueryClient();
@@ -83,6 +84,7 @@ export function PatientDetailPage() {
               {(close) => (
                 <>
                   <MenuItem icon={<Pencil className="h-4 w-4" />} onClick={() => { close(); setEditing(true); }}>{t('Gegevens bewerken', 'Edit details')}</MenuItem>
+                  <MenuItem icon={<FileText className="h-4 w-4" />} onClick={() => { close(); nav(`/app/patienten/${id}/rapport`); }}>{t('Voortgangsrapport (PDF)', 'Progress report (PDF)')}</MenuItem>
                   <MenuItem icon={<Download className="h-4 w-4" />} onClick={() => { close(); window.open(`/api/patients/${id}/export`, '_blank'); }}>{t('Gegevens exporteren (AVG)', 'Export data (GDPR)')}</MenuItem>
                   {pt.archived ? (
                     <MenuItem icon={<ArchiveRestore className="h-4 w-4" />} onClick={() => { close(); act(() => api.post(`/patients/${id}/restore`), t('Patiënt hersteld', 'Patient restored')); }}>{t('Herstellen', 'Restore')}</MenuItem>
