@@ -73,9 +73,9 @@ rustige thumbnail-tinten. `prefers-reduced-motion` zet alle animaties uit.
 
 ## Resterende visuele inconsistenties
 
-1. Android-schil (`android/`) en de PNG-app-iconen (`web/public/icon-*.png`, `apple-touch-icon.png`)
-   hebben nog de oude olijfkleur. Bewust niet aangepast: de schil wijzigen vraagt een nieuwe
-   Play-versie. `favicon.svg`, `theme-color` en het manifest zijn wel bijgewerkt.
+1. ~~Android-schil en PNG-iconen in de oude kleur~~: opgelost. Alle iconen, het opstartscherm en de
+   Play Store-afbeeldingen komen nu uit `scripts/make-icons.mjs` (bosgroen/salie); de Android-kleuren
+   staan in `android/gradle.properties`. De app staat nog niet in Google Play, dus dit kost geen extra versie.
 2. Oefeningen zonder eigen media tonen een monogram op een salie-tint; echte opnames ontbreken nog.
 3. Grafiekbalken gebruiken het accent op 70 %; bij een eigen praktijkkleur verandert die mee.
 4. In de screenshots over de hele pagina staan de vaste zijbalk en de opslaanbalk halverwege en
