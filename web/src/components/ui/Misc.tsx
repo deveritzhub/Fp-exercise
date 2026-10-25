@@ -82,7 +82,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, className }: { t
   );
 }
 
-export function Segmented<T extends string>({ options, value, onChange, label, size = 'md' }: { options: { value: T; label: ReactNode }[]; value: T; onChange: (v: T) => void; label: string; size?: 'sm' | 'md' }) {
+export function Segmented<T extends string>({ options, value, onChange, label, size = 'md' }: { options: { value: T; label: ReactNode }[]; value: T; onChange: (v: T) => void; label: string; size?: 'sm' | 'md' | 'lg' }) {
   return (
     <div role="radiogroup" aria-label={label} className="inline-flex rounded-lg border border-line bg-ink-50 p-0.5">
       {options.map((o) => (
@@ -94,7 +94,7 @@ export function Segmented<T extends string>({ options, value, onChange, label, s
           onClick={() => onChange(o.value)}
           className={cn(
             'rounded-md font-medium transition-all',
-            size === 'sm' ? 'px-2.5 py-1 text-[12.5px]' : 'px-3 py-1.5 text-[13px]',
+            size === 'sm' ? 'px-2.5 py-1 text-[12.5px]' : size === 'lg' ? 'min-h-[44px] flex-1 px-2 py-1 text-[15px] leading-tight' : 'px-3 py-1.5 text-[13px]',
             value === o.value ? 'bg-white text-ink-950 shadow-xs' : 'text-ink-500 hover:text-ink-800',
           )}
         >

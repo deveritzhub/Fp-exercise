@@ -5,11 +5,12 @@ import { api, ApiError } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
 import { useLogout, useSession } from '@/lib/session';
 import { useDocumentMeta } from '@/lib/meta';
-import { Button, Card, CardHeader, Input, Notice, PageHeader, Select, useToast } from '@/components/ui';
+import { Button, Card, CardHeader, Input, Notice, PageHeader, Segmented, Select, useToast } from '@/components/ui';
 import { Link } from 'react-router-dom';
 import { MfaCard } from '@/components/app/Mfa';
 import { ReminderCard } from '@/components/app/Reminders';
 import { MyDataCard } from '@/components/patient/Modules';
+import { useTextSize, type TextSize } from '@/lib/textSize';
 
 export function AccountPage({ patient }: { patient?: boolean }) {
   const { t, locale, setLocale } = useI18n();
@@ -65,6 +66,7 @@ export function AccountPage({ patient }: { patient?: boolean }) {
       {!patient && <MfaCard />}
       {patient && (
         <>
+          <TextSizeCard />
           <ReminderCard />
           <MyDataCard />
           <Card className="p-5 text-[14px] leading-relaxed text-ink-600">
@@ -76,5 +78,29 @@ export function AccountPage({ patient }: { patient?: boolean }) {
         </>
       )}
     </div>
+  );
+}
+
+function TextSizeCard() {
+  const { t } = useI18n();
+  const [size, setSize] = useTextSize();
+  return (
+    <Card className="p-5">
+      <h2 className="font-bold text-ink-900">{t('Tekstgrootte', 'Text size')}</h2>
+      <p className="mb-3 mt-0.5 text-[14px] text-ink-600">{t('Alleen op dit apparaat.', 'On this device only.')}</p>
+      <div className="flex [&>div]:w-full [&>div]:flex">
+        <Segmented<TextSize>
+          size="lg"
+          label={t('Tekstgrootte', 'Text size')}
+          value={size}
+          onChange={setSize}
+          options={[
+            { value: 'normal', label: t('Normaal', 'Normal') },
+            { value: 'large', label: t('Groot', 'Large') },
+            { value: 'xlarge', label: t('Extra groot', 'Extra large') },
+          ]}
+        />
+      </div>
+    </Card>
   );
 }

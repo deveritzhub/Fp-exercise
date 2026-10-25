@@ -57,6 +57,9 @@
   .input[aria-invalid='true'] { @apply border-bad focus:ring-bad/20; }
   /* Patient app: every field is a comfortable touch target (44 px). */
   .patient-app .input { min-height: 44px; font-size: 16px; }
+  /* Patient text size (lib/textSize.ts): zoom scales text and touch targets together and reflows. */
+  html[data-text-size='large'] .patient-app main { zoom: 1.12; }
+  html[data-text-size='xlarge'] .patient-app main { zoom: 1.25; }
   .muted { @apply text-ink-500; }
   .link { @apply font-medium text-accent underline-offset-4 hover:underline; }
   .skeleton { @apply relative overflow-hidden rounded-md bg-ink-100; }
