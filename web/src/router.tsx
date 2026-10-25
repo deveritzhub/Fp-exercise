@@ -5,13 +5,20 @@ import { useI18n } from '@/lib/i18n';
 import { MarketingLayout } from '@/layouts/MarketingLayout';
 import { RequireAuth } from '@/layouts/Guards';
 import { HomePage } from '@/pages/marketing/HomePage';
-import { ContactPage, CookiesPage, FeaturesPage, HowItWorksPage, PricingPage, PrivacyPage, TermsPage } from '@/pages/marketing/MarketingPages';
-import { DemoPage } from '@/pages/marketing/DemoPage';
 import { ForgotPasswordPage, InvitePage, LoginPage, MfaRequiredPage, ResetPasswordPage, VerifyEmailPage } from '@/pages/auth/AuthPages';
 
 // Authenticated areas are code-split so the public website stays light.
 const named = <K extends string>(loader: () => Promise<Record<K, React.ComponentType<any>>>, name: K) =>
   lazy(() => loader().then((m) => ({ default: m[name] })));
+// Secondary marketing pages: own chunks, so the app start (login, patient app) stays small.
+const FeaturesPage = named(() => import('@/pages/marketing/MarketingPages'), 'FeaturesPage');
+const HowItWorksPage = named(() => import('@/pages/marketing/MarketingPages'), 'HowItWorksPage');
+const PricingPage = named(() => import('@/pages/marketing/MarketingPages'), 'PricingPage');
+const ContactPage = named(() => import('@/pages/marketing/MarketingPages'), 'ContactPage');
+const PrivacyPage = named(() => import('@/pages/marketing/MarketingPages'), 'PrivacyPage');
+const TermsPage = named(() => import('@/pages/marketing/MarketingPages'), 'TermsPage');
+const CookiesPage = named(() => import('@/pages/marketing/MarketingPages'), 'CookiesPage');
+const DemoPage = named(() => import('@/pages/marketing/DemoPage'), 'DemoPage');
 const TherapistLayout = named(() => import('@/layouts/TherapistLayout'), 'TherapistLayout');
 const PatientLayout = named(() => import('@/layouts/PatientLayout'), 'PatientLayout');
 const DashboardPage = named(() => import('@/pages/therapist/DashboardPage'), 'DashboardPage');
@@ -65,14 +72,14 @@ export const router = createBrowserRouter([
         element: <MarketingLayout />,
         children: [
           { path: '/', element: <HomePage /> },
-          { path: '/functies', element: <FeaturesPage /> },
-          { path: '/hoe-het-werkt', element: <HowItWorksPage /> },
-          { path: '/prijzen', element: <PricingPage /> },
-          { path: '/demo', element: <DemoPage /> },
-          { path: '/contact', element: <ContactPage /> },
-          { path: '/privacy', element: <PrivacyPage /> },
-          { path: '/voorwaarden', element: <TermsPage /> },
-          { path: '/cookies', element: <CookiesPage /> },
+          { path: '/functies', element: <S><FeaturesPage /></S> },
+          { path: '/hoe-het-werkt', element: <S><HowItWorksPage /></S> },
+          { path: '/prijzen', element: <S><PricingPage /></S> },
+          { path: '/demo', element: <S><DemoPage /></S> },
+          { path: '/contact', element: <S><ContactPage /></S> },
+          { path: '/privacy', element: <S><PrivacyPage /></S> },
+          { path: '/voorwaarden', element: <S><TermsPage /></S> },
+          { path: '/cookies', element: <S><CookiesPage /></S> },
           { path: '*', element: <NotFound /> },
         ],
       },
