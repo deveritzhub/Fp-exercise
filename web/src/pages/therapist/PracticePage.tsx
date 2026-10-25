@@ -7,7 +7,7 @@ import { useSession } from '@/lib/session';
 import { fmtDateTime, fmtDate } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
 import { accentVars, DEFAULT_ACCENT } from '@/lib/accent';
-import { Avatar, Badge, Button, buttonClass, Card, CardHeader, Dialog, EmptyState, Input, Notice, PageHeader, ProgressBar, Select, Spinner, Tabs, useToast } from '@/components/ui';
+import { Avatar, Badge, Button, buttonClass, Card, CardHeader, Dialog, EmptyState, Input, Notice, PageHeader, ProgressBar, Select, Spinner, Tabs, useToast, TableScroll } from '@/components/ui';
 import type { Member, Role } from '@/lib/types';
 import { FeedbackList } from '@/components/app/Feedback';
 
@@ -334,7 +334,7 @@ function Audit() {
   return (
     <Card>
       <CardHeader title={t('Auditlog', 'Audit log')} description={t('Gevoelige handelingen binnen je praktijk (laatste 200). Bevat geen klinische inhoud.', 'Sensitive operations in your practice (last 200). Contains no clinical content.')} />
-      <div className="overflow-x-auto">
+      <TableScroll label={t('Auditlog', 'Audit log')}>
         <table className="w-full min-w-[560px] text-[13px]">
           <thead className="border-b border-line text-left text-[12px] text-ink-500"><tr><th className="px-5 py-2 font-medium">{t('Tijdstip', 'Time')}</th><th className="px-3 py-2 font-medium">{t('Gebruiker', 'User')}</th><th className="px-3 py-2 font-medium">{t('Actie', 'Action')}</th><th className="px-3 py-2 font-medium">{t('Object', 'Object')}</th></tr></thead>
           <tbody className="divide-y divide-line">
@@ -343,7 +343,7 @@ function Audit() {
             ))}
           </tbody>
         </table>
-      </div>
+      </TableScroll>
     </Card>
   );
 }

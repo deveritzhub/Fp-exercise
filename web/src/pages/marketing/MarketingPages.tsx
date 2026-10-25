@@ -6,7 +6,7 @@ import { api, ApiError } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
-import { Badge, Button, ButtonLink, Checkbox, Input, Notice, Select, Segmented, Textarea } from '@/components/ui';
+import { Badge, Button, ButtonLink, Checkbox, Input, Notice, Select, Segmented, Textarea, TableScroll } from '@/components/ui';
 
 function Hero({ eyebrow, title, intro }: { eyebrow: string; title: string; intro: string }) {
   return (
@@ -279,7 +279,7 @@ export function CookiesPage() {
     <LegalDraft title={t('Cookieverklaring', 'Cookie notice')}>
       <p>{t('[Concept] FP Exercise gebruikt alleen functionele cookies en lokale opslag die nodig zijn om de dienst te laten werken. Er worden geen tracking- of advertentiecookies geplaatst, en daarom tonen we geen cookiebanner.', '[Draft] FP Exercise only uses functional cookies and local storage needed to run the service. No tracking or advertising cookies are set, which is why we do not show a cookie banner.')}</p>
       <h2>{t('Overzicht', 'Overview')}</h2>
-      <div className="overflow-x-auto">
+      <TableScroll label={t('Overzicht cookies', 'Cookie overview')}>
         <table className="w-full text-[14px]">
           <thead className="text-left text-ink-500"><tr><th className="py-2 pr-4 font-medium">{t('Naam', 'Name')}</th><th className="py-2 pr-4 font-medium">{t('Doel', 'Purpose')}</th><th className="py-2 font-medium">{t('Bewaartermijn', 'Retention')}</th></tr></thead>
           <tbody className="divide-y divide-line">
@@ -288,7 +288,7 @@ export function CookiesPage() {
             <tr><td className="py-2 pr-4 font-mono">fp.practice</td><td className="py-2 pr-4">{t('Actieve praktijk (lokale opslag)', 'Active practice (local storage)')}</td><td className="py-2">{t('Tot verwijderd', 'Until deleted')}</td></tr>
           </tbody>
         </table>
-      </div>
+      </TableScroll>
     </LegalDraft>
   );
 }

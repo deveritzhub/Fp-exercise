@@ -7,7 +7,7 @@ import { errorMessage, useI18n } from '@/lib/i18n';
 import { fmtDate, fmtDateTime, fmtRelative, pct } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
-import { Avatar, Badge, Bars, Button, ButtonLink, Card, CardHeader, Dialog, EmptyState, ErrorState, Notice, PageHeader, Popover, MenuItem, Skeleton, Sparkline, Spinner, Stat, Tabs, useToast } from '@/components/ui';
+import { Avatar, Badge, Bars, Button, ButtonLink, Card, CardHeader, Dialog, EmptyState, ErrorState, Notice, PageHeader, Popover, MenuItem, Skeleton, Sparkline, Spinner, Stat, Tabs, useToast, TableScroll } from '@/components/ui';
 import { ProgramStatusBadge } from '@/components/app/StatusBadge';
 import { PatientFormDialog } from './PatientsPage';
 import { OpenRedFlagsBanner, PatientModulesTab } from './PatientModulesTab';
@@ -171,7 +171,7 @@ function Overview({ progress, programs }: { progress?: Progress; programs: Patie
         {progress.perExercise.length === 0 ? (
           <EmptyState title={t('Nog geen geregistreerde oefeningen', 'No logged exercises yet')} />
         ) : (
-          <div className="overflow-x-auto">
+          <TableScroll label={t('Oefenscores per oefening', 'Exercise scores per exercise')}>
             <table className="w-full min-w-[560px] text-sm">
               <thead className="border-b border-line text-left text-[12px] text-ink-500">
                 <tr><th className="px-5 py-2 font-medium">{t('Oefening', 'Exercise')}</th><th className="px-3 py-2 font-medium">{t('Uitgevoerd', 'Completed')}</th><th className="px-3 py-2 font-medium">{t('Gem. zwaarte', 'Avg. difficulty')}</th><th className="px-3 py-2 font-medium">{t('Gem. pijn', 'Avg. pain')}</th><th className="px-3 py-2 font-medium">{t('Max. pijn', 'Max. pain')}</th></tr>
@@ -188,7 +188,7 @@ function Overview({ progress, programs }: { progress?: Progress; programs: Patie
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         )}
       </Card>
     </div>

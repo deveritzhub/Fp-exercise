@@ -7,7 +7,7 @@ import { errorMessage, useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { fmtRelative, pct } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
-import { Avatar, Badge, Button, Card, Dialog, EmptyState, ErrorState, Input, Notice, PageHeader, ProgressBar, Segmented, Select, Skeleton, useDebounced, useToast } from '@/components/ui';
+import { Avatar, Badge, Button, Card, Dialog, EmptyState, ErrorState, Input, Notice, PageHeader, ProgressBar, Segmented, Select, Skeleton, useDebounced, useToast, TableScroll } from '@/components/ui';
 import type { PatientListItem } from '@/lib/types';
 
 export function PatientsPage() {
@@ -49,7 +49,7 @@ export function PatientsPage() {
         ) : list.data.items.length === 0 ? (
           <EmptyState icon={<Users className="h-5 w-5" />} title={dq ? t('Geen patiënten gevonden', 'No patients found') : t('Nog geen patiënten', 'No patients yet')} description={dq ? t('Probeer een andere zoekterm.', 'Try a different search term.') : t('Voeg een patiënt toe om een programma voor te schrijven.', 'Add a patient to prescribe a programme.')} action={!dq && <Button onClick={() => setParams({ nieuw: '1' })} icon={<UserPlus className="h-4 w-4" />}>{t('Nieuwe patiënt', 'New patient')}</Button>} />
         ) : (
-          <div className="overflow-x-auto">
+          <TableScroll label={t('Patiëntenlijst', 'Patient list')}>
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="border-b border-line bg-ink-50/50 text-[12px] font-medium text-ink-500">
                 <tr>
@@ -93,7 +93,7 @@ export function PatientsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         )}
       </Card>
       <PatientFormDialog open={creating} onClose={() => setParams({})} />

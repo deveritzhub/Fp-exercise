@@ -8,7 +8,7 @@ import { useLogout, useSession } from '@/lib/session';
 import { fmtDate } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
 import { Logo, LocaleSwitch } from '@/components/app/Brand';
-import { Badge, Button, Card, CardHeader, Dialog, Input, Notice, PageHeader, Select, Spinner, Stat, useToast } from '@/components/ui';
+import { Badge, Button, Card, CardHeader, Dialog, Input, Notice, PageHeader, Select, Spinner, Stat, useToast, TableScroll } from '@/components/ui';
 
 type PracticeRow = { id: string; name: string; slug: string; city: string | null; planCode: string; subscriptionStatus: string; createdAt: string; archived: boolean; members: number; activePatients: number; customExercises: number };
 
@@ -58,7 +58,7 @@ export function AdminPage() {
         <Card>
           <CardHeader title={t('Alle praktijken', 'All practices')} />
           {!q.data ? <Spinner /> : (
-            <div className="overflow-x-auto">
+            <TableScroll label={t('Alle praktijken', 'All practices')}>
               <table className="w-full min-w-[720px] text-sm">
                 <thead className="border-b border-line text-left text-[12px] text-ink-500"><tr><th className="px-5 py-2 font-medium">{t('Praktijk', 'Practice')}</th><th className="px-3 py-2 font-medium">{t('Abonnement', 'Plan')}</th><th className="px-3 py-2 font-medium">{t('Team', 'Team')}</th><th className="px-3 py-2 font-medium">{t('Patiënten', 'Patients')}</th><th className="px-3 py-2 font-medium">{t('Sinds', 'Since')}</th><th className="px-3 py-2" /></tr></thead>
                 <tbody className="divide-y divide-line">
@@ -83,7 +83,7 @@ export function AdminPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableScroll>
           )}
         </Card>
         <div className="mt-6"><FeedbackList /></div>

@@ -229,3 +229,15 @@ export function MenuItem({ icon, children, onClick, danger }: { icon?: ReactNode
     </button>
   );
 }
+
+/**
+ * Wide table that scrolls sideways on narrow screens. Focusable with a name, so keyboard users can
+ * scroll it too (WCAG 2.1.1).
+ */
+export function TableScroll({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
+  return (
+    <div role="region" aria-label={label} tabIndex={0} className={cn('overflow-x-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50', className)}>
+      {children}
+    </div>
+  );
+}

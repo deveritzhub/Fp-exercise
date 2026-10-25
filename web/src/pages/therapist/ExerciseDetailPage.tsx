@@ -8,7 +8,7 @@ import { useSession } from '@/lib/session';
 import { fmtDate } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { useDocumentMeta, useLabels } from '@/lib/meta';
-import { Badge, Button, ButtonLink, Card, Dialog, ErrorState, Notice, Skeleton, useToast } from '@/components/ui';
+import { Badge, Button, ButtonLink, Card, Dialog, ErrorState, Notice, Skeleton, useToast, TableScroll } from '@/components/ui';
 import { MediaUpload } from './ExerciseFormPage';
 import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import { Difficulty } from '@/components/app/StatusBadge';
@@ -377,7 +377,7 @@ function Variants({ e }: { e: Exercise }) {
     <section aria-labelledby="variants-title">
       <h2 id="variants-title" className="mb-1 flex items-center gap-1.5 font-sans text-[15px] font-semibold text-ink-900"><Layers className="h-4 w-4" />{t(`Varianten van deze oefening (${all.length})`, `Variants of this exercise (${all.length})`)}</h2>
       <p className="mb-2 text-[12.5px] text-ink-600">{t('Zelfde naam, andere bron of invulling. Verschillen zijn gemarkeerd; er wordt niets samengevoegd.', 'Same name, different source or content. Differences are highlighted; nothing is merged.')}</p>
-      <div className="overflow-x-auto rounded-xl border border-line bg-white">
+      <TableScroll label={t('Varianten vergelijken', 'Compare variants')} className="rounded-xl border border-line bg-white">
         <table className="w-full min-w-[28rem] text-left text-[13px]">
           <thead>
             <tr className="border-b border-line">
@@ -401,7 +401,7 @@ function Variants({ e }: { e: Exercise }) {
             })}
           </tbody>
         </table>
-      </div>
+      </TableScroll>
     </section>
   );
 }
