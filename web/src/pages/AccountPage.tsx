@@ -74,7 +74,7 @@ export function AccountPage({ patient }: { patient?: boolean }) {
             {t('Je oefengegevens worden alleen gedeeld met je eigen praktijk. Vragen over je gegevens? Neem contact op met je fysiotherapeut.', 'Your exercise data is only shared with your own practice. Questions about your data? Contact your physiotherapist.')}{' '}
             <Link to="/privacy" className="link">{t('Privacyverklaring', 'Privacy notice')}</Link>
           </Card>
-          <Button variant="secondary" size="xl" className="w-full" icon={<LogOut className="h-5 w-5" />} onClick={logout}>{t('Uitloggen', 'Log out')}</Button>
+          <Button variant="secondary" size="xl" className="w-full" icon={<LogOut className="h-5 w-5" />} onClick={() => logout()}>{t('Uitloggen', 'Log out')}</Button>
         </>
       )}
     </div>

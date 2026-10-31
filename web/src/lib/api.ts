@@ -24,8 +24,10 @@ export const setActivePractice = (id: string) => {
   }
 };
 
-async function request<T>(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, signal?: AbortSignal, background = false): Promise<T> {
   const headers: Record<string, string> = { 'x-requested-with': 'fp' };
+  // Polling is not activity: it must not keep an idle staff login alive.
+  if (background) headers['x-fp-background'] = '1';
   const practice = getActivePractice();
   if (practice) headers['x-practice-id'] = practice;
   let payload: BodyInit | undefined;
@@ -57,6 +59,8 @@ function safeJson(t: string) {
 
 export const api = {
   get: <T>(p: string, signal?: AbortSignal) => request<T>('GET', p, undefined, signal),
+  /** GET from a timer (polling): does not count as activity. */
+  poll: <T>(p: string) => request<T>('GET', p, undefined, undefined, true),
   post: <T = { ok: boolean }>(p: string, b: unknown = {}) => request<T>('POST', p, b),
   put: <T = { ok: boolean }>(p: string, b: unknown = {}) => request<T>('PUT', p, b),
   patch: <T = { ok: boolean }>(p: string, b: unknown = {}) => request<T>('PATCH', p, b),

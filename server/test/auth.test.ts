@@ -111,3 +111,45 @@ describe('authentication', () => {
     expect(res.headers.get('cache-control')).toBe('no-store');
   });
 });
+
+describe('idle timeout (staff)', () => {
+  const age = async (c: Client, minutes: number) => {
+    const token = c.cookie!.split(';')[0].split('=')[1];
+    const { createHash } = await import('node:crypto');
+    await authPool.query(`UPDATE auth_sessions SET last_seen_at = now() - make_interval(mins => $2) WHERE token_hash = $1`, [
+      createHash('sha256').update(token).digest('hex'),
+      minutes,
+    ]);
+  };
+
+  it('ends a staff session after 30 minutes without activity', async () => {
+    const c = await login('therapistA');
+    expect((await c.get('/auth/me')).body.user.idleMinutes).toBe(30);
+    await age(c, 29);
+    expect((await c.get('/auth/me')).body.user).not.toBeNull();
+    await age(c, 31);
+    expect((await c.get('/auth/me')).body.user).toBeNull();
+    expect((await c.get('/dashboard')).status).toBe(401);
+  });
+
+  it('background polling does not keep a staff session alive', async () => {
+    const c2 = await login('therapistA');
+    await age(c2, 25);
+    expect((await c2.get('/me/notifications', { 'x-fp-background': '1' })).status).toBe(200);
+    await c2.get('/me/notifications', { 'x-fp-background': '1' });
+    const token = c2.cookie!.split(';')[0].split('=')[1];
+    const { createHash } = await import('node:crypto');
+    const { rows } = await authPool.query(`SELECT extract(epoch FROM now() - last_seen_at) / 60 AS idle FROM auth_sessions WHERE token_hash = $1`, [createHash('sha256').update(token).digest('hex')]);
+    expect(Number(rows[0].idle)).toBeGreaterThan(24);
+    await c2.get('/auth/me');
+    const after = await authPool.query(`SELECT extract(epoch FROM now() - last_seen_at) / 60 AS idle FROM auth_sessions WHERE token_hash = $1`, [createHash('sha256').update(token).digest('hex')]);
+    expect(Number(after.rows[0].idle)).toBeLessThan(1);
+  });
+
+  it('patients have no idle limit (the app on their own phone)', async () => {
+    const c = await login('patientA');
+    expect((await c.get('/auth/me')).body.user.idleMinutes).toBeNull();
+    await age(c, 600);
+    expect((await c.get('/auth/me')).body.user).not.toBeNull();
+  });
+});

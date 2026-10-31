@@ -9,6 +9,8 @@ export type SessionUser = {
   mfaEnabled: boolean;
   mfaRequired: boolean;
   memberships: { practiceId: string; practiceName: string; practiceSlug: string; role: Role; accent?: string | null }[];
+  /** Staff only: minutes without activity before the login ends. */
+  idleMinutes?: number | null;
   patient: { id: string; practiceId: string; practiceName: string; accent?: string | null } | null;
 };
 

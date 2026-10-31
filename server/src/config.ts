@@ -20,6 +20,8 @@ export const config = {
   storageDir: path.resolve(process.env.STORAGE_DIR ?? './storage'),
   mailTransport: process.env.MAIL_TRANSPORT ?? 'outbox',
   sessionTtlHours: Number(process.env.SESSION_TTL_HOURS ?? 12),
+  /** Staff (therapists, admins) are logged out after this many minutes without activity; 0 = off. */
+  staffIdleMinutes: Number(process.env.STAFF_IDLE_MINUTES ?? 30),
   /** Public demo deployment with synthetic data: invite links are shown on screen because no real e-mail is sent. */
   demoMode: process.env.DEMO_MODE === '1',
   maxUploadBytes: Number(process.env.MAX_UPLOAD_MB ?? 200) * 1024 * 1024,
