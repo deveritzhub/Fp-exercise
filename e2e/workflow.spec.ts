@@ -60,6 +60,9 @@ test('patient activates account on a phone and completes a session', async ({ br
   await page.getByLabel('Nieuw wachtwoord').fill('Eva-wachtwoord-2026');
   await page.getByLabel('Herhaal wachtwoord').fill('Eva-wachtwoord-2026');
   await page.getByRole('button', { name: 'Account activeren' }).click();
+  // A new patient first sees the sports-hero creator; postpone it.
+  await page.waitForURL(/\/p\/held\/nieuw$/);
+  await page.getByRole('link', { name: 'Later' }).click();
   await page.waitForURL(/\/p$/);
   await expect(page.getByRole('heading', { name: 'E2E — knie basis' })).toBeVisible();
   await expectAccessible(page, 'patient-home');

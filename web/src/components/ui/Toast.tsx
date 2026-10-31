@@ -20,8 +20,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div key={t.id} role="status" className={cn('pointer-events-auto flex max-w-md animate-slide-up items-center gap-3 rounded-xl border bg-ink-950 px-4 py-3 text-sm text-white shadow-pop', t.tone === 'bad' ? 'border-bad/40' : 'border-ink-800')}>
             {t.tone === 'ok' ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" /> : <AlertCircle className="h-4 w-4 shrink-0 text-red-300" />}
             <span>{t.text}</span>
-            <button type="button" aria-label="Close" className="ml-1 text-ink-400 hover:text-white" onClick={() => setItems((x) => x.filter((i) => i.id !== t.id))}>
-              <X className="h-3.5 w-3.5" />
+            <button type="button" aria-label="Sluiten / Close" className="-my-2 -mr-2 ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-300 hover:bg-white/10 hover:text-white" onClick={() => setItems((x) => x.filter((i) => i.id !== t.id))}>
+              <X className="h-4 w-4" aria-hidden />
             </button>
           </div>
         ))}

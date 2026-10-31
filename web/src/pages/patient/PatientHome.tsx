@@ -13,6 +13,7 @@ import { ConsentToggle, ModeSwitch, StartTemplates, useModes, type Mode } from '
 import type { Adherence, Notification, Program } from '@/lib/types';
 import type { DayState } from '@shared/adherence';
 import { cn } from '@/lib/cn';
+import { HeroHomeCard } from '@/pages/patient/HeroPages';
 import { Check, Flame } from 'lucide-react';
 
 export type PatientHomeData = {
@@ -60,6 +61,8 @@ export function PatientHome() {
         <p className="text-[15px] text-ink-500">{new Intl.DateTimeFormat(locale === 'nl' ? 'nl-NL' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</p>
         <h1 className="mt-0.5 text-[28px] font-bold leading-tight">{greeting(locale)}, {d.patient.firstName}</h1>
       </div>
+
+      <HeroHomeCard />
 
       {showModes && <ModeSwitch value={mode} onChange={pickMode} />}
       {showModes && mode !== 'revalidatie' && modes.data && (

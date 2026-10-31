@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X, Printer } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X, Printer, Trophy } from 'lucide-react';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { useI18n, describeError } from '@/lib/i18n';
 import { toISODate } from '@shared/adherence';
 import { itemsForDate } from '@shared/schedule';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
+import { XP } from '@shared/hero';
 import { useCountdown } from '@/lib/useCountdown';
 import { isNetworkError, postOrQueue } from '@/lib/outbox';
 import { useSession } from '@/lib/session';
@@ -119,6 +120,7 @@ export function SessionPlayer() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedOffline, setSavedOffline] = useState(false);
+  const [earned, setEarned] = useState(0);
   const [leaving, setLeaving] = useState(false);
   const { user } = useSession();
   const uid = user?.id ?? '';
@@ -235,9 +237,11 @@ export function SessionPlayer() {
               try {
                 const how = await postOrQueue(uid, `/patient/sessions/${sessionId}/complete`, { ...s, feedback: s.feedback.trim() || null, completedAt: new Date().toISOString() });
                 if (how === 'queued') setSavedOffline(true);
+                setEarned(XP.session + (s.pain !== null ? XP.painReported : 0));
                 setPhase('done');
                 qc.invalidateQueries({ queryKey: ['patient-home'] });
                 qc.invalidateQueries({ queryKey: ['patient-history'] });
+                qc.invalidateQueries({ queryKey: ['patient-hero'] });
               } catch (e) {
                 setError(describeError(e, locale));
               } finally {
@@ -279,6 +283,11 @@ export function SessionPlayer() {
                 ? t('Goed bezig! Houd de app open: je training wordt automatisch verstuurd zodra je weer internet hebt.', 'Great work! Keep the app open: your workout is sent automatically once you are back online.')
                 : t('Goed bezig. Je fysiotherapeut kan je voortgang en feedback nu bekijken.', 'Great work. Your physiotherapist can now see your progress and feedback.')}
             </p>
+            {earned > 0 && (
+              <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-sand-soft px-4 py-2 font-display text-[17px] font-bold text-sand-ink">
+                <Trophy className="h-5 w-5" aria-hidden />+{earned} XP {t('voor je sportheld', 'for your sports hero')}
+              </p>
+            )}
             <Button size="xl" className="mt-8 w-full max-w-xs" onClick={() => nav('/p')}>{t('Terug naar overzicht', 'Back to overview')}</Button>
           </div>
         )}

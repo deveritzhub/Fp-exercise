@@ -39,7 +39,8 @@ export function useLogout() {
   return useCallback(
     async (reason?: 'inactief') => {
       // A shared device must not keep this person's reminders, cached data or unsent workouts.
-      await forgetDevice();
+      // Never let a stuck service worker keep the person logged in: give it at most 2 seconds.
+      await Promise.race([forgetDevice(), new Promise((r) => setTimeout(r, 2000))]);
       await api.post('/auth/logout').catch(() => undefined);
       qc.clear();
       window.location.assign(reason ? `/login?reden=${reason}` : '/login');

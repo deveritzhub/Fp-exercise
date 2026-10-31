@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { CalendarCheck2, CloudOff, LineChart, RefreshCw, UserRound } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
+import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { CalendarCheck2, CloudOff, LineChart, RefreshCw, Trophy, UserRound } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import type { HeroState } from '@/lib/types';
 import { usePendingCount, useOnline, useOutboxSync } from '@/lib/outbox';
 import { Logo } from '@/components/app/Brand';
 import { FeedbackButton } from '@/components/app/Feedback';
@@ -10,6 +12,8 @@ import { usePracticeAccent } from '@/lib/accent';
 import { useTextSize } from '@/lib/textSize';
 import { useSession } from '@/lib/session';
 import { cn } from '@/lib/cn';
+
+const HERO_LATER_KEY = 'fp.heroLater';
 
 /** Mobile-first shell for patients: large type, bottom tab bar, minimal chrome. */
 export function PatientLayout() {
@@ -32,12 +36,25 @@ export function PatientLayout() {
     void import('@/pages/patient/SessionPlayer');
     void import('@/pages/patient/PatientProgress');
     void import('@/pages/AccountPage');
+    void import('@/pages/patient/HeroPages');
   }, []);
   const inPlayer = loc.pathname.includes('/sessie');
+  // Creating the hero is a focused flow: no tab bar.
+  const inSetup = loc.pathname === '/p/held/nieuw';
+  // First visit: create the sports hero first (once per session it can be postponed with "Later").
+  const hero = useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero'), enabled: !!user?.patient });
+  let later = false;
+  try {
+    later = sessionStorage.getItem(HERO_LATER_KEY) === '1';
+  } catch {
+    /* storage unavailable */
+  }
   if (!user?.patient) return null;
+  if (loc.pathname === '/p' && hero.data && !hero.data.hero && !later) return <Navigate to="/p/held/nieuw" replace />;
   const tabs = [
     { to: '/p', end: true, icon: CalendarCheck2, label: t('Vandaag', 'Today') },
     { to: '/p/voortgang', icon: LineChart, label: t('Voortgang', 'Progress') },
+    { to: '/p/held', icon: Trophy, label: t('Held', 'Hero') },
     { to: '/p/account', icon: UserRound, label: t('Account', 'Account') },
   ];
   return (
@@ -68,9 +85,9 @@ export function PatientLayout() {
       <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : 'px-4 pb-28 pt-5')}>
         <Outlet />
       </main>
-      {!inPlayer && (
+      {!inPlayer && !inSetup && (
         <nav className="fixed inset-x-0 bottom-0 z-30 print:hidden border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label={t('Navigatie', 'Navigation')}>
-          <div className="mx-auto grid max-w-xl grid-cols-3">
+          <div className="mx-auto grid max-w-xl grid-cols-4">
             {tabs.map((tab) => (
               <NavLink key={tab.to} to={tab.to} end={tab.end} className={({ isActive }) => cn('tap group flex min-h-[60px] flex-col items-center justify-center gap-1 py-2 text-[13px]', isActive ? 'font-semibold text-accent' : 'font-medium text-ink-500 hover:text-ink-800')}>
                 {({ isActive }) => (

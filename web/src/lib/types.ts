@@ -160,3 +160,15 @@ export type Progress = {
 export type Member = { userId: string; fullName: string; email: string; role: Role; title: string | null; active: boolean; patients: number; activated: boolean; mfaEnabled: boolean; createdAt: string };
 export type Notification = { id: string; kind: string; title: string; body: string; link: string | null; readAt?: string | null; createdAt: string };
 export type Labelled = { key: string; nl: string; en: string };
+
+/** Sports hero (gamified revalidatie), see shared/hero.ts. */
+export type PainCheckin = { recordedAt: string; entries: { area: string; score: number }[] };
+export type HeroState = {
+  hero: { heroName: string; skin: string; hair: string; outfit: string; sport: string; createdAt: string } | null;
+  painMap: { baseline: PainCheckin | null; current: PainCheckin | null; checkins: number };
+  level: { level: number; xp: number; from: number; to: number; progress: number };
+  badges: { key: string; earned: boolean }[];
+  stats: { consistency: number | null; strength: number | null; mobility: number | null; recovery: number | null };
+  totals: { sessions: number; fullWeeks: number; phasesCompleted: number };
+  chapter: { title: string; no: number; count: number; name: string | null; goal: string | null } | null;
+};

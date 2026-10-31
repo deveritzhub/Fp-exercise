@@ -35,8 +35,9 @@ test('exercise library on a phone: compact cards, filter sheet, preview', async 
   await page.goto('/app/oefeningen');
   await expect(page.getByRole('heading', { name: 'Bekkenbrug', exact: true })).toBeVisible();
   // Compact rows: several exercises fit on one screen.
-  const box = await page.locator('article').first().boundingBox();
-  expect(box!.height).toBeLessThan(130);
+  // Measured on one fixed card: which card comes first depends on the test data.
+  const box = await page.locator('article', { has: page.getByRole('heading', { name: 'Bekkenbrug', exact: true }) }).first().boundingBox();
+  expect(box!.height).toBeLessThan(140); // 140: the redesign raised the minimum text size (12–13 px)
   await page.getByRole('button', { name: 'Filters' }).click();
   const sheet = page.getByRole('dialog', { name: 'Filters' });
   await sheet.getByRole('combobox', { name: 'Niveau' }).selectOption('1');

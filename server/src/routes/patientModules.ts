@@ -228,6 +228,8 @@ patientModules.get('/export', async (c) => {
       consents: await q('SELECT module, granted_at, revoked_at FROM patient_module_consents WHERE patient_id = $1'),
       redFlagReports: await q('SELECT flags, note, created_at, handled_at FROM red_flag_reports WHERE patient_id = $1'),
       deletionRequests: await q('SELECT created_at, handled_at, outcome FROM deletion_requests WHERE patient_id = $1'),
+      hero: (await q('SELECT hero_name, skin, hair, outfit, sport, created_at, updated_at FROM patient_heroes WHERE patient_id = $1'))[0] ?? null,
+      painMap: await q(`SELECT batch, area, score, recorded_at FROM pain_map_entries WHERE patient_id = $1 AND area <> 'none' ORDER BY recorded_at`),
     };
     await audit(tx, user.id, patient.practiceId, 'export_self', 'patient', patient.id);
     return out;
