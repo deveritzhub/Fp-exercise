@@ -2,7 +2,10 @@ import { FeedbackList } from '@/components/app/Feedback';
 import { IdleGuard } from '@/components/app/IdleGuard';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building2, LogOut, Plus, ShieldCheck } from 'lucide-react';
+import { Building2, LogOut, Plus, ShieldCheck, UserRound } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { AccountPage } from '@/pages/AccountPage';
 import { api, ApiError } from '@/lib/api';
 import { errorMessage, useI18n } from '@/lib/i18n';
 import { useLogout, useSession } from '@/lib/session';
@@ -16,8 +19,6 @@ type PracticeRow = { id: string; name: string; slug: string; city: string | null
 export function AdminPage() {
   const { t, locale } = useI18n();
   useDocumentMeta(t('Platformbeheer', 'Platform admin'));
-  const { user } = useSession();
-  const logout = useLogout();
   const qc = useQueryClient();
   const toast = useToast();
   const q = useQuery({ queryKey: ['admin-practices'], queryFn: () => api.get<{ items: PracticeRow[] }>('/admin/practices') });
@@ -29,19 +30,8 @@ export function AdminPage() {
   const items = q.data?.items ?? [];
 
   return (
-    <div className="min-h-screen bg-canvas">
-      <IdleGuard />
-      <header className="border-b border-line bg-white">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-5">
-          <Logo to="/admin" />
-          <Badge tone="info">{t('Platformbeheer', 'Platform admin')}</Badge>
-          <div className="flex-1" />
-          <LocaleSwitch />
-          <span className="hidden text-[13px] text-ink-500 sm:inline">{user?.email}</span>
-          <Button variant="ghost" size="sm" icon={<LogOut className="h-4 w-4" />} onClick={() => logout()}>{t('Uitloggen', 'Log out')}</Button>
-        </div>
-      </header>
-      <main className="mx-auto max-w-6xl px-5 py-8">
+    <AdminShell>
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-5">
         <PageHeader
           title={t('Praktijken', 'Practices')}
           description={t('Beheer van tenants en abonnementen. Geen toegang tot patiënt- of behandelgegevens.', 'Tenant and subscription management. No access to patient or treatment data.')}
@@ -112,6 +102,50 @@ export function AdminPage() {
           <Input label={t('E-mail eigenaar', 'Owner email')} type="email" required value={form.ownerEmail} onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })} />
         </form>
       </Dialog>
+    </AdminShell>
+  );
+}
+
+/** Header for the platform-admin pages: logo, role, account and log out. */
+function AdminShell({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
+  const { user } = useSession();
+  const logout = useLogout();
+  return (
+    <div className="min-h-screen bg-canvas">
+      <IdleGuard />
+      <header className="border-b border-line bg-white">
+        <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:gap-3 sm:px-5">
+          {/* Narrow phones: logo mark only, so the header fits on one line. */}
+          <Logo to="/admin" compact className="min-h-[44px] min-w-[44px] justify-center sm:hidden" />
+          <Logo to="/admin" className="hidden sm:inline-flex" />
+          <Badge tone="info">{t('Platformbeheer', 'Platform admin')}</Badge>
+          <div className="flex-1" />
+          <LocaleSwitch />
+          <span className="hidden text-[13px] text-ink-500 md:inline">{user?.email}</span>
+          <Link to="/admin/account" className="inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-[13.5px] font-medium text-ink-700 hover:bg-ink-100 hover:text-ink-900" aria-label={t('Account', 'Account')}>
+            <UserRound className="h-4 w-4" aria-hidden />
+            <span className="hidden sm:inline">{t('Account', 'Account')}</span>
+          </Link>
+          <Button variant="ghost" size="sm" className="h-10" icon={<LogOut className="h-4 w-4" />} onClick={() => logout()} aria-label={t('Uitloggen', 'Log out')}>
+            <span className="hidden sm:inline">{t('Uitloggen', 'Log out')}</span>
+          </Button>
+        </div>
+      </header>
+      {children}
     </div>
+  );
+}
+
+/** Platform admin: own account (name, password, two-step verification). */
+export function AdminAccountPage() {
+  const { t } = useI18n();
+  return (
+    <AdminShell>
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-5">
+        <Link to="/admin" className="mb-4 inline-flex min-h-[44px] items-center text-[14px] font-medium text-ink-700 hover:text-ink-950">← {t('Praktijken', 'Practices')}</Link>
+        <AccountPage />
+      </main>
+    </AdminShell>
   );
 }

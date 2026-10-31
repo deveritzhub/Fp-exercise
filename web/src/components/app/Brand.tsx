@@ -15,7 +15,7 @@ export function Logo({ className, to = '/', compact }: { className?: string; to?
         </g>
       </svg>
       {!compact && (
-        <span className="flex flex-col leading-none">
+        <span className="flex flex-col whitespace-nowrap leading-none">
           <span className="font-display text-[16px] font-extrabold uppercase tracking-[0.12em] text-brand-forest">FP Exercise</span>
           <span className="mt-1 text-[9.5px] font-medium uppercase tracking-[0.24em] text-ink-500">Functional Performance</span>
         </span>

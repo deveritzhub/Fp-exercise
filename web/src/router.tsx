@@ -40,6 +40,7 @@ const ProgramPrintPage = named(() => import('@/pages/PrintPages'), 'ProgramPrint
 const PatientProgramPrintPage = named(() => import('@/pages/PrintPages'), 'PatientProgramPrintPage');
 const ProgressReportPage = named(() => import('@/pages/therapist/ProgressReportPage'), 'ProgressReportPage');
 const AdminPage = named(() => import('@/pages/admin/AdminPage'), 'AdminPage');
+const AdminAccountPage = named(() => import('@/pages/admin/AdminPage'), 'AdminAccountPage');
 
 const S = ({ children }: { children: ReactNode }) => <Suspense fallback={<Spinner className="min-h-[50vh]" />}>{children}</Suspense>;
 
@@ -123,6 +124,7 @@ export const router = createBrowserRouter([
         ],
       },
       { path: '/admin', element: <RequireAuth kind="admin"><S><AdminPage /></S></RequireAuth> },
+      { path: '/admin/account', element: <RequireAuth kind="admin"><S><AdminAccountPage /></S></RequireAuth> },
     ],
   },
 ]);
