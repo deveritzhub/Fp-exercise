@@ -9,6 +9,7 @@ import { exposeInviteLinks } from '../config';
 import { assertNotPatient, inviteUser } from '../auth/service';
 import { resetForMember } from '../auth/mfa';
 import { importLibrary, libraryFileSchema } from '../lib/libraryImport';
+import { FP_BUNDLES, readFpBundle } from '../lib/fpLibrary';
 
 export const practice = new Hono<AppEnv>();
 
@@ -182,6 +183,28 @@ practice.post('/library-import', async (c) => {
     const r = await importLibrary(tx, practiceId, user.id, file);
     await audit(tx, user.id, practiceId, 'import', 'exercise_library', null, { exercises: r.exercises, templates: r.templates });
     return r;
+  });
+  return c.json(result);
+});
+
+/**
+ * Add (or update) the Functional Performance library shipped with the app: exercises and phased
+ * templates for revalidatie, krachttraining and mobiliteit. Safe to repeat: matched on the ids in
+ * the bundles, so nothing is duplicated.
+ */
+practice.post('/library-import/fp', async (c) => {
+  const { user, practiceId } = requireStaff(c, ['owner', 'admin']);
+  const result = await withUser(user.id, async (tx) => {
+    const total = { exercises: 0, created: 0, updated: 0, templates: 0 };
+    for (const b of FP_BUNDLES) {
+      const r = await importLibrary(tx, practiceId, user.id, readFpBundle(b.file));
+      total.exercises += r.exercises;
+      total.created += r.created;
+      total.updated += r.updated;
+      total.templates += r.templates;
+    }
+    await audit(tx, user.id, practiceId, 'import', 'exercise_library', null, { source: 'fp', exercises: total.exercises, templates: total.templates });
+    return total;
   });
   return c.json(result);
 });

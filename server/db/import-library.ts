@@ -1,21 +1,14 @@
 import 'dotenv/config';
-import fs from 'node:fs';
-import path from 'node:path';
 import pg from 'pg';
-import { importLibrary, libraryFileSchema, linkSharedVideos } from '../src/lib/libraryImport';
+import { importLibrary, linkSharedVideos } from '../src/lib/libraryImport';
+import { FP_BUNDLES, readFpBundle } from '../src/lib/fpLibrary';
 
 /**
  * Loads the Functional Performance library bundles into the demo practice, each bundle once
  * (recorded in library_imports). Later versions are imported by the practice itself
  * (Praktijk → Instellingen) or by adding a new bundle name here.
  */
-const BUNDLES = [
-  { name: 'fp-library-v1', file: 'seed-data/fp-library.json' },
-  // Revalidatie (incl. criteria for shoulder/neck/low back), krachttraining and mobiliteit, with phases.
-  { name: 'fp-app-update-v1', file: 'seed-data/fp-app-update.json' },
-  // Only guideline-backed frameworks: vestibular, MS, ankle dorsiflexion (measurement moments, no thresholds).
-  { name: 'fp-uitbreiding-v2', file: 'seed-data/fp-uitbreiding-v2.json' },
-];
+const BUNDLES = FP_BUNDLES;
 
 export async function importFpLibrary(ownerUrl: string, slug = 'functional-performance-demo') {
   const db = new pg.Client({ connectionString: ownerUrl });
@@ -36,7 +29,7 @@ export async function importFpLibrary(ownerUrl: string, slug = 'functional-perfo
     }
     for (const b of BUNDLES) {
       if (done.has(b.name)) continue;
-      const file = libraryFileSchema.parse(JSON.parse(fs.readFileSync(path.join(import.meta.dirname, b.file), 'utf8')));
+      const file = readFpBundle(b.file);
       await db.query('BEGIN');
       try {
         const r = await importLibrary(db, p.id, p.owner, file);

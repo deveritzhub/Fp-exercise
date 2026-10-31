@@ -257,6 +257,19 @@ function LibraryImport() {
             )}
           </Notice>
         )}
+        <div className="rounded-lg border border-line bg-sage/50 p-4">
+          <p className="text-[14px] font-semibold text-ink-900">{t('Functional Performance-bibliotheek', 'Functional Performance library')}</p>
+          <p className="mt-0.5 text-[13.5px] text-ink-600">{t('Oefeningen en gefaseerde sjablonen voor revalidatie, krachttraining en mobiliteit. Opnieuw toevoegen werkt ze bij, zonder dubbele oefeningen.', 'Exercises and phased templates for rehabilitation, strength training and mobility. Adding again updates them, without duplicates.')}</p>
+          <Button className="mt-3" loading={busy} onClick={async () => {
+            setBusy(true); setError(null); setResult(null);
+            try {
+              setResult(await api.post('/practice/library-import/fp'));
+              qc.invalidateQueries();
+            } catch (err) {
+              setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale));
+            } finally { setBusy(false); }
+          }}>{t('FP-bibliotheek toevoegen', 'Add FP library')}</Button>
+        </div>
         <p className="text-[13.5px] text-ink-600">
           {t('Een nieuwe versie van hetzelfde bestand werkt de bestaande oefeningen en sjablonen bij (op basis van de id’s in het bestand). Er komen geen dubbele oefeningen.', 'A new version of the same file updates existing exercises and templates (matched on the ids in the file). No duplicates are created.')}
         </p>
