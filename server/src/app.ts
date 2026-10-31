@@ -22,6 +22,7 @@ import { publicRoutes } from './routes/public';
 import { feedback } from './routes/feedback';
 import { reminders } from './routes/reminders';
 import { patientModules } from './routes/patientModules';
+import { heroPatient, heroStaff } from './routes/hero';
 import { patientCare, redFlags } from './routes/patientCare';
 
 export function createApp() {
@@ -70,6 +71,8 @@ export function createApp() {
   api.route('/programs', programs);
   api.route('/patient', patientApp);
   api.route('/patient', patientModules);
+  api.route('/patient', heroPatient);
+  api.route('/patients', heroStaff);
   api.route('/dashboard', dashboard);
   api.route('/practice', practice);
   api.route('/admin', admin);

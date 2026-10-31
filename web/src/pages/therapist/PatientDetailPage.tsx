@@ -12,6 +12,7 @@ import { ProgramStatusBadge } from '@/components/app/StatusBadge';
 import { PatientFormDialog } from './PatientsPage';
 import { OpenRedFlagsBanner, PatientModulesTab } from './PatientModulesTab';
 import type { Member, PatientDetail, Progress } from '@/lib/types';
+import { PainMapCard } from '@/components/hero/PainMapCard';
 
 type Tab = 'overzicht' | 'programmas' | 'sessies' | 'modules' | 'gegevens';
 
@@ -127,7 +128,7 @@ export function PatientDetailPage() {
       />
 
       {tab === 'modules' && <PatientModulesTab patientId={pt.id} />}
-      {tab === 'overzicht' && <Overview progress={prog.data} programs={pt.programs} />}
+      {tab === 'overzicht' && <Overview patientId={id} progress={prog.data} programs={pt.programs} />}
       {tab === 'programmas' && <Programs pt={pt} />}
       {tab === 'sessies' && <Sessions progress={prog.data} onReviewed={() => qc.invalidateQueries({ queryKey: ['patient', id, 'progress'] })} />}
       {tab === 'gegevens' && <Details pt={pt} onEdit={() => setEditing(true)} />}
@@ -137,7 +138,7 @@ export function PatientDetailPage() {
   );
 }
 
-function Overview({ progress, programs }: { progress?: Progress; programs: PatientDetail['programs'] }) {
+function Overview({ patientId, progress, programs }: { patientId: string; progress?: Progress; programs: PatientDetail['programs'] }) {
   const { t, locale } = useI18n();
   if (!progress) return <div className="grid gap-4 sm:grid-cols-3">{Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>;
   const active = programs.filter((p) => p.status === 'active');
@@ -150,6 +151,7 @@ function Overview({ progress, programs }: { progress?: Progress; programs: Patie
         <Stat label={t('Afgeronde sessies', 'Completed sessions')} value={progress.completedSessions} hint={t('totaal', 'total')} />
         <Stat label={t('Actieve programma’s', 'Active programmes')} value={active.length} hint={active[0]?.title} />
       </div>
+      <PainMapCard patientId={patientId} />
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-3">
           <CardHeader title={t('Therapietrouw per week', 'Weekly adherence')} description={t('Gedane ten opzichte van geplande trainingsdagen per week (start op maandag). Zelfde berekening als op het dashboard en in de patiëntapp.', 'Completed versus planned training days per week (starting Monday). Same calculation as the dashboard and the patient app.')} />
