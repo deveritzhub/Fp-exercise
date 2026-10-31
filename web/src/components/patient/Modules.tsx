@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, Dumbbell, HeartPulse, Lock, Move, Play, ShieldCheck, Trash2 } from 'lucide-react';
-import { api, ApiError } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { api } from '@/lib/api';
+import { useI18n, describeError } from '@/lib/i18n';
 import { fmtDate } from '@/lib/format';
 import { Badge, Button, Card, CardHeader, Dialog, Notice, Textarea, useToast } from '@/components/ui';
 import { cn } from '@/lib/cn';
@@ -60,7 +60,7 @@ export function ConsentToggle({ module, since }: { module: 'kracht' | 'mobilitei
       toast(since ? t('Je deelt dit niet meer met je praktijk', 'You no longer share this with your practice') : t('Je deelt dit nu met je praktijk', 'You now share this with your practice'));
       qc.invalidateQueries({ queryKey: ['patient-modes'] });
     } catch (e) {
-      toast(errorMessage(e instanceof ApiError ? e.code : undefined, locale), 'bad');
+      toast(describeError(e, locale), 'bad');
     } finally {
       setBusy(false);
     }
@@ -131,7 +131,7 @@ export function StartTemplates({ modes, module }: { modes: Modes; module: 'krach
                   setConfirm(null);
                   nav(`/p/programma/${r.id}`);
                 } catch (e) {
-                  toast(errorMessage(e instanceof ApiError ? e.code : undefined, locale), 'bad');
+                  toast(describeError(e, locale), 'bad');
                 } finally {
                   setBusy(false);
                 }
@@ -202,7 +202,7 @@ export function MyDataCard() {
                   setOpen(false);
                   qc.invalidateQueries({ queryKey: ['deletion-request'] });
                 } catch (e) {
-                  toast(errorMessage(e instanceof ApiError ? e.code : undefined, locale), 'bad');
+                  toast(describeError(e, locale), 'bad');
                 } finally {
                   setBusy(false);
                 }

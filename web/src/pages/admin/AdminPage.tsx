@@ -6,8 +6,8 @@ import { Building2, LogOut, Plus, ShieldCheck, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { AccountPage } from '@/pages/AccountPage';
-import { api, ApiError } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { api } from '@/lib/api';
+import { useI18n, describeError, fieldErrors, slugify } from '@/lib/i18n';
 import { useLogout, useSession } from '@/lib/session';
 import { fmtDate } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
@@ -26,6 +26,8 @@ export function AdminPage() {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: '', slug: '', city: '', planCode: 'trial', ownerName: '', ownerEmail: '' });
   const [error, setError] = useState<string | null>(null);
+  const [fields, setFields] = useState<Record<string, string>>({});
+  const [slugTouched, setSlugTouched] = useState(false);
   const [link, setLink] = useState<string | null>(null);
   const items = q.data?.items ?? [];
 
@@ -84,22 +86,23 @@ export function AdminPage() {
         <form id="practice-form" className="space-y-4" onSubmit={async (e) => {
           e.preventDefault();
           setError(null);
+          setFields({});
           try {
-            const r = await api.post<{ inviteUrl?: string }>('/admin/practices', { ...form, city: form.city || null });
+            const r = await api.post<{ inviteUrl?: string }>('/admin/practices', { ...form, slug: slugify(form.slug, true), city: form.city || null });
             setLink(r.inviteUrl ?? null);
             setCreating(false);
             qc.invalidateQueries({ queryKey: ['admin-practices'] });
             toast(t('Praktijk aangemaakt, eigenaar uitgenodigd', 'Practice created, owner invited'));
-          } catch (err) { setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale)); }
+          } catch (err) { setError(describeError(err, locale)); setFields(fieldErrors(err, locale)); }
         }}>
           {error && <Notice tone="bad">{error}</Notice>}
-          <Input label={t('Praktijknaam', 'Practice name')} required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value, slug: form.slug || e.target.value.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) })} />
+          <Input label={t('Praktijknaam', 'Practice name')} required error={fields.name} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value, slug: slugTouched ? form.slug : slugify(e.target.value, true) })} />
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input label="Slug" required pattern="[a-z0-9-]{2,60}" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
-            <Input label={t('Plaats', 'City')} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+            <Input label="Slug" required minLength={2} hint={t('Kleine letters, cijfers en streepjes; wordt automatisch aangepast.', 'Lowercase letters, numbers and hyphens; adjusted automatically.')} error={fields.slug} value={form.slug} autoCapitalize="none" autoCorrect="off" spellCheck={false} onChange={(e) => { setSlugTouched(true); setForm({ ...form, slug: slugify(e.target.value) }); }} />
+            <Input label={t('Plaats', 'City')} error={fields.city} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
           </div>
-          <Input label={t('Naam eigenaar', 'Owner name')} required value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })} />
-          <Input label={t('E-mail eigenaar', 'Owner email')} type="email" required value={form.ownerEmail} onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })} />
+          <Input label={t('Naam eigenaar', 'Owner name')} required error={fields.ownerName} value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })} />
+          <Input label={t('E-mail eigenaar', 'Owner email')} type="email" required error={fields.ownerEmail} value={form.ownerEmail} onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })} />
         </form>
       </Dialog>
     </AdminShell>

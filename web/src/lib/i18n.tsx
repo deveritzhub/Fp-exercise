@@ -97,5 +97,87 @@ const ERRORS: Record<string, [string, string]> = {
 export function errorMessage(code: string | undefined, locale: Locale) {
   const e = code ? ERRORS[code] : undefined;
   if (e) return locale === 'nl' ? e[0] : e[1];
-  return locale === 'nl' ? 'Er ging iets mis. Probeer het opnieuw.' : 'Something went wrong. Please try again.';
+  const base = locale === 'nl' ? 'Er ging iets mis. Probeer het opnieuw.' : 'Something went wrong. Please try again.';
+  // An unknown error still names its code, so it can be reported and looked up.
+  return code ? `${base} (${locale === 'nl' ? 'foutcode' : 'error code'}: ${code})` : base;
 }
+
+/** Field names as the forms show them (API field → label). */
+const FIELDS: Record<string, [string, string]> = {
+  name: ['Naam', 'Name'], fullName: ['Naam', 'Name'], firstName: ['Voornaam', 'First name'], lastName: ['Achternaam', 'Last name'],
+  email: ['E-mailadres', 'Email'], ownerEmail: ['E-mail eigenaar', 'Owner email'], ownerName: ['Naam eigenaar', 'Owner name'],
+  slug: ['Slug', 'Slug'], city: ['Plaats', 'City'], password: ['Wachtwoord', 'Password'], current: ['Huidig wachtwoord', 'Current password'],
+  next: ['Nieuw wachtwoord', 'New password'], title: ['Titel', 'Title'], description: ['Beschrijving', 'Description'],
+  patientInstructions: ['Instructies voor de patiënt', 'Patient instructions'], startDate: ['Startdatum', 'Start date'], endDate: ['Einddatum', 'End date'],
+  nameNl: ['Naam (NL)', 'Name (NL)'], nameEn: ['Naam (EN)', 'Name (EN)'], bodyRegion: ['Lichaamsregio', 'Body region'], difficulty: ['Niveau', 'Level'],
+  sets: ['Sets', 'Sets'], reps: ['Herhalingen', 'Reps'], holdS: ['Vasthouden', 'Hold'], restS: ['Rust', 'Rest'], weightKg: ['Gewicht', 'Weight'],
+  externalRef: ['Kenmerk', 'Reference'], locale: ['Taal', 'Language'], defaultLocale: ['Standaardtaal', 'Default language'], accent: ['Accentkleur', 'Accent colour'],
+  note: ['Notitie', 'Note'], reason: ['Reden', 'Reason'], message: ['Bericht', 'Message'], phone: ['Telefoon', 'Phone'], role: ['Rol', 'Role'],
+};
+/** Extra explanation for fields with a fixed format. */
+const FORMATS: Record<string, [string, string]> = {
+  slug: ['alleen kleine letters, cijfers en streepjes (bijv. fp-training)', 'only lowercase letters, numbers and hyphens (e.g. fp-training)'],
+  accent: ['een kleurcode zoals #29483c', 'a colour code like #29483c'],
+};
+
+type Issue = { path?: string; message?: string; code?: string; minimum?: number; maximum?: number; validation?: string; type?: string; received?: string };
+
+function issueText(i: Issue, nl: boolean) {
+  const { label, why } = issueParts(i, nl);
+  return `${label} ${why}`;
+}
+
+function issueParts(i: Issue, nl: boolean) {
+  const key = (i.path ?? '').split('.').filter((p) => !/^\d+$/.test(p)).pop() ?? '';
+  const label = FIELDS[key] ? FIELDS[key][nl ? 0 : 1] : key || (nl ? 'Formulier' : 'Form');
+  let why: string;
+  if (i.code === 'invalid_type' && (i.received === 'undefined' || i.received === 'null')) why = nl ? 'is verplicht' : 'is required';
+  else if (i.code === 'too_small' && i.type === 'string') why = i.minimum === 1 ? (nl ? 'is verplicht' : 'is required') : nl ? `is te kort (minimaal ${i.minimum} tekens)` : `is too short (at least ${i.minimum} characters)`;
+  else if (i.code === 'too_big' && i.type === 'string') why = nl ? `is te lang (maximaal ${i.maximum} tekens)` : `is too long (at most ${i.maximum} characters)`;
+  else if (i.code === 'too_small') why = nl ? `moet minimaal ${i.minimum} zijn` : `must be at least ${i.minimum}`;
+  else if (i.code === 'too_big') why = nl ? `mag maximaal ${i.maximum} zijn` : `must be at most ${i.maximum}`;
+  else if (i.code === 'invalid_string' && i.validation === 'email') why = nl ? 'is geen geldig e-mailadres' : 'is not a valid email address';
+  else if (i.code === 'invalid_string' && FORMATS[key]) why = nl ? `heeft een ongeldig formaat: ${FORMATS[key][0]}` : `has an invalid format: ${FORMATS[key][1]}`;
+  else if (i.code === 'invalid_string' || i.code === 'invalid_date') why = nl ? 'heeft een ongeldig formaat' : 'has an invalid format';
+  else if (i.code === 'invalid_enum_value' || i.code === 'invalid_union') why = nl ? 'heeft een ongeldige keuze' : 'has an invalid choice';
+  else why = i.message ?? (nl ? 'klopt niet' : 'is not valid');
+  return { key, label, why };
+}
+
+/**
+ * What went wrong, as precisely as possible: for a rejected form every field and the reason
+ * ("Slug heeft een ongeldig formaat: alleen kleine letters…"), otherwise the known message or the
+ * error code. Use this wherever an error is shown to a person.
+ */
+export function describeError(err: unknown, locale: Locale): string {
+  const nl = locale === 'nl';
+  const code = (err as { code?: string } | null)?.code;
+  const details = (err as { details?: unknown } | null)?.details;
+  if (code === 'validation_failed' && Array.isArray(details) && details.length) {
+    const lines = [...new Set((details as Issue[]).map((i) => issueText(i, nl)))];
+    return `${nl ? 'Controleer' : 'Please check'}: ${lines.join('; ')}.`;
+  }
+  if (typeof code === 'string') return errorMessage(code, locale);
+  if (err instanceof Error && err.message) return `${errorMessage(undefined, locale).replace(/\.$/, '')} (${err.message})`;
+  return errorMessage(undefined, locale);
+}
+
+/** Per form field (API name) what is wrong with it, to show under the input and mark it red. */
+export function fieldErrors(err: unknown, locale: Locale): Record<string, string> {
+  const details = (err as { details?: unknown } | null)?.details;
+  if ((err as { code?: string } | null)?.code !== 'validation_failed' || !Array.isArray(details)) return {};
+  const out: Record<string, string> = {};
+  for (const i of details as Issue[]) {
+    const field = (i.path ?? '').split('.')[0];
+    if (!field || out[field]) continue;
+    const why = issueParts(i, locale === 'nl').why;
+    out[field] = why.charAt(0).toUpperCase() + why.slice(1) + '.';
+  }
+  return out;
+}
+
+/** Turns typed text into a valid slug: lowercase letters, numbers and single hyphens. */
+export const slugify = (v: string, final = false) => {
+  const s = v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-]+/g, '-').replace(/-{2,}/g, '-').replace(/^-/, '').slice(0, 60);
+  return final ? s.replace(/-$/, '') : s;
+};

@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Archive, ArchiveRestore, Check, ChevronDown, Download, Layers, Mail, MessageSquareText, Pencil, Plus, Send, FileText } from 'lucide-react';
-import { api, ApiError } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { api } from '@/lib/api';
+import { useI18n, describeError } from '@/lib/i18n';
 import { fmtDate, fmtDateTime, fmtRelative, pct } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
@@ -43,7 +43,7 @@ export function PatientDetailPage() {
       qc.invalidateQueries({ queryKey: ['patient', id] });
       qc.invalidateQueries({ queryKey: ['patients'] });
     } catch (e) {
-      toast(errorMessage(e instanceof ApiError ? e.code : undefined, locale), 'bad');
+      toast(describeError(e, locale), 'bad');
     }
   };
 
@@ -348,7 +348,7 @@ function Details({ pt, onEdit }: { pt: PatientDetail; onEdit: () => void }) {
                   setAssigning(false);
                   qc.invalidateQueries({ queryKey: ['patient', pt.id] });
                 } catch (e) {
-                  setError(errorMessage(e instanceof ApiError ? e.code : undefined, locale));
+                  setError(describeError(e, locale));
                 }
               }}
             >

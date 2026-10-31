@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react';
 import { AlertTriangle, CheckCircle2, Info, Loader2, OctagonAlert, RotateCw } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { useI18n, errorMessage } from '@/lib/i18n';
-import { ApiError } from '@/lib/api';
+import { useI18n, describeError } from '@/lib/i18n';
 import { Button } from './Button';
 
 export function Skeleton({ className }: { className?: string }) {
@@ -31,13 +30,12 @@ export function EmptyState({ icon, title, description, action, className }: { ic
 
 export function ErrorState({ error, onRetry, className }: { error: unknown; onRetry?: () => void; className?: string }) {
   const { locale, t } = useI18n();
-  const code = error instanceof ApiError ? error.code : undefined;
   return (
     <div className={cn('flex flex-col items-center px-6 py-12 text-center', className)} role="alert">
       <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-bad-soft text-bad">
         <AlertTriangle className="h-5 w-5" />
       </div>
-      <p className="text-sm text-ink-700">{errorMessage(code, locale)}</p>
+      <p className="text-sm text-ink-700">{describeError(error, locale)}</p>
       {onRetry && (
         <Button variant="secondary" size="sm" className="mt-4" icon={<RotateCw className="h-3.5 w-3.5" />} onClick={onRetry}>
           {t('Opnieuw proberen', 'Try again')}

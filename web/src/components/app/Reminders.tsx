@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, BellOff, BellRing, Share } from 'lucide-react';
-import { api, ApiError } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { api } from '@/lib/api';
+import { useI18n, describeError } from '@/lib/i18n';
 import { Badge, Button, Card, Notice, Select, useToast } from '@/components/ui';
 
 type Settings = { publicKey: string; enabled: boolean; time: string; endpoints: string[] };
@@ -52,7 +52,7 @@ export function ReminderCard() {
     }
   }, [q.data]);
 
-  const fail = (err: unknown) => toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad');
+  const fail = (err: unknown) => toast(describeError(err, locale), 'bad');
   const refresh = () => qc.invalidateQueries({ queryKey: ['reminders'] });
 
   const enable = async () => {

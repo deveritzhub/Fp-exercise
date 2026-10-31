@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ShieldCheck, Upload, UserPlus } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { useI18n, describeError } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { fmtDateTime, fmtDate } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
@@ -78,7 +78,7 @@ function Team({ isAdmin, myRole }: { isAdmin: boolean; myRole: Role }) {
               {isAdmin ? (
                 <div className="flex items-center gap-2">
                   <Select aria-label={t('Rol', 'Role')} className="h-8 w-36 py-1 text-[13px]" value={m.role} disabled={m.role === 'owner' && myRole !== 'owner'} onChange={async (e) => {
-                    try { await api.patch(`/practice/members/${m.userId}`, { role: e.target.value }); toast(t('Rol bijgewerkt', 'Role updated')); qc.invalidateQueries({ queryKey: ['members'] }); } catch (err) { toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad'); }
+                    try { await api.patch(`/practice/members/${m.userId}`, { role: e.target.value }); toast(t('Rol bijgewerkt', 'Role updated')); qc.invalidateQueries({ queryKey: ['members'] }); } catch (err) { toast(describeError(err, locale), 'bad'); }
                   }}>
                     <option value="therapist">{roleLabel('therapist')}</option>
                     <option value="admin">{roleLabel('admin')}</option>
@@ -88,7 +88,7 @@ function Team({ isAdmin, myRole }: { isAdmin: boolean; myRole: Role }) {
                     <Button size="sm" variant="ghost" onClick={() => setResetting(m)}>{t('2FA resetten', 'Reset 2FA')}</Button>
                   )}
                   <Button size="sm" variant="ghost" onClick={async () => {
-                    try { await api.patch(`/practice/members/${m.userId}`, { active: !m.active }); qc.invalidateQueries({ queryKey: ['members'] }); } catch (err) { toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad'); }
+                    try { await api.patch(`/practice/members/${m.userId}`, { active: !m.active }); qc.invalidateQueries({ queryKey: ['members'] }); } catch (err) { toast(describeError(err, locale), 'bad'); }
                   }}>{m.active ? t('Deactiveren', 'Deactivate') : t('Activeren', 'Activate')}</Button>
                 </div>
               ) : <Badge tone="outline">{roleLabel(m.role)}</Badge>}
@@ -104,7 +104,7 @@ function Team({ isAdmin, myRole }: { isAdmin: boolean; myRole: Role }) {
               await api.post(`/practice/members/${resetting!.userId}/mfa-reset`);
               toast(t('Gereset — je collega stelt het opnieuw in bij de volgende keer inloggen', 'Reset — your colleague sets it up again at next sign-in'));
               qc.invalidateQueries({ queryKey: ['members'] });
-            } catch (err) { toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad'); }
+            } catch (err) { toast(describeError(err, locale), 'bad'); }
             setResetting(null);
           }}>{t('Resetten', 'Reset')}</Button>
         </>
@@ -132,7 +132,7 @@ function Team({ isAdmin, myRole }: { isAdmin: boolean; myRole: Role }) {
             setForm({ fullName: '', email: '', role: 'therapist', title: '' });
             toast(t('Uitnodiging verstuurd', 'Invitation sent'));
             qc.invalidateQueries({ queryKey: ['members'] });
-          } catch (err) { setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale)); }
+          } catch (err) { setError(describeError(err, locale)); }
         }}>
           {error && <Notice tone="bad">{error}</Notice>}
           <Input label={t('Naam', 'Name')} required value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
@@ -170,7 +170,7 @@ function Settings() {
           await api.patch('/practice', { name: f.name, city: f.city || null, defaultLocale: f.defaultLocale, branding: accentVars(f.accent) ? { accent: f.accent } : {} });
           toast(t('Instellingen opgeslagen', 'Settings saved'));
           qc.invalidateQueries();
-        } catch (err) { toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad'); }
+        } catch (err) { toast(describeError(err, locale), 'bad'); }
       }}>
         <Input label={t('Praktijknaam', 'Practice name')} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
         <div className="grid gap-4 sm:grid-cols-2">
@@ -226,7 +226,7 @@ function Security() {
               await api.patch('/practice', { name: p.name, city: p.city, defaultLocale: p.defaultLocale, branding: p.branding, requireMfa: !on });
               toast(on ? t('Niet meer verplicht', 'No longer required') : t('Tweestapsverificatie is nu verplicht voor je team', 'Two-factor authentication is now required for your team'));
               qc.invalidateQueries();
-            } catch (err) { toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad'); }
+            } catch (err) { toast(describeError(err, locale), 'bad'); }
             finally { setBusy(false); }
           }}>{on ? t('Niet meer verplichten', 'Stop requiring') : t('Verplicht maken voor iedereen', 'Require for everyone')}</Button>
         </div>
@@ -266,7 +266,7 @@ function LibraryImport() {
               setResult(await api.post('/practice/library-import/fp'));
               qc.invalidateQueries();
             } catch (err) {
-              setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale));
+              setError(describeError(err, locale));
             } finally { setBusy(false); }
           }}>{t('FP-bibliotheek toevoegen', 'Add FP library')}</Button>
         </div>
@@ -294,7 +294,7 @@ function LibraryImport() {
                 const code = err instanceof ApiError ? err.code : undefined;
                 setError(code === 'invalid_json' || code === 'validation_failed'
                   ? t('Dit bestand heeft niet het verwachte formaat (oefeningen met id, naam, regio, instructie en dosering).', 'This file does not have the expected format (exercises with id, name, region, instruction and dose).')
-                  : errorMessage(code, locale));
+                  : describeError(err, locale));
               } finally { setBusy(false); }
             }}
           />

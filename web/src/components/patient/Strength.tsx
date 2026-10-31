@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Dumbbell, TrendingUp, Trophy } from 'lucide-react';
-import { api, ApiError } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { api } from '@/lib/api';
+import { useI18n, describeError } from '@/lib/i18n';
 import { fmtDate } from '@/lib/format';
 import { postOrQueue } from '@/lib/outbox';
 import { Button, Dialog, Notice, Sparkline, useToast } from '@/components/ui';
@@ -75,7 +75,7 @@ export function StrengthLogger({ item, sessionId, userId, onSetSaved }: { item: 
       onSetSaved?.(next.size);
       qc.invalidateQueries({ queryKey: ['patient-strength'] });
     } catch (e) {
-      toast(errorMessage(e instanceof ApiError ? e.code : undefined, locale), 'bad');
+      toast(describeError(e, locale), 'bad');
     }
   };
   const best = data.reduce<number | null>((b, r) => {
@@ -187,7 +187,7 @@ function OneRmTestDialog({ exercise, onClose }: { exercise: StrengthExercise | n
       setResult(r.stopped ? 'stopped' : 'saved');
       qc.invalidateQueries({ queryKey: ['patient-strength'] });
     } catch (e) {
-      setError(errorMessage(e instanceof ApiError ? e.code : undefined, locale));
+      setError(describeError(e, locale));
     } finally {
       setBusy(false);
     }

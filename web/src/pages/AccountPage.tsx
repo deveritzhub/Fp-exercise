@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { LogOut } from 'lucide-react';
-import { api, ApiError } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { api } from '@/lib/api';
+import { useI18n, describeError } from '@/lib/i18n';
 import { useLogout, useSession } from '@/lib/session';
 import { useDocumentMeta } from '@/lib/meta';
 import { Button, Card, CardHeader, Input, Notice, PageHeader, Segmented, Select, useToast } from '@/components/ui';
@@ -36,7 +36,7 @@ export function AccountPage({ patient }: { patient?: boolean }) {
             setLocale(lang);
             qc.invalidateQueries({ queryKey: ['me'] });
             toast(t('Opgeslagen', 'Saved'));
-          } catch (err) { toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad'); }
+          } catch (err) { toast(describeError(err, locale), 'bad'); }
         }}>
           <Input label={t('Naam', 'Name')} value={name} onChange={(e) => setName(e.target.value)} required />
           <Input label={t('E-mailadres', 'Email')} value={user.email} disabled />
@@ -55,7 +55,7 @@ export function AccountPage({ patient }: { patient?: boolean }) {
             await api.post('/auth/password/change', pw);
             setPw({ current: '', next: '' });
             toast(t('Wachtwoord gewijzigd', 'Password changed'));
-          } catch (err) { setPwError(errorMessage(err instanceof ApiError ? err.code : undefined, locale)); }
+          } catch (err) { setPwError(describeError(err, locale)); }
         }}>
           {pwError && <Notice tone="bad">{pwError}</Notice>}
           <Input label={t('Huidig wachtwoord', 'Current password')} type="password" autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} required />

@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Bell, FilePlus2, LayoutTemplate, Plus, Star, UserRound } from 'lucide-react';
-import { api, ApiError, mediaUrl } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { api, mediaUrl } from '@/lib/api';
+import { useI18n, describeError } from '@/lib/i18n';
 import { useLabels } from '@/lib/meta';
 import { cn } from '@/lib/cn';
 import { Badge, Button, Dialog, NumberStepper, Spinner, useToast } from '@/components/ui';
@@ -93,7 +93,7 @@ export function QuickAddSheet({ exercise, open, onClose }: { exercise: Exercise 
           : t(`Toegevoegd aan “${p.title}”`, `Added to “${p.title}”`),
       );
     } catch (err) {
-      toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad');
+      toast(describeError(err, locale), 'bad');
     } finally {
       setBusy(null);
     }
@@ -231,7 +231,7 @@ export function FavoriteToggle({ e, className, size = 'md' }: { e: Pick<Exercise
           qc.invalidateQueries({ queryKey: ['dashboard'] });
         } catch (err) {
           setFav(!next);
-          toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad');
+          toast(describeError(err, locale), 'bad');
         }
       }}
     >

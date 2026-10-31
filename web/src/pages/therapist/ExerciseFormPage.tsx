@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImagePlus, Lock, Trash2, Upload, Video } from 'lucide-react';
 import { api, ApiError, mediaUrl } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { useI18n, describeError } from '@/lib/i18n';
 import { taxonomy, useDocumentMeta } from '@/lib/meta';
 import { Button, Card, Chip, Input, Notice, NumberStepper, PageHeader, Select, Spinner, Textarea, useToast } from '@/components/ui';
 import type { Exercise } from '@/lib/types';
@@ -86,7 +86,7 @@ export function ExerciseFormPage() {
       }
       qc.invalidateQueries({ queryKey: ['exercises'] });
     } catch (err) {
-      setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale));
+      setError(describeError(err, locale));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setBusy(false);
@@ -245,7 +245,7 @@ export function MediaUpload({ kind, value, onChange }: { kind: 'video' | 'image'
             if (r.kind !== kind) throw new ApiError(400, 'unsupported_file_type');
             onChange(r.id);
           } catch (err) {
-            setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale));
+            setError(describeError(err, locale));
           } finally {
             setBusy(false);
           }

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { OctagonAlert, PhoneCall } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { useI18n, describeError } from '@/lib/i18n';
 import { Button, Dialog, Notice, Textarea } from '@/components/ui';
 import { cn } from '@/lib/cn';
 
@@ -59,7 +59,7 @@ function RedFlagDialog({ open, onClose, programId, redFlags, sessionId, onReport
     } catch (e) {
       setError(e instanceof ApiError && e.code === 'network_error'
         ? t('Geen internet: je melding is niet verstuurd. Stop met oefenen en bel je praktijk.', 'No internet: your report was not sent. Stop exercising and call your practice.')
-        : errorMessage(e instanceof ApiError ? e.code : undefined, locale));
+        : describeError(e, locale));
     } finally {
       setBusy(false);
     }

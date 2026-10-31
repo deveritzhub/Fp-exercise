@@ -2,8 +2,8 @@ import { useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart3, BookOpen, Check, CheckCircle2, ClipboardList, FileWarning, Layers, Lock, MessageSquareText, Search, Send, Smartphone, Star, Users } from 'lucide-react';
-import { api, ApiError } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { api } from '@/lib/api';
+import { useI18n, describeError } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
 import { Badge, Button, ButtonLink, Checkbox, Input, Notice, Select, Segmented, Textarea, TableScroll } from '@/components/ui';
@@ -176,7 +176,7 @@ export function ContactPage() {
                 await api.post('/public/contact', { ...f, consent: true, startedAt });
                 setState('done');
               } catch (err) {
-                setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale));
+                setError(describeError(err, locale));
                 setState('idle');
               }
             }}

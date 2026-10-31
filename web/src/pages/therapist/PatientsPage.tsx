@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Search, UserPlus, Users } from 'lucide-react';
-import { api, ApiError, qs } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { api, qs } from '@/lib/api';
+import { useI18n, describeError } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { fmtRelative, pct } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
@@ -136,7 +136,7 @@ export function PatientFormDialog({ open, onClose, patient }: { open: boolean; o
         nav(`/app/patienten/${r.id}`, { state: { inviteUrl: inv?.inviteUrl ?? null } });
       }
     } catch (err) {
-      setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale));
+      setError(describeError(err, locale));
     } finally {
       setBusy(false);
     }

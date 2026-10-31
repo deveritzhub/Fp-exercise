@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X, Printer } from 'lucide-react';
 import { api, ApiError, mediaUrl } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { useI18n, describeError } from '@/lib/i18n';
 import { toISODate } from '@shared/adherence';
 import { itemsForDate } from '@shared/schedule';
 import { useDocumentMeta } from '@/lib/meta';
@@ -76,7 +76,7 @@ function StopProgramButton({ programId }: { programId: string }) {
             qc.invalidateQueries({ queryKey: ['patient-home'] });
             nav('/p');
           } catch (e) {
-            toast(errorMessage(e instanceof ApiError ? e.code : undefined, locale), 'bad');
+            toast(describeError(e, locale), 'bad');
           }
         }}>{t('Stoppen', 'Stop')}</Button></div>}
       >{null}</Dialog>
@@ -144,7 +144,7 @@ export function SessionPlayer() {
     try {
       begin((await api.post<{ id: string }>('/patient/sessions', { programId: id })).id);
     } catch (e) {
-      if (!isNetworkError(e)) return setError(errorMessage(e instanceof ApiError ? e.code : undefined, locale));
+      if (!isNetworkError(e)) return setError(describeError(e, locale));
       // No connection: train anyway. The workout gets its id here and is sent later.
       const open = q.data?.openSession?.id;
       const sid = open ?? crypto.randomUUID();
@@ -169,7 +169,7 @@ export function SessionPlayer() {
       } else setPhase('summary');
       window.scrollTo({ top: 0 });
     } catch (e) {
-      setError(errorMessage(e instanceof ApiError ? e.code : undefined, locale));
+      setError(describeError(e, locale));
     } finally {
       setSaving(false);
     }
@@ -239,7 +239,7 @@ export function SessionPlayer() {
                 qc.invalidateQueries({ queryKey: ['patient-home'] });
                 qc.invalidateQueries({ queryKey: ['patient-history'] });
               } catch (e) {
-                setError(errorMessage(e instanceof ApiError ? e.code : undefined, locale));
+                setError(describeError(e, locale));
               } finally {
                 setSaving(false);
               }

@@ -6,7 +6,11 @@ export function parse<T extends ZodTypeAny>(schema: T, data: unknown): z.infer<T
   if (!r.success) {
     throw badRequest(
       'validation_failed',
-      r.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+      // Code and limits let the app say exactly what is wrong with which field.
+      r.error.issues.map((i) => {
+        const x = i as typeof i & { minimum?: unknown; maximum?: unknown; validation?: unknown; type?: unknown; received?: unknown };
+        return { path: i.path.join('.'), message: i.message, code: i.code, minimum: x.minimum, maximum: x.maximum, validation: x.validation, type: x.type, received: x.received };
+      }),
     );
   }
   return r.data;

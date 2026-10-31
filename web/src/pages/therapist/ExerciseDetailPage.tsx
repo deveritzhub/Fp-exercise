@@ -2,8 +2,8 @@ import { Link, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, ChevronLeft, ChevronRight, Copy, Film, Layers, Lock, Pencil, Plus, ShieldAlert, Shuffle, TrendingDown, TrendingUp, Undo2, VideoOff } from 'lucide-react';
-import { api, ApiError, mediaUrl, qs } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { api, mediaUrl, qs } from '@/lib/api';
+import { useI18n, describeError } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { fmtDate } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -273,7 +273,7 @@ function PracticeMediaCard({ e, onSaved }: { e: Exercise; onSaved?: () => void }
             qc.invalidateQueries({ queryKey: ['exercise', e.id] });
             qc.invalidateQueries({ queryKey: ['exercises'] });
           } catch (err) {
-            toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad');
+            toast(describeError(err, locale), 'bad');
           } finally {
             setBusy(false);
           }
@@ -301,7 +301,7 @@ function ReviewBanner({ e }: { e: Exercise }) {
       qc.invalidateQueries({ queryKey: ['exercise', e.id] });
       qc.invalidateQueries({ queryKey: ['exercises'] });
     } catch (err) {
-      toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad');
+      toast(describeError(err, locale), 'bad');
     } finally {
       setBusy(false);
     }

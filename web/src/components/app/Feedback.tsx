@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Bug, Heart, Lightbulb, MessageSquarePlus } from 'lucide-react';
-import { api, ApiError } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { api } from '@/lib/api';
+import { useI18n, describeError } from '@/lib/i18n';
 import { fmtDateTime } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { Badge, Button, Card, CardHeader, Dialog, EmptyState, Notice, Spinner, Textarea, useToast } from '@/components/ui';
@@ -69,7 +69,7 @@ export function FeedbackButton({ big }: { big?: boolean }) {
               close();
               toast(t('Bedankt! Je feedback is verstuurd.', 'Thanks! Your feedback was sent.'));
             } catch (err) {
-              setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale));
+              setError(describeError(err, locale));
             } finally {
               setBusy(false);
             }

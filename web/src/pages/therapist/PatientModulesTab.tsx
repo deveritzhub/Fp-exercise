@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, Lock, OctagonAlert, ShieldCheck, Trash2, TrendingUp } from 'lucide-react';
-import { api, ApiError } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { api } from '@/lib/api';
+import { useI18n, describeError } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { fmtDate, fmtDateTime } from '@/lib/format';
 import { Badge, Button, Card, CardHeader, Dialog, EmptyState, Input, Notice, Sparkline, Spinner, Textarea, useToast } from '@/components/ui';
@@ -103,7 +103,7 @@ function RedFlagsCard({ patientId, m }: { patientId: string; m: Modules }) {
                         toast(t('Melding afgehandeld; de patiënt kan weer oefenen', 'Report handled; the patient can exercise again'));
                         refresh();
                       } catch (e) {
-                        toast(errorMessage(e instanceof ApiError ? e.code : undefined, locale), 'bad');
+                        toast(describeError(e, locale), 'bad');
                       } finally {
                         setBusy(null);
                       }
@@ -168,7 +168,7 @@ function TransitionCard({ patientId, m }: { patientId: string; m: Modules }) {
       await qc.invalidateQueries({ queryKey: ['patient', patientId, 'modules'] });
       refresh();
     } catch (e) {
-      toast(errorMessage(e instanceof ApiError ? e.code : undefined, locale), 'bad');
+      toast(describeError(e, locale), 'bad');
     } finally {
       setOptimistic({});
       setBusy(null);
@@ -281,7 +281,7 @@ function DeletionCard({ patientId, m }: { patientId: string; m: Modules }) {
       if (mode === 'deleted') nav('/app/patienten');
       else refresh();
     } catch (e) {
-      toast(errorMessage(e instanceof ApiError ? e.code : undefined, locale), 'bad');
+      toast(describeError(e, locale), 'bad');
     } finally {
       setBusy(false);
     }

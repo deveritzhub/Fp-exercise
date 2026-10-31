@@ -6,8 +6,8 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities';
 import {
   Archive, ArrowDown, ArrowRight, ArrowUp, BookCopy, CheckCircle2, ChevronDown, Copy, Eye, GripVertical, History, LayoutTemplate, Plus, Search, Trash2, X, Printer } from 'lucide-react';
-import { api, ApiError, qs } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { api, qs } from '@/lib/api';
+import { useI18n, describeError } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { dose, fmtDate, fmtDateTime, todayISO } from '@/lib/format';
 import { taxonomy, useDocumentMeta, useLabels } from '@/lib/meta';
@@ -204,7 +204,7 @@ export function ProgramBuilderPage() {
         qc.invalidateQueries({ queryKey: ['program-versions', id] });
       }
     } catch (e) {
-      setError(errorMessage(e instanceof ApiError ? e.code : undefined, locale));
+      setError(describeError(e, locale));
     } finally {
       setBusy(false);
     }
@@ -216,7 +216,7 @@ export function ProgramBuilderPage() {
       toast(t('Status bijgewerkt', 'Status updated'));
       qc.invalidateQueries({ queryKey: ['program', id] });
     } catch (e) {
-      toast(errorMessage(e instanceof ApiError ? e.code : undefined, locale), 'bad');
+      toast(describeError(e, locale), 'bad');
     }
   };
 
@@ -226,12 +226,12 @@ export function ProgramBuilderPage() {
       toast(asTpl ? t('Opgeslagen als praktijksjabloon', 'Saved as practice template') : t('Kopie gemaakt', 'Copy created'));
       nav(`/app/programmas/${r.id}`);
     } catch (e) {
-      toast(errorMessage(e instanceof ApiError ? e.code : undefined, locale), 'bad');
+      toast(describeError(e, locale), 'bad');
     }
   };
 
   if (id && existing.isLoading) return <Spinner />;
-  if (id && (existing.isError || !program)) return <Notice tone="bad">{errorMessage(existing.error instanceof ApiError ? existing.error.code : undefined, locale)}</Notice>;
+  if (id && (existing.isError || !program)) return <Notice tone="bad">{describeError(existing.error, locale)}</Notice>;
 
   const library = <LibraryPanel onAdd={addExercise} addedIds={items.map((i) => i.exerciseId)} />;
 
@@ -266,7 +266,7 @@ export function ProgramBuilderPage() {
                   {!program.isTemplate && (program.status === 'completed' || program.status === 'archived') && <MenuItem icon={<CheckCircle2 className="h-4 w-4" />} onClick={() => { close(); setStatus('active'); }}>{t('Opnieuw activeren', 'Reactivate')}</MenuItem>}
                   {!program.isTemplate && program.status !== 'archived' && <MenuItem danger icon={<Archive className="h-4 w-4" />} onClick={() => { close(); setStatus('archived'); }}>{t('Archiveren', 'Archive')}</MenuItem>}
                   {(program.status === 'draft' || (program.isTemplate && program.scope === 'practice')) && (
-                    <MenuItem danger icon={<Trash2 className="h-4 w-4" />} onClick={async () => { close(); if (!confirm(t('Definitief verwijderen?', 'Delete permanently?'))) return; try { await api.del(`/programs/${id}`); toast(t('Verwijderd', 'Deleted')); nav(program.patient ? `/app/patienten/${program.patient.id}` : '/app/programmas'); } catch (e) { toast(errorMessage(e instanceof ApiError ? e.code : undefined, locale), 'bad'); } }}>{t('Verwijderen', 'Delete')}</MenuItem>
+                    <MenuItem danger icon={<Trash2 className="h-4 w-4" />} onClick={async () => { close(); if (!confirm(t('Definitief verwijderen?', 'Delete permanently?'))) return; try { await api.del(`/programs/${id}`); toast(t('Verwijderd', 'Deleted')); nav(program.patient ? `/app/patienten/${program.patient.id}` : '/app/programmas'); } catch (e) { toast(describeError(e, locale), 'bad'); } }}>{t('Verwijderen', 'Delete')}</MenuItem>
                   )}
                 </>
               )}
@@ -1056,7 +1056,7 @@ function PhaseCard({ source, programId, patientId }: { source: Program | null; p
       setChecks(r.items);
       qc.invalidateQueries({ queryKey: ['program', programId] });
     } catch (err) {
-      toast(errorMessage(err instanceof ApiError ? err.code : undefined, locale), 'bad');
+      toast(describeError(err, locale), 'bad');
     } finally {
       setBusy(null);
     }

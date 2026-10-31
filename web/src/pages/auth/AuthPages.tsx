@@ -6,7 +6,7 @@ import { CodeInput, MfaSetup } from '@/components/app/Mfa';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { Button, Input, Notice, Spinner, useToast } from '@/components/ui';
 import { api, ApiError } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { useI18n, describeError } from '@/lib/i18n';
 import { homePathFor, useLogout, useSession } from '@/lib/session';
 import { useDocumentMeta } from '@/lib/meta';
 import type { SessionUser } from '@/lib/types';
@@ -59,7 +59,7 @@ export function LoginPage() {
         setCode('');
       } else signedIn(r.user);
     } catch (err) {
-      setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale));
+      setError(describeError(err, locale));
     } finally {
       setBusy(false);
     }
@@ -78,7 +78,7 @@ export function LoginPage() {
     } catch (err) {
       const c = err instanceof ApiError ? err.code : undefined;
       if (c === 'mfa_session_expired') setMfaToken(null);
-      setError(errorMessage(c, locale));
+      setError(describeError(err, locale));
       setCode('');
     } finally {
       setBusy(false);
@@ -181,7 +181,7 @@ export function ForgotPasswordPage() {
               await api.post('/auth/password/forgot', { email });
               setDone(true);
             } catch (err) {
-              setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale));
+              setError(describeError(err, locale));
             } finally {
               setBusy(false);
             }
@@ -213,7 +213,7 @@ function PasswordForm({ onSubmit, cta, existingAccount }: { onSubmit: (pw: strin
         try {
           await onSubmit(pw);
         } catch (err) {
-          setError(errorMessage(err instanceof ApiError ? err.code : undefined, locale));
+          setError(describeError(err, locale));
         } finally {
           setBusy(false);
         }

@@ -1,8 +1,8 @@
 import { useState, type InputHTMLAttributes } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Copy, Download, KeyRound, ShieldCheck, Smartphone } from 'lucide-react';
-import { api, ApiError } from '@/lib/api';
-import { errorMessage, useI18n } from '@/lib/i18n';
+import { api } from '@/lib/api';
+import { useI18n, describeError } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 import { cn } from '@/lib/cn';
 import { Badge, Button, Card, CardHeader, Checkbox, Dialog, Input, Notice, useToast } from '@/components/ui';
@@ -31,7 +31,7 @@ export function CodeInput({ id, label, recovery, className, ...rest }: InputHTML
   );
 }
 
-const errOf = (err: unknown, locale: 'nl' | 'en') => errorMessage(err instanceof ApiError ? err.code : undefined, locale);
+const errOf = (err: unknown, locale: 'nl' | 'en') => describeError(err, locale);
 
 /** Shown once after enabling: the single-use codes for when the phone is lost. */
 export function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void }) {
