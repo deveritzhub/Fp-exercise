@@ -14,7 +14,7 @@ export function NotificationBell() {
   const nav = useNavigate();
   const q = useQuery({
     queryKey: ['notifications'],
-    queryFn: () => api.get<{ items: Notification[]; unread: number }>('/me/notifications'),
+    queryFn: () => api.poll<{ items: Notification[]; unread: number }>('/me/notifications'),
     refetchInterval: 60_000,
   });
   const unread = q.data?.unread ?? 0;

@@ -17,7 +17,7 @@ export type AppEnv = {
 export const sessionMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
   const token = getCookie(c, SESSION_COOKIE) ?? null;
   c.set('token', token);
-  c.set('user', token ? await resolveSession(token) : null);
+  c.set('user', token ? await resolveSession(token, { background: c.req.header('x-fp-background') === '1' }) : null);
   await next();
 };
 

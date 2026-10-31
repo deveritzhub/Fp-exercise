@@ -1,4 +1,5 @@
 import { FeedbackList } from '@/components/app/Feedback';
+import { IdleGuard } from '@/components/app/IdleGuard';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, LogOut, Plus, ShieldCheck } from 'lucide-react';
@@ -29,6 +30,7 @@ export function AdminPage() {
 
   return (
     <div className="min-h-screen bg-canvas">
+      <IdleGuard />
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-5">
           <Logo to="/admin" />
@@ -36,7 +38,7 @@ export function AdminPage() {
           <div className="flex-1" />
           <LocaleSwitch />
           <span className="hidden text-[13px] text-ink-500 sm:inline">{user?.email}</span>
-          <Button variant="ghost" size="sm" icon={<LogOut className="h-4 w-4" />} onClick={logout}>{t('Uitloggen', 'Log out')}</Button>
+          <Button variant="ghost" size="sm" icon={<LogOut className="h-4 w-4" />} onClick={() => logout()}>{t('Uitloggen', 'Log out')}</Button>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-5 py-8">

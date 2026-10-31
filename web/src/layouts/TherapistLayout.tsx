@@ -10,6 +10,7 @@ import { setActivePractice } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { NotificationBell } from './Notifications';
 import { CommandPalette } from '@/components/app/CommandPalette';
+import { IdleGuard } from '@/components/app/IdleGuard';
 import { FeedbackButton } from '@/components/app/Feedback';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -166,7 +167,7 @@ export function TherapistLayout() {
               <MenuItem icon={<UserRound className="h-4 w-4" />} onClick={() => { close(); nav('/app/account'); }}>{t('Account', 'Account')}</MenuItem>
               {isAdmin && <MenuItem icon={<Settings className="h-4 w-4" />} onClick={() => { close(); nav('/app/praktijk'); }}>{t('Praktijkinstellingen', 'Practice settings')}</MenuItem>}
               {user.isPlatformAdmin && <MenuItem icon={<Building2 className="h-4 w-4" />} onClick={() => { close(); nav('/admin'); }}>{t('Platformbeheer', 'Platform admin')}</MenuItem>}
-              <MenuItem icon={<LogOut className="h-4 w-4" />} onClick={logout}>{t('Uitloggen', 'Log out')}</MenuItem>
+              <MenuItem icon={<LogOut className="h-4 w-4" />} onClick={() => logout()}>{t('Uitloggen', 'Log out')}</MenuItem>
             </>
           )}
         </Popover>
@@ -175,6 +176,7 @@ export function TherapistLayout() {
         <Outlet />
       </main>
       <CommandPalette open={palette} onClose={() => setPalette(false)} />
+      <IdleGuard />
     </div>
   );
 }

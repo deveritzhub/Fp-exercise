@@ -127,6 +127,11 @@ export function LoginPage() {
       }
     >
       <form onSubmit={submit} className="space-y-4" noValidate>
+        {params.get('reden') === 'inactief' && !error && (
+          <Notice tone="info" title={t('Je bent automatisch uitgelogd', 'You were logged out automatically')}>
+            {t('Na een tijd zonder activiteit loggen we je uit, zodat niemand anders op deze computer bij gegevens kan. Log opnieuw in om verder te gaan.', 'After a while without activity we log you out, so nobody else on this computer can see any data. Log in again to continue.')}
+          </Notice>
+        )}
         {error && <Notice tone="bad">{error}</Notice>}
         <Input label={t('E-mailadres', 'Email address')} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
         <Input label={t('Wachtwoord', 'Password')} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -318,7 +323,7 @@ export function MfaRequiredPage() {
         'Je praktijk vereist tweestapsverificatie voor iedereen die patiëntgegevens kan zien. Stel het nu eenmalig in.',
         'Your practice requires two-factor authentication for everyone who can see patient data. Set it up once now.',
       )}
-      footer={<button type="button" className="link" onClick={logout}>{t('Uitloggen', 'Log out')}</button>}
+      footer={<button type="button" className="link" onClick={() => logout()}>{t('Uitloggen', 'Log out')}</button>}
     >
       <MfaSetup
         onDone={async () => {

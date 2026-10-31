@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, getActivePractice, setActivePractice } from './api';
 import type { SessionUser } from './types';
@@ -35,13 +36,16 @@ export function useSession() {
 
 export function useLogout() {
   const qc = useQueryClient();
-  return async () => {
-    // A shared device must not keep this person's reminders, cached data or unsent workouts.
-    await forgetDevice();
-    await api.post('/auth/logout');
-    qc.clear();
-    window.location.assign('/login');
-  };
+  return useCallback(
+    async (reason?: 'inactief') => {
+      // A shared device must not keep this person's reminders, cached data or unsent workouts.
+      await forgetDevice();
+      await api.post('/auth/logout').catch(() => undefined);
+      qc.clear();
+      window.location.assign(reason ? `/login?reden=${reason}` : '/login');
+    },
+    [qc],
+  );
 }
 
 export function homePathFor(u: SessionUser | null) {

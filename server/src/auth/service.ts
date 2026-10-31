@@ -18,6 +18,8 @@ export type SessionUser = {
   /** A practice of this user (or the platform-admin role) demands MFA that is not set up yet: staff APIs are blocked. */
   mfaRequired: boolean;
   memberships: Membership[];
+  /** Minutes of inactivity after which this login ends (staff only; null = no idle limit). */
+  idleMinutes: number | null;
   patient: { id: string; practiceId: string; practiceName: string; accent?: string | null } | null;
 };
 
@@ -56,6 +58,7 @@ export async function loadUser(userId: string): Promise<SessionUser | null> {
     mfaEnabled: u.mfa_enabled,
     mfaRequired: mfaDemanded && !u.mfa_enabled,
     memberships: members.rows.map((r) => ({ practiceId: r.practice_id, practiceName: r.name, practiceSlug: r.slug, role: r.role, accent: r.accent ?? null })),
+    idleMinutes: (members.rows.length || u.is_platform_admin) && config.staffIdleMinutes > 0 ? config.staffIdleMinutes : null,
     patient: patient.rows[0]
       ? { id: patient.rows[0].id, practiceId: patient.rows[0].practice_id, practiceName: patient.rows[0].name, accent: patient.rows[0].accent ?? null }
       : null,
@@ -121,11 +124,19 @@ export async function createSession(userId: string, userAgent?: string) {
   return token;
 }
 
-export async function resolveSession(token: string): Promise<SessionUser | null> {
+/**
+ * Looks up a session. Staff sessions also end after `staffIdleMinutes` without activity (a shared
+ * practice computer left unlocked). Background requests (polling) do not count as activity.
+ */
+export async function resolveSession(token: string, opts: { background?: boolean } = {}): Promise<SessionUser | null> {
   const { rows } = await authPool.query(
-    `UPDATE auth_sessions SET last_seen_at = now()
-      WHERE token_hash = $1 AND expires_at > now() RETURNING user_id`,
-    [sha256(token)],
+    `UPDATE auth_sessions s SET last_seen_at = CASE WHEN $2 THEN s.last_seen_at ELSE now() END
+      WHERE s.token_hash = $1 AND s.expires_at > now()
+        AND ($3 <= 0 OR s.last_seen_at > now() - make_interval(mins => $3)
+             OR NOT EXISTS (SELECT 1 FROM users u WHERE u.id = s.user_id AND u.is_platform_admin)
+                AND NOT EXISTS (SELECT 1 FROM practice_members m WHERE m.user_id = s.user_id AND m.active))
+      RETURNING user_id`,
+    [sha256(token), !!opts.background, config.staffIdleMinutes],
   );
   if (!rows[0]) return null;
   return loadUser(rows[0].user_id);
