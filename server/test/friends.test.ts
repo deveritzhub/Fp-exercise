@@ -65,17 +65,19 @@ describe('hero friends (opt-in)', () => {
     expect((await noah.post(`/patient/hero/friends/${inc[0].id}/accept`)).status).toBe(404);
     expect((await emma.post(`/patient/hero/friends/${inc[0].id}/accept`)).status).toBe(200);
 
-    // Friends: level, total level and the nine skill levels; nothing else.
+    // Friends: level, total level and each skill as a level or a lock. Nothing else.
     await noah.get('/patient/hero'); // refreshes Noah's own card
     const friend = (await emma.get('/patient/hero/friends')).body.friends[0];
     expect(friend.kind).toBe('friend');
     expect(Object.keys(friend.stats).sort()).toEqual(['level', 'skills', 'totalLevel']);
-    expect(Object.keys(friend.stats.skills)).toHaveLength(9);
+    expect(Object.keys(friend.stats.skills)).toHaveLength(10);
+    expect(Object.values(friend.stats.skills as Record<string, { locked: boolean }>).some((s) => s.locked)).toBe(true);
+    expect(friend.stats.skills.knowledge).toMatchObject({ locked: true, reason: 'soon', level: null });
     const noahState = (await noah.get('/patient/hero')).body;
     expect(friend.stats.level).toBe(noahState.level.level);
     expect(friend.stats.totalLevel).toBe(noahState.totalLevel);
     const json = JSON.stringify(friend);
-    for (const secret of ['pain', 'program', 'practice', 'therapist', 'session', 'email', 'Mulder']) expect(json.toLowerCase()).not.toContain(secret.toLowerCase());
+    for (const secret of ['pain', 'program', 'practice', 'therapist', 'session', 'email', 'Mulder', 'kg']) expect(json.toLowerCase()).not.toContain(secret.toLowerCase());
 
     // The hero table itself stays closed: Emma cannot read Noah's hero or body map.
     expect((await emma.get(`/patients/${s.patients.noah}/hero`)).status).toBe(403);

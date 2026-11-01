@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { login, seedDb, type Seed } from './helpers';
+import pg from 'pg';
+import { Client, login, seedDb, type Seed } from './helpers';
 import { resetRateLimits } from '../src/lib/rateLimit';
 
 let s: Seed;
@@ -34,8 +35,11 @@ describe('sports hero', () => {
     expect(after.level.xp).toBeGreaterThan(before.level.xp); // check-in week counts
     const recovery = after.skills.find((k: { key: string }) => k.key === 'recovery');
     expect(recovery.xp).toBeGreaterThan(0);
-    expect(after.skills).toHaveLength(9);
-    expect(after.totalLevel).toBeGreaterThanOrEqual(9);
+    expect(after.skills).toHaveLength(10);
+    expect(after.skills.find((k: { key: string; locked: boolean }) => k.key === 'knowledge')).toMatchObject({ locked: true, reason: 'soon' });
+    expect(after.skills.find((k: { key: string; locked: boolean }) => k.key === 'mobility').locked).toBe(true);
+    expect(after.skills.find((k: { key: string; locked: boolean }) => k.key === 'strength').locked).toBe(false);
+    expect(after.totalLevel).toBe(after.skills.reduce((sum: number, k: { locked: boolean; level: number }) => sum + (k.locked ? 0 : k.level), 0));
     // Discipline: XP per completed workout and per full week.
     expect(after.skills.find((k: { key: string }) => k.key === 'discipline').xp).toBe(after.totals.sessions * 20 + after.totals.fullWeeks * 50);
     expect(after.badges.find((b: { key: string }) => b.key === 'pain_down').earned).toBe(true);
@@ -84,7 +88,7 @@ describe('weekly quests, gear, daily check-in, trends', () => {
     // Gear: locked items cannot be worn, including level and skill pieces.
     const locked = after.gear.unlocked.includes('gold_shoes') ? null : 'gold_shoes';
     if (locked) expect((await patient.put('/patient/hero/gear', { equipped: [locked] })).body.error).toBe('gear_locked');
-    for (const key of ['pin', 'crown', 'gloves', 'cap']) {
+    for (const key of ['pin', 'crown', 'gloves', 'yoga_mat']) {
       if (!after.gear.unlocked.includes(key)) expect((await patient.put('/patient/hero/gear', { equipped: [key] })).body.error).toBe('gear_locked');
     }
     expect((await patient.put('/patient/hero/gear', { equipped: ['cape'] })).body.error).toBe('unknown_gear');
@@ -119,5 +123,44 @@ describe('weekly quests, gear, daily check-in, trends', () => {
     expect(seen.trends.find((t: { area: string }) => t.area === 'knee_l')).toBeTruthy();
     expect(seen.weekly.length).toBe(12);
     expect((await (await login('therapistB')).get(`/patients/${s.patients.emma}/hero`)).status).toBe(404);
+  });
+});
+
+describe('red-flag skill XP follows the account kind', () => {
+  it('gives a physiotherapy account the recovery bonus and withholds it from a personal account', async () => {
+    const owner = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
+    await owner.connect();
+    try {
+      const emma = await login('patientA');
+      const before = (await emma.get('/patient/hero')).body.skills.find((k: { key: string }) => k.key === 'recovery').xp as number;
+      const prog = (await owner.query(`SELECT id, practice_id, patient_id FROM programs WHERE patient_id = $1 AND status = 'active' LIMIT 1`, [s.patients.emma])).rows[0];
+      await owner.query(
+        `INSERT INTO red_flag_reports(practice_id, patient_id, program_id, flags) VALUES ($1,$2,$3,'["test"]'::jsonb)`,
+        [prog.practice_id, prog.patient_id, prog.id],
+      );
+      const after = (await emma.get('/patient/hero')).body.skills.find((k: { key: string }) => k.key === 'recovery').xp as number;
+      expect(after - before).toBe(25);
+
+      const personal = new Client();
+      const signed = await personal.post('/auth/signup', {
+        kind: 'personal', fullName: 'Sam de Vries', email: 'sam-skills@voorbeeld.test', password: 'Sterk-wachtwoord-1', acceptTerms: true,
+      });
+      expect(signed.status).toBe(201);
+      await personal.put('/patient/hero', LOOK);
+      const modes = (await personal.get('/patient/modes')).body;
+      const mob = modes.templates.find((t: { module: string }) => t.module === 'mobiliteit');
+      const started = await personal.post('/patient/programs/start', { templateId: mob.id });
+      expect(started.status).toBe(201);
+      const own = (await personal.get('/patient/hero')).body.skills.find((k: { key: string }) => k.key === 'recovery').xp as number;
+      const me = signed.body.user.patient;
+      await owner.query(
+        `INSERT INTO red_flag_reports(practice_id, patient_id, program_id, flags) VALUES ($1,$2,$3,'["test"]'::jsonb)`,
+        [me.practiceId, me.id, started.body.id],
+      );
+      const still = (await personal.get('/patient/hero')).body.skills.find((k: { key: string }) => k.key === 'recovery').xp as number;
+      expect(still).toBe(own);
+    } finally {
+      await owner.end();
+    }
   });
 });

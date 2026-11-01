@@ -8,9 +8,10 @@ import { HttpError, badRequest, notFound } from '../lib/errors';
 import { loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
 import { weeklyAdherence } from '../../../shared/adherence';
 import {
-  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, SKILLS, SKILL_XP, averagePain, levelFor, questTimeline,
-  questXp, skillLevel, skillOfWeek, skillsForExercise, weeklyQuests, xpFor, type SkillKey, type WeekData,
+  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
+  questXp, skillOfWeek, skillsForExercise, weeklyQuests, xpFor, type SkillKey, type WeekData,
 } from '../../../shared/hero';
+import { loadSkillSnapshot } from '../lib/skillState';
 
 /**
  * Sports hero (gamified revalidatie): the patient's own character, a body map with self-reported
@@ -95,29 +96,17 @@ async function heroState(tx: Tx, patientId: string) {
   const daily = (await tx.query('SELECT day::text AS day, area, score FROM daily_checkins WHERE patient_id = $1 ORDER BY day', [patientId])).rows as { day: string; area: string; score: number }[];
   const painBaseline = map.baseline ? averagePain(map.baseline.entries.map((e) => e.score)) ?? 0 : null;
   const painNow = map.current ? averagePain(map.current.entries.map((e) => e.score)) ?? 0 : null;
-  let xp = xpFor({ sessions: s.sessions, sessionsWithPain: s.with_pain, redFlags: s.red_flags, checkinWeeks: s.checkin_weeks }) + daily.length * CHECKIN_XP;
+  const skillsSnap = await loadSkillSnapshot(tx, patientId, weekly);
+  // Warning-sign XP is part of physiotherapy. Coach and personal accounts do not earn it.
+  let xp = xpFor({
+    sessions: s.sessions,
+    sessionsWithPain: s.with_pain,
+    redFlags: skillsSnap.accountKind === 'physio' ? s.red_flags : 0,
+    checkinWeeks: s.checkin_weeks,
+  }) + daily.length * CHECKIN_XP;
   const badgeInput = { sessions: s.sessions, sessionsWithPain: s.with_pain, redFlags: s.red_flags, fullWeeks, phasesCompleted: s.phases_done, painBaseline, painNow };
   // Current chapter: the active rehabilitation programme with a phase.
-  // ---- Skills: XP per skill from what the patient actually did. ----
-  const logs = (
-    await tx.query(
-      `SELECT e.training_categories, e.movement_category, count(*)::int AS n
-         FROM exercise_logs l JOIN exercises e ON e.id = l.exercise_id
-        WHERE l.patient_id = $1 AND l.completed
-        GROUP BY e.training_categories, e.movement_category`,
-      [patientId],
-    )
-  ).rows;
-  const skillXp: Record<SkillKey, number> = Object.fromEntries(SKILLS.map((k) => [k.key, 0])) as Record<SkillKey, number>;
-  for (const r of logs) for (const k of skillsForExercise(r.training_categories ?? [], r.movement_category)) skillXp[k] += r.n * SKILL_XP.exercise;
-  skillXp.strength += s.strength_sets * SKILL_XP.strengthSet;
-  skillXp.discipline += s.sessions * SKILL_XP.session + fullWeeks * SKILL_XP.fullWeek;
-  skillXp.recovery +=
-    s.with_pain * SKILL_XP.painReported +
-    s.checkin_weeks * SKILL_XP.painCheckin +
-    (map.checkins > 1 && painBaseline !== null && painNow !== null ? Math.max(0, Math.round((painBaseline - painNow) * SKILL_XP.painPointDown)) : 0);
-  skillXp.recovery += daily.length * CHECKIN_XP;
-  const skills = SKILLS.map((k) => ({ key: k.key, ...skillLevel(skillXp[k.key]) }));
+  const skills = skillsSnap.skills;
 
   // ---- Weekly quests: evaluated for every week with activity, so XP for past weeks stays. ----
   const perWeek = (
@@ -172,7 +161,7 @@ async function heroState(tx: Tx, patientId: string) {
 
   // ---- Gear: unlocked by hero level, skill level and other real progress. ----
   const reached = levelFor(xp);
-  const gearInput = { skills: Object.fromEntries(skills.map((k) => [k.key, k.level])), sessions: s.sessions, phasesCompleted: s.phases_done, chestWeeks, level: reached.level };
+  const gearInput = { skills: skillsSnap.gearLevels, sessions: s.sessions, phasesCompleted: s.phases_done, chestWeeks, level: reached.level };
   const unlocked = GEAR.filter((g) => g.unlocked(gearInput)).map((g) => g.key);
   const equipped = ((await tx.query('SELECT gear FROM patient_heroes WHERE patient_id = $1', [patientId])).rows[0]?.gear ?? []).filter((g: string) => unlocked.includes(g));
 
@@ -239,7 +228,9 @@ async function heroState(tx: Tx, patientId: string) {
     level: reached,
     badges: BADGES.map((b) => ({ key: b.key, earned: b.earned(badgeInput) })),
     skills,
-    totalLevel: skills.reduce((a, k) => a + k.level, 0),
+    totalLevel: skillsSnap.totalLevel,
+    disciplineStreak: skillsSnap.disciplineStreak,
+    strengthEstimates: skillsSnap.strengthEstimates,
     totals: { sessions: s.sessions, fullWeeks, phasesCompleted: s.phases_done, since, painStart: painBaseline, painNow: map.checkins > 1 ? painNow : null },
     quest,
     weekly: { weekStart: thisWeek, quests, chestWeeks, xpPerQuest: QUEST_XP, chestXp: CHEST_XP },
@@ -287,11 +278,11 @@ heroPatient.get('/hero', async (c) => {
 // ---------------------------------------------------------------------------------------------
 
 type HeroStateT = Awaited<ReturnType<typeof heroState>>;
-/** The only numbers a friend ever sees. */
+/** The only numbers a friend ever sees: levels, or a lock. No kilograms, pain or programme text. */
 export const friendCard = (s: HeroStateT) => ({
   level: s.level.level,
   totalLevel: s.totalLevel,
-  skills: Object.fromEntries(s.skills.map((k) => [k.key, k.level])) as Record<SkillKey, number>,
+  skills: Object.fromEntries(s.skills.map((k) => [k.key, friendSkillCard(k)])) as Record<SkillKey, ReturnType<typeof friendSkillCard>>,
 });
 
 /** Update the shared card when the patient shares and something changed. */
@@ -494,7 +485,15 @@ heroStaff.get('/:id/hero', async (c) => {
       if (!ok) throw notFound();
       const hero = mapHero((await tx.query('SELECT * FROM patient_heroes WHERE patient_id = $1', [id])).rows[0]);
       const inputs = await loadAdherenceInputs(tx, [id]);
-      return { hero, painMap: await painMap(tx, id), trends: await painTrends(tx, id), weekly: weeklyForPatient(inputs, id, 12) };
+      const skills = await loadSkillSnapshot(tx, id, weeklyForPatient(inputs, id, 52));
+      return {
+        hero,
+        painMap: await painMap(tx, id),
+        trends: await painTrends(tx, id),
+        weekly: weeklyForPatient(inputs, id, 12),
+        // Kilograms stay on the professional record. The friend card never includes this list.
+        strengthEstimates: skills.strengthEstimates,
+      };
     }),
   );
 });

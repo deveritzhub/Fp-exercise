@@ -1,5 +1,6 @@
 import type { Tx } from '../db';
 import { best1RM, estimate1RM, oneRmTestAllowed, progressionAdvice, repRange, type Advice } from '../../../shared/strength';
+import { epley1Rm, strengthAwards, type RmMeasurement } from '../../../shared/hero';
 
 type SetRow = { weightKg: number | null; reps: number | null; rpe: number | null; rir: number | null; pain: number | null; setNo: number };
 
@@ -22,7 +23,9 @@ export async function loadStrength(tx: Tx, patientId: string) {
   const sets = (
     await tx.query(
       `SELECT s.exercise_id, s.session_id, s.set_no, s.weight_kg, s.reps, s.rpe, s.rir, s.pain, s.created_at,
-              coalesce(ws.completed_at, ws.started_at) AS at
+              coalesce(ws.completed_at, ws.started_at) AS at,
+              to_char(timezone('Europe/Amsterdam', coalesce(ws.completed_at, ws.started_at)), 'YYYY-MM-DD') AS day,
+              ws.pain AS session_pain
          FROM strength_sets s JOIN workout_sessions ws ON ws.id = s.session_id
         WHERE s.patient_id = $1 ORDER BY at DESC, s.set_no`,
       [patientId],
@@ -30,11 +33,32 @@ export async function loadStrength(tx: Tx, patientId: string) {
   ).rows;
   const tests = (
     await tx.query(
-      `SELECT t.exercise_id, t.weight_kg, t.screening_ok, t.created_at, e.name_nl, e.name_en
+      `SELECT t.id, t.exercise_id, t.weight_kg, t.screening_ok, t.created_at, e.name_nl, e.name_en,
+              to_char(timezone('Europe/Amsterdam', t.created_at), 'YYYY-MM-DD') AS day
          FROM one_rm_tests t JOIN exercises e ON e.id = t.exercise_id WHERE t.patient_id = $1 ORDER BY t.created_at DESC`,
       [patientId],
     )
   ).rows;
+
+  const measurements: RmMeasurement[] = [];
+  const bestBySession = new Map<string, RmMeasurement>();
+  for (const s of sets) {
+    const est = epley1Rm(s.weight_kg === null ? null : Number(s.weight_kg), s.reps === null ? null : Number(s.reps));
+    if (est === null) continue;
+    const key = `${s.session_id}|${s.exercise_id}`;
+    const setPain = s.pain === null ? null : Number(s.pain);
+    const sessPain = s.session_pain === null ? null : Number(s.session_pain);
+    const pain = setPain === null ? sessPain : sessPain === null ? setPain : Math.max(setPain, sessPain);
+    const cur = bestBySession.get(key);
+    if (!cur || est > cur.estimateKg) bestBySession.set(key, { exerciseId: s.exercise_id, sessionId: s.session_id, date: s.day, estimateKg: est, pain });
+  }
+  measurements.push(...bestBySession.values());
+  for (const t of tests) {
+    if (!t.screening_ok || t.weight_kg === null) continue;
+    measurements.push({ exerciseId: t.exercise_id, sessionId: `test:${t.id}`, date: t.day, estimateKg: Number(t.weight_kg), pain: null });
+  }
+  const awarded = strengthAwards(measurements);
+  const round1 = (n: number) => Math.round(n * 10) / 10;
 
   const exerciseIds = [...new Set([...items.map((i) => i.exercise_id), ...sets.map((s) => s.exercise_id)])];
   const byExercise = exerciseIds.map((exerciseId) => {
@@ -57,6 +81,7 @@ export async function loadStrength(tx: Tx, patientId: string) {
     const earlier = values.filter((v) => latest && new Date(v.date) < new Date(latest.date)).map((v) => v.value);
     const latestIsPr = !!latest?.best && earlier.length > 0 && latest.best > Math.max(...earlier);
     const advice: Advice = item ? progressionAdvice(sessions.map((x) => ({ sets: x.sets })), repRange(item.notes, item.reps)) : { kind: 'none' };
+    const epley = awarded.summaries.find((x) => x.exerciseId === exerciseId);
     return {
       exerciseId,
       nameNl: item?.name_nl ?? tests.find((t) => t.exercise_id === exerciseId)?.name_nl ?? '',
@@ -71,6 +96,14 @@ export async function loadStrength(tx: Tx, patientId: string) {
       latestIsPr,
       lastSets: sessions[0]?.sets ?? [],
       advice,
+      epley: epley
+        ? {
+            startKg: epley.startKg === null ? null : round1(epley.startKg),
+            latestKg: epley.latestKg === null ? null : round1(epley.latestKg),
+            progressPct: epley.progressPct,
+            history: epley.history.map((h) => ({ date: h.date, kg: round1(h.kg) })),
+          }
+        : null,
     };
   });
   // Names for exercises only known from sets (e.g. a stopped programme).
