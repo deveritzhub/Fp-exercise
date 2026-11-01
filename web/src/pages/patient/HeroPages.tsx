@@ -10,6 +10,7 @@ import { cn } from '@/lib/cn';
 import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, Spinner, useToast } from '@/components/ui';
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
+import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
 import { SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
 import { BADGES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
@@ -60,6 +61,23 @@ function Choice<T extends string>({ legend, name, value, options, onChange, rend
 }
 
 const swatch = (bg: string) => <span className="h-7 w-7 shrink-0 rounded-full border border-ink-200 shadow-xs" style={{ background: bg }} aria-hidden />;
+
+/** Strength level ceiling: real lifts relative to body weight decide how far the level can go. */
+function StrengthCeiling({ c }: { c: NonNullable<HeroState['skills'][number]['ceiling']> }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const L = (k: keyof typeof COMPOUND_LABEL) => COMPOUND_LABEL[k][nl ? 0 : 1];
+  return (
+    <div className="rounded-xl bg-canvas p-3 text-[14px] text-ink-700" data-testid="strength-ceiling">
+      <p className="font-semibold text-ink-900">{t(`Maximaal level nu: ${c.cap}`, `Maximum level now: ${c.cap}`)} · {TIER_LABEL[c.tier][nl ? 0 : 1]}</p>
+      {c.reason === 'no_compound' && <p>{t('Log een squat, deadlift, bankdrukken of overhead press in je krachtlog om hoger te kunnen. Level 99 vraagt elite-niveau.', 'Log a squat, deadlift, bench press or overhead press in your strength log to go higher. Level 99 takes elite lifting.')}</p>}
+      {c.reason === 'no_weight' && <p>{t('Vul je lichaamsgewicht in: het plafond hangt af van je lift ten opzichte van je eigen gewicht.', 'Enter your body weight: the ceiling depends on your lift relative to your own weight.')}</p>}
+      {c.best && <p>{t(`Beste lift: ${L(c.best.lift)} ${c.best.oneRmKg.toLocaleString('nl-NL')} kg = ${c.best.ratio.toLocaleString('nl-NL')}× je lichaamsgewicht.`, `Best lift: ${L(c.best.lift)} ${c.best.oneRmKg} kg = ${c.best.ratio}× your body weight.`)}</p>}
+      {c.next && <p>{t(`Volgende stap: ${L(c.next.lift)} ${c.next.kg.toLocaleString('nl-NL')} kg (1RM) → maximaal level ${c.next.cap}.`, `Next step: ${L(c.next.lift)} ${c.next.kg} kg (1RM) → maximum level ${c.next.cap}.`)}</p>}
+      {c.capped && <p className="font-medium text-accent">{t('Je XP telt gewoon door; je level gaat verder zodra je sterker wordt.', 'Your XP keeps counting; your level moves on as soon as you get stronger.')}</p>}
+    </div>
+  );
+}
 
 /** Five skin tones: the groups the photos exist for. */
 function SkinChoice({ look, onChange }: { look: HeroLook; onChange: (skin: string) => void }) {
@@ -489,6 +507,7 @@ function Skills({ d }: { d: HeroState }) {
                 <p className="text-ink-700">{t('Zo train je deze skill:', 'How to train this skill:')} {nl ? info.howNl : info.howEn}</p>
                 {skillTitle(sel.key, sel.level, nl) && <p className="font-semibold text-ink-900">{skillTitle(sel.key, sel.level, nl)}</p>}
                 {sel.key === 'discipline' && d.disciplineStreak > 0 && <p className="text-ink-700">{t(`Reeks: ${d.disciplineStreak} volle weken. Eén vrije week per 8 weken telt niet als breuk.`, `Run: ${d.disciplineStreak} full weeks. One free week per 8 weeks does not break it.`)}</p>}
+                {sel.key === 'strength' && sel.ceiling && <StrengthCeiling c={sel.ceiling} />}
                 {sel.key === 'strength' && d.strengthEstimates.length > 0 && (
                   <ul className="space-y-1">
                     {d.strengthEstimates.map((e) => (

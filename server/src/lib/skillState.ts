@@ -1,7 +1,9 @@
 import type { Tx } from '../db';
+import { strengthCap, type StrengthCap } from '../../../shared/strengthStandards';
+import { gymKey, setEstimate } from '../../../shared/gymLog';
 import { isoWeekday, parseDate } from '../../../shared/adherence';
 import {
-  SKILLS, addDays, computeSkillXp, epley1Rm, friendSkillCard, painDropEvents, plannedRestDates, skillLevel, skillLock, skillsForExercise,
+  SKILLS, addDays, computeSkillXp, epley1Rm, friendSkillCard, painDropEvents, plannedRestDates, skillLevel, skillLock, skillXpForLevel, skillsForExercise,
   type FriendSkillCard, type LoggedExercise, type RecoveryEvent, type RmMeasurement, type SkillKey, type SkillLockCode, type SkillLockContext,
 } from '../../../shared/hero';
 
@@ -15,6 +17,8 @@ export type SkillView = {
   locked: boolean;
   reason: SkillLockCode | null;
   phase: number | null;
+  /** Strength only: the level ceiling from the best compound lift relative to body weight. */
+  ceiling?: StrengthCap & { capped: boolean };
 };
 
 export type StrengthEstimate = {
@@ -134,6 +138,22 @@ export async function loadSkillSnapshot(tx: Tx, patientId: string, weekly: Week[
       [patientId],
     )
   ).rows;
+
+  // Krachtlog (any place) and the body weight for the Strength ceiling.
+  const gym = (
+    await tx.query(
+      `SELECT exercise_name, weight_kg, reps, to_char(day, 'YYYY-MM-DD') AS day FROM gym_sets WHERE patient_id = $1`,
+      [patientId],
+    )
+  ).rows;
+  const body = (
+    await tx.query(
+      `SELECT (SELECT kg FROM weight_logs WHERE patient_id = $1 ORDER BY day DESC LIMIT 1) AS logged,
+              (SELECT weight_kg FROM patient_body_metrics WHERE patient_id = $1) AS metric,
+              (SELECT frame FROM patient_heroes WHERE patient_id = $1) AS frame`,
+      [patientId],
+    )
+  ).rows[0];
 
   const sessions = (
     await tx.query(
@@ -275,6 +295,19 @@ export async function loadSkillSnapshot(tx: Tx, patientId: string, weekly: Week[
     });
   }
 
+  // Krachtlog: best estimate per exercise per day. New records there also earn Strength XP.
+  const gymBest = new Map<string, RmMeasurement>();
+  for (const g of gym) {
+    const est = setEstimate(Number(g.weight_kg), Number(g.reps));
+    if (est === null) continue;
+    const id = `gym:${gymKey(g.exercise_name)}`;
+    names.set(id, { nl: g.exercise_name, en: g.exercise_name });
+    const key = `${g.day}|${id}`;
+    const pain = dayPain.get(g.day);
+    if (!gymBest.has(key) || est > gymBest.get(key)!.estimateKg) gymBest.set(key, { exerciseId: id, sessionId: `gym:${g.day}`, date: g.day, estimateKg: est, pain: pain === undefined ? null : pain });
+  }
+  measurements.push(...gymBest.values());
+
   const trained = new Set(sessions.map((s) => s.day));
   const restPrograms = new Map<string, { start: string | null; end: string | null; weekdays: number[] }>();
   for (const p of programs) {
@@ -347,12 +380,26 @@ export async function loadSkillSnapshot(tx: Tx, patientId: string, weekly: Week[
     accountKind,
   });
 
+  // Best estimated 1RM per exercise (all sources), for the Strength ceiling.
+  const bestByName = new Map<string, number>();
+  for (const m of measurements) {
+    const n = names.get(m.exerciseId);
+    for (const nm of [n?.nl, n?.en]) if (nm) bestByName.set(nm, Math.max(bestByName.get(nm) ?? 0, m.estimateKg));
+  }
+  const bodyweight = body?.logged ? Number(body.logged) : body?.metric ? Number(body.metric) : null;
+  const ceiling = strengthCap({ frame: body?.frame ?? null, bodyweightKg: bodyweight, lifts: [...bestByName].map(([name, oneRmKg]) => ({ name, oneRmKg })) });
+
   const skills: SkillView[] = SKILLS.map((k) => {
     const lock = skillLock(k.key, ctx);
-    return { key: k.key, ...skillLevel(computed.xp[k.key] + (extraXp[k.key] ?? 0)), locked: lock.locked, reason: lock.reason, phase: lock.phase };
+    const lv = skillLevel(computed.xp[k.key] + (extraXp[k.key] ?? 0));
+    if (k.key !== 'strength') return { key: k.key, ...lv, locked: lock.locked, reason: lock.reason, phase: lock.phase };
+    // XP keeps counting; the level waits at the ceiling until the lifts catch up.
+    const capped = lv.level > ceiling.cap;
+    const shown = capped ? { ...skillLevel(skillXpForLevel(ceiling.cap)), xp: lv.xp, progress: 1 } : lv;
+    return { key: k.key, ...shown, locked: lock.locked, reason: lock.reason, phase: lock.phase, ceiling: { ...ceiling, capped } };
   });
   const gearLevels = Object.fromEntries(skills.map((s) => [s.key, s.locked ? 0 : s.level])) as Partial<Record<SkillKey, number>>;
-  const strengthEstimates: StrengthEstimate[] = computed.strength.map((s) => ({
+  const strengthEstimates: StrengthEstimate[] = computed.strength.filter((s) => !s.exerciseId.startsWith('gym:')).map((s) => ({
     exerciseId: s.exerciseId,
     nameNl: names.get(s.exerciseId)?.nl ?? '',
     nameEn: names.get(s.exerciseId)?.en ?? '',

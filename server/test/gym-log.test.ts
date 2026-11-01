@@ -64,3 +64,22 @@ describe('krachtlog with 1RM meter', () => {
     expect((await other.post(`/patients/${emma}/gym/sets`, { exerciseName: 'Squat', weightKg: 85, reps: 5 })).status).toBe(404);
   });
 });
+
+describe('Strength level follows real lifts', () => {
+  it('reports the ceiling from the best compound lift relative to body weight', async () => {
+    const patient = await login('patientB');
+    await patient.put('/patient/hero', { heroName: 'Noah', frame: 'm', build: 'average', skin: 's3', hair: 'short', hairColor: 'darkbrown', eyeColor: 'brown', beard: 'none', glasses: 'none', outfit: 'forest', sport: 'fitness' });
+    const strength = async () => (await patient.get('/patient/hero')).body.skills.find((k: { key: string }) => k.key === 'strength');
+    // No compound lift yet: the base ceiling.
+    expect((await strength()).ceiling).toMatchObject({ cap: 50, reason: 'no_compound' });
+    await patient.post('/patient/gym/sets', { exerciseName: 'Back squat', weightKg: 100, reps: 5 });
+    // Compound lift, but no body weight.
+    expect((await strength()).ceiling).toMatchObject({ reason: 'no_weight' });
+    expect((await patient.post('/patient/logs/weight', { kg: 80 })).status).toBe(201);
+    // 114.5 kg estimated / 80 kg = 1.43 × body weight: between novice (1.25) and intermediate (1.5).
+    const c = (await strength()).ceiling;
+    expect(c).toMatchObject({ reason: 'ok', tier: 2, best: { lift: 'squat', oneRmKg: 114.5, ratio: 1.43 }, next: { lift: 'squat', kg: 120, cap: 72 } });
+    expect(c.cap).toBeGreaterThan(62);
+    expect(c.cap).toBeLessThan(72);
+  });
+});

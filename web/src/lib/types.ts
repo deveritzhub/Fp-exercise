@@ -171,7 +171,7 @@ export type HeroState = {
   painMap: { baseline: PainCheckin | null; current: PainCheckin | null; checkins: number };
   level: { level: number; xp: number; from: number; to: number; progress: number };
   badges: { key: string; earned: boolean }[];
-  skills: { key: import('@shared/hero').SkillKey; level: number; xp: number; from: number; to: number; progress: number; locked: boolean; reason: import('@shared/hero').SkillLockCode | null; phase: number | null }[];
+  skills: { key: import('@shared/hero').SkillKey; level: number; xp: number; from: number; to: number; progress: number; locked: boolean; reason: import('@shared/hero').SkillLockCode | null; phase: number | null; ceiling?: import('@shared/strengthStandards').StrengthCap & { capped: boolean } }[];
   totalLevel: number;
   disciplineStreak: number;
   /** Own estimated maximum per exercise. Never copied onto a friend card. */
