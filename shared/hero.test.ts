@@ -100,7 +100,10 @@ describe('weekly quests and gear', () => {
   it('gear unlocks from real progress', () => {
     const none = { skills: {}, sessions: 0, phasesCompleted: 0, chestWeeks: 0, level: 1 };
     expect(GEAR.filter((g) => g.unlocked(none))).toHaveLength(0);
-    expect(GEAR.filter((g) => g.unlocked({ ...none, skills: { discipline: 10 }, sessions: 25 })).map((g) => g.key).sort()).toEqual(['captain', 'gold_shoes']);
+    expect(GEAR.filter((g) => g.unlocked({ ...none, skills: { discipline: 10 }, sessions: 25 })).map((g) => g.key).sort()).toEqual(['captain', 'gold_shoes', 'headphones']);
+    // Starter pieces: one per open skill at level 1; a locked skill (0) gives none.
+    const starters = GEAR.filter((g) => g.unlocked({ ...none, skills: { strength: 1, balance: 1, power: 0 } })).map((g) => g.key).sort();
+    expect(starters).toEqual(['crew_socks', 'wristbands']);
   });
 
   it('level-10 gear unlocks per skill; a high hero level does not', () => {

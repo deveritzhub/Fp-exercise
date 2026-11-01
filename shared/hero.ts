@@ -692,6 +692,21 @@ export type GearInput = { skills: Partial<Record<SkillKey, number>>; sessions: n
 
 const lvl = (g: GearInput) => g.level ?? 1;
 const skill = (g: GearInput, key: SkillKey) => g.skills[key] ?? 1;
+/** A skill is open (level 1 or more, not locked). Locked skills are 0 in the gear levels. */
+const open = (g: GearInput, key: SkillKey) => (g.skills[key] ?? 0) >= 1;
+
+/** Starter piece per skill: yours as soon as the skill opens (level 1), so every skill has something to wear right away. */
+export const SKILL_STARTER: Partial<Record<SkillKey, { key: string; nl: string; en: string }>> = {
+  strength: { key: 'wristbands', nl: 'Polsbandjes', en: 'Wristbands' },
+  mobility: { key: 'headband', nl: 'Hoofdband', en: 'Headband' },
+  balance: { key: 'crew_socks', nl: 'Grip-sokken', en: 'Grip socks' },
+  stability: { key: 'sleeve', nl: 'Compressiesleeve', en: 'Compression sleeve' },
+  power: { key: 'cap', nl: 'Pet', en: 'Cap' },
+  endurance: { key: 'watch', nl: 'Sporthorloge', en: 'Sports watch' },
+  sport: { key: 'shin_guards', nl: 'Scheenbeschermers', en: 'Shin guards' },
+  discipline: { key: 'headphones', nl: 'Koptelefoon', en: 'Headphones' },
+  recovery: { key: 'scarf', nl: 'Warme sjaal', en: 'Warm scarf' },
+};
 
 /** Level 10 wearable for each trainable skill. Knowledge has none. The captain band is the discipline item. */
 export const SKILL_GEAR: Partial<Record<SkillKey, string>> = {
@@ -715,6 +730,12 @@ export const GEAR: { key: string; nl: string; en: string; unlockNl: string; unlo
   { key: 'pin', nl: 'Borstspeld', en: 'Chest pin', unlockNl: 'Level 2', unlockEn: 'Level 2', unlocked: (g) => lvl(g) >= 2 },
   { key: 'visor', nl: 'Klep', en: 'Visor', unlockNl: 'Level 4', unlockEn: 'Level 4', unlocked: (g) => lvl(g) >= 4 },
   { key: 'crown', nl: 'Kroon', en: 'Crown', unlockNl: 'Level 12', unlockEn: 'Level 12', unlocked: (g) => lvl(g) >= 12 },
+  // Starter pieces: one per skill, at level 1 (as soon as the skill opens).
+  ...(Object.entries(SKILL_STARTER) as [SkillKey, { key: string; nl: string; en: string }][]).map(([k, it]) => ({
+    key: it.key, nl: it.nl, en: it.en,
+    unlockNl: `${SKILLS.find((x) => x.key === k)?.nl ?? k} level 1`, unlockEn: `${SKILLS.find((x) => x.key === k)?.en ?? k} level 1`,
+    unlocked: (g: GearInput) => open(g, k),
+  })),
   // One level-10 piece per skill. Worn via the existing gear list; it never unlocks an exercise.
   { key: 'gloves', nl: 'Handschoenen', en: 'Gloves', unlockNl: 'Kracht level 10', unlockEn: 'Strength level 10', unlocked: (g) => skill(g, 'strength') >= SKILL_GEAR_LEVEL },
   { key: 'yoga_mat', nl: 'Yogamat op de rug', en: 'Yoga mat on the back', unlockNl: 'Mobiliteit level 10', unlockEn: 'Mobility level 10', unlocked: (g) => skill(g, 'mobility') >= SKILL_GEAR_LEVEL },
