@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Beef, Dumbbell, Footprints, Minus, Plus, Scale } from 'lucide-react';
+import { Beef, Droplets, Dumbbell, Footprints, Minus, Moon, Plus, Scale } from 'lucide-react';
+import { SleepLog, WaterLog } from './Survival';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
@@ -9,7 +10,7 @@ import { Button, Dialog, Spinner, useToast } from '@/components/ui';
 import { useHero } from '@/pages/patient/HeroPages';
 import { ProteinQuickAdd, ProteinRing, WeightLog, refreshHero, zoneLabel } from './Nutrition';
 
-type Tab = 'protein' | 'weight' | 'steps';
+type Tab = 'protein' | 'water' | 'weight' | 'steps' | 'sleep';
 
 /**
  * The + button: log protein, weight or steps in two taps from anywhere in the patient app.
@@ -20,13 +21,21 @@ export function QuickLogButton() {
   const hero = useHero();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>('protein');
+  useEffect(() => {
+    const on = (e: Event) => {
+      setTab((e as CustomEvent<Tab>).detail ?? 'protein');
+      setOpen(true);
+    };
+    window.addEventListener('fp:quicklog', on);
+    return () => window.removeEventListener('fp:quicklog', on);
+  }, []);
   if (!hero.data?.hero) return null;
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label={t('Snel loggen: eiwit, gewicht of stappen', 'Quick log: protein, weight or steps')}
+        aria-label={t('Snel loggen: eiwit, water, gewicht, stappen of slaap', 'Quick log: protein, water, weight, steps or sleep')}
         className="tap fixed z-30 flex h-16 w-16 items-center justify-center rounded-full bg-accent text-accent-ink shadow-pop ring-4 ring-white transition-transform hover:scale-105 active:scale-95 motion-reduce:transition-none print:hidden"
         style={{ right: 'max(16px, calc(env(safe-area-inset-right, 0px) + 16px))', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}
       >
@@ -34,15 +43,17 @@ export function QuickLogButton() {
       </button>
       <Dialog open={open} onClose={() => setOpen(false)} sheet size="md" title={t('Snel loggen', 'Quick log')}>
         <div className="space-y-4">
-          <div role="tablist" aria-label={t('Wat wil je loggen?', 'What do you want to log?')} className="grid grid-cols-3 gap-1 rounded-2xl bg-ink-100 p-1">
+          <div role="tablist" aria-label={t('Wat wil je loggen?', 'What do you want to log?')} className="grid grid-cols-5 gap-1 rounded-2xl bg-ink-100 p-1">
             {([
               ['protein', Beef, t('Eiwit', 'Protein')],
+              ['water', Droplets, t('Water', 'Water')],
               ['weight', Scale, t('Gewicht', 'Weight')],
               ['steps', Footprints, t('Stappen', 'Steps')],
+              ['sleep', Moon, t('Slaap', 'Sleep')],
             ] as const).map(([k, Icon, label]) => (
               <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-                className={cn('flex min-h-[48px] items-center justify-center gap-1.5 rounded-xl text-[14.5px] font-semibold', tab === k ? 'bg-white text-ink-950 shadow-xs' : 'text-ink-600')}>
-                <Icon className="h-4 w-4" aria-hidden />{label}
+                className={cn('flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl text-[12px] font-semibold', tab === k ? 'bg-white text-ink-950 shadow-xs' : 'text-ink-600')}>
+                <Icon className="h-5 w-5" aria-hidden /><span className="max-w-full truncate">{label}</span>
               </button>
             ))}
           </div>
@@ -58,6 +69,10 @@ export function QuickLogButton() {
               </div>
               <ProteinQuickAdd d={hero.data} />
             </div>
+          ) : tab === 'water' ? (
+            <div role="tabpanel"><WaterLog d={hero.data} /></div>
+          ) : tab === 'sleep' ? (
+            <div role="tabpanel"><SleepLog d={hero.data} /></div>
           ) : tab === 'weight' ? (
             <div role="tabpanel"><WeightLog d={hero.data} /></div>
           ) : (

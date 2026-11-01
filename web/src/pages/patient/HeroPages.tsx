@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Award, BookOpen, CalendarCheck, Check, ChevronRight, CircleCheck, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Utensils, Zap, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Award, BookOpen, CalendarCheck, Check, ChevronRight, CircleCheck, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Utensils, Droplets, Zap, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -16,6 +16,7 @@ import { LOG_XP } from '@shared/patientLogs';
 import type { HeroState } from '@/lib/types';
 import { PainTrendList } from '@/components/hero/PainTrend';
 import { Fold } from '@/components/app/Fold';
+import { SurvivalPanel } from '@/components/patient/Survival';
 import { FriendsCard } from './FriendsPage';
 
 export const HERO_LATER_KEY = 'fp.heroLater';
@@ -750,6 +751,10 @@ export function HeroPage() {
         </details>
       </section>
 
+      <Fold id="hero-survival" defaultOpen icon={<Droplets className="h-5 w-5" />} title={t('Conditie van je held', 'Your hero’s condition')}
+        summary={t(`Water ${Math.round(d.logs.survival.water.ratio * 100)}% · energie ${d.logs.survival.energy}%`, `Water ${Math.round(d.logs.survival.water.ratio * 100)}% · energy ${d.logs.survival.energy}%`)}>
+        <SurvivalPanel d={d} />
+      </Fold>
       <DailyCheckin d={d} />
       <Fold id="hero-log" defaultOpen icon={<Utensils className="h-5 w-5" />} title={t('Eigen training en eiwit', 'Your own workout and protein')}
         summary={d.logs.protein.goal !== null ? t(`Eiwit ${d.logs.protein.grams} van ${d.logs.protein.goal} g`, `Protein ${d.logs.protein.grams} of ${d.logs.protein.goal} g`) : t('Eiwit en eigen trainingen bijhouden', 'Track protein and your own workouts')}>

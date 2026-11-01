@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Beef, Dumbbell, Footprints, Scale, Trash2 } from 'lucide-react';
+import { ArrowLeft, Beef, Droplets, Dumbbell, Footprints, Moon, Scale, Trash2 } from 'lucide-react';
 import { Fold } from '@/components/app/Fold';
+import { SleepLog, WaterLog } from '@/components/patient/Survival';
 import { LOG_XP, STEPS, TRAINING_KINDS, type TrainingKind } from '@shared/patientLogs';
 import { SKILLS as HERO_SKILLS } from '@shared/hero';
 import { api } from '@/lib/api';
@@ -37,6 +38,14 @@ export function LogbookPage() {
       <Fold id="log-protein" defaultOpen icon={<Beef className="h-5 w-5" />} title={t('Eiwit', 'Protein')}
         summary={d.logs.protein.goal !== null ? t(`${d.logs.protein.grams} van ${d.logs.protein.goal} g vandaag`, `${d.logs.protein.grams} of ${d.logs.protein.goal} g today`) : t(`${d.logs.protein.grams} g vandaag`, `${d.logs.protein.grams} g today`)}>
         <ProteinCard d={d} />
+      </Fold>
+      <Fold id="log-water" icon={<Droplets className="h-5 w-5" />} title={t('Water', 'Water')}
+        summary={t(`${(d.logs.survival.water.ml / 1000).toLocaleString('nl-NL')} van ${(d.logs.survival.water.target / 1000).toLocaleString('nl-NL')} L`, `${d.logs.survival.water.ml / 1000} of ${d.logs.survival.water.target / 1000} L`)}>
+        <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="water-title"><h2 id="water-title" className="t-section mb-3">{t('Water', 'Water')}</h2><WaterLog d={d} /></section>
+      </Fold>
+      <Fold id="log-sleep" icon={<Moon className="h-5 w-5" />} title={t('Slaap', 'Sleep')}
+        summary={d.logs.survival.sleep ? t(`${d.logs.survival.sleep.hours.toLocaleString('nl-NL')} uur vannacht`, `${d.logs.survival.sleep.hours} h last night`) : t('Nog niet ingevuld', 'Not filled in yet')}>
+        <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="sleep-title"><h2 id="sleep-title" className="t-section mb-3">{t('Slaap', 'Sleep')}</h2><SleepLog d={d} /></section>
       </Fold>
       <Fold id="log-weight" icon={<Scale className="h-5 w-5" />} title={t('Gewicht', 'Weight')}
         summary={d.logs.weight.latestKg !== null ? `${d.logs.weight.latestKg.toLocaleString(locale === 'nl' ? 'nl-NL' : 'en-GB')} kg` : t('Nog niet ingevuld', 'Not filled in yet')}>

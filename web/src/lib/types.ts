@@ -209,6 +209,13 @@ export type PatientLogState = {
     entries: { id: string; grams: number; label: string | null; createdAt: string }[];
   };
   weight: { latestKg: number | null; heightCm: number | null; olderAdult: boolean; history: { day: string; kg: number }[] };
+  survival: {
+    water: { ml: number; target: number; ratio: number; entries: { id: string; ml: number; createdAt: string }[] };
+    sleep: { hours: number; quality: number; score: number } | null;
+    energy: number;
+    stiffness: number;
+    status: { key: string; kind: 'buff' | 'tip'; nl: string; en: string }[];
+  };
   trainings: {
     id: string;
     day: string;

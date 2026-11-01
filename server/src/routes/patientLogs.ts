@@ -6,6 +6,7 @@ import { parse, uuidParam } from '../lib/validate';
 import { badRequest, notFound } from '../lib/errors';
 import { PROTEIN, SELF_LIMITS, TRAINING_KIND_KEYS, minutesOk } from '../../../shared/patientLogs';
 import { proteinTargets } from '../../../shared/protein';
+import { WATER } from '../../../shared/survival';
 
 /** Own workouts and protein grams. Patient only; see migration 017. */
 export const patientLogs = new Hono<AppEnv>();
@@ -65,6 +66,40 @@ patientLogs.post('/logs/weight', async (c) => {
     );
   });
   return c.json({ ok: true }, 201);
+});
+
+/** A glass or bottle of water. A daily maximum guards against drinking far too much. */
+patientLogs.post('/logs/water', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ ml: z.number().int().min(50).max(WATER.maxEntry) }), await c.req.json());
+  await withUser(user.id, async (tx) => {
+    const sum = Number((await tx.query('SELECT coalesce(sum(ml), 0) AS s FROM water_logs WHERE patient_id = $1 AND day = now()::date', [patient.id])).rows[0].s);
+    if (sum + b.ml > WATER.maxPerDay) throw badRequest('too_much_water');
+    await tx.query('INSERT INTO water_logs(patient_id, practice_id, day, ml) VALUES ($1, app.patient_practice($1), now()::date, $2)', [patient.id, b.ml]);
+  });
+  return c.json({ ok: true }, 201);
+});
+
+patientLogs.delete('/logs/water/:id', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  const n = await withUser(user.id, (tx) => tx.query('DELETE FROM water_logs WHERE id = $1 AND patient_id = $2', [id, patient.id]));
+  if (!n.rowCount) throw notFound();
+  return c.json({ ok: true });
+});
+
+/** Last night's sleep (stored on this morning's date; can be changed the same day). */
+patientLogs.put('/logs/sleep', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ hours: z.number().min(0).max(16), quality: z.number().int().min(1).max(5) }), await c.req.json());
+  await withUser(user.id, (tx) =>
+    tx.query(
+      `INSERT INTO sleep_logs(patient_id, practice_id, day, hours, quality) VALUES ($1, app.patient_practice($1), now()::date, $2, $3)
+       ON CONFLICT (patient_id, day) DO UPDATE SET hours = EXCLUDED.hours, quality = EXCLUDED.quality`,
+      [patient.id, Math.round(b.hours * 2) / 2, b.quality],
+    ),
+  );
+  return c.json({ ok: true });
 });
 
 /** 65 or older: a higher minimum (PROT-AGE / ESPEN). */

@@ -2,6 +2,7 @@ import type { Tx } from '../db';
 import type { SkillKey } from '../../../shared/hero';
 import { STEPS, proteinHitDays, rewardProteinDays, rewardSelfTrainings, rewardStepDays, stepHitDays, suggestedProteinGrams, type TrainingKind } from '../../../shared/patientLogs';
 import { healthConfigured } from './googleHealth';
+import { loadSurvival, type SurvivalView } from './survival';
 import { proteinTargets, proteinZone, type ProteinTargets, type ProteinTier, type ProteinZone } from '../../../shared/protein';
 
 export type TrainingView = {
@@ -28,6 +29,7 @@ export type PatientLogState = {
     hit: boolean;
     entries: { id: string; grams: number; label: string | null; createdAt: string }[];
   };
+  survival: SurvivalView;
   weight: { latestKg: number | null; heightCm: number | null; olderAdult: boolean; history: { day: string; kg: number }[] };
   trainings: TrainingView[];
   steps: {
@@ -96,7 +98,8 @@ export async function loadPatientLogs(tx: Tx, patientId: string) {
   const stepsReward = rewardStepDays(stepHits.length);
   const connection = (await tx.query('SELECT synced_at FROM fitness_connections WHERE patient_id = $1 AND provider = $2', [patientId, 'google_health'])).rows[0];
   const skills: Partial<Record<SkillKey, number>> = {};
-  for (const part of [self.skills, protein.skills, stepsReward.skills]) {
+  const survival = await loadSurvival(tx, patientId, weightKg);
+  for (const part of [self.skills, protein.skills, stepsReward.skills, { recovery: survival.recoveryXp }]) {
     for (const [k, n] of Object.entries(part)) skills[k as SkillKey] = (skills[k as SkillKey] ?? 0) + (n ?? 0);
   }
   const entries = proteinRows
@@ -117,6 +120,7 @@ export async function loadPatientLogs(tx: Tx, patientId: string) {
       entries,
     },
     weight: { latestKg: weightKg, heightCm, olderAdult, history: weightHistory },
+    survival: survival.view,
     trainings: trainings.filter((t) => t.day >= from),
     steps: {
       goal: stepGoal,
@@ -126,5 +130,5 @@ export async function loadPatientLogs(tx: Tx, patientId: string) {
       google: { configured: healthConfigured(), connected: !!connection, syncedAt: connection?.synced_at ? iso(connection.synced_at) : null },
     },
   };
-  return { view, heroXp: self.hero + protein.hero + stepsReward.hero, skillXp: skills };
+  return { view, heroXp: self.hero + protein.hero + stepsReward.hero + survival.heroXp, skillXp: skills };
 }
