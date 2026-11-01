@@ -9,7 +9,8 @@ import { useSession } from '@/lib/session';
 import { cn } from '@/lib/cn';
 import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, Spinner, useToast } from '@/components/ui';
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
-import { EYE_COLOURS, HAIR_COLOURS, HumanFigure, KIT, SKIN_TONES } from '@/components/hero/HumanFigure';
+import { HeroPhoto } from '@/components/hero/HeroPhoto';
+import { EYE_COLOURS, HAIR_COLOURS, KIT, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
 import { BADGES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, metricInRange, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
@@ -139,7 +140,7 @@ export function HeroSetupPage() {
 
       {step >= 2 && step <= 4 && (
         <div className="flex justify-center rounded-2xl bg-sage/60 py-3" role="img" aria-label={t(`Voorbeeld van ${look.heroName || 'je held'}`, `Preview of ${look.heroName || 'your hero'}`)}>
-          <HumanFigure look={look} className="h-[300px] w-auto" />
+          <HeroPhoto look={look} gearChips={false} className="h-[300px] w-[200px]" />
         </div>
       )}
 
@@ -166,7 +167,7 @@ export function HeroSetupPage() {
       {step === 3 && (
         <Card className="space-y-5 p-5">
           <Choice legend={t('Kapsel', 'Hairstyle')} name="hair" cols="grid-cols-4" value={look.hair as Opt<'hair'>} options={HERO_OPTIONS.hair} onChange={(v) => set('hair', v)}
-            render={(v) => <span className="flex flex-col items-center gap-1 text-[12.5px] leading-tight"><HeroAvatar look={{ ...look, hair: v }} size={44} plain />{L('hair', v)}</span>} />
+            render={(v) => <span className="flex flex-col items-center gap-1 text-[12.5px] leading-tight"><HeroAvatar look={{ ...look, hair: v }} size={44} plain photo={false} />{L('hair', v)}</span>} />
           <Choice legend={t('Haarkleur', 'Hair colour')} name="hairColor" cols="grid-cols-2" value={look.hairColor as Opt<'hairColor'>} options={HERO_OPTIONS.hairColor} onChange={(v) => set('hairColor', v)}
             render={(v) => <>{swatch(HAIR_COLOURS[v])}<span className="text-[13px]">{L('hairColor', v)}</span></>} />
           <Choice legend={t('Oogkleur', 'Eye colour')} name="eyeColor" cols="grid-cols-2" value={look.eyeColor as Opt<'eyeColor'>} options={HERO_OPTIONS.eyeColor} onChange={(v) => set('eyeColor', v)}
@@ -205,6 +206,24 @@ export function HeroSetupPage() {
 }
 
 const PROFILE_LABEL = ['Uiterlijk en maten aanpassen', 'Edit look and measurements'] as const;
+
+/** The hero page's full-body photo, also the way into look + body measurements. */
+function HeroPhotoLink({ look, level }: { look: FigureLook; level: number }) {
+  const { t } = useI18n();
+  return (
+    <Link
+      to="/p/held/uiterlijk"
+      aria-label={t(`Uiterlijk en maten aanpassen, level ${level}`, `Edit look and measurements, level ${level}`)}
+      className="tap relative block shrink-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+    >
+      <HeroPhoto look={look} className="h-[184px] w-[123px] shadow-card" />
+      <span className="absolute -left-1.5 -top-1.5 flex min-w-[28px] items-center justify-center rounded-full border-2 border-white bg-sand px-1.5 font-display text-[13px] font-bold leading-[24px] text-sand-ink" aria-hidden>{level}</span>
+      <span className="absolute -bottom-1.5 -right-1.5 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-white text-accent shadow-sm" aria-hidden>
+        <Pencil className="h-4 w-4" />
+      </span>
+    </Link>
+  );
+}
 
 /** The profile photo is the way into look + body measurements. */
 function AvatarLink({ look, size, level }: { look: HeroLook & { gear?: string[] }; size: number; level?: number }) {
@@ -313,7 +332,7 @@ export function HeroProfilePage() {
       </div>
       {error && <Notice tone="bad">{error}</Notice>}
       <div className="flex justify-center rounded-2xl bg-sage/60 py-3" role="img" aria-label={t(`Voorbeeld van ${look.heroName || 'je held'}`, `Preview of ${look.heroName || 'your hero'}`)}>
-        <HumanFigure look={preview} className="h-[280px] w-auto" />
+        <HeroPhoto look={preview} className="h-[280px] w-[187px]" />
       </div>
       {shape && (
         <p className="-mt-2 text-center text-[14px] text-ink-700" aria-live="polite">
@@ -333,7 +352,7 @@ export function HeroProfilePage() {
         <Choice legend={t('Huidskleur', 'Skin tone')} name="skin" cols="grid-cols-5" value={look.skin as Opt<'skin'>} options={HERO_OPTIONS.skin} onChange={(v) => set('skin', v)}
           render={(v) => <>{swatch(SKIN_TONES[v])}<span className="sr-only">{t(`Huidskleur ${v.slice(1)} van 10`, `Skin tone ${v.slice(1)} of 10`)}</span></>} />
         <Choice legend={t('Kapsel', 'Hairstyle')} name="hair" cols="grid-cols-4" value={look.hair as Opt<'hair'>} options={HERO_OPTIONS.hair} onChange={(v) => set('hair', v)}
-          render={(v) => <span className="flex flex-col items-center gap-1 text-[12.5px] leading-tight"><HeroAvatar look={{ ...look, hair: v }} size={44} plain />{L('hair', v)}</span>} />
+          render={(v) => <span className="flex flex-col items-center gap-1 text-[12.5px] leading-tight"><HeroAvatar look={{ ...look, hair: v }} size={44} plain photo={false} />{L('hair', v)}</span>} />
         <Choice legend={t('Haarkleur', 'Hair colour')} name="hairColor" cols="grid-cols-2" value={look.hairColor as Opt<'hairColor'>} options={HERO_OPTIONS.hairColor} onChange={(v) => set('hairColor', v)}
           render={(v) => <>{swatch(HAIR_COLOURS[v])}<span className="text-[13px]">{L('hairColor', v)}</span></>} />
         <Choice legend={t('Oogkleur', 'Eye colour')} name="eyeColor" cols="grid-cols-2" value={look.eyeColor as Opt<'eyeColor'>} options={HERO_OPTIONS.eyeColor} onChange={(v) => set('eyeColor', v)}
@@ -728,7 +747,7 @@ export function HeroPage() {
         {scene?.key === 'gym' && <svg aria-hidden className="pointer-events-none absolute right-3 top-3 h-10 w-24"><rect x="4" y="16" width="88" height="6" rx="2" fill="#29483c" opacity=".45" /><rect x="18" y="8" width="6" height="22" fill="#29483c" opacity=".45" /><rect x="72" y="8" width="6" height="22" fill="#29483c" opacity=".45" /></svg>}
         {scene?.key === 'stadium' && <svg aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-16 w-full"><path d="M0,40 Q100,8 200,40 L200,0 L0,0 Z" fill="#143040" /><path d="M20,34 Q100,14 180,34" fill="none" stroke="#e2b84a" strokeWidth="2" /></svg>}
         <div className="flex items-center gap-4">
-          <AvatarLink look={look} size={88} level={L.level} />
+          <HeroPhotoLink look={look} level={L.level} />
           <div className="min-w-0">
             <p className="t-label">{t(`Level ${L.level}`, `Level ${L.level}`)} · {titleFor(L.level, nl)}</p>
             <h1 id="hero-name" className={cn('t-page [overflow-wrap:anywhere]', scene?.key === 'stadium' && 'text-white')}>{d.hero.heroName}</h1>

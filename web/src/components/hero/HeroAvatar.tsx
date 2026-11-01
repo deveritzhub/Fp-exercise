@@ -9,8 +9,8 @@ export const SPORT_ICON: Record<string, LucideIcon> = {
   swimming: Waves, hockey: Shield, dance: Music, walking: Mountain, other: Trophy,
 };
 
-/** The patient's sports hero as a portrait (head and shoulders of their own figure). Decorative. */
-export function HeroAvatar({ look, size = 96, className, level, plain, photo }: { look: FigureLook & { sport: string }; size?: number; className?: string; level?: number; plain?: boolean; photo?: boolean }) {
+/** The patient's sports hero as a portrait: a photo of a real person by default, the drawing with photo={false}. Decorative. */
+export function HeroAvatar({ look, size = 96, className, level, plain, photo = true }: { look: FigureLook & { sport: string }; size?: number; className?: string; level?: number; plain?: boolean; photo?: boolean }) {
   const kit = KIT[look.outfit] ?? KIT.forest;
   // Photorealistic portrait (generated art matching figure, skin and build); falls back to the drawing.
   const [photoFailed, setPhotoFailed] = useState(false);
