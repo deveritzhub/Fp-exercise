@@ -13,7 +13,7 @@ export const SPORT_ICON: Record<string, LucideIcon> = {
 export function HeroAvatar({ look, size = 96, className, level, plain, photo = true }: { look: FigureLook & { sport: string }; size?: number; className?: string; level?: number; plain?: boolean; photo?: boolean }) {
   const kit = KIT[look.outfit] ?? KIT.forest;
   // Photorealistic portrait (generated art matching figure, skin and build); falls back to the drawing.
-  const keys = [...new Set([heroPhotoKey(look, look.body ?? null), heroPhotoKey(look, look.body ?? null, false)])];
+  const keys = [...new Set([...(look.photo ? [look.photo] : []), heroPhotoKey(look, look.body ?? null), heroPhotoKey(look, look.body ?? null, false)])];
   const [attempt, setAttempt] = useState(0);
   const usePhoto = photo && attempt < keys.length;
   const Icon = SPORT_ICON[look.sport] ?? Trophy;

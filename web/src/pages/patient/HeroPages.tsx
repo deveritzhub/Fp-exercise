@@ -401,7 +401,7 @@ export function HeroProfilePage() {
   };
   // The figure follows the measurements as you type: more body fat = fuller, high BMI with low fat = muscular.
   const shape = bodyShape({ weightKg: parseMetric(weight), heightCm: parseMetric(height), bodyFatPct: parseMetric(fat) }, look.frame);
-  const preview = { ...look, gear: q.data.gear.equipped, body: shape };
+  const preview = { ...look, gear: q.data.gear.equipped, body: shape, photo: q.data.customPhoto ?? null };
   return (
     <div className="space-y-5">
       <Link to="/p/held" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" aria-hidden />{t('Terug', 'Back')}</Link>
@@ -798,7 +798,7 @@ export function HeroPage() {
     );
   }
   const L = d.level;
-  const look = { ...d.hero, gear: [...d.gear.equipped, ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null };
+  const look = { ...d.hero, gear: [...d.gear.equipped, ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null, photo: d.customPhoto ?? null };
   const scene = sceneForTotal(d.totalLevel);
   const emblems = d.skills.filter((s) => !s.locked && s.level >= SKILL_EMBLEM_LEVEL);
   const ownTitles = d.skills.flatMap((s) => {
@@ -994,7 +994,7 @@ export function HeroHomeCard() {
       </Link>
     );
   }
-  const heroLook = { ...d.hero, gear: [...d.gear.equipped, ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null };
+  const heroLook = { ...d.hero, gear: [...d.gear.equipped, ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null, photo: d.customPhoto ?? null };
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-line bg-white p-4 shadow-card">
       <AvatarLink look={heroLook} size={64} level={d.level.level} />

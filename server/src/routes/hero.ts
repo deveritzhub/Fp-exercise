@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { config } from '../config';
 import { z } from 'zod';
 import { randomInt, randomUUID } from 'node:crypto';
 import { withUser, type Tx } from '../db';
@@ -276,7 +277,8 @@ heroPatient.get('/hero', async (c) => {
     await withUser(user.id, async (tx) => {
       const state = await heroState(tx, patient.id);
       await refreshFriendCard(tx, patient.id, state);
-      return state;
+      // A personal photo (own likeness, by request) replaces the generated one on this account only.
+      return { ...state, customPhoto: config.personalHeroPhotos.get(user.email.toLowerCase()) ?? null };
     }),
   );
 });

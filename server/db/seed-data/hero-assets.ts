@@ -67,6 +67,8 @@ export const HERO_AVATAR_FILES: Record<string, string> = {
   "f_s9_average": "hf_20261101_102336_2152a6ae-e5c9-4dc4-927b-fd9e745b60f9.png",
   "f_s9_soft": "hf_20261101_102336_82b14b71-b4e5-4b44-a25e-6c9488fdec1a.png",
   "f_s9_full": "hf_20261101_102335_abde7150-689d-43e0-ab57-7c1218e11918.png",
+  // Personal hero photo (own likeness, at the owner's request; see config.personalHeroPhotos).
+  "custom_1": "hf_20261101_142344_1227e718-c8ab-443c-ab09-717d0e00ad8a.png",
   // Hairstyle variants h2–h4 (edits of the base photo, 2026-11-01); h1 is the base photo above.
   "f_s1_athletic_h2": "hf_20261101_141720_8e198099-b51d-4e9b-934d-2336a8dfad6c.png",
   "f_s1_athletic_h3": "hf_20261101_142157_924c790c-a70f-4bb3-a216-001f9358e422.png",

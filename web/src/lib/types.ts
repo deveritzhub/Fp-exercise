@@ -167,6 +167,8 @@ export type PainCheckin = { recordedAt: string; entries: { area: string; score: 
 export type HeroState = {
   /** Walking aids switched on by the professional, e.g. 'crutches'. */
   aids?: string[];
+  /** Personal photo key (own likeness) for this account's hero, if set. */
+  customPhoto?: string | null;
   hero: (import('@shared/hero').HeroLook & { createdAt: string; gear?: string[] }) | null;
   painMap: { baseline: PainCheckin | null; current: PainCheckin | null; checkins: number };
   level: { level: number; xp: number; from: number; to: number; progress: number };

@@ -11,7 +11,7 @@ import { HumanFigure, type FigureLook } from './HumanFigure';
  */
 export function HeroPhoto({ look, className, gearChips = true }: { look: FigureLook; className?: string; gearChips?: boolean }) {
   // Try the photo with this hairstyle, then the base photo of the same figure, then the drawing.
-  const keys = [...new Set([heroPhotoKey(look, look.body ?? null), heroPhotoKey(look, look.body ?? null, false)])];
+  const keys = [...new Set([...(look.photo ? [look.photo] : []), heroPhotoKey(look, look.body ?? null), heroPhotoKey(look, look.body ?? null, false)])];
   const [attempt, setAttempt] = useState(0);
   const failed = attempt >= keys.length;
   const gear = (look.gear ?? []).filter((g) => g !== 'crutches').slice(0, 3);

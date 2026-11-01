@@ -24,6 +24,17 @@ export const config = {
   staffIdleMinutes: Number(process.env.STAFF_IDLE_MINUTES ?? 30),
   /** Public demo deployment with synthetic data: invite links are shown on screen because no real e-mail is sent. */
   demoMode: process.env.DEMO_MODE === '1',
+  /**
+   * Personal hero photos: "email=assetKey;email2=assetKey2". Only for people who asked for their own
+   * likeness (e.g. the practice owner); shown on that account's own hero only. Keys must be custom_*.
+   */
+  personalHeroPhotos: new Map(
+    (process.env.PERSONAL_HERO_PHOTOS ?? '')
+      .split(';')
+      .map((x) => x.split('=').map((y) => y.trim()))
+      .filter(([e, k]) => e && /^custom_[a-z0-9_]{1,30}$/.test(k ?? ''))
+      .map(([e, k]) => [e.toLowerCase(), k] as [string, string]),
+  ),
   maxUploadBytes: Number(process.env.MAX_UPLOAD_MB ?? 200) * 1024 * 1024,
   /** Google Play app (Trusted Web Activity): package name and SHA-256 fingerprints of its signing certificates. */
   android: {
