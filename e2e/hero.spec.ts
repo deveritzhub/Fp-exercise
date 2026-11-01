@@ -84,6 +84,9 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await expect(pp.getByText('Doe een dagcheck of werk je pijnkaart bij')).toBeVisible();
   await expect(pp.getByText(/Weekkist geopend|Haal alle drie voor de weekkist/)).toBeVisible();
   // Gear: locked items say how to unlock them; unlocked items can be worn.
+  // The inventory has its own page, one tap from the hero.
+  await pp.getByRole('link', { name: /^Inventaris \(\d+\)$/ }).click();
+  await expect(pp).toHaveURL(/\/p\/held\/inventaris$/);
   await expect(pp.getByRole('heading', { name: /Uitrusting \(\d+ van \d+\)/ })).toBeVisible();
   await expect(pp.getByText(/Nog op slot: /).first()).toBeVisible();
   const wear = pp.getByRole('button', { name: 'Aandoen' }).first();
@@ -91,6 +94,8 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
     await wear.click();
     await expect(pp.getByRole('button', { name: 'Aan', pressed: true }).first()).toBeVisible();
   }
+  await pp.getByRole('link', { name: 'Terug naar je held' }).click();
+  await expandFolds(pp);
   // Main quest: goal, week of the schedule, expected time to the goal.
   await expect(pp.getByRole('heading', { name: 'Knie — patellapees belastingsopbouw' })).toBeVisible();
   await expect(pp.getByText(/Week \d+ van \d+/)).toBeVisible();

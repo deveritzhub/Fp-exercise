@@ -58,7 +58,7 @@ test('lock reasons are visible, a level-10 item can be worn, and the sheet fits 
     INSERT INTO exercise_logs(session_id, practice_id, patient_id, program_item_id, exercise_id, completed, sets_done, reps_done)
     SELECT ins.id, ins.practice_id, ins.patient_id, item.item_id, item.exercise_id, true, 3, 8 FROM ins CROSS JOIN item`);
 
-  await page.reload();
+  await page.goto('/p/held/inventaris');
   const wear = page.getByRole('button', { name: 'Handschoenen Aandoen' });
   await wear.scrollIntoViewIfNeeded();
   await expect(wear).toBeVisible();

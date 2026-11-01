@@ -903,7 +903,10 @@ export function HeroPage() {
                 {[...ownTitles, ...combos.map((c) => c.name)].join(' · ')}
               </p>
             )}
-            <Link to="/p/held/uiterlijk" className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent">{t('Uiterlijk en maten', 'Look and measurements')}</Link>
+            <div className="flex flex-wrap items-center gap-x-3">
+              <Link to="/p/held/uiterlijk" className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent">{t('Uiterlijk en maten', 'Look and measurements')}</Link>
+              <Link to="/p/held/inventaris" className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-sand-soft px-3 text-[14px] font-semibold text-sand-ink"><Crown className="h-4 w-4" aria-hidden />{t(`Inventaris (${d.gear.unlocked.length})`, `Inventory (${d.gear.unlocked.length})`)}</Link>
+            </div>
           </div>
         </div>
         <div className="mt-3">
@@ -975,9 +978,14 @@ export function HeroPage() {
         <Skills d={d} />
       </Fold>
       <FriendsCard />
-      <Fold id="hero-gear" icon={<Crown className="h-5 w-5" />} title={t('Uitrusting', 'Gear')} summary={t(`${d.gear.unlocked.length} vrijgespeeld · ${d.gear.equipped.length} aan`, `${d.gear.unlocked.length} unlocked · ${d.gear.equipped.length} worn`)}>
-        <GearCard d={d} />
-      </Fold>
+      <Link to="/p/held/inventaris" className="tap flex w-full items-center gap-3 rounded-2xl border border-line bg-white px-4 py-3.5 shadow-card hover:border-ink-300">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sand-soft text-sand-ink" aria-hidden><Crown className="h-5 w-5" /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[16px] font-semibold text-ink-900">{t('Inventaris', 'Inventory')}</span>
+          <span className="block truncate text-[13.5px] text-ink-600">{t(`${d.gear.unlocked.length} vrijgespeeld · ${d.gear.equipped.length} aan`, `${d.gear.unlocked.length} unlocked · ${d.gear.equipped.length} worn`)}</span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />
+      </Link>
 
       <Fold id="hero-badges" icon={<Award className="h-5 w-5" />} title={t('Badges', 'Badges')} summary={t(`${earned} van ${d.badges.length} behaald`, `${earned} of ${d.badges.length} earned`)}>
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="badges-title">
@@ -1004,6 +1012,22 @@ export function HeroPage() {
 }
 
 /** Update the body map (a new check-in; the history is kept). */
+/** Inventory: all gear, unlocked in colour, locked in grey. */
+export function InventoryPage() {
+  const { t } = useI18n();
+  useDocumentMeta(t('Inventaris', 'Inventory'));
+  const q = useHero();
+  if (q.isError) return <ErrorState error={q.error} />;
+  if (!q.data) return <Spinner />;
+  return (
+    <div className="space-y-5">
+      <Link to="/p/held" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" aria-hidden />{t('Terug naar je held', 'Back to your hero')}</Link>
+      <h1 className="t-page">{t('Inventaris', 'Inventory')}</h1>
+      {q.data.hero ? <GearCard d={q.data} /> : <Notice tone="info">{t('Maak eerst je held.', 'Create your hero first.')}</Notice>}
+    </div>
+  );
+}
+
 export function PainCheckinPage() {
   const { t, locale } = useI18n();
   useDocumentMeta(t('Pijnkaart bijwerken', 'Update body map'));
