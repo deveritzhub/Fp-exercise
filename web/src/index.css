@@ -5,6 +5,8 @@
 @tailwind utilities;
 
 @layer base {
+  /* Long words (and large system text on phones) wrap instead of running off the screen. */
+  h1, h2, h3, h4, p, li, dd, dt, label, legend { overflow-wrap: break-word; }
   :root {
     /* Primary interaction colour: Deep Forest Green, hover Dark Forest, soft Clinical Sage.
        Overridable per practice (branding.accent, see lib/accent.ts). RGB triplets for alpha support. */

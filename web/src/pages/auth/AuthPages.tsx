@@ -158,11 +158,11 @@ export function LoginPage() {
       {showDemoAccounts && (
         <div className="mt-6 border-t border-line pt-5">
           <p className="mb-2 text-[12.5px] font-medium text-ink-500">{t('Demo-accounts (synthetische gegevens)', 'Demo accounts (synthetic data)')}</p>
-          <div className="grid gap-1.5">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-1.5">
             {DEMO_ACCOUNTS.map((a) => (
               <button key={a.email} type="button" disabled={busy} onClick={() => submit(undefined, { email: a.email, password: DEMO_PASSWORD })} className="flex items-center justify-between rounded-lg border border-line px-3 py-2 text-left text-[13px] hover:border-ink-300 hover:bg-ink-50">
-                <span className="font-medium text-ink-800">{locale === 'nl' ? a.nl : a.en}</span>
-                <span className="truncate pl-2 text-[12px] text-ink-400">{a.email}</span>
+                <span className="min-w-0 truncate font-medium text-ink-800">{locale === 'nl' ? a.nl : a.en}</span>
+                <span className="min-w-0 truncate pl-2 text-[12px] text-ink-400">{a.email}</span>
               </button>
             ))}
           </div>

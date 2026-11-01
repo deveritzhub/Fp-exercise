@@ -34,12 +34,12 @@ export function HomePage() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_70%_0%,rgba(65,61,40,0.08),transparent)]" />
-        <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 pb-24 pt-16 lg:grid-cols-[1fr_1.15fr] lg:pt-24">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1 text-[13px] font-medium text-ink-600 shadow-xs">
+        <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] items-center gap-14 px-5 pb-24 pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:pt-24">
+          <div className="min-w-0">
+            <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-line bg-white px-3 py-1 text-[13px] font-medium text-ink-600 shadow-xs">
               <Sparkles className="h-3.5 w-3.5 text-accent" /> {t('Gemaakt in Rotterdam, voor de Nederlandse fysiotherapie', 'Made in Rotterdam for Dutch physiotherapy')}
             </span>
-            <h1 className="mt-6 text-[42px] font-bold leading-[1.08] tracking-[-0.02em] sm:text-[56px]">
+            <h1 className="mt-6 text-[34px] font-bold leading-[1.08] [overflow-wrap:anywhere] sm:text-[42px] tracking-[-0.02em] sm:text-[56px]">
               {t('Oefentherapie die je patiënt', 'Exercise therapy your patients')} <span className="text-accent">{t('écht volhoudt', 'actually stick with')}</span>.
             </h1>
             <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-ink-600">

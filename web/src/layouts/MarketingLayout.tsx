@@ -28,7 +28,7 @@ export function MarketingLayout() {
         {t('Naar inhoud', 'Skip to content')}
       </a>
       <header className="sticky top-0 z-30 border-b border-line/70 bg-white/85 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-8 px-5">
+        <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:gap-8 sm:px-5">
           <Logo />
           <nav className="hidden flex-1 items-center gap-1 md:flex" aria-label={t('Hoofdnavigatie', 'Main navigation')}>
             {links.map((l) => (

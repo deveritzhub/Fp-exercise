@@ -37,8 +37,8 @@ export function ProductShot({ className }: { className?: string }) {
           <span className="h-2.5 w-2.5 rounded-full bg-ink-200" /><span className="h-2.5 w-2.5 rounded-full bg-ink-200" /><span className="h-2.5 w-2.5 rounded-full bg-ink-200" />
           <span className="ml-3 rounded-md bg-white px-3 py-0.5 text-[11px] text-ink-500">app.fpflow.nl/programmas/nieuw</span>
         </div>
-        <div className="grid grid-cols-[200px_1fr] text-left sm:grid-cols-[240px_1fr]">
-          <div className="border-r border-line bg-sage/60 p-3">
+        <div className="grid grid-cols-[minmax(0,1fr)] text-left sm:grid-cols-[240px_minmax(0,1fr)]">
+          <div className="hidden border-r border-line bg-sage/60 p-3 sm:block">
             <div className="flex items-center gap-2 rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] text-ink-500"><Search className="h-3 w-3" />{t('Zoek oefening…', 'Search exercise…')}</div>
             <div className="mt-3 space-y-1.5">
               {lib.map(([n, s], i) => (
