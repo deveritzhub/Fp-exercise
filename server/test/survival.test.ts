@@ -34,6 +34,10 @@ describe('survival: water and sleep', () => {
     expect(st.logs.survival.energy).toBeGreaterThan(50);
     await p.put('/patient/logs/sleep', { hours: 5, quality: 2 }); // same day: replaces
     expect((await p.get('/patient/hero')).body.logs.survival.sleep.hours).toBe(5);
+    await p.post('/patient/logs/sleep/cycle'); // one cycle of 90 min more
+    expect((await p.get('/patient/hero')).body.logs.survival.sleep.hours).toBe(6.5);
+    await p.put('/patient/logs/sleep', { hours: 5, quality: 2 });
+    expect((await p.get('/patient/hero')).body.logs.survival.sleep.hours).toBe(5);
 
     // The practice does not see water or sleep.
     const ther = await login('therapistA');

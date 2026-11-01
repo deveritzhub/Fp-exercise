@@ -102,6 +102,19 @@ patientLogs.put('/logs/sleep', async (c) => {
   return c.json({ ok: true });
 });
 
+/** One sleep cycle (~90 min) more for last night; starts a log with "OK" if there is none. */
+patientLogs.post('/logs/sleep/cycle', async (c) => {
+  const { user, patient } = requirePatient(c);
+  await withUser(user.id, (tx) =>
+    tx.query(
+      `INSERT INTO sleep_logs(patient_id, practice_id, day, hours, quality) VALUES ($1, app.patient_practice($1), now()::date, 1.5, 3)
+       ON CONFLICT (patient_id, day) DO UPDATE SET hours = least(16, sleep_logs.hours + 1.5)`,
+      [patient.id],
+    ),
+  );
+  return c.json({ ok: true });
+});
+
 /** 65 or older: a higher minimum (PROT-AGE / ESPEN). */
 patientLogs.put('/logs/older-adult', async (c) => {
   const { user, patient } = requirePatient(c);

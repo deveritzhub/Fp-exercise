@@ -17,9 +17,14 @@ test('the hero’s condition: drink water and log sleep from the + button', asyn
   await expect(panel.getByRole('meter', { name: 'Water' })).toHaveAttribute('aria-valuenow', '0');
   await expect(panel.getByText('Nog niet ingevuld')).toBeVisible();
   await expectAccessible(pp, 'survival panel');
+  // One tap per glass and per sleep cycle, straight from the meters.
+  await panel.getByRole('button', { name: 'Eén glas water erbij' }).click();
+  await expect(panel.getByText('1 glas van 250 ml')).toBeVisible();
+  await panel.getByRole('button', { name: /Eén cyclus slaap erbij/ }).click();
+  await expect(panel.getByText('1,5 uur')).toBeVisible();
 
-  // "Drinken" opens the + sheet on the water tab.
-  await panel.getByRole('button', { name: 'Drinken' }).click();
+  // "…" opens the + sheet on the water tab.
+  await panel.getByRole('button', { name: 'Meer opties voor water' }).click();
   const sheet = pp.getByRole('dialog', { name: 'Snel loggen' });
   await expect(sheet.getByRole('tab', { name: 'Water' })).toHaveAttribute('aria-selected', 'true');
   await sheet.getByRole('button', { name: /500 ml/ }).click();
@@ -31,8 +36,9 @@ test('the hero’s condition: drink water and log sleep from the + button', asyn
   await expect(pp.getByText(/Slaap opgeslagen/)).toBeVisible();
   await expectAccessible(pp, 'sleep tab');
   await sheet.getByRole('button', { name: 'Sluiten' }).click().catch(() => pp.keyboard.press('Escape'));
-  await expect(panel.getByText('8 uur')).toBeVisible();
-  await expect(panel.getByText('Uitgerust')).toBeVisible();
+  // The sheet starts from the 1,5 hour of the cycle tapped earlier: +0,5 = 2 hours, a short night.
+  await expect(panel.getByText('2 uur')).toBeVisible();
+  await expect(panel.getByText(/Korte nacht/)).toBeVisible();
   await expect.poll(async () => Number(await panel.getByRole('meter', { name: 'Water' }).getAttribute('aria-valuenow'))).toBeGreaterThan(0);
   await panel.screenshot({ path: 'screenshots/hero/survival.png' });
   await ctx.close();

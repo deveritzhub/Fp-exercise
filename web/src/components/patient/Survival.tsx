@@ -37,17 +37,58 @@ function Meter({ icon, label, value, pct, tone, action, hint }: { icon: React.Re
 export function SurvivalPanel({ d }: { d: HeroState }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
+  const qc = useQueryClient();
+  const toast = useToast();
   const s = d.logs.survival;
-  const small = 'mt-0.5 inline-flex min-h-[40px] items-center justify-center gap-1 rounded-lg bg-canvas px-2 text-[13px] font-semibold text-accent hover:bg-accent-soft';
+  const [busy, setBusy] = useState<string | null>(null);
+  const small = 'inline-flex min-h-[44px] items-center justify-center gap-1 rounded-lg bg-canvas px-2 text-[13px] font-semibold text-accent hover:bg-accent-soft disabled:opacity-60';
+  // One tap = one glass of water / one sleep cycle (~90 min), straight from the meter.
+  const plus = async (key: string, fn: () => Promise<unknown>, ok: (xp: number) => string) => {
+    setBusy(key);
+    try {
+      navigator.vibrate?.(10);
+    } catch {
+      /* ignore */
+    }
+    try {
+      await fn();
+      const { xp } = await refreshHero(qc, d.level.xp);
+      toast(ok(xp), 'ok');
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(null);
+    }
+  };
+  const glasses = Math.round(s.water.ml / WATER.glassMl);
+  const cycles = s.sleep ? Math.round((s.sleep.hours / 1.5) * 10) / 10 : 0;
   return (
     <section className="rounded-2xl border border-line bg-white p-4 shadow-card" aria-labelledby="survival-title">
       <h2 id="survival-title" className="t-section">{t('Conditie van je held', 'Your hero’s condition')}</h2>
       <p className="text-[13px] text-ink-600">{t('Houd je held fit: drinken, slapen en bewegen. Een lage meter kost niets, je krijgt alleen een tip.', 'Keep your hero fit: drink, sleep and move. A low meter costs nothing, you just get a tip.')}</p>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Meter icon={<Droplets className="h-4 w-4" />} label={t('Water', 'Water')} value={`${fmtL(s.water.ml, nl)} / ${fmtL(s.water.target, nl)}`} pct={s.water.ratio * 100} tone="#2f7fb8"
-          action={<button type="button" className={small} onClick={() => openQuickLog('water')}><Plus className="h-3.5 w-3.5" aria-hidden />{t('Drinken', 'Drink')}</button>} />
+          hint={t(`${glasses} ${glasses === 1 ? 'glas' : 'glazen'} van ${WATER.glassMl} ml`, `${glasses} glass${glasses === 1 ? '' : 'es'} of ${WATER.glassMl} ml`)}
+          action={
+            <div className="mt-0.5 grid grid-cols-[1fr_auto] gap-1">
+              <button type="button" className={small} disabled={busy !== null} aria-label={t('Eén glas water erbij', 'One more glass of water')}
+                onClick={() => plus('water', () => api.post('/patient/logs/water', { ml: WATER.glassMl }), (xp) => (xp > 0 ? t(`+1 glas · +${xp} XP`, `+1 glass · +${xp} XP`) : t('+1 glas', '+1 glass')))}>
+                <Plus className="h-3.5 w-3.5" aria-hidden />{t('Glas', 'Glass')}
+              </button>
+              <button type="button" className={small} aria-label={t('Meer opties voor water', 'More water options')} onClick={() => openQuickLog('water')}>…</button>
+            </div>
+          } />
         <Meter icon={<Moon className="h-4 w-4" />} label={t('Slaap', 'Sleep')} value={s.sleep ? t(`${s.sleep.hours.toLocaleString('nl-NL')} uur`, `${s.sleep.hours} h`) : t('Nog niet ingevuld', 'Not filled in')} pct={s.sleep?.score ?? 0} tone="#6b5ca5"
-          action={<button type="button" className={small} onClick={() => openQuickLog('sleep')}>{s.sleep ? t('Aanpassen', 'Change') : t('Invullen', 'Fill in')}</button>} />
+          hint={t(`${cycles.toLocaleString('nl-NL')} slaapcycli van 90 min`, `${cycles} sleep cycles of 90 min`)}
+          action={
+            <div className="mt-0.5 grid grid-cols-[1fr_auto] gap-1">
+              <button type="button" className={small} disabled={busy !== null} aria-label={t('Eén cyclus slaap erbij (90 minuten)', 'One more sleep cycle (90 minutes)')}
+                onClick={() => plus('sleep', () => api.post('/patient/logs/sleep/cycle'), (xp) => (xp > 0 ? t(`+1 cyclus · +${xp} XP`, `+1 cycle · +${xp} XP`) : t('+1 slaapcyclus', '+1 sleep cycle')))}>
+                <Plus className="h-3.5 w-3.5" aria-hidden />{t('Cyclus', 'Cycle')}
+              </button>
+              <button type="button" className={small} aria-label={t('Slaap aanpassen', 'Change sleep')} onClick={() => openQuickLog('sleep')}>…</button>
+            </div>
+          } />
         <Meter icon={<Zap className="h-4 w-4" />} label={t('Energie', 'Energy')} value={`${s.energy}%`} pct={s.energy} tone="#c98a1a" hint={t('Uit slaap, training en rust', 'From sleep, training and rest')} />
         <Meter icon={<Snowflake className="h-4 w-4" />} label={t('Stijfheid', 'Stiffness')} value={s.stiffness <= 20 ? t('Soepel', 'Loose') : s.stiffness <= 55 ? t('Wat stijf', 'A bit stiff') : t('Stijf', 'Stiff')} pct={s.stiffness} tone="#8a6d5c" hint={t('Daalt na elke beweging', 'Drops after any movement')} />
       </div>
