@@ -26,6 +26,21 @@ are updated the same way. A practice can still show its own file via "Video van 
 | Eenbeensstand | `eenbeensstand.mp4` | ✅ clinically approved 2026-11-01 (dynamic Grok remake) | ✅ seeded |
 | Opstappen | `opstappen.mp4` | ✅ clinically approved 2026-11-01 (dynamic Grok remake) | ✅ seeded |
 
+## Seedance 2.0 clips (2026-11-01) — live
+
+Text-to-video with Seedance 2.0 via Higgsfield (720p std, 12 s, side view, same male instructor in
+olive sportswear, 2 reps, no sound). The squat was approved by the practice owner before the other two
+were made. They hang on **practice-library** exercises (by source key) and are listed in
+`SEEDANCE_VIDEOS` in `server/db/seed-data/videos.ts`. The host downloads each once into private
+storage after the library import. The bodyweight squat and forward lunge were added to the library
+for this (bundle `fp-videos-v1.json`).
+
+| Exercise | Source key | Video |
+|---|---|---|
+| Squat met lichaamsgewicht | `kr_bodyweight_squat` | [66bb90c8](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261101_100113_66bb90c8-b419-40c3-bca9-f798ef61c7ec.mp4) |
+| Voorwaartse uitvalspas | `kr_forward_lunge` | [070fb383](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261101_115959_070fb383-fc07-42e3-bfc4-cfebe8547e4b.mp4) |
+| Conventional deadlift | `kr_conventional_deadlift` | [397d6443](https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/hf_20261101_120000_397d6443-cce6-4150-a60d-9a89e6176ac1.mp4) |
+
 ## Deprecated — October 2026 Higgsfield / CloudFront clips
 
 **Not the live source. Do not point `LIBRARY_VIDEOS` at these URLs.** They were the first

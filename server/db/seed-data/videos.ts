@@ -3,12 +3,14 @@
  * (dynamic Grok remakes, 2026-11-01). The files live next to this module and
  * are copied into private storage on start-up. See docs/VIDEOS.md.
  *
- * The old Higgsfield CloudFront URLs are not the live source.
+ * The October 2026 Higgsfield clips are not the live source. The three Seedance clips below are.
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const LIBRARY_VIDEO_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'library-videos');
+
+const HF = 'https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/';
 
 export type LibraryVideo = { exercise?: string; sourceKeys?: string[]; file: string };
 
@@ -26,6 +28,17 @@ export const LIBRARY_VIDEOS: LibraryVideo[] = [
   { exercise: 'Hielheffen staand', file: 'hielheffen.mp4' },
   { exercise: 'Eenbeensstand', file: 'eenbeensstand.mp4' },
   { exercise: 'Opstappen', file: 'opstappen.mp4' },
+];
+
+/**
+ * Seedance 2.0 via Higgsfield (2026-11-01), approved by the practice owner. They belong to
+ * practice-library exercises (by source key), so they are linked after the library import.
+ * Fetched once on the server; the CDN is reachable from the host.
+ */
+export const SEEDANCE_VIDEOS: LibraryVideo[] = [
+  { sourceKeys: ['kr_bodyweight_squat'], file: `${HF}hf_20261101_100113_66bb90c8-b419-40c3-bca9-f798ef61c7ec.mp4` },
+  { sourceKeys: ['kr_forward_lunge'], file: `${HF}hf_20261101_115959_070fb383-fc07-42e3-bfc4-cfebe8547e4b.mp4` },
+  { sourceKeys: ['kr_conventional_deadlift'], file: `${HF}hf_20261101_120000_397d6443-cce6-4150-a60d-9a89e6176ac1.mp4` },
 ];
 
 /** Resolve a library video `file` to a local seed path or a remote URL. */

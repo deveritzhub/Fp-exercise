@@ -5,7 +5,8 @@ import path from 'node:path';
 import pg from 'pg';
 import { seedDb, type Seed } from './helpers';
 import { EXERCISES } from '../db/seed-data/exercises';
-import { LIBRARY_VIDEOS, resolveLibraryVideo } from '../db/seed-data/videos';
+import { LIBRARY_VIDEOS, SEEDANCE_VIDEOS, resolveLibraryVideo } from '../db/seed-data/videos';
+import { readFpBundle } from '../src/lib/fpLibrary';
 import { sniff } from '../src/routes/media';
 
 const url = () => process.env.DATABASE_OWNER_URL!;
@@ -23,6 +24,22 @@ async function q(sql: string, p: unknown[] = []) {
 function fakeMp4(payload: string) {
   return Buffer.concat([Buffer.from([0x00, 0x00, 0x00, 0x18]), Buffer.from('ftypisom'), Buffer.from(payload)]);
 }
+
+describe('Seedance demo videos', () => {
+  it('each belongs to an exercise in a library bundle and resolves to a CDN mp4', () => {
+    const keys = new Set<string>();
+    for (const f of ['fp-app-update.json', 'fp-videos-v1.json']) {
+      for (const e of (readFpBundle(f) as { seed_data: { krachttraining: { oefeningen: { id: string }[] } } }).seed_data.krachttraining.oefeningen) keys.add(e.id);
+    }
+    expect(SEEDANCE_VIDEOS.flatMap((v) => v.sourceKeys)).toEqual(['kr_bodyweight_squat', 'kr_forward_lunge', 'kr_conventional_deadlift']);
+    for (const v of SEEDANCE_VIDEOS) {
+      for (const k of v.sourceKeys!) expect(keys.has(k), k).toBe(true);
+      const src = resolveLibraryVideo(v.file);
+      expect(src.url?.startsWith('https://d8j0ntlcm91z4.cloudfront.net/')).toBe(true);
+      expect(src.storageName).toMatch(/^hf_20261101_\d{6}_[0-9a-f-]{36}\.mp4$/);
+    }
+  });
+});
 
 describe('approved library video seed files', () => {
   it('points each central exercise at a local mp4 in the repo', async () => {

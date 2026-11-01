@@ -261,13 +261,14 @@ const MOBILITY_SAME_AS: Record<string, string> = {
   mb_thoracic_rotatie: 'ex_thoracic_rotatie',
   mb_cat_camel: 'ex_cat_camel',
 };
-const STRENGTH_EN: Record<string, string> = { kr_leg_curl: 'Lying leg curl', kr_standing_calf_raise: 'Standing calf raise', kr_lateral_raise: 'Dumbbell lateral raise' };
+const STRENGTH_EN: Record<string, string> = { kr_bodyweight_squat: 'Bodyweight squat', kr_forward_lunge: 'Forward lunge', kr_leg_curl: 'Lying leg curl', kr_standing_calf_raise: 'Standing calf raise', kr_lateral_raise: 'Dumbbell lateral raise' };
 export const STRENGTH_REGION: Record<string, string> = {
-  kr_back_squat: 'knee', kr_leg_press: 'knee', kr_leg_curl: 'knee', kr_leg_extension: 'knee', kr_rdl: 'hip', kr_conventional_deadlift: 'hip',
+  kr_bodyweight_squat: 'knee', kr_forward_lunge: 'knee', kr_back_squat: 'knee', kr_leg_press: 'knee', kr_leg_curl: 'knee', kr_leg_extension: 'knee', kr_rdl: 'hip', kr_conventional_deadlift: 'hip',
   kr_hip_thrust: 'hip', kr_standing_calf_raise: 'ankle_foot', kr_core_plank: 'lumbar_spine',
 };
 const STRENGTH_MOVEMENT: Record<string, string> = { legs: 'squat', push: 'push', pull: 'pull', core: 'core_stability' };
 const HINGE = new Set(['kr_rdl', 'kr_conventional_deadlift', 'kr_hip_thrust']);
+const LUNGE = new Set(['kr_forward_lunge']);
 
 const criteriaFrom = (groups: z.infer<typeof criteriaGroups> | undefined, from: string): Criteria =>
   (groups ?? [])
@@ -380,7 +381,7 @@ function normaliseStrength(m: z.infer<typeof strengthModule>, b: Bundle) {
       nameEn: STRENGTH_EN[e.id] ?? e.naam,
       region: STRENGTH_REGION[e.id] ?? 'shoulder',
       training: ['strength'],
-      movement: HINGE.has(e.id) ? 'hinge' : STRENGTH_MOVEMENT[e.categorie] ?? null,
+      movement: HINGE.has(e.id) ? 'hinge' : LUNGE.has(e.id) ? 'lunge' : STRENGTH_MOVEMENT[e.categorie] ?? null,
       equipment: e.materiaal && e.materiaal !== 'Geen' ? equipmentFor(e.materiaal) : ['none'],
       difficulty: e.niveau === 'gevorderd' ? 4 : e.niveau === 'beginner' ? 2 : 3,
       muscles: (e.hoofdspier ?? '').split(/,\s*/).filter(Boolean),

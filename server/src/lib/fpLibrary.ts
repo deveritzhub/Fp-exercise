@@ -13,6 +13,8 @@ export const FP_BUNDLES = [
   { name: 'fp-app-update-v1', file: 'fp-app-update.json' },
   // Only guideline-backed frameworks: vestibular, MS, ankle dorsiflexion (measurement moments, no thresholds).
   { name: 'fp-uitbreiding-v2', file: 'fp-uitbreiding-v2.json' },
+  // Bodyweight squat and forward lunge, so the 2026-11-01 Seedance demo videos have their exercise.
+  { name: 'fp-videos-v1', file: 'fp-videos-v1.json' },
 ] as const;
 
 const DIR = path.join(import.meta.dirname, '../../db/seed-data');
