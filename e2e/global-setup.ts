@@ -13,7 +13,7 @@ export default async function () {
   await db.connect();
   await db.query(
     `INSERT INTO patient_heroes(patient_id, practice_id, hero_name, skin, hair, outfit, sport)
-     SELECT id, practice_id, first_name, 's3', 'short', 'forest', 'running' FROM patients ON CONFLICT DO NOTHING`,
+     SELECT id, practice_id, first_name, 's4', 'short', 'forest', 'running' FROM patients ON CONFLICT DO NOTHING`,
   );
   await db.end();
 }

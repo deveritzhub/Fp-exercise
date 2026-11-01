@@ -44,19 +44,38 @@ export const AREA_KEYS = new Set(BODY_AREAS.map((a) => a.key));
 
 /** Looks of the hero: a few calm choices, all in the app's own colours. */
 export const HERO_OPTIONS = {
-  skin: ['s1', 's2', 's3', 's4', 's5', 's6'],
-  hair: ['short', 'long', 'curly', 'bun', 'buzz', 'none'],
+  frame: ['f', 'm'], // body type: feminine or masculine build
+  build: ['slim', 'average', 'athletic', 'full'],
+  skin: ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10'],
+  hair: ['short', 'long', 'ponytail', 'bun', 'curly', 'afro', 'buzz', 'none'],
+  hairColor: ['black', 'darkbrown', 'brown', 'blond', 'red', 'grey'],
+  eyeColor: ['brown', 'darkbrown', 'blue', 'green', 'hazel', 'grey'],
+  beard: ['none', 'stubble', 'moustache', 'beard'],
+  glasses: ['none', 'round', 'square'],
   outfit: ['forest', 'sand', 'ocean', 'berry', 'slate', 'sun'],
   sport: ['running', 'football', 'fitness', 'cycling', 'tennis', 'swimming', 'hockey', 'dance', 'walking', 'other'],
 } as const;
 
-export type HeroLook = { heroName: string; skin: string; hair: string; outfit: string; sport: string };
+export type HeroLook = {
+  heroName: string;
+  frame: string;
+  build: string;
+  skin: string;
+  hair: string;
+  hairColor: string;
+  eyeColor: string;
+  beard: string;
+  glasses: string;
+  outfit: string;
+  sport: string;
+};
+
+export const DEFAULT_LOOK: Omit<HeroLook, 'heroName'> = {
+  frame: 'f', build: 'average', skin: 's4', hair: 'long', hairColor: 'darkbrown', eyeColor: 'brown', beard: 'none', glasses: 'none', outfit: 'forest', sport: 'running',
+};
 
 export const validLook = (l: HeroLook) =>
-  HERO_OPTIONS.skin.includes(l.skin as never) &&
-  HERO_OPTIONS.hair.includes(l.hair as never) &&
-  HERO_OPTIONS.outfit.includes(l.outfit as never) &&
-  HERO_OPTIONS.sport.includes(l.sport as never);
+  (Object.keys(DEFAULT_LOOK) as (keyof typeof DEFAULT_LOOK)[]).every((k) => (HERO_OPTIONS[k] as readonly string[]).includes(l[k]));
 
 // ----------------------------------------------------------------------------------------------
 // XP and levels

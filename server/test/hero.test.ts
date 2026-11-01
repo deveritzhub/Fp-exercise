@@ -8,7 +8,7 @@ beforeAll(async () => {
   resetRateLimits();
 });
 
-const LOOK = { heroName: 'Emma de Sprinter', skin: 's3', hair: 'long', outfit: 'forest', sport: 'running' };
+const LOOK = { heroName: 'Emma de Sprinter', frame: 'f', build: 'athletic', skin: 's3', hair: 'long', hairColor: 'blond', eyeColor: 'blue', beard: 'none', glasses: 'round', outfit: 'forest', sport: 'running' };
 
 describe('sports hero', () => {
   it('the patient creates a hero, checks in pain and earns XP; the own therapist sees the body map', async () => {
@@ -28,7 +28,7 @@ describe('sports hero', () => {
     expect((await patient.post('/patient/hero/pain-map', { entries: [{ area: 'knee_l', score: 2 }] })).status).toBe(201);
 
     const after = (await patient.get('/patient/hero')).body;
-    expect(after.hero).toMatchObject({ heroName: 'Emma de Sprinter', outfit: 'ocean' });
+    expect(after.hero).toMatchObject({ heroName: 'Emma de Sprinter', outfit: 'ocean', build: 'athletic', hairColor: 'blond', glasses: 'round' });
     expect(after.painMap.baseline.entries).toEqual([{ area: 'knee_l', score: 6 }, { area: 'lower_back', score: 4 }]);
     expect(after.painMap.current.entries).toEqual([{ area: 'knee_l', score: 2 }]);
     expect(after.level.xp).toBeGreaterThan(before.level.xp); // check-in week counts

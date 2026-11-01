@@ -9,6 +9,12 @@ CREATE TABLE patient_heroes (
   hair        text NOT NULL CHECK (hair ~ '^[a-z0-9_]{1,20}$'),
   outfit      text NOT NULL CHECK (outfit ~ '^[a-z0-9_]{1,20}$'),
   sport       text NOT NULL CHECK (sport ~ '^[a-z0-9_]{1,20}$'),
+  frame       text NOT NULL DEFAULT 'f' CHECK (frame ~ '^[a-z0-9_]{1,20}$'),
+  build       text NOT NULL DEFAULT 'average' CHECK (build ~ '^[a-z0-9_]{1,20}$'),
+  hair_color  text NOT NULL DEFAULT 'darkbrown' CHECK (hair_color ~ '^[a-z0-9_]{1,20}$'),
+  eye_color   text NOT NULL DEFAULT 'brown' CHECK (eye_color ~ '^[a-z0-9_]{1,20}$'),
+  beard       text NOT NULL DEFAULT 'none' CHECK (beard ~ '^[a-z0-9_]{1,20}$'),
+  glasses     text NOT NULL DEFAULT 'none' CHECK (glasses ~ '^[a-z0-9_]{1,20}$'),
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
@@ -28,7 +34,7 @@ CREATE INDEX ON pain_map_entries(patient_id, recorded_at);
 
 ALTER TABLE patient_heroes ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON patient_heroes FROM PUBLIC;
-GRANT SELECT, INSERT, UPDATE (hero_name, skin, hair, outfit, sport, updated_at) ON patient_heroes TO fp_app;
+GRANT SELECT, INSERT, UPDATE (hero_name, skin, hair, outfit, sport, frame, build, hair_color, eye_color, beard, glasses, updated_at) ON patient_heroes TO fp_app;
 -- The patient creates and edits their own hero; the professionals of the patient can look.
 CREATE POLICY hero_read ON patient_heroes FOR SELECT TO fp_app USING (
   patient_id IN (SELECT app.my_patient_ids()) OR app.can_manage_patient(patient_id));

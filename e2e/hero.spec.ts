@@ -16,7 +16,7 @@ async function sql(q: string, p: unknown[] = []) {
 // Put every seeded patient's hero back for the other specs.
 test.afterAll(async () => {
   await sql(`INSERT INTO patient_heroes(patient_id, practice_id, hero_name, skin, hair, outfit, sport)
-    SELECT id, practice_id, first_name, 's3', 'short', 'forest', 'running' FROM patients ON CONFLICT DO NOTHING`);
+    SELECT id, practice_id, first_name, 's4', 'short', 'forest', 'running' FROM patients ON CONFLICT DO NOTHING`);
 });
 
 test('patient creates a sports hero on the first visit and marks where it hurts', async ({ browser, page }) => {
@@ -35,9 +35,28 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await pp.getByRole('radio', { name: 'Hardlopen' }).click();
   await pp.getByRole('button', { name: 'Volgende' }).click();
 
-  await pp.getByRole('radio', { name: 'Krullen' }).click();
+  // Body: figure, build, skin tone; the preview follows.
+  await expect(pp.getByRole('heading', { name: 'Je lichaam' })).toBeVisible();
+  await pp.getByRole('radio', { name: 'Vrouwelijk figuur' }).click();
+  await pp.getByRole('radio', { name: 'Sportief' }).click();
+  await pp.getByRole('radio', { name: 'Huidskleur 6 van 10' }).click();
+  await expect(pp.getByRole('img', { name: 'Voorbeeld van Emma de Sprinter' })).toBeVisible();
+  await expectAccessible(pp, 'hero body');
+  await pp.screenshot({ path: 'screenshots/hero/body-step.png', fullPage: true });
+  await pp.getByRole('button', { name: 'Volgende' }).click();
+
+  // Face and hair.
+  await expect(pp.getByRole('heading', { name: 'Gezicht en haar' })).toBeVisible();
+  await pp.getByRole('group', { name: 'Kapsel' }).getByRole('radio', { name: 'Krullen' }).click();
+  await pp.getByRole('group', { name: 'Haarkleur' }).getByRole('radio', { name: 'Zwart' }).click();
+  await pp.getByRole('group', { name: 'Oogkleur' }).getByRole('radio', { name: 'Groen' }).click();
+  await pp.getByRole('radio', { name: 'Ronde bril' }).click();
+  await expectAccessible(pp, 'hero face');
+  await pp.screenshot({ path: 'screenshots/hero/face-step.png', fullPage: true });
+  await pp.getByRole('button', { name: 'Volgende' }).click();
+
+  // Kit.
   await pp.getByRole('radio', { name: 'Oceaan' }).click();
-  await expectAccessible(pp, 'hero step 2');
   await pp.getByRole('button', { name: 'Volgende' }).click();
 
   await expect(pp.getByRole('heading', { name: 'Waar heb je pijn?' })).toBeVisible();
@@ -94,5 +113,25 @@ test('"Later" postpones the character creator for this visit', async ({ browser 
   await pp.getByRole('link', { name: 'Later' }).click();
   await expect(pp).toHaveURL(/\/p$/);
   await expect(pp.getByRole('link', { name: /Maak je sportheld/ })).toBeVisible();
+  await ctx.close();
+});
+
+test('no label in the hero creator is cut off on a 360 px phone', async ({ browser }) => {
+  const [p] = await sql(`SELECT id FROM patients WHERE email = 'patient@praktijk-b.test'`);
+  await sql('DELETE FROM patient_heroes WHERE patient_id = $1', [p.id]);
+  const ctx = await browser.newContext({ viewport: { width: 360, height: 780 } });
+  const pp = await ctx.newPage();
+  await login(pp, 'patient@praktijk-b.test');
+  await pp.getByRole('button', { name: 'Volgende' }).click();
+  for (let step = 2; step <= 4; step++) {
+    const cut = await pp.evaluate(() =>
+      [...document.querySelectorAll('fieldset label, fieldset label span:not(.sr-only):not([aria-hidden])')]
+        .filter((el) => !el.closest('[aria-hidden]') && (el.textContent ?? '').trim() && el.scrollWidth > el.clientWidth + 1)
+        .map((el) => el.textContent),
+    );
+    expect(cut, `step ${step}`).toEqual([]);
+    expect(await pp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+    await pp.getByRole('button', { name: 'Volgende' }).click();
+  }
   await ctx.close();
 });

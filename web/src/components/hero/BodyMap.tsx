@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { BODY_AREAS, type Side } from '@shared/hero';
+import { BODY_AREAS, DEFAULT_LOOK, type Side } from '@shared/hero';
+import { HumanFigure, figureGeometry, type FigureLook } from './HumanFigure';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import { Segmented } from '@/components/ui';
@@ -15,28 +16,19 @@ export function painWord(score: number, nl: boolean) {
 }
 const tone = (score: number) => (score <= 3 ? 'bg-ok text-white' : score <= 6 ? 'bg-warn text-white' : 'bg-bad text-white');
 
-function Figure() {
-  return (
-    <g fill="#e6eee8" stroke="#b5c1ba" strokeWidth="2">
-      <circle cx="100" cy="36" r="24" />
-      <rect x="90" y="58" width="20" height="16" rx="6" />
-      <path d="M58 86c8-10 26-14 42-14s34 4 42 14l8 46-14 4-6-30v62H70v-62l-6 30-14-4z" />
-      <path d="M50 132l-10 52-12 30 10 4 16-30 10-46zM150 132l10 52 12 30-10 4-16-30-10-46z" />
-      <path d="M70 196h60l4 30-6 90-4 74H106l-4-74-2-60-2 60-4 74H76l-4-74-6-90z" />
-    </g>
-  );
-}
-
 /**
  * Clickable body map (front and back). Every area is a real button (keyboard, screen reader,
  * 44 px touch target). With `onChange` the patient marks areas and sets a score 0–10.
  */
-export function BodyMap({ entries, onChange, compare, className }: { entries: PainEntries; onChange?: (e: PainEntries) => void; compare?: PainEntries; className?: string }) {
+export function BodyMap({ entries, onChange, compare, className, look }: { entries: PainEntries; onChange?: (e: PainEntries) => void; compare?: PainEntries; className?: string; look?: FigureLook }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const [side, setSide] = useState<Side>('front');
   const [selected, setSelected] = useState<string | null>(null);
-  const areas = BODY_AREAS.filter((a) => a.side === side);
+  // The patient's own hero, with the points placed on their body type.
+  const figure: FigureLook = look ?? DEFAULT_LOOK;
+  const pts = figureGeometry(figure).points;
+  const areas = BODY_AREAS.filter((a) => a.side === side).map((a) => ({ ...a, x: pts[a.key]?.[0] ?? a.x, y: pts[a.key]?.[1] ?? a.y }));
   const sel = BODY_AREAS.find((a) => a.key === selected);
   const count = (s: Side) => BODY_AREAS.filter((a) => a.side === s && entries[a.key] !== undefined).length;
 
@@ -54,8 +46,8 @@ export function BodyMap({ entries, onChange, compare, className }: { entries: Pa
           ]}
         />
       </div>
-      <div className="relative mx-auto aspect-[200/420] w-full max-w-[240px]">
-        <svg viewBox="0 0 200 420" className="absolute inset-0 h-full w-full" aria-hidden><Figure /></svg>
+      <div className="relative mx-auto aspect-[200/420] w-full max-w-[260px]">
+        <HumanFigure look={figure} side={side} className="absolute inset-0 h-full w-full" />
         <ul className="absolute inset-0" aria-label={side === 'front' ? t('Voorkant van het lichaam', 'Front of the body') : t('Achterkant van het lichaam', 'Back of the body')}>
           {areas.map((a) => {
             const v = entries[a.key];

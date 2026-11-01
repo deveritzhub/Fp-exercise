@@ -17,14 +17,25 @@ export const heroStaff = new Hono<AppEnv>();
 
 const look = z.object({
   heroName: z.string().trim().min(1).max(40),
+  frame: z.enum(HERO_OPTIONS.frame),
+  build: z.enum(HERO_OPTIONS.build),
   skin: z.enum(HERO_OPTIONS.skin),
   hair: z.enum(HERO_OPTIONS.hair),
+  hairColor: z.enum(HERO_OPTIONS.hairColor),
+  eyeColor: z.enum(HERO_OPTIONS.eyeColor),
+  beard: z.enum(HERO_OPTIONS.beard),
+  glasses: z.enum(HERO_OPTIONS.glasses),
   outfit: z.enum(HERO_OPTIONS.outfit),
   sport: z.enum(HERO_OPTIONS.sport),
 });
 
 const mapHero = (r: Record<string, any> | undefined) =>
-  r ? { heroName: r.hero_name, skin: r.skin, hair: r.hair, outfit: r.outfit, sport: r.sport, createdAt: r.created_at } : null;
+  r
+    ? {
+        heroName: r.hero_name, frame: r.frame, build: r.build, skin: r.skin, hair: r.hair, hairColor: r.hair_color, eyeColor: r.eye_color,
+        beard: r.beard, glasses: r.glasses, outfit: r.outfit, sport: r.sport, createdAt: r.created_at,
+      }
+    : null;
 
 /** First (baseline) and latest check-in of the body map, each as { recordedAt, entries }. */
 async function painMap(tx: Tx, patientId: string) {
@@ -113,11 +124,12 @@ heroPatient.put('/hero', async (c) => {
   const b = parse(look, await c.req.json());
   await withUser(user.id, (tx) =>
     tx.query(
-      `INSERT INTO patient_heroes(patient_id, practice_id, hero_name, skin, hair, outfit, sport)
-       VALUES ($1, app.patient_practice($1), $2, $3, $4, $5, $6)
-       ON CONFLICT (patient_id) DO UPDATE SET hero_name = EXCLUDED.hero_name, skin = EXCLUDED.skin, hair = EXCLUDED.hair,
-         outfit = EXCLUDED.outfit, sport = EXCLUDED.sport, updated_at = now()`,
-      [patient.id, b.heroName, b.skin, b.hair, b.outfit, b.sport],
+      `INSERT INTO patient_heroes(patient_id, practice_id, hero_name, frame, build, skin, hair, hair_color, eye_color, beard, glasses, outfit, sport)
+       VALUES ($1, app.patient_practice($1), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       ON CONFLICT (patient_id) DO UPDATE SET hero_name = EXCLUDED.hero_name, frame = EXCLUDED.frame, build = EXCLUDED.build,
+         skin = EXCLUDED.skin, hair = EXCLUDED.hair, hair_color = EXCLUDED.hair_color, eye_color = EXCLUDED.eye_color,
+         beard = EXCLUDED.beard, glasses = EXCLUDED.glasses, outfit = EXCLUDED.outfit, sport = EXCLUDED.sport, updated_at = now()`,
+      [patient.id, b.heroName, b.frame, b.build, b.skin, b.hair, b.hairColor, b.eyeColor, b.beard, b.glasses, b.outfit, b.sport],
     ),
   );
   return c.json({ ok: true });

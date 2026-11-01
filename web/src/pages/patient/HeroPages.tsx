@@ -8,10 +8,11 @@ import { useDocumentMeta } from '@/lib/meta';
 import { useSession } from '@/lib/session';
 import { cn } from '@/lib/cn';
 import { Button, Card, ErrorState, Input, Notice, ProgressBar, Spinner, useToast } from '@/components/ui';
-import { HeroAvatar, OUTFIT, SKIN, SPORT_ICON } from '@/components/hero/HeroAvatar';
+import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
+import { EYE_COLOURS, HAIR_COLOURS, HumanFigure, KIT, SKIN_TONES } from '@/components/hero/HumanFigure';
 import { BodyMap, type PainEntries } from '@/components/hero/BodyMap';
 import { PhaseTimeline } from '@/components/app/PhaseInfo';
-import { BADGES, HERO_OPTIONS, XP, titleFor, type HeroLook } from '@shared/hero';
+import { BADGES, DEFAULT_LOOK, HERO_OPTIONS, XP, titleFor, type HeroLook } from '@shared/hero';
 import type { HeroState } from '@/lib/types';
 
 export const HERO_LATER_KEY = 'fp.heroLater';
@@ -22,12 +23,17 @@ const SPORTS: Record<string, [string, string]> = {
   tennis: ['Tennis / padel', 'Tennis / padel'], swimming: ['Zwemmen', 'Swimming'], hockey: ['Hockey', 'Hockey'], dance: ['Dansen', 'Dance'],
   walking: ['Wandelen', 'Walking'], other: ['Iets anders', 'Something else'],
 };
-const HAIR: Record<string, [string, string]> = {
-  short: ['Kort', 'Short'], long: ['Lang', 'Long'], curly: ['Krullen', 'Curly'], bun: ['Knot', 'Bun'], buzz: ['Heel kort', 'Buzz cut'], none: ['Geen', 'None'],
+const LABELS: Record<string, Record<string, [string, string]>> = {
+  frame: { f: ['Vrouwelijk figuur', 'Feminine figure'], m: ['Mannelijk figuur', 'Masculine figure'] },
+  build: { slim: ['Slank', 'Slim'], average: ['Gemiddeld', 'Average'], athletic: ['Sportief', 'Athletic'], full: ['Vol', 'Full'] },
+  hair: { short: ['Kort', 'Short'], long: ['Lang', 'Long'], ponytail: ['Staart', 'Ponytail'], bun: ['Knot', 'Bun'], curly: ['Krullen', 'Curly'], afro: ['Afro', 'Afro'], buzz: ['Heel kort', 'Buzz cut'], none: ['Kaal', 'Bald'] },
+  hairColor: { black: ['Zwart', 'Black'], darkbrown: ['Donkerbruin', 'Dark brown'], brown: ['Bruin', 'Brown'], blond: ['Blond', 'Blond'], red: ['Rood', 'Red'], grey: ['Grijs', 'Grey'] },
+  eyeColor: { brown: ['Bruin', 'Brown'], darkbrown: ['Donkerbruin', 'Dark brown'], blue: ['Blauw', 'Blue'], green: ['Groen', 'Green'], hazel: ['Hazelaar', 'Hazel'], grey: ['Grijs', 'Grey'] },
+  beard: { none: ['Geen', 'None'], stubble: ['Stoppels', 'Stubble'], moustache: ['Snor', 'Moustache'], beard: ['Baard', 'Beard'] },
+  glasses: { none: ['Geen bril', 'No glasses'], round: ['Ronde bril', 'Round glasses'], square: ['Rechthoekige bril', 'Square glasses'] },
+  outfit: { forest: ['Bosgroen', 'Forest'], sand: ['Zand', 'Sand'], ocean: ['Oceaan', 'Ocean'], berry: ['Bes', 'Berry'], slate: ['Leisteen', 'Slate'], sun: ['Zon', 'Sun'] },
 };
-const OUTFITS: Record<string, [string, string]> = {
-  forest: ['Bosgroen', 'Forest'], sand: ['Zand', 'Sand'], ocean: ['Oceaan', 'Ocean'], berry: ['Bes', 'Berry'], slate: ['Leisteen', 'Slate'], sun: ['Zon', 'Sun'],
-};
+type Opt<K extends keyof typeof HERO_OPTIONS> = (typeof HERO_OPTIONS)[K][number];
 
 /** A row of radio choices (real radio buttons: keyboard and screen reader friendly). */
 function Choice<T extends string>({ legend, name, value, options, onChange, render, cols = 'grid-cols-3' }: { legend: string; name: string; value: T; options: readonly T[]; onChange: (v: T) => void; render: (v: T, checked: boolean) => React.ReactNode; cols?: string }) {
@@ -48,10 +54,11 @@ function Choice<T extends string>({ legend, name, value, options, onChange, rend
   );
 }
 
-/** First visit (or "Uiterlijk aanpassen"): build the sports hero, then mark where it hurts. */
+/** First visit (or "Uiterlijk aanpassen"): build the sports hero step by step, then mark where it hurts. */
 export function HeroSetupPage({ edit = false }: { edit?: boolean }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
+  const L = (k: string, v: string) => LABELS[k][v][nl ? 0 : 1];
   useDocumentMeta(edit ? t('Uiterlijk aanpassen', 'Change look') : t('Maak je sportheld', 'Create your sports hero'));
   const { user } = useSession();
   const nav = useNavigate();
@@ -59,18 +66,22 @@ export function HeroSetupPage({ edit = false }: { edit?: boolean }) {
   const toast = useToast();
   const q = useHero();
   const [step, setStep] = useState(1);
-  const [look, setLook] = useState<HeroLook>({ heroName: '', skin: 's3', hair: 'short', outfit: 'forest', sport: 'running' });
+  const [look, setLook] = useState<HeroLook>({ heroName: '', ...DEFAULT_LOOK });
   const [pain, setPain] = useState<PainEntries>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    if (q.data?.hero) setLook({ heroName: q.data.hero.heroName, skin: q.data.hero.skin, hair: q.data.hero.hair, outfit: q.data.hero.outfit, sport: q.data.hero.sport });
-    else if (user && !look.heroName) setLook((l) => ({ ...l, heroName: user.fullName.split(' ')[0] }));
+    if (q.data?.hero) {
+      const { createdAt: _c, ...h } = q.data.hero;
+      setLook(h);
+    } else if (user && !look.heroName) setLook((l) => ({ ...l, heroName: user.fullName.split(' ')[0] }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q.data, user]);
   if (q.isError) return <ErrorState error={q.error} />;
   if (!q.data) return <Spinner />;
-  const steps = edit ? 2 : 3;
+  const steps = edit ? 4 : 5;
+  const set = <K extends keyof HeroLook>(k: K, v: HeroLook[K]) => setLook((l) => ({ ...l, [k]: v }));
+  const swatch = (bg: string) => <span className="h-7 w-7 shrink-0 rounded-full border border-ink-200 shadow-xs" style={{ background: bg }} aria-hidden />;
 
   const finish = async (withPain: boolean) => {
     setBusy(true);
@@ -87,6 +98,19 @@ export function HeroSetupPage({ edit = false }: { edit?: boolean }) {
       setBusy(false);
     }
   };
+  const nextBack = (next: () => void, nextLabel = t('Volgende', 'Next'), loading = false) => (
+    <div className="grid grid-cols-2 gap-2">
+      <Button size="xl" variant="secondary" onClick={() => setStep(step - 1)}>{t('Vorige', 'Back')}</Button>
+      <Button size="xl" loading={loading} onClick={next}>{nextLabel}</Button>
+    </div>
+  );
+  const titles: Record<number, [string, string]> = {
+    1: [edit ? 'Uiterlijk aanpassen' : 'Maak je sportheld', edit ? 'Change look' : 'Create your sports hero'],
+    2: ['Je lichaam', 'Your body'],
+    3: ['Gezicht en haar', 'Face and hair'],
+    4: ['Je tenue', 'Your kit'],
+    5: ['Waar heb je pijn?', 'Where does it hurt?'],
+  };
 
   return (
     <div className="space-y-5">
@@ -97,59 +121,67 @@ export function HeroSetupPage({ edit = false }: { edit?: boolean }) {
         <span className="text-[14px] text-ink-600">{t(`Stap ${step} van ${steps}`, `Step ${step} of ${steps}`)}</span>
       </div>
 
-      <div className="flex flex-col items-center gap-2 text-center">
-        <HeroAvatar look={look} size={112} level={1} />
-        <h1 className="t-page">{step === 3 ? t('Waar heb je pijn?', 'Where does it hurt?') : edit ? t('Uiterlijk aanpassen', 'Change look') : t('Maak je sportheld', 'Create your sports hero')}</h1>
-        <p className="max-w-sm text-[15px] text-ink-600">
-          {step === 1 && t('Jij bent de held van je eigen herstel. Elke training levert XP op en brengt je een level verder.', 'You are the hero of your own recovery. Every workout earns XP and takes you a level further.')}
-          {step === 2 && t('Kies hoe je sportheld eruitziet.', 'Choose how your sports hero looks.')}
-          {step === 3 && t('Tik op de plekken waar je pijn hebt en geef aan hoeveel. Zo zie je straks hoe je herstelt, en je fysiotherapeut ziet het ook.', 'Tap where it hurts and say how much. Later you see how you recover, and your physiotherapist sees it too.')}
+      <div className="text-center">
+        <h1 className="t-page">{titles[step][nl ? 0 : 1]}</h1>
+        <p className="mx-auto mt-1 max-w-sm text-[15px] text-ink-600">
+          {step === 1 && t('Jij bent de held van je eigen herstel. Maak een sportheld die op jou lijkt: elke training levert XP op.', 'You are the hero of your own recovery. Make a sports hero who looks like you: every workout earns XP.')}
+          {step === 5 && t('Tik op je held waar je pijn hebt en geef aan hoeveel. Zo zie je straks hoe je herstelt, en je fysiotherapeut ziet het ook.', 'Tap your hero where it hurts and say how much. Later you see how you recover, and your physiotherapist sees it too.')}
         </p>
       </div>
 
       {error && <Notice tone="bad">{error}</Notice>}
 
+      {step >= 2 && step <= 4 && (
+        <div className="flex justify-center rounded-2xl bg-sage/60 py-3" role="img" aria-label={t(`Voorbeeld van ${look.heroName || 'je held'}`, `Preview of ${look.heroName || 'your hero'}`)}>
+          <HumanFigure look={look} className="h-[300px] w-auto" />
+        </div>
+      )}
+
       {step === 1 && (
         <Card className="space-y-5 p-5">
-          <Input label={t('Naam van je held', 'Name of your hero')} value={look.heroName} maxLength={40} onChange={(e) => setLook({ ...look, heroName: e.target.value })} />
-          <Choice
-            legend={t('Jouw sport', 'Your sport')}
-            name="sport"
-            cols="grid-cols-2"
-            value={look.sport as (typeof HERO_OPTIONS.sport)[number]}
-            options={HERO_OPTIONS.sport}
-            onChange={(v) => setLook({ ...look, sport: v })}
-            render={(v) => {
-              const Icon = SPORT_ICON[v];
-              return <><Icon className="h-4 w-4 shrink-0" aria-hidden />{SPORTS[v][nl ? 0 : 1]}</>;
-            }}
-          />
+          <div className="flex justify-center"><HeroAvatar look={look} size={112} level={1} /></div>
+          <Input label={t('Naam van je held', 'Name of your hero')} value={look.heroName} maxLength={40} onChange={(e) => set('heroName', e.target.value)} />
+          <Choice legend={t('Jouw sport', 'Your sport')} name="sport" cols="grid-cols-2" value={look.sport as Opt<'sport'>} options={HERO_OPTIONS.sport} onChange={(v) => set('sport', v)}
+            render={(v) => { const Icon = SPORT_ICON[v]; return <><Icon className="h-4 w-4 shrink-0" aria-hidden />{SPORTS[v][nl ? 0 : 1]}</>; }} />
           <Button size="xl" className="w-full" disabled={!look.heroName.trim()} onClick={() => setStep(2)}>{t('Volgende', 'Next')}</Button>
         </Card>
       )}
 
       {step === 2 && (
         <Card className="space-y-5 p-5">
-          <Choice legend={t('Huidskleur', 'Skin tone')} name="skin" value={look.skin as (typeof HERO_OPTIONS.skin)[number]} options={HERO_OPTIONS.skin} onChange={(v) => setLook({ ...look, skin: v })}
-            render={(v) => <><span className="h-7 w-7 rounded-full border border-ink-200" style={{ background: SKIN[v] }} aria-hidden /><span className="sr-only">{t(`Huidskleur ${v.slice(1)}`, `Skin tone ${v.slice(1)}`)}</span></>} />
-          <Choice legend={t('Haar', 'Hair')} name="hair" value={look.hair as (typeof HERO_OPTIONS.hair)[number]} options={HERO_OPTIONS.hair} onChange={(v) => setLook({ ...look, hair: v })}
-            render={(v) => <span className="flex flex-col items-center gap-1"><HeroAvatar look={{ ...look, hair: v }} size={40} />{HAIR[v][nl ? 0 : 1]}</span>} />
-          <Choice legend={t('Tenue', 'Kit')} name="outfit" value={look.outfit as (typeof HERO_OPTIONS.outfit)[number]} options={HERO_OPTIONS.outfit} onChange={(v) => setLook({ ...look, outfit: v })}
-            render={(v) => <><span className="h-5 w-5 shrink-0 rounded-full" style={{ background: OUTFIT[v].main }} aria-hidden />{OUTFITS[v][nl ? 0 : 1]}</>} />
-          <div className="grid grid-cols-2 gap-2">
-            <Button size="xl" variant="secondary" onClick={() => setStep(1)}>{t('Vorige', 'Back')}</Button>
-            {edit ? (
-              <Button size="xl" loading={busy} onClick={() => finish(false)}>{t('Opslaan', 'Save')}</Button>
-            ) : (
-              <Button size="xl" onClick={() => setStep(3)}>{t('Volgende', 'Next')}</Button>
-            )}
-          </div>
+          <Choice legend={t('Figuur', 'Figure')} name="frame" cols="grid-cols-2" value={look.frame as Opt<'frame'>} options={HERO_OPTIONS.frame} onChange={(v) => set('frame', v)} render={(v) => L('frame', v)} />
+          <Choice legend={t('Bouw', 'Build')} name="build" cols="grid-cols-2" value={look.build as Opt<'build'>} options={HERO_OPTIONS.build} onChange={(v) => set('build', v)} render={(v) => L('build', v)} />
+          <Choice legend={t('Huidskleur', 'Skin tone')} name="skin" cols="grid-cols-5" value={look.skin as Opt<'skin'>} options={HERO_OPTIONS.skin} onChange={(v) => set('skin', v)}
+            render={(v) => <>{swatch(SKIN_TONES[v])}<span className="sr-only">{t(`Huidskleur ${v.slice(1)} van 10`, `Skin tone ${v.slice(1)} of 10`)}</span></>} />
+          {nextBack(() => setStep(3))}
         </Card>
       )}
 
       {step === 3 && (
+        <Card className="space-y-5 p-5">
+          <Choice legend={t('Kapsel', 'Hairstyle')} name="hair" cols="grid-cols-4" value={look.hair as Opt<'hair'>} options={HERO_OPTIONS.hair} onChange={(v) => set('hair', v)}
+            render={(v) => <span className="flex flex-col items-center gap-1 text-[12.5px] leading-tight"><HeroAvatar look={{ ...look, hair: v }} size={44} plain />{L('hair', v)}</span>} />
+          <Choice legend={t('Haarkleur', 'Hair colour')} name="hairColor" cols="grid-cols-2" value={look.hairColor as Opt<'hairColor'>} options={HERO_OPTIONS.hairColor} onChange={(v) => set('hairColor', v)}
+            render={(v) => <>{swatch(HAIR_COLOURS[v])}<span className="text-[13px]">{L('hairColor', v)}</span></>} />
+          <Choice legend={t('Oogkleur', 'Eye colour')} name="eyeColor" cols="grid-cols-2" value={look.eyeColor as Opt<'eyeColor'>} options={HERO_OPTIONS.eyeColor} onChange={(v) => set('eyeColor', v)}
+            render={(v) => <>{swatch(EYE_COLOURS[v])}<span className="text-[13px]">{L('eyeColor', v)}</span></>} />
+          <Choice legend={t('Baard', 'Beard')} name="beard" cols="grid-cols-2" value={look.beard as Opt<'beard'>} options={HERO_OPTIONS.beard} onChange={(v) => set('beard', v)} render={(v) => L('beard', v)} />
+          <Choice legend={t('Bril', 'Glasses')} name="glasses" cols="grid-cols-1 min-[400px]:grid-cols-3" value={look.glasses as Opt<'glasses'>} options={HERO_OPTIONS.glasses} onChange={(v) => set('glasses', v)} render={(v) => <span className="text-[13px]">{L('glasses', v)}</span>} />
+          {nextBack(() => setStep(4))}
+        </Card>
+      )}
+
+      {step === 4 && (
+        <Card className="space-y-5 p-5">
+          <Choice legend={t('Kleur van je tenue', 'Colour of your kit')} name="outfit" cols="grid-cols-2" value={look.outfit as Opt<'outfit'>} options={HERO_OPTIONS.outfit} onChange={(v) => set('outfit', v)}
+            render={(v) => <>{swatch(KIT[v].main)}<span className="text-[13px]">{L('outfit', v)}</span></>} />
+          {edit ? nextBack(() => finish(false), t('Opslaan', 'Save'), busy) : nextBack(() => setStep(5))}
+        </Card>
+      )}
+
+      {step === 5 && (
         <Card className="space-y-4 p-5">
-          <BodyMap entries={pain} onChange={setPain} />
+          <BodyMap entries={pain} onChange={setPain} look={look} />
           <p className="text-center text-[13.5px] text-ink-600">
             {Object.keys(pain).length
               ? t(`${Object.keys(pain).length} ${Object.keys(pain).length === 1 ? 'plek' : 'plekken'} aangegeven`, `${Object.keys(pain).length} area(s) marked`)
@@ -158,7 +190,7 @@ export function HeroSetupPage({ edit = false }: { edit?: boolean }) {
           <div className="grid gap-2">
             <Button size="xl" loading={busy} disabled={!Object.keys(pain).length} onClick={() => finish(true)}>{t('Klaar: start mijn avontuur', 'Done: start my journey')}</Button>
             <Button size="lg" variant="ghost" disabled={busy} onClick={() => finish(false)}>{t('Ik heb nergens pijn', 'I have no pain anywhere')}</Button>
-            <Button size="lg" variant="ghost" disabled={busy} onClick={() => setStep(2)}>{t('Vorige', 'Back')}</Button>
+            <Button size="lg" variant="ghost" disabled={busy} onClick={() => setStep(4)}>{t('Vorige', 'Back')}</Button>
           </div>
         </Card>
       )}
@@ -267,7 +299,7 @@ export function HeroPage() {
         {d.painMap.current && d.painMap.current.entries.length === 0 ? (
           <Notice tone="ok" className="mt-3">{t('Je gaf aan dat je nergens pijn hebt.', 'You reported no pain anywhere.')}</Notice>
         ) : (
-          <BodyMap entries={toEntries(d.painMap.current)} compare={d.painMap.checkins > 1 ? toEntries(d.painMap.baseline) : undefined} className="mt-3" />
+          <BodyMap entries={toEntries(d.painMap.current)} compare={d.painMap.checkins > 1 ? toEntries(d.painMap.baseline) : undefined} look={d.hero} className="mt-3" />
         )}
       </section>
 
@@ -332,7 +364,7 @@ export function PainCheckinPage() {
       </div>
       {error && <Notice tone="bad">{error}</Notice>}
       <Card className="space-y-4 p-5">
-        <BodyMap entries={pain} onChange={setPain} />
+        <BodyMap entries={pain} onChange={setPain} look={q.data.hero ?? undefined} />
         <div className="grid gap-2">
           <Button size="xl" loading={busy} onClick={() => save(pain)}>{t('Opslaan', 'Save')}</Button>
           <Button size="lg" variant="ghost" disabled={busy} onClick={() => save({})}>{t('Ik heb nergens pijn meer', 'I have no pain anywhere now')}</Button>

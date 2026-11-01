@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BADGES, BODY_AREAS, averagePain, levelFor, titleFor, validLook, xpFor, xpForLevel } from './hero';
+import { BADGES, BODY_AREAS, DEFAULT_LOOK, averagePain, levelFor, titleFor, validLook, xpFor, xpForLevel } from './hero';
 
 describe('sports hero rules', () => {
   it('levels grow gently and progress is between 0 and 1', () => {
@@ -42,8 +42,10 @@ describe('sports hero rules', () => {
   });
 
   it('only known looks are accepted', () => {
-    expect(validLook({ heroName: 'Max', skin: 's3', hair: 'curly', outfit: 'forest', sport: 'running' })).toBe(true);
-    expect(validLook({ heroName: 'Max', skin: 'pink', hair: 'curly', outfit: 'forest', sport: 'running' })).toBe(false);
+    const max = { heroName: 'Max', ...DEFAULT_LOOK, frame: 'm', hair: 'curly', beard: 'stubble' };
+    expect(validLook(max)).toBe(true);
+    expect(validLook({ ...max, skin: 'pink' })).toBe(false);
+    expect(validLook({ ...max, build: 'huge' })).toBe(false);
     expect(averagePain([4, 6])).toBe(5);
     expect(averagePain([])).toBeNull();
   });

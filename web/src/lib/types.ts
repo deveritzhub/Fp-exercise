@@ -164,7 +164,7 @@ export type Labelled = { key: string; nl: string; en: string };
 /** Sports hero (gamified revalidatie), see shared/hero.ts. */
 export type PainCheckin = { recordedAt: string; entries: { area: string; score: number }[] };
 export type HeroState = {
-  hero: { heroName: string; skin: string; hair: string; outfit: string; sport: string; createdAt: string } | null;
+  hero: (import('@shared/hero').HeroLook & { createdAt: string }) | null;
   painMap: { baseline: PainCheckin | null; current: PainCheckin | null; checkins: number };
   level: { level: number; xp: number; from: number; to: number; progress: number };
   badges: { key: string; earned: boolean }[];

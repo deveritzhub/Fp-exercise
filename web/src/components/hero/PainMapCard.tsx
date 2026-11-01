@@ -33,7 +33,7 @@ export function PainMapCard({ patientId }: { patientId: string }) {
         <p className="px-5 py-4 text-[14px] text-ink-600">{t('De patiënt heeft de pijnkaart nog niet ingevuld.', 'The patient has not filled in the body map yet.')}</p>
       ) : (
         <div className="grid gap-5 p-5 md:grid-cols-[240px_minmax(0,1fr)]">
-          <BodyMap entries={now} compare={painMap.checkins > 1 ? start : undefined} />
+          <BodyMap entries={now} compare={painMap.checkins > 1 ? start : undefined} look={hero ?? undefined} />
           <div className="min-w-0 space-y-3">
             <dl className="grid grid-cols-2 gap-3 text-[14px]">
               <div className="rounded-lg border border-line p-3">
