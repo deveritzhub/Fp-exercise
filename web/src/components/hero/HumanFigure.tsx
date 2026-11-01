@@ -26,7 +26,7 @@ export const KIT: Record<string, { main: string; dark: string; soft: string }> =
   sun: { main: '#b5781a', dark: '#8a5b12', soft: '#fbf0d9' },
 };
 
-export type FigureLook = Pick<HeroLook, 'skin' | 'hair' | 'outfit'> & Partial<Pick<HeroLook, 'hairColor' | 'eyeColor' | 'frame' | 'build' | 'beard' | 'glasses'>>;
+export type FigureLook = Pick<HeroLook, 'skin' | 'hair' | 'outfit'> & Partial<Pick<HeroLook, 'hairColor' | 'eyeColor' | 'frame' | 'build' | 'beard' | 'glasses'>> & { gear?: string[] };
 
 type Pt = [number, number, number]; // x, y, half width
 
@@ -152,6 +152,8 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
   const kit = KIT[look.outfit] ?? KIT.forest;
   const front = side === 'front';
   const L = g.limbW;
+  const gear = new Set(look.gear ?? []);
+  const gold = gear.has('gold_shoes');
 
   const torso = limb([[100, 70, g.neck], [100, 79, g.shoulder * 0.74], [100, 88, g.shoulder * 0.97], [100, 100, g.shoulder * 0.96], [100, 120, g.chest], [100, 162, g.waist], [100, 198, g.hip], [100, 214, g.hip * 0.96]]);
   const arm = (s: -1 | 1) =>
@@ -233,7 +235,7 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
         const x = 100 + s * (g.legX - 2.1);
         return (
           <g key={s}>
-            <path d={`M${x - 7},396 C${x - 8},388 ${x - 5},383 ${x},383 C${x + 5},383 ${x + 8},388 ${x + 7},396 C${x + 7},401 ${x - 7},401 ${x - 7},396 Z`} fill="#f7f9f7" stroke="#b5c1ba" strokeWidth="1" />
+            <path d={`M${x - 7},396 C${x - 8},388 ${x - 5},383 ${x},383 C${x + 5},383 ${x + 8},388 ${x + 7},396 C${x + 7},401 ${x - 7},401 ${x - 7},396 Z`} fill={gold ? '#e2b84a' : '#f7f9f7'} stroke={gold ? '#a77d16' : '#b5c1ba'} strokeWidth="1" />
             <path d={`M${x - 6.5},396 h13`} stroke={kit.main} strokeWidth="2" />
           </g>
         );
@@ -293,6 +295,24 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
       {!front && look.hair === 'ponytail' && <path d="M96,40 C88,62 92,84 100,92 C108,84 112,62 104,40 Z" fill={hair} />}
       {!front && look.hair === 'bun' && <circle cx="100" cy="14" r="9" fill={hair} />}
       {!front && look.hair === 'long' && <path d="M78,40 C76,70 80,92 84,98 L116,98 C120,92 124,70 122,40 Z" fill={hair} />}
+      {/* Gear unlocked by progress */}
+      {gear.has('wristbands') && [-1, 1].map((sd) => (
+        <rect key={sd} x={g.armX(sd as -1 | 1, 200) - 5 * L} y="196" width={10 * L} height="6" rx="2" fill={kit.main} stroke="#fff" strokeWidth=".8" />
+      ))}
+      {gear.has('captain') && (
+        <g>
+          <rect x={g.armX(1, 112) - 8 * L} y="110" width={16 * L} height="8" rx="2" fill="#e2b84a" stroke="#a77d16" strokeWidth=".8" />
+          <text x={g.armX(1, 112)} y="116.6" textAnchor="middle" fontSize="7" fontWeight="700" fill="#5b4a2e">C</text>
+        </g>
+      )}
+      {front && gear.has('medal') && (
+        <g>
+          <path d="M94,80 L100,108 L106,80" fill="none" stroke="#b42318" strokeWidth="3" />
+          <circle cx="100" cy="112" r="7" fill="#e2b84a" stroke="#a77d16" strokeWidth="1.2" />
+          <path d="M100,108 l1.3,2.7 3,.4 -2.2,2.1 .5,3 -2.6,-1.4 -2.6,1.4 .5,-3 -2.2,-2.1 3,-.4z" fill="#fff" opacity=".85" />
+        </g>
+      )}
+      {gear.has('headband') && <path d="M78.6,30 Q100,22 121.4,30 L121,35.5 Q100,28 79,35.5 Z" fill={kit.main} stroke="#fff" strokeWidth=".6" />}
     </svg>
   );
 }

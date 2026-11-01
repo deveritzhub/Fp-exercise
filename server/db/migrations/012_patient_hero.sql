@@ -15,6 +15,7 @@ CREATE TABLE patient_heroes (
   eye_color   text NOT NULL DEFAULT 'brown' CHECK (eye_color ~ '^[a-z0-9_]{1,20}$'),
   beard       text NOT NULL DEFAULT 'none' CHECK (beard ~ '^[a-z0-9_]{1,20}$'),
   glasses     text NOT NULL DEFAULT 'none' CHECK (glasses ~ '^[a-z0-9_]{1,20}$'),
+  gear        text[] NOT NULL DEFAULT '{}' CHECK (cardinality(gear) <= 10),
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
@@ -34,7 +35,7 @@ CREATE INDEX ON pain_map_entries(patient_id, recorded_at);
 
 ALTER TABLE patient_heroes ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON patient_heroes FROM PUBLIC;
-GRANT SELECT, INSERT, UPDATE (hero_name, skin, hair, outfit, sport, frame, build, hair_color, eye_color, beard, glasses, updated_at) ON patient_heroes TO fp_app;
+GRANT SELECT, INSERT, UPDATE (hero_name, skin, hair, outfit, sport, frame, build, hair_color, eye_color, beard, glasses, gear, updated_at) ON patient_heroes TO fp_app;
 -- The patient creates and edits their own hero; the professionals of the patient can look.
 CREATE POLICY hero_read ON patient_heroes FOR SELECT TO fp_app USING (
   patient_id IN (SELECT app.my_patient_ids()) OR app.can_manage_patient(patient_id));
@@ -67,3 +68,24 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
 $$;
 REVOKE EXECUTE ON FUNCTION app.patient_series_phases(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION app.patient_series_phases(text) TO fp_app;
+
+-- Daily check-in: one quick score per day for the main sore area (or 'general'); feeds the pain trend.
+CREATE TABLE daily_checkins (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  patient_id  uuid NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  practice_id uuid NOT NULL REFERENCES practices(id) ON DELETE CASCADE,
+  day         date NOT NULL,
+  area        text NOT NULL CHECK (area ~ '^[a-z_]{2,40}$'),
+  score       smallint NOT NULL CHECK (score BETWEEN 0 AND 10),
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (patient_id, day)
+);
+ALTER TABLE daily_checkins ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON daily_checkins FROM PUBLIC;
+GRANT SELECT, INSERT, UPDATE (area, score) ON daily_checkins TO fp_app;
+CREATE POLICY checkin_read ON daily_checkins FOR SELECT TO fp_app USING (
+  patient_id IN (SELECT app.my_patient_ids()) OR app.can_manage_patient(patient_id));
+CREATE POLICY checkin_insert ON daily_checkins FOR INSERT TO fp_app WITH CHECK (
+  patient_id IN (SELECT app.my_patient_ids()) AND practice_id = app.patient_practice(patient_id));
+CREATE POLICY checkin_update ON daily_checkins FOR UPDATE TO fp_app
+  USING (patient_id IN (SELECT app.my_patient_ids())) WITH CHECK (patient_id IN (SELECT app.my_patient_ids()));

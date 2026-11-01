@@ -75,6 +75,23 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await expect(pp.getByRole('heading', { name: 'Emma de Sprinter' })).toBeVisible();
   await expect(pp.getByText(/Level \d+ · /).first()).toBeVisible();
   await expect(pp.getByRole('img', { name: /Linkerknie: 7\/10/ })).toBeVisible();
+  // Daily check-in (5 seconds) and weekly quests.
+  const checkin = pp.getByRole('region', { name: 'Dagcheck' }).or(pp.locator('section[aria-labelledby="checkin-title"]'));
+  await expect(pp.getByRole('heading', { name: /Hoe voelt je linkerknie vandaag\?/ })).toBeVisible();
+  await pp.getByLabel('0 = geen pijn, 10 = ergst denkbaar').fill('6');
+  await checkin.getByRole('button', { name: 'Opslaan' }).click();
+  await expect(pp.getByText(/Dagcheck gedaan: 6\/10/)).toBeVisible();
+  await expect(pp.getByRole('heading', { name: 'Weekquests' })).toBeVisible();
+  await expect(pp.getByText('Doe een dagcheck of werk je pijnkaart bij')).toBeVisible();
+  await expect(pp.getByText(/Weekkist geopend|Haal alle drie voor de weekkist/)).toBeVisible();
+  // Gear: locked items say how to unlock them; unlocked items can be worn.
+  await expect(pp.getByRole('heading', { name: /Uitrusting \(\d van 5\)/ })).toBeVisible();
+  await expect(pp.getByText(/Nog op slot: /).first()).toBeVisible();
+  const wear = pp.getByRole('button', { name: 'Aandoen' }).first();
+  if (await wear.count()) {
+    await wear.click();
+    await expect(pp.getByRole('button', { name: 'Aan', pressed: true }).first()).toBeVisible();
+  }
   // Main quest: goal, week of the schedule, expected time to the goal.
   await expect(pp.getByRole('heading', { name: 'Knie — patellapees belastingsopbouw' })).toBeVisible();
   await expect(pp.getByText(/Week \d+ van \d+/)).toBeVisible();
@@ -126,12 +143,19 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await pp.screenshot({ path: 'screenshots/hero/workout-done.png', fullPage: true });
   await ctx.close();
 
+  // An earlier measurement two weeks ago, so there is a trend over time.
+  await sql(`INSERT INTO pain_map_entries(patient_id, practice_id, batch, area, score, recorded_at)
+             SELECT id, practice_id, gen_random_uuid(), 'knee_l', 8, now() - interval '14 days' FROM patients WHERE id = $1`, [emma.id]);
+
   // Therapist sees the body map in the record.
   await login(page, 'therapeut@praktijk-a.test');
   await page.goto(`/app/patienten/${emma.id}`);
   await expect(page.getByRole('heading', { name: 'Pijnkaart (door patiënt ingevuld)' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Linkerknie' })).toBeVisible();
   await expect(page.getByRole('cell', { name: '3 · licht' })).toBeVisible();
+  // Pain trend per area next to adherence.
+  await expect(page.getByRole('heading', { name: 'Pijnverloop per plek' })).toBeVisible();
+  await expect(page.getByRole('list', { name: 'Therapietrouw per week' })).toBeVisible();
   await expectAccessible(page, 'therapist pain map');
   await page.screenshot({ path: 'screenshots/hero/therapist.png', fullPage: true });
 });

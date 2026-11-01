@@ -234,3 +234,52 @@ export function questTimeline(input: { phases: { no: number; weeks: string | nul
   const weeksLeft = Math.max(0, Math.ceil((expectedEnd.getTime() - today.getTime()) / (7 * 86400_000)));
   return { week, totalWeeks, progress: Math.min(1, elapsedWeeks / totalWeeks), expectedEnd: expectedEnd.toISOString().slice(0, 10), weeksLeft };
 }
+
+// ----------------------------------------------------------------------------------------------
+// Weekly quests: three small goals per week (Monday–Sunday). Optional: no penalty for missing one,
+// and the training goal never asks for more than the days the therapist planned.
+// ----------------------------------------------------------------------------------------------
+
+export const QUEST_XP = 40; // per quest completed
+export const CHEST_XP = 100; // all three quests of a week: the week chest
+
+export type WeekData = { planned: number; trainedDays: number; checkins: number; skillLogs: Partial<Record<SkillKey, number>> };
+export type Quest = { key: 'train' | 'checkin' | 'skill'; skill?: SkillKey; target: number; progress: number; done: boolean };
+
+/** The skill of the week rotates through the skills the patient's own exercises train. */
+export function skillOfWeek(weekStart: string, skills: SkillKey[]): SkillKey {
+  const list = skills.length ? [...new Set(skills)].sort() : (['mobility'] as SkillKey[]);
+  const weekNo = Math.floor(new Date(weekStart + 'T12:00:00Z').getTime() / (7 * 86400_000));
+  return list[weekNo % list.length];
+}
+
+export function weeklyQuests(w: WeekData, skill: SkillKey): Quest[] {
+  const trainTarget = w.planned > 0 ? Math.min(w.planned, 3) : 1;
+  const q = (key: Quest['key'], target: number, progress: number, extra: Partial<Quest> = {}): Quest => ({ key, target, progress: Math.min(progress, target), done: progress >= target, ...extra });
+  return [
+    q('train', trainTarget, w.trainedDays),
+    q('checkin', 1, w.checkins),
+    q('skill', 2, w.skillLogs[skill] ?? 0, { skill }),
+  ];
+}
+
+export const questXp = (quests: Quest[]) => quests.filter((q) => q.done).length * QUEST_XP + (quests.every((q) => q.done) ? CHEST_XP : 0);
+
+// ----------------------------------------------------------------------------------------------
+// Gear: items for the hero, unlocked by real progress; the patient chooses what to wear.
+// ----------------------------------------------------------------------------------------------
+
+export type GearInput = { skills: Partial<Record<SkillKey, number>>; sessions: number; phasesCompleted: number; chestWeeks: number };
+
+export const GEAR: { key: string; nl: string; en: string; unlockNl: string; unlockEn: string; unlocked: (g: GearInput) => boolean }[] = [
+  { key: 'headband', nl: 'Zweetband', en: 'Headband', unlockNl: 'Discipline level 5', unlockEn: 'Discipline level 5', unlocked: (g) => (g.skills.discipline ?? 1) >= 5 },
+  { key: 'wristbands', nl: 'Polsbandjes', en: 'Wristbands', unlockNl: 'Kracht level 5', unlockEn: 'Strength level 5', unlocked: (g) => (g.skills.strength ?? 1) >= 5 },
+  { key: 'captain', nl: 'Aanvoerdersband', en: 'Captain’s armband', unlockNl: '3 weken alle weekquests', unlockEn: '3 weeks with all weekly quests', unlocked: (g) => g.chestWeeks >= 3 },
+  { key: 'medal', nl: 'Medaille', en: 'Medal', unlockNl: 'Een fase van je revalidatie voltooid', unlockEn: 'A phase of your rehabilitation completed', unlocked: (g) => g.phasesCompleted >= 1 },
+  { key: 'gold_shoes', nl: 'Gouden schoenen', en: 'Golden shoes', unlockNl: '25 trainingen', unlockEn: '25 workouts', unlocked: (g) => g.sessions >= 25 },
+];
+export const GEAR_KEYS = new Set(GEAR.map((g) => g.key));
+
+/** Daily check-in: a quick score for the main sore area (or how you feel overall). */
+export const CHECKIN_XP = 5; // hero XP and Herstel XP per day
+export const GENERAL_AREA = 'general';

@@ -6,9 +6,10 @@ import { BODY_AREAS, averagePain } from '@shared/hero';
 import { Card, CardHeader, Notice } from '@/components/ui';
 import { BodyMap, painWord } from './BodyMap';
 import { HeroAvatar } from './HeroAvatar';
+import { PainTrendList } from './PainTrend';
 import type { HeroState } from '@/lib/types';
 
-type StaffHero = Pick<HeroState, 'hero' | 'painMap'>;
+type StaffHero = Pick<HeroState, 'hero' | 'painMap' | 'trends'> & { weekly: { weekStart: string; planned: number; completed: number; rate: number | null }[] };
 
 /** Therapist: the patient's self-reported body map, first check-in versus latest. */
 export function PainMapCard({ patientId }: { patientId: string }) {
@@ -62,6 +63,21 @@ export function PainMapCard({ patientId }: { patientId: string }) {
               </table>
             )}
             <p className="text-[13px] text-ink-600">{t(`${painMap.checkins} ${painMap.checkins === 1 ? 'meting' : 'metingen'}`, `${painMap.checkins} check-in(s)`)}</p>
+            {q.data.trends.some((tr) => tr.points.length > 1) && (
+              <div className="border-t border-line pt-3">
+                <h3 className="t-card mb-2">{t('Pijnverloop per plek', 'Pain trend per area')}</h3>
+                <PainTrendList trends={q.data.trends.filter((tr) => tr.points.length > 1)} />
+                <p className="mt-3 text-[13px] font-semibold text-ink-800">{t('Therapietrouw per week (laatste 12 weken)', 'Adherence per week (last 12 weeks)')}</p>
+                <div className="mt-1 flex items-end gap-1" role="list" aria-label={t('Therapietrouw per week', 'Adherence per week')}>
+                  {q.data.weekly.map((w) => (
+                    <div key={w.weekStart} role="listitem" className="flex h-12 flex-1 flex-col justify-end" aria-label={t(`Week van ${w.weekStart}: ${w.planned ? `${w.completed} van ${w.planned}` : 'niets gepland'}`, `Week of ${w.weekStart}: ${w.planned ? `${w.completed} of ${w.planned}` : 'nothing planned'}`)}>
+                      <div className={w.rate === null ? 'h-1 rounded-sm bg-ink-100' : 'rounded-sm bg-accent/70'} style={w.rate === null ? undefined : { height: `${Math.max(6, w.rate * 100)}%` }} />
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-1 text-[12.5px] text-ink-600">{t('Zelfde weken als de lijnen hierboven: zo zie je of de pijn daalt terwijl de belasting stijgt.', 'Same weeks as the lines above: see whether pain goes down while the load goes up.')}</p>
+              </div>
+            )}
           </div>
         </div>
       )}

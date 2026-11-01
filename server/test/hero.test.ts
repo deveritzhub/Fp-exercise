@@ -62,3 +62,36 @@ describe('sports hero', () => {
     expect((await other.get(`/patients/${s.patients.emma}/hero`)).status).toBe(403);
   });
 });
+
+describe('weekly quests, gear, daily check-in, trends', () => {
+  it('gives quests, a daily check-in and a pain trend; gear only when unlocked', async () => {
+    const patient = await login('patientA');
+    await patient.put('/patient/hero', LOOK);
+    const st = (await patient.get('/patient/hero')).body;
+    expect(st.weekly.quests.map((q: { key: string }) => q.key)).toEqual(['train', 'checkin', 'skill']);
+    expect(st.weekly.quests[0].target).toBeLessThanOrEqual(3);
+
+    // Daily check-in: once per day, can be changed; counts as this week's check-in.
+    expect((await patient.post('/patient/hero/checkin', { area: 'knee_l', score: 4 })).status).toBe(201);
+    expect((await patient.post('/patient/hero/checkin', { area: 'knee_l', score: 3 })).status).toBe(201);
+    expect((await patient.post('/patient/hero/checkin', { area: 'tail', score: 3 })).body.error).toBe('unknown_body_area');
+    const after = (await patient.get('/patient/hero')).body;
+    expect(after.checkin.today).toMatchObject({ area: 'knee_l', score: 3 });
+    expect(after.weekly.quests[1].done).toBe(true);
+    const knee = after.trends.find((t: { area: string }) => t.area === 'knee_l');
+    expect(knee.points.at(-1)).toMatchObject({ score: 3, source: 'daily' });
+
+    // Gear: locked items cannot be worn.
+    const locked = after.gear.unlocked.includes('gold_shoes') ? null : 'gold_shoes';
+    if (locked) expect((await patient.put('/patient/hero/gear', { equipped: [locked] })).body.error).toBe('gear_locked');
+    expect((await patient.put('/patient/hero/gear', { equipped: ['cape'] })).body.error).toBe('unknown_gear');
+    expect((await patient.put('/patient/hero/gear', { equipped: after.gear.unlocked })).status).toBe(200);
+
+    // The therapist sees the trend; another practice does not.
+    const ther = await login('therapistA');
+    const seen = (await ther.get(`/patients/${s.patients.emma}/hero`)).body;
+    expect(seen.trends.find((t: { area: string }) => t.area === 'knee_l')).toBeTruthy();
+    expect(seen.weekly.length).toBe(12);
+    expect((await (await login('therapistB')).get(`/patients/${s.patients.emma}/hero`)).status).toBe(404);
+  });
+});

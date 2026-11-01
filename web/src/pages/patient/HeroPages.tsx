@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Award, CalendarCheck, Check, ChevronRight, CircleCheck, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, PersonStanding, Shield, Sparkles, Trophy, Zap, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Award, CalendarCheck, Check, ChevronRight, CircleCheck, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Zap, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -10,9 +10,10 @@ import { cn } from '@/lib/cn';
 import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, Spinner, useToast } from '@/components/ui';
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { EYE_COLOURS, HAIR_COLOURS, HumanFigure, KIT, SKIN_TONES } from '@/components/hero/HumanFigure';
-import { BodyMap, type PainEntries } from '@/components/hero/BodyMap';
-import { BADGES, DEFAULT_LOOK, HERO_OPTIONS, SKILLS, XP, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
+import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
+import { BADGES, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, SKILLS, XP, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import type { HeroState } from '@/lib/types';
+import { PainTrendList } from '@/components/hero/PainTrend';
 
 export const HERO_LATER_KEY = 'fp.heroLater';
 export const useHero = () => useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero') });
@@ -319,6 +320,142 @@ function Quest({ d }: { d: HeroState }) {
   );
 }
 
+/** Daily check-in: a five-second score for the main sore area. */
+function DailyCheckin({ d }: { d: HeroState }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [editing, setEditing] = useState(false);
+  const [score, setScore] = useState<number>(d.checkin.today?.score ?? 3);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const area = BODY_AREAS.find((a) => a.key === d.checkin.area);
+  const question = area ? t(`Hoe voelt je ${area.nl.toLowerCase()} vandaag?`, `How does your ${area.en.toLowerCase()} feel today?`) : t('Hoeveel pijn of ongemak heb je vandaag?', 'How much pain or discomfort do you have today?');
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.post('/patient/hero/checkin', { area: d.checkin.area, score });
+      await qc.invalidateQueries({ queryKey: ['patient-hero'] });
+      toast(t(`Dagcheck opgeslagen: +${CHECKIN_XP} XP`, `Daily check-in saved: +${CHECKIN_XP} XP`));
+      setEditing(false);
+    } catch (e) {
+      setError(describeError(e, locale));
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (d.checkin.today && !editing) {
+    return (
+      <section className="flex items-center gap-3 rounded-2xl border border-ok/25 bg-ok-soft p-4" aria-label={t('Dagcheck', 'Daily check-in')}>
+        <CircleCheck className="h-6 w-6 shrink-0 text-ok" aria-hidden />
+        <p className="min-w-0 flex-1 text-[15px] text-ink-800">
+          {t('Dagcheck gedaan', 'Daily check-in done')}: <strong>{d.checkin.today.score}/10</strong> · {painWord(d.checkin.today.score, nl)}
+        </p>
+        <button type="button" onClick={() => { setScore(d.checkin.today!.score); setEditing(true); }} className="min-h-[44px] px-2 text-[14px] font-medium text-accent">{t('Aanpassen', 'Change')}</button>
+      </section>
+    );
+  }
+  return (
+    <section className="rounded-2xl border border-accent/25 bg-accent-soft p-5" aria-labelledby="checkin-title">
+      <p className="t-label">{t('Dagcheck', 'Daily check-in')} · +{CHECKIN_XP} XP</p>
+      <h2 id="checkin-title" className="t-section mt-1">{question}</h2>
+      {error && <Notice tone="bad" className="mt-2">{error}</Notice>}
+      <div className="mt-3 flex items-baseline justify-between text-[15px]">
+        <label htmlFor="checkin-score" className="text-ink-700">{t('0 = geen pijn, 10 = ergst denkbaar', '0 = no pain, 10 = worst imaginable')}</label>
+        <span className="tabular-nums"><strong className="font-display text-[22px]">{score}</strong>/10 · {painWord(score, nl)}</span>
+      </div>
+      <input id="checkin-score" type="range" min={0} max={10} step={1} value={score} onChange={(e) => setScore(Number(e.target.value))} className="mt-2 h-11 w-full accent-[rgb(var(--accent))]" aria-valuetext={`${score}/10, ${painWord(score, nl)}`} />
+      <Button size="lg" className="mt-2 w-full" loading={busy} onClick={save}>{t('Opslaan', 'Save')}</Button>
+    </section>
+  );
+}
+
+/** This week's three quests and the week chest. */
+function WeeklyQuests({ d }: { d: HeroState }) {
+  const { t } = useI18n();
+  const w = d.weekly;
+  const label = (q: HeroState['weekly']['quests'][number]) => {
+    if (q.key === 'train') return q.target === 1 ? t('Doe 1 training', 'Do 1 workout') : t(`Train ${q.target} dagen`, `Train on ${q.target} days`);
+    if (q.key === 'checkin') return t('Doe een dagcheck of werk je pijnkaart bij', 'Do a daily check-in or update your body map');
+    const sk = SKILLS.find((k) => k.key === q.skill)!;
+    return t(`Skill van de week: doe 2 oefeningen voor ${sk.nl}`, `Skill of the week: do 2 exercises for ${sk.en}`);
+  };
+  const allDone = w.quests.every((q) => q.done);
+  return (
+    <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="weekly-title">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="weekly-title" className="t-section">{t('Weekquests', 'Weekly quests')}</h2>
+        <span className="text-[13px] text-ink-600">{t(`week van ${new Date(w.weekStart + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}`, `week of ${new Date(w.weekStart + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`)}</span>
+      </div>
+      <ul className="mt-3 space-y-2">
+        {w.quests.map((q) => (
+          <li key={q.key} className={cn('flex items-center gap-3 rounded-xl border p-3', q.done ? 'border-ok/30 bg-ok-soft' : 'border-line')}>
+            {q.done ? <CircleCheck className="h-6 w-6 shrink-0 text-ok" aria-hidden /> : <Target className="h-6 w-6 shrink-0 text-ink-500" aria-hidden />}
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14.5px] font-medium text-ink-900">{label(q)}</span>
+              <span className="block text-[13px] text-ink-600">{q.progress}/{q.target} · +{w.xpPerQuest} XP{q.done ? t(' · gehaald', ' · done') : ''}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className={cn('mt-3 flex items-center gap-2 rounded-lg px-3 py-2.5 text-[14px]', allDone ? 'bg-sand-soft font-semibold text-sand-ink' : 'bg-canvas text-ink-700')}>
+        <Gift className="h-4 w-4 shrink-0" aria-hidden />
+        {allDone ? t(`Weekkist geopend: +${w.chestXp} XP!`, `Week chest opened: +${w.chestXp} XP!`) : t(`Haal alle drie voor de weekkist: +${w.chestXp} XP`, `Complete all three for the week chest: +${w.chestXp} XP`)}
+      </p>
+      <p className="mt-2 text-[12.5px] text-ink-600">{t('Weekquests zijn een extraatje: een week missen kost je niets, en meer trainen dan gepland is nooit nodig.', 'Weekly quests are a bonus: missing a week costs nothing, and training more than planned is never needed.')}</p>
+    </section>
+  );
+}
+
+/** Gear: unlocked by progress; the patient chooses what the hero wears. */
+function GearCard({ d }: { d: HeroState }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [busy, setBusy] = useState<string | null>(null);
+  const toggle = async (key: string) => {
+    const on = d.gear.equipped.includes(key);
+    const next = on ? d.gear.equipped.filter((g) => g !== key) : [...d.gear.equipped, key];
+    setBusy(key);
+    try {
+      await api.put('/patient/hero/gear', { equipped: next });
+      await qc.invalidateQueries({ queryKey: ['patient-hero'] });
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="gear-title">
+      <h2 id="gear-title" className="t-section">{t(`Uitrusting (${d.gear.unlocked.length} van ${GEAR.length})`, `Gear (${d.gear.unlocked.length} of ${GEAR.length})`)}</h2>
+      <ul className="mt-3 space-y-2">
+        {GEAR.map((g) => {
+          const unlocked = d.gear.unlocked.includes(g.key);
+          const worn = d.gear.equipped.includes(g.key);
+          return (
+            <li key={g.key} className={cn('flex items-center gap-3 rounded-xl border p-3', unlocked ? 'border-line' : 'border-line bg-canvas')}>
+              {unlocked ? <Crown className="h-5 w-5 shrink-0 text-sand-ink" aria-hidden /> : <Lock className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />}
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14.5px] font-semibold text-ink-900">{nl ? g.nl : g.en}</span>
+                <span className="block text-[13px] text-ink-600">{unlocked ? t('Vrijgespeeld', 'Unlocked') : t(`Nog op slot: ${g.unlockNl}`, `Locked: ${g.unlockEn}`)}</span>
+              </span>
+              {unlocked && (
+                <Button size="sm" variant={worn ? 'primary' : 'secondary'} className="h-11" aria-pressed={worn} loading={busy === g.key} onClick={() => toggle(g.key)}>
+                  {worn ? t('Aan', 'On') : t('Aandoen', 'Wear')}
+                </Button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 /** The character sheet: the hero with their pain, the main quest, skills and badges. */
 export function HeroPage() {
   const { t, locale } = useI18n();
@@ -339,6 +476,7 @@ export function HeroPage() {
     );
   }
   const L = d.level;
+  const look = { ...d.hero, gear: d.gear.equipped };
   const toEntries = (c: HeroState['painMap']['current']) => Object.fromEntries((c?.entries ?? []).map((e) => [e.area, e.score]));
   const earned = d.badges.filter((b) => b.earned).length;
 
@@ -346,7 +484,7 @@ export function HeroPage() {
     <div className="space-y-5">
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="hero-name">
         <div className="flex items-center gap-4">
-          <HeroAvatar look={d.hero} size={80} level={L.level} />
+          <HeroAvatar look={look} size={80} level={L.level} />
           <div className="min-w-0">
             <p className="t-label">{t(`Level ${L.level}`, `Level ${L.level}`)} · {titleFor(L.level, nl)}</p>
             <h1 id="hero-name" className="t-page [overflow-wrap:anywhere]">{d.hero.heroName}</h1>
@@ -372,6 +510,8 @@ export function HeroPage() {
         </details>
       </section>
 
+      <DailyCheckin d={d} />
+      <WeeklyQuests d={d} />
       <Quest d={d} />
 
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="map-title">
@@ -387,10 +527,17 @@ export function HeroPage() {
         {d.painMap.current && d.painMap.current.entries.length === 0 && (
           <Notice tone="ok" className="mt-3">{t('Je gaf aan dat je nergens pijn hebt.', 'You reported no pain anywhere.')}</Notice>
         )}
-        <BodyMap entries={toEntries(d.painMap.current)} compare={d.painMap.checkins > 1 ? toEntries(d.painMap.baseline) : undefined} look={d.hero} className="mt-3" />
+        <BodyMap entries={toEntries(d.painMap.current)} compare={d.painMap.checkins > 1 ? toEntries(d.painMap.baseline) : undefined} look={look} className="mt-3" />
+        {d.trends.some((tr) => tr.points.length > 1) && (
+          <div className="mt-4 border-t border-line pt-4">
+            <h3 className="t-card mb-2">{t('Verloop per plek', 'Trend per area')}</h3>
+            <PainTrendList trends={d.trends.filter((tr) => tr.points.length > 1)} />
+          </div>
+        )}
       </section>
 
       <Skills d={d} />
+      <GearCard d={d} />
 
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="badges-title">
         <h2 id="badges-title" className="t-section">{t(`Badges (${earned} van ${d.badges.length})`, `Badges (${earned} of ${d.badges.length})`)}</h2>
@@ -483,10 +630,13 @@ export function HeroHomeCard() {
   }
   return (
     <Link to="/p/held" className="flex items-center gap-4 rounded-2xl border border-line bg-white p-4 shadow-card">
-      <HeroAvatar look={d.hero} size={60} level={d.level.level} />
+      <HeroAvatar look={{ ...d.hero, gear: d.gear.equipped }} size={60} level={d.level.level} />
       <span className="min-w-0 flex-1">
         <span className="block truncate font-semibold text-ink-900">{d.hero.heroName}</span>
         <span className="block text-[13.5px] text-ink-600">{t(`Level ${d.level.level}`, `Level ${d.level.level}`)} · {titleFor(d.level.level, locale === 'nl')} · {d.level.xp} XP</span>
+        <span className="block text-[13px] font-medium text-accent">
+          {!d.checkin.today ? t('Dagcheck nog te doen', 'Daily check-in to do') : t(`Weekquests: ${d.weekly.quests.filter((q) => q.done).length}/3`, `Weekly quests: ${d.weekly.quests.filter((q) => q.done).length}/3`)}
+        </span>
         <ProgressBar value={d.level.progress} className="mt-1.5 h-2" label={t(`Voortgang naar level ${d.level.level + 1}`, `Progress to level ${d.level.level + 1}`)} />
       </span>
       <ChevronRight className="h-5 w-5 shrink-0 text-ink-400" aria-hidden />

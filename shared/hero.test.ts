@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BADGES, BODY_AREAS, DEFAULT_LOOK, averagePain, levelFor, questTimeline, skillLevel, skillXpForLevel, skillsForExercise, titleFor, validLook, xpFor, xpForLevel } from './hero';
+import { BADGES, BODY_AREAS, CHEST_XP, DEFAULT_LOOK, GEAR, QUEST_XP, averagePain, levelFor, questTimeline, questXp, skillLevel, skillOfWeek, skillXpForLevel, skillsForExercise, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type SkillKey } from './hero';
 
 describe('sports hero rules', () => {
   it('levels grow gently and progress is between 0 and 1', () => {
@@ -76,5 +76,30 @@ describe('skills and quest', () => {
     expect(q.weeksLeft).toBe(7);
     expect(q.progress).toBeCloseTo(5 / 12, 2);
     expect(questTimeline({ phases: [{ no: 1, weeks: 'n.v.t.' }], currentNo: 1, phaseStart: '2026-11-02' })).toBeNull();
+  });
+});
+
+describe('weekly quests and gear', () => {
+  it('quests never ask more than the planned days; all three give the chest', () => {
+    const w = { planned: 5, trainedDays: 3, checkins: 1, skillLogs: { balance: 2 } };
+    const q = weeklyQuests(w, 'balance');
+    expect(q.map((x) => [x.key, x.target, x.done])).toEqual([['train', 3, true], ['checkin', 1, true], ['skill', 2, true]]);
+    expect(questXp(q)).toBe(3 * QUEST_XP + CHEST_XP);
+    expect(weeklyQuests({ ...w, planned: 2, trainedDays: 1 }, 'balance')[0]).toMatchObject({ target: 2, progress: 1, done: false });
+    expect(questXp(weeklyQuests({ planned: 0, trainedDays: 0, checkins: 0, skillLogs: {} }, 'balance'))).toBe(0);
+  });
+
+  it('the skill of the week rotates through the patient’s own skills', () => {
+    const skills: SkillKey[] = ['strength', 'balance'];
+    const a = skillOfWeek('2026-11-02', skills);
+    const b = skillOfWeek('2026-11-09', skills);
+    expect(new Set([a, b])).toEqual(new Set(skills));
+    expect(skillOfWeek('2026-11-02', [])).toBe('mobility');
+  });
+
+  it('gear unlocks from real progress', () => {
+    const none = { skills: {}, sessions: 0, phasesCompleted: 0, chestWeeks: 0 };
+    expect(GEAR.filter((g) => g.unlocked(none))).toHaveLength(0);
+    expect(GEAR.filter((g) => g.unlocked({ ...none, skills: { discipline: 5 }, sessions: 25 })).map((g) => g.key)).toEqual(['headband', 'gold_shoes']);
   });
 });

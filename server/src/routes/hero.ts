@@ -6,7 +6,11 @@ import { requirePatient, requireStaff, type AppEnv } from '../middleware';
 import { parse, uuidParam } from '../lib/validate';
 import { badRequest, notFound } from '../lib/errors';
 import { loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
-import { AREA_KEYS, BADGES, HERO_OPTIONS, SKILLS, SKILL_XP, averagePain, levelFor, questTimeline, skillLevel, skillsForExercise, xpFor, type SkillKey } from '../../../shared/hero';
+import { weeklyAdherence } from '../../../shared/adherence';
+import {
+  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, GENERAL_AREA, HERO_OPTIONS, QUEST_XP, SKILLS, SKILL_XP, averagePain, levelFor, questTimeline,
+  questXp, skillLevel, skillOfWeek, skillsForExercise, weeklyQuests, xpFor, type SkillKey, type WeekData,
+} from '../../../shared/hero';
 
 /**
  * Sports hero (gamified revalidatie): the patient's own character, a body map with self-reported
@@ -33,7 +37,7 @@ const mapHero = (r: Record<string, any> | undefined) =>
   r
     ? {
         heroName: r.hero_name, frame: r.frame, build: r.build, skin: r.skin, hair: r.hair, hairColor: r.hair_color, eyeColor: r.eye_color,
-        beard: r.beard, glasses: r.glasses, outfit: r.outfit, sport: r.sport, createdAt: r.created_at,
+        beard: r.beard, glasses: r.glasses, outfit: r.outfit, sport: r.sport, gear: (r.gear ?? []) as string[], createdAt: r.created_at,
       }
     : null;
 
@@ -78,10 +82,12 @@ async function heroState(tx: Tx, patientId: string) {
     )
   ).rows[0];
   const inputs = await loadAdherenceInputs(tx, [patientId]);
-  const fullWeeks = weeklyForPatient(inputs, patientId, 52).filter((w) => w.planned > 0 && w.completed >= w.planned).length;
+  const weekly = weeklyForPatient(inputs, patientId, 52);
+  const fullWeeks = weekly.filter((w) => w.planned > 0 && w.completed >= w.planned).length;
+  const daily = (await tx.query('SELECT day::text AS day, area, score FROM daily_checkins WHERE patient_id = $1 ORDER BY day', [patientId])).rows as { day: string; area: string; score: number }[];
   const painBaseline = map.baseline ? averagePain(map.baseline.entries.map((e) => e.score)) ?? 0 : null;
   const painNow = map.current ? averagePain(map.current.entries.map((e) => e.score)) ?? 0 : null;
-  const xp = xpFor({ sessions: s.sessions, sessionsWithPain: s.with_pain, redFlags: s.red_flags, checkinWeeks: s.checkin_weeks });
+  let xp = xpFor({ sessions: s.sessions, sessionsWithPain: s.with_pain, redFlags: s.red_flags, checkinWeeks: s.checkin_weeks }) + daily.length * CHECKIN_XP;
   const badgeInput = { sessions: s.sessions, sessionsWithPain: s.with_pain, redFlags: s.red_flags, fullWeeks, phasesCompleted: s.phases_done, painBaseline, painNow };
   // Current chapter: the active rehabilitation programme with a phase.
   // ---- Skills: XP per skill from what the patient actually did. ----
@@ -102,7 +108,70 @@ async function heroState(tx: Tx, patientId: string) {
     s.with_pain * SKILL_XP.painReported +
     s.checkin_weeks * SKILL_XP.painCheckin +
     (map.checkins > 1 && painBaseline !== null && painNow !== null ? Math.max(0, Math.round((painBaseline - painNow) * SKILL_XP.painPointDown)) : 0);
+  skillXp.recovery += daily.length * CHECKIN_XP;
   const skills = SKILLS.map((k) => ({ key: k.key, ...skillLevel(skillXp[k.key]) }));
+
+  // ---- Weekly quests: evaluated for every week with activity, so XP for past weeks stays. ----
+  const perWeek = (
+    await tx.query(
+      `SELECT to_char(date_trunc('week', l.created_at), 'YYYY-MM-DD') AS week, e.training_categories, e.movement_category, count(*)::int AS n
+         FROM exercise_logs l JOIN exercises e ON e.id = l.exercise_id
+        WHERE l.patient_id = $1 AND l.completed GROUP BY 1, 2, 3`,
+      [patientId],
+    )
+  ).rows;
+  const checkinWeeks = (
+    await tx.query(
+      `SELECT week, count(*)::int AS n FROM (
+         SELECT DISTINCT to_char(date_trunc('week', recorded_at), 'YYYY-MM-DD') AS week, batch::text AS k FROM pain_map_entries WHERE patient_id = $1
+         UNION ALL SELECT to_char(date_trunc('week', day::timestamptz), 'YYYY-MM-DD'), day::text FROM daily_checkins WHERE patient_id = $1) x
+       GROUP BY week`,
+      [patientId],
+    )
+  ).rows;
+  const progSkills = (
+    await tx.query(
+      `SELECT DISTINCT e.training_categories, e.movement_category FROM program_items i
+         JOIN programs p ON p.id = i.program_id JOIN exercises e ON e.id = i.exercise_id
+        WHERE p.patient_id = $1 AND p.status = 'active'`,
+      [patientId],
+    )
+  ).rows.flatMap((r) => skillsForExercise(r.training_categories ?? [], r.movement_category));
+  const rotation = [...new Set(progSkills)] as SkillKey[];
+  const weekData = (weekStart: string): WeekData => {
+    const w = weekly.find((x) => x.weekStart === weekStart);
+    const skillLogs: Partial<Record<SkillKey, number>> = {};
+    for (const r of perWeek.filter((x) => x.week === weekStart))
+      for (const k of skillsForExercise(r.training_categories ?? [], r.movement_category)) skillLogs[k] = (skillLogs[k] ?? 0) + r.n;
+    return { planned: w?.planned ?? 0, trainedDays: w?.completed ?? 0, checkins: checkinWeeks.find((x) => x.week === weekStart)?.n ?? 0, skillLogs };
+  };
+  const activeWeeks = new Set([...perWeek.map((r) => r.week as string), ...checkinWeeks.map((r) => r.week as string)]);
+  let chestWeeks = 0;
+  for (const w of weekly.slice(0, -1)) {
+    if (!activeWeeks.has(w.weekStart)) continue;
+    const q = weeklyQuests(weekData(w.weekStart), skillOfWeek(w.weekStart, rotation));
+    xp += questXp(q);
+    if (q.every((x) => x.done)) chestWeeks++;
+  }
+  const thisWeek = weekly[weekly.length - 1].weekStart;
+  // This week's training goal uses all days planned this week (not only those up to today), so it does not grow mid-week.
+  const sunday = new Date(thisWeek + 'T12:00:00');
+  sunday.setDate(sunday.getDate() + 6);
+  const fullWeek = weeklyAdherence(inputs.schedules.get(patientId) ?? [], inputs.done.get(patientId) ?? new Map(), sunday, 1)[0];
+  const quests = weeklyQuests({ ...weekData(thisWeek), planned: fullWeek.planned }, skillOfWeek(thisWeek, rotation));
+  xp += questXp(quests);
+  if (quests.every((x) => x.done)) chestWeeks++;
+
+  // ---- Gear: unlocked by progress; the patient chooses what to wear. ----
+  const gearInput = { skills: Object.fromEntries(skills.map((k) => [k.key, k.level])), sessions: s.sessions, phasesCompleted: s.phases_done, chestWeeks };
+  const unlocked = GEAR.filter((g) => g.unlocked(gearInput)).map((g) => g.key);
+  const equipped = ((await tx.query('SELECT gear FROM patient_heroes WHERE patient_id = $1', [patientId])).rows[0]?.gear ?? []).filter((g: string) => unlocked.includes(g));
+
+  // ---- Daily check-in and the pain trend per area. ----
+  const today = (await tx.query("SELECT to_char(now(), 'YYYY-MM-DD') AS d")).rows[0].d as string;
+  const mainArea = [...(map.current?.entries ?? [])].sort((a, b) => b.score - a.score)[0]?.area ?? GENERAL_AREA;
+  const checkin = { today: daily.find((d) => d.day === today) ?? null, area: mainArea, total: daily.length };
+  const trends = await painTrends(tx, patientId);
 
   // ---- Quest: the goal of the current programme and the road there. ----
   const prog = (
@@ -156,7 +225,31 @@ async function heroState(tx: Tx, patientId: string) {
     totalLevel: skills.reduce((a, k) => a + k.level, 0),
     totals: { sessions: s.sessions, fullWeeks, phasesCompleted: s.phases_done, since, painStart: painBaseline, painNow: map.checkins > 1 ? painNow : null },
     quest,
+    weekly: { weekStart: thisWeek, quests, chestWeeks, xpPerQuest: QUEST_XP, chestXp: CHEST_XP },
+    gear: { unlocked, equipped },
+    checkin,
+    trends,
   };
+}
+
+/** Per body area: every score over time, from body-map check-ins and daily check-ins. */
+async function painTrends(tx: Tx, patientId: string) {
+  const { rows } = await tx.query(
+    `SELECT area, score, to_char(recorded_at, 'YYYY-MM-DD') AS day, 'map' AS source FROM pain_map_entries WHERE patient_id = $1 AND area <> 'none'
+     UNION ALL SELECT area, score, day::text, 'daily' FROM daily_checkins WHERE patient_id = $1
+     ORDER BY day`,
+    [patientId],
+  );
+  const by = new Map<string, { day: string; score: number; source: string }[]>();
+  for (const r of rows) {
+    const list = by.get(r.area) ?? [];
+    // One point per day and area: the last score of that day.
+    const same = list.findIndex((x) => x.day === r.day);
+    if (same >= 0) list[same] = { day: r.day, score: r.score, source: r.source };
+    else list.push({ day: r.day, score: r.score, source: r.source });
+    by.set(r.area, list);
+  }
+  return [...by.entries()].map(([area, points]) => ({ area, points }));
 }
 
 heroPatient.get('/hero', async (c) => {
@@ -179,6 +272,35 @@ heroPatient.put('/hero', async (c) => {
     ),
   );
   return c.json({ ok: true });
+});
+
+/** Choose which unlocked gear the hero wears. */
+heroPatient.put('/hero/gear', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ equipped: z.array(z.string()).max(10) }), await c.req.json());
+  if (b.equipped.some((g) => !GEAR_KEYS.has(g))) throw badRequest('unknown_gear');
+  await withUser(user.id, async (tx) => {
+    const state = await heroState(tx, patient.id);
+    if (!state.hero) throw badRequest('hero_required');
+    if (b.equipped.some((g) => !state.gear.unlocked.includes(g))) throw badRequest('gear_locked');
+    await tx.query('UPDATE patient_heroes SET gear = $2, updated_at = now() WHERE patient_id = $1', [patient.id, [...new Set(b.equipped)]]);
+  });
+  return c.json({ ok: true });
+});
+
+/** Daily check-in: one quick score for today (can be changed the same day). */
+heroPatient.post('/hero/checkin', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ area: z.string(), score: z.number().int().min(0).max(10) }), await c.req.json());
+  if (b.area !== GENERAL_AREA && !AREA_KEYS.has(b.area)) throw badRequest('unknown_body_area');
+  await withUser(user.id, (tx) =>
+    tx.query(
+      `INSERT INTO daily_checkins(patient_id, practice_id, day, area, score) VALUES ($1, app.patient_practice($1), now()::date, $2, $3)
+       ON CONFLICT (patient_id, day) DO UPDATE SET area = EXCLUDED.area, score = EXCLUDED.score`,
+      [patient.id, b.area, b.score],
+    ),
+  );
+  return c.json({ ok: true }, 201);
 });
 
 /** A body-map check-in: every sore area with a score 0–10 (an empty list means "no pain"). */
@@ -211,7 +333,8 @@ heroStaff.get('/:id/hero', async (c) => {
       const ok = (await tx.query('SELECT app.can_manage_patient($1) AS ok', [id])).rows[0].ok;
       if (!ok) throw notFound();
       const hero = mapHero((await tx.query('SELECT * FROM patient_heroes WHERE patient_id = $1', [id])).rows[0]);
-      return { hero, painMap: await painMap(tx, id) };
+      const inputs = await loadAdherenceInputs(tx, [id]);
+      return { hero, painMap: await painMap(tx, id), trends: await painTrends(tx, id), weekly: weeklyForPatient(inputs, id, 12) };
     }),
   );
 });

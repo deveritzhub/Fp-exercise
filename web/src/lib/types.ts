@@ -164,7 +164,7 @@ export type Labelled = { key: string; nl: string; en: string };
 /** Sports hero (gamified revalidatie), see shared/hero.ts. */
 export type PainCheckin = { recordedAt: string; entries: { area: string; score: number }[] };
 export type HeroState = {
-  hero: (import('@shared/hero').HeroLook & { createdAt: string }) | null;
+  hero: (import('@shared/hero').HeroLook & { createdAt: string; gear?: string[] }) | null;
   painMap: { baseline: PainCheckin | null; current: PainCheckin | null; checkins: number };
   level: { level: number; xp: number; from: number; to: number; progress: number };
   badges: { key: string; earned: boolean }[];
@@ -180,4 +180,9 @@ export type HeroState = {
     phases: { no: number; name: string | null; weeks: string | null; goal: string | null; status: 'done' | 'current' | 'next' }[];
     timeline: { week: number; totalWeeks: number; progress: number; expectedEnd: string; weeksLeft: number } | null;
   } | null;
+  weekly: { weekStart: string; quests: import('@shared/hero').Quest[]; chestWeeks: number; xpPerQuest: number; chestXp: number };
+  gear: { unlocked: string[]; equipped: string[] };
+  checkin: { today: { day: string; area: string; score: number } | null; area: string; total: number };
+  trends: PainTrend[];
 };
+export type PainTrend = { area: string; points: { day: string; score: number; source: 'map' | 'daily' }[] };
