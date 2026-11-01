@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BADGES, BODY_AREAS, CHEST_XP, DEFAULT_LOOK, GEAR, QUEST_XP, averagePain, levelFor, questTimeline, questXp, skillLevel, skillOfWeek, skillXpForLevel, skillsForExercise, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type SkillKey } from './hero';
+import { BADGES, BODY_AREAS, CHEST_XP, DEFAULT_LOOK, GEAR, QUEST_XP, SKILLS, averagePain, levelFor, metricInRange, parseMetric, questTimeline, questXp, skillLevel, skillOfWeek, skillXpForLevel, skillsForExercise, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type SkillKey } from './hero';
 
 describe('sports hero rules', () => {
   it('levels grow gently and progress is between 0 and 1', () => {
@@ -98,8 +98,42 @@ describe('weekly quests and gear', () => {
   });
 
   it('gear unlocks from real progress', () => {
-    const none = { skills: {}, sessions: 0, phasesCompleted: 0, chestWeeks: 0 };
+    const none = { skills: {}, sessions: 0, phasesCompleted: 0, chestWeeks: 0, level: 1 };
     expect(GEAR.filter((g) => g.unlocked(none))).toHaveLength(0);
     expect(GEAR.filter((g) => g.unlocked({ ...none, skills: { discipline: 5 }, sessions: 25 })).map((g) => g.key)).toEqual(['headband', 'gold_shoes']);
+  });
+
+  it('gear unlocks by hero level and by each skill', () => {
+    const base = { skills: {}, sessions: 0, phasesCompleted: 0, chestWeeks: 0, level: 1 };
+    expect(new Set(GEAR.map((g) => g.key)).size).toBe(GEAR.length);
+    expect(GEAR.find((g) => g.key === 'pin')!.unlocked({ ...base, level: 2 })).toBe(true);
+    expect(GEAR.find((g) => g.key === 'pin')!.unlocked(base)).toBe(false);
+    expect(GEAR.find((g) => g.key === 'visor')!.unlocked({ ...base, level: 4 })).toBe(true);
+    expect(GEAR.find((g) => g.key === 'crown')!.unlocked({ ...base, level: 11 })).toBe(false);
+    expect(GEAR.find((g) => g.key === 'crown')!.unlocked({ ...base, level: 12 })).toBe(true);
+    const bySkill: [string, SkillKey, number][] = [
+      ['headband', 'discipline', 5], ['headphones', 'discipline', 8], ['wristbands', 'strength', 5], ['gloves', 'strength', 8],
+      ['cap', 'mobility', 5], ['watch', 'balance', 5], ['knee_support', 'stability', 5], ['sleeve', 'power', 5],
+      ['crew_socks', 'endurance', 5], ['shin_guards', 'sport', 5], ['scarf', 'recovery', 5],
+    ];
+    for (const [key, skillKey, level] of bySkill) {
+      expect(GEAR.find((g) => g.key === key)!.unlocked({ ...base, skills: { [skillKey]: level - 1 } })).toBe(false);
+      expect(GEAR.find((g) => g.key === key)!.unlocked({ ...base, skills: { [skillKey]: level } })).toBe(true);
+    }
+    // A high hero level does not unlock a skill item.
+    expect(GEAR.find((g) => g.key === 'cap')!.unlocked({ ...base, level: 99 })).toBe(false);
+    expect(SKILLS.every((s) => GEAR.some((g) => g.unlocked({ ...base, skills: { [s.key]: 8 } })))).toBe(true);
+  });
+
+  it('parses optional body measurements', () => {
+    expect(parseMetric('')).toBeNull();
+    expect(parseMetric('72,5')).toBe(72.5);
+    expect(parseMetric('72.4')).toBe(72.4);
+    expect(parseMetric('abc')).toBeNull();
+    expect(metricInRange('weightKg', 72.5)).toBe(true);
+    expect(metricInRange('weightKg', 10)).toBe(false);
+    expect(metricInRange('bodyFatPct', null)).toBe(true);
+    expect(metricInRange('heightCm', 168)).toBe(true);
+    expect(metricInRange('heightCm', 40)).toBe(false);
   });
 });

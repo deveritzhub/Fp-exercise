@@ -8,7 +8,7 @@ import { HttpError, badRequest, notFound } from '../lib/errors';
 import { loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
 import { weeklyAdherence } from '../../../shared/adherence';
 import {
-  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, GENERAL_AREA, HERO_OPTIONS, QUEST_XP, SKILLS, SKILL_XP, averagePain, levelFor, questTimeline,
+  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, SKILLS, SKILL_XP, averagePain, levelFor, questTimeline,
   questXp, skillLevel, skillOfWeek, skillsForExercise, weeklyQuests, xpFor, type SkillKey, type WeekData,
 } from '../../../shared/hero';
 
@@ -18,6 +18,14 @@ import {
  */
 export const heroPatient = new Hono<AppEnv>();
 export const heroStaff = new Hono<AppEnv>();
+
+const round1 = (n: number) => Math.round(n * 10) / 10;
+const metric = (min: number, max: number) => z.number().min(min).max(max).transform(round1).nullable();
+const metricsBody = z.object({
+  weightKg: metric(METRICS.weightKg.min, METRICS.weightKg.max),
+  bodyFatPct: metric(METRICS.bodyFatPct.min, METRICS.bodyFatPct.max),
+  heightCm: metric(METRICS.heightCm.min, METRICS.heightCm.max),
+});
 
 const look = z.object({
   heroName: z.string().trim().min(1).max(40),
@@ -162,8 +170,9 @@ async function heroState(tx: Tx, patientId: string) {
   xp += questXp(quests);
   if (quests.every((x) => x.done)) chestWeeks++;
 
-  // ---- Gear: unlocked by progress; the patient chooses what to wear. ----
-  const gearInput = { skills: Object.fromEntries(skills.map((k) => [k.key, k.level])), sessions: s.sessions, phasesCompleted: s.phases_done, chestWeeks };
+  // ---- Gear: unlocked by hero level, skill level and other real progress. ----
+  const reached = levelFor(xp);
+  const gearInput = { skills: Object.fromEntries(skills.map((k) => [k.key, k.level])), sessions: s.sessions, phasesCompleted: s.phases_done, chestWeeks, level: reached.level };
   const unlocked = GEAR.filter((g) => g.unlocked(gearInput)).map((g) => g.key);
   const equipped = ((await tx.query('SELECT gear FROM patient_heroes WHERE patient_id = $1', [patientId])).rows[0]?.gear ?? []).filter((g: string) => unlocked.includes(g));
 
@@ -215,11 +224,19 @@ async function heroState(tx: Tx, patientId: string) {
     };
   }
   const since = (await tx.query('SELECT min(started_at) AS at FROM workout_sessions WHERE patient_id = $1', [patientId])).rows[0].at;
+  const metricsRow = (await tx.query('SELECT weight_kg, body_fat_pct, height_cm, updated_at FROM patient_body_metrics WHERE patient_id = $1', [patientId])).rows[0];
+  const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+  const metrics = {
+    weightKg: num(metricsRow?.weight_kg),
+    bodyFatPct: num(metricsRow?.body_fat_pct),
+    heightCm: num(metricsRow?.height_cm),
+    updatedAt: (metricsRow?.updated_at as string | undefined) ?? null,
+  };
 
   return {
     hero,
     painMap: map,
-    level: levelFor(xp),
+    level: reached,
     badges: BADGES.map((b) => ({ key: b.key, earned: b.earned(badgeInput) })),
     skills,
     totalLevel: skills.reduce((a, k) => a + k.level, 0),
@@ -227,6 +244,7 @@ async function heroState(tx: Tx, patientId: string) {
     quest,
     weekly: { weekStart: thisWeek, quests, chestWeeks, xpPerQuest: QUEST_XP, chestXp: CHEST_XP },
     gear: { unlocked, equipped },
+    metrics,
     checkin,
     trends,
   };
@@ -400,10 +418,26 @@ heroPatient.put('/hero', async (c) => {
   return c.json({ ok: true });
 });
 
+/** Self-reported weight, body fat and height. Only the patient (RLS); not shown to the practice. */
+heroPatient.put('/hero/metrics', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(metricsBody, await c.req.json());
+  await withUser(user.id, (tx) =>
+    tx.query(
+      `INSERT INTO patient_body_metrics(patient_id, practice_id, weight_kg, body_fat_pct, height_cm)
+       VALUES ($1, app.patient_practice($1), $2, $3, $4)
+       ON CONFLICT (patient_id) DO UPDATE SET weight_kg = EXCLUDED.weight_kg, body_fat_pct = EXCLUDED.body_fat_pct,
+         height_cm = EXCLUDED.height_cm, updated_at = now()`,
+      [patient.id, b.weightKg, b.bodyFatPct, b.heightCm],
+    ),
+  );
+  return c.json({ ok: true });
+});
+
 /** Choose which unlocked gear the hero wears. */
 heroPatient.put('/hero/gear', async (c) => {
   const { user, patient } = requirePatient(c);
-  const b = parse(z.object({ equipped: z.array(z.string()).max(10) }), await c.req.json());
+  const b = parse(z.object({ equipped: z.array(z.string()).max(24) }), await c.req.json());
   if (b.equipped.some((g) => !GEAR_KEYS.has(g))) throw badRequest('unknown_gear');
   await withUser(user.id, async (tx) => {
     const state = await heroState(tx, patient.id);

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Award, CalendarCheck, Check, ChevronRight, CircleCheck, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Zap, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Award, CalendarCheck, Check, ChevronRight, CircleCheck, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Zap, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -11,7 +11,7 @@ import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, Spinner, 
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { EYE_COLOURS, HAIR_COLOURS, HumanFigure, KIT, SKIN_TONES } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
-import { BADGES, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, SKILLS, XP, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
+import { BADGES, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, METRICS, SKILLS, XP, metricInRange, parseMetric, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import type { HeroState } from '@/lib/types';
 import { PainTrendList } from '@/components/hero/PainTrend';
 import { FriendsCard } from './FriendsPage';
@@ -55,12 +55,12 @@ function Choice<T extends string>({ legend, name, value, options, onChange, rend
   );
 }
 
-/** First visit (or "Uiterlijk aanpassen"): build the sports hero step by step, then mark where it hurts. */
-export function HeroSetupPage({ edit = false }: { edit?: boolean }) {
+/** First visit: build the sports hero step by step, then mark where it hurts. Later edits use HeroProfilePage. */
+export function HeroSetupPage() {
   const { t, locale, kind } = useI18n();
   const nl = locale === 'nl';
   const L = (k: string, v: string) => LABELS[k][v][nl ? 0 : 1];
-  useDocumentMeta(edit ? t('Uiterlijk aanpassen', 'Change look') : t('Maak je sportheld', 'Create your sports hero'));
+  useDocumentMeta(t('Maak je sportheld', 'Create your sports hero'));
   const { user } = useSession();
   const nav = useNavigate();
   const qc = useQueryClient();
@@ -80,7 +80,7 @@ export function HeroSetupPage({ edit = false }: { edit?: boolean }) {
   }, [q.data, user]);
   if (q.isError) return <ErrorState error={q.error} />;
   if (!q.data) return <Spinner />;
-  const steps = edit ? 4 : 5;
+  const steps = 5;
   const set = <K extends keyof HeroLook>(k: K, v: HeroLook[K]) => setLook((l) => ({ ...l, [k]: v }));
   const swatch = (bg: string) => <span className="h-7 w-7 shrink-0 rounded-full border border-ink-200 shadow-xs" style={{ background: bg }} aria-hidden />;
 
@@ -89,9 +89,9 @@ export function HeroSetupPage({ edit = false }: { edit?: boolean }) {
     setError(null);
     try {
       await api.put('/patient/hero', look);
-      if (!edit) await api.post('/patient/hero/pain-map', { entries: withPain ? Object.entries(pain).map(([area, score]) => ({ area, score })) : [] });
+      await api.post('/patient/hero/pain-map', { entries: withPain ? Object.entries(pain).map(([area, score]) => ({ area, score })) : [] });
       await qc.invalidateQueries({ queryKey: ['patient-hero'] });
-      toast(edit ? t('Je sportheld is bijgewerkt', 'Your sports hero is updated') : t('Je sportheld is klaar!', 'Your sports hero is ready!'));
+      toast(t('Je sportheld is klaar!', 'Your sports hero is ready!'));
       nav('/p/held');
     } catch (e) {
       setError(describeError(e, locale));
@@ -106,7 +106,7 @@ export function HeroSetupPage({ edit = false }: { edit?: boolean }) {
     </div>
   );
   const titles: Record<number, [string, string]> = {
-    1: [edit ? 'Uiterlijk aanpassen' : 'Maak je sportheld', edit ? 'Change look' : 'Create your sports hero'],
+    1: ['Maak je sportheld', 'Create your sports hero'],
     2: ['Je lichaam', 'Your body'],
     3: ['Gezicht en haar', 'Face and hair'],
     4: ['Je tenue', 'Your kit'],
@@ -116,8 +116,8 @@ export function HeroSetupPage({ edit = false }: { edit?: boolean }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <Link to={edit ? '/p/held' : '/p'} onClick={() => { if (!edit) { try { sessionStorage.setItem(HERO_LATER_KEY, '1'); } catch { /* storage unavailable */ } } }} className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700">
-          {edit ? <><ArrowLeft className="h-4 w-4" aria-hidden />{t('Terug', 'Back')}</> : t('Later', 'Later')}
+        <Link to="/p" onClick={() => { try { sessionStorage.setItem(HERO_LATER_KEY, '1'); } catch { /* storage unavailable */ } }} className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700">
+          {t('Later', 'Later')}
         </Link>
         <span className="text-[14px] text-ink-600">{t(`Stap ${step} van ${steps}`, `Step ${step} of ${steps}`)}</span>
       </div>
@@ -178,7 +178,7 @@ export function HeroSetupPage({ edit = false }: { edit?: boolean }) {
         <Card className="space-y-5 p-5">
           <Choice legend={t('Kleur van je tenue', 'Colour of your kit')} name="outfit" cols="grid-cols-2" value={look.outfit as Opt<'outfit'>} options={HERO_OPTIONS.outfit} onChange={(v) => set('outfit', v)}
             render={(v) => <>{swatch(KIT[v].main)}<span className="text-[13px]">{L('outfit', v)}</span></>} />
-          {edit ? nextBack(() => finish(false), t('Opslaan', 'Save'), busy) : nextBack(() => setStep(5))}
+          {nextBack(() => setStep(5))}
         </Card>
       )}
 
@@ -197,6 +197,147 @@ export function HeroSetupPage({ edit = false }: { edit?: boolean }) {
           </div>
         </Card>
       )}
+    </div>
+  );
+}
+
+const PROFILE_LABEL = ['Uiterlijk en maten aanpassen', 'Edit look and measurements'] as const;
+
+/** The profile photo is the way into look + body measurements. */
+function AvatarLink({ look, size, level }: { look: HeroLook & { gear?: string[] }; size: number; level?: number }) {
+  const { t } = useI18n();
+  return (
+    <Link
+      to="/p/held/uiterlijk"
+      aria-label={level !== undefined ? t(`Uiterlijk en maten aanpassen, level ${level}`, `Edit look and measurements, level ${level}`) : t(PROFILE_LABEL[0], PROFILE_LABEL[1])}
+      className="tap relative inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+    >
+      <HeroAvatar look={look} size={size} level={level} />
+      <span className="absolute -bottom-1 left-1/2 z-10 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-white text-accent shadow-sm" aria-hidden>
+        <Pencil className="h-3.5 w-3.5" />
+      </span>
+    </Link>
+  );
+}
+
+function metricText(n: number | null, nl: boolean) {
+  if (n === null) return '';
+  const s = String(n);
+  return nl ? s.replace('.', ',') : s;
+}
+
+/** One screen: live preview, look, and self-reported weight / body fat / height. */
+export function HeroProfilePage() {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const L = (k: string, v: string) => LABELS[k][v][nl ? 0 : 1];
+  useDocumentMeta(t('Uiterlijk en maten', 'Look and measurements'));
+  const nav = useNavigate();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const q = useHero();
+  const [look, setLook] = useState<HeroLook | null>(null);
+  const [weight, setWeight] = useState('');
+  const [fat, setFat] = useState('');
+  const [height, setHeight] = useState('');
+  const [fieldError, setFieldError] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!q.data?.hero || look) return;
+    const h = q.data.hero;
+    setLook({
+      heroName: h.heroName, frame: h.frame, build: h.build, skin: h.skin, hair: h.hair, hairColor: h.hairColor,
+      eyeColor: h.eyeColor, beard: h.beard, glasses: h.glasses, outfit: h.outfit, sport: h.sport,
+    });
+    const m = q.data.metrics;
+    setWeight(metricText(m?.weightKg ?? null, nl));
+    setFat(metricText(m?.bodyFatPct ?? null, nl));
+    setHeight(metricText(m?.heightCm ?? null, nl));
+    // Locale is fixed for this visit; prefilling once avoids wiping what the patient is typing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q.data]);
+  if (q.isError) return <ErrorState error={q.error} />;
+  if (!q.data || (q.data.hero && !look)) return <Spinner />;
+  if (!q.data.hero || !look) {
+    return (
+      <Card className="space-y-4 p-6 text-center">
+        <h1 className="t-page">{t('Maak eerst je sportheld', 'Create your sports hero first')}</h1>
+        <Link to="/p/held/nieuw" className="inline-flex h-14 w-full items-center justify-center rounded-xl bg-accent text-base font-semibold text-accent-ink">{t('Beginnen', 'Start')}</Link>
+      </Card>
+    );
+  }
+  const set = <K extends keyof HeroLook>(k: K, v: HeroLook[K]) => setLook({ ...look, [k]: v });
+  const swatch = (bg: string) => <span className="h-7 w-7 shrink-0 rounded-full border border-ink-200 shadow-xs" style={{ background: bg }} aria-hidden />;
+  const typed = (raw: string, setter: (v: string) => void) => setter(raw.replace(/[^\d.,]/g, '').replace(',', '.').replace(/\.(?=.*\.)/g, ''));
+  const save = async () => {
+    const weightKg = parseMetric(weight);
+    const bodyFatPct = parseMetric(fat);
+    const heightCm = parseMetric(height);
+    const next: Record<string, string> = {};
+    const bad = (key: string, label: string) => { next[key] = t(`${label} klopt niet.`, `${label} is not valid.`); };
+    if (weight.trim() && (weightKg === null || !metricInRange('weightKg', weightKg))) bad('weightKg', t('Gewicht', 'Weight'));
+    if (fat.trim() && (bodyFatPct === null || !metricInRange('bodyFatPct', bodyFatPct))) bad('bodyFatPct', t('Lichaamsvet', 'Body fat'));
+    if (height.trim() && (heightCm === null || !metricInRange('heightCm', heightCm))) bad('heightCm', t('Lengte', 'Height'));
+    setFieldError(next);
+    if (!look.heroName.trim() || Object.keys(next).length) {
+      setError(t('Controleer de velden hieronder.', 'Check the fields below.'));
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await api.put('/patient/hero', look);
+      await api.put('/patient/hero/metrics', { weightKg, bodyFatPct, heightCm });
+      await qc.invalidateQueries({ queryKey: ['patient-hero'] });
+      toast(t('Uiterlijk en maten opgeslagen', 'Look and measurements saved'));
+      nav('/p/held');
+    } catch (e) {
+      setError(describeError(e, locale));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const preview = { ...look, gear: q.data.gear.equipped };
+  return (
+    <div className="space-y-5">
+      <Link to="/p/held" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" aria-hidden />{t('Terug', 'Back')}</Link>
+      <div>
+        <h1 className="t-page">{t('Uiterlijk en maten', 'Look and measurements')}</h1>
+        <p className="mt-1 text-[15px] text-ink-600">{t('Pas je held aan en vul, als je wilt, je eigen maten in. De maten zie alleen jij.', 'Change your hero and, if you want, fill in your own measurements. Only you see the measurements.')}</p>
+      </div>
+      {error && <Notice tone="bad">{error}</Notice>}
+      <div className="flex justify-center rounded-2xl bg-sage/60 py-3" role="img" aria-label={t(`Voorbeeld van ${look.heroName || 'je held'}`, `Preview of ${look.heroName || 'your hero'}`)}>
+        <HumanFigure look={preview} className="h-[280px] w-auto" />
+      </div>
+      <Card className="space-y-5 p-5">
+        <h2 className="t-section">{t('Uiterlijk', 'Look')}</h2>
+        <Input label={t('Naam van je held', 'Name of your hero')} value={look.heroName} maxLength={40} onChange={(e) => set('heroName', e.target.value)} />
+        <Choice legend={t('Jouw sport', 'Your sport')} name="sport" cols="grid-cols-2" value={look.sport as Opt<'sport'>} options={HERO_OPTIONS.sport} onChange={(v) => set('sport', v)}
+          render={(v) => { const Icon = SPORT_ICON[v]; return <><Icon className="h-4 w-4 shrink-0" aria-hidden />{SPORTS[v][nl ? 0 : 1]}</>; }} />
+        <Choice legend={t('Figuur', 'Figure')} name="frame" cols="grid-cols-2" value={look.frame as Opt<'frame'>} options={HERO_OPTIONS.frame} onChange={(v) => set('frame', v)} render={(v) => L('frame', v)} />
+        <Choice legend={t('Bouw', 'Build')} name="build" cols="grid-cols-2" value={look.build as Opt<'build'>} options={HERO_OPTIONS.build} onChange={(v) => set('build', v)} render={(v) => L('build', v)} />
+        <Choice legend={t('Huidskleur', 'Skin tone')} name="skin" cols="grid-cols-5" value={look.skin as Opt<'skin'>} options={HERO_OPTIONS.skin} onChange={(v) => set('skin', v)}
+          render={(v) => <>{swatch(SKIN_TONES[v])}<span className="sr-only">{t(`Huidskleur ${v.slice(1)} van 10`, `Skin tone ${v.slice(1)} of 10`)}</span></>} />
+        <Choice legend={t('Kapsel', 'Hairstyle')} name="hair" cols="grid-cols-4" value={look.hair as Opt<'hair'>} options={HERO_OPTIONS.hair} onChange={(v) => set('hair', v)}
+          render={(v) => <span className="flex flex-col items-center gap-1 text-[12.5px] leading-tight"><HeroAvatar look={{ ...look, hair: v }} size={44} plain />{L('hair', v)}</span>} />
+        <Choice legend={t('Haarkleur', 'Hair colour')} name="hairColor" cols="grid-cols-2" value={look.hairColor as Opt<'hairColor'>} options={HERO_OPTIONS.hairColor} onChange={(v) => set('hairColor', v)}
+          render={(v) => <>{swatch(HAIR_COLOURS[v])}<span className="text-[13px]">{L('hairColor', v)}</span></>} />
+        <Choice legend={t('Oogkleur', 'Eye colour')} name="eyeColor" cols="grid-cols-2" value={look.eyeColor as Opt<'eyeColor'>} options={HERO_OPTIONS.eyeColor} onChange={(v) => set('eyeColor', v)}
+          render={(v) => <>{swatch(EYE_COLOURS[v])}<span className="text-[13px]">{L('eyeColor', v)}</span></>} />
+        <Choice legend={t('Baard', 'Beard')} name="beard" cols="grid-cols-2" value={look.beard as Opt<'beard'>} options={HERO_OPTIONS.beard} onChange={(v) => set('beard', v)} render={(v) => L('beard', v)} />
+        <Choice legend={t('Bril', 'Glasses')} name="glasses" cols="grid-cols-1 min-[400px]:grid-cols-3" value={look.glasses as Opt<'glasses'>} options={HERO_OPTIONS.glasses} onChange={(v) => set('glasses', v)} render={(v) => <span className="text-[13px]">{L('glasses', v)}</span>} />
+        <Choice legend={t('Kleur van je tenue', 'Colour of your kit')} name="outfit" cols="grid-cols-2" value={look.outfit as Opt<'outfit'>} options={HERO_OPTIONS.outfit} onChange={(v) => set('outfit', v)}
+          render={(v) => <>{swatch(KIT[v].main)}<span className="text-[13px]">{L('outfit', v)}</span></>} />
+      </Card>
+      <Card className="space-y-4 p-5">
+        <h2 className="t-section">{t('Lichaamsmaten', 'Body measurements')}</h2>
+        <p className="text-[14px] text-ink-600">{t('Optioneel. Wat jij zelf invult, geen meting van de praktijk en geen oordeel over je gezondheid.', 'Optional. What you fill in yourself, not a measurement by the practice and not a judgement of your health.')}</p>
+        <Input label={t('Gewicht (kg)', 'Weight (kg)')} optional={t('optioneel', 'optional')} inputMode="decimal" autoComplete="off" value={weight} error={fieldError.weightKg} hint={t(`Tussen ${METRICS.weightKg.min} en ${METRICS.weightKg.max} kg, of leeg.`, `Between ${METRICS.weightKg.min} and ${METRICS.weightKg.max} kg, or leave empty.`)} onChange={(e) => typed(e.target.value, setWeight)} />
+        <Input label={t('Lichaamsvet (%)', 'Body fat (%)')} optional={t('optioneel', 'optional')} inputMode="decimal" autoComplete="off" value={fat} error={fieldError.bodyFatPct} hint={t(`Tussen ${METRICS.bodyFatPct.min} en ${METRICS.bodyFatPct.max}%, of leeg.`, `Between ${METRICS.bodyFatPct.min} and ${METRICS.bodyFatPct.max}%, or leave empty.`)} onChange={(e) => typed(e.target.value, setFat)} />
+        <Input label={t('Lengte (cm)', 'Height (cm)')} optional={t('optioneel', 'optional')} inputMode="decimal" autoComplete="off" value={height} error={fieldError.heightCm} hint={t(`Tussen ${METRICS.heightCm.min} en ${METRICS.heightCm.max} cm, of leeg.`, `Between ${METRICS.heightCm.min} and ${METRICS.heightCm.max} cm, or leave empty.`)} onChange={(e) => typed(e.target.value, setHeight)} />
+      </Card>
+      <Button size="xl" className="w-full" loading={busy} onClick={save}>{t('Opslaan', 'Save')}</Button>
     </div>
   );
 }
@@ -435,20 +576,23 @@ function GearCard({ d }: { d: HeroState }) {
   return (
     <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="gear-title">
       <h2 id="gear-title" className="t-section">{t(`Uitrusting (${d.gear.unlocked.length} van ${GEAR.length})`, `Gear (${d.gear.unlocked.length} of ${GEAR.length})`)}</h2>
+      <p className="mt-1 text-[13.5px] text-ink-600">{t('Vrijspelen met je level of met een skill. Wat op slot zit, kun je nog niet aandoen.', 'Unlock with your level or with a skill. Locked pieces cannot be worn yet.')}</p>
       <ul className="mt-3 space-y-2">
-        {GEAR.map((g) => {
+        {[...GEAR].sort((a, b) => Number(d.gear.unlocked.includes(b.key)) - Number(d.gear.unlocked.includes(a.key))).map((g) => {
           const unlocked = d.gear.unlocked.includes(g.key);
           const worn = d.gear.equipped.includes(g.key);
+          const name = nl ? g.nl : g.en;
+          const action = worn ? t('Aan', 'On') : t('Aandoen', 'Wear');
           return (
             <li key={g.key} className={cn('flex items-center gap-3 rounded-xl border p-3', unlocked ? 'border-line' : 'border-line bg-canvas')}>
               {unlocked ? <Crown className="h-5 w-5 shrink-0 text-sand-ink" aria-hidden /> : <Lock className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />}
               <span className="min-w-0 flex-1">
-                <span className="block text-[14.5px] font-semibold text-ink-900">{nl ? g.nl : g.en}</span>
+                <span className="block text-[14.5px] font-semibold text-ink-900">{name}</span>
                 <span className="block text-[13px] text-ink-600">{unlocked ? t('Vrijgespeeld', 'Unlocked') : t(`Nog op slot: ${g.unlockNl}`, `Locked: ${g.unlockEn}`)}</span>
               </span>
               {unlocked && (
-                <Button size="sm" variant={worn ? 'primary' : 'secondary'} className="h-11" aria-pressed={worn} loading={busy === g.key} onClick={() => toggle(g.key)}>
-                  {worn ? t('Aan', 'On') : t('Aandoen', 'Wear')}
+                <Button size="lg" variant={worn ? 'primary' : 'secondary'} className="shrink-0 px-3" aria-pressed={worn} aria-label={`${action}: ${name}`} loading={busy === g.key} onClick={() => toggle(g.key)}>
+                  {action}
                 </Button>
               )}
             </li>
@@ -487,11 +631,11 @@ export function HeroPage() {
     <div className="space-y-5">
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="hero-name">
         <div className="flex items-center gap-4">
-          <HeroAvatar look={look} size={80} level={L.level} />
+          <AvatarLink look={look} size={88} level={L.level} />
           <div className="min-w-0">
             <p className="t-label">{t(`Level ${L.level}`, `Level ${L.level}`)} · {titleFor(L.level, nl)}</p>
             <h1 id="hero-name" className="t-page [overflow-wrap:anywhere]">{d.hero.heroName}</h1>
-            <Link to="/p/held/uiterlijk" className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent">{t('Uiterlijk aanpassen', 'Change look')}</Link>
+            <Link to="/p/held/uiterlijk" className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent">{t('Uiterlijk en maten', 'Look and measurements')}</Link>
           </div>
         </div>
         <div className="mt-3">
@@ -632,18 +776,21 @@ export function HeroHomeCard() {
       </Link>
     );
   }
+  const heroLook = { ...d.hero, gear: d.gear.equipped };
   return (
-    <Link to="/p/held" className="flex items-center gap-4 rounded-2xl border border-line bg-white p-4 shadow-card">
-      <HeroAvatar look={{ ...d.hero, gear: d.gear.equipped }} size={60} level={d.level.level} />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate font-semibold text-ink-900">{d.hero.heroName}</span>
-        <span className="block text-[13.5px] text-ink-600">{t(`Level ${d.level.level}`, `Level ${d.level.level}`)} · {titleFor(d.level.level, locale === 'nl')} · {d.level.xp} XP</span>
-        <span className="block text-[13px] font-medium text-accent">
-          {!d.checkin.today ? t('Dagcheck nog te doen', 'Daily check-in to do') : t(`Weekquests: ${d.weekly.quests.filter((q) => q.done).length}/3`, `Weekly quests: ${d.weekly.quests.filter((q) => q.done).length}/3`)}
+    <div className="flex items-center gap-3 rounded-2xl border border-line bg-white p-4 shadow-card">
+      <AvatarLink look={heroLook} size={64} level={d.level.level} />
+      <Link to="/p/held" className="tap flex min-h-[44px] min-w-0 flex-1 items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-semibold text-ink-900">{d.hero.heroName}</span>
+          <span className="block text-[13.5px] text-ink-600">{t(`Level ${d.level.level}`, `Level ${d.level.level}`)} · {titleFor(d.level.level, locale === 'nl')} · {d.level.xp} XP</span>
+          <span className="block text-[13px] font-medium text-accent">
+            {!d.checkin.today ? t('Dagcheck nog te doen', 'Daily check-in to do') : t(`Weekquests: ${d.weekly.quests.filter((q) => q.done).length}/3`, `Weekly quests: ${d.weekly.quests.filter((q) => q.done).length}/3`)}
+          </span>
+          <ProgressBar value={d.level.progress} className="mt-1.5 h-2" label={t(`Voortgang naar level ${d.level.level + 1}`, `Progress to level ${d.level.level + 1}`)} />
         </span>
-        <ProgressBar value={d.level.progress} className="mt-1.5 h-2" label={t(`Voortgang naar level ${d.level.level + 1}`, `Progress to level ${d.level.level + 1}`)} />
-      </span>
-      <ChevronRight className="h-5 w-5 shrink-0 text-ink-400" aria-hidden />
-    </Link>
+        <ChevronRight className="h-5 w-5 shrink-0 text-ink-400" aria-hidden />
+      </Link>
+    </div>
   );
 }

@@ -253,6 +253,7 @@ patientModules.get('/export', async (c) => {
       redFlagReports: await q('SELECT flags, note, created_at, handled_at FROM red_flag_reports WHERE patient_id = $1'),
       deletionRequests: await q('SELECT created_at, handled_at, outcome FROM deletion_requests WHERE patient_id = $1'),
       hero: (await q('SELECT hero_name, frame, build, skin, hair, hair_color, eye_color, beard, glasses, outfit, sport, created_at, updated_at FROM patient_heroes WHERE patient_id = $1'))[0] ?? null,
+      bodyMetrics: (await q('SELECT weight_kg, body_fat_pct, height_cm, updated_at FROM patient_body_metrics WHERE patient_id = $1'))[0] ?? null,
       painMap: await q(`SELECT batch, area, score, recorded_at FROM pain_map_entries WHERE patient_id = $1 AND area <> 'none' ORDER BY recorded_at`),
       heroSharing: (await q('SELECT share_with_friends, friend_code, shared_stats, stats_updated_at FROM patient_heroes WHERE patient_id = $1'))[0] ?? null,
       heroFriends: (await q('SELECT kind, hero_name, since FROM app.hero_friends($1)')).map((f) => ({ kind: f.kind, heroName: f.hero_name, since: f.since })),

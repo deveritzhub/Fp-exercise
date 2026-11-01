@@ -152,6 +152,7 @@ const FIELDS: Record<string, [string, string]> = {
   patientInstructions: ['Instructies voor de patiënt', 'Patient instructions'], startDate: ['Startdatum', 'Start date'], endDate: ['Einddatum', 'End date'],
   nameNl: ['Naam (NL)', 'Name (NL)'], nameEn: ['Naam (EN)', 'Name (EN)'], bodyRegion: ['Lichaamsregio', 'Body region'], difficulty: ['Niveau', 'Level'],
   sets: ['Sets', 'Sets'], reps: ['Herhalingen', 'Reps'], holdS: ['Vasthouden', 'Hold'], restS: ['Rust', 'Rest'], weightKg: ['Gewicht', 'Weight'],
+  bodyFatPct: ['Lichaamsvet', 'Body fat'], heightCm: ['Lengte', 'Height'],
   externalRef: ['Kenmerk', 'Reference'], locale: ['Taal', 'Language'], defaultLocale: ['Standaardtaal', 'Default language'], accent: ['Accentkleur', 'Accent colour'],
   note: ['Notitie', 'Note'], reason: ['Reden', 'Reason'], message: ['Bericht', 'Message'], phone: ['Telefoon', 'Phone'], role: ['Rol', 'Role'],
 };

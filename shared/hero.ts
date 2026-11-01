@@ -269,16 +269,60 @@ export const questXp = (quests: Quest[]) => quests.filter((q) => q.done).length 
 // Gear: items for the hero, unlocked by real progress; the patient chooses what to wear.
 // ----------------------------------------------------------------------------------------------
 
-export type GearInput = { skills: Partial<Record<SkillKey, number>>; sessions: number; phasesCompleted: number; chestWeeks: number };
+/** Hero level counts as 1 when a caller does not pass one (level gear stays locked). */
+export type GearInput = { skills: Partial<Record<SkillKey, number>>; sessions: number; phasesCompleted: number; chestWeeks: number; level?: number };
+
+const lvl = (g: GearInput) => g.level ?? 1;
+const skill = (g: GearInput, key: SkillKey) => g.skills[key] ?? 1;
 
 export const GEAR: { key: string; nl: string; en: string; unlockNl: string; unlockEn: string; unlocked: (g: GearInput) => boolean }[] = [
-  { key: 'headband', nl: 'Zweetband', en: 'Headband', unlockNl: 'Discipline level 5', unlockEn: 'Discipline level 5', unlocked: (g) => (g.skills.discipline ?? 1) >= 5 },
-  { key: 'wristbands', nl: 'Polsbandjes', en: 'Wristbands', unlockNl: 'Kracht level 5', unlockEn: 'Strength level 5', unlocked: (g) => (g.skills.strength ?? 1) >= 5 },
+  // Hero level
+  { key: 'pin', nl: 'Borstspeld', en: 'Chest pin', unlockNl: 'Level 2', unlockEn: 'Level 2', unlocked: (g) => lvl(g) >= 2 },
+  { key: 'visor', nl: 'Klep', en: 'Visor', unlockNl: 'Level 4', unlockEn: 'Level 4', unlocked: (g) => lvl(g) >= 4 },
+  { key: 'crown', nl: 'Kroon', en: 'Crown', unlockNl: 'Level 12', unlockEn: 'Level 12', unlocked: (g) => lvl(g) >= 12 },
+  // One wearable per skill, plus a harder step for strength and discipline
+  { key: 'headband', nl: 'Zweetband', en: 'Headband', unlockNl: 'Discipline level 5', unlockEn: 'Discipline level 5', unlocked: (g) => skill(g, 'discipline') >= 5 },
+  { key: 'headphones', nl: 'Koptelefoon', en: 'Headphones', unlockNl: 'Discipline level 8', unlockEn: 'Discipline level 8', unlocked: (g) => skill(g, 'discipline') >= 8 },
+  { key: 'wristbands', nl: 'Polsbandjes', en: 'Wristbands', unlockNl: 'Kracht level 5', unlockEn: 'Strength level 5', unlocked: (g) => skill(g, 'strength') >= 5 },
+  { key: 'gloves', nl: 'Handschoenen', en: 'Gloves', unlockNl: 'Kracht level 8', unlockEn: 'Strength level 8', unlocked: (g) => skill(g, 'strength') >= 8 },
+  { key: 'cap', nl: 'Pet', en: 'Cap', unlockNl: 'Mobiliteit level 5', unlockEn: 'Mobility level 5', unlocked: (g) => skill(g, 'mobility') >= 5 },
+  { key: 'watch', nl: 'Sportwatch', en: 'Sports watch', unlockNl: 'Balans level 5', unlockEn: 'Balance level 5', unlocked: (g) => skill(g, 'balance') >= 5 },
+  { key: 'knee_support', nl: 'Kniebanden', en: 'Knee sleeves', unlockNl: 'Stabiliteit level 5', unlockEn: 'Stability level 5', unlocked: (g) => skill(g, 'stability') >= 5 },
+  { key: 'sleeve', nl: 'Compressiemouw', en: 'Compression sleeve', unlockNl: 'Explosief level 5', unlockEn: 'Power level 5', unlocked: (g) => skill(g, 'power') >= 5 },
+  { key: 'crew_socks', nl: 'Sportsokken', en: 'Sports socks', unlockNl: 'Conditie level 5', unlockEn: 'Endurance level 5', unlocked: (g) => skill(g, 'endurance') >= 5 },
+  { key: 'shin_guards', nl: 'Scheenbeschermers', en: 'Shin guards', unlockNl: 'Techniek level 5', unlockEn: 'Technique level 5', unlocked: (g) => skill(g, 'sport') >= 5 },
+  { key: 'scarf', nl: 'Sjaal', en: 'Scarf', unlockNl: 'Herstel level 5', unlockEn: 'Recovery level 5', unlocked: (g) => skill(g, 'recovery') >= 5 },
+  // Kept from the first closet: weeks, a finished phase, workouts
   { key: 'captain', nl: 'Aanvoerdersband', en: 'Captain’s armband', unlockNl: '3 weken alle weekquests', unlockEn: '3 weeks with all weekly quests', unlocked: (g) => g.chestWeeks >= 3 },
   { key: 'medal', nl: 'Medaille', en: 'Medal', unlockNl: 'Een fase van je revalidatie voltooid', unlockEn: 'A phase of your rehabilitation completed', unlocked: (g) => g.phasesCompleted >= 1 },
   { key: 'gold_shoes', nl: 'Gouden schoenen', en: 'Golden shoes', unlockNl: '25 trainingen', unlockEn: '25 workouts', unlocked: (g) => g.sessions >= 25 },
 ];
 export const GEAR_KEYS = new Set(GEAR.map((g) => g.key));
+
+/**
+ * Self-reported body measurements the patient types in next to the avatar.
+ * Optional, not a clinic measurement and not a health score.
+ */
+export const METRICS = {
+  weightKg: { min: 20, max: 300 },
+  bodyFatPct: { min: 2, max: 60 },
+  heightCm: { min: 100, max: 230 },
+} as const;
+
+/** Blank → null. Comma or dot. One decimal. Not a number → null (the form shows its own error). */
+export function parseMetric(raw: string): number | null {
+  const t = raw.trim().replace(',', '.');
+  if (!t) return null;
+  if (!/^\d+(\.\d+)?$/.test(t)) return null;
+  const n = Math.round(Number(t) * 10) / 10;
+  return Number.isFinite(n) ? n : null;
+}
+
+export function metricInRange(kind: keyof typeof METRICS, value: number | null) {
+  if (value === null) return true;
+  const { min, max } = METRICS[kind];
+  return value >= min && value <= max;
+}
 
 /** Daily check-in: a quick score for the main sore area (or how you feel overall). */
 export const CHECKIN_XP = 5; // hero XP and Herstel XP per day
