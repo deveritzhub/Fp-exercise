@@ -38,6 +38,7 @@ export function PatientLayout() {
     void import('@/pages/patient/PatientProgress');
     void import('@/pages/AccountPage');
     void import('@/pages/patient/HeroPages');
+    void import('@/pages/patient/LogbookPage');
   }, []);
   const inPlayer = loc.pathname.includes('/sessie');
   // Creating the hero is a focused flow: no tab bar.

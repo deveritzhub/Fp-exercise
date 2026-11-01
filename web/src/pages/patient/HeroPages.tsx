@@ -12,6 +12,7 @@ import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { EYE_COLOURS, HAIR_COLOURS, HumanFigure, KIT, SKIN_TONES } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
 import { BADGES, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, METRICS, SKILLS, XP, metricInRange, parseMetric, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
+import { LOG_XP } from '@shared/patientLogs';
 import type { HeroState } from '@/lib/types';
 import { PainTrendList } from '@/components/hero/PainTrend';
 import { FriendsCard } from './FriendsPage';
@@ -603,6 +604,32 @@ function GearCard({ d }: { d: HeroState }) {
   );
 }
 
+function LogTeaser({ d }: { d: HeroState }) {
+  const { t } = useI18n();
+  const p = d.logs.protein;
+  return (
+    <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="log-teaser">
+      <h2 id="log-teaser" className="t-section">{t('Eigen training en eiwit', 'Your own workout and protein')}</h2>
+      <p className="mt-1 text-[13.5px] text-ink-600">{t('Vrijblijvend. Een dag overslaan kost niets.', 'Optional. Skipping a day costs nothing.')}</p>
+      {p.goal === null ? (
+        <p className="mt-3 text-[15px] text-ink-800">{t(`Stel een eiwitdoel in. Voorstel: ${p.suggested} g.`, `Set a protein goal. Suggestion: ${p.suggested} g.`)}</p>
+      ) : (
+        <div className="mt-3">
+          <div className="flex justify-between text-[14px]">
+            <span className="font-semibold text-ink-900">{t(`Eiwit ${p.grams} van ${p.goal} g`, `Protein ${p.grams} of ${p.goal} g`)}</span>
+            <span className="text-ink-600">{p.hit ? t('Doel gehaald', 'Goal hit') : t(`nog ${Math.max(0, p.goal - p.grams)} g`, `${Math.max(0, p.goal - p.grams)} g to go`)}</span>
+          </div>
+          <ProgressBar value={p.grams / p.goal} className="mt-1.5 h-2.5" label={t('Eiwit vandaag', 'Protein today')} />
+        </div>
+      )}
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <Link to="/p/logboek#eiwit" className="inline-flex h-11 items-center justify-center rounded-xl bg-accent text-[14px] font-semibold text-accent-ink">{t('Eiwit loggen', 'Log protein')}</Link>
+        <Link to="/p/logboek#training" className="inline-flex h-11 items-center justify-center rounded-xl border border-line bg-white text-[14px] font-semibold text-ink-900">{t('Training loggen', 'Log a workout')}</Link>
+      </div>
+    </section>
+  );
+}
+
 /** The character sheet: the hero with their pain, the main quest, skills and badges. */
 export function HeroPage() {
   const { t, locale } = useI18n();
@@ -652,12 +679,15 @@ export function HeroPage() {
             <li>+{XP.painReported} XP · {t('je pijn doorgegeven na de training (ook als die hoog is)', 'your pain reported after the workout (also when it is high)')}</li>
             <li>+{XP.redFlag} XP · {t('een alarmsignaal gemeld', 'a warning sign reported')}</li>
             <li>+{XP.painCheckin} XP · {t('je pijnkaart bijgewerkt (1× per week)', 'your body map updated (once a week)')}</li>
+            <li>+{LOG_XP.selfSession} XP · {t('een eigen training gelogd (maximaal 2 per dag)', 'a workout you log yourself (at most 2 a day)')}</li>
+            <li>+{LOG_XP.proteinGoal} XP · {t('eiwitdoel van de dag gehaald (niet per hap)', 'protein goal for the day hit (not per bite)')}</li>
           </ul>
           <p className="text-ink-600">{t('Elke oefening traint ook skills, zoals Kracht of Balans. Doorgaan met pijn levert nooit extra punten op, en een rustdag kost je niets.', 'Every exercise also trains skills, such as Strength or Balance. Training through pain never earns extra points, and a rest day costs you nothing.')}</p>
         </details>
       </section>
 
       <DailyCheckin d={d} />
+      <LogTeaser d={d} />
       <WeeklyQuests d={d} />
       <Quest d={d} />
 

@@ -133,6 +133,9 @@ const ERRORS: Record<string, [string, string]> = {
   friend_self: ['Dit is je eigen vriendcode.', 'This is your own friend code.'],
   friend_exists: ['Jullie zijn al vrienden of er staat al een verzoek open.', 'You are already friends or a request is pending.'],
   friend_limit: ['Je hebt het maximum van 100 vrienden en verzoeken bereikt.', 'You have reached the maximum of 100 friends and requests.'],
+  too_many_protein: ['Je hebt vandaag al genoeg eiwitregels. Haal er een weg als je iets wilt wijzigen.', 'You already have enough protein entries today. Remove one if you want to change something.'],
+  too_many_trainings: ['Je hebt vandaag al genoeg eigen trainingen gelogd.', 'You already logged enough own workouts today.'],
+  bad_minutes: ['Een eigen training is 5 tot 180 minuten.', 'An own workout is 5 to 180 minutes.'],
 };
 
 export function errorMessage(code: string | undefined, locale: Locale) {
