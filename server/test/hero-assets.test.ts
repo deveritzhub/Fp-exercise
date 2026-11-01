@@ -3,8 +3,8 @@ import fs from 'node:fs/promises';
 import { Client } from './helpers';
 import { heroAssetFile } from '../src/lib/heroAssets';
 import { config } from '../src/config';
-import { HERO_AVATAR_FILES, HERO_AWARD_FILES, HERO_ITEM_FILES, HERO_SHOP_FILES } from '../db/seed-data/hero-assets';
-import { BADGES, GEAR, HAIR_PRESETS, HAIR_PRESET_KEYS, SKILLS, SKIN_GROUPS, TROPHY_TIERS, heroPhotoKey } from '../../shared/hero';
+import { HERO_AVATAR_FILES, HERO_AWARD_FILES, HERO_ITEM_FILES, HERO_OUTFIT_FILES, HERO_SHOP_FILES } from '../db/seed-data/hero-assets';
+import { BADGES, GEAR, OUTFITS, HAIR_PRESETS, HAIR_PRESET_KEYS, SKILLS, SKIN_GROUPS, TROPHY_TIERS, heroPhotoKey } from '../../shared/hero';
 
 describe('hero art', () => {
   it('has 240 avatars (2 figures × 5 skin groups × 6 builds × 4 hairstyles) and a photo per gear item', () => {
@@ -19,6 +19,14 @@ describe('hero art', () => {
   it('has a shop icon for every item in the shop', () => {
     for (const g of GEAR) expect(HERO_SHOP_FILES[g.key], g.key).toMatch(/^hf_\d{8}_\d{6}_[0-9a-f-]{36}\.png$/);
     expect(new Set(Object.values(HERO_SHOP_FILES)).size).toBe(Object.keys(HERO_SHOP_FILES).length);
+  });
+  it('has an outfit photo for every base avatar and the personal photo, per outfit', () => {
+    const bases = Object.keys(HERO_AVATAR_FILES).filter((k) => /^[mf]_s\d_[a-z]+$/.test(k) || k === 'custom_1');
+    expect(bases).toHaveLength(61);
+    for (const o of OUTFITS) for (const b of bases) expect(HERO_OUTFIT_FILES[`${b}__${o}`], `${b}__${o}`).toMatch(/^hf_\d{8}_\d{6}_[0-9a-f-]{36}\.png$/);
+    expect(Object.keys(HERO_OUTFIT_FILES)).toHaveLength(61 * OUTFITS.length);
+    // Every key fits the asset route's key pattern.
+    for (const k of Object.keys(HERO_OUTFIT_FILES)) expect(k).toMatch(/^[a-z0-9_]{2,40}$/);
   });
   it('has a photo for every figure, skin tone, body type and hairstyle the app can pick', () => {
     const files = new Set(Object.values(HERO_AVATAR_FILES));

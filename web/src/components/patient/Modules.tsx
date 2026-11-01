@@ -112,7 +112,7 @@ export function StartTemplates({ modes, module }: { modes: Modes; module: 'krach
             <span className="block font-semibold">{x.title}</span>
             <span className="text-[14px] text-ink-600">{x.itemCount} {t('oefeningen', 'exercises')}{x.phase?.weeks ? ` · ${t('week', 'week')} ${x.phase.weeks}` : ''}</span>
           </span>
-          <Button disabled={blocked} onClick={() => setConfirm(x)} icon={<Play className="h-4 w-4" />}>{t('Starten', 'Start')}</Button>
+          <Button size="lg" disabled={blocked} onClick={() => setConfirm(x)} icon={<Play className="h-4 w-4" />}>{t('Starten', 'Start')}</Button>
         </div>
       ))}
       <Dialog

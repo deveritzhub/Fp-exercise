@@ -1,20 +1,32 @@
 import { useState } from 'react';
 import { cn } from '@/lib/cn';
 import { useI18n } from '@/lib/i18n';
-import { heroPhotoKey } from '@shared/hero';
+import { heroPhotoKey, wornOutfit } from '@shared/hero';
 import { HumanFigure, type FigureLook } from './HumanFigure';
 import { WEAR_SLOTS, wearPlacements, type BodyKind } from './wear';
 
 /**
  * The hero as a real person: a full-body photo matching figure, skin group, body type and
- * hairstyle (generated art, see server/db/seed-data/hero-assets.ts). Worn gear is drawn on the
+ * hairstyle (generated art, see server/db/seed-data/hero-assets.ts), or the bought outfit's photo. Worn gear is drawn on the
  * photo from cut-outs at fixed places per build (wear.ts); gear without a cut-out shows as a small
  * product photo. Falls back to the drawn figure when no photo loads.
  * Decorative: callers give the surrounding element its accessible name.
  */
+/**
+ * Photo sources in order of preference (paths under /api/hero-assets/): the bought outfit's photo
+ * (per figure, skin group and build with the base hairstyle, or per personal/guest photo), then the
+ * personal/guest photo, this hairstyle, and the base photo.
+ */
+export function heroPhotoSources(look: FigureLook): string[] {
+  const outfit = wornOutfit(look.gear ?? []);
+  const outfitKeys = outfit ? [...(look.photo ? [`outfit/${look.photo}__${outfit}`] : []), `outfit/${heroPhotoKey(look, look.body ?? null, false)}__${outfit}`] : [];
+  const plain = [...(look.photo ? [look.photo] : []), heroPhotoKey(look, look.body ?? null), heroPhotoKey(look, look.body ?? null, false)].map((k) => `avatar/${k}`);
+  return [...new Set([...outfitKeys, ...plain])];
+}
+
 export function HeroPhoto({ look, className, gearChips = false }: { look: FigureLook; className?: string; gearChips?: boolean }) {
   // Try the personal/guest photo, then this hairstyle, then the base photo, then the drawing.
-  const keys = [...new Set([...(look.photo ? [look.photo] : []), heroPhotoKey(look, look.body ?? null), heroPhotoKey(look, look.body ?? null, false)])];
+  const keys = heroPhotoSources(look);
   const { t } = useI18n();
   const [attempt, setAttempt] = useState(0);
   const failed = attempt >= keys.length;
@@ -31,7 +43,7 @@ export function HeroPhoto({ look, className, gearChips = false }: { look: Figure
       ) : (
         // A 3:4 layer that matches the photo exactly, so the gear lands on the body at any box size.
         <span className="absolute left-1/2 top-0 block aspect-[3/4] h-full -translate-x-1/2">
-          <img key={keys[attempt]} src={`/api/hero-assets/avatar/${keys[attempt]}`} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setAttempt((a) => a + 1)} />
+          <img key={keys[attempt]} src={`/api/hero-assets/${keys[attempt]}`} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setAttempt((a) => a + 1)} />
           {worn.map((p, i) => <WearItem key={`${p.key}-${i}`} p={p} />)}
         </span>
       )}

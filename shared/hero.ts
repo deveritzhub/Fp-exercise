@@ -760,7 +760,14 @@ export const GEAR: (GearDef & { price: number })[] = ([
   { key: 'gold_shoes', nl: 'Gouden schoenen', en: 'Golden shoes', tier: 4, score: 80 },
   // Tier 5
   { key: 'crown', nl: 'Kroon', en: 'Crown', tier: 5, score: 100 },
+  // Outfits: the hero photo itself changes (one generated photo per figure, skin group and build).
+  { key: 'tracksuit', nl: 'Trainingspak', en: 'Tracksuit', tier: 2, score: 25 },
+  { key: 'team_kit', nl: 'Teamtenue', en: 'Team kit', tier: 3, score: 47 },
+  { key: 'champion', nl: 'Kampioenspak', en: 'Champion suit', tier: 5, score: 100 },
 ] as GearDef[]).map((g) => ({ ...g, price: GEAR_TIERS[g.tier - 1].price }));
+export const OUTFITS = ['tracksuit', 'team_kit', 'champion'] as const;
+/** The outfit the hero wears, if any (one per slot, so at most one). */
+export const wornOutfit = (gear: readonly string[]) => (OUTFITS as readonly string[]).find((o) => gear.includes(o)) ?? null;
 export const gearTier = (key: string) => GEAR_TIERS[(GEAR.find((g) => g.key === key)?.tier ?? 1) - 1];
 export const GEAR_KEYS = new Set(GEAR.map((g) => g.key));
 
@@ -782,7 +789,7 @@ export function skillTrophies(skills: { key: SkillKey; level: number; locked: bo
 }
 
 /** Character screen slots (RPG paper doll): one piece per slot. */
-export type GearSlot = 'head' | 'neck' | 'chest' | 'back' | 'arm' | 'wrist' | 'hands' | 'waist' | 'legs' | 'feet' | 'held';
+export type GearSlot = 'head' | 'neck' | 'chest' | 'back' | 'arm' | 'wrist' | 'hands' | 'waist' | 'legs' | 'feet' | 'held' | 'outfit';
 export const GEAR_SLOTS: { key: GearSlot; nl: string; en: string; side: 'left' | 'right' | 'bottom' }[] = [
   { key: 'head', nl: 'Hoofd', en: 'Head', side: 'left' },
   { key: 'neck', nl: 'Nek', en: 'Neck', side: 'left' },
@@ -794,6 +801,7 @@ export const GEAR_SLOTS: { key: GearSlot; nl: string; en: string; side: 'left' |
   { key: 'waist', nl: 'Middel', en: 'Waist', side: 'right' },
   { key: 'legs', nl: 'Benen', en: 'Legs', side: 'right' },
   { key: 'feet', nl: 'Voeten', en: 'Feet', side: 'right' },
+  { key: 'outfit', nl: 'Outfit', en: 'Outfit', side: 'bottom' },
   { key: 'held', nl: 'In de hand', en: 'Held', side: 'bottom' },
 ];
 export const GEAR_SLOT: Record<string, GearSlot> = {
@@ -808,6 +816,7 @@ export const GEAR_SLOT: Record<string, GearSlot> = {
   sleeve: 'legs', shin_guards: 'legs',
   gold_shoes: 'feet', balance_shoes: 'feet', spikes: 'feet', crew_socks: 'feet',
   sport_item: 'held',
+  tracksuit: 'outfit', team_kit: 'outfit', champion: 'outfit',
 };
 /** Keep one piece per slot: the last one in the list wins (newest choice). */
 export function onePerSlot(equipped: string[]): string[] {

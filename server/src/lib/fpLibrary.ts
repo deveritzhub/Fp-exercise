@@ -15,6 +15,8 @@ export const FP_BUNDLES = [
   { name: 'fp-uitbreiding-v2', file: 'fp-uitbreiding-v2.json' },
   // Bodyweight squat and forward lunge, so the 2026-11-01 Seedance demo videos have their exercise.
   { name: 'fp-videos-v1', file: 'fp-videos-v1.json' },
+  // Seven extra mobility programmes patients can start themselves (existing exercises only).
+  { name: 'fp-mobiliteit-v2', file: 'fp-mobiliteit-v2.json' },
 ] as const;
 
 const DIR = path.join(import.meta.dirname, '../../db/seed-data');

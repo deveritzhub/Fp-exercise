@@ -857,7 +857,7 @@ function GearTile({ g, d, busy, onToggle, onBuy }: { g: GearItem; d: HeroState; 
       {short > 0 ? (
         <span className="mt-auto inline-flex items-center gap-1 text-[11.5px] leading-tight text-ink-600"><Coins className="h-3.5 w-3.5" aria-hidden />{t(`${g.price} · nog ${short} nodig`, `${g.price} · ${short} more needed`)}</span>
       ) : (
-        <Button size="sm" className="mt-auto w-full" loading={busy === g.key} disabled={busy !== null} onClick={onBuy}
+        <Button size="sm" className="mt-auto min-h-[44px] w-full" loading={busy === g.key} disabled={busy !== null} onClick={onBuy}
           aria-label={t(`Kopen ${g.price} muntjes: ${name}`, `Buy ${g.price} coins: ${name}`)}>
           <Coins className="h-4 w-4" aria-hidden />{t(`Kopen ${g.price}`, `Buy ${g.price}`)}
         </Button>
@@ -903,7 +903,7 @@ function CharacterScreen({ d, busy, onSave, onBuy }: { d: HeroState; busy: strin
         <HeroPhoto look={look} className="h-full min-h-[300px] w-full" />
         <div className="grid gap-2">{side('right')}</div>
       </div>
-      <div className="mx-auto mt-2 w-16">{slotBtn('held')}</div>
+      <div className="mx-auto mt-2 grid w-[136px] grid-cols-2 gap-2">{GEAR_SLOTS.filter((x) => x.side === 'bottom').map((x) => slotBtn(x.key))}</div>
       <Dialog open={!!sel} onClose={() => setOpen(null)} size="sm" title={sel ? (nl ? sel.nl : sel.en) : ''}
         footer={<Button variant="secondary" onClick={() => setOpen(null)}>{t('Sluiten', 'Close')}</Button>}>
         {sel && (

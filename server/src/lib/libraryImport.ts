@@ -480,7 +480,8 @@ function normaliseMobility(m: z.infer<typeof mobilityModule>, b: Bundle) {
   const item = (it: z.infer<typeof phaseItem>, perWeek?: number): NItem => {
     const f = it.frequentie_per_week ?? perWeek;
     return {
-      ex: reuse(it.exercise_id) ?? it.exercise_id, sets: it.sets || null, reps: it.reps || null, holdS: it.hold_sec || null, restS: null,
+      // An exercise this file does not define comes from an earlier bundle: use the key it was stored under there.
+      ex: reuse(it.exercise_id) ?? (m.oefeningen.some((e) => e.id === it.exercise_id) ? it.exercise_id : MOBILITY_SAME_AS[it.exercise_id] ?? it.exercise_id), sets: it.sets || null, reps: it.reps || null, holdS: it.hold_sec || null, restS: null,
       days: DAYS[f ?? 7], frequency: f ? `${f}× per week` : null, notes: it.opmerking ?? '',
     };
   };

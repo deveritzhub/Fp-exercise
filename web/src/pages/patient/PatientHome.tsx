@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, CheckCircle2, ChevronRight, Play, X } from 'lucide-react';
+import { Bell, CheckCircle2, ChevronDown, ChevronRight, Play, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtRelative, greeting, pct } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
-import { ButtonLink, ErrorState, ProgressRing, Skeleton } from '@/components/ui';
+import { Button, ButtonLink, ErrorState, ProgressRing, Skeleton } from '@/components/ui';
 import { RestDayCard, TodayProgramCard } from '@/components/patient/TodayCard';
 import { PausedNotice } from '@/components/patient/Safety';
 import { ConsentToggle, ModeSwitch, StartTemplates, useModes, type Mode } from '@/components/patient/Modules';
@@ -66,21 +66,45 @@ export function PatientHome() {
         <h1 className="mt-0.5 text-[28px] font-bold leading-tight">{greeting(locale)}, {d.patient.firstName}</h1>
       </div>
 
-      <HeroHomeCard />
-      <LogbookHomeCard />
-
       {showModes && <ModeSwitch value={mode} onChange={pickMode} modules={modes.data!.modules} />}
       {showModes && mode !== 'revalidatie' && modes.data && (
         <div className="space-y-3">
           {modes.data.kind !== 'personal' && <ConsentToggle module={mode} since={modes.data.consents[mode]} />}
-          {d.programs.length === 0 && (
+          {d.programs.length === 0 ? (
             <section aria-labelledby="start-title">
               <h2 id="start-title" className="mb-2 text-lg font-bold">{mode === 'kracht' ? t('Start een krachtprogramma', 'Start a strength programme') : t('Start een mobiliteitsprogramma', 'Start a mobility programme')}</h2>
               <StartTemplates modes={modes.data} module={mode} />
             </section>
+          ) : modes.data.templates.some((x) => x.module === mode) && (
+            // Already training here: more programmes stay one tap away.
+            <details className="group rounded-2xl border border-line bg-white shadow-card">
+              <summary className="tap flex min-h-[48px] cursor-pointer list-none items-center gap-2 px-4 py-3 font-semibold text-ink-900">
+                <Play className="h-4 w-4 text-accent" aria-hidden />
+                <span className="flex-1">{t(`Nog een programma starten (${modes.data.templates.filter((x) => x.module === mode).length})`, `Start another programme (${modes.data.templates.filter((x) => x.module === mode).length})`)}</span>
+                <ChevronDown className="h-4 w-4 text-ink-500 transition-transform group-open:rotate-180" aria-hidden />
+              </summary>
+              <div className="px-3 pb-3"><StartTemplates modes={modes.data} module={mode} /></div>
+            </details>
           )}
         </div>
       )}
+      {showModes && mode === 'revalidatie' && modes.data && modes.data.templates.length > 0 && (
+        // Rehabilitation is set by the physiotherapist; mobility and strength the patient can start.
+        <section aria-labelledby="self-start-title" className="rounded-2xl border border-line bg-white p-4 shadow-card">
+          <h2 id="self-start-title" className="font-semibold text-ink-900">{t('Zelf iets starten', 'Start something yourself')}</h2>
+          <p className="mt-0.5 text-[14px] text-ink-600">{t('Naast je revalidatie kun je zelf een mobiliteits- of krachtprogramma kiezen.', 'Next to your rehabilitation you can pick a mobility or strength programme yourself.')}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {(['mobiliteit', 'kracht'] as const).filter((m) => modes.data!.templates.some((x) => x.module === m)).map((m) => (
+              <Button key={m} variant="secondary" size="lg" onClick={() => pickMode(m)}>
+                {m === 'mobiliteit' ? t(`Mobiliteit (${modes.data!.templates.filter((x) => x.module === m).length})`, `Mobility (${modes.data!.templates.filter((x) => x.module === m).length})`) : t(`Kracht (${modes.data!.templates.filter((x) => x.module === m).length})`, `Strength (${modes.data!.templates.filter((x) => x.module === m).length})`)}
+              </Button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <HeroHomeCard />
+      <LogbookHomeCard />
 
       {d.notifications.length > 0 && (
         <div className="space-y-2">
