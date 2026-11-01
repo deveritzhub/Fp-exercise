@@ -247,8 +247,11 @@ export function SessionPlayer() {
                   const after = await qc.fetchQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero'), staleTime: 0 }).catch(() => null);
                   if (after) {
                     const ups = after.skills
-                      .map((k) => ({ key: k.key, from: before.skills.find((b) => b.key === k.key)?.level ?? k.level, to: k.level }))
-                      .filter((k) => k.to > k.from);
+                      .filter((k) => {
+                        const prev = before.skills.find((b) => b.key === k.key);
+                        return !k.locked && !prev?.locked && k.level > (prev?.level ?? k.level);
+                      })
+                      .map((k) => ({ key: k.key, from: before.skills.find((b) => b.key === k.key)?.level ?? k.level, to: k.level }));
                     if (after.level.level > before.level.level) ups.unshift({ key: 'hero' as never, from: before.level.level, to: after.level.level });
                     setLevelUps(ups);
                   }

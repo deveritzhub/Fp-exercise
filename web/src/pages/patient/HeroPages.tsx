@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Award, CalendarCheck, Check, ChevronRight, CircleCheck, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Zap, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Award, BookOpen, CalendarCheck, Check, ChevronRight, CircleCheck, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Zap, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -11,7 +11,7 @@ import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, Spinner, 
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { EYE_COLOURS, HAIR_COLOURS, HumanFigure, KIT, SKIN_TONES } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
-import { BADGES, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, METRICS, SKILLS, XP, metricInRange, parseMetric, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
+import { BADGES, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, metricInRange, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import type { HeroState } from '@/lib/types';
 import { PainTrendList } from '@/components/hero/PainTrend';
 import { FriendsCard } from './FriendsPage';
@@ -344,10 +344,18 @@ export function HeroProfilePage() {
 
 const SKILL_ICON: Record<SkillKey, LucideIcon> = {
   strength: Dumbbell, mobility: Move, balance: PersonStanding, stability: Shield, power: Zap,
-  endurance: HeartPulse, sport: Trophy, discipline: CalendarCheck, recovery: Sparkles,
+  endurance: HeartPulse, sport: Trophy, discipline: CalendarCheck, recovery: Sparkles, knowledge: BookOpen,
 };
 
-/** RuneScape-style skills: every skill levels from 1 to 99 on its own. */
+function estimateSentence(kg: number | null, pct: number | null, name: string, t: (nl: string, en: string) => string) {
+  if (kg === null) return null;
+  const shown = Math.round(kg);
+  const arrow = pct === null ? '' : pct > 0 ? ` ↑ ${pct}% sinds start` : pct < 0 ? ` ↓ ${Math.abs(pct)}% sinds start` : ' → 0% sinds start';
+  const arrowEn = pct === null ? '' : pct > 0 ? ` ↑ ${pct}% since the start` : pct < 0 ? ` ↓ ${Math.abs(pct)}% since the start` : ' → 0% since the start';
+  return <span className="block text-[14px] text-ink-800"><span className="font-medium">{name}: </span>{t(`Geschat maximum: ${shown} kg${arrow}`, `Estimated maximum: ${shown} kg${arrowEn}`)}</span>;
+}
+
+/** RuneScape-style skills: every skill levels from 1 to 99 on its own. A locked skill is not level 1. */
 function Skills({ d }: { d: HeroState }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
@@ -364,6 +372,8 @@ function Skills({ d }: { d: HeroState }) {
         {d.skills.map((k) => {
           const Icon = SKILL_ICON[k.key];
           const meta = SKILLS.find((x) => x.key === k.key)!;
+          const name = nl ? meta.nl : meta.en;
+          const reason = k.locked ? skillLockLabel(k.reason, k.phase, nl) : null;
           return (
             <li key={k.key}>
               <button
@@ -371,24 +381,45 @@ function Skills({ d }: { d: HeroState }) {
                 onClick={() => setOpen(k.key)}
                 className="tap flex min-h-[96px] w-full flex-col items-center justify-center gap-1 rounded-xl border border-line bg-canvas p-2 text-center hover:border-ink-300"
               >
-                <Icon className="h-5 w-5 text-accent" aria-hidden />
-                <span className="w-full break-words text-[12.5px] font-medium leading-tight text-ink-700">{nl ? meta.nl : meta.en}</span>
-                <span className="font-display text-[20px] font-bold leading-none tabular-nums text-ink-950"><span className="sr-only">level </span>{k.level}<span className="text-[12px] font-medium text-ink-500">/99</span></span>
-                <span className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-ink-100" aria-hidden><span className="block h-full rounded-full bg-accent" style={{ width: `${k.progress * 100}%` }} /></span>
+                {reason ? <Lock className="h-5 w-5 text-ink-500" aria-hidden /> : <Icon className="h-5 w-5 text-accent" aria-hidden />}
+                <span className="w-full break-words text-[12.5px] font-medium leading-tight text-ink-700">{name}</span>
+                {reason ? (
+                  <span className="w-full break-words text-[11.5px] font-semibold leading-tight text-ink-700">{reason}</span>
+                ) : (
+                  <>
+                    <span className="font-display text-[20px] font-bold leading-none tabular-nums text-ink-950"><span className="sr-only">level </span>{k.level}<span className="text-[12px] font-medium text-ink-500">/99</span></span>
+                    <span className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-ink-100" aria-hidden><span className="block h-full rounded-full bg-accent" style={{ width: `${k.progress * 100}%` }} /></span>
+                  </>
+                )}
               </button>
             </li>
           );
         })}
       </ul>
-      <Dialog open={!!sel} onClose={() => setOpen(null)} size="sm" title={sel && info ? `${nl ? info.nl : info.en} · level ${sel.level}` : ''}
+      <Dialog open={!!sel} onClose={() => setOpen(null)} size="sm" title={sel && info ? (sel.locked ? `${nl ? info.nl : info.en} · ${skillLockLabel(sel.reason, sel.phase, nl)}` : `${nl ? info.nl : info.en} · level ${sel.level}`) : ''}
         footer={<Button onClick={() => setOpen(null)}>{t('Sluiten', 'Close')}</Button>}>
         {sel && info && (
           <div className="space-y-3 text-[15px]">
-            <p className="text-ink-700">{t('Zo train je deze skill:', 'How to train this skill:')} {nl ? info.howNl : info.howEn}</p>
-            <div>
-              <div className="flex justify-between text-[14px]"><span>{sel.xp} XP</span><span className="text-ink-600">{sel.level < 99 ? t(`nog ${sel.to - sel.xp} XP tot level ${sel.level + 1}`, `${sel.to - sel.xp} XP to level ${sel.level + 1}`) : t('Maximaal level!', 'Maximum level!')}</span></div>
-              <ProgressBar value={sel.progress} className="mt-1.5 h-2.5" label={t('Voortgang naar het volgende level', 'Progress to the next level')} />
-            </div>
+            {sel.locked ? (
+              <p className="text-ink-700">{skillLockLabel(sel.reason, sel.phase, nl)}. {nl ? info.howNl : info.howEn}</p>
+            ) : (
+              <>
+                <p className="text-ink-700">{t('Zo train je deze skill:', 'How to train this skill:')} {nl ? info.howNl : info.howEn}</p>
+                {skillTitle(sel.key, sel.level, nl) && <p className="font-semibold text-ink-900">{skillTitle(sel.key, sel.level, nl)}</p>}
+                {sel.key === 'discipline' && d.disciplineStreak > 0 && <p className="text-ink-700">{t(`Reeks: ${d.disciplineStreak} volle weken. Eén vrije week per 8 weken telt niet als breuk.`, `Run: ${d.disciplineStreak} full weeks. One free week per 8 weeks does not break it.`)}</p>}
+                {sel.key === 'strength' && d.strengthEstimates.length > 0 && (
+                  <ul className="space-y-1">
+                    {d.strengthEstimates.map((e) => (
+                      <li key={e.exerciseId}>{estimateSentence(e.latestKg, e.progressPct, nl ? e.nameNl : e.nameEn, t)}</li>
+                    ))}
+                  </ul>
+                )}
+                <div>
+                  <div className="flex justify-between text-[14px]"><span>{sel.xp} XP</span><span className="text-ink-600">{sel.level < 99 ? t(`nog ${sel.to - sel.xp} XP tot level ${sel.level + 1}`, `${sel.to - sel.xp} XP to level ${sel.level + 1}`) : t('Maximaal level!', 'Maximum level!')}</span></div>
+                  <ProgressBar value={sel.progress} className="mt-1.5 h-2.5" label={t('Voortgang naar het volgende level', 'Progress to the next level')} />
+                </div>
+              </>
+            )}
           </div>
         )}
       </Dialog>
@@ -624,17 +655,34 @@ export function HeroPage() {
   }
   const L = d.level;
   const look = { ...d.hero, gear: d.gear.equipped };
+  const scene = sceneForTotal(d.totalLevel);
+  const emblems = d.skills.filter((s) => !s.locked && s.level >= SKILL_EMBLEM_LEVEL);
+  const ownTitles = d.skills.flatMap((s) => {
+    if (s.locked) return [];
+    const name = skillTitle(s.key, s.level, nl);
+    return name ? [name] : [];
+  });
+  const combos = comboTitles(Object.fromEntries(d.skills.filter((s) => !s.locked).map((s) => [s.key, s.level])), nl);
   const toEntries = (c: HeroState['painMap']['current']) => Object.fromEntries((c?.entries ?? []).map((e) => [e.area, e.score]));
   const earned = d.badges.filter((b) => b.earned).length;
 
   return (
     <div className="space-y-5">
-      <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="hero-name">
+      <section className={cn('relative overflow-hidden rounded-2xl border border-line bg-white p-5 shadow-card', scene?.key === 'gym' && 'bg-[linear-gradient(180deg,#efe6d4_0%,#fff_46%)]', scene?.key === 'stadium' && 'bg-[linear-gradient(180deg,#1b3a4a_0%,#fff_48%)]')} aria-labelledby="hero-name">
+        {scene?.key === 'gym' && <svg aria-hidden className="pointer-events-none absolute right-3 top-3 h-10 w-24"><rect x="4" y="16" width="88" height="6" rx="2" fill="#29483c" opacity=".45" /><rect x="18" y="8" width="6" height="22" fill="#29483c" opacity=".45" /><rect x="72" y="8" width="6" height="22" fill="#29483c" opacity=".45" /></svg>}
+        {scene?.key === 'stadium' && <svg aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-16 w-full"><path d="M0,40 Q100,8 200,40 L200,0 L0,0 Z" fill="#143040" /><path d="M20,34 Q100,14 180,34" fill="none" stroke="#e2b84a" strokeWidth="2" /></svg>}
         <div className="flex items-center gap-4">
           <AvatarLink look={look} size={88} level={L.level} />
           <div className="min-w-0">
             <p className="t-label">{t(`Level ${L.level}`, `Level ${L.level}`)} · {titleFor(L.level, nl)}</p>
-            <h1 id="hero-name" className="t-page [overflow-wrap:anywhere]">{d.hero.heroName}</h1>
+            <h1 id="hero-name" className={cn('t-page [overflow-wrap:anywhere]', scene?.key === 'stadium' && 'text-white')}>{d.hero.heroName}</h1>
+            {scene && <p className={cn('text-[12.5px] font-semibold', scene.key === 'stadium' ? 'text-sand' : 'text-ink-600')}>{nl ? scene.nl : scene.en}</p>}
+            {(emblems.length > 0 || ownTitles.length > 0 || combos.length > 0) && (
+              <p className={cn('text-[13px]', scene?.key === 'stadium' ? 'text-white/90' : 'text-ink-700')}>
+                {emblems.length > 0 && <span className="mr-2">{t('Emblemen', 'Emblems')}: {emblems.map((s) => (nl ? SKILLS.find((k) => k.key === s.key)?.nl : SKILLS.find((k) => k.key === s.key)?.en)).join(', ')}</span>}
+                {[...ownTitles, ...combos.map((c) => c.name)].join(' · ')}
+              </p>
+            )}
             <Link to="/p/held/uiterlijk" className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent">{t('Uiterlijk en maten', 'Look and measurements')}</Link>
           </div>
         </div>

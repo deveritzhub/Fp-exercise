@@ -26,7 +26,7 @@ export const KIT: Record<string, { main: string; dark: string; soft: string }> =
   sun: { main: '#b5781a', dark: '#8a5b12', soft: '#fbf0d9' },
 };
 
-export type FigureLook = Pick<HeroLook, 'skin' | 'hair' | 'outfit'> & Partial<Pick<HeroLook, 'hairColor' | 'eyeColor' | 'frame' | 'build' | 'beard' | 'glasses'>> & { gear?: string[] };
+export type FigureLook = Pick<HeroLook, 'skin' | 'hair' | 'outfit'> & Partial<Pick<HeroLook, 'hairColor' | 'eyeColor' | 'frame' | 'build' | 'beard' | 'glasses' | 'sport'>> & { gear?: string[] };
 
 type Pt = [number, number, number]; // x, y, half width
 
@@ -139,6 +139,19 @@ function Hair({ style, colour, back }: { style: string; colour: string; back: bo
     default:
       return null;
   }
+}
+
+/** Small chest mark for the technique item. The shape follows the sport the patient chose. */
+function SportMark({ sport }: { sport: string }) {
+  const common = { stroke: '#1c2622', strokeWidth: 1.1, fill: '#f4f7f5' };
+  if (sport === 'football') return <circle cx="118" cy="128" r="6" {...common} />;
+  if (sport === 'cycling') return <g {...common} fill="none"><circle cx="114" cy="132" r="4" /><circle cx="124" cy="132" r="4" /><path d="M114,132 L124,124 L124,132" /></g>;
+  if (sport === 'swimming') return <path d="M110,128 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1d5f99" strokeWidth="1.6" />;
+  if (sport === 'tennis') return <g {...common}><circle cx="118" cy="128" r="5" /><path d="M114,124 q4,4 8,0" fill="none" /></g>;
+  if (sport === 'hockey') return <path d="M122,118 v12 h-6" fill="none" stroke="#1c2622" strokeWidth="1.6" strokeLinecap="round" />;
+  if (sport === 'dance') return <path d="M118,120 v10 M118,122 h4" fill="none" stroke="#8e3b5f" strokeWidth="1.6" strokeLinecap="round" />;
+  if (sport === 'fitness') return <path d="M112,128 h4 v-3 h4 v3 h4" fill="none" stroke="#1c2622" strokeWidth="1.5" strokeLinecap="round" />;
+  return <path d="M118,122 l1.4,3 3.2,.4 -2.4,2.2 .6,3.2 -2.8,-1.6 -2.8,1.6 .6,-3.2 -2.4,-2.2 3.2,-.4 z" fill="#e2b84a" stroke="#a77d16" strokeWidth=".6" />;
 }
 
 /** Full figure (front or back). Decorative: the meaning is given by the surrounding labels. */
@@ -391,6 +404,32 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
         </g>
       )}
       {gear.has('crown') && <path d="M76,20 L85,3 L94,16 L100,1 L106,16 L115,3 L124,20 L118,23 L82,23 Z" fill="#f0d56e" stroke="#a77d16" strokeWidth=".9" />}
+      {gear.has('yoga_mat') && (
+        <g>
+          <path d={`M${100 + g.shoulder * 0.2},86 Q${118 + g.shoulder},120 ${112},190`} fill="none" stroke="#6d8f78" strokeWidth="2.2" strokeLinecap="round" />
+          {!front && <rect x={118} y={96} width="16" height="78" rx="6" fill="#6d8f78" stroke="#3e5c4a" strokeWidth="1" />}
+        </g>
+      )}
+      {gear.has('belt') && <rect x={100 - g.waist + 4} y={186} width={g.waist * 2 - 8} height={8} rx={2} fill="#2a241c" stroke="#c7a15a" strokeWidth="1.2" />}
+      {gear.has('towel') && (
+        <path d={`M${100 - g.neck - 8},70 Q100,92 ${100 + g.neck + 8},70 L${100 + g.neck + 6},108 Q${100 + g.neck},96 ${100 + g.neck - 2},112 L${100 + 4},78 Q100,90 ${100 - 6},78 L${100 - g.neck + 2},112 Q${100 - g.neck},96 ${100 - g.neck - 6},108 Z`} fill="#d7ebe4" stroke="#7fa396" strokeWidth=".8" />
+      )}
+      {gear.has('hr_band') && <rect x={100 - g.chest * 0.55} y={118} width={g.chest * 1.1} height={7} rx={3} fill="#1c2622" />}
+      {gear.has('balance_shoes') && [-1, 1].map((s) => {
+        const x = 100 + s * (g.legX - 2.1);
+        return <path key={s} d={`M${x - 11},400 h22 v6 h-22 Z`} fill="#2f6f9f" stroke="#16324a" strokeWidth=".8" />;
+      })}
+      {gear.has('spikes') && [-1, 1].map((s) => {
+        const x = 100 + s * (g.legX - 2.1);
+        return (
+          <g key={s} fill="#e2b84a">
+            <path d={`M${x - 7},406 l2,6 h-4 Z`} />
+            <path d={`M${x},406 l2,6 h-4 Z`} />
+            <path d={`M${x + 7},406 l2,6 h-4 Z`} />
+          </g>
+        );
+      })}
+      {front && gear.has('sport_item') && <SportMark sport={look.sport ?? 'other'} />}
     </svg>
   );
 }

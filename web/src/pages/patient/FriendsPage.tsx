@@ -8,7 +8,7 @@ import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
 import { Button, Dialog, ErrorState, Input, Spinner, useToast } from '@/components/ui';
 import { HeroAvatar } from '@/components/hero/HeroAvatar';
-import { SKILLS, titleFor, type SkillKey } from '@shared/hero';
+import { SKILLS, friendSkillCard, skillLockLabel, titleFor, type FriendSkillCard, type SkillKey } from '@shared/hero';
 import type { FriendsState, HeroFriend } from '@/lib/types';
 import { useHero } from './HeroPages';
 
@@ -39,16 +39,30 @@ function WhatIsShared() {
   );
 }
 
-function SkillGrid({ skills }: { skills: Record<SkillKey, number> }) {
+function readSkill(v: FriendSkillCard | number | undefined): FriendSkillCard {
+  if (typeof v === 'number') return { level: v, locked: false, reason: null, phase: null };
+  return v ?? { level: null, locked: true, reason: 'unavailable', phase: null };
+}
+
+function SkillGrid({ skills }: { skills: Record<SkillKey, FriendSkillCard | number> }) {
   const { locale } = useI18n();
+  const nl = locale === 'nl';
   return (
     <ul className="grid grid-cols-3 gap-1.5">
-      {SKILLS.map((k) => (
-        <li key={k.key} className="rounded-lg bg-canvas px-2 py-1.5 text-center">
-          <span className="block break-words text-[12px] leading-tight text-ink-600">{locale === 'nl' ? k.nl : k.en}</span>
-          <span className="font-display text-[16px] font-bold tabular-nums text-ink-950"><span className="sr-only">level </span>{skills[k.key] ?? 1}</span>
-        </li>
-      ))}
+      {SKILLS.map((k) => {
+        const s = readSkill(skills[k.key]);
+        const reason = s.locked ? skillLockLabel(s.reason, s.phase, nl) : null;
+        return (
+          <li key={k.key} className="rounded-lg bg-canvas px-1.5 py-1.5 text-center">
+            <span className="block break-words text-[12px] leading-tight text-ink-600">{nl ? k.nl : k.en}</span>
+            {reason ? (
+              <span className="block break-words text-[11px] font-semibold leading-tight text-ink-700">{reason}</span>
+            ) : (
+              <span className="font-display text-[16px] font-bold tabular-nums text-ink-950"><span className="sr-only">level </span>{s.level}</span>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -129,7 +143,7 @@ export function FriendsPage() {
   const meRow = {
     heroName: H.hero!.heroName,
     look: { ...H.hero!, gear: H.gear.equipped },
-    stats: { level: H.level.level, totalLevel: H.totalLevel, skills: Object.fromEntries(H.skills.map((k) => [k.key, k.level])) as Record<SkillKey, number> },
+    stats: { level: H.level.level, totalLevel: H.totalLevel, skills: Object.fromEntries(H.skills.map((k) => [k.key, friendSkillCard(k)])) as Record<SkillKey, FriendSkillCard> },
   };
   // Ranking by total level (then level), the patient included.
   const ranking = [...friends.map((f) => ({ ...f, stats: f.stats!, me: false })), { ...meRow, id: 'me', me: true }].sort(

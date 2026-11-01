@@ -18,10 +18,18 @@ export type StrengthExercise = {
   directTests: { date: string; value: number }[];
   lastSets: SetRow[];
   advice: { kind: 'increase'; fromKg: number; toKgMin: number; toKgMax: number } | { kind: 'keep' | 'plateau' | 'none' };
+  epley?: { startKg: number | null; latestKg: number | null; progressPct: number | null; history: { date: string; kg: number }[] } | null;
 };
 export type StrengthData = { exercises: StrengthExercise[]; screeningStops: number };
 
 export const useStrength = (enabled = true) => useQuery({ queryKey: ['patient-strength'], queryFn: () => api.get<StrengthData>('/patient/strength'), enabled });
+
+function maximumLine(kg: number, pct: number | null, t: (nl: string, en: string) => string) {
+  const shown = Math.round(kg);
+  if (pct === null) return t(`Geschat maximum: ${shown} kg`, `Estimated maximum: ${shown} kg`);
+  const mark = pct > 0 ? `↑ ${pct}` : pct < 0 ? `↓ ${Math.abs(pct)}` : '→ 0';
+  return t(`Geschat maximum: ${shown} kg ${mark}% sinds start`, `Estimated maximum: ${shown} kg ${mark}% since the start`);
+}
 
 function AdviceText({ e }: { e: StrengthExercise }) {
   const { t } = useI18n();
@@ -145,6 +153,7 @@ export function StrengthProgress() {
           <div className="mt-1 text-[14px] text-ink-700">
             {e.best ? t(`Beste: ${e.best.value} kg (${fmtDate(e.best.date, locale)})`, `Best: ${e.best.value} kg (${fmtDate(e.best.date, locale)})`) : t('Nog geen schatting', 'No estimate yet')}
           </div>
+          {e.epley?.latestKg != null && <p className="mt-1 text-[14px] text-ink-800">{maximumLine(e.epley.latestKg, e.epley.progressPct, t)}</p>}
           {e.history.length > 1 && <Sparkline values={e.history.map((h) => h.best)} max={Math.max(1, ...e.history.map((h) => h.best ?? 0)) * 1.1} />}
           <p className="mt-1 flex items-start gap-1.5 text-[14px] text-ink-700"><TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden /><span><AdviceText e={e} /></span></p>
           {e.main && e.programId && (

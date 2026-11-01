@@ -169,8 +169,11 @@ export type HeroState = {
   painMap: { baseline: PainCheckin | null; current: PainCheckin | null; checkins: number };
   level: { level: number; xp: number; from: number; to: number; progress: number };
   badges: { key: string; earned: boolean }[];
-  skills: { key: import('@shared/hero').SkillKey; level: number; xp: number; from: number; to: number; progress: number }[];
+  skills: { key: import('@shared/hero').SkillKey; level: number; xp: number; from: number; to: number; progress: number; locked: boolean; reason: import('@shared/hero').SkillLockCode | null; phase: number | null }[];
   totalLevel: number;
+  disciplineStreak: number;
+  /** Own estimated maximum per exercise. Never copied onto a friend card. */
+  strengthEstimates: { exerciseId: string; nameNl: string; nameEn: string; startKg: number | null; latestKg: number | null; progressPct: number | null; history: { date: string; kg: number }[] }[];
   totals: { sessions: number; fullWeeks: number; phasesCompleted: number; since: string | null; painStart: number | null; painNow: number | null };
   quest: {
     title: string;
@@ -196,7 +199,7 @@ export type HeroFriend = {
   kind: 'friend' | 'incoming' | 'outgoing';
   heroName: string;
   look: Omit<import('@shared/hero').HeroLook, 'heroName'> & { gear: string[] };
-  stats: { level: number; totalLevel: number; skills: Record<import('@shared/hero').SkillKey, number> } | null;
+  stats: { level: number; totalLevel: number; skills: Record<import('@shared/hero').SkillKey, import('@shared/hero').FriendSkillCard> } | null;
   statsUpdatedAt: string | null;
   since: string;
 };

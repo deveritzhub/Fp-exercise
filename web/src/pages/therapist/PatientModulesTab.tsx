@@ -23,6 +23,7 @@ type Strength = {
     exerciseId: string; nameNl: string; nameEn: string; main: boolean; best: { date: string; value: number } | null; latestIsPr: boolean;
     history: { date: string; best: number | null; topKg: number | null; topReps: number | null }[];
     advice: { kind: 'increase'; fromKg: number; toKgMin: number; toKgMax: number } | { kind: 'keep' | 'plateau' | 'none' };
+    epley?: { startKg: number | null; latestKg: number | null; progressPct: number | null; history: { date: string; kg: number }[] } | null;
   }[];
 };
 
@@ -243,6 +244,18 @@ function StrengthCard({ patientId, shared }: { patientId: string; shared: boolea
                 </span>
               </div>
               <Sparkline values={e.history.map((h) => h.best)} max={Math.max(1, ...e.history.map((h) => h.best ?? 0)) * 1.1} />
+              {e.epley?.latestKg != null && (
+                <div className="mt-2">
+                  <p className="text-[13px] font-semibold text-ink-900">
+                    {t(
+                      `1RM: ${Math.round(e.epley.latestKg)} kg${e.epley.progressPct === null ? '' : ` · ${e.epley.progressPct > 0 ? '+' : ''}${e.epley.progressPct}% sinds start`}`,
+                      `1RM: ${Math.round(e.epley.latestKg)} kg${e.epley.progressPct === null ? '' : ` · ${e.epley.progressPct > 0 ? '+' : ''}${e.epley.progressPct}% since the start`}`,
+                    )}
+                  </p>
+                  <Sparkline values={e.epley.history.map((h) => h.kg)} max={Math.max(1, ...e.epley.history.map((h) => h.kg)) * 1.1} />
+                  <p className="sr-only">{t('Verloop van het geschatte maximum', 'Course of the estimated maximum')}: {e.epley.history.map((h) => `${h.date} ${Math.round(h.kg)} kg`).join(', ')}</p>
+                </div>
+              )}
               <p className="text-[12.5px] text-ink-600">
                 {e.advice.kind === 'increase'
                   ? t(`Advies: gewicht naar ${e.advice.toKgMin}–${e.advice.toKgMax} kg`, `Advice: weight to ${e.advice.toKgMin}–${e.advice.toKgMax} kg`)
