@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Beef, Dumbbell, Footprints, Scale, Trash2 } from 'lucide-react';
+import { Fold } from '@/components/app/Fold';
 import { LOG_XP, STEPS, TRAINING_KINDS, type TrainingKind } from '@shared/patientLogs';
 import { SKILLS as HERO_SKILLS } from '@shared/hero';
 import { api } from '@/lib/api';
@@ -20,11 +21,12 @@ async function saved(qc: ReturnType<typeof useQueryClient>, before: number) {
 
 /** Own workouts and protein grams. */
 export function LogbookPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   useDocumentMeta(t('Logboek', 'Logbook'));
   const q = useHero();
   if (q.isError) return <ErrorState error={q.error} />;
   if (!q.data) return <Spinner />;
+  const d = q.data;
   return (
     <div className="space-y-5">
       <Link to="/p/held" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" aria-hidden />{t('Terug naar je held', 'Back to your hero')}</Link>
@@ -32,10 +34,22 @@ export function LogbookPage() {
         <h1 className="t-page">{t('Logboek', 'Logbook')}</h1>
         <p className="mt-1 text-[15px] text-ink-600">{t('Een eigen training of je eiwit van vandaag. Overslaan kost niets. Een hoge pijnscore levert niet méér op, en stoppen vanwege pijn telt als herstel.', 'A workout of your own, or today’s protein. Skipping costs nothing. A high pain score does not earn more, and stopping because of pain counts as recovery.')}</p>
       </div>
-      <ProteinCard d={q.data} />
-      <WeightCard d={q.data} />
-      <StepsCard d={q.data} />
-      <TrainingCard d={q.data} />
+      <Fold id="log-protein" defaultOpen icon={<Beef className="h-5 w-5" />} title={t('Eiwit', 'Protein')}
+        summary={d.logs.protein.goal !== null ? t(`${d.logs.protein.grams} van ${d.logs.protein.goal} g vandaag`, `${d.logs.protein.grams} of ${d.logs.protein.goal} g today`) : t(`${d.logs.protein.grams} g vandaag`, `${d.logs.protein.grams} g today`)}>
+        <ProteinCard d={d} />
+      </Fold>
+      <Fold id="log-weight" icon={<Scale className="h-5 w-5" />} title={t('Gewicht', 'Weight')}
+        summary={d.logs.weight.latestKg !== null ? `${d.logs.weight.latestKg.toLocaleString(locale === 'nl' ? 'nl-NL' : 'en-GB')} kg` : t('Nog niet ingevuld', 'Not filled in yet')}>
+        <WeightCard d={d} />
+      </Fold>
+      <Fold id="log-steps" icon={<Footprints className="h-5 w-5" />} title={t('Stappen', 'Steps')}
+        summary={`${d.logs.steps.today.toLocaleString(locale === 'nl' ? 'nl-NL' : 'en-GB')} / ${d.logs.steps.goal.toLocaleString(locale === 'nl' ? 'nl-NL' : 'en-GB')}${d.logs.steps.hit ? t(' · gehaald', ' · hit') : ''}`}>
+        <StepsCard d={d} />
+      </Fold>
+      <Fold id="log-training" icon={<Dumbbell className="h-5 w-5" />} title={t('Eigen training', 'Your own workout')}
+        summary={t(`${d.logs.trainings.length} gelogd in de laatste 2 weken`, `${d.logs.trainings.length} logged in the last 2 weeks`)}>
+        <TrainingCard d={d} />
+      </Fold>
     </div>
   );
 }

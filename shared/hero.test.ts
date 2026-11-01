@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BADGES, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
+import { BADGES, bodyShape, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
 
 describe('sports hero rules', () => {
   it('levels grow gently and progress is between 0 and 1', () => {
@@ -433,5 +433,23 @@ describe('self-trained skills', () => {
     expect(skillLock('endurance', ctx).locked).toBe(false);
     expect(skillLock('mobility', ctx)).toMatchObject({ locked: true, reason: 'unavailable' });
     expect(skillLock('power', ctx).locked).toBe(true);
+  });
+});
+
+describe('body shape from measurements', () => {
+  it('high BMI with low body fat is muscular; same weight with high fat is fuller', () => {
+    const strong = bodyShape({ weightKg: 95, heightCm: 180, bodyFatPct: 12 }, 'm')!;
+    const fuller = bodyShape({ weightKg: 95, heightCm: 180, bodyFatPct: 32 }, 'm')!;
+    expect(strong.kind).toBe('muscular');
+    expect(fuller.kind).toBe('full');
+    expect(fuller.fat).toBeGreaterThan(strong.fat);
+    expect(strong.muscle).toBeGreaterThan(fuller.muscle);
+  });
+  it('estimates body fat from BMI when missing; needs weight and height', () => {
+    const s = bodyShape({ weightKg: 60, heightCm: 170, bodyFatPct: null }, 'f')!;
+    expect(s.estimated).toBe(true);
+    expect(s.bodyFatPct).toBeGreaterThan(20);
+    expect(bodyShape({ weightKg: 60, heightCm: null, bodyFatPct: 20 }, 'f')).toBeNull();
+    expect(bodyShape({ weightKg: 55, heightCm: 172, bodyFatPct: 18 }, 'f')!.kind).toBe('lean');
   });
 });

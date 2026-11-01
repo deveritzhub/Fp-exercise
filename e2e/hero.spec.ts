@@ -1,6 +1,6 @@
 import pg from 'pg';
 import { test, expect } from '@playwright/test';
-import { login, expectAccessible } from './helpers';
+import { login, expectAccessible, expandFolds } from './helpers';
 
 /** Sports hero: first visit → character creator → body map → character sheet; therapist sees the map. */
 async function sql(q: string, p: unknown[] = []) {
@@ -72,6 +72,7 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await pp.getByRole('button', { name: 'Klaar: start mijn avontuur' }).click();
 
   await expect(pp).toHaveURL(/\/p\/held$/);
+  await expandFolds(pp);
   await expect(pp.getByRole('heading', { name: 'Emma de Sprinter' })).toBeVisible();
   await expect(pp.getByText(/Level \d+ · /).first()).toBeVisible();
   await expect(pp.getByRole('img', { name: /Linkerknie: 7\/10/ })).toBeVisible();
@@ -118,6 +119,7 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await pp.getByLabel(/Hoeveel pijn/).fill('3');
   await pp.getByRole('button', { name: 'Opslaan' }).click();
   await expect(pp).toHaveURL(/\/p\/held$/);
+  await expandFolds(pp);
   await expect(pp.getByRole('img', { name: /Linkerknie: 3\/10, licht \(start 7\/10\)/ })).toBeVisible();
 
   // A workout: XP for the hero, and a level up when a skill goes up.
@@ -216,6 +218,7 @@ test('tapping the hero photo opens look and body measurements', async ({ browser
   await pp.screenshot({ path: 'screenshots/hero/profile.png', fullPage: true });
   await pp.getByRole('button', { name: 'Opslaan' }).click();
   await expect(pp).toHaveURL(/\/p\/held$/);
+  await expandFolds(pp);
   await expect(pp.getByText('Uiterlijk en maten opgeslagen')).toBeVisible();
   const hero = await (await pp.request.get('/api/patient/hero')).json();
   expect(hero.hero.outfit).toBe('sand');
@@ -231,6 +234,7 @@ test('skill names are never cut off on a 360 px phone', async ({ browser }) => {
   const pp = await ctx.newPage();
   await login(pp, 'patient@praktijk-a.test');
   await pp.goto('/p/held');
+  await expandFolds(pp);
   await expect(pp.getByRole('heading', { name: 'Skills' })).toBeVisible();
   const cut = await pp.evaluate(() =>
     [...document.querySelectorAll('[aria-labelledby="skills-title"] li span:not(.sr-only)')].filter((el) => el.scrollWidth > el.clientWidth + 1 && (el.textContent ?? '').trim()).map((el) => el.textContent),

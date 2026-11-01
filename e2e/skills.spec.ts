@@ -1,6 +1,6 @@
 import pg from 'pg';
 import { test, expect } from '@playwright/test';
-import { login, expectAccessible } from './helpers';
+import { login, expectAccessible, expandFolds } from './helpers';
 
 /** Skills v2: a locked skill explains itself, level-10 gear can be worn, and the sheet fits a narrow phone. */
 async function sql(q: string, p: unknown[] = []) {
@@ -26,6 +26,7 @@ test('lock reasons are visible, a level-10 item can be worn, and the sheet fits 
   await page.setViewportSize({ width: 300, height: 780 });
   await login(page, 'patient@praktijk-a.test');
   await page.goto('/p/held');
+  await expandFolds(page);
   await expect(page.getByRole('heading', { name: 'Skills' })).toBeVisible();
   await expect(page.getByText('binnenkort').first()).toBeVisible();
   await expect(page.getByText('nog niet in je programma').first()).toBeVisible();

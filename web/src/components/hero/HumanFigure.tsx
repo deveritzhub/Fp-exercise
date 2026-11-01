@@ -26,7 +26,11 @@ export const KIT: Record<string, { main: string; dark: string; soft: string }> =
   sun: { main: '#b5781a', dark: '#8a5b12', soft: '#fbf0d9' },
 };
 
-export type FigureLook = Pick<HeroLook, 'skin' | 'hair' | 'outfit'> & Partial<Pick<HeroLook, 'hairColor' | 'eyeColor' | 'frame' | 'build' | 'beard' | 'glasses' | 'sport'>> & { gear?: string[] };
+export type FigureLook = Pick<HeroLook, 'skin' | 'hair' | 'outfit'> & Partial<Pick<HeroLook, 'hairColor' | 'eyeColor' | 'frame' | 'build' | 'beard' | 'glasses' | 'sport'>> & {
+  gear?: string[];
+  /** Body composition from the patient's own measurements (0–1 each); overrides `build`. */
+  body?: { fat: number; muscle: number } | null;
+};
 
 type Pt = [number, number, number]; // x, y, half width
 
@@ -69,18 +73,35 @@ function limb(points: Pt[]) {
 }
 
 /** Body proportions for a body type and build (all positions in the 200 × 420 frame). */
-export function figureGeometry(look: Pick<FigureLook, 'frame' | 'build'>) {
+export function figureGeometry(look: Pick<FigureLook, 'frame' | 'build' | 'body'>) {
   const f = look.frame === 'f';
   const b = { slim: 0.9, average: 1, athletic: 1.04, full: 1.16 }[look.build ?? 'average'] ?? 1;
-  const shoulder = (f ? 31 : 36) * (look.build === 'athletic' ? 1.1 : look.build === 'full' ? 1.08 : b);
-  const chest = (f ? 28 : 31) * b;
-  const waist = (f ? 21 : 26) * (look.build === 'full' ? 1.32 : look.build === 'athletic' ? 0.96 : b);
-  const hip = (f ? 31 : 27) * (look.build === 'full' ? 1.2 : b);
-  const neck = (f ? 6.5 : 8) * (look.build === 'athletic' ? 1.12 : b);
-  const limbW = look.build === 'full' ? 1.2 : look.build === 'athletic' ? 1.12 : b;
+  let shoulder = (f ? 31 : 36) * (look.build === 'athletic' ? 1.1 : look.build === 'full' ? 1.08 : b);
+  let chest = (f ? 28 : 31) * b;
+  let waist = (f ? 21 : 26) * (look.build === 'full' ? 1.32 : look.build === 'athletic' ? 0.96 : b);
+  let hip = (f ? 31 : 27) * (look.build === 'full' ? 1.2 : b);
+  let neck = (f ? 6.5 : 8) * (look.build === 'athletic' ? 1.12 : b);
+  let limbW = look.build === 'full' ? 1.2 : look.build === 'athletic' ? 1.12 : b;
+  let armW = limbW;
+  let legW = limbW;
+  let belly = look.build === 'full' ? 0.12 : 0;
+  // Own measurements win: fat mostly widens waist and hips, muscle mostly shoulders, neck and limbs.
+  if (look.body) {
+    const fat = Math.min(1, Math.max(0, look.body.fat));
+    const mus = Math.min(1, Math.max(0, look.body.muscle));
+    shoulder = (f ? 31 : 36) * (0.86 + 0.42 * mus + 0.1 * fat);
+    chest = (f ? 28 : 31) * (0.84 + 0.3 * mus + 0.42 * fat);
+    waist = (f ? 21 : 26) * (0.78 + 0.02 * mus + 1.3 * fat);
+    hip = (f ? 31 : 27) * (0.84 + 0.05 * mus + 0.6 * fat);
+    neck = (f ? 6.5 : 8) * (0.86 + 0.5 * mus + 0.25 * fat);
+    limbW = 0.82 + 0.45 * mus + 0.5 * fat;
+    armW = 0.76 + 0.75 * mus + 0.45 * fat;
+    legW = 0.8 + 0.42 * mus + 0.75 * fat;
+    belly = 0.45 * fat;
+  }
   const legX = hip * 0.52 + 1;
   return {
-    f, b, shoulder, chest, waist, hip, neck, limbW, legX,
+    f, b, shoulder, chest, waist, hip, neck, limbW, armW, legW, belly, legX,
     armX: (side: -1 | 1, y: number) => 100 + side * (shoulder - 3 + (y - 92) * 0.14),
     /** Where each body-map area sits on this figure. */
     points: {
@@ -168,13 +189,16 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
   const gear = new Set(look.gear ?? []);
   const gold = gear.has('gold_shoes');
 
-  const torso = limb([[100, 70, g.neck], [100, 79, g.shoulder * 0.74], [100, 88, g.shoulder * 0.97], [100, 100, g.shoulder * 0.96], [100, 120, g.chest], [100, 162, g.waist], [100, 198, g.hip], [100, 214, g.hip * 0.96]]);
+  // A fuller body gets a belly between chest and waist; a muscular one a V-shape (wide shoulders, narrow waist).
+  const torso = limb([[100, 70, g.neck], [100, 79, g.shoulder * 0.74], [100, 88, g.shoulder * 0.97], [100, 100, g.shoulder * 0.96], [100, 120, g.chest], [100, 144, (g.chest + g.waist) / 2 * (1 + g.belly)], [100, 166, g.waist * (1 + g.belly * 0.6)], [100, 198, g.hip], [100, 214, g.hip * 0.96]]);
+  const A = g.armW;
   const arm = (s: -1 | 1) =>
-    limb([[g.armX(s, 88), 88, 7.6 * L], [g.armX(s, 112), 112, 7.4 * L], [g.armX(s, 150), 150, 5.6 * L], [g.armX(s, 176), 176, 5.4 * L], [g.armX(s, 206), 206, 4 * L]]);
+    limb([[g.armX(s, 88), 88, 7.6 * A], [g.armX(s, 112), 112, 7.6 * A], [g.armX(s, 150), 150, 5.6 * A], [g.armX(s, 176), 176, 5.6 * A], [g.armX(s, 206), 206, 4 * Math.min(A, 1.15)]]);
   const hand = (s: -1 | 1) => <ellipse cx={g.armX(s, 214)} cy={216} rx={4.6 * L} ry={8} fill={`url(#sk${uid})`} />;
   const leg = (s: -1 | 1) => {
     const x = 100 + s * g.legX;
-    return limb([[x, 204, 13.5 * L], [x + s * 0.4, 240, 12 * L], [x - s * 1.5, 298, 7.6 * L], [x - s * 1.8, 330, 8.4 * L], [x - s * 2, 362, 6.4 * L], [x - s * 2.1, 386, 4.6 * L]]);
+    const W = g.legW;
+    return limb([[x, 204, 13.5 * W], [x + s * 0.4, 240, 12 * W], [x - s * 1.5, 298, 7.6 * Math.min(W, 1.2)], [x - s * 1.8, 330, 8.4 * W], [x - s * 2, 362, 6.4 * Math.min(W, 1.2)], [x - s * 2.1, 386, 4.6]]);
   };
   const neckPath = limb([[100, 50, g.neck * 0.9], [100, 66, g.neck], [100, 76, g.neck * 1.05]]);
   const jaw = g.f ? 'M100,13 C120,13 122,32 120,44 C118,55 109,61 100,61 C91,61 82,55 80,44 C78,32 80,13 100,13 Z' : 'M100,12 C121,12 123,32 121,45 C119,57 110,63 100,63 C90,63 81,57 79,45 C77,32 79,12 100,12 Z';

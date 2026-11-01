@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Award, BookOpen, CalendarCheck, Check, ChevronRight, CircleCheck, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Zap, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Award, BookOpen, CalendarCheck, Check, ChevronRight, CircleCheck, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Utensils, Zap, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -11,10 +11,11 @@ import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, Spinner, 
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { EYE_COLOURS, HAIR_COLOURS, HumanFigure, KIT, SKIN_TONES } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
-import { BADGES, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, metricInRange, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
+import { BADGES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, metricInRange, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
 import type { HeroState } from '@/lib/types';
 import { PainTrendList } from '@/components/hero/PainTrend';
+import { Fold } from '@/components/app/Fold';
 import { FriendsCard } from './FriendsPage';
 
 export const HERO_LATER_KEY = 'fp.heroLater';
@@ -299,7 +300,9 @@ export function HeroProfilePage() {
       setBusy(false);
     }
   };
-  const preview = { ...look, gear: q.data.gear.equipped };
+  // The figure follows the measurements as you type: more body fat = fuller, high BMI with low fat = muscular.
+  const shape = bodyShape({ weightKg: parseMetric(weight), heightCm: parseMetric(height), bodyFatPct: parseMetric(fat) }, look.frame);
+  const preview = { ...look, gear: q.data.gear.equipped, body: shape };
   return (
     <div className="space-y-5">
       <Link to="/p/held" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" aria-hidden />{t('Terug', 'Back')}</Link>
@@ -311,13 +314,21 @@ export function HeroProfilePage() {
       <div className="flex justify-center rounded-2xl bg-sage/60 py-3" role="img" aria-label={t(`Voorbeeld van ${look.heroName || 'je held'}`, `Preview of ${look.heroName || 'your hero'}`)}>
         <HumanFigure look={preview} className="h-[280px] w-auto" />
       </div>
+      {shape && (
+        <p className="-mt-2 text-center text-[14px] text-ink-700" aria-live="polite">
+          {t('Lichaamsbouw van je held', 'Your hero’s build')}: <strong>{BODY_KIND_LABEL[shape.kind][nl ? 0 : 1]}</strong>
+          <span className="text-ink-500"> · {t('vet', 'fat')} {shape.bodyFatPct.toLocaleString(nl ? 'nl-NL' : 'en-GB')}%{shape.estimated ? t(' (geschat uit BMI)', ' (estimated from BMI)') : ''}</span>
+        </p>
+      )}
       <Card className="space-y-5 p-5">
         <h2 className="t-section">{t('Uiterlijk', 'Look')}</h2>
         <Input label={t('Naam van je held', 'Name of your hero')} value={look.heroName} maxLength={40} onChange={(e) => set('heroName', e.target.value)} />
         <Choice legend={t('Jouw sport', 'Your sport')} name="sport" cols="grid-cols-2" value={look.sport as Opt<'sport'>} options={HERO_OPTIONS.sport} onChange={(v) => set('sport', v)}
           render={(v) => { const Icon = SPORT_ICON[v]; return <><Icon className="h-4 w-4 shrink-0" aria-hidden />{SPORTS[v][nl ? 0 : 1]}</>; }} />
         <Choice legend={t('Figuur', 'Figure')} name="frame" cols="grid-cols-2" value={look.frame as Opt<'frame'>} options={HERO_OPTIONS.frame} onChange={(v) => set('frame', v)} render={(v) => L('frame', v)} />
-        <Choice legend={t('Bouw', 'Build')} name="build" cols="grid-cols-2" value={look.build as Opt<'build'>} options={HERO_OPTIONS.build} onChange={(v) => set('build', v)} render={(v) => L('build', v)} />
+        {shape ? (
+          <p className="rounded-xl bg-canvas px-3 py-2.5 text-[14px] text-ink-700">{t('Je bouw volgt nu je eigen maten (gewicht, lengte en vetpercentage). Laat ze leeg om zelf een bouw te kiezen.', 'Your build now follows your own measurements (weight, height and body fat). Leave them empty to choose a build yourself.')}</p>
+        ) : <Choice legend={t('Bouw', 'Build')} name="build" cols="grid-cols-2" value={look.build as Opt<'build'>} options={HERO_OPTIONS.build} onChange={(v) => set('build', v)} render={(v) => L('build', v)} />}
         <Choice legend={t('Huidskleur', 'Skin tone')} name="skin" cols="grid-cols-5" value={look.skin as Opt<'skin'>} options={HERO_OPTIONS.skin} onChange={(v) => set('skin', v)}
           render={(v) => <>{swatch(SKIN_TONES[v])}<span className="sr-only">{t(`Huidskleur ${v.slice(1)} van 10`, `Skin tone ${v.slice(1)} of 10`)}</span></>} />
         <Choice legend={t('Kapsel', 'Hairstyle')} name="hair" cols="grid-cols-4" value={look.hair as Opt<'hair'>} options={HERO_OPTIONS.hair} onChange={(v) => set('hair', v)}
@@ -685,7 +696,7 @@ export function HeroPage() {
     );
   }
   const L = d.level;
-  const look = { ...d.hero, gear: [...d.gear.equipped, ...(d.aids ?? [])] };
+  const look = { ...d.hero, gear: [...d.gear.equipped, ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null };
   const scene = sceneForTotal(d.totalLevel);
   const emblems = d.skills.filter((s) => !s.locked && s.level >= SKILL_EMBLEM_LEVEL);
   const ownTitles = d.skills.flatMap((s) => {
@@ -740,10 +751,21 @@ export function HeroPage() {
       </section>
 
       <DailyCheckin d={d} />
-      <LogTeaser d={d} />
-      <WeeklyQuests d={d} />
-      <Quest d={d} />
+      <Fold id="hero-log" defaultOpen icon={<Utensils className="h-5 w-5" />} title={t('Eigen training en eiwit', 'Your own workout and protein')}
+        summary={d.logs.protein.goal !== null ? t(`Eiwit ${d.logs.protein.grams} van ${d.logs.protein.goal} g`, `Protein ${d.logs.protein.grams} of ${d.logs.protein.goal} g`) : t('Eiwit en eigen trainingen bijhouden', 'Track protein and your own workouts')}>
+        <LogTeaser d={d} />
+      </Fold>
+      <Fold id="hero-weekly" defaultOpen icon={<Gift className="h-5 w-5" />} title={t('Weekquests', 'Weekly quests')}
+        summary={t(`${d.weekly.quests.filter((x) => x.done).length} van ${d.weekly.quests.length} gehaald`, `${d.weekly.quests.filter((x) => x.done).length} of ${d.weekly.quests.length} done`)}>
+        <WeeklyQuests d={d} />
+      </Fold>
+      <Fold id="hero-quest" icon={<Flag className="h-5 w-5" />} title={t('Hoofdquest', 'Main quest')}
+        summary={d.quest?.timeline ? t(`Week ${d.quest.timeline.week} van ${d.quest.timeline.totalWeeks} · ${Math.round(d.quest.timeline.progress * 100)}% onderweg`, `Week ${d.quest.timeline.week} of ${d.quest.timeline.totalWeeks} · ${Math.round(d.quest.timeline.progress * 100)}% of the way`) : d.quest?.title ?? t('Nog geen quest', 'No quest yet')}>
+        <Quest d={d} />
+      </Fold>
 
+      <Fold id="hero-map" icon={<MapPin className="h-5 w-5" />} title={t('Je held en je pijn', 'Your hero and your pain')}
+        summary={!d.painMap.current ? t('Nog niet ingevuld', 'Not filled in yet') : d.painMap.current.entries.length === 0 ? t('Nergens pijn', 'No pain anywhere') : t(`${d.painMap.current.entries.length} plek(ken) · hoogste ${Math.max(...d.painMap.current.entries.map((e) => e.score))}/10`, `${d.painMap.current.entries.length} area(s) · highest ${Math.max(...d.painMap.current.entries.map((e) => e.score))}/10`)}>
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="map-title">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -765,11 +787,17 @@ export function HeroPage() {
           </div>
         )}
       </section>
+      </Fold>
 
-      <Skills d={d} />
+      <Fold id="hero-skills" icon={<Zap className="h-5 w-5" />} title={t('Skills', 'Skills')} summary={t(`Totaal level ${d.totalLevel}`, `Total level ${d.totalLevel}`)}>
+        <Skills d={d} />
+      </Fold>
       <FriendsCard />
-      <GearCard d={d} />
+      <Fold id="hero-gear" icon={<Crown className="h-5 w-5" />} title={t('Uitrusting', 'Gear')} summary={t(`${d.gear.unlocked.length} vrijgespeeld · ${d.gear.equipped.length} aan`, `${d.gear.unlocked.length} unlocked · ${d.gear.equipped.length} worn`)}>
+        <GearCard d={d} />
+      </Fold>
 
+      <Fold id="hero-badges" icon={<Award className="h-5 w-5" />} title={t('Badges', 'Badges')} summary={t(`${earned} van ${d.badges.length} behaald`, `${earned} of ${d.badges.length} earned`)}>
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="badges-title">
         <h2 id="badges-title" className="t-section">{t(`Badges (${earned} van ${d.badges.length})`, `Badges (${earned} of ${d.badges.length})`)}</h2>
         <ul className="mt-3 grid grid-cols-2 gap-2">
@@ -788,6 +816,7 @@ export function HeroPage() {
           })}
         </ul>
       </section>
+      </Fold>
     </div>
   );
 }
@@ -859,7 +888,7 @@ export function HeroHomeCard() {
       </Link>
     );
   }
-  const heroLook = { ...d.hero, gear: [...d.gear.equipped, ...(d.aids ?? [])] };
+  const heroLook = { ...d.hero, gear: [...d.gear.equipped, ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null };
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-line bg-white p-4 shadow-card">
       <AvatarLink look={heroLook} size={64} level={d.level.level} />

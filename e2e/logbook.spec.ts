@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login, expectAccessible } from './helpers';
+import { login, expectAccessible, expandFolds } from './helpers';
 
 test('patient logs protein and an own workout and sees the XP', async ({ browser }) => {
   test.setTimeout(90_000);
@@ -9,6 +9,7 @@ test('patient logs protein and an own workout and sees the XP', async ({ browser
   const before = await (await pp.request.get('/api/patient/hero')).json();
 
   await pp.goto('/p/logboek');
+  await expandFolds(pp);
   await expect(pp.getByRole('heading', { name: 'Logboek' })).toBeVisible();
   await expect(pp.getByText('Koppelen staat op deze server nog uit').or(pp.getByRole('link', { name: 'Koppel Google Health' }))).toBeVisible();
   await pp.getByLabel('Dagelijks doel', { exact: true }).fill('1000');
@@ -56,6 +57,7 @@ test('patient logs protein and an own workout and sees the XP', async ({ browser
   await expect(pp.getByText(/Eiwit 52 van 50 g/).first()).toBeVisible();
 
   await pp.goto('/p/logboek');
+  await expandFolds(pp);
   expect(await pp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
   await expectAccessible(pp, 'logbook');
   await pp.screenshot({ path: 'screenshots/hero/logbook.png', fullPage: true });

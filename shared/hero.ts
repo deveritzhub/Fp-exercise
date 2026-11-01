@@ -805,3 +805,43 @@ export function metricInRange(kind: keyof typeof METRICS, value: number | null) 
 /** Daily check-in: a quick score for the main sore area (or how you feel overall). */
 export const CHECKIN_XP = 5; // hero XP and Herstel XP per day
 export const GENERAL_AREA = 'general';
+
+// ----------------------------------------------------------------------------------------------
+// Body composition → how the hero looks
+// ----------------------------------------------------------------------------------------------
+
+export type BodyShape = { fat: number; muscle: number; bodyFatPct: number; estimated: boolean; ffmi: number; kind: 'lean' | 'athletic' | 'muscular' | 'average' | 'soft' | 'full' };
+
+const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+
+/**
+ * The hero's shape from the patient's own measurements. Body fat sets how full the body is; the
+ * fat-free mass index (FFMI = lean mass / height²) sets how muscular. So a high BMI with low body fat
+ * gives a muscular hero, a high BMI with high body fat a fuller one.
+ * Without a body-fat value it is estimated from BMI (Deurenberg et al. 1991, age 35 assumed).
+ * Reference ranges: body fat men ~8–35 %, women ~16–45 %; FFMI men ~17 (low) to 25 (very muscular),
+ * women ~14 to 21 (Kouri et al. 1995; Schutz et al. 2002).
+ */
+export function bodyShape(m: { weightKg: number | null; heightCm: number | null; bodyFatPct: number | null }, frame: 'f' | 'm' | string | undefined): BodyShape | null {
+  if (!m.weightKg || !m.heightCm) return null;
+  const female = frame === 'f';
+  const h = m.heightCm / 100;
+  const bmi = m.weightKg / (h * h);
+  const estimated = m.bodyFatPct === null || m.bodyFatPct === undefined;
+  const bf = estimated ? Math.min(55, Math.max(4, 1.2 * bmi + 0.23 * 35 - 10.8 * (female ? 0 : 1) - 5.4)) : (m.bodyFatPct as number);
+  const ffmi = (m.weightKg * (1 - bf / 100)) / (h * h);
+  const fat = clamp01((bf - (female ? 16 : 8)) / (female ? 29 : 27));
+  const muscle = clamp01((ffmi - (female ? 13.5 : 16.5)) / (female ? 7.5 : 8.5));
+  const kind: BodyShape['kind'] =
+    fat >= 0.7 ? 'full' : fat >= 0.5 ? 'soft' : muscle >= 0.65 && fat < 0.45 ? 'muscular' : muscle >= 0.45 && fat < 0.4 ? 'athletic' : fat < 0.2 && muscle < 0.4 ? 'lean' : 'average';
+  return { fat, muscle, bodyFatPct: Math.round(bf * 10) / 10, estimated, ffmi: Math.round(ffmi * 10) / 10, kind };
+}
+
+export const BODY_KIND_LABEL: Record<BodyShape['kind'], [string, string]> = {
+  lean: ['Slank', 'Lean'],
+  athletic: ['Atletisch', 'Athletic'],
+  muscular: ['Gespierd', 'Muscular'],
+  average: ['Gemiddeld', 'Average'],
+  soft: ['Iets voller', 'Slightly fuller'],
+  full: ['Voller', 'Fuller'],
+};
