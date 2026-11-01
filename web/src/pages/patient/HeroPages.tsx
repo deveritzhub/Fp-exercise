@@ -778,7 +778,7 @@ function GearCard({ d }: { d: HeroState }) {
             { value: 'shop', label: t(`Winkel (${GEAR.length - d.gear.owned.length})`, `Shop (${GEAR.length - d.gear.owned.length})`) },
           ]} />
       </div>
-      <ul className="mt-3 grid grid-cols-2 gap-2 min-[420px]:grid-cols-3 min-[620px]:grid-cols-4">
+      <ul className="mt-3 grid grid-cols-2 gap-2 min-[340px]:grid-cols-3 min-[620px]:grid-cols-4">
         {shown.map((g) => (
           <li key={g.key}>
             <GearTile g={g} d={d} busy={busy} onToggle={() => toggle(g.key)} onBuy={() => buy(g.key)} />
@@ -841,7 +841,7 @@ function GearTile({ g, d, busy, onToggle, onBuy }: { g: GearItem; d: HeroState; 
       <button type="button" aria-pressed={on} disabled={busy !== null} onClick={onToggle}
         className={cn('tap relative flex h-full w-full flex-col items-center gap-1 rounded-xl border-2 p-2 text-center transition-colors', on ? 'border-accent bg-accent-soft' : 'bg-white hover:border-ink-300')}
         style={on ? undefined : { borderColor: `${tier.color}55` }}>
-        <span className="block h-16 w-16 overflow-hidden rounded-lg bg-sand-soft" aria-hidden><GearImg gearKey={g.key} /></span>
+        <span className="block h-14 w-14 overflow-hidden rounded-lg bg-sand-soft" aria-hidden><GearImg gearKey={g.key} /></span>
         <span className="max-w-full text-[12.5px] font-semibold leading-tight text-ink-900 [hyphens:auto] [overflow-wrap:anywhere]" lang={locale}>{name}</span>
         <TierTag g={g} />
         <span className={cn('text-[11.5px] font-medium', on ? 'text-accent' : 'text-ink-600')}>{on ? t('Aan ✓', 'On ✓') : t('Aandoen', 'Wear')}</span>
@@ -851,15 +851,15 @@ function GearTile({ g, d, busy, onToggle, onBuy }: { g: GearItem; d: HeroState; 
   const short = g.price - d.gear.coins;
   return (
     <div className="flex h-full flex-col items-center gap-1 rounded-xl border border-dashed bg-canvas p-2 text-center" style={{ borderColor: `${tier.color}88` }}>
-      <span className="block h-16 w-16 overflow-hidden rounded-lg bg-white" aria-hidden><GearImg gearKey={g.key} className={short > 0 ? 'opacity-60' : ''} /></span>
+      <span className="block h-14 w-14 overflow-hidden rounded-lg bg-white" aria-hidden><GearImg gearKey={g.key} className={short > 0 ? 'opacity-60' : ''} /></span>
       <span className="max-w-full text-[12.5px] font-semibold leading-tight text-ink-800 [hyphens:auto] [overflow-wrap:anywhere]" lang={locale}>{name}</span>
       <TierTag g={g} />
       {short > 0 ? (
-        <span className="mt-auto inline-flex items-center gap-1 text-[11.5px] leading-tight text-ink-600"><Coins className="h-3.5 w-3.5" aria-hidden />{t(`${g.price} · nog ${short} nodig`, `${g.price} · ${short} more needed`)}</span>
+        <span className="mt-auto inline-flex flex-wrap items-center justify-center gap-x-1 text-[11.5px] leading-tight text-ink-600"><span className="inline-flex items-center gap-0.5 font-semibold text-ink-800"><Coins className="h-3.5 w-3.5" aria-hidden />{g.price}</span>{t(`nog ${short} nodig`, `${short} more needed`)}</span>
       ) : (
         <Button size="sm" className="mt-auto min-h-[44px] w-full" loading={busy === g.key} disabled={busy !== null} onClick={onBuy}
           aria-label={t(`Kopen ${g.price} muntjes: ${name}`, `Buy ${g.price} coins: ${name}`)}>
-          <Coins className="h-4 w-4" aria-hidden />{t(`Kopen ${g.price}`, `Buy ${g.price}`)}
+          <Coins className="h-4 w-4" aria-hidden />{g.price}
         </Button>
       )}
     </div>
@@ -977,7 +977,15 @@ function TrophyCabinet({ d }: { d: HeroState }) {
   const qc = useQueryClient();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [all, setAll] = useState(false);
   const earnedCount = d.trophies.filter((x) => x.earned).length;
+  // By default: what you won plus the next trophy per skill, so the cabinet stays short.
+  const visible = (skill: string) => {
+    const list = d.trophies.filter((x) => x.skill === skill);
+    if (all) return list;
+    const next = list.find((x) => !x.earned);
+    return list.filter((x) => x.earned || x === next);
+  };
   const toggle = async (key: string) => {
     const on = d.showcase.includes(key);
     if (!on && d.showcase.length >= SHOWCASE_MAX) {
@@ -1004,7 +1012,7 @@ function TrophyCabinet({ d }: { d: HeroState }) {
           <li key={s.key}>
             <p className="text-[14px] font-semibold text-ink-900">{nl ? s.nl : s.en}</p>
             <div className="mt-1 grid grid-cols-5 gap-1.5">
-              {d.trophies.filter((x) => x.skill === s.key).map((x) => {
+              {visible(s.key).map((x) => {
                 const tier = tierOf(x.tier);
                 const on = d.showcase.includes(x.key);
                 const label = `${nl ? s.nl : s.en} ${nl ? tier.nl : tier.en}`;
@@ -1027,6 +1035,10 @@ function TrophyCabinet({ d }: { d: HeroState }) {
           </li>
         ))}
       </ul>
+      <button type="button" onClick={() => setAll((v) => !v)} aria-expanded={all} className="mt-3 inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-accent">
+        {all ? t('Alleen gewonnen en volgende tonen', 'Show only won and next') : t(`Alle ${d.trophies.length} prijzen tonen`, `Show all ${d.trophies.length} trophies`)}
+        <ChevronRight className={cn('h-4 w-4 transition-transform', all ? '-rotate-90' : 'rotate-90')} aria-hidden />
+      </button>
     </section>
   );
 }
@@ -1049,7 +1061,7 @@ function LogTeaser({ d }: { d: HeroState }) {
   const p = d.logs.protein;
   return (
     <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="log-teaser">
-      <h2 id="log-teaser" className="t-section">{t('Eigen training en eiwit', 'Your own workout and protein')}</h2>
+      <h2 id="log-teaser" className="t-section">{t('Logboek', 'Logbook')}</h2>
       <p className="mt-1 text-[13.5px] text-ink-600">{t('Vrijblijvend. Een dag overslaan kost niets.', 'Optional. Skipping a day costs nothing.')}</p>
       {p.goal === null ? (
         <p className="mt-3 text-[15px] text-ink-800">
@@ -1070,6 +1082,7 @@ function LogTeaser({ d }: { d: HeroState }) {
         <Link to="/p/logboek#eiwit" className="inline-flex h-11 items-center justify-center rounded-xl bg-accent text-[14px] font-semibold text-accent-ink">{t('Eiwit loggen', 'Log protein')}</Link>
         <Link to="/p/logboek#training" className="inline-flex h-11 items-center justify-center rounded-xl border border-line bg-white text-[14px] font-semibold text-ink-900">{t('Training loggen', 'Log a workout')}</Link>
       </div>
+      <Link to="/p/logboek" className="mt-2 inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-accent">{t('Hele logboek: gewicht, water, slaap en stappen', 'Full logbook: weight, water, sleep and steps')}<ChevronRight className="h-4 w-4" aria-hidden /></Link>
     </section>
   );
 }
@@ -1164,7 +1177,6 @@ export function HeroPage() {
       <Fold id="hero-log" defaultOpen icon={<Utensils className="h-5 w-5" />} title={t('Logboek', 'Logbook')}
         summary={d.logs.protein.goal !== null ? t(`Eiwit ${d.logs.protein.grams} van ${d.logs.protein.goal} g`, `Protein ${d.logs.protein.grams} of ${d.logs.protein.goal} g`) : t('Eiwit en eigen trainingen bijhouden', 'Track protein and your own workouts')}>
         <LogTeaser d={d} />
-        <Link to="/p/logboek" className="mt-3 inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-accent">{t('Open je logboek: eiwit, gewicht, water, slaap en stappen', 'Open your logbook: protein, weight, water, sleep and steps')}<ChevronRight className="h-4 w-4" aria-hidden /></Link>
       </Fold>
       <Fold id="hero-weekly" defaultOpen icon={<Gift className="h-5 w-5" />} title={t('Weekquests', 'Weekly quests')}
         summary={t(`${d.weekly.quests.filter((x) => x.done).length} van ${d.weekly.quests.length} gehaald`, `${d.weekly.quests.filter((x) => x.done).length} of ${d.weekly.quests.length} done`)}>
@@ -1208,7 +1220,7 @@ export function HeroPage() {
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sand-soft text-sand-ink" aria-hidden><Crown className="h-5 w-5" /></span>
         <span className="min-w-0 flex-1">
           <span className="block text-[16px] font-semibold text-ink-900">{t('Inventaris', 'Inventory')}</span>
-          <span className="block truncate text-[13.5px] text-ink-600">{t(`${d.gear.owned.length} in je tas · gearscore ${d.gear.score} · ${d.gear.coins} muntjes`, `${d.gear.owned.length} in your bag · gear score ${d.gear.score} · ${d.gear.coins} coins`)}</span>
+          <span className="block text-[13.5px] text-ink-600">{t(`Winkel · ${d.gear.coins} muntjes · gearscore ${d.gear.score}`, `Shop · ${d.gear.coins} coins · gear score ${d.gear.score}`)}</span>
         </span>
         <ChevronRight className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />
       </Link>

@@ -21,7 +21,7 @@ function Meter({ icon, label, value, pct, tone, action, hint }: { icon: React.Re
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ background: `${tone}22`, color: tone }} aria-hidden>{icon}</span>
         <span className="min-w-0 flex-1">
           <span className="block text-[12.5px] font-semibold uppercase tracking-wide text-ink-600">{label}</span>
-          <span className="block truncate font-display text-[17px] font-bold tabular-nums text-ink-950">{value}</span>
+          <span className="block font-display text-[16px] font-bold leading-tight tabular-nums text-ink-950 [overflow-wrap:anywhere]">{value}</span>
         </span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-ink-100" role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)} aria-valuetext={value}>

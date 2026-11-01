@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2, MessageCircle } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -17,6 +18,7 @@ export function PatientProgress() {
   const { t, locale } = useI18n();
   useDocumentMeta(t('Voortgang', 'Progress'));
   const q = useQuery({ queryKey: ['patient-history'], queryFn: () => api.get<History>('/patient/history') });
+  const [shown, setShown] = useState(10);
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
   if (!q.data) return <div className="space-y-4"><Skeleton className="h-8 w-1/2" /><Skeleton className="h-52 rounded-2xl" /></div>;
   const d = q.data;
@@ -45,7 +47,7 @@ export function PatientProgress() {
           <p className="rounded-2xl border border-line bg-white p-5 text-ink-500">{t('Nog geen afgeronde trainingen.', 'No completed workouts yet.')}</p>
         ) : (
           <ul className="divide-y divide-line rounded-2xl border border-line bg-white shadow-card">
-            {d.sessions.map((s) => (
+            {d.sessions.slice(0, shown).map((s) => (
               <li key={s.id} className="flex gap-3 px-4 py-3.5">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-ok" />
                 <div className="min-w-0 flex-1">
@@ -56,6 +58,11 @@ export function PatientProgress() {
               </li>
             ))}
           </ul>
+        )}
+        {d.sessions.length > shown && (
+          <button type="button" onClick={() => setShown((n) => n + 20)} className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-line bg-white text-[15px] font-semibold text-ink-900 shadow-card">
+            {t(`Meer tonen (${d.sessions.length - shown} over)`, `Show more (${d.sessions.length - shown} left)`)}
+          </button>
         )}
       </section>
     </div>
