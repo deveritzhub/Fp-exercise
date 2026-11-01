@@ -245,7 +245,7 @@ function LibraryImport() {
     <Card className="max-w-2xl">
       <CardHeader
         title={t('Eigen oefenbibliotheek importeren', 'Import your own exercise library')}
-        description={t('JSON-bestand met oefeningen en gefaseerde programma’s (formaat Functional Performance). Alleen zichtbaar voor jouw praktijk.', 'JSON file with exercises and phased programmes (Functional Performance format). Only visible to your practice.')}
+        description={t('JSON-bestand met oefeningen en gefaseerde programma’s (FP Flow-formaat). Alleen zichtbaar voor jouw praktijk.', 'JSON file with exercises and phased programmes (FP Flow format). Only visible to your practice.')}
       />
       <div className="space-y-4 p-5">
         {error && <Notice tone="bad">{error}</Notice>}
@@ -258,7 +258,7 @@ function LibraryImport() {
           </Notice>
         )}
         <div className="rounded-lg border border-line bg-sage/50 p-4">
-          <p className="text-[14px] font-semibold text-ink-900">{t('Functional Performance-bibliotheek', 'Functional Performance library')}</p>
+          <p className="text-[14px] font-semibold text-ink-900">{t('FP Flow-bibliotheek', 'FP Flow library')}</p>
           <p className="mt-0.5 text-[13.5px] text-ink-600">{t('Oefeningen en gefaseerde sjablonen voor revalidatie, krachttraining en mobiliteit. Opnieuw toevoegen werkt ze bij, zonder dubbele oefeningen.', 'Exercises and phased templates for rehabilitation, strength training and mobility. Adding again updates them, without duplicates.')}</p>
           <Button className="mt-3" loading={busy} onClick={async () => {
             setBusy(true); setError(null); setResult(null);
