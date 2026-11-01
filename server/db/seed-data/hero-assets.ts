@@ -280,4 +280,32 @@ export const HERO_ITEM_FILES: Record<string, string> = {
   "crutches": "hf_20261101_101813_1a4c5306-6509-4698-bb3c-02d4bdbb9547.png"
 };
 
+/** Gear cut out on a transparent background, worn on the hero photo (overlay positions in web/src/components/hero/wear.ts). */
+export const HERO_WEAR_FILES: Record<string, string> = {
+  "headband": "hf_20261101_161152_4ed87103-e2f8-46e1-bb2e-9fcdc7a09774.png",
+  "wristbands": "hf_20261101_161153_649a965e-9b2e-461b-96c2-edd0fd8dda18.png",
+  "captain": "hf_20261101_161152_981496b8-caed-4986-9e49-b8e6ef1b9efd.png",
+  "medal": "hf_20261101_161151_53388723-03d1-4d44-b5db-d27890de26ca.png",
+  "gold_shoes": "hf_20261101_161152_6244bc4b-8b7c-421d-9276-b278f05a1ee3.png",
+  "cap": "hf_20261101_161151_42d78ea5-66c4-4ab2-8cab-31c73f8c1526.png",
+  "visor": "hf_20261101_161150_1be2e45e-7a67-42fc-9747-efe745111943.png",
+  "pin": "hf_20261101_161154_9341d2d3-7ac5-4115-a30e-d1acfc777eec.png",
+  "crown": "hf_20261101_161207_cce40391-7c3e-4c37-a02c-05cf5ecd04ac.png",
+  "gloves": "hf_20261101_161206_58b9bbc3-a310-45b9-8574-cb058d870927.png",
+  "belt": "hf_20261101_161206_032af04f-6393-4012-b5b6-d29467580596.png",
+  "hr_band": "hf_20261101_161207_c3505769-de34-46df-ac31-4e5e85804c97.png",
+  "balance_shoes": "hf_20261101_161218_b9566630-3a63-4de1-ab45-d762aaf64389.png",
+  "spikes": "hf_20261101_161218_c0a90747-f634-4a5c-8083-4e0c055ef40c.png",
+  "sport_item": "hf_20261101_161218_f51e7fbf-6830-4298-aced-a6a5281f0d91.png",
+  "crew_socks": "hf_20261101_161217_fa94f244-398e-4909-9abd-40533496f211.png",
+  "yoga_mat": "hf_20261101_161236_f1c2ee5e-abf2-45ce-b8b2-348dbd2f84cb.png",
+  "towel": "hf_20261101_161235_369e92de-ec37-4c4e-9cff-bb0091be95e5.png",
+  "shin_guards": "hf_20261101_161236_1939e1de-1ba9-406c-bdd8-111a1f9339f8.png",
+  "scarf": "hf_20261101_161235_063fe6eb-513c-46de-931c-ab76e265df79.png",
+  "sleeve": "hf_20261101_162645_34c126e5-2726-42bb-993a-9dd2851432c9.png",
+  "watch": "hf_20261101_162644_4c2ba23e-9e56-4d7a-a269-12479f9da1a3.png",
+  "headphones": "hf_20261101_162644_aa2a1a2a-50e9-40d0-a5e8-8fabd52dead3.png",
+  "crutches": "hf_20261101_162644_405873ae-71ac-4f09-850b-e94e7547a8f9.png",
+};
+
 export const heroAssetUrl = (file: string) => BASE + file;
