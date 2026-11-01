@@ -54,7 +54,9 @@ export async function seed(connectionString = process.env.DATABASE_OWNER_URL!, o
       ('trial','Proefperiode',0,0,'{"therapists":3,"active_patients":50,"days":30}','{"Volledige functionaliteit","30 dagen"}',0,false),
       ('solo','Solo',3900,39000,'{"therapists":1,"active_patients":150}','{"1 therapeut","Oefenbibliotheek","Programmabouwer","Patiëntapp","Voortgangsmonitoring"}',1,true),
       ('praktijk','Praktijk',2900,29000,'{"therapists":15,"active_patients":2000}','{"Per therapeut","Eigen oefeningen en video''s","Gedeelde praktijksjablonen","Praktijkbeheer","Auditlog"}',2,true),
-      ('organisatie','Organisatie',NULL,NULL,'{}','{"Meerdere locaties","Eigen huisstijl","SSO (gepland)","Verwerkersovereenkomst op maat"}',3,true)`);
+      ('organisatie','Organisatie',NULL,NULL,'{}','{"Meerdere locaties","Eigen huisstijl","SSO (gepland)","Verwerkersovereenkomst op maat"}',3,true),
+      ('coach_trial','Coach proefperiode',0,0,'{"days":30,"therapists":1,"active_patients":25}','{}',10,false),
+      ('personal','Persoonlijk',NULL,NULL,'{"therapists":0,"active_patients":1}','{}',11,false)`);
 
     const hash = await bcrypt.hash(DEMO_PASSWORD, process.env.VITEST ? 4 : 10);
     const ids: Record<string, string> = {};

@@ -5,7 +5,8 @@ import { HttpError, badRequest } from '../lib/errors';
 import { dummyVerify, hashPassword, validatePassword, verifyPassword } from './password';
 import { sendMail } from './mailer';
 
-export type Membership = { practiceId: string; practiceName: string; practiceSlug: string; role: 'owner' | 'admin' | 'therapist'; accent?: string | null };
+export type AccountKind = 'physio' | 'coach' | 'personal';
+export type Membership = { practiceId: string; practiceName: string; practiceSlug: string; role: 'owner' | 'admin' | 'therapist'; accent?: string | null; kind: AccountKind };
 export type SessionUser = {
   id: string;
   email: string;
@@ -20,7 +21,7 @@ export type SessionUser = {
   memberships: Membership[];
   /** Minutes of inactivity after which this login ends (staff only; null = no idle limit). */
   idleMinutes: number | null;
-  patient: { id: string; practiceId: string; practiceName: string; accent?: string | null } | null;
+  patient: { id: string; practiceId: string; practiceName: string; accent?: string | null; kind: AccountKind } | null;
 };
 
 const MAX_FAILED = 8;
@@ -35,14 +36,14 @@ export async function loadUser(userId: string): Promise<SessionUser | null> {
   const u = rows[0];
   if (!u) return null;
   const members = await authPool.query(
-    `SELECT m.practice_id, p.name, p.slug, m.role, p.branding->>'accent' AS accent, coalesce((p.settings->>'requireMfa')::boolean, false) AS require_mfa
+    `SELECT m.practice_id, p.name, p.slug, m.role, p.kind, p.branding->>'accent' AS accent, coalesce((p.settings->>'requireMfa')::boolean, false) AS require_mfa
        FROM practice_members m
        JOIN practices p ON p.id = m.practice_id
       WHERE m.user_id = $1 AND m.active AND p.archived_at IS NULL ORDER BY m.created_at`,
     [userId],
   );
   const patient = await authPool.query(
-    `SELECT pt.id, pt.practice_id, p.name, p.branding->>'accent' AS accent FROM patients pt JOIN practices p ON p.id = pt.practice_id
+    `SELECT pt.id, pt.practice_id, p.name, p.kind, p.branding->>'accent' AS accent FROM patients pt JOIN practices p ON p.id = pt.practice_id
       WHERE pt.user_id = $1 AND pt.archived_at IS NULL AND p.archived_at IS NULL LIMIT 1`,
     [userId],
   );
@@ -57,10 +58,10 @@ export async function loadUser(userId: string): Promise<SessionUser | null> {
     emailVerified: !!u.email_verified_at,
     mfaEnabled: u.mfa_enabled,
     mfaRequired: mfaDemanded && !u.mfa_enabled,
-    memberships: members.rows.map((r) => ({ practiceId: r.practice_id, practiceName: r.name, practiceSlug: r.slug, role: r.role, accent: r.accent ?? null })),
+    memberships: members.rows.map((r) => ({ practiceId: r.practice_id, practiceName: r.name, practiceSlug: r.slug, role: r.role, accent: r.accent ?? null, kind: r.kind })),
     idleMinutes: (members.rows.length || u.is_platform_admin) && config.staffIdleMinutes > 0 ? config.staffIdleMinutes : null,
     patient: patient.rows[0]
-      ? { id: patient.rows[0].id, practiceId: patient.rows[0].practice_id, practiceName: patient.rows[0].name, accent: patient.rows[0].accent ?? null }
+      ? { id: patient.rows[0].id, practiceId: patient.rows[0].practice_id, practiceName: patient.rows[0].name, accent: patient.rows[0].accent ?? null, kind: patient.rows[0].kind }
       : null,
   };
 }
@@ -344,4 +345,22 @@ export async function eraseLogin(userId: string) {
   await authPool.query('DELETE FROM auth_tokens WHERE user_id = $1', [userId]);
   await authPool.query('DELETE FROM push_subscriptions WHERE user_id = $1', [userId]);
   await authPool.query('DELETE FROM reminder_settings WHERE user_id = $1', [userId]);
+}
+
+/** Self-signup: a new login with a password. The e-mail address must not be in use. */
+export async function createPasswordUser(opts: { email: string; password: string; fullName: string; locale: 'nl' | 'en' }) {
+  const bad = validatePassword(opts.password);
+  if (bad) throw badRequest(bad);
+  const email = opts.email.trim().toLowerCase();
+  const hash = await hashPassword(opts.password);
+  try {
+    const { rows } = await authPool.query(
+      'INSERT INTO users(email, full_name, locale, password_hash) VALUES ($1,$2,$3,$4) RETURNING id',
+      [email, opts.fullName, opts.locale, hash],
+    );
+    return rows[0].id as string;
+  } catch (e) {
+    if ((e as { code?: string }).code === '23505') throw new HttpError(409, 'email_in_use');
+    throw e;
+  }
 }

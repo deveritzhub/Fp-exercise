@@ -7,11 +7,15 @@ import { useI18n, describeError } from '@/lib/i18n';
 import { fmtDate } from '@/lib/format';
 import { Badge, Button, Card, CardHeader, Dialog, Notice, Textarea, useToast } from '@/components/ui';
 import { cn } from '@/lib/cn';
+import { SELF_CHECK, type AccountKind } from '@shared/accountKind';
 
 export type Mode = 'revalidatie' | 'kracht' | 'mobiliteit';
 export type Modes = {
   active: Mode;
+  kind: AccountKind;
+  modules: Mode[];
   strengthCleared: boolean;
+  selfCheck: { at: string | null; outcome: 'clear' | 'doctor_ok' | null } | null;
   consents: { kracht: string | null; mobiliteit: string | null };
   templates: { id: string; title: string; patientInstructions: string; module: 'kracht' | 'mobiliteit'; phase: { seriesTitle: string; name: string; weeks: string | null } | null; redFlags: string[]; itemCount: number }[];
 };
@@ -19,15 +23,15 @@ export type Modes = {
 export const useModes = () => useQuery({ queryKey: ['patient-modes'], queryFn: () => api.get<Modes>('/patient/modes') });
 
 /** W01: switch between rehabilitation, strength and mobility; the choice is remembered. */
-export function ModeSwitch({ value, onChange }: { value: Mode; onChange: (m: Mode) => void }) {
+export function ModeSwitch({ value, onChange, modules }: { value: Mode; onChange: (m: Mode) => void; modules?: Mode[] }) {
   const { t } = useI18n();
-  const opts: { v: Mode; label: string; icon: typeof HeartPulse }[] = [
+  const opts = ([
     { v: 'revalidatie', label: t('Revalidatie', 'Rehab'), icon: HeartPulse },
     { v: 'kracht', label: t('Kracht', 'Strength'), icon: Dumbbell },
     { v: 'mobiliteit', label: t('Mobiliteit', 'Mobility'), icon: Move },
-  ];
+  ] as { v: Mode; label: string; icon: typeof HeartPulse }[]).filter((o) => !modules || modules.includes(o.v));
   return (
-    <div role="radiogroup" aria-label={t('Modus', 'Mode')} className="grid grid-cols-3 gap-1 rounded-2xl bg-ink-100 p-1">
+    <div role="radiogroup" aria-label={t('Modus', 'Mode')} className={cn('grid gap-1 rounded-2xl bg-ink-100 p-1', opts.length === 2 ? 'grid-cols-2' : 'grid-cols-3')}>
       {opts.map((o) => (
         <button
           key={o.v}
@@ -98,7 +102,8 @@ export function StartTemplates({ modes, module }: { modes: Modes; module: 'krach
   if (!list.length) return <p className="text-[15px] text-ink-600">{t('Je praktijk heeft hier nog geen programma’s klaargezet.', 'Your practice has not set up programmes here yet.')}</p>;
   return (
     <div className="space-y-2">
-      {blocked && (
+      {blocked && modes.kind === 'personal' && <SelfCheck />}
+      {blocked && modes.kind !== 'personal' && (
         <Notice tone="info">{t('Krachttraining start pas als je fysiotherapeut heeft bevestigd dat je eraan toe bent. Bespreek het bij je volgende afspraak.', 'Strength training starts once your physiotherapist has confirmed you are ready. Discuss it at your next appointment.')}</Notice>
       )}
       {list.map((x) => (
@@ -151,6 +156,72 @@ export function StartTemplates({ modes, module }: { modes: Modes; module: 'krach
         )}
       </Dialog>
     </div>
+  );
+}
+
+/**
+ * Self-check before strength training for someone without a physiotherapist (PAR-Q style). General
+ * questions, no diagnosis: any "yes" means ask a doctor first. Only the outcome is stored.
+ */
+export function SelfCheck() {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [answers, setAnswers] = useState<Record<string, boolean>>({});
+  const [doctorOk, setDoctorOk] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [seeDoctor, setSeeDoctor] = useState(false);
+  const all = SELF_CHECK.every((q) => answers[q.key] !== undefined);
+  const anyYes = SELF_CHECK.some((q) => answers[q.key]);
+  const submit = async () => {
+    setBusy(true);
+    try {
+      const r = await api.post<{ outcome: string }>('/patient/self-check', { anyYes, doctorOk });
+      if (r.outcome === 'see_doctor') setSeeDoctor(true);
+      else {
+        toast(t('Klaar: je kunt krachttraining starten', 'Done: you can start strength training'), 'ok');
+        await qc.invalidateQueries({ queryKey: ['patient-modes'] });
+      }
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="rounded-2xl border border-line bg-white p-4 shadow-card" aria-labelledby="selfcheck-title">
+      <h3 id="selfcheck-title" className="t-card">{t('Eerst een korte check', 'A short check first')}</h3>
+      <p className="mt-0.5 text-[14px] text-ink-600">{t('Zwaarder trainen is voor bijna iedereen veilig. Deze vragen helpen je bepalen of je eerst een arts moet spreken. Je antwoorden worden niet opgeslagen.', 'Training harder is safe for almost everyone. These questions help you decide whether to see a doctor first. Your answers are not stored.')}</p>
+      <ol className="mt-3 space-y-3">
+        {SELF_CHECK.map((q, i) => (
+          <li key={q.key}>
+            <fieldset>
+              <legend className="text-[14.5px] text-ink-900">{i + 1}. {nl ? q.nl : q.en}</legend>
+              <div className="mt-1.5 grid grid-cols-2 gap-2">
+                {[false, true].map((v) => (
+                  <label key={String(v)} className={cn('flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-lg border text-[14.5px] font-medium', answers[q.key] === v ? 'border-accent bg-accent-soft text-accent' : 'border-line')}>
+                    <input type="radio" name={`sc-${q.key}`} className="sr-only" checked={answers[q.key] === v} onChange={() => setAnswers((a) => ({ ...a, [q.key]: v }))} />
+                    {v ? t('Ja', 'Yes') : t('Nee', 'No')}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </li>
+        ))}
+      </ol>
+      {all && anyYes && (
+        <div className="mt-3 space-y-2">
+          <Notice tone="warn">{t('Je hebt “ja” geantwoord. Bespreek met je huisarts of zwaarder trainen voor jou verstandig is, voordat je start met krachttraining. Mobiliteit kun je wel gewoon doen.', 'You answered “yes”. Ask your GP whether training harder is wise for you before you start strength training. You can still do mobility.')}</Notice>
+          <label className="flex min-h-[44px] cursor-pointer items-start gap-3 text-[14.5px]">
+            <input type="checkbox" className="mt-1 h-5 w-5 accent-[rgb(var(--accent))]" checked={doctorOk} onChange={(e) => setDoctorOk(e.target.checked)} />
+            {t('Mijn huisarts of specialist heeft gezegd dat ik mag krachttrainen.', 'My GP or specialist has said I may do strength training.')}
+          </label>
+        </div>
+      )}
+      {seeDoctor && !doctorOk && <p className="mt-2 text-[14px] font-medium text-ink-800" role="status">{t('Prima. Spreek eerst je huisarts; daarna kun je hier verder.', 'Fine. See your GP first; then continue here.')}</p>}
+      <Button className="mt-3 w-full" size="lg" disabled={!all} loading={busy} onClick={submit}>{t('Check afronden', 'Finish check')}</Button>
+    </section>
   );
 }
 

@@ -7,7 +7,7 @@ import type { HeroState } from '@/lib/types';
 import { usePendingCount, useOnline, useOutboxSync } from '@/lib/outbox';
 import { Logo } from '@/components/app/Brand';
 import { FeedbackButton } from '@/components/app/Feedback';
-import { useI18n } from '@/lib/i18n';
+import { useI18n, useAccountKind } from '@/lib/i18n';
 import { usePracticeAccent } from '@/lib/accent';
 import { useTextSize } from '@/lib/textSize';
 import { useSession } from '@/lib/session';
@@ -20,6 +20,7 @@ export function PatientLayout() {
   const { t } = useI18n();
   const { user } = useSession();
   usePracticeAccent(user?.patient?.accent);
+  useAccountKind(user?.patient?.kind);
   useTextSize();
   const loc = useLocation();
   const qc = useQueryClient();
@@ -66,7 +67,7 @@ export function PatientLayout() {
             <Logo to="/p" compact className="min-h-[44px] min-w-[44px] justify-center min-[430px]:hidden" />
             <Logo to="/p" className="hidden min-h-[44px] min-[430px]:inline-flex" />
             <div className="flex min-w-0 items-center gap-1">
-              <span className="min-w-0 text-right text-[13.5px] font-medium leading-tight text-ink-600">{user.patient.practiceName}</span>
+              <span className="min-w-0 text-right text-[13.5px] font-medium leading-tight text-ink-600">{user.patient.kind === 'personal' ? t('Persoonlijk account', 'Personal account') : user.patient.practiceName}</span>
               <FeedbackButton big />
             </div>
           </div>

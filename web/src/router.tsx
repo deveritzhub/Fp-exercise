@@ -6,6 +6,7 @@ import { MarketingLayout } from '@/layouts/MarketingLayout';
 import { RequireAuth } from '@/layouts/Guards';
 import { HomePage } from '@/pages/marketing/HomePage';
 import { ForgotPasswordPage, InvitePage, LoginPage, MfaRequiredPage, ResetPasswordPage, VerifyEmailPage } from '@/pages/auth/AuthPages';
+import { SignupPage } from '@/pages/auth/SignupPage';
 
 // Authenticated areas are code-split so the public website stays light.
 const named = <K extends string>(loader: () => Promise<Record<K, React.ComponentType<any>>>, name: K) =>
@@ -89,6 +90,7 @@ export const router = createBrowserRouter([
         ],
       },
       { path: '/login', element: <LoginPage /> },
+      { path: '/aanmelden', element: <SignupPage /> },
       { path: '/wachtwoord-vergeten', element: <ForgotPasswordPage /> },
       { path: '/wachtwoord-herstellen', element: <ResetPasswordPage /> },
       { path: '/uitnodiging/:token', element: <InvitePage /> },

@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { isClinical } from '../../../shared/accountKind';
 import { z } from 'zod';
 import { withUser, type Tx } from '../db';
 import { requirePatient, type AppEnv } from '../middleware';
@@ -37,7 +38,9 @@ patientApp.get('/home', async (c) => {
       const paused = new Set(
         (await tx.query('SELECT DISTINCT program_id FROM red_flag_reports WHERE patient_id = $1 AND handled_at IS NULL', [patient.id])).rows.map((r) => r.program_id),
       );
-      const mode = (await tx.query('SELECT active_mode FROM patients WHERE id = $1', [patient.id])).rows[0]?.active_mode ?? 'revalidatie';
+      const stored = (await tx.query('SELECT active_mode FROM patients WHERE id = $1', [patient.id])).rows[0]?.active_mode ?? 'revalidatie';
+      // Without a physiotherapist there is no rehab mode.
+      const mode = !isClinical(patient.kind) && stored === 'revalidatie' ? 'kracht' : stored;
       // Unfinished workouts (same 12-hour window as the session start, so resuming never duplicates).
       const open = new Map(
         (

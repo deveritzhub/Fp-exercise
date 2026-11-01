@@ -129,6 +129,9 @@ export function createApp() {
     }
     if (err instanceof HTTPException) return c.json({ error: 'http_error' }, err.status);
     const pgCode = (err as { code?: string }).code;
+    // Rules enforced in the database that the app explains in its own words.
+    const hint = (err as { hint?: string }).hint;
+    if (hint && ['rehab_needs_physio', 'strength_not_cleared'].includes(hint)) return c.json({ error: hint }, 409);
     if (pgCode === '42501') return c.json({ error: 'forbidden' }, 403); // RLS / privilege violation
     if (pgCode === '23503' || pgCode === '23514' || pgCode === '22P02') return c.json({ error: 'invalid_request' }, 400);
     // Privacy-conscious logging: no request bodies or query parameters.

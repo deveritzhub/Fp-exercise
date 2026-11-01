@@ -8,6 +8,7 @@ import { badRequest, HttpError, notFound } from '../lib/errors';
 import { loadStrength } from '../lib/strengthData';
 import { oneRmTestAllowed, ONE_RM_SCREENING } from '../../../shared/strength';
 import { patientProgram } from './programs';
+import { isClinical } from '../../../shared/accountKind';
 
 /**
  * Patient side of the FP app update: mode switch, consent per module, self-started kracht/mobiliteit
@@ -22,13 +23,17 @@ patientModules.get('/modes', async (c) => {
   const { user, patient } = requirePatient(c);
   return c.json(
     await withUser(user.id, async (tx) => {
-      const p = (await tx.query('SELECT active_mode, strength_cleared_at FROM patients WHERE id = $1', [patient.id])).rows[0];
+      const p = (await tx.query('SELECT active_mode, strength_cleared_at, self_check_at, self_check_outcome FROM patients WHERE id = $1', [patient.id])).rows[0];
+      if (!isClinical(patient.kind) && p.active_mode === 'revalidatie') p.active_mode = 'kracht';
       const consents = (await tx.query('SELECT module, granted_at FROM patient_module_consents WHERE patient_id = $1 AND revoked_at IS NULL', [patient.id])).rows;
       // Start templates of the own practice via a definer function (patients cannot read templates under RLS).
       const templates = (await tx.query('SELECT * FROM app.patient_module_templates()')).rows;
       return {
         active: p.active_mode,
+        kind: patient.kind,
+        modules: isClinical(patient.kind) ? MODULES : SHARED,
         strengthCleared: !!p.strength_cleared_at,
+        selfCheck: patient.kind === 'personal' ? { at: p.self_check_at, outcome: p.self_check_outcome } : null,
         consents: Object.fromEntries(SHARED.map((m) => [m, consents.find((x) => x.module === m)?.granted_at ?? null])),
         templates: templates.map((t) => ({
           id: t.id,
@@ -45,8 +50,9 @@ patientModules.get('/modes', async (c) => {
 });
 
 patientModules.put('/mode', async (c) => {
-  const { user } = requirePatient(c);
+  const { user, patient } = requirePatient(c);
   const { mode } = parse(z.object({ mode: z.enum(MODULES) }), await c.req.json());
+  if (mode === 'revalidatie' && !isClinical(patient.kind)) throw new HttpError(409, 'rehab_needs_physio');
   await withUser(user.id, (tx) => tx.query('SELECT app.set_active_mode($1)', [mode]));
   return c.json({ ok: true });
 });
@@ -75,6 +81,22 @@ patientModules.delete('/consents/:module', async (c) => {
     if (r.rowCount) await audit(tx, user.id, patient.practiceId, 'consent_revoked', 'patient', patient.id, { module });
   });
   return c.json({ ok: true });
+});
+
+/**
+ * Self-check before strength training, for personal accounts (no physiotherapist to clear it).
+ * Only the outcome is stored, never the answers.
+ */
+patientModules.post('/self-check', async (c) => {
+  const { user, patient } = requirePatient(c);
+  if (patient.kind !== 'personal') throw new HttpError(403, 'forbidden');
+  const b = parse(z.object({ anyYes: z.boolean(), doctorOk: z.boolean().default(false) }), await c.req.json());
+  const outcome = await withUser(user.id, async (tx) => {
+    const r = (await tx.query('SELECT app.patient_self_check($1, $2) AS o', [b.anyYes, b.doctorOk])).rows[0].o as string;
+    await audit(tx, user.id, patient.practiceId, 'self_check', 'patient', patient.id, { outcome: r });
+    return r;
+  });
+  return c.json({ outcome });
 });
 
 patientModules.post('/programs/start', async (c) => {
@@ -118,6 +140,8 @@ patientModules.post('/programs/:id/red-flag', async (c) => {
     await c.req.json(),
   );
   if (!b.flags.length && !b.note) throw badRequest('red_flag_empty');
+  // Warning-sign reports go to a physiotherapist; other accounts get general safety advice instead.
+  if (!isClinical(patient.kind)) throw new HttpError(409, 'red_flag_needs_physio');
   const reportId = await withUser(user.id, async (tx) => {
     const p = (await tx.query('SELECT id FROM programs WHERE id = $1 AND patient_id = $2', [id, patient.id])).rows[0];
     if (!p) throw notFound();

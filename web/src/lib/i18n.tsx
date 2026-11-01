@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Locale } from '@shared/taxonomy';
+import { vocab, type AccountKind } from '@shared/accountKind';
 
 /**
  * Translation approach: UI copy is co-located and bilingual — t('Nederlands', 'English').
@@ -7,7 +8,7 @@ import type { Locale } from '@shared/taxonomy';
  * message catalogs (e.g. ICU/JSON) once a third language is added. Shared vocabularies come from
  * shared/taxonomy.ts; error codes from errorMessage().
  */
-type Ctx = { locale: Locale; setLocale: (l: Locale) => void; t: (nl: string, en: string) => string };
+type Ctx = { locale: Locale; setLocale: (l: Locale) => void; t: (nl: string, en: string) => string; kind: AccountKind; setKind: (k: AccountKind) => void };
 const I18nContext = createContext<Ctx | null>(null);
 const KEY = 'fp.locale';
 
@@ -34,8 +35,22 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
-  const value = useMemo<Ctx>(() => ({ locale, setLocale, t: (nl, en) => (locale === 'nl' ? nl : en) }), [locale, setLocale]);
+  // Account kind of the screen being shown: staff screens follow the active practice, the patient
+  // app the patient's account. Coaches and personal accounts get their own words (shared/accountKind).
+  const [kind, setKind] = useState<AccountKind>('physio');
+  const value = useMemo<Ctx>(
+    () => ({ locale, setLocale, kind, setKind, t: (nl, en) => vocab(kind, locale === 'nl' ? nl : en, locale) }),
+    [locale, setLocale, kind],
+  );
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
+/** Layouts call this so the copy below them uses the words of that account kind. */
+export function useAccountKind(kind: AccountKind | null | undefined) {
+  const { setKind } = useI18n();
+  useEffect(() => {
+    setKind(kind ?? 'physio');
+  }, [kind, setKind]);
 }
 
 export function useI18n() {
@@ -93,6 +108,25 @@ const ERRORS: Record<string, [string, string]> = {
   email_locked_after_activation: ['Het e-mailadres kan na activatie niet meer worden gewijzigd.', 'The email address cannot be changed after activation.'],
   session_completed: ['Deze sessie is al afgerond.', 'This session is already completed.'],
   hero_required: ['Maak eerst je sportheld aan.', 'Create your sports hero first.'],
+  email_in_use: ['Er bestaat al een account met dit e-mailadres. Log in, of herstel je wachtwoord via “Wachtwoord vergeten”.', 'An account with this email address already exists. Log in, or reset your password via “Forgot password”.'],
+  signup_closed: ['Aanmelden is nu niet mogelijk.', 'Sign-up is not available right now.'],
+  rehab_needs_physio: ['Revalidatieprogramma’s zijn alleen voor fysiotherapiepraktijken.', 'Rehabilitation programmes are for physiotherapy practices only.'],
+  red_flag_needs_physio: ['Meldingen gaan naar een fysiotherapeut. Stop met trainen en bel bij twijfel je huisarts, of 112 bij spoed.', 'Reports go to a physiotherapist. Stop training and call your GP if in doubt, or 112 in an emergency.'],
+  social_cancelled: ['Inloggen is geannuleerd.', 'Login was cancelled.'],
+  social_login_failed: ['Inloggen via Google of Apple is niet gelukt. Probeer het opnieuw.', 'Logging in with Google or Apple failed. Please try again.'],
+  social_login_expired: ['Je inlogpoging is verlopen. Probeer het opnieuw.', 'Your login attempt expired. Please try again.'],
+  social_email_unverified: ['Je e-mailadres is bij Google of Apple niet bevestigd.', 'Your email address is not verified with Google or Apple.'],
+  social_link_required: ['Er bestaat al een FP Flow-account met dit e-mailadres. Log in met je wachtwoord en koppel Google of Apple via Account → Inlogmethoden.', 'An FP Flow account with this email address already exists. Log in with your password and link Google or Apple under Account → Login methods.'],
+  social_no_account: ['Er is nog geen account voor dit Google- of Apple-account. Maak eerst een account aan.', 'There is no account for this Google or Apple account yet. Create an account first.'],
+  social_in_use: ['Dit Google- of Apple-account is al aan een ander FP Flow-account gekoppeld.', 'This Google or Apple account is already linked to another FP Flow account.'],
+  social_already_linked: ['Er is al een account van deze aanbieder gekoppeld. Ontkoppel dat eerst.', 'An account from this provider is already linked. Unlink it first.'],
+  provider_not_configured: ['Deze inlogmethode is nog niet beschikbaar.', 'This login method is not available yet.'],
+  last_login_method: ['Dit is je enige manier om in te loggen. Voeg eerst een andere toe (bijv. een wachtwoord of passkey).', 'This is your only way to log in. Add another one first (e.g. a password or passkey).'],
+  passkey_expired: ['Dat duurde te lang. Probeer het opnieuw.', 'That took too long. Please try again.'],
+  passkey_failed: ['De passkey kon niet worden gecontroleerd. Probeer het opnieuw.', 'The passkey could not be verified. Please try again.'],
+  passkey_unknown: ['Deze passkey is niet (meer) bij ons bekend. Log in op een andere manier.', 'This passkey is not (or no longer) known to us. Log in another way.'],
+  passkey_exists: ['Deze passkey is al toegevoegd.', 'This passkey has already been added.'],
+  passkey_limit: ['Je hebt het maximum van 10 passkeys bereikt.', 'You have reached the maximum of 10 passkeys.'],
   gear_locked: ['Dit item heb je nog niet vrijgespeeld.', 'You have not unlocked this item yet.'],
   sharing_off: ['Zet eerst "Deel mijn held met vrienden" aan.', 'Switch on "Share my hero with friends" first.'],
   friend_code_not_found: ['Geen held gevonden met deze vriendcode. Controleer de code; je vriend moet delen ook aan hebben staan.', 'No hero found with this friend code. Check the code; your friend must have sharing switched on too.'],

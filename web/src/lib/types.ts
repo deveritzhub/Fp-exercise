@@ -1,3 +1,4 @@
+import type { AccountKind } from '@shared/accountKind';
 export type Role = 'owner' | 'admin' | 'therapist';
 export type SessionUser = {
   id: string;
@@ -8,10 +9,10 @@ export type SessionUser = {
   emailVerified: boolean;
   mfaEnabled: boolean;
   mfaRequired: boolean;
-  memberships: { practiceId: string; practiceName: string; practiceSlug: string; role: Role; accent?: string | null }[];
+  memberships: { practiceId: string; practiceName: string; practiceSlug: string; role: Role; accent?: string | null; kind: AccountKind }[];
   /** Staff only: minutes without activity before the login ends. */
   idleMinutes?: number | null;
-  patient: { id: string; practiceId: string; practiceName: string; accent?: string | null } | null;
+  patient: { id: string; practiceId: string; practiceName: string; accent?: string | null; kind: AccountKind } | null;
 };
 
 export type Defaults = { sets: number | null; reps: number | null; holdS: number | null; restS: number | null; tempo: string | null; frequency: string | null };

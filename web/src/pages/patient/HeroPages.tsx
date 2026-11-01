@@ -57,7 +57,7 @@ function Choice<T extends string>({ legend, name, value, options, onChange, rend
 
 /** First visit (or "Uiterlijk aanpassen"): build the sports hero step by step, then mark where it hurts. */
 export function HeroSetupPage({ edit = false }: { edit?: boolean }) {
-  const { t, locale } = useI18n();
+  const { t, locale, kind } = useI18n();
   const nl = locale === 'nl';
   const L = (k: string, v: string) => LABELS[k][v][nl ? 0 : 1];
   useDocumentMeta(edit ? t('Uiterlijk aanpassen', 'Change look') : t('Maak je sportheld', 'Create your sports hero'));
@@ -126,7 +126,9 @@ export function HeroSetupPage({ edit = false }: { edit?: boolean }) {
         <h1 className="t-page">{titles[step][nl ? 0 : 1]}</h1>
         <p className="mx-auto mt-1 max-w-sm text-[15px] text-ink-600">
           {step === 1 && t('Jij bent de held van je eigen herstel. Maak een sportheld die op jou lijkt: elke training levert XP op.', 'You are the hero of your own recovery. Make a sports hero who looks like you: every workout earns XP.')}
-          {step === 5 && t('Tik op je held waar je pijn hebt en geef aan hoeveel. Zo zie je straks hoe je herstelt, en je fysiotherapeut ziet het ook.', 'Tap your hero where it hurts and say how much. Later you see how you recover, and your physiotherapist sees it too.')}
+          {step === 5 && (kind === 'physio'
+            ? t('Tik op je held waar je pijn hebt en geef aan hoeveel. Zo zie je straks hoe je herstelt, en je fysiotherapeut ziet het ook.', 'Tap your hero where it hurts and say how much. Later you see how you recover, and your physiotherapist sees it too.')
+            : t('Tik op je held waar je iets voelt en geef aan hoeveel. Dit is een dagboek voor jezelf: zo zie je hoe het verloopt.', 'Tap your hero where you feel something and say how much. This is a diary for yourself: you see how it goes over time.'))}
         </p>
       </div>
 

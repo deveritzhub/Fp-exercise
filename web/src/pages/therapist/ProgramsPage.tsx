@@ -113,7 +113,7 @@ const MODULE_ORDER: ProgramModule[] = ['revalidatie', 'kracht', 'mobiliteit'];
 
 /** Templates grouped per programme (series of phases) and module, with search and filters. */
 function TemplateBrowser() {
-  const { t } = useI18n();
+  const { t, kind } = useI18n();
   const L = useLabels();
   const modules = useModules();
   const [q, setQ] = useState('');
@@ -187,7 +187,7 @@ function TemplateBrowser() {
       </div>
       <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0" role="group" aria-label={t('Module', 'Module')}>
         <button type="button" aria-pressed={!mod} className={chip(!mod)} onClick={() => setMod('')}>{t('Alle modules', 'All modules')}</button>
-        {MODULE_ORDER.map((m) => {
+        {MODULE_ORDER.filter((m) => kind === 'physio' || m !== 'revalidatie').map((m) => {
           const M = modules[m];
           return (
             <button key={m} type="button" aria-pressed={mod === m} className={chip(mod === m)} onClick={() => setMod(mod === m ? '' : m)}>

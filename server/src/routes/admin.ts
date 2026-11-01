@@ -45,6 +45,7 @@ admin.post('/practices', async (c) => {
       planCode: z.string().default('trial'),
       ownerEmail: z.string().trim().toLowerCase().email(),
       ownerName: z.string().trim().min(2).max(160),
+      kind: z.enum(['physio', 'coach']).default('physio'),
     }),
     await c.req.json(),
   );
@@ -53,9 +54,9 @@ admin.post('/practices', async (c) => {
     try {
       await tx.query(
         // New practices start with two-factor authentication required for all staff.
-        `INSERT INTO practices(id, name, slug, city, plan_code, trial_ends_at, settings)
-         VALUES ($1,$2,$3,$4,$5, now() + interval '30 days', '{"requireMfa": true}')`,
-        [id, b.name, b.slug, b.city ?? null, b.planCode],
+        `INSERT INTO practices(id, name, slug, city, plan_code, trial_ends_at, settings, kind)
+         VALUES ($1,$2,$3,$4,$5, now() + interval '30 days', '{"requireMfa": true}', $6)`,
+        [id, b.name, b.slug, b.city ?? null, b.planCode, b.kind],
       );
     } catch (e: any) {
       if (e.code === '23505') throw new HttpError(409, 'slug_taken');

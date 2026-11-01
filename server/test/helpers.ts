@@ -36,6 +36,10 @@ export class Client {
     }
     return { status: res.status, body: json, headers: res.headers };
   }
+  /** A request exactly as a browser would send it: no automatic headers or cookie, no redirect following. */
+  async raw(method: string, path: string, headers: Record<string, string> = {}, body?: string) {
+    return app.request('/api' + path, { method, headers, body, redirect: 'manual' });
+  }
   get = (p: string, h?: Record<string, string>) => this.req('GET', p, undefined, h);
   post = (p: string, b?: unknown) => this.req('POST', p, b ?? {});
   put = (p: string, b?: unknown) => this.req('PUT', p, b ?? {});

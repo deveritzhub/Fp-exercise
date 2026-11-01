@@ -8,6 +8,7 @@ import { useDocumentMeta } from '@/lib/meta';
 import { Button, Card, CardHeader, Input, Notice, PageHeader, Segmented, Select, useToast } from '@/components/ui';
 import { Link } from 'react-router-dom';
 import { MfaCard } from '@/components/app/Mfa';
+import { LoginMethodsCard } from '@/pages/auth/SocialLogin';
 import { ReminderCard } from '@/components/app/Reminders';
 import { MyDataCard } from '@/components/patient/Modules';
 import { useTextSize, type TextSize } from '@/lib/textSize';
@@ -63,6 +64,7 @@ export function AccountPage({ patient }: { patient?: boolean }) {
           <div className="flex justify-end"><Button type="submit" variant="secondary" size={patient ? 'lg' : 'md'}>{t('Wachtwoord wijzigen', 'Change password')}</Button></div>
         </form>
       </Card>
+      <LoginMethodsCard />
       {!patient && <MfaCard />}
       {patient && (
         <>

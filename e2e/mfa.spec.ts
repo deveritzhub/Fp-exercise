@@ -55,7 +55,7 @@ test('signing in asks for the code from the app', async ({ page }) => {
   await page.goto('/login');
   await page.getByLabel('E-mailadres').fill(OWNER);
   await page.getByLabel('Wachtwoord', { exact: true }).fill(PASSWORD);
-  await page.getByRole('button', { name: 'Inloggen' }).click();
+  await page.getByRole('button', { name: 'Inloggen', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Bevestig dat jij het bent' })).toBeVisible();
   await expectAccessible(page, 'mfa login');
   await page.getByLabel('Verificatiecode').fill('000000');

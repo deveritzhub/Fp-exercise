@@ -3,11 +3,12 @@ import { useEffect, useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { Logo, LocaleSwitch } from '@/components/app/Brand';
 import { ButtonLink } from '@/components/ui';
-import { useI18n } from '@/lib/i18n';
+import { useI18n, useAccountKind } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 
 export function MarketingLayout() {
   const { t } = useI18n();
+  useAccountKind('physio');
   const [open, setOpen] = useState(false);
   const loc = useLocation();
   useEffect(() => {

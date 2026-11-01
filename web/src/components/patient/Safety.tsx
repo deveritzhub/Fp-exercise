@@ -11,8 +11,10 @@ import { cn } from '@/lib/cn';
  * and the therapist is notified. Shows the programme's own red flags plus free text.
  */
 export function RedFlagButton({ programId, redFlags, sessionId, onReported, className }: { programId: string; redFlags: string[]; sessionId?: string | null; onReported?: () => void; className?: string }) {
-  const { t } = useI18n();
+  const { t, kind } = useI18n();
   const [open, setOpen] = useState(false);
+  // Without a physiotherapist nobody receives a report: give general safety advice instead.
+  if (kind !== 'physio') return <SafetyAdviceButton className={className} />;
   return (
     <>
       <button
@@ -121,5 +123,43 @@ export function PausedNotice() {
       <p>{t('Je hebt een alarmsignaal gemeld. Doe geen oefeningen tot je fysiotherapeut contact met je heeft gehad.', 'You reported a warning sign. Do not exercise until your physiotherapist has been in touch.')}</p>
       <p className="text-[14px] text-ink-700">{t('Ernstige of snel erger wordende klachten? Bel je huisarts, of bij spoed 112.', 'Severe or quickly worsening symptoms? Call your GP, or 112 in an emergency.')}</p>
     </div>
+  );
+}
+
+/** For coaches' clients and personal accounts: general advice, no report, no diagnosis. */
+export function SafetyAdviceButton({ className }: { className?: string }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={cn('inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-bad/30 bg-white px-4 text-[15px] font-medium text-bad hover:bg-bad-soft/50', className)}
+      >
+        <OctagonAlert className="h-5 w-5" aria-hidden />
+        {t('Voel je je niet goed?', 'Not feeling well?')}
+      </button>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        size="sm"
+        title={t('Stop met trainen', 'Stop training')}
+        footer={<Button size="lg" className="w-full" data-autofocus onClick={() => setOpen(false)}>{t('Begrepen', 'Understood')}</Button>}
+      >
+        <div className="space-y-3 text-[15px] text-ink-800">
+          <p className="flex items-start gap-2 rounded-xl bg-bad-soft/60 p-3 font-medium">
+            <PhoneCall className="mt-0.5 h-5 w-5 shrink-0 text-bad" aria-hidden />
+            {t('Pijn op de borst, benauwdheid, flauwvallen, plotselinge uitval of verwardheid? Bel direct 112.', 'Chest pain, shortness of breath, fainting, sudden weakness or confusion? Call 112 right away.')}
+          </p>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>{t('Scherpe of toenemende pijn: stop deze oefening. Probeer het later rustiger, of sla hem over.', 'Sharp or increasing pain: stop this exercise. Try it more gently later, or skip it.')}</li>
+            <li>{t('Duizelig of misselijk: ga zitten, drink water en train vandaag niet verder.', 'Dizzy or sick: sit down, drink water and do not train any more today.')}</li>
+            <li>{t('Klachten die niet weggaan of terugkomen: vraag advies aan je huisarts of een fysiotherapeut.', 'Complaints that do not go away or keep coming back: ask your GP or a physiotherapist for advice.')}</li>
+          </ul>
+          <p className="text-[13.5px] text-ink-600">{t('FP Flow geeft geen medisch advies en stelt geen diagnose.', 'FP Flow does not give medical advice or make a diagnosis.')}</p>
+        </div>
+      </Dialog>
+    </>
   );
 }

@@ -6,10 +6,12 @@ import { CodeInput, MfaSetup } from '@/components/app/Mfa';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { Button, Input, Notice, Spinner, useToast } from '@/components/ui';
 import { api, ApiError } from '@/lib/api';
-import { useI18n, describeError } from '@/lib/i18n';
+import { useI18n, describeError, errorMessage } from '@/lib/i18n';
 import { homePathFor, useLogout, useSession } from '@/lib/session';
 import { useDocumentMeta } from '@/lib/meta';
 import type { SessionUser } from '@/lib/types';
+import { SocialButtons } from './SocialLogin';
+import { useAuthOptions } from './SignupPage';
 
 export const DEMO_ACCOUNTS = [
   { email: 'therapeut@praktijk-a.test', nl: 'Fysiotherapeut — praktijk A', en: 'Physiotherapist — practice A' },
@@ -37,7 +39,14 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  // After Google/Apple for an account with two-step verification: the server sends #mfa=<token>.
+  const [mfaToken, setMfaToken] = useState<string | null>(() => {
+    const m = /^#mfa=([\w-]{20,100})$/.exec(window.location.hash);
+    if (m) window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    return m ? m[1] : null;
+  });
+  const opts = useAuthOptions();
+  const socialError = params.get('fout');
   const [code, setCode] = useState('');
   const [useRecovery, setUseRecovery] = useState(false);
   const toast = useToast();
@@ -122,7 +131,11 @@ export function LoginPage() {
       description={t('Log in bij FP Flow.', 'Log in to FP Flow.')}
       footer={
         <>
-          {t('Nog geen account? Je fysiotherapeut of praktijk stuurt je een uitnodiging.', 'No account yet? Your physiotherapist or practice will send you an invitation.')}
+          {opts.data?.signup.length ? (
+            <>{t('Nog geen account?', 'No account yet?')} <Link className="link" to="/aanmelden">{t('Account aanmaken', 'Create account')}</Link>. {t('Patiënt? Je praktijk stuurt je een uitnodiging.', 'Patient? Your practice will send you an invitation.')}</>
+          ) : (
+            t('Nog geen account? Je fysiotherapeut of praktijk stuurt je een uitnodiging.', 'No account yet? Your physiotherapist or practice will send you an invitation.')
+          )}
         </>
       }
     >
@@ -133,6 +146,7 @@ export function LoginPage() {
           </Notice>
         )}
         {error && <Notice tone="bad">{error}</Notice>}
+        {socialError && !error && <Notice tone="bad">{errorMessage(socialError, locale)}</Notice>}
         <Input label={t('E-mailadres', 'Email address')} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
         <Input label={t('Wachtwoord', 'Password')} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         <div className="flex justify-end">
@@ -140,6 +154,7 @@ export function LoginPage() {
         </div>
         <Button type="submit" size="lg" className="w-full" loading={busy}>{t('Inloggen', 'Log in')}</Button>
       </form>
+      <SocialButtons intent="login" next={safeNext(params.get('next'))} onPasskeyLogin={signedIn} />
       {showDemoAccounts && (
         <div className="mt-6 border-t border-line pt-5">
           <p className="mb-2 text-[12.5px] font-medium text-ink-500">{t('Demo-accounts (synthetische gegevens)', 'Demo accounts (synthetic data)')}</p>

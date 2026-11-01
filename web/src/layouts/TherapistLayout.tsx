@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { BookOpen, Building2, ChevronsUpDown, LayoutDashboard, LogOut, Menu, Plus, Search, Settings, Users, Layers, X, UserRound, Check } from 'lucide-react';
 import { Logo, LocaleSwitch } from '@/components/app/Brand';
 import { Avatar, Popover, MenuItem, Button } from '@/components/ui';
-import { useI18n } from '@/lib/i18n';
+import { useI18n, useAccountKind } from '@/lib/i18n';
 import { usePracticeAccent } from '@/lib/accent';
 import { useLogout, useSession } from '@/lib/session';
 import { setActivePractice } from '@/lib/api';
@@ -18,6 +18,7 @@ export function TherapistLayout() {
   const { t } = useI18n();
   const { user, practice } = useSession();
   usePracticeAccent(practice?.accent);
+  useAccountKind(practice?.kind);
   const logout = useLogout();
   const nav = useNavigate();
   const qc = useQueryClient();

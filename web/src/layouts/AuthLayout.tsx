@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
 import { Logo, LocaleSwitch } from '@/components/app/Brand';
+import { useAccountKind } from '@/lib/i18n';
 
 export function AuthLayout({ title, description, children, footer }: { title: string; description?: ReactNode; children: ReactNode; footer?: ReactNode }) {
+  useAccountKind('physio');
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
       <div className="flex items-center justify-between px-5 py-5 sm:px-8">

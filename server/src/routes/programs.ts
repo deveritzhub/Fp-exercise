@@ -232,7 +232,7 @@ async function loadChecks(tx: Tx, programId: string) {
 // ---------------------------------------------------------------------------
 
 programs.get('/templates', async (c) => {
-  const { user } = requireStaff(c);
+  const { user, practiceId } = requireStaff(c);
   const q = (c.req.query('q') ?? '').trim().slice(0, 80);
   return c.json(
     await withUser(user.id, async (tx) => {
@@ -245,8 +245,10 @@ programs.get('/templates', async (c) => {
            LEFT JOIN template_favorites tf ON tf.program_id = p.id AND tf.user_id = app.uid()
           WHERE p.is_template AND p.status <> 'archived'
             AND ($1 = '' OR p.title ILIKE '%' || $1 || '%' OR p.description ILIKE '%' || $1 || '%')
+            -- Rehab templates are for physiotherapy practices only.
+            AND (app.practice_kind($2) = 'physio' OR coalesce(p.module, 'revalidatie') <> 'revalidatie')
           ORDER BY (tf.user_id IS NOT NULL) DESC, (p.practice_id IS NOT NULL) DESC, p.title`,
-        [q],
+        [q, practiceId],
       );
       return {
         items: rows.map((r) => ({ ...mapProgram(r), favorite: r.favorite, itemCount: r.item_count, regions: r.regions ?? [] })),

@@ -85,8 +85,9 @@ patients.post('/', async (c) => {
   await withUser(user.id, async (tx) => {
     try {
       await tx.query(
-        `INSERT INTO patients(id, practice_id, first_name, last_name, email, locale, external_ref, created_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,app.uid())`,
+        // Clients of a coach start in krachttraining (rehab needs a physiotherapy practice).
+        `INSERT INTO patients(id, practice_id, first_name, last_name, email, locale, external_ref, created_by, active_mode)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,app.uid(), CASE WHEN app.practice_kind($2) = 'physio' THEN 'revalidatie' ELSE 'kracht' END)`,
         [id, practiceId, b.firstName, b.lastName, b.email || null, b.locale, b.externalRef || null],
       );
     } catch (e: any) {

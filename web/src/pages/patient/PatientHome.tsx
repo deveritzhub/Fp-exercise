@@ -45,8 +45,11 @@ export function PatientHome() {
   const all = q.data;
   // W01: rehabilitation, strength or mobility. Shown when the patient has more than rehabilitation.
   const moduleOf = (p: { module?: string | null }) => (p.module === 'kracht' || p.module === 'mobiliteit' ? p.module : 'revalidatie');
-  const showModes = !!modes.data && (modes.data.templates.length > 0 || all.programs.some((p) => moduleOf(p) !== 'revalidatie'));
-  const mode: Mode = showModes ? modeChoice ?? modes.data!.active : 'revalidatie';
+  // Without a physiotherapist (coach, personal) there is no rehab mode: always show the switch.
+  const clinical = !modes.data || modes.data.modules.includes('revalidatie');
+  const showModes = !!modes.data && (!clinical || modes.data.templates.length > 0 || all.programs.some((p) => moduleOf(p) !== 'revalidatie'));
+  const picked: Mode = showModes ? modeChoice ?? modes.data!.active : 'revalidatie';
+  const mode: Mode = !clinical && picked === 'revalidatie' ? 'kracht' : picked;
   const pickMode = (m: Mode) => {
     setModeChoice(m);
     api.put('/patient/mode', { mode: m }).then(() => qc.invalidateQueries({ queryKey: ['patient-modes'] })).catch(() => undefined);
@@ -64,10 +67,10 @@ export function PatientHome() {
 
       <HeroHomeCard />
 
-      {showModes && <ModeSwitch value={mode} onChange={pickMode} />}
+      {showModes && <ModeSwitch value={mode} onChange={pickMode} modules={modes.data!.modules} />}
       {showModes && mode !== 'revalidatie' && modes.data && (
         <div className="space-y-3">
-          <ConsentToggle module={mode} since={modes.data.consents[mode]} />
+          {modes.data.kind !== 'personal' && <ConsentToggle module={mode} since={modes.data.consents[mode]} />}
           {d.programs.length === 0 && (
             <section aria-labelledby="start-title">
               <h2 id="start-title" className="mb-2 text-lg font-bold">{mode === 'kracht' ? t('Start een krachtprogramma', 'Start a strength programme') : t('Start een mobiliteitsprogramma', 'Start a mobility programme')}</h2>

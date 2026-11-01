@@ -27,7 +27,10 @@ export const sessionMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
  * this API never approves) and, when present, an Origin equal to APP_ORIGIN.
  */
 export const csrfMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
-  if (!['GET', 'HEAD', 'OPTIONS'].includes(c.req.method)) {
+  // Apple returns from "Sign in with Apple" with a cross-site form POST. That one request is
+  // protected by the single-use state, the browser-binding cookie and the signed ID token instead.
+  const appleCallback = c.req.method === 'POST' && c.req.path === '/api/auth/oauth/apple/callback' && c.req.header('origin') === 'https://appleid.apple.com';
+  if (!appleCallback && !['GET', 'HEAD', 'OPTIONS'].includes(c.req.method)) {
     const origin = c.req.header('origin');
     if (origin && origin !== config.appOrigin && origin !== new URL(c.req.url).origin) {
       throw new HttpError(403, 'bad_origin');
