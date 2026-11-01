@@ -92,6 +92,13 @@ const ERRORS: Record<string, [string, string]> = {
   already_activated: ['Deze patiënt heeft het account al geactiveerd.', 'This patient has already activated their account.'],
   email_locked_after_activation: ['Het e-mailadres kan na activatie niet meer worden gewijzigd.', 'The email address cannot be changed after activation.'],
   session_completed: ['Deze sessie is al afgerond.', 'This session is already completed.'],
+  hero_required: ['Maak eerst je sportheld aan.', 'Create your sports hero first.'],
+  gear_locked: ['Dit item heb je nog niet vrijgespeeld.', 'You have not unlocked this item yet.'],
+  sharing_off: ['Zet eerst "Deel mijn held met vrienden" aan.', 'Switch on "Share my hero with friends" first.'],
+  friend_code_not_found: ['Geen held gevonden met deze vriendcode. Controleer de code; je vriend moet delen ook aan hebben staan.', 'No hero found with this friend code. Check the code; your friend must have sharing switched on too.'],
+  friend_self: ['Dit is je eigen vriendcode.', 'This is your own friend code.'],
+  friend_exists: ['Jullie zijn al vrienden of er staat al een verzoek open.', 'You are already friends or a request is pending.'],
+  friend_limit: ['Je hebt het maximum van 100 vrienden en verzoeken bereikt.', 'You have reached the maximum of 100 friends and requests.'],
 };
 
 export function errorMessage(code: string | undefined, locale: Locale) {

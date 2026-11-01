@@ -186,3 +186,15 @@ export type HeroState = {
   trends: PainTrend[];
 };
 export type PainTrend = { area: string; points: { day: string; score: number; source: 'map' | 'daily' }[] };
+
+/** Hero friends (opt-in): only the hero card is shared. */
+export type HeroFriend = {
+  id: string;
+  kind: 'friend' | 'incoming' | 'outgoing';
+  heroName: string;
+  look: Omit<import('@shared/hero').HeroLook, 'heroName'> & { gear: string[] };
+  stats: { level: number; totalLevel: number; skills: Record<import('@shared/hero').SkillKey, number> } | null;
+  statsUpdatedAt: string | null;
+  since: string;
+};
+export type FriendsState = { hasHero: boolean; sharing: { enabled: boolean; code: string | null }; friends: HeroFriend[] };

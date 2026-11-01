@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { randomUUID } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 import { withUser, type Tx } from '../db';
-import { requirePatient, requireStaff, type AppEnv } from '../middleware';
+import { rateLimit, requirePatient, requireStaff, type AppEnv } from '../middleware';
 import { parse, uuidParam } from '../lib/validate';
-import { badRequest, notFound } from '../lib/errors';
+import { HttpError, badRequest, notFound } from '../lib/errors';
 import { loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
 import { weeklyAdherence } from '../../../shared/adherence';
 import {
@@ -254,7 +254,133 @@ async function painTrends(tx: Tx, patientId: string) {
 
 heroPatient.get('/hero', async (c) => {
   const { user, patient } = requirePatient(c);
-  return c.json(await withUser(user.id, (tx) => heroState(tx, patient.id)));
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const state = await heroState(tx, patient.id);
+      await refreshFriendCard(tx, patient.id, state);
+      return state;
+    }),
+  );
+});
+
+// ---------------------------------------------------------------------------------------------
+// Friends (opt-in). Friends see only the "hero card": name, look, level, total level and skill
+// levels. The card is a snapshot written here, by the patient's own requests; see migration 013.
+// ---------------------------------------------------------------------------------------------
+
+type HeroStateT = Awaited<ReturnType<typeof heroState>>;
+/** The only numbers a friend ever sees. */
+export const friendCard = (s: HeroStateT) => ({
+  level: s.level.level,
+  totalLevel: s.totalLevel,
+  skills: Object.fromEntries(s.skills.map((k) => [k.key, k.level])) as Record<SkillKey, number>,
+});
+
+/** Update the shared card when the patient shares and something changed. */
+async function refreshFriendCard(tx: Tx, patientId: string, state?: HeroStateT) {
+  const row = (await tx.query('SELECT share_with_friends, shared_stats FROM patient_heroes WHERE patient_id = $1', [patientId])).rows[0];
+  if (!row?.share_with_friends) return;
+  const card = friendCard(state ?? (await heroState(tx, patientId)));
+  if (JSON.stringify(row.shared_stats) === JSON.stringify(card)) return;
+  await tx.query('UPDATE patient_heroes SET shared_stats = $2, stats_updated_at = now() WHERE patient_id = $1', [patientId, JSON.stringify(card)]);
+}
+
+// No I/O/0/1, so codes are easy to read out loud.
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const newFriendCode = () => {
+  const part = () => Array.from({ length: 4 }, () => CODE_CHARS[randomInt(CODE_CHARS.length)]).join('');
+  return `${part()}-${part()}`;
+};
+
+async function friendsView(tx: Tx, patientId: string) {
+  const me = (await tx.query('SELECT share_with_friends, friend_code FROM patient_heroes WHERE patient_id = $1', [patientId])).rows[0];
+  const friends = me?.share_with_friends
+    ? (await tx.query('SELECT * FROM app.hero_friends($1)', [patientId])).rows.map((r) => ({
+        id: r.id as string,
+        kind: r.kind as 'friend' | 'incoming' | 'outgoing',
+        heroName: r.hero_name as string,
+        look: r.look,
+        stats: r.stats ?? null,
+        statsUpdatedAt: r.stats_updated_at ?? null,
+        since: r.since,
+      }))
+    : [];
+  return { hasHero: !!me, sharing: { enabled: !!me?.share_with_friends, code: me?.share_with_friends ? (me.friend_code as string) : null }, friends };
+}
+
+heroPatient.get('/hero/friends', async (c) => {
+  const { user, patient } = requirePatient(c);
+  return c.json(await withUser(user.id, (tx) => friendsView(tx, patient.id)));
+});
+
+/** Switch sharing on (creates a friend code and the card) or off (ends all friendships, removes code and card). */
+heroPatient.put('/hero/sharing', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ enabled: z.boolean() }), await c.req.json());
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const me = (await tx.query('SELECT friend_code FROM patient_heroes WHERE patient_id = $1', [patient.id])).rows[0];
+      if (!me) throw badRequest('hero_required');
+      if (b.enabled) {
+        // A collision on the unique code is rare; retry inside a savepoint.
+        for (let i = 0; ; i++) {
+          await tx.query('SAVEPOINT code');
+          try {
+            await tx.query('UPDATE patient_heroes SET share_with_friends = true, friend_code = coalesce(friend_code, $2) WHERE patient_id = $1', [patient.id, newFriendCode()]);
+            await tx.query('RELEASE SAVEPOINT code');
+            break;
+          } catch (err) {
+            await tx.query('ROLLBACK TO SAVEPOINT code');
+            if ((err as { code?: string }).code !== '23505' || i >= 5) throw err;
+          }
+        }
+        await refreshFriendCard(tx, patient.id);
+      } else {
+        await tx.query('SELECT app.hero_friends_clear($1)', [patient.id]);
+        await tx.query(
+          'UPDATE patient_heroes SET share_with_friends = false, friend_code = NULL, shared_stats = NULL, stats_updated_at = NULL WHERE patient_id = $1',
+          [patient.id],
+        );
+      }
+      return friendsView(tx, patient.id);
+    }),
+  );
+});
+
+/** Send a friend request with the other patient's friend code (accepts it when they already asked). */
+heroPatient.post('/hero/friends', rateLimit('friend-request', 20, 15 * 60_000), async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ code: z.string().trim().min(4).max(20) }), await c.req.json());
+  const result = await withUser(user.id, async (tx) => {
+    if (!(await tx.query('SELECT 1 FROM patient_heroes WHERE patient_id = $1', [patient.id])).rowCount) throw badRequest('hero_required');
+    return (await tx.query('SELECT app.hero_friend_request($1, $2) AS r', [patient.id, b.code.replace(/\s+/g, '').toUpperCase()])).rows[0].r as string;
+  });
+  const errors: Record<string, [number, string]> = {
+    not_found: [404, 'friend_code_not_found'],
+    self: [400, 'friend_self'],
+    sharing_off: [409, 'sharing_off'],
+    exists: [409, 'friend_exists'],
+    limit: [409, 'friend_limit'],
+  };
+  if (errors[result]) throw new HttpError(errors[result][0], errors[result][1]);
+  return c.json({ result }, result === 'requested' ? 201 : 200);
+});
+
+heroPatient.post('/hero/friends/:id/accept', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  const ok = await withUser(user.id, async (tx) => (await tx.query('SELECT app.hero_friend_respond($1, $2, true) AS ok', [patient.id, id])).rows[0].ok);
+  if (!ok) throw notFound();
+  return c.json({ ok: true });
+});
+
+/** Decline a request, cancel your own request, or remove a friend. */
+heroPatient.delete('/hero/friends/:id', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  const ok = await withUser(user.id, async (tx) => (await tx.query('SELECT app.hero_friend_respond($1, $2, false) AS ok', [patient.id, id])).rows[0].ok);
+  if (!ok) throw notFound();
+  return c.json({ ok: true });
 });
 
 /** Create or change the hero's look. */

@@ -14,6 +14,7 @@ import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
 import { BADGES, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, SKILLS, XP, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import type { HeroState } from '@/lib/types';
 import { PainTrendList } from '@/components/hero/PainTrend';
+import { FriendsCard } from './FriendsPage';
 
 export const HERO_LATER_KEY = 'fp.heroLater';
 export const useHero = () => useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero') });
@@ -537,6 +538,7 @@ export function HeroPage() {
       </section>
 
       <Skills d={d} />
+      <FriendsCard />
       <GearCard d={d} />
 
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="badges-title">
