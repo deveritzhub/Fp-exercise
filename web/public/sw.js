@@ -7,7 +7,7 @@
  * - Everything else, including all patient data (API), videos and POSTs: straight to the network.
  *   Health data is never stored on the device (FP rule: no health data in browser storage).
  */
-const VERSION = 'v2';
+const VERSION = 'v3'; // v3: new app icons (same file names)
 const SHELL = `fp-shell-${VERSION}`;
 const STATIC = `fp-static-${VERSION}`;
 const MEDIA = 'fp-media';
