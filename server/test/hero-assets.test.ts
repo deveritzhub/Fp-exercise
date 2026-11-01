@@ -3,8 +3,8 @@ import fs from 'node:fs/promises';
 import { Client } from './helpers';
 import { heroAssetFile } from '../src/lib/heroAssets';
 import { config } from '../src/config';
-import { HERO_AVATAR_FILES, HERO_AWARD_FILES, HERO_ITEM_FILES } from '../db/seed-data/hero-assets';
-import { BADGES, HAIR_PRESETS, HAIR_PRESET_KEYS, SKILLS, SKIN_GROUPS, TROPHY_TIERS, heroPhotoKey } from '../../shared/hero';
+import { HERO_AVATAR_FILES, HERO_AWARD_FILES, HERO_ITEM_FILES, HERO_SHOP_FILES } from '../db/seed-data/hero-assets';
+import { BADGES, GEAR, HAIR_PRESETS, HAIR_PRESET_KEYS, SKILLS, SKIN_GROUPS, TROPHY_TIERS, heroPhotoKey } from '../../shared/hero';
 
 describe('hero art', () => {
   it('has 240 avatars (2 figures × 5 skin groups × 6 builds × 4 hairstyles) and a photo per gear item', () => {
@@ -15,6 +15,10 @@ describe('hero art', () => {
   it('has art for every trophy (skill × tier) and every badge', () => {
     for (const s of SKILLS) for (const t of TROPHY_TIERS) expect(HERO_AWARD_FILES[`${s.key}_${t.level}`], `${s.key}_${t.level}`).toMatch(/\.png$/);
     for (const b of BADGES) expect(HERO_AWARD_FILES[`badge_${b.key}`], b.key).toMatch(/\.png$/);
+  });
+  it('has a shop icon for every item in the shop', () => {
+    for (const g of GEAR) expect(HERO_SHOP_FILES[g.key], g.key).toMatch(/^hf_\d{8}_\d{6}_[0-9a-f-]{36}\.png$/);
+    expect(new Set(Object.values(HERO_SHOP_FILES)).size).toBe(Object.keys(HERO_SHOP_FILES).length);
   });
   it('has a photo for every figure, skin tone, body type and hairstyle the app can pick', () => {
     const files = new Set(Object.values(HERO_AVATAR_FILES));

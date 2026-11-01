@@ -1038,9 +1038,10 @@ function BadgeArt({ k, earned }: { k: string; earned: boolean }) {
 }
 
 function GearImg({ gearKey, className }: { gearKey: string; className?: string }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return <span className={cn('flex h-full w-full items-center justify-center', className)}><Crown className="h-5 w-5 text-sand-ink" /></span>;
-  return <img src={`/api/hero-assets/item/${gearKey}`} alt="" loading="lazy" onError={() => setFailed(true)} className={cn('h-full w-full object-cover', className)} />;
+  // Shop icon (game-style, tier glow) first, then the plain product photo, then a crown.
+  const [step, setStep] = useState(0);
+  if (step >= 2) return <span className={cn('flex h-full w-full items-center justify-center', className)}><Crown className="h-5 w-5 text-sand-ink" /></span>;
+  return <img key={step} src={`/api/hero-assets/${step === 0 ? 'shop' : 'item'}/${gearKey}`} alt="" loading="lazy" onError={() => setStep((n) => n + 1)} className={cn('h-full w-full', step === 0 ? 'object-contain p-0.5' : 'object-cover', className)} />;
 }
 
 function LogTeaser({ d }: { d: HeroState }) {

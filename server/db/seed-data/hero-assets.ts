@@ -371,3 +371,30 @@ export const HERO_AWARD_FILES: Record<string, string> = {
 };
 
 export const heroAssetUrl = (file: string) => BASE + file;
+
+/** Shop icons per gear item: game-style 3D icons with a glow in the item's tier colour (Higgsfield). */
+export const HERO_SHOP_FILES: Record<string, string> = {
+  "wristbands": "hf_20261101_211336_6b310a98-334f-4afc-b095-d86dd599067a.png",
+  "headband": "hf_20261101_211337_74b4d082-bfe8-43c3-b828-1ce584b97da7.png",
+  "crew_socks": "hf_20261101_211336_4d7434e0-6b99-45cc-af25-6319b6967cba.png",
+  "sleeve": "hf_20261101_211336_82fd36b4-c909-450f-95fd-ba3bcfe4fdcd.png",
+  "cap": "hf_20261101_211335_fcf513e2-9a4a-46ca-86e5-900043b61e60.png",
+  "watch": "hf_20261101_211334_0ad0fa88-e896-4ab8-93aa-b4cf5ac0bac8.png",
+  "shin_guards": "hf_20261101_211336_7504764d-d34a-4d22-bd97-f5c12a3fd9c1.png",
+  "headphones": "hf_20261101_211335_c1b73b23-8cd7-4b7b-bcdf-39c909bba212.png",
+  "scarf": "hf_20261101_211351_a7f596a7-aeac-4ffb-9f99-0734d18c4ecf.png",
+  "pin": "hf_20261101_211351_11084404-006a-4338-afe5-8cc0bd2d6c47.png",
+  "visor": "hf_20261101_211353_0601319f-c2fb-4cf9-849a-aebe6f1ee2c2.png",
+  "towel": "hf_20261101_211350_1de545a2-4b5e-460a-836c-2e5a0ff87adb.png",
+  "captain": "hf_20261101_211351_127d2b62-9d99-418d-8da8-078e8c4dca0c.png",
+  "belt": "hf_20261101_211351_f9bac11e-2d29-49a2-9360-a09fdf9ea00e.png",
+  "yoga_mat": "hf_20261101_211351_7dbc0aa7-75c3-4e56-b8b1-d35e0f39a373.png",
+  "sport_item": "hf_20261101_211350_c1eedf8a-4aae-473c-8fc7-5ab6565a0e09.png",
+  "gloves": "hf_20261101_211405_5e8b961b-97de-4b4b-b0c6-55ffd6709e91.png",
+  "hr_band": "hf_20261101_211406_833962ae-68f9-44bf-9930-e81be976186b.png",
+  "balance_shoes": "hf_20261101_211406_b3fe13e0-3ed3-4cc7-b426-43485977ff0e.png",
+  "spikes": "hf_20261101_211406_ef6c4175-9b91-4b8b-b7aa-26c1ed615e19.png",
+  "medal": "hf_20261101_211406_ffedcd15-7c2e-4b6b-8eb2-26b81cd3f66f.png",
+  "gold_shoes": "hf_20261101_211419_5f7ad5f8-8ecb-4793-8214-fb046123d96a.png",
+  "crown": "hf_20261101_211406_d08f1627-985d-4f83-b8ba-53bf339a4c69.png"
+};
