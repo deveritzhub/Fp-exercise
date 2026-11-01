@@ -13,7 +13,7 @@ import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
 import { SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
-import { BADGES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
+import { BADGES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, SHOWCASE_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
 import type { HeroState } from '@/lib/types';
 import { PainTrendList } from '@/components/hero/PainTrend';
@@ -829,6 +829,7 @@ function CharacterScreen({ d, busy, onSave }: { d: HeroState; busy: string | nul
   const options = open ? GEAR.filter((x) => GEAR_SLOT[x.key] === open) : [];
   return (
     <div className="mt-3 rounded-2xl bg-[linear-gradient(180deg,#efe6d4_0%,#f7f9f7_100%)] p-3">
+      <div className="mb-2"><TrophyShelf d={d} compact /></div>
       <div className="grid grid-cols-[minmax(52px,64px)_1fr_minmax(52px,64px)] items-start gap-2">
         <div className="grid gap-2">{side('left')}</div>
         <HeroPhoto look={look} className="h-full min-h-[300px] w-full" />
@@ -867,6 +868,101 @@ function CharacterScreen({ d, busy, onSave }: { d: HeroState; busy: string | nul
         )}
       </Dialog>
     </div>
+  );
+}
+
+const tierOf = (tier: string) => TROPHY_TIERS.find((x) => x.key === tier)!;
+const skillName = (k: string, nl: boolean) => { const s = SKILLS.find((x) => x.key === k); return s ? (nl ? s.nl : s.en) : k; };
+
+function TrophyIcon({ tier, earned = true, size = 'md' }: { tier: string; earned?: boolean; size?: 'sm' | 'md' }) {
+  const c = tierOf(tier).color;
+  return (
+    <span className={cn('flex items-center justify-center rounded-full', size === 'sm' ? 'h-9 w-9' : 'h-12 w-12', earned ? '' : 'bg-ink-100')} style={earned ? { background: `radial-gradient(circle at 35% 30%, #fff 0%, ${c}33 55%, ${c}55 100%)` } : undefined} aria-hidden>
+      {earned ? <Trophy className={size === 'sm' ? 'h-5 w-5' : 'h-6 w-6'} style={{ color: c }} strokeWidth={2.2} /> : (
+        <span className="relative"><Trophy className="h-5 w-5 text-ink-300" /><Lock className="absolute -bottom-1 -right-1.5 h-3 w-3 text-ink-500" /></span>
+      )}
+    </span>
+  );
+}
+
+/** The shelf behind the hero: up to three chosen trophies. */
+function TrophyShelf({ d, compact = false }: { d: HeroState; compact?: boolean }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const shown = d.showcase.map((k) => d.trophies.find((x) => x.key === k)).filter(Boolean) as HeroState['trophies'];
+  return (
+    <div className="relative" aria-label={t('Prijzenplank', 'Trophy shelf')} role="group">
+      <div className={cn('flex items-end justify-center gap-3', compact ? 'min-h-[40px]' : 'min-h-[56px]')}>
+        {shown.length ? shown.map((x) => (
+          <span key={x.key} className="flex flex-col items-center" title={`${skillName(x.skill, nl)} · ${nl ? tierOf(x.tier).nl : tierOf(x.tier).en}`}>
+            <TrophyIcon tier={x.tier} size={compact ? 'sm' : 'md'} />
+            {!compact && <span className="mt-0.5 text-[10.5px] font-semibold text-ink-700">{skillName(x.skill, nl)}</span>}
+          </span>
+        )) : <span className="pb-1 text-[12.5px] text-ink-600">{t('Je prijzenplank is nog leeg', 'Your trophy shelf is still empty')}</span>}
+      </div>
+      <div className="mt-1 h-2 rounded-full bg-[linear-gradient(180deg,#b8946a_0%,#8a6a46_100%)] shadow-[0_2px_0_rgba(0,0,0,0.15)]" aria-hidden />
+    </div>
+  );
+}
+
+/** Trophy cabinet: every skill with its five trophies; tap an earned one to put it on the shelf. */
+function TrophyCabinet({ d }: { d: HeroState }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const earnedCount = d.trophies.filter((x) => x.earned).length;
+  const toggle = async (key: string) => {
+    const on = d.showcase.includes(key);
+    if (!on && d.showcase.length >= SHOWCASE_MAX) {
+      toast(t(`Er passen ${SHOWCASE_MAX} prijzen op je plank. Haal er eerst een af.`, `Your shelf holds ${SHOWCASE_MAX} trophies. Take one off first.`), 'bad');
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.put('/patient/hero/showcase', { trophies: on ? d.showcase.filter((k) => k !== key) : [...d.showcase, key] });
+      await qc.invalidateQueries({ queryKey: ['patient-hero'] });
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="trophies-title">
+      <h2 id="trophies-title" className="t-section">{t(`Prijzenkast (${earnedCount} van ${d.trophies.length})`, `Trophy cabinet (${earnedCount} of ${d.trophies.length})`)}</h2>
+      <p className="mt-1 text-[13.5px] text-ink-600">{t(`Per skill een prijs bij level ${TROPHY_TIERS.map((x) => x.level).join(', ')}. Tik op een gewonnen prijs om hem op je plank te zetten (max. ${SHOWCASE_MAX}).`, `A trophy per skill at level ${TROPHY_TIERS.map((x) => x.level).join(', ')}. Tap a won trophy to put it on your shelf (max ${SHOWCASE_MAX}).`)}</p>
+      <div className="mt-3 rounded-xl bg-[linear-gradient(180deg,#efe6d4_0%,#f7f9f7_100%)] p-3"><TrophyShelf d={d} /></div>
+      <ul className="mt-4 space-y-3">
+        {SKILLS.filter((s) => d.trophies.some((x) => x.skill === s.key)).map((s) => (
+          <li key={s.key}>
+            <p className="text-[14px] font-semibold text-ink-900">{nl ? s.nl : s.en}</p>
+            <div className="mt-1 grid grid-cols-5 gap-1.5">
+              {d.trophies.filter((x) => x.skill === s.key).map((x) => {
+                const tier = tierOf(x.tier);
+                const on = d.showcase.includes(x.key);
+                const label = `${nl ? s.nl : s.en} ${nl ? tier.nl : tier.en}`;
+                return x.earned ? (
+                  <button key={x.key} type="button" aria-pressed={on} disabled={busy} onClick={() => toggle(x.key)}
+                    className={cn('tap flex flex-col items-center gap-0.5 rounded-xl border p-1.5 text-center', on ? 'border-accent bg-accent-soft' : 'border-line bg-white')}>
+                    <TrophyIcon tier={x.tier} size="sm" />
+                    <span className="text-[11px] font-semibold leading-tight text-ink-800"><span className="sr-only">{label}, </span>{nl ? tier.nl : tier.en}</span>
+                    <span className="text-[10px] text-ink-600">{on ? t('Op plank', 'On shelf') : `lv ${x.level}`}</span>
+                  </button>
+                ) : (
+                  <div key={x.key} className="flex flex-col items-center gap-0.5 rounded-xl border border-dashed border-line bg-canvas p-1.5 text-center">
+                    <TrophyIcon tier={x.tier} earned={false} size="sm" />
+                    <span className="text-[11px] font-semibold leading-tight text-ink-600"><span className="sr-only">{label}, {t('nog niet gewonnen', 'not won yet')}, </span>{nl ? tier.nl : tier.en}</span>
+                    <span className="text-[10px] text-ink-500">lv {x.level}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -961,6 +1057,11 @@ export function HeroPage() {
             </div>
           </div>
         </div>
+        {d.trophies?.some((x) => x.earned) && (
+          <Link to="/p/held/inventaris" className="mt-3 block rounded-xl bg-[linear-gradient(180deg,#efe6d4_0%,#fff_100%)] px-3 py-2" aria-label={t('Prijzenplank, naar je prijzenkast', 'Trophy shelf, to your trophy cabinet')}>
+            <TrophyShelf d={d} compact />
+          </Link>
+        )}
         <div className="mt-3">
           <div className="flex items-baseline justify-between text-[14px]">
             <span className="font-semibold text-ink-900">{L.xp} XP</span>
@@ -1075,7 +1176,7 @@ export function InventoryPage() {
     <div className="space-y-5">
       <Link to="/p/held" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" aria-hidden />{t('Terug naar je held', 'Back to your hero')}</Link>
       <h1 className="t-page">{t('Inventaris', 'Inventory')}</h1>
-      {q.data.hero ? <GearCard d={q.data} /> : <Notice tone="info">{t('Maak eerst je held.', 'Create your hero first.')}</Notice>}
+      {q.data.hero ? <><GearCard d={q.data} /><TrophyCabinet d={q.data} /></> : <Notice tone="info">{t('Maak eerst je held.', 'Create your hero first.')}</Notice>}
     </div>
   );
 }

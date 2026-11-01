@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { cn } from '@/lib/cn';
+import { useI18n } from '@/lib/i18n';
 import { heroPhotoKey } from '@shared/hero';
 import { HumanFigure, type FigureLook } from './HumanFigure';
 import { WEAR_SLOTS, wearPlacements, type BodyKind } from './wear';
@@ -14,12 +15,15 @@ import { WEAR_SLOTS, wearPlacements, type BodyKind } from './wear';
 export function HeroPhoto({ look, className, gearChips = false }: { look: FigureLook; className?: string; gearChips?: boolean }) {
   // Try the personal/guest photo, then this hairstyle, then the base photo, then the drawing.
   const keys = [...new Set([...(look.photo ? [look.photo] : []), heroPhotoKey(look, look.body ?? null), heroPhotoKey(look, look.body ?? null, false)])];
+  const { t } = useI18n();
   const [attempt, setAttempt] = useState(0);
   const failed = attempt >= keys.length;
   const gear = look.gear ?? [];
   const kind: BodyKind | undefined = look.body?.kind ?? ({ slim: 'lean', average: 'average', athletic: 'athletic', full: 'full' } as Record<string, BodyKind>)[look.build ?? 'average'];
   const worn = wearPlacements(gear, look.frame, kind);
   const chips = gear.filter((g) => !WEAR_SLOTS[g]).slice(0, 3);
+  // Walking aids (switched on by the therapist) always show as a small label.
+  const aid = gear.includes('crutches');
   return (
     <span className={cn('relative block overflow-hidden rounded-2xl bg-[#ece4d6]', className)} aria-hidden>
       {failed ? (
@@ -29,6 +33,12 @@ export function HeroPhoto({ look, className, gearChips = false }: { look: Figure
         <span className="absolute left-1/2 top-0 block aspect-[3/4] h-full -translate-x-1/2">
           <img key={keys[attempt]} src={`/api/hero-assets/avatar/${keys[attempt]}`} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setAttempt((a) => a + 1)} />
           {worn.map((p, i) => <WearItem key={`${p.key}-${i}`} p={p} />)}
+        </span>
+      )}
+      {!failed && aid && (
+        <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-full bg-white/90 py-0.5 pl-0.5 pr-2 text-[11px] font-semibold text-ink-800 shadow-sm">
+          <span className="h-6 w-6 overflow-hidden rounded-full bg-white"><img src="/api/hero-assets/item/crutches" alt="" className="h-full w-full object-cover" /></span>
+          {t('Krukken', 'Crutches')}
         </span>
       )}
       {!failed && gearChips && chips.length > 0 && (

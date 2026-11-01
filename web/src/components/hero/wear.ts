@@ -20,12 +20,8 @@ const FRAME_SPREAD = { f: 1, m: 1.1 } as const;
 // (cap, visor, headband, crown, scarf, towel, socks) or sit under the shirt (heart-rate band)
 // look pasted on, so they stay small product photos in the corner.
 export const WEAR_SLOTS: Record<string, Slot> = {
-  // The character screen shows every piece in its slot; on the photo itself only what passed the
-  // owner's visual check (2026-11-01) — headphones around the neck and the chest pin — plus the
-  // crutches the therapist switches on. Measured on a large screenshot of the lean feminine photo.
-  headphones: { x: 0.5, y: 0.18, w: 0.17, scale: true },
-  pin: { x: 0.565, y: 0.265, w: 0.04, spread: true },
-  crutches: { x: 0.285, y: 0.585, w: 0.09, h: 0.73, side: 'both', spread: true },
+  // Pasted pieces looked fake on the real photo (owner's check, 2026-11-01), so nothing is drawn on
+  // it any more: gear lives in the character screen slots, trophies on the shelf behind the hero.
 };
 
 /** Back items first, then bottom to top, so a scarf lies over a heart-rate band and a cap over the hair. */

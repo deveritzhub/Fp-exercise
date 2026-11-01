@@ -10,7 +10,7 @@ import { loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
 import { loadPatientLogs } from '../lib/patientLogs';
 import { weeklyAdherence } from '../../../shared/adherence';
 import {
-  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
+  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, skillTrophies, SHOWCASE_MAX, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
   questXp, skillOfWeek, skillsForExercise, weeklyQuests, xpFor, type SkillKey, type WeekData,
 } from '../../../shared/hero';
 import { loadSkillSnapshot } from '../lib/skillState';
@@ -80,7 +80,8 @@ async function painMap(tx: Tx, patientId: string) {
 }
 
 async function heroState(tx: Tx, patientId: string) {
-  const hero = mapHero((await tx.query('SELECT * FROM patient_heroes WHERE patient_id = $1', [patientId])).rows[0]);
+  const heroRow = (await tx.query('SELECT * FROM patient_heroes WHERE patient_id = $1', [patientId])).rows[0];
+  const hero = mapHero(heroRow);
   const map = await painMap(tx, patientId);
   const s = (
     await tx.query(
@@ -244,6 +245,9 @@ async function heroState(tx: Tx, patientId: string) {
     quest,
     weekly: { weekStart: thisWeek, quests, chestWeeks, xpPerQuest: QUEST_XP, chestXp: CHEST_XP },
     gear: { unlocked, equipped },
+    // Trophy cabinet: per skill at level 10/25/50/75/99; up to three on the shelf behind the hero.
+    trophies: skillTrophies(skills),
+    showcase: ((heroRow?.showcase ?? []) as string[]).filter((k) => skillTrophies(skills).some((t) => t.key === k && t.earned)),
     metrics,
     checkin,
     trends,
@@ -427,6 +431,20 @@ heroPatient.put('/hero', async (c) => {
       [patient.id, b.heroName, b.frame, b.build, b.skin, b.hair, b.hairColor, b.eyeColor, b.beard, b.glasses, b.outfit, sport, sports, b.photoKey ?? null],
     ),
   );
+  return c.json({ ok: true });
+});
+
+/** Put up to three earned trophies on the shelf behind the hero. */
+heroPatient.put('/hero/showcase', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ trophies: z.array(z.string().max(30)).max(SHOWCASE_MAX) }), await c.req.json());
+  await withUser(user.id, async (tx) => {
+    const state = await heroState(tx, patient.id);
+    if (!state.hero) throw badRequest('hero_required');
+    const earned = new Set(state.trophies.filter((t) => t.earned).map((t) => t.key));
+    if (b.trophies.some((k) => !earned.has(k))) throw badRequest('trophy_not_earned');
+    await tx.query('UPDATE patient_heroes SET showcase = $2, updated_at = now() WHERE patient_id = $1', [patient.id, [...new Set(b.trophies)]]);
+  });
   return c.json({ ok: true });
 });
 

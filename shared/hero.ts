@@ -751,6 +751,23 @@ export const GEAR: { key: string; nl: string; en: string; unlockNl: string; unlo
 ];
 export const GEAR_KEYS = new Set(GEAR.map((g) => g.key));
 
+/**
+ * Trophy cabinet: per skill a trophy at level 10, 25, 50, 75 and 99. Up to three earned trophies can
+ * stand on the shelf behind the hero. Keys look like 'strength:25'.
+ */
+export const TROPHY_TIERS = [
+  { level: 10, key: 'bronze', nl: 'Brons', en: 'Bronze', color: '#b07a4a' },
+  { level: 25, key: 'silver', nl: 'Zilver', en: 'Silver', color: '#9aa4ad' },
+  { level: 50, key: 'gold', nl: 'Goud', en: 'Gold', color: '#d4a72c' },
+  { level: 75, key: 'platinum', nl: 'Platina', en: 'Platinum', color: '#7fb7c9' },
+  { level: 99, key: 'master', nl: 'Meester', en: 'Master', color: '#7c4dff' },
+] as const;
+export const SHOWCASE_MAX = 3;
+export type Trophy = { key: string; skill: SkillKey; level: number; tier: (typeof TROPHY_TIERS)[number]['key']; earned: boolean };
+export function skillTrophies(skills: { key: SkillKey; level: number; locked: boolean }[]): Trophy[] {
+  return skills.flatMap((s) => TROPHY_TIERS.map((t) => ({ key: `${s.key}:${t.level}`, skill: s.key, level: t.level, tier: t.key, earned: !s.locked && s.level >= t.level })));
+}
+
 /** Character screen slots (RPG paper doll): one piece per slot. */
 export type GearSlot = 'head' | 'neck' | 'chest' | 'back' | 'arm' | 'wrist' | 'hands' | 'waist' | 'legs' | 'feet' | 'held';
 export const GEAR_SLOTS: { key: GearSlot; nl: string; en: string; side: 'left' | 'right' | 'bottom' }[] = [

@@ -16,7 +16,7 @@ async function sql(q: string, p: unknown[] = []) {
 const clearSeed = () =>
   sql(`DELETE FROM exercise_logs WHERE session_id IN (SELECT id FROM workout_sessions WHERE feedback = 'skills-v2-e2e');
        DELETE FROM workout_sessions WHERE feedback = 'skills-v2-e2e';
-       UPDATE patient_heroes SET gear = '{}' FROM patients p WHERE p.id = patient_heroes.patient_id AND p.email = 'patient@praktijk-a.test'`);
+       UPDATE patient_heroes SET gear = '{}', showcase = '{}' FROM patients p WHERE p.id = patient_heroes.patient_id AND p.email = 'patient@praktijk-a.test'`);
 
 test.afterAll(clearSeed);
 
@@ -70,6 +70,12 @@ test('lock reasons are visible, a level-10 item can be worn, and the sheet fits 
   await expect(page.getByRole('dialog', { name: 'Hoofd' })).toBeVisible();
   await expectAccessible(page, 'gear slot picker');
   await page.getByRole('button', { name: 'Sluiten' }).last().click();
+  // Trophy cabinet: Strength level 10 won bronze; put it on the shelf behind the hero.
+  const bronze = page.getByRole('button', { name: /^Kracht Brons/ });
+  await bronze.scrollIntoViewIfNeeded();
+  await bronze.click();
+  await expect(page.getByRole('button', { name: /^Kracht Brons/, pressed: true })).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Prijzenplank' }).first().locator('[title^="Kracht"]')).toBeVisible();
   await expectAccessible(page, 'skills gear worn');
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
 });

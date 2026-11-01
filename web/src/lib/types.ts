@@ -169,6 +169,8 @@ export type HeroState = {
   aids?: string[];
   /** Personal photo key (own likeness) for this account's hero, if set. */
   customPhoto?: string | null;
+  trophies: import('@shared/hero').Trophy[];
+  showcase: string[];
   /** Guest heroes a patient may play as (real people who agreed). */
   heroGuests?: { key: string; name: string }[];
   hero: (import('@shared/hero').HeroLook & { createdAt: string; gear?: string[] }) | null;

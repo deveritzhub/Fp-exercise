@@ -172,3 +172,16 @@ describe('red-flag skill XP follows the account kind', () => {
     }
   });
 });
+
+describe('trophy shelf', () => {
+  it('only earned trophies can go on the shelf, at most three', async () => {
+    const p = await login('patientA');
+    const st = (await p.get('/patient/hero')).body;
+    expect(st.trophies.length).toBeGreaterThan(0);
+    expect(st.trophies[0]).toMatchObject({ key: expect.stringMatching(/^[a-z_]+:\d+$/), earned: expect.any(Boolean) });
+    const notEarned = st.trophies.find((x: { earned: boolean }) => !x.earned);
+    expect((await p.put('/patient/hero/showcase', { trophies: [notEarned.key] })).body.error).toBe('trophy_not_earned');
+    expect((await p.put('/patient/hero/showcase', { trophies: ['a', 'b', 'c', 'd'] })).status).toBe(400);
+    expect((await p.put('/patient/hero/showcase', { trophies: [] })).status).toBe(200);
+  });
+});
