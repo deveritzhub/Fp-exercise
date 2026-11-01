@@ -75,6 +75,17 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await expect(pp.getByRole('heading', { name: 'Emma de Sprinter' })).toBeVisible();
   await expect(pp.getByText(/Level \d+ · /).first()).toBeVisible();
   await expect(pp.getByRole('img', { name: /Linkerknie: 7\/10/ })).toBeVisible();
+  // Main quest: goal, week of the schedule, expected time to the goal.
+  await expect(pp.getByRole('heading', { name: 'Knie — patellapees belastingsopbouw' })).toBeVisible();
+  await expect(pp.getByText(/Week \d+ van \d+/)).toBeVisible();
+  await expect(pp.getByText(/bereik je je doel rond|aan het einde van het schema/)).toBeVisible();
+  // Skills (RuneScape-style): 9 skills, details in a dialog.
+  await expect(pp.getByRole('heading', { name: 'Skills' })).toBeVisible();
+  await expect(pp.getByRole('button', { name: /^Discipline\s*level \d+\/99$/ })).toBeVisible();
+  await pp.getByRole('button', { name: /^Kracht\s*level/ }).click();
+  await expect(pp.getByRole('dialog', { name: /Kracht · level \d+/ })).toBeVisible();
+  await expectAccessible(pp, 'skill dialog');
+  await pp.getByRole('button', { name: 'Sluiten', exact: true }).last().click();
   await expectAccessible(pp, 'character sheet');
   await pp.screenshot({ path: 'screenshots/hero/character-sheet.png', fullPage: true });
 
@@ -91,6 +102,28 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await pp.getByRole('button', { name: 'Opslaan' }).click();
   await expect(pp).toHaveURL(/\/p\/held$/);
   await expect(pp.getByRole('img', { name: /Linkerknie: 3\/10, licht \(start 7\/10\)/ })).toBeVisible();
+
+  // A workout: XP for the hero, and a level up when a skill goes up.
+  const home = await (await pp.request.get('/api/patient/home')).json();
+  const before = await (await pp.request.get('/api/patient/hero')).json();
+  await pp.goto(`/p/sessie/${home.programs[0].id}`);
+  await pp.getByRole('button', { name: /Beginnen|Verder met training/ }).click();
+  for (let i = 0; i < 12; i++) {
+    if (await pp.getByRole('button', { name: 'Training afronden' }).isVisible()) break;
+    await pp.getByRole('button', { name: 'Oefening gedaan' }).click();
+    await pp.getByRole('button', { name: 'Hoe zwaar was het?: 4', exact: true }).click();
+    await pp.getByRole('button', { name: 'Pijn of ongemak tijdens de oefening: 1', exact: true }).click();
+    await pp.getByRole('button', { name: 'Opslaan en verder' }).click();
+    await pp.waitForTimeout(200);
+  }
+  await pp.getByRole('button', { name: 'Pijn of ongemak na de training: 2', exact: true }).click();
+  await pp.getByRole('button', { name: 'Training afronden' }).click();
+  await expect(pp.getByText('+60 XP voor je sportheld')).toBeVisible();
+  const after = await (await pp.request.get('/api/patient/hero')).json();
+  const up = after.skills.some((k: { key: string; level: number }) => k.level > before.skills.find((b: { key: string }) => b.key === k.key).level);
+  if (up) await expect(pp.getByText('Level up!')).toBeVisible();
+  else await expect(pp.getByText('Level up!')).toHaveCount(0);
+  await pp.screenshot({ path: 'screenshots/hero/workout-done.png', fullPage: true });
   await ctx.close();
 
   // Therapist sees the body map in the record.
@@ -133,5 +166,18 @@ test('no label in the hero creator is cut off on a 360 px phone', async ({ brows
     expect(await pp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
     await pp.getByRole('button', { name: 'Volgende' }).click();
   }
+  await ctx.close();
+});
+
+test('skill names are never cut off on a 360 px phone', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 360, height: 780 } });
+  const pp = await ctx.newPage();
+  await login(pp, 'patient@praktijk-a.test');
+  await pp.goto('/p/held');
+  await expect(pp.getByRole('heading', { name: 'Skills' })).toBeVisible();
+  const cut = await pp.evaluate(() =>
+    [...document.querySelectorAll('[aria-labelledby="skills-title"] li span:not(.sr-only)')].filter((el) => el.scrollWidth > el.clientWidth + 1 && (el.textContent ?? '').trim()).map((el) => el.textContent),
+  );
+  expect(cut).toEqual([]);
   await ctx.close();
 });

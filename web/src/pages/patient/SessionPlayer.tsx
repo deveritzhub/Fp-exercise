@@ -8,7 +8,7 @@ import { toISODate } from '@shared/adherence';
 import { itemsForDate } from '@shared/schedule';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
-import { XP } from '@shared/hero';
+import { SKILLS, XP } from '@shared/hero';
 import { useCountdown } from '@/lib/useCountdown';
 import { isNetworkError, postOrQueue } from '@/lib/outbox';
 import { useSession } from '@/lib/session';
@@ -17,7 +17,7 @@ import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import { ProgramItemsList } from '@/components/patient/TodayCard';
 import { PausedNotice, RedFlagButton } from '@/components/patient/Safety';
 import { StrengthLogger } from '@/components/patient/Strength';
-import type { Program, ProgramItem } from '@/lib/types';
+import type { HeroState, Program, ProgramItem } from '@/lib/types';
 
 type PatientProgram = Program & { therapistName: string; paused?: boolean; selfStarted?: boolean; openSession: { id: string; loggedItemIds: string[] } | null };
 type Phase = 'intro' | 'exercise' | 'rate' | 'summary' | 'done';
@@ -121,6 +121,9 @@ export function SessionPlayer() {
   const [saving, setSaving] = useState(false);
   const [savedOffline, setSavedOffline] = useState(false);
   const [earned, setEarned] = useState(0);
+  const [levelUps, setLevelUps] = useState<{ key: string; from: number; to: number }[]>([]);
+  // Loaded up front, so level ups can be shown after the workout.
+  useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero') });
   const [leaving, setLeaving] = useState(false);
   const { user } = useSession();
   const uid = user?.id ?? '';
@@ -238,6 +241,18 @@ export function SessionPlayer() {
                 const how = await postOrQueue(uid, `/patient/sessions/${sessionId}/complete`, { ...s, feedback: s.feedback.trim() || null, completedAt: new Date().toISOString() });
                 if (how === 'queued') setSavedOffline(true);
                 setEarned(XP.session + (s.pain !== null ? XP.painReported : 0));
+                // Level ups: compare the hero before and after this workout (only when it reached the server).
+                const before = qc.getQueryData<HeroState>(['patient-hero']);
+                if (how !== 'queued' && before?.hero) {
+                  const after = await qc.fetchQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero'), staleTime: 0 }).catch(() => null);
+                  if (after) {
+                    const ups = after.skills
+                      .map((k) => ({ key: k.key, from: before.skills.find((b) => b.key === k.key)?.level ?? k.level, to: k.level }))
+                      .filter((k) => k.to > k.from);
+                    if (after.level.level > before.level.level) ups.unshift({ key: 'hero' as never, from: before.level.level, to: after.level.level });
+                    setLevelUps(ups);
+                  }
+                }
                 setPhase('done');
                 qc.invalidateQueries({ queryKey: ['patient-home'] });
                 qc.invalidateQueries({ queryKey: ['patient-history'] });
@@ -287,6 +302,18 @@ export function SessionPlayer() {
               <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-sand-soft px-4 py-2 font-display text-[17px] font-bold text-sand-ink">
                 <Trophy className="h-5 w-5" aria-hidden />+{earned} XP {t('voor je sportheld', 'for your sports hero')}
               </p>
+            )}
+            {levelUps.length > 0 && (
+              <div className="mt-4 w-full max-w-xs rounded-2xl border border-accent/30 bg-accent-soft p-4" role="status">
+                <p className="font-display text-[20px] font-bold text-accent">{t('Level up!', 'Level up!')}</p>
+                <ul className="mt-1 space-y-0.5 text-[15px] text-ink-800">
+                  {levelUps.map((u) => {
+                    const meta = SKILLS.find((k) => k.key === u.key);
+                    const name = meta ? (locale === 'nl' ? meta.nl : meta.en) : t('Je sportheld', 'Your sports hero');
+                    return <li key={u.key}><strong>{name}</strong> {u.from} → {u.to}</li>;
+                  })}
+                </ul>
+              </div>
             )}
             <Button size="xl" className="mt-8 w-full max-w-xs" onClick={() => nav('/p')}>{t('Terug naar overzicht', 'Back to overview')}</Button>
           </div>

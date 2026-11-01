@@ -168,7 +168,16 @@ export type HeroState = {
   painMap: { baseline: PainCheckin | null; current: PainCheckin | null; checkins: number };
   level: { level: number; xp: number; from: number; to: number; progress: number };
   badges: { key: string; earned: boolean }[];
-  stats: { consistency: number | null; strength: number | null; mobility: number | null; recovery: number | null };
-  totals: { sessions: number; fullWeeks: number; phasesCompleted: number };
-  chapter: { title: string; no: number; count: number; name: string | null; goal: string | null } | null;
+  skills: { key: import('@shared/hero').SkillKey; level: number; xp: number; from: number; to: number; progress: number }[];
+  totalLevel: number;
+  totals: { sessions: number; fullWeeks: number; phasesCompleted: number; since: string | null; painStart: number | null; painNow: number | null };
+  quest: {
+    title: string;
+    goal: string | null;
+    phaseNo: number | null;
+    phaseCount: number | null;
+    phaseGoal: string | null;
+    phases: { no: number; name: string | null; weeks: string | null; goal: string | null; status: 'done' | 'current' | 'next' }[];
+    timeline: { week: number; totalWeeks: number; progress: number; expectedEnd: string; weeksLeft: number } | null;
+  } | null;
 };

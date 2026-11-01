@@ -5,8 +5,8 @@ import { withUser, type Tx } from '../db';
 import { requirePatient, requireStaff, type AppEnv } from '../middleware';
 import { parse, uuidParam } from '../lib/validate';
 import { badRequest, notFound } from '../lib/errors';
-import { adherenceForPatient, loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
-import { AREA_KEYS, BADGES, HERO_OPTIONS, averagePain, levelFor, xpFor } from '../../../shared/hero';
+import { loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
+import { AREA_KEYS, BADGES, HERO_OPTIONS, SKILLS, SKILL_XP, averagePain, levelFor, questTimeline, skillLevel, skillsForExercise, xpFor, type SkillKey } from '../../../shared/hero';
 
 /**
  * Sports hero (gamified revalidatie): the patient's own character, a body map with self-reported
@@ -79,37 +79,83 @@ async function heroState(tx: Tx, patientId: string) {
   ).rows[0];
   const inputs = await loadAdherenceInputs(tx, [patientId]);
   const fullWeeks = weeklyForPatient(inputs, patientId, 52).filter((w) => w.planned > 0 && w.completed >= w.planned).length;
-  const adherence = adherenceForPatient(inputs, patientId, 28).rate;
   const painBaseline = map.baseline ? averagePain(map.baseline.entries.map((e) => e.score)) ?? 0 : null;
   const painNow = map.current ? averagePain(map.current.entries.map((e) => e.score)) ?? 0 : null;
   const xp = xpFor({ sessions: s.sessions, sessionsWithPain: s.with_pain, redFlags: s.red_flags, checkinWeeks: s.checkin_weeks });
   const badgeInput = { sessions: s.sessions, sessionsWithPain: s.with_pain, redFlags: s.red_flags, fullWeeks, phasesCompleted: s.phases_done, painBaseline, painNow };
   // Current chapter: the active rehabilitation programme with a phase.
-  const chapter = (
+  // ---- Skills: XP per skill from what the patient actually did. ----
+  const logs = (
     await tx.query(
-      `SELECT title, series_title, phase_no, phase_count, phase_name, phase_goal FROM programs
-        WHERE patient_id = $1 AND status = 'active' AND module = 'revalidatie' AND phase_no IS NOT NULL
-        ORDER BY updated_at DESC LIMIT 1`,
+      `SELECT e.training_categories, e.movement_category, count(*)::int AS n
+         FROM exercise_logs l JOIN exercises e ON e.id = l.exercise_id
+        WHERE l.patient_id = $1 AND l.completed
+        GROUP BY e.training_categories, e.movement_category`,
+      [patientId],
+    )
+  ).rows;
+  const skillXp: Record<SkillKey, number> = Object.fromEntries(SKILLS.map((k) => [k.key, 0])) as Record<SkillKey, number>;
+  for (const r of logs) for (const k of skillsForExercise(r.training_categories ?? [], r.movement_category)) skillXp[k] += r.n * SKILL_XP.exercise;
+  skillXp.strength += s.strength_sets * SKILL_XP.strengthSet;
+  skillXp.discipline += s.sessions * SKILL_XP.session + fullWeeks * SKILL_XP.fullWeek;
+  skillXp.recovery +=
+    s.with_pain * SKILL_XP.painReported +
+    s.checkin_weeks * SKILL_XP.painCheckin +
+    (map.checkins > 1 && painBaseline !== null && painNow !== null ? Math.max(0, Math.round((painBaseline - painNow) * SKILL_XP.painPointDown)) : 0);
+  const skills = SKILLS.map((k) => ({ key: k.key, ...skillLevel(skillXp[k.key]) }));
+
+  // ---- Quest: the goal of the current programme and the road there. ----
+  const prog = (
+    await tx.query(
+      `SELECT title, series_key, series_title, phase_no, phase_count, phase_name, phase_goal, start_date, end_date FROM programs
+        WHERE patient_id = $1 AND status = 'active' AND NOT is_template
+        ORDER BY (module = 'revalidatie') DESC, (phase_no IS NOT NULL) DESC, updated_at DESC LIMIT 1`,
       [patientId],
     )
   ).rows[0];
-  const clamp = (n: number) => Math.max(0, Math.min(10, Math.round(n)));
+  let quest = null;
+  if (prog) {
+    const phases = prog.series_key
+      ? (await tx.query('SELECT * FROM app.patient_series_phases($1)', [prog.series_key])).rows.map((r) => ({ no: r.phase_no as number, name: r.phase_name as string | null, weeks: r.phase_weeks as string | null, goal: r.phase_goal as string | null }))
+      : [];
+    const timeline = prog.phase_no && phases.length ? questTimeline({ phases, currentNo: prog.phase_no, phaseStart: prog.start_date }) : null;
+    // Without phases: the programme's own start and end date.
+    let fallback = null;
+    if (!timeline && prog.start_date && prog.end_date) {
+      const a = new Date(prog.start_date + 'T12:00:00').getTime();
+      const b = new Date(prog.end_date + 'T12:00:00').getTime();
+      const now = Date.now();
+      const totalWeeks = Math.max(1, Math.round((b - a) / (7 * 86400_000)));
+      fallback = {
+        week: Math.min(totalWeeks, Math.max(1, Math.floor((now - a) / (7 * 86400_000)) + 1)),
+        totalWeeks,
+        progress: Math.max(0, Math.min(1, (now - a) / (b - a))),
+        expectedEnd: prog.end_date as string,
+        weeksLeft: Math.max(0, Math.ceil((b - now) / (7 * 86400_000))),
+      };
+    }
+    const lastGoal = [...phases].sort((x, y) => y.no - x.no)[0]?.goal ?? null;
+    quest = {
+      title: prog.series_title || prog.title,
+      goal: lastGoal || prog.phase_goal || null,
+      phaseNo: prog.phase_no,
+      phaseCount: prog.phase_count,
+      phaseGoal: prog.phase_goal,
+      phases: phases.map((ph) => ({ ...ph, status: ph.no < prog.phase_no ? 'done' : ph.no === prog.phase_no ? 'current' : 'next' })),
+      timeline: timeline ?? fallback,
+    };
+  }
+  const since = (await tx.query('SELECT min(started_at) AS at FROM workout_sessions WHERE patient_id = $1', [patientId])).rows[0].at;
+
   return {
     hero,
     painMap: map,
     level: levelFor(xp),
     badges: BADGES.map((b) => ({ key: b.key, earned: b.earned(badgeInput) })),
-    stats: {
-      consistency: adherence === null ? null : clamp(adherence * 10),
-      strength: s.strength_sets ? clamp(s.strength_sets / 10) : null,
-      mobility: s.mobility_sessions ? clamp(s.mobility_sessions / 2) : null,
-      // Recovery needs a second check-in to compare with.
-      recovery: map.checkins > 1 && painBaseline && painNow !== null ? clamp(10 * (1 - painNow / painBaseline)) : null,
-    },
-    totals: { sessions: s.sessions, fullWeeks, phasesCompleted: s.phases_done },
-    chapter: chapter
-      ? { title: chapter.series_title || chapter.title, no: chapter.phase_no, count: chapter.phase_count, name: chapter.phase_name, goal: chapter.phase_goal }
-      : null,
+    skills,
+    totalLevel: skills.reduce((a, k) => a + k.level, 0),
+    totals: { sessions: s.sessions, fullWeeks, phasesCompleted: s.phases_done, since, painStart: painBaseline, painNow: map.checkins > 1 ? painNow : null },
+    quest,
   };
 }
 

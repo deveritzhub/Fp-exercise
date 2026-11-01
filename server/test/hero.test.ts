@@ -32,7 +32,12 @@ describe('sports hero', () => {
     expect(after.painMap.baseline.entries).toEqual([{ area: 'knee_l', score: 6 }, { area: 'lower_back', score: 4 }]);
     expect(after.painMap.current.entries).toEqual([{ area: 'knee_l', score: 2 }]);
     expect(after.level.xp).toBeGreaterThan(before.level.xp); // check-in week counts
-    expect(after.stats.recovery).toBeGreaterThan(0);
+    const recovery = after.skills.find((k: { key: string }) => k.key === 'recovery');
+    expect(recovery.xp).toBeGreaterThan(0);
+    expect(after.skills).toHaveLength(9);
+    expect(after.totalLevel).toBeGreaterThanOrEqual(9);
+    // Discipline: XP per completed workout and per full week.
+    expect(after.skills.find((k: { key: string }) => k.key === 'discipline').xp).toBe(after.totals.sessions * 20 + after.totals.fullWeeks * 50);
     expect(after.badges.find((b: { key: string }) => b.key === 'pain_down').earned).toBe(true);
 
     // "No pain" is a valid check-in too.

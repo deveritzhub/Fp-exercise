@@ -52,3 +52,18 @@ CREATE POLICY painmap_read ON pain_map_entries FOR SELECT TO fp_app USING (
   patient_id IN (SELECT app.my_patient_ids()) OR app.can_manage_patient(patient_id));
 CREATE POLICY painmap_insert ON pain_map_entries FOR INSERT TO fp_app WITH CHECK (
   patient_id IN (SELECT app.my_patient_ids()) AND practice_id = app.patient_practice(patient_id));
+
+-- The phases (route) of the patient's own phased programme, for the quest view: names, weeks and
+-- goals of the series templates of their practice (or the central library). Read-only metadata.
+CREATE FUNCTION app.patient_series_phases(p_series text)
+RETURNS TABLE (phase_no int, phase_name text, phase_weeks text, phase_goal text)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
+  SELECT DISTINCT ON (p.phase_no) p.phase_no::int, p.phase_name, p.phase_weeks, p.phase_goal
+    FROM programs p
+    JOIN patients pt ON pt.user_id = app.uid() AND pt.archived_at IS NULL
+   WHERE p.is_template AND p.series_key = p_series AND p.phase_no IS NOT NULL
+     AND (p.practice_id = pt.practice_id OR p.practice_id IS NULL)
+   ORDER BY p.phase_no, (p.practice_id IS NULL), p.updated_at DESC
+$$;
+REVOKE EXECUTE ON FUNCTION app.patient_series_phases(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION app.patient_series_phases(text) TO fp_app;

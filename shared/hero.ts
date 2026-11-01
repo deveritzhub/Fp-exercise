@@ -145,3 +145,92 @@ export const BADGES: { key: string; nl: string; en: string; descNl: string; desc
 
 /** Average of the scores in one body-map check-in (null without areas). */
 export const averagePain = (scores: number[]) => (scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : null);
+
+// ----------------------------------------------------------------------------------------------
+// Skills (RuneScape-style): each skill levels from 1 to 99 on its own
+// ----------------------------------------------------------------------------------------------
+
+export type SkillKey = 'strength' | 'mobility' | 'balance' | 'stability' | 'power' | 'endurance' | 'sport' | 'discipline' | 'recovery';
+
+export const SKILLS: { key: SkillKey; nl: string; en: string; howNl: string; howEn: string }[] = [
+  { key: 'strength', nl: 'Kracht', en: 'Strength', howNl: 'Krachtoefeningen en gelogde sets.', howEn: 'Strength exercises and logged sets.' },
+  { key: 'mobility', nl: 'Mobiliteit', en: 'Mobility', howNl: 'Mobiliteits- en rekoefeningen.', howEn: 'Mobility and stretching exercises.' },
+  { key: 'balance', nl: 'Balans', en: 'Balance', howNl: 'Balansoefeningen.', howEn: 'Balance exercises.' },
+  { key: 'stability', nl: 'Stabiliteit', en: 'Stability', howNl: 'Rompstabiliteit en motorische controle.', howEn: 'Core stability and motor control.' },
+  { key: 'power', nl: 'Explosief', en: 'Power', howNl: 'Spring- en landingsoefeningen (plyometrie).', howEn: 'Jumping and landing (plyometrics).' },
+  { key: 'endurance', nl: 'Conditie', en: 'Endurance', howNl: 'Conditie- en loopoefeningen.', howEn: 'Conditioning and walking exercises.' },
+  { key: 'sport', nl: 'Techniek', en: 'Technique', howNl: 'Sportspecifieke oefeningen.', howEn: 'Sport-specific exercises.' },
+  { key: 'discipline', nl: 'Discipline', en: 'Discipline', howNl: 'Trainingen afronden en volle weken halen.', howEn: 'Completing workouts and full weeks.' },
+  { key: 'recovery', nl: 'Herstel', en: 'Recovery', howNl: 'Je pijn doorgeven, je pijnkaart bijhouden en minder pijn krijgen.', howEn: 'Reporting pain, keeping your body map and having less pain.' },
+];
+
+/** Which skills an exercise trains, from its training categories and movement category. */
+export function skillsForExercise(trainingCategories: string[], movementCategory: string | null): SkillKey[] {
+  const out = new Set<SkillKey>();
+  for (const c of trainingCategories) {
+    if (['strength', 'isometric', 'eccentric', 'concentric'].includes(c)) out.add('strength');
+    if (['mobility', 'neurodynamics'].includes(c)) out.add('mobility');
+    if (c === 'balance') out.add('balance');
+    if (['motor_control', 'neuromuscular'].includes(c)) out.add('stability');
+    if (c === 'plyometrics') out.add('power');
+    if (c === 'conditioning') out.add('endurance');
+    if (c === 'sport_specific') out.add('sport');
+  }
+  if (movementCategory === 'core_stability') out.add('stability');
+  if (movementCategory === 'stretch') out.add('mobility');
+  if (movementCategory === 'jump') out.add('power');
+  if (movementCategory === 'gait') out.add('endurance');
+  if (['squat', 'hinge', 'lunge', 'push', 'pull', 'carry', 'raise'].includes(movementCategory ?? '') && !out.size) out.add('strength');
+  return [...out];
+}
+
+export const SKILL_XP = {
+  exercise: 10, // per completed exercise, for every skill it trains
+  strengthSet: 2, // per logged strength set (Kracht)
+  session: 20, // Discipline, per completed workout
+  fullWeek: 50, // Discipline, per week with every planned day done
+  painReported: 15, // Herstel, per workout with a pain score
+  painCheckin: 30, // Herstel, per week with a body-map check-in
+  painPointDown: 40, // Herstel, per point the average pain went down since the start
+} as const;
+
+/** XP needed for a skill level (1–99): a long climb, like RuneScape, but early levels come fast. */
+export const skillXpForLevel = (level: number) => Math.round(25 * Math.pow(level - 1, 1.8));
+
+export function skillLevel(xp: number) {
+  let level = 1;
+  while (level < 99 && xp >= skillXpForLevel(level + 1)) level++;
+  const from = skillXpForLevel(level);
+  const to = level === 99 ? from : skillXpForLevel(level + 1);
+  return { level, xp, from, to, progress: level === 99 ? 1 : (xp - from) / (to - from) };
+}
+
+// ----------------------------------------------------------------------------------------------
+// Quest: the road to the goal of a phased programme
+// ----------------------------------------------------------------------------------------------
+
+/** "5-8" → { from: 5, to: 8 }; anything else → null. */
+export function parseWeeks(w: string | null | undefined) {
+  const m = /(\d+)\s*[-–]\s*(\d+)/.exec(w ?? '');
+  return m ? { from: Number(m[1]), to: Number(m[2]) } : null;
+}
+
+/**
+ * Where the patient is on the route and when the goal is expected according to the schedule.
+ * `phaseStart` is the start date of the current phase's programme. The expectation is the plan,
+ * not a promise: the therapist decides when the next phase starts.
+ */
+export function questTimeline(input: { phases: { no: number; weeks: string | null }[]; currentNo: number; phaseStart: string | null; today?: Date }) {
+  const today = input.today ?? new Date();
+  const cur = parseWeeks(input.phases.find((p) => p.no === input.currentNo)?.weeks);
+  const last = parseWeeks([...input.phases].sort((a, b) => b.no - a.no)[0]?.weeks);
+  if (!cur || !last || !input.phaseStart) return null;
+  const start = new Date(input.phaseStart + 'T12:00:00');
+  const seriesStart = new Date(start.getTime() - (cur.from - 1) * 7 * 86400_000);
+  const totalWeeks = last.to;
+  const elapsedWeeks = Math.max(0, (today.getTime() - seriesStart.getTime()) / (7 * 86400_000));
+  const week = Math.min(totalWeeks, Math.floor(elapsedWeeks) + 1);
+  const expectedEnd = new Date(seriesStart.getTime() + totalWeeks * 7 * 86400_000);
+  const weeksLeft = Math.max(0, Math.ceil((expectedEnd.getTime() - today.getTime()) / (7 * 86400_000)));
+  return { week, totalWeeks, progress: Math.min(1, elapsedWeeks / totalWeeks), expectedEnd: expectedEnd.toISOString().slice(0, 10), weeksLeft };
+}

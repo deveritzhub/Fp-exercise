@@ -1,18 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Award, Check, ChevronRight, Lock, Sparkles } from 'lucide-react';
+import { ArrowLeft, Award, CalendarCheck, Check, ChevronRight, CircleCheck, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, PersonStanding, Shield, Sparkles, Trophy, Zap, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
 import { useSession } from '@/lib/session';
 import { cn } from '@/lib/cn';
-import { Button, Card, ErrorState, Input, Notice, ProgressBar, Spinner, useToast } from '@/components/ui';
+import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, Spinner, useToast } from '@/components/ui';
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { EYE_COLOURS, HAIR_COLOURS, HumanFigure, KIT, SKIN_TONES } from '@/components/hero/HumanFigure';
 import { BodyMap, type PainEntries } from '@/components/hero/BodyMap';
-import { PhaseTimeline } from '@/components/app/PhaseInfo';
-import { BADGES, DEFAULT_LOOK, HERO_OPTIONS, XP, titleFor, type HeroLook } from '@shared/hero';
+import { BADGES, DEFAULT_LOOK, HERO_OPTIONS, SKILLS, XP, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import type { HeroState } from '@/lib/types';
 
 export const HERO_LATER_KEY = 'fp.heroLater';
@@ -198,20 +197,129 @@ export function HeroSetupPage({ edit = false }: { edit?: boolean }) {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number | null }) {
-  const { t } = useI18n();
+const SKILL_ICON: Record<SkillKey, LucideIcon> = {
+  strength: Dumbbell, mobility: Move, balance: PersonStanding, stability: Shield, power: Zap,
+  endurance: HeartPulse, sport: Trophy, discipline: CalendarCheck, recovery: Sparkles,
+};
+
+/** RuneScape-style skills: every skill levels from 1 to 99 on its own. */
+function Skills({ d }: { d: HeroState }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const [open, setOpen] = useState<SkillKey | null>(null);
+  const sel = d.skills.find((k) => k.key === open);
+  const info = SKILLS.find((k) => k.key === open);
   return (
-    <div>
-      <div className="flex items-baseline justify-between text-[14px]">
-        <span className="font-medium text-ink-800">{label}</span>
-        <span className="tabular-nums text-ink-600">{value === null ? t('nog geen data', 'no data yet') : `${value}/10`}</span>
+    <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="skills-title">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="skills-title" className="t-section">{t('Skills', 'Skills')}</h2>
+        <span className="text-[14px] text-ink-600">{t('Totaal level', 'Total level')} <strong className="font-display text-[18px] tabular-nums text-ink-950">{d.totalLevel}</strong></span>
       </div>
-      <ProgressBar value={value === null ? 0 : value / 10} className="mt-1.5 h-2" label={`${label}: ${value === null ? '—' : `${value}/10`}`} />
-    </div>
+      <ul className="mt-3 grid grid-cols-3 gap-2">
+        {d.skills.map((k) => {
+          const Icon = SKILL_ICON[k.key];
+          const meta = SKILLS.find((x) => x.key === k.key)!;
+          return (
+            <li key={k.key}>
+              <button
+                type="button"
+                onClick={() => setOpen(k.key)}
+                className="tap flex min-h-[96px] w-full flex-col items-center justify-center gap-1 rounded-xl border border-line bg-canvas p-2 text-center hover:border-ink-300"
+              >
+                <Icon className="h-5 w-5 text-accent" aria-hidden />
+                <span className="w-full break-words text-[12.5px] font-medium leading-tight text-ink-700">{nl ? meta.nl : meta.en}</span>
+                <span className="font-display text-[20px] font-bold leading-none tabular-nums text-ink-950"><span className="sr-only">level </span>{k.level}<span className="text-[12px] font-medium text-ink-500">/99</span></span>
+                <span className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-ink-100" aria-hidden><span className="block h-full rounded-full bg-accent" style={{ width: `${k.progress * 100}%` }} /></span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <Dialog open={!!sel} onClose={() => setOpen(null)} size="sm" title={sel && info ? `${nl ? info.nl : info.en} · level ${sel.level}` : ''}
+        footer={<Button onClick={() => setOpen(null)}>{t('Sluiten', 'Close')}</Button>}>
+        {sel && info && (
+          <div className="space-y-3 text-[15px]">
+            <p className="text-ink-700">{t('Zo train je deze skill:', 'How to train this skill:')} {nl ? info.howNl : info.howEn}</p>
+            <div>
+              <div className="flex justify-between text-[14px]"><span>{sel.xp} XP</span><span className="text-ink-600">{sel.level < 99 ? t(`nog ${sel.to - sel.xp} XP tot level ${sel.level + 1}`, `${sel.to - sel.xp} XP to level ${sel.level + 1}`) : t('Maximaal level!', 'Maximum level!')}</span></div>
+              <ProgressBar value={sel.progress} className="mt-1.5 h-2.5" label={t('Voortgang naar het volgende level', 'Progress to the next level')} />
+            </div>
+          </div>
+        )}
+      </Dialog>
+    </section>
   );
 }
 
-/** The character sheet: hero, level and XP, chapter (phase), stats, body map and badges. */
+/** The main quest: the goal, the route (phases), how far the patient has come and the expected time to the goal. */
+function Quest({ d }: { d: HeroState }) {
+  const { t, locale } = useI18n();
+  const q = d.quest;
+  const fmt = (iso: string) => new Date(iso + 'T12:00:00').toLocaleDateString(locale === 'nl' ? 'nl-NL' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const days = d.totals.since ? Math.max(1, Math.round((Date.now() - new Date(d.totals.since).getTime()) / 86400_000)) : null;
+  return (
+    <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="quest-title">
+      <p className="t-label flex items-center gap-1.5"><Flag className="h-4 w-4" aria-hidden />{t('Hoofdquest', 'Main quest')}</p>
+      {!q ? (
+        <>
+          <h2 id="quest-title" className="t-section mt-1">{t('Nog geen quest', 'No quest yet')}</h2>
+          <p className="mt-1 text-[15px] text-ink-600">{t('Zodra je fysiotherapeut een programma voor je klaarzet, zie je hier je doel en de weg ernaartoe.', 'As soon as your physiotherapist sets up a programme for you, you see your goal and the road to it here.')}</p>
+        </>
+      ) : (
+        <>
+          <h2 id="quest-title" className="t-section mt-1">{q.title}</h2>
+          {q.goal && <p className="mt-1 text-[15px] text-ink-800"><strong>{t('Doel', 'Goal')}:</strong> {q.goal}</p>}
+          {q.timeline ? (
+            <div className="mt-4">
+              <div className="flex items-baseline justify-between text-[14px]">
+                <span className="font-semibold text-ink-900">{t(`Week ${q.timeline.week} van ${q.timeline.totalWeeks}`, `Week ${q.timeline.week} of ${q.timeline.totalWeeks}`)}</span>
+                <span className="tabular-nums text-ink-600">{t(`${Math.round(q.timeline.progress * 100)}% onderweg`, `${Math.round(q.timeline.progress * 100)}% of the way`)}</span>
+              </div>
+              <ProgressBar value={q.timeline.progress} className="mt-1.5 h-3" label={t('Voortgang naar je doel', 'Progress to your goal')} />
+              <p className="mt-3 flex items-start gap-2 rounded-lg bg-sand-soft px-3 py-2.5 text-[14.5px] text-ink-800">
+                <Hourglass className="mt-0.5 h-4 w-4 shrink-0 text-sand-ink" aria-hidden />
+                <span>
+                  {q.timeline.weeksLeft > 0
+                    ? t(`Volgens het schema bereik je je doel rond ${fmt(q.timeline.expectedEnd)}: nog ongeveer ${q.timeline.weeksLeft} ${q.timeline.weeksLeft === 1 ? 'week' : 'weken'}.`, `According to the schedule you reach your goal around ${fmt(q.timeline.expectedEnd)}: about ${q.timeline.weeksLeft} more week(s).`)
+                    : t('Je zit aan het einde van het schema. Je fysiotherapeut bespreekt met je hoe je verder gaat.', 'You are at the end of the schedule. Your physiotherapist discusses the next steps with you.')}
+                </span>
+              </p>
+              <p className="mt-1.5 text-[13px] text-ink-600">{t('Dit is een verwachting: iedereen herstelt in een eigen tempo, en je fysiotherapeut beslist wanneer je verder gaat.', 'This is an estimate: everyone recovers at their own pace, and your physiotherapist decides when you move on.')}</p>
+            </div>
+          ) : (
+            <p className="mt-2 text-[14px] text-ink-600">{t('Voor dit programma is geen einddatum gepland; je fysiotherapeut bepaalt de duur.', 'This programme has no planned end date; your physiotherapist decides the duration.')}</p>
+          )}
+          {q.phases.length > 1 && (
+            <ol className="mt-4 space-y-2" aria-label={t('Route van je revalidatie', 'Route of your rehabilitation')}>
+              {q.phases.map((ph) => (
+                <li key={ph.no} className={cn('flex gap-3 rounded-xl border p-3', ph.status === 'current' ? 'border-accent/40 bg-accent-soft' : 'border-line')}>
+                  <span className={cn('mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full', ph.status === 'done' ? 'bg-accent text-accent-ink' : ph.status === 'current' ? 'bg-white text-accent ring-2 ring-accent' : 'bg-ink-100 text-ink-500')} aria-hidden>
+                    {ph.status === 'done' ? <CircleCheck className="h-4 w-4" /> : ph.status === 'current' ? <MapPin className="h-4 w-4" /> : <Lock className="h-3.5 w-3.5" />}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[14.5px] font-semibold text-ink-900">
+                      {ph.name ?? t(`Fase ${ph.no}`, `Phase ${ph.no}`)}
+                      {ph.weeks && <span className="font-normal text-ink-600"> · {t('week', 'week')} {ph.weeks}</span>}
+                      <span className="sr-only"> ({ph.status === 'done' ? t('voltooid', 'completed') : ph.status === 'current' ? t('je bent hier', 'you are here') : t('nog op slot', 'still locked')})</span>
+                    </span>
+                    {ph.goal && <span className="block text-[13.5px] text-ink-700">{ph.goal}</span>}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </>
+      )}
+      <dl className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-4 text-center">
+        <div><dt className="text-[12.5px] text-ink-600">{t('Onderweg', 'On the road')}</dt><dd className="font-display text-[18px] font-bold tabular-nums">{days ? t(`${days} d`, `${days} d`) : '—'}</dd></div>
+        <div><dt className="text-[12.5px] text-ink-600">{t('Trainingen', 'Workouts')}</dt><dd className="font-display text-[18px] font-bold tabular-nums">{d.totals.sessions}</dd></div>
+        <div><dt className="text-[12.5px] text-ink-600">{t('Pijn start → nu', 'Pain start → now')}</dt><dd className="font-display text-[18px] font-bold tabular-nums">{d.totals.painStart ?? '—'} → {d.totals.painNow ?? '—'}</dd></div>
+      </dl>
+    </section>
+  );
+}
+
+/** The character sheet: the hero with their pain, the main quest, skills and badges. */
 export function HeroPage() {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
@@ -238,14 +346,14 @@ export function HeroPage() {
     <div className="space-y-5">
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="hero-name">
         <div className="flex items-center gap-4">
-          <HeroAvatar look={d.hero} size={96} level={L.level} />
+          <HeroAvatar look={d.hero} size={80} level={L.level} />
           <div className="min-w-0">
             <p className="t-label">{t(`Level ${L.level}`, `Level ${L.level}`)} · {titleFor(L.level, nl)}</p>
             <h1 id="hero-name" className="t-page [overflow-wrap:anywhere]">{d.hero.heroName}</h1>
             <Link to="/p/held/uiterlijk" className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent">{t('Uiterlijk aanpassen', 'Change look')}</Link>
           </div>
         </div>
-        <div className="mt-4">
+        <div className="mt-3">
           <div className="flex items-baseline justify-between text-[14px]">
             <span className="font-semibold text-ink-900">{L.xp} XP</span>
             <span className="text-ink-600">{t(`nog ${L.to - L.xp} XP tot level ${L.level + 1}`, `${L.to - L.xp} XP to level ${L.level + 1}`)}</span>
@@ -260,48 +368,29 @@ export function HeroPage() {
             <li>+{XP.redFlag} XP · {t('een alarmsignaal gemeld', 'a warning sign reported')}</li>
             <li>+{XP.painCheckin} XP · {t('je pijnkaart bijgewerkt (1× per week)', 'your body map updated (once a week)')}</li>
           </ul>
-          <p className="text-ink-600">{t('Doorgaan met pijn levert nooit extra punten op, en een rustdag kost je niets.', 'Training through pain never earns extra points, and a rest day costs you nothing.')}</p>
+          <p className="text-ink-600">{t('Elke oefening traint ook skills, zoals Kracht of Balans. Doorgaan met pijn levert nooit extra punten op, en een rustdag kost je niets.', 'Every exercise also trains skills, such as Strength or Balance. Training through pain never earns extra points, and a rest day costs you nothing.')}</p>
         </details>
       </section>
 
-      <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="chapter-title">
-        <h2 id="chapter-title" className="t-section">{t('Je avontuur', 'Your journey')}</h2>
-        {d.chapter ? (
-          <>
-            <p className="mt-1 text-[15px] text-ink-800">{d.chapter.title}</p>
-            {d.chapter.count > 1 && <PhaseTimeline phaseNo={d.chapter.no} phaseCount={d.chapter.count} className="mt-3" />}
-            {d.chapter.goal && <p className="mt-3 text-[14.5px] text-ink-700"><strong>{t('Doel van dit hoofdstuk', 'Goal of this chapter')}:</strong> {d.chapter.goal}</p>}
-            <p className="mt-2 text-[13.5px] text-ink-600">{t('Het volgende hoofdstuk zet je fysiotherapeut klaar zodra je eraan toe bent.', 'Your physiotherapist unlocks the next chapter when you are ready.')}</p>
-          </>
-        ) : (
-          <p className="mt-1 text-[15px] text-ink-600">{t('Elke training brengt je verder. Je fysiotherapeut kan je revalidatie in hoofdstukken (fases) opdelen.', 'Every workout takes you further. Your physiotherapist can divide your rehabilitation into chapters (phases).')}</p>
-        )}
-      </section>
-
-      <section className="space-y-3 rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="stats-title">
-        <h2 id="stats-title" className="t-section">{t('Eigenschappen', 'Attributes')}</h2>
-        <Stat label={t('Doorzetten', 'Consistency')} value={d.stats.consistency} />
-        <Stat label={t('Herstel', 'Recovery')} value={d.stats.recovery} />
-        <Stat label={t('Kracht', 'Strength')} value={d.stats.strength} />
-        <Stat label={t('Mobiliteit', 'Mobility')} value={d.stats.mobility} />
-      </section>
+      <Quest d={d} />
 
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="map-title">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 id="map-title" className="t-section">{t('Pijnkaart', 'Body map')}</h2>
+            <h2 id="map-title" className="t-section">{t('Je held en je pijn', 'Your hero and your pain')}</h2>
             <p className="text-[13.5px] text-ink-600">
               {d.painMap.current ? t(`Laatst bijgewerkt ${new Date(d.painMap.current.recordedAt).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' })}`, `Last updated ${new Date(d.painMap.current.recordedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`) : t('Nog niet ingevuld', 'Not filled in yet')}
             </p>
           </div>
           <Link to="/p/held/pijn" className="inline-flex h-11 shrink-0 items-center gap-1 rounded-lg bg-accent-soft px-3 text-[14px] font-semibold text-accent">{t('Bijwerken', 'Update')}<ChevronRight className="h-4 w-4" aria-hidden /></Link>
         </div>
-        {d.painMap.current && d.painMap.current.entries.length === 0 ? (
+        {d.painMap.current && d.painMap.current.entries.length === 0 && (
           <Notice tone="ok" className="mt-3">{t('Je gaf aan dat je nergens pijn hebt.', 'You reported no pain anywhere.')}</Notice>
-        ) : (
-          <BodyMap entries={toEntries(d.painMap.current)} compare={d.painMap.checkins > 1 ? toEntries(d.painMap.baseline) : undefined} look={d.hero} className="mt-3" />
         )}
+        <BodyMap entries={toEntries(d.painMap.current)} compare={d.painMap.checkins > 1 ? toEntries(d.painMap.baseline) : undefined} look={d.hero} className="mt-3" />
       </section>
+
+      <Skills d={d} />
 
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="badges-title">
         <h2 id="badges-title" className="t-section">{t(`Badges (${earned} van ${d.badges.length})`, `Badges (${earned} of ${d.badges.length})`)}</h2>

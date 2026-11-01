@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BADGES, BODY_AREAS, DEFAULT_LOOK, averagePain, levelFor, titleFor, validLook, xpFor, xpForLevel } from './hero';
+import { BADGES, BODY_AREAS, DEFAULT_LOOK, averagePain, levelFor, questTimeline, skillLevel, skillXpForLevel, skillsForExercise, titleFor, validLook, xpFor, xpForLevel } from './hero';
 
 describe('sports hero rules', () => {
   it('levels grow gently and progress is between 0 and 1', () => {
@@ -48,5 +48,33 @@ describe('sports hero rules', () => {
     expect(validLook({ ...max, build: 'huge' })).toBe(false);
     expect(averagePain([4, 6])).toBe(5);
     expect(averagePain([])).toBeNull();
+  });
+});
+
+describe('skills and quest', () => {
+  it('maps exercises to skills', () => {
+    expect(skillsForExercise(['strength', 'eccentric'], 'squat')).toEqual(['strength']);
+    expect(skillsForExercise(['balance', 'motor_control'], null).sort()).toEqual(['balance', 'stability']);
+    expect(skillsForExercise([], 'hinge')).toEqual(['strength']);
+    expect(skillsForExercise([], 'stretch')).toEqual(['mobility']);
+  });
+
+  it('skill levels climb from 1 to 99', () => {
+    expect(skillLevel(0).level).toBe(1);
+    expect(skillLevel(25).level).toBe(2);
+    expect(skillLevel(skillXpForLevel(10)).level).toBe(10);
+    expect(skillLevel(10_000_000)).toMatchObject({ level: 99, progress: 1 });
+  });
+
+  it('quest: week, progress and expected end follow the phase schedule', () => {
+    const phases = [{ no: 1, weeks: '1-4' }, { no: 2, weeks: '5-8' }, { no: 3, weeks: '9-12' }];
+    // Phase 2 started on 2 Nov, so the series started 4 weeks earlier (5 Oct) and ends after 12 weeks.
+    const q = questTimeline({ phases, currentNo: 2, phaseStart: '2026-11-02', today: new Date('2026-11-09T12:00:00') })!;
+    expect(q.week).toBe(6);
+    expect(q.totalWeeks).toBe(12);
+    expect(q.expectedEnd).toBe('2026-12-28');
+    expect(q.weeksLeft).toBe(7);
+    expect(q.progress).toBeCloseTo(5 / 12, 2);
+    expect(questTimeline({ phases: [{ no: 1, weeks: 'n.v.t.' }], currentNo: 1, phaseStart: '2026-11-02' })).toBeNull();
   });
 });
