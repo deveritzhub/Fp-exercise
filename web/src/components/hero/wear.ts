@@ -17,25 +17,28 @@ const FRAME_SPREAD = { f: 1, m: 1.1 } as const;
 // Measured on the lean feminine photo: head top 0.03, chin 0.15, shoulders 0.19 (x 0.35–0.65),
 // waist 0.43 (x 0.39–0.61), wrists 0.51 (x 0.35 / 0.65), knees 0.71 (x 0.42 / 0.58), feet 0.96.
 // Only items that can lie flat on (or next to) the photo. Things that wrap around the head or neck
-// (cap, visor, headband, crown, scarf, towel, headphones) or sit under the shirt (heart-rate band)
+// (cap, visor, headband, crown, scarf, towel, socks) or sit under the shirt (heart-rate band)
 // look pasted on, so they stay small product photos in the corner.
 export const WEAR_SLOTS: Record<string, Slot> = {
-  medal: { x: 0.5, y: 0.25, w: 0.11 },
+  // Measured again on a large screenshot of the lean feminine photo (owner's check, 2026-11-01):
+  // neck 0.18, shoulders x 0.35–0.66, hem 0.445, wrists 0.52 (x 0.345 / 0.655), hands 0.56,
+  // knees 0.69 (x 0.42 / 0.58), shins 0.79, shoes 0.935 (x 0.39 / 0.61).
+  headphones: { x: 0.5, y: 0.18, w: 0.17, scale: true },
+  medal: { x: 0.5, y: 0.27, w: 0.1 },
   pin: { x: 0.565, y: 0.265, w: 0.04, spread: true },
-  captain: { x: 0.345, y: 0.27, w: 0.06, spread: true },
-  yoga_mat: { x: 0.69, y: 0.3, w: 0.11, spread: true },
-  belt: { x: 0.5, y: 0.43, w: 0.25, scale: true },
-  watch: { x: 0.345, y: 0.505, w: 0.045, spread: true },
-  wristbands: { x: 0.35, y: 0.5, w: 0.055, side: 'both', spread: true },
-  gloves: { x: 0.35, y: 0.56, w: 0.075, side: 'both', spread: true },
-  sleeve: { x: 0.578, y: 0.71, w: 0.07, spread: true },
-  shin_guards: { x: 0.42, y: 0.8, w: 0.06, side: 'both', spread: true },
-  crew_socks: { x: 0.418, y: 0.915, w: 0.065, side: 'both', spread: true },
-  gold_shoes: { x: 0.417, y: 0.955, w: 0.095, side: 'both', spread: true },
-  balance_shoes: { x: 0.417, y: 0.955, w: 0.095, side: 'both', spread: true },
-  spikes: { x: 0.417, y: 0.955, w: 0.095, side: 'both', spread: true },
-  sport_item: { x: 0.77, y: 0.9, w: 0.13 },
-  crutches: { x: 0.27, y: 0.62, w: 0.09, h: 0.72, side: 'both', spread: true },
+  captain: { x: 0.34, y: 0.255, w: 0.055, spread: true },
+  yoga_mat: { x: 0.72, y: 0.3, w: 0.11, spread: true },
+  belt: { x: 0.5, y: 0.445, w: 0.25, scale: true },
+  watch: { x: 0.345, y: 0.522, w: 0.045, spread: true },
+  wristbands: { x: 0.347, y: 0.515, w: 0.05, side: 'both', spread: true },
+  gloves: { x: 0.352, y: 0.562, w: 0.07, side: 'both', spread: true },
+  sleeve: { x: 0.58, y: 0.69, w: 0.065, spread: true },
+  shin_guards: { x: 0.414, y: 0.79, w: 0.055, side: 'both', spread: true },
+  gold_shoes: { x: 0.392, y: 0.935, w: 0.09, side: 'both', spread: true },
+  balance_shoes: { x: 0.392, y: 0.935, w: 0.09, side: 'both', spread: true },
+  spikes: { x: 0.392, y: 0.935, w: 0.09, side: 'both', spread: true },
+  sport_item: { x: 0.78, y: 0.9, w: 0.13 },
+  crutches: { x: 0.285, y: 0.585, w: 0.09, h: 0.73, side: 'both', spread: true },
 };
 
 /** Back items first, then bottom to top, so a scarf lies over a heart-rate band and a cap over the hair. */

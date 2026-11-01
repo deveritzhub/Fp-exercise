@@ -4,9 +4,9 @@ import { GEAR } from '@shared/hero';
 
 describe('gear on the hero photo', () => {
   it('has a place for every wearable item, and broader builds spread pairs wider', () => {
-    for (const k of ['medal', 'pin', 'captain', 'belt', 'watch', 'wristbands', 'gloves', 'sleeve', 'shin_guards', 'crew_socks', 'gold_shoes', 'spikes', 'crutches']) expect(WEAR_SLOTS[k], k).toBeDefined();
+    for (const k of ['medal', 'pin', 'captain', 'belt', 'watch', 'wristbands', 'gloves', 'sleeve', 'shin_guards', 'headphones', 'gold_shoes', 'spikes', 'crutches']) expect(WEAR_SLOTS[k], k).toBeDefined();
     // Head and neck pieces are not pasted on the photo.
-    for (const k of ['cap', 'visor', 'headband', 'crown', 'scarf', 'towel', 'headphones']) expect(WEAR_SLOTS[k], k).toBeUndefined();
+    for (const k of ['cap', 'visor', 'headband', 'crown', 'scarf', 'towel', 'crew_socks', 'hr_band']) expect(WEAR_SLOTS[k], k).toBeUndefined();
     expect(GEAR.length).toBeGreaterThan(0);
     const lean = wearPlacements(['wristbands'], 'f', 'lean');
     const full = wearPlacements(['wristbands'], 'm', 'full');
