@@ -133,6 +133,11 @@ const ERRORS: Record<string, [string, string]> = {
   friend_self: ['Dit is je eigen vriendcode.', 'This is your own friend code.'],
   friend_exists: ['Jullie zijn al vrienden of er staat al een verzoek open.', 'You are already friends or a request is pending.'],
   friend_limit: ['Je hebt het maximum van 100 vrienden en verzoeken bereikt.', 'You have reached the maximum of 100 friends and requests.'],
+  too_many_protein: ['Je hebt vandaag al genoeg eiwitregels. Haal er een weg als je iets wilt wijzigen.', 'You already have enough protein entries today. Remove one if you want to change something.'],
+  too_many_trainings: ['Je hebt vandaag al genoeg eigen trainingen gelogd.', 'You already logged enough own workouts today.'],
+  bad_minutes: ['Een eigen training is 5 tot 180 minuten.', 'An own workout is 5 to 180 minutes.'],
+  steps_provider_off: ['Google Health is op deze server nog niet ingesteld. Vul je stappen zelf in.', 'Google Health is not set up on this server yet. Enter your steps yourself.'],
+  steps_sync_failed: ['De stappen konden niet worden opgehaald. Probeer het later opnieuw, of vul ze zelf in.', 'The steps could not be fetched. Try again later, or enter them yourself.'],
 };
 
 export function errorMessage(code: string | undefined, locale: Locale) {

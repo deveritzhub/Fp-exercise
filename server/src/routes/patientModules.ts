@@ -255,6 +255,12 @@ patientModules.get('/export', async (c) => {
       hero: (await q('SELECT hero_name, frame, build, skin, hair, hair_color, eye_color, beard, glasses, outfit, sport, created_at, updated_at FROM patient_heroes WHERE patient_id = $1'))[0] ?? null,
       bodyMetrics: (await q('SELECT weight_kg, body_fat_pct, height_cm, updated_at FROM patient_body_metrics WHERE patient_id = $1'))[0] ?? null,
       painMap: await q(`SELECT batch, area, score, recorded_at FROM pain_map_entries WHERE patient_id = $1 AND area <> 'none' ORDER BY recorded_at`),
+      proteinGoal: (await q('SELECT grams, updated_at FROM protein_goals WHERE patient_id = $1'))[0] ?? null,
+      proteinLogs: await q('SELECT day, grams, label, created_at FROM protein_logs WHERE patient_id = $1 ORDER BY created_at'),
+      selfTrainings: await q('SELECT day, kind, minutes, pain, stopped_for_pain, note, created_at FROM self_trainings WHERE patient_id = $1 ORDER BY created_at'),
+      stepGoal: (await q('SELECT steps, updated_at FROM step_goals WHERE patient_id = $1'))[0] ?? null,
+      stepDays: await q('SELECT day, steps, source, updated_at FROM step_days WHERE patient_id = $1 ORDER BY day'),
+      fitnessConnections: await q(`SELECT provider, external_user_id, scope, connected_at, synced_at FROM fitness_connections WHERE patient_id = $1`),
       heroSharing: (await q('SELECT share_with_friends, friend_code, shared_stats, stats_updated_at FROM patient_heroes WHERE patient_id = $1'))[0] ?? null,
       heroFriends: (await q('SELECT kind, hero_name, since FROM app.hero_friends($1)')).map((f) => ({ kind: f.kind, heroName: f.hero_name, since: f.since })),
     };

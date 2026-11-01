@@ -6,6 +6,7 @@ import { rateLimit, requirePatient, requireStaff, type AppEnv } from '../middlew
 import { parse, uuidParam } from '../lib/validate';
 import { HttpError, badRequest, notFound } from '../lib/errors';
 import { loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
+import { loadPatientLogs } from '../lib/patientLogs';
 import { weeklyAdherence } from '../../../shared/adherence';
 import {
   AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, SKILLS, SKILL_XP, averagePain, levelFor, questTimeline,
@@ -117,6 +118,9 @@ async function heroState(tx: Tx, patientId: string) {
     s.checkin_weeks * SKILL_XP.painCheckin +
     (map.checkins > 1 && painBaseline !== null && painNow !== null ? Math.max(0, Math.round((painBaseline - painNow) * SKILL_XP.painPointDown)) : 0);
   skillXp.recovery += daily.length * CHECKIN_XP;
+  // Own workouts and protein sit on top of the existing skill XP. They do not change how programme XP is earned.
+  const logged = await loadPatientLogs(tx, patientId);
+  for (const [k, n] of Object.entries(logged.skillXp)) skillXp[k as SkillKey] += n ?? 0;
   const skills = SKILLS.map((k) => ({ key: k.key, ...skillLevel(skillXp[k.key]) }));
 
   // ---- Weekly quests: evaluated for every week with activity, so XP for past weeks stays. ----
@@ -169,6 +173,7 @@ async function heroState(tx: Tx, patientId: string) {
   const quests = weeklyQuests({ ...weekData(thisWeek), planned: fullWeek.planned }, skillOfWeek(thisWeek, rotation));
   xp += questXp(quests);
   if (quests.every((x) => x.done)) chestWeeks++;
+  xp += logged.heroXp;
 
   // ---- Gear: unlocked by hero level, skill level and other real progress. ----
   const reached = levelFor(xp);
@@ -247,6 +252,7 @@ async function heroState(tx: Tx, patientId: string) {
     metrics,
     checkin,
     trends,
+    logs: logged.view,
   };
 }
 
