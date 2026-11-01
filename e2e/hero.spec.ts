@@ -32,7 +32,11 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await expect(pp.getByRole('heading', { name: 'Maak je sportheld' })).toBeVisible();
   await expectAccessible(pp, 'hero step 1');
   await pp.getByLabel('Naam van je held').fill('Emma de Sprinter');
-  await pp.getByRole('radio', { name: 'Hardlopen' }).click();
+  // Several sports can be ticked; running (the default) stays the main one.
+  await expect(pp.getByRole('checkbox', { name: 'Hardlopen' })).toBeChecked();
+  await pp.getByRole('checkbox', { name: 'Fitness' }).click();
+  await pp.getByRole('checkbox', { name: 'Wandelen' }).click();
+  await expect(pp.getByRole('checkbox', { name: /Fitness/ })).toBeChecked();
   await pp.getByRole('button', { name: 'Volgende' }).click();
 
   // Body: figure, build, skin tone; the preview follows.
@@ -125,6 +129,8 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   // A workout: XP for the hero, and a level up when a skill goes up.
   const home = await (await pp.request.get('/api/patient/home')).json();
   const before = await (await pp.request.get('/api/patient/hero')).json();
+  expect(before.hero.sports).toEqual(['running', 'fitness', 'walking']);
+  expect(before.hero.sport).toBe('running');
   await pp.goto(`/p/sessie/${home.programs[0].id}`);
   await pp.getByRole('button', { name: /Beginnen|Verder met training/ }).click();
   for (let i = 0; i < 12; i++) {

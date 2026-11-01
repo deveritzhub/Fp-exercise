@@ -69,15 +69,19 @@ export type HeroLook = {
   beard: string;
   glasses: string;
   outfit: string;
+  /** Main sport (the first of `sports`). */
   sport: string;
+  /** All sports the patient does. */
+  sports?: string[];
 };
 
-export const DEFAULT_LOOK: Omit<HeroLook, 'heroName'> = {
+export const DEFAULT_LOOK: Omit<HeroLook, 'heroName' | 'sports'> = {
   frame: 'f', build: 'average', skin: 's4', hair: 'long', hairColor: 'darkbrown', eyeColor: 'brown', beard: 'none', glasses: 'none', outfit: 'forest', sport: 'running',
 };
 
 export const validLook = (l: HeroLook) =>
-  (Object.keys(DEFAULT_LOOK) as (keyof typeof DEFAULT_LOOK)[]).every((k) => (HERO_OPTIONS[k] as readonly string[]).includes(l[k]));
+  (Object.keys(DEFAULT_LOOK) as (keyof typeof DEFAULT_LOOK)[]).every((k) => (HERO_OPTIONS[k] as readonly string[]).includes(l[k])) &&
+  (l.sports ?? []).every((s) => (HERO_OPTIONS.sport as readonly string[]).includes(s));
 
 // ----------------------------------------------------------------------------------------------
 // XP and levels

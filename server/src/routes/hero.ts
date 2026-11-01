@@ -41,13 +41,15 @@ const look = z.object({
   glasses: z.enum(HERO_OPTIONS.glasses),
   outfit: z.enum(HERO_OPTIONS.outfit),
   sport: z.enum(HERO_OPTIONS.sport),
+  /** Every sport the patient does; the first is the main one. Optional for older clients. */
+  sports: z.array(z.enum(HERO_OPTIONS.sport)).min(1).max(10).optional(),
 });
 
 const mapHero = (r: Record<string, any> | undefined) =>
   r
     ? {
         heroName: r.hero_name, frame: r.frame, build: r.build, skin: r.skin, hair: r.hair, hairColor: r.hair_color, eyeColor: r.eye_color,
-        beard: r.beard, glasses: r.glasses, outfit: r.outfit, sport: r.sport, gear: (r.gear ?? []) as string[], createdAt: r.created_at,
+        beard: r.beard, glasses: r.glasses, outfit: r.outfit, sport: r.sport, sports: (r.sports?.length ? r.sports : [r.sport]) as string[], gear: (r.gear ?? []) as string[], createdAt: r.created_at,
       }
     : null;
 
@@ -403,14 +405,16 @@ heroPatient.delete('/hero/friends/:id', async (c) => {
 heroPatient.put('/hero', async (c) => {
   const { user, patient } = requirePatient(c);
   const b = parse(look, await c.req.json());
+  const sports = [...new Set(b.sports ?? [b.sport])];
+  const sport = sports[0];
   await withUser(user.id, (tx) =>
     tx.query(
-      `INSERT INTO patient_heroes(patient_id, practice_id, hero_name, frame, build, skin, hair, hair_color, eye_color, beard, glasses, outfit, sport)
-       VALUES ($1, app.patient_practice($1), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `INSERT INTO patient_heroes(patient_id, practice_id, hero_name, frame, build, skin, hair, hair_color, eye_color, beard, glasses, outfit, sport, sports)
+       VALUES ($1, app.patient_practice($1), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        ON CONFLICT (patient_id) DO UPDATE SET hero_name = EXCLUDED.hero_name, frame = EXCLUDED.frame, build = EXCLUDED.build,
          skin = EXCLUDED.skin, hair = EXCLUDED.hair, hair_color = EXCLUDED.hair_color, eye_color = EXCLUDED.eye_color,
-         beard = EXCLUDED.beard, glasses = EXCLUDED.glasses, outfit = EXCLUDED.outfit, sport = EXCLUDED.sport, updated_at = now()`,
-      [patient.id, b.heroName, b.frame, b.build, b.skin, b.hair, b.hairColor, b.eyeColor, b.beard, b.glasses, b.outfit, b.sport],
+         beard = EXCLUDED.beard, glasses = EXCLUDED.glasses, outfit = EXCLUDED.outfit, sport = EXCLUDED.sport, sports = EXCLUDED.sports, updated_at = now()`,
+      [patient.id, b.heroName, b.frame, b.build, b.skin, b.hair, b.hairColor, b.eyeColor, b.beard, b.glasses, b.outfit, sport, sports],
     ),
   );
   return c.json({ ok: true });

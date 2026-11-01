@@ -59,6 +59,37 @@ function Choice<T extends string>({ legend, name, value, options, onChange, rend
   );
 }
 
+/** Tick every sport you do (at least one). The first one ticked is the main sport, shown on the badge. */
+function SportPicker({ look, onChange }: { look: HeroLook; onChange: (sports: string[]) => void }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const chosen = look.sports?.length ? look.sports : [look.sport];
+  const toggle = (v: string) => {
+    const next = chosen.includes(v) ? chosen.filter((x) => x !== v) : [...chosen, v];
+    if (next.length) onChange(next);
+  };
+  return (
+    <fieldset>
+      <legend className="mb-1 text-[15px] font-semibold text-ink-900">{t('Jouw sporten', 'Your sports')}</legend>
+      <p className="mb-2 text-[13.5px] text-ink-600">{t('Vink alles aan wat je doet. De eerste is je hoofdsport.', 'Tick everything you do. The first one is your main sport.')}</p>
+      <div className="grid grid-cols-2 gap-2">
+        {HERO_OPTIONS.sport.map((v) => {
+          const on = chosen.includes(v);
+          const Icon = SPORT_ICON[v];
+          return (
+            <label key={v} className={cn('tap relative flex min-h-[52px] cursor-pointer items-center justify-center gap-2 rounded-xl border bg-white p-2 text-center text-[14px] transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent', on ? 'border-accent bg-accent-soft font-semibold text-accent' : 'border-line text-ink-700 hover:border-ink-300')}>
+              <input type="checkbox" name="sports" value={v} checked={on} onChange={() => toggle(v)} className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0" />
+              <Icon className="h-4 w-4 shrink-0" aria-hidden />{SPORTS[v][nl ? 0 : 1]}
+              {on && <Check className="absolute right-1.5 top-1.5 h-3.5 w-3.5" aria-hidden />}
+              {on && chosen[0] === v && chosen.length > 1 && <span className="absolute bottom-1 right-1.5 text-[10.5px] font-semibold uppercase tracking-wide">{t('hoofd', 'main')}</span>}
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
 /** First visit: build the sports hero step by step, then mark where it hurts. Later edits use HeroProfilePage. */
 export function HeroSetupPage() {
   const { t, locale, kind } = useI18n();
@@ -148,8 +179,7 @@ export function HeroSetupPage() {
         <Card className="space-y-5 p-5">
           <div className="flex justify-center"><HeroAvatar look={look} size={112} level={1} /></div>
           <HeroNameField value={look.heroName} frame={look.frame} onChange={(v) => set('heroName', v)} />
-          <Choice legend={t('Jouw sport', 'Your sport')} name="sport" cols="grid-cols-2" value={look.sport as Opt<'sport'>} options={HERO_OPTIONS.sport} onChange={(v) => set('sport', v)}
-            render={(v) => { const Icon = SPORT_ICON[v]; return <><Icon className="h-4 w-4 shrink-0" aria-hidden />{SPORTS[v][nl ? 0 : 1]}</>; }} />
+          <SportPicker look={look} onChange={(sports) => setLook((l) => ({ ...l, sports, sport: sports[0] }))} />
           <Button size="xl" className="w-full" disabled={!look.heroName.trim()} onClick={() => setStep(2)}>{t('Volgende', 'Next')}</Button>
         </Card>
       )}
@@ -293,7 +323,7 @@ export function HeroProfilePage() {
     const h = q.data.hero;
     setLook({
       heroName: h.heroName, frame: h.frame, build: h.build, skin: h.skin, hair: h.hair, hairColor: h.hairColor,
-      eyeColor: h.eyeColor, beard: h.beard, glasses: h.glasses, outfit: h.outfit, sport: h.sport,
+      eyeColor: h.eyeColor, beard: h.beard, glasses: h.glasses, outfit: h.outfit, sport: h.sport, sports: h.sports ?? [h.sport],
     });
     const m = q.data.metrics;
     setWeight(metricText(m?.weightKg ?? null, nl));
@@ -366,8 +396,7 @@ export function HeroProfilePage() {
       <Card className="space-y-5 p-5">
         <h2 className="t-section">{t('Uiterlijk', 'Look')}</h2>
         <HeroNameField value={look.heroName} frame={look.frame} onChange={(v) => set('heroName', v)} />
-        <Choice legend={t('Jouw sport', 'Your sport')} name="sport" cols="grid-cols-2" value={look.sport as Opt<'sport'>} options={HERO_OPTIONS.sport} onChange={(v) => set('sport', v)}
-          render={(v) => { const Icon = SPORT_ICON[v]; return <><Icon className="h-4 w-4 shrink-0" aria-hidden />{SPORTS[v][nl ? 0 : 1]}</>; }} />
+        <SportPicker look={look} onChange={(sports) => setLook({ ...look, sports, sport: sports[0] })} />
         <Choice legend={t('Figuur', 'Figure')} name="frame" cols="grid-cols-2" value={look.frame as Opt<'frame'>} options={HERO_OPTIONS.frame} onChange={(v) => set('frame', v)} render={(v) => L('frame', v)} />
         {shape ? (
           <p className="rounded-xl bg-canvas px-3 py-2.5 text-[14px] text-ink-700">{t('Je bouw volgt nu je eigen maten (gewicht, lengte en vetpercentage). Laat ze leeg om zelf een bouw te kiezen.', 'Your build now follows your own measurements (weight, height and body fat). Leave them empty to choose a build yourself.')}</p>

@@ -21,6 +21,14 @@ describe('sports hero', () => {
     expect((await patient.put('/patient/hero', { ...LOOK, skin: 'pink' })).status).toBe(400);
     expect((await patient.put('/patient/hero', LOOK)).status).toBe(200);
     expect((await patient.put('/patient/hero', { ...LOOK, outfit: 'ocean' })).status).toBe(200);
+    // Older clients send only `sport`; it becomes the one sport.
+    expect((await patient.get('/patient/hero')).body.hero).toMatchObject({ sport: 'running', sports: ['running'] });
+    // Several sports: the first is the main one; unknown or empty lists are refused.
+    expect((await patient.put('/patient/hero', { ...LOOK, outfit: 'ocean', sports: ['fitness', 'swimming', 'fitness'] })).status).toBe(200);
+    expect((await patient.get('/patient/hero')).body.hero).toMatchObject({ sport: 'fitness', sports: ['fitness', 'swimming'] });
+    expect((await patient.put('/patient/hero', { ...LOOK, sports: ['skydiving'] })).status).toBe(400);
+    expect((await patient.put('/patient/hero', { ...LOOK, sports: [] })).status).toBe(400);
+    expect((await patient.put('/patient/hero', { ...LOOK, outfit: 'ocean' })).status).toBe(200);
 
     expect((await patient.post('/patient/hero/pain-map', { entries: [{ area: 'elbow_x', score: 3 }] })).body.error).toBe('unknown_body_area');
     expect((await patient.post('/patient/hero/pain-map', { entries: [{ area: 'knee_l', score: 11 }] })).status).toBe(400);
