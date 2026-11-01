@@ -8,7 +8,11 @@ services:
     runtime: node
     region: frankfurt
     plan: free             # upgrade: starter (~$7/month, always on)
-    buildCommand: npm ci --include=dev && npx vite build   # typecheck runs in CI; keeps the free 512 MB build light
+    # Vite inlines VITE_* into the client bundle at build time. The assignment on
+    # `vite build` forces the hosted-demo login buttons on even when service
+    # envVars are not visible to the build. Typecheck stays in CI so this free
+    # plan build stays under the 512 MB limit.
+    buildCommand: npm ci --include=dev && VITE_SHOW_DEMO_ACCOUNTS=1 npx vite build
     startCommand: npm run start:hosted
     healthCheckPath: /api/health
     # disk:                # with plan: starter — uploads survive restarts (~$0.25/GB/month)
