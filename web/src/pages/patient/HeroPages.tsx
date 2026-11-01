@@ -79,6 +79,28 @@ function StrengthCeiling({ c }: { c: NonNullable<HeroState['skills'][number]['ce
   );
 }
 
+/** Play as yourself, or as a guest hero: a real person who agreed to be offered (e.g. the practice owner). */
+function GuestHeroChoice({ guests, value, onChange }: { guests: { key: string; name: string }[]; value: string | null; onChange: (key: string | null) => void }) {
+  const { t } = useI18n();
+  if (!guests.length) return null;
+  const options = ['own', ...guests.map((g) => g.key)];
+  return (
+    <Choice legend={t('Wie is je held?', 'Who is your hero?')} name="guestHero" cols="grid-cols-2" value={value ?? 'own'} options={options}
+      onChange={(k) => onChange(k === 'own' ? null : k)}
+      render={(k) => {
+        const g = guests.find((x) => x.key === k);
+        return g ? (
+          <span className="flex flex-col items-center gap-1.5 py-1 text-[13px] leading-tight">
+            <span className="h-16 w-16 overflow-hidden rounded-full bg-[#ece4d6]" aria-hidden><img src={`/api/hero-assets/avatar/${g.key}`} alt="" className="h-full w-full scale-[2.4] object-cover object-[50%_0%] [transform-origin:50%_8%]" /></span>
+            {t(`Speel als ${g.name}`, `Play as ${g.name}`)}
+          </span>
+        ) : (
+          <span className="py-1 text-[13px]">{t('Mijn eigen held', 'My own hero')}</span>
+        );
+      }} />
+  );
+}
+
 /** Five skin tones: the groups the photos exist for. */
 function SkinChoice({ look, onChange }: { look: HeroLook; onChange: (skin: string) => void }) {
   const { t } = useI18n();
@@ -214,7 +236,7 @@ export function HeroSetupPage() {
 
       {step >= 2 && step <= 3 && (
         <div className="flex justify-center rounded-2xl bg-sage/60 py-3" role="img" aria-label={t(`Voorbeeld van ${look.heroName || 'je held'}`, `Preview of ${look.heroName || 'your hero'}`)}>
-          <HeroPhoto look={look} gearChips={false} className="h-[300px] w-[200px]" />
+          <HeroPhoto look={{ ...look, photo: look.photoKey ?? null }} gearChips={false} className="h-[300px] w-[200px]" />
         </div>
       )}
 
@@ -238,6 +260,7 @@ export function HeroSetupPage() {
 
       {step === 3 && (
         <Card className="space-y-5 p-5">
+          <GuestHeroChoice guests={q.data?.heroGuests ?? []} value={look.photoKey ?? null} onChange={(photoKey) => setLook((l) => ({ ...l, photoKey }))} />
           <HairChoice look={look} onChange={(fields) => setLook((l) => ({ ...l, ...fields }))} />
           {nextBack(() => setStep(4))}
         </Card>
@@ -350,7 +373,7 @@ export function HeroProfilePage() {
     const h = q.data.hero;
     setLook({
       heroName: h.heroName, frame: h.frame, build: h.build, skin: h.skin, hair: h.hair, hairColor: h.hairColor,
-      eyeColor: h.eyeColor, beard: h.beard, glasses: h.glasses, outfit: h.outfit, sport: h.sport, sports: h.sports ?? [h.sport],
+      eyeColor: h.eyeColor, beard: h.beard, glasses: h.glasses, outfit: h.outfit, sport: h.sport, sports: h.sports ?? [h.sport], photoKey: h.photoKey ?? null,
     });
     const m = q.data.metrics;
     setWeight(metricText(m?.weightKg ?? null, nl));
@@ -401,7 +424,8 @@ export function HeroProfilePage() {
   };
   // The figure follows the measurements as you type: more body fat = fuller, high BMI with low fat = muscular.
   const shape = bodyShape({ weightKg: parseMetric(weight), heightCm: parseMetric(height), bodyFatPct: parseMetric(fat) }, look.frame);
-  const preview = { ...look, gear: q.data.gear.equipped, body: shape, photo: q.data.customPhoto ?? null };
+  const personal = q.data.customPhoto && q.data.customPhoto !== q.data.hero?.photoKey ? q.data.customPhoto : null;
+  const preview = { ...look, gear: q.data.gear.equipped, body: shape, photo: look.photoKey ?? personal };
   return (
     <div className="space-y-5">
       <Link to="/p/held" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" aria-hidden />{t('Terug', 'Back')}</Link>
@@ -428,6 +452,7 @@ export function HeroProfilePage() {
           <p className="rounded-xl bg-canvas px-3 py-2.5 text-[14px] text-ink-700">{t('Je bouw volgt nu je eigen maten (gewicht, lengte en vetpercentage). Laat ze leeg om zelf een bouw te kiezen.', 'Your build now follows your own measurements (weight, height and body fat). Leave them empty to choose a build yourself.')}</p>
         ) : <Choice legend={t('Bouw', 'Build')} name="build" cols="grid-cols-2" value={look.build as Opt<'build'>} options={HERO_OPTIONS.build} onChange={(v) => set('build', v)} render={(v) => L('build', v)} />}
         <SkinChoice look={look} onChange={(skin) => set('skin', skin)} />
+        <GuestHeroChoice guests={q.data.heroGuests ?? []} value={look.photoKey ?? null} onChange={(photoKey) => setLook({ ...look, photoKey })} />
         <HairChoice look={look} onChange={(fields) => setLook({ ...look, ...fields })} />
       </Card>
       <Card className="space-y-4 p-5">

@@ -28,6 +28,17 @@ export const config = {
    * Personal hero photos: "email=assetKey;email2=assetKey2". Only for people who asked for their own
    * likeness (e.g. the practice owner); shown on that account's own hero only. Keys must be custom_*.
    */
+  /**
+   * Guest heroes every patient may pick: "custom_1=Name;custom_2=Name". Only photos of people who
+   * agreed to be offered as a hero.
+   */
+  heroGuests: new Map(
+    (process.env.HERO_GUESTS ?? '')
+      .split(';')
+      .map((x) => x.split('=').map((y) => y.trim()))
+      .filter(([k, n]) => /^custom_[a-z0-9_]{1,30}$/.test(k ?? '') && n && n.length <= 40)
+      .map(([k, n]) => [k, n] as [string, string]),
+  ),
   personalHeroPhotos: new Map(
     (process.env.PERSONAL_HERO_PHOTOS ?? '')
       .split(';')

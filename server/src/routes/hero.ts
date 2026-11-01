@@ -44,13 +44,15 @@ const look = z.object({
   sport: z.enum(HERO_OPTIONS.sport),
   /** Every sport the patient does; the first is the main one. Optional for older clients. */
   sports: z.array(z.enum(HERO_OPTIONS.sport)).min(1).max(10).optional(),
+  /** Play as a guest hero (HERO_GUESTS), or null for the own hero. */
+  photoKey: z.string().max(40).nullable().optional(),
 });
 
 const mapHero = (r: Record<string, any> | undefined) =>
   r
     ? {
         heroName: r.hero_name, frame: r.frame, build: r.build, skin: r.skin, hair: r.hair, hairColor: r.hair_color, eyeColor: r.eye_color,
-        beard: r.beard, glasses: r.glasses, outfit: r.outfit, sport: r.sport, sports: (r.sports?.length ? r.sports : [r.sport]) as string[], gear: (r.gear ?? []) as string[], createdAt: r.created_at,
+        beard: r.beard, glasses: r.glasses, outfit: r.outfit, sport: r.sport, sports: (r.sports?.length ? r.sports : [r.sport]) as string[], photoKey: (r.photo_key ?? null) as string | null, gear: (r.gear ?? []) as string[], createdAt: r.created_at,
       }
     : null;
 
@@ -278,7 +280,12 @@ heroPatient.get('/hero', async (c) => {
       const state = await heroState(tx, patient.id);
       await refreshFriendCard(tx, patient.id, state);
       // A personal photo (own likeness, by request) replaces the generated one on this account only.
-      return { ...state, customPhoto: config.personalHeroPhotos.get(user.email.toLowerCase()) ?? null };
+      const guest = state.hero?.photoKey && config.heroGuests.has(state.hero.photoKey) ? state.hero.photoKey : null;
+      return {
+        ...state,
+        customPhoto: config.personalHeroPhotos.get(user.email.toLowerCase()) ?? guest,
+        heroGuests: [...config.heroGuests].map(([key, name]) => ({ key, name })),
+      };
     }),
   );
 });
@@ -407,16 +414,17 @@ heroPatient.delete('/hero/friends/:id', async (c) => {
 heroPatient.put('/hero', async (c) => {
   const { user, patient } = requirePatient(c);
   const b = parse(look, await c.req.json());
+  if (b.photoKey && !config.heroGuests.has(b.photoKey)) throw badRequest('unknown_guest_hero');
   const sports = [...new Set(b.sports ?? [b.sport])];
   const sport = sports[0];
   await withUser(user.id, (tx) =>
     tx.query(
-      `INSERT INTO patient_heroes(patient_id, practice_id, hero_name, frame, build, skin, hair, hair_color, eye_color, beard, glasses, outfit, sport, sports)
-       VALUES ($1, app.patient_practice($1), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      `INSERT INTO patient_heroes(patient_id, practice_id, hero_name, frame, build, skin, hair, hair_color, eye_color, beard, glasses, outfit, sport, sports, photo_key)
+       VALUES ($1, app.patient_practice($1), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        ON CONFLICT (patient_id) DO UPDATE SET hero_name = EXCLUDED.hero_name, frame = EXCLUDED.frame, build = EXCLUDED.build,
          skin = EXCLUDED.skin, hair = EXCLUDED.hair, hair_color = EXCLUDED.hair_color, eye_color = EXCLUDED.eye_color,
-         beard = EXCLUDED.beard, glasses = EXCLUDED.glasses, outfit = EXCLUDED.outfit, sport = EXCLUDED.sport, sports = EXCLUDED.sports, updated_at = now()`,
-      [patient.id, b.heroName, b.frame, b.build, b.skin, b.hair, b.hairColor, b.eyeColor, b.beard, b.glasses, b.outfit, sport, sports],
+         beard = EXCLUDED.beard, glasses = EXCLUDED.glasses, outfit = EXCLUDED.outfit, sport = EXCLUDED.sport, sports = EXCLUDED.sports, photo_key = EXCLUDED.photo_key, updated_at = now()`,
+      [patient.id, b.heroName, b.frame, b.build, b.skin, b.hair, b.hairColor, b.eyeColor, b.beard, b.glasses, b.outfit, sport, sports, b.photoKey ?? null],
     ),
   );
   return c.json({ ok: true });

@@ -55,3 +55,31 @@ describe('personal hero photo', () => {
     }
   });
 });
+
+describe('guest hero', () => {
+  it('patients may play as an offered guest hero, and only those', async () => {
+    const { login, seedDb } = await import('./helpers');
+    await seedDb();
+    config.heroGuests.set('custom_1', 'Dinish');
+    try {
+      const p = await login('patientA');
+      const look = { heroName: 'Emma', frame: 'f', build: 'average', skin: 's3', hair: 'long', hairColor: 'darkbrown', eyeColor: 'brown', beard: 'none', glasses: 'none', outfit: 'forest', sport: 'running' };
+      expect((await p.put('/patient/hero', { ...look, photoKey: 'custom_9' })).body.error).toBe('unknown_guest_hero');
+      expect((await p.put('/patient/hero', { ...look, photoKey: 'custom_1' })).status).toBe(200);
+      let st = (await p.get('/patient/hero')).body;
+      expect(st.heroGuests).toEqual([{ key: 'custom_1', name: 'Dinish' }]);
+      expect(st.hero.photoKey).toBe('custom_1');
+      expect(st.customPhoto).toBe('custom_1');
+      // Back to the own hero.
+      await p.put('/patient/hero', { ...look, photoKey: null });
+      st = (await p.get('/patient/hero')).body;
+      expect(st.customPhoto).toBeNull();
+      // When the guest is withdrawn from the configuration, the photo disappears too.
+      await p.put('/patient/hero', { ...look, photoKey: 'custom_1' });
+      config.heroGuests.clear();
+      expect((await p.get('/patient/hero')).body.customPhoto).toBeNull();
+    } finally {
+      config.heroGuests.clear();
+    }
+  });
+});

@@ -169,6 +169,8 @@ export type HeroState = {
   aids?: string[];
   /** Personal photo key (own likeness) for this account's hero, if set. */
   customPhoto?: string | null;
+  /** Guest heroes a patient may play as (real people who agreed). */
+  heroGuests?: { key: string; name: string }[];
   hero: (import('@shared/hero').HeroLook & { createdAt: string; gear?: string[] }) | null;
   painMap: { baseline: PainCheckin | null; current: PainCheckin | null; checkins: number };
   level: { level: number; xp: number; from: number; to: number; progress: number };

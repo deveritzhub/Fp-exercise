@@ -73,9 +73,11 @@ export type HeroLook = {
   sport: string;
   /** All sports the patient does. */
   sports?: string[];
+  /** Playing as a guest hero (photo key), or null. */
+  photoKey?: string | null;
 };
 
-export const DEFAULT_LOOK: Omit<HeroLook, 'heroName' | 'sports'> = {
+export const DEFAULT_LOOK: Omit<HeroLook, 'heroName' | 'sports' | 'photoKey'> = {
   frame: 'f', build: 'average', skin: 's4', hair: 'long', hairColor: 'darkbrown', eyeColor: 'brown', beard: 'none', glasses: 'none', outfit: 'forest', sport: 'running',
 };
 
