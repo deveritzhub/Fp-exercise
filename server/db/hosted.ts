@@ -68,7 +68,7 @@ if (!seeded) {
 
 await import('../src/index');
 
-// Demo videos: fetched in the background so start-up (and the health check) is not delayed.
+// Demo videos: copied from the repo in the background so start-up (and the health check) is not delayed.
 const { importLibraryVideos } = await import('./import-videos');
 const { config } = await import('../src/config');
 const { importFpLibrary } = await import('./import-library');

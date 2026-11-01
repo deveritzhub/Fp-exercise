@@ -51,11 +51,11 @@ describe('completing the FP library texts', () => {
 });
 
 describe('library videos for the practice library (by source key)', () => {
-  it('links an available video to practice exercises without replacing an existing one', async () => {
+  it('links an available video and replaces a clip that was already linked', async () => {
     const fs = await import('node:fs/promises');
     const path = await import('node:path');
     const { importLibraryVideos } = await import('../db/import-videos');
-    // A synthetic entry: the real list only holds approved videos.
+    // A synthetic remote entry: the real list points at local seed files.
     const v = { sourceKeys: ['ex_kniebuiging_muur'], file: 'https://voorbeeld.test/videos/kniebuiging.mp4' };
     const dir = await fs.mkdtemp(path.join((await import('node:os')).tmpdir(), 'fpvid-'));
     // The file is already "on disk", so nothing is downloaded (this test needs no network).
@@ -74,7 +74,9 @@ describe('library videos for the practice library (by source key)', () => {
     await importLibraryVideos(url(), dir, [v]);
     const [a] = await q('SELECT e.video_media_id, m.storage_key FROM exercises e JOIN media m ON m.id = e.video_media_id WHERE e.id = $1', [ex.id]);
     expect(a.storage_key).toBe(key);
-    const [b] = await q('SELECT video_media_id FROM exercises WHERE id = $1', [other.id]);
-    expect(b.video_media_id).toBe(own.id);
+    const [b] = await q('SELECT e.video_media_id, m.storage_key FROM exercises e JOIN media m ON m.id = e.video_media_id WHERE e.id = $1', [other.id]);
+    expect(b.storage_key).toBe(key);
+    expect(b.video_media_id).toBe(a.video_media_id);
+    expect(b.video_media_id).not.toBe(own.id);
   });
 });
