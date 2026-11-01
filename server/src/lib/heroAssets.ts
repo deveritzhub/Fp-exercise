@@ -1,13 +1,13 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { HERO_AVATAR_FILES, HERO_ITEM_FILES, HERO_WEAR_FILES, heroAssetUrl } from '../../db/seed-data/hero-assets';
+import { HERO_AVATAR_FILES, HERO_AWARD_FILES, HERO_ITEM_FILES, HERO_WEAR_FILES, heroAssetUrl } from '../../db/seed-data/hero-assets';
 import { sniff } from '../routes/media';
 
-export type HeroAssetKind = 'avatar' | 'item' | 'wear';
-const LIST: Record<HeroAssetKind, Record<string, string>> = { avatar: HERO_AVATAR_FILES, item: HERO_ITEM_FILES, wear: HERO_WEAR_FILES };
+export type HeroAssetKind = 'avatar' | 'item' | 'wear' | 'award';
+const LIST: Record<HeroAssetKind, Record<string, string>> = { avatar: HERO_AVATAR_FILES, item: HERO_ITEM_FILES, wear: HERO_WEAR_FILES, award: HERO_AWARD_FILES };
 
 export const heroAssetFile = (storageDir: string, kind: HeroAssetKind, key: string) => path.join(storageDir, 'hero-assets', kind, `${key}.png`);
-export const isHeroAsset = (kind: string, key: string): kind is HeroAssetKind => (kind === 'avatar' || kind === 'item' || kind === 'wear') && /^[a-z0-9_]{2,40}$/.test(key) && !!LIST[kind as HeroAssetKind][key];
+export const isHeroAsset = (kind: string, key: string): kind is HeroAssetKind => (kind === 'avatar' || kind === 'item' || kind === 'wear' || kind === 'award') && /^[a-z0-9_]{2,40}$/.test(key) && !!LIST[kind as HeroAssetKind][key];
 
 /**
  * Copies the generated hero art into private storage (once; again when the free host lost its disk).
@@ -16,7 +16,7 @@ export const isHeroAsset = (kind: string, key: string): kind is HeroAssetKind =>
  */
 export async function syncHeroAssets(storageDir: string) {
   let ok = 0;
-  for (const kind of ['item', 'wear', 'avatar'] as const) {
+  for (const kind of ['award', 'item', 'wear', 'avatar'] as const) {
     for (const [key, file] of Object.entries(LIST[kind])) {
       const target = heroAssetFile(storageDir, kind, key);
       if (await fs.stat(target).then((s) => s.size > 0).catch(() => false)) {
@@ -36,5 +36,5 @@ export async function syncHeroAssets(storageDir: string) {
       }
     }
   }
-  console.log(`[hero-assets] ${ok} of ${Object.keys(HERO_AVATAR_FILES).length + Object.keys(HERO_ITEM_FILES).length + Object.keys(HERO_WEAR_FILES).length} ready`);
+  console.log(`[hero-assets] ${ok} of ${Object.keys(HERO_AVATAR_FILES).length + Object.keys(HERO_ITEM_FILES).length + Object.keys(HERO_WEAR_FILES).length + Object.keys(HERO_AWARD_FILES).length} ready`);
 }

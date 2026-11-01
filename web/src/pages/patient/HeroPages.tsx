@@ -874,8 +874,18 @@ function CharacterScreen({ d, busy, onSave }: { d: HeroState; busy: string | nul
 const tierOf = (tier: string) => TROPHY_TIERS.find((x) => x.key === tier)!;
 const skillName = (k: string, nl: boolean) => { const s = SKILLS.find((x) => x.key === k); return s ? (nl ? s.nl : s.en) : k; };
 
-function TrophyIcon({ tier, earned = true, size = 'md' }: { tier: string; earned?: boolean; size?: 'sm' | 'md' }) {
+function TrophyIcon({ tier, earned = true, size = 'md', art }: { tier: string; earned?: boolean; size?: 'sm' | 'md'; art?: string }) {
   const c = tierOf(tier).color;
+  const [failed, setFailed] = useState(false);
+  // Artwork per skill and tier (Higgsfield); a drawn cup when it is missing.
+  if (art && !failed) {
+    return (
+      <span className={cn('relative block', size === 'sm' ? 'h-11 w-11' : 'h-16 w-16')} aria-hidden>
+        <img src={`/api/hero-assets/award/${art}`} alt="" loading="lazy" onError={() => setFailed(true)} className={cn('h-full w-full object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.2)]', !earned && 'opacity-30 grayscale')} />
+        {!earned && <Lock className="absolute bottom-0 right-0 h-3.5 w-3.5 text-ink-600" />}
+      </span>
+    );
+  }
   return (
     <span className={cn('flex items-center justify-center rounded-full', size === 'sm' ? 'h-9 w-9' : 'h-12 w-12', earned ? '' : 'bg-ink-100')} style={earned ? { background: `radial-gradient(circle at 35% 30%, #fff 0%, ${c}33 55%, ${c}55 100%)` } : undefined} aria-hidden>
       {earned ? <Trophy className={size === 'sm' ? 'h-5 w-5' : 'h-6 w-6'} style={{ color: c }} strokeWidth={2.2} /> : (
@@ -895,7 +905,7 @@ function TrophyShelf({ d, compact = false }: { d: HeroState; compact?: boolean }
       <div className={cn('flex items-end justify-center gap-3', compact ? 'min-h-[40px]' : 'min-h-[56px]')}>
         {shown.length ? shown.map((x) => (
           <span key={x.key} className="flex flex-col items-center" title={`${skillName(x.skill, nl)} · ${nl ? tierOf(x.tier).nl : tierOf(x.tier).en}`}>
-            <TrophyIcon tier={x.tier} size={compact ? 'sm' : 'md'} />
+            <TrophyIcon tier={x.tier} size={compact ? 'sm' : 'md'} art={`${x.skill}_${x.level}`} />
             {!compact && <span className="mt-0.5 text-[10.5px] font-semibold text-ink-700">{skillName(x.skill, nl)}</span>}
           </span>
         )) : <span className="pb-1 text-[12.5px] text-ink-600">{t('Je prijzenplank is nog leeg', 'Your trophy shelf is still empty')}</span>}
@@ -946,13 +956,13 @@ function TrophyCabinet({ d }: { d: HeroState }) {
                 return x.earned ? (
                   <button key={x.key} type="button" aria-pressed={on} disabled={busy} onClick={() => toggle(x.key)}
                     className={cn('tap flex flex-col items-center gap-0.5 rounded-xl border p-1.5 text-center', on ? 'border-accent bg-accent-soft' : 'border-line bg-white')}>
-                    <TrophyIcon tier={x.tier} size="sm" />
+                    <TrophyIcon tier={x.tier} size="sm" art={`${x.skill}_${x.level}`} />
                     <span className="text-[11px] font-semibold leading-tight text-ink-800"><span className="sr-only">{label}, </span>{nl ? tier.nl : tier.en}</span>
                     <span className="text-[10px] text-ink-600">{on ? t('Op plank', 'On shelf') : `lv ${x.level}`}</span>
                   </button>
                 ) : (
                   <div key={x.key} className="flex flex-col items-center gap-0.5 rounded-xl border border-dashed border-line bg-canvas p-1.5 text-center">
-                    <TrophyIcon tier={x.tier} earned={false} size="sm" />
+                    <TrophyIcon tier={x.tier} earned={false} size="sm" art={`${x.skill}_${x.level}`} />
                     <span className="text-[11px] font-semibold leading-tight text-ink-600"><span className="sr-only">{label}, {t('nog niet gewonnen', 'not won yet')}, </span>{nl ? tier.nl : tier.en}</span>
                     <span className="text-[10px] text-ink-500">lv {x.level}</span>
                   </div>
@@ -964,6 +974,12 @@ function TrophyCabinet({ d }: { d: HeroState }) {
       </ul>
     </section>
   );
+}
+
+function BadgeArt({ k, earned }: { k: string; earned: boolean }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return <img src={`/api/hero-assets/award/badge_${k}`} alt="" aria-hidden loading="lazy" onError={() => setFailed(true)} className={cn('mx-auto mb-1 h-20 w-20 object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.2)]', !earned && 'opacity-30 grayscale')} />;
 }
 
 function GearImg({ gearKey, className }: { gearKey: string; className?: string }) {
@@ -1148,6 +1164,7 @@ export function HeroPage() {
             const has = d.badges.find((x) => x.key === b.key)?.earned;
             return (
               <li key={b.key} className={cn('rounded-xl border p-3', has ? 'border-accent/30 bg-accent-soft' : 'border-line bg-canvas')}>
+                <BadgeArt k={b.key} earned={!!has} />
                 <div className={cn('flex items-center gap-1.5 text-[14px] font-semibold', has ? 'text-accent' : 'text-ink-600')}>
                   {has ? <Award className="h-4 w-4" aria-hidden /> : <Lock className="h-4 w-4" aria-hidden />}
                   {nl ? b.nl : b.en}
