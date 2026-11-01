@@ -169,6 +169,24 @@ async function heroState(tx: Tx, patientId: string) {
   if (quests.every((x) => x.done)) chestWeeks++;
   xp += logged.heroXp;
 
+  // Where each quest is done: today's training, the body map, and an exercise for the skill of the week.
+  const skillQuest = quests.find((x) => x.key === 'skill');
+  let skillLink: string | null = null;
+  if (skillQuest?.skill) {
+    const items = (
+      await tx.query(
+        `SELECT pi.id, pi.program_id, e.training_categories, e.movement_category
+           FROM program_items pi JOIN programs p ON p.id = pi.program_id JOIN exercises e ON e.id = pi.exercise_id
+          WHERE p.patient_id = $1 AND p.status = 'active' AND NOT p.is_template
+          ORDER BY p.created_at, pi.position`,
+        [patientId],
+      )
+    ).rows;
+    const hit = items.find((r) => skillsForExercise(r.training_categories ?? [], r.movement_category).includes(skillQuest.skill!));
+    skillLink = hit ? `/p/programma/${hit.program_id}/oefening/${hit.id}` : skillQuest.skill === 'strength' ? '/p/kracht' : null;
+  }
+  const questLinks = { train: '/p', checkin: '/p/held/pijn', skill: skillLink };
+
   // ---- Gear: unlocked by hero level, skill level and other real progress. ----
   const reached = levelFor(xp);
   const gearInput = { skills: skillsSnap.gearLevels, sessions: s.sessions, phasesCompleted: s.phases_done, chestWeeks, level: reached.level };
@@ -243,7 +261,7 @@ async function heroState(tx: Tx, patientId: string) {
     strengthEstimates: skillsSnap.strengthEstimates,
     totals: { sessions: s.sessions, fullWeeks, phasesCompleted: s.phases_done, since, painStart: painBaseline, painNow: map.checkins > 1 ? painNow : null },
     quest,
-    weekly: { weekStart: thisWeek, quests, chestWeeks, xpPerQuest: QUEST_XP, chestXp: CHEST_XP },
+    weekly: { weekStart: thisWeek, quests, chestWeeks, xpPerQuest: QUEST_XP, chestXp: CHEST_XP, links: questLinks },
     gear: { unlocked, equipped },
     // Trophy cabinet: per skill at level 10/25/50/75/99; up to three on the shelf behind the hero.
     trophies: skillTrophies(skills),

@@ -83,6 +83,9 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await expect(pp.getByRole('heading', { name: 'Weekquests' })).toBeVisible();
   await expect(pp.getByText('Doe een dagcheck of werk je pijnkaart bij')).toBeVisible();
   await expect(pp.getByText(/Weekkist geopend|Haal alle drie voor de weekkist/)).toBeVisible();
+  // Each quest leads to where it is done.
+  await expect(pp.getByRole('link', { name: /Doe een dagcheck of werk je pijnkaart bij/ })).toHaveAttribute('href', '/p/held/pijn');
+  await expect(pp.getByRole('link', { name: /Train .* dagen|Doe 1 training/ })).toHaveAttribute('href', '/p');
   // Gear: locked items say how to unlock them; unlocked items can be worn.
   // The inventory has its own page, one tap from the hero.
   await pp.getByRole('link', { name: /^Inventaris \(\d+\)$/ }).click();

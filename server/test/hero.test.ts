@@ -82,6 +82,9 @@ describe('weekly quests, gear, daily check-in, trends', () => {
     const st = (await patient.get('/patient/hero')).body;
     expect(st.weekly.quests.map((q: { key: string }) => q.key)).toEqual(['train', 'checkin', 'skill']);
     expect(st.weekly.quests[0].target).toBeLessThanOrEqual(3);
+    // Each quest points to where it is done: today's training, the body map, an exercise for the skill.
+    expect(st.weekly.links).toMatchObject({ train: '/p', checkin: '/p/held/pijn' });
+    if (st.weekly.links.skill) expect(st.weekly.links.skill).toMatch(/^\/p\/(programma\/[\w-]+\/oefening\/[\w-]+|kracht)$/);
 
     // Daily check-in: once per day, can be changed; counts as this week's check-in.
     expect((await patient.post('/patient/hero/checkin', { area: 'knee_l', score: 4 })).status).toBe(201);

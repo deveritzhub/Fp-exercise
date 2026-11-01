@@ -692,12 +692,15 @@ function WeeklyQuests({ d }: { d: HeroState }) {
       </div>
       <ul className="mt-3 space-y-2">
         {w.quests.map((q) => (
-          <li key={q.key} className={cn('flex items-center gap-3 rounded-xl border p-3', q.done ? 'border-ok/30 bg-ok-soft' : 'border-line')}>
-            {q.done ? <CircleCheck className="h-6 w-6 shrink-0 text-ok" aria-hidden /> : <Target className="h-6 w-6 shrink-0 text-ink-500" aria-hidden />}
-            <span className="min-w-0 flex-1">
-              <span className="block text-[14.5px] font-medium text-ink-900">{label(q)}</span>
-              <span className="block text-[13px] text-ink-600">{q.progress}/{q.target} · +{w.xpPerQuest} XP{q.done ? t(' · gehaald', ' · done') : ''}</span>
-            </span>
+          <li key={q.key}>
+            <QuestRow to={w.links?.[q.key] ?? null} done={q.done}>
+              {q.done ? <CircleCheck className="h-6 w-6 shrink-0 text-ok" aria-hidden /> : <Target className="h-6 w-6 shrink-0 text-ink-500" aria-hidden />}
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14.5px] font-medium text-ink-900">{label(q)}</span>
+                <span className="block text-[13px] text-ink-600">{q.progress}/{q.target} · +{w.xpPerQuest} XP{q.done ? t(' · gehaald', ' · done') : ''}</span>
+              </span>
+              {w.links?.[q.key] && <ChevronRight className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />}
+            </QuestRow>
           </li>
         ))}
       </ul>
@@ -708,6 +711,12 @@ function WeeklyQuests({ d }: { d: HeroState }) {
       <p className="mt-2 text-[12.5px] text-ink-600">{t('Weekquests zijn een extraatje: een week missen kost je niets, en meer trainen dan gepland is nooit nodig.', 'Weekly quests are a bonus: missing a week costs nothing, and training more than planned is never needed.')}</p>
     </section>
   );
+}
+
+/** A quest row; links to the page where the quest is done (today's training, body map, an exercise). */
+function QuestRow({ to, done, children }: { to: string | null; done: boolean; children: React.ReactNode }) {
+  const cls = cn('flex min-h-[44px] items-center gap-3 rounded-xl border p-3', done ? 'border-ok/30 bg-ok-soft' : 'border-line');
+  return to ? <Link to={to} className={cn(cls, 'transition hover:border-ink-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--accent))]')}>{children}</Link> : <div className={cls}>{children}</div>;
 }
 
 /** Gear: unlocked by progress; the patient chooses what the hero wears. */
