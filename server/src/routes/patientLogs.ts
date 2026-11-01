@@ -5,6 +5,7 @@ import { requirePatient, type AppEnv } from '../middleware';
 import { parse, uuidParam } from '../lib/validate';
 import { badRequest, notFound } from '../lib/errors';
 import { PROTEIN, SELF_LIMITS, TRAINING_KIND_KEYS, minutesOk } from '../../../shared/patientLogs';
+import { proteinTargets } from '../../../shared/protein';
 
 /** Own workouts and protein grams. Patient only; see migration 017. */
 export const patientLogs = new Hono<AppEnv>();
@@ -14,14 +15,67 @@ const noteOrNull = (s: string | undefined, max: number) => {
   return t ? t.slice(0, max) : null;
 };
 
+/**
+ * The daily protein goal: a level (minimum / suboptimal / optimal, follows the weight; needs a
+ * weight) or an own number of grams.
+ */
 patientLogs.put('/logs/protein-goal', async (c) => {
   const { user, patient } = requirePatient(c);
-  const b = parse(z.object({ grams: z.number().int().min(PROTEIN.min).max(PROTEIN.max) }), await c.req.json());
+  const b = parse(
+    z.union([
+      z.object({ tier: z.enum(['minimum', 'suboptimal', 'optimal']) }),
+      z.object({ grams: z.number().int().min(PROTEIN.min).max(PROTEIN.max) }),
+    ]),
+    await c.req.json(),
+  );
+  await withUser(user.id, async (tx) => {
+    let grams: number;
+    let tier: string | null = null;
+    if ('tier' in b) {
+      const body = (await tx.query('SELECT weight_kg, height_cm, older_adult FROM patient_body_metrics WHERE patient_id = $1', [patient.id])).rows[0];
+      if (!body?.weight_kg) throw badRequest('weight_required');
+      const t = proteinTargets(Number(body.weight_kg), body.height_cm ? Number(body.height_cm) : null, !!body.older_adult);
+      grams = Math.min(PROTEIN.max, Math.max(PROTEIN.min, t[b.tier]));
+      tier = b.tier;
+    } else grams = b.grams;
+    await tx.query(
+      `INSERT INTO protein_goals(patient_id, practice_id, grams, tier) VALUES ($1, app.patient_practice($1), $2, $3)
+       ON CONFLICT (patient_id) DO UPDATE SET grams = EXCLUDED.grams, tier = EXCLUDED.tier, updated_at = now()`,
+      [patient.id, grams, tier],
+    );
+  });
+  return c.json({ ok: true });
+});
+
+/** Today's weight (one per day, the latest counts). No XP: weighing yourself is not a game. */
+patientLogs.post('/logs/weight', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ kg: z.number().min(20).max(300) }), await c.req.json());
+  const kg = Math.round(b.kg * 10) / 10;
+  await withUser(user.id, async (tx) => {
+    await tx.query(
+      `INSERT INTO weight_logs(patient_id, practice_id, day, kg) VALUES ($1, app.patient_practice($1), now()::date, $2)
+       ON CONFLICT (patient_id, day) DO UPDATE SET kg = EXCLUDED.kg`,
+      [patient.id, kg],
+    );
+    await tx.query(
+      `INSERT INTO patient_body_metrics(patient_id, practice_id, weight_kg) VALUES ($1, app.patient_practice($1), $2)
+       ON CONFLICT (patient_id) DO UPDATE SET weight_kg = EXCLUDED.weight_kg, updated_at = now()`,
+      [patient.id, kg],
+    );
+  });
+  return c.json({ ok: true }, 201);
+});
+
+/** 65 or older: a higher minimum (PROT-AGE / ESPEN). */
+patientLogs.put('/logs/older-adult', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ olderAdult: z.boolean() }), await c.req.json());
   await withUser(user.id, (tx) =>
     tx.query(
-      `INSERT INTO protein_goals(patient_id, practice_id, grams) VALUES ($1, app.patient_practice($1), $2)
-       ON CONFLICT (patient_id) DO UPDATE SET grams = EXCLUDED.grams, updated_at = now()`,
-      [patient.id, b.grams],
+      `INSERT INTO patient_body_metrics(patient_id, practice_id, older_adult) VALUES ($1, app.patient_practice($1), $2)
+       ON CONFLICT (patient_id) DO UPDATE SET older_adult = EXCLUDED.older_adult, updated_at = now()`,
+      [patient.id, b.olderAdult],
     ),
   );
   return c.json({ ok: true });

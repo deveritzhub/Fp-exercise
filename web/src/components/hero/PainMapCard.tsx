@@ -1,15 +1,16 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { useI18n } from '@/lib/i18n';
+import { describeError, useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/format';
 import { BODY_AREAS, averagePain } from '@shared/hero';
-import { Card, CardHeader, Notice } from '@/components/ui';
+import { Card, CardHeader, Notice, useToast } from '@/components/ui';
 import { BodyMap, painWord } from './BodyMap';
 import { HeroAvatar } from './HeroAvatar';
 import { PainTrendList } from './PainTrend';
 import type { HeroState } from '@/lib/types';
 
-type StaffHero = Pick<HeroState, 'hero' | 'painMap' | 'trends'> & { weekly: { weekStart: string; planned: number; completed: number; rate: number | null }[] };
+type StaffHero = Pick<HeroState, 'hero' | 'painMap' | 'trends'> & { aids?: string[]; suggestCrutches?: boolean } & { weekly: { weekStart: string; planned: number; completed: number; rate: number | null }[] };
 
 /** Therapist: the patient's self-reported body map, first check-in versus latest. */
 export function PainMapCard({ patientId }: { patientId: string }) {
@@ -30,6 +31,7 @@ export function PainMapCard({ patientId }: { patientId: string }) {
         description={t('Zelfrapportage, indicatief: geen diagnose. Eerste meting tegenover de laatste.', 'Self-report, indicative: not a diagnosis. First check-in versus the latest.')}
         action={hero ? <HeroAvatar look={hero} size={40} /> : undefined}
       />
+      {hero && <AidsToggle patientId={patientId} on={(q.data.aids ?? []).includes('crutches')} suggest={!!q.data.suggestCrutches} />}
       {!painMap.current ? (
         <p className="px-5 py-4 text-[14px] text-ink-600">{t('De patiënt heeft de pijnkaart nog niet ingevuld.', 'The patient has not filled in the body map yet.')}</p>
       ) : (
@@ -82,5 +84,48 @@ export function PainMapCard({ patientId }: { patientId: string }) {
         </div>
       )}
     </Card>
+  );
+}
+
+/** The professional switches crutches on the patient's hero (e.g. the first weeks after ACL surgery). */
+function AidsToggle({ patientId, on, suggest }: { patientId: string; on: boolean; suggest: boolean }) {
+  const { t, locale } = useI18n();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const toggle = async () => {
+    setBusy(true);
+    try {
+      await api.put(`/patients/${patientId}/hero/aids`, { crutches: !on });
+      await qc.invalidateQueries({ queryKey: ['patient', patientId, 'hero'] });
+      toast(!on ? t('Krukken staan aan op de held', 'Crutches are on the hero') : t('Krukken uitgezet', 'Crutches switched off'), 'ok');
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mx-5 mb-1 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-canvas px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <p id={`aids-${patientId}`} className="text-[14.5px] font-semibold text-ink-900">{t('Krukken op de held', 'Crutches on the hero')}</p>
+        <p className="text-[13px] text-ink-600">
+          {suggest && !on
+            ? t('Voorstel: deze patiënt zit in een vroege fase na een knie-operatie.', 'Suggestion: this patient is in an early phase after knee surgery.')
+            : t('Zichtbaar voor de patiënt, niet voor vrienden.', 'Visible to the patient, not to friends.')}
+        </p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-labelledby={`aids-${patientId}`}
+        disabled={busy}
+        onClick={toggle}
+        className={`relative h-8 w-14 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${on ? 'bg-accent' : 'bg-ink-300'}`}
+      >
+        <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-xs transition-[left] ${on ? 'left-7' : 'left-1'}`} />
+      </button>
+    </div>
   );
 }

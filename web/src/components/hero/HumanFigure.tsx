@@ -429,6 +429,20 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
           </g>
         );
       })}
+      {/* Forearm crutches (walking aid switched on by the professional, e.g. after ACL surgery). */}
+      {gear.has('crutches') && [-1, 1].map((sd) => {
+        const hx = g.armX(sd as -1 | 1, 214);
+        const top = { x: hx - sd * 1, y: 178 };
+        const foot = { x: hx + sd * 11, y: 410 };
+        return (
+          <g key={`crutch${sd}`} data-gear="crutches">
+            <line x1={top.x} y1={top.y} x2={foot.x} y2={foot.y} stroke="#7f8f97" strokeWidth="3.4" strokeLinecap="round" />
+            <path d={`M${top.x - 6},${top.y + 2} q6,-9 12,0`} fill="none" stroke="#5b6a72" strokeWidth="3" strokeLinecap="round" />
+            <line x1={hx - sd * 5} y1={214} x2={hx + sd * 6} y2={215} stroke="#3d4a50" strokeWidth="3.6" strokeLinecap="round" />
+            <rect x={foot.x - 3.2} y={foot.y - 3} width={6.4} height={7} rx={2} fill="#2b3236" />
+          </g>
+        );
+      })}
       {front && gear.has('sport_item') && <SportMark sport={look.sport ?? 'other'} />}
     </svg>
   );

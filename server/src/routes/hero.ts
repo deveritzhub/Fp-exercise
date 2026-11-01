@@ -243,6 +243,8 @@ async function heroState(tx: Tx, patientId: string) {
     checkin,
     trends,
     logs: logged.view,
+    // Walking aids the professional switched on (e.g. crutches); drawn on the hero, never on the friend card.
+    aids: ((await tx.query('SELECT hero_aids FROM patients WHERE id = $1', [patientId])).rows[0]?.hero_aids ?? []) as string[],
   };
 }
 
@@ -491,8 +493,20 @@ heroStaff.get('/:id/hero', async (c) => {
       const hero = mapHero((await tx.query('SELECT * FROM patient_heroes WHERE patient_id = $1', [id])).rows[0]);
       const inputs = await loadAdherenceInputs(tx, [id]);
       const skills = await loadSkillSnapshot(tx, id, weeklyForPatient(inputs, id, 52));
+      const pt = (await tx.query('SELECT hero_aids FROM patients WHERE id = $1', [id])).rows[0];
+      // Suggest crutches in the first phases of an ACL / knee post-op programme.
+      const acl = (
+        await tx.query(
+          `SELECT 1 FROM programs WHERE patient_id = $1 AND status = 'active' AND coalesce(phase_no, 1) <= 2
+              AND (coalesce(series_title, '') || ' ' || title || ' ' || coalesce(indication, '')) ~* '(kruisband|vkb|acl|knie.*(postoperatief|operatie)|menisc)'
+            LIMIT 1`,
+          [id],
+        )
+      ).rowCount;
       return {
         hero,
+        aids: (pt?.hero_aids ?? []) as string[],
+        suggestCrutches: !!acl,
         painMap: await painMap(tx, id),
         trends: await painTrends(tx, id),
         weekly: weeklyForPatient(inputs, id, 12),
@@ -501,4 +515,19 @@ heroStaff.get('/:id/hero', async (c) => {
       };
     }),
   );
+});
+
+/** The professional switches walking aids on the patient's hero (e.g. crutches after ACL surgery). */
+heroStaff.put('/:id/hero/aids', async (c) => {
+  const { user } = requireStaff(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  const b = parse(z.object({ crutches: z.boolean() }), await c.req.json());
+  await withUser(user.id, async (tx) => {
+    const r = await tx.query(
+      `UPDATE patients SET hero_aids = CASE WHEN $2 THEN ARRAY['crutches'] ELSE '{}'::text[] END WHERE id = $1 AND app.can_manage_patient($1)`,
+      [id, b.crutches],
+    );
+    if (!r.rowCount) throw notFound();
+  });
+  return c.json({ ok: true });
 });

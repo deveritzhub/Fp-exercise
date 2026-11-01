@@ -2,6 +2,7 @@ import type { Tx } from '../db';
 import type { SkillKey } from '../../../shared/hero';
 import { STEPS, proteinHitDays, rewardProteinDays, rewardSelfTrainings, rewardStepDays, stepHitDays, suggestedProteinGrams, type TrainingKind } from '../../../shared/patientLogs';
 import { healthConfigured } from './googleHealth';
+import { proteinTargets, proteinZone, type ProteinTargets, type ProteinTier, type ProteinZone } from '../../../shared/protein';
 
 export type TrainingView = {
   id: string;
@@ -17,11 +18,17 @@ export type TrainingView = {
 export type PatientLogState = {
   protein: {
     goal: number | null;
+    /** Chosen level; the goal then follows the latest weight. Null = own number of grams. */
+    tier: ProteinTier | null;
+    /** Null until a weight is known. */
+    targets: ProteinTargets | null;
+    zone: ProteinZone | null;
     suggested: number;
     grams: number;
     hit: boolean;
     entries: { id: string; grams: number; label: string | null; createdAt: string }[];
   };
+  weight: { latestKg: number | null; heightCm: number | null; olderAdult: boolean; history: { day: string; kg: number }[] };
   trainings: TrainingView[];
   steps: {
     goal: number;
@@ -46,9 +53,19 @@ const shiftDay = (day: string, days: number) => {
 /** Today's protein progress, recent own workouts, and the XP those logs earn. */
 export async function loadPatientLogs(tx: Tx, patientId: string) {
   const today = (await tx.query("SELECT to_char(now(), 'YYYY-MM-DD') AS d")).rows[0].d as string;
-  const weight = (await tx.query('SELECT weight_kg FROM patient_body_metrics WHERE patient_id = $1', [patientId])).rows[0]?.weight_kg;
-  const goalRow = (await tx.query('SELECT grams FROM protein_goals WHERE patient_id = $1', [patientId])).rows[0];
-  const goal = goalRow ? Number(goalRow.grams) : null;
+  const body = (await tx.query('SELECT weight_kg, height_cm, older_adult FROM patient_body_metrics WHERE patient_id = $1', [patientId])).rows[0];
+  const weight = body?.weight_kg;
+  const weightKg = weight === null || weight === undefined ? null : Number(weight);
+  const heightCm = body?.height_cm === null || body?.height_cm === undefined ? null : Number(body.height_cm);
+  const olderAdult = !!body?.older_adult;
+  const targets = weightKg !== null ? proteinTargets(weightKg, heightCm, olderAdult) : null;
+  const goalRow = (await tx.query('SELECT grams, tier FROM protein_goals WHERE patient_id = $1', [patientId])).rows[0];
+  const tier = (goalRow?.tier as ProteinTier | null | undefined) ?? null;
+  // A chosen level follows the latest weight; otherwise the patient's own number of grams.
+  const goal = goalRow ? (tier && targets ? targets[tier] : Number(goalRow.grams)) : null;
+  const weightHistory = (
+    await tx.query(`SELECT day::text AS day, kg FROM weight_logs WHERE patient_id = $1 AND day > now()::date - 90 ORDER BY day`, [patientId])
+  ).rows.map((r) => ({ day: r.day as string, kg: Number(r.kg) }));
   const proteinRows = (await tx.query('SELECT id, day::text AS day, grams, label, created_at FROM protein_logs WHERE patient_id = $1 ORDER BY created_at', [patientId])).rows;
   const trainingRows = (
     await tx.query(
@@ -89,7 +106,17 @@ export async function loadPatientLogs(tx: Tx, patientId: string) {
   const from = shiftDay(today, -13);
   const todaySteps = stepRows.find((r) => r.day === today);
   const view: PatientLogState = {
-    protein: { goal, suggested: suggestedProteinGrams(weight === null || weight === undefined ? null : Number(weight)), grams, hit: goal !== null && grams >= goal, entries },
+    protein: {
+      goal,
+      tier,
+      targets,
+      zone: targets ? proteinZone(grams, targets) : null,
+      suggested: targets ? targets.optimal : suggestedProteinGrams(weightKg),
+      grams,
+      hit: goal !== null && grams >= goal,
+      entries,
+    },
+    weight: { latestKg: weightKg, heightCm, olderAdult, history: weightHistory },
     trainings: trainings.filter((t) => t.day >= from),
     steps: {
       goal: stepGoal,

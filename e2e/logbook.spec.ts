@@ -23,14 +23,19 @@ test('patient logs protein and an own workout and sees the XP', async ({ browser
   ]);
   await expect(pp.locator('#stappen').getByText('Doel gehaald')).toBeVisible();
 
-  await pp.getByLabel('Dagelijks doel (g)').fill('40');
-  await pp.getByRole('button', { name: 'Doel instellen' }).click();
-  await expect(pp.getByText('nog 40 g')).toBeVisible();
-
-  await pp.getByRole('textbox', { name: 'Grammen toevoegen' }).fill('40');
-  await pp.getByRole('button', { name: 'Toevoegen', exact: true }).click();
-  await expect(pp.getByText('Doel gehaald').first()).toBeVisible();
-  await expect(pp.getByRole('progressbar', { name: 'Eiwit vandaag' }).first()).toHaveAttribute('aria-valuenow', '100');
+  // Weight → personal levels → choose "Minimaal" → log protein with the quick buttons.
+  await pp.locator('#gewicht').getByRole('textbox', { name: 'Gewicht in kg' }).fill('60');
+  await pp.getByRole('button', { name: 'Gewicht opslaan' }).click();
+  await expect(pp.getByText(/Optimaal eiwit voor jou: 95 g/)).toBeVisible();
+  const levels = pp.getByRole('radiogroup', { name: 'Kies je dagdoel' });
+  await expect(levels.getByRole('radio')).toHaveCount(3);
+  await levels.getByRole('radio', { name: /Minimaal/ }).click();
+  await expect(levels.getByRole('radio', { name: /Minimaal/ })).toHaveAttribute('aria-checked', 'true');
+  await pp.locator('#eiwit').getByRole('button', { name: '30 g', exact: true }).click();
+  await expect(pp.getByText(/\+30 g eiwit/)).toBeVisible();
+  await pp.locator('#eiwit').getByRole('button', { name: /Magere kwark/ }).click();
+  await expect(pp.getByText(/\+22 g · Minimaal bereikt!/)).toBeVisible();
+  await expect(pp.locator('#eiwit').getByRole('img', { name: /Eiwit vandaag: 52 gram/ })).toBeVisible();
 
   await pp.getByRole('radio', { name: 'Wandelen' }).check();
   await pp.getByRole('textbox', { name: 'Minuten', exact: true }).fill('20');
@@ -48,7 +53,7 @@ test('patient logs protein and an own workout and sees the XP', async ({ browser
 
   await pp.goto('/p');
   await expect(pp.getByRole('link', { name: /Logboek/ })).toBeVisible();
-  await expect(pp.getByText('Eiwit 40 van 40 g').first()).toBeVisible();
+  await expect(pp.getByText(/Eiwit 52 van 50 g/).first()).toBeVisible();
 
   await pp.goto('/p/logboek');
   expect(await pp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);

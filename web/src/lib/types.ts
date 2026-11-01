@@ -165,6 +165,8 @@ export type Labelled = { key: string; nl: string; en: string };
 /** Sports hero (gamified revalidatie), see shared/hero.ts. */
 export type PainCheckin = { recordedAt: string; entries: { area: string; score: number }[] };
 export type HeroState = {
+  /** Walking aids switched on by the professional, e.g. 'crutches'. */
+  aids?: string[];
   hero: (import('@shared/hero').HeroLook & { createdAt: string; gear?: string[] }) | null;
   painMap: { baseline: PainCheckin | null; current: PainCheckin | null; checkins: number };
   level: { level: number; xp: number; from: number; to: number; progress: number };
@@ -198,11 +200,15 @@ export type PainTrend = { area: string; points: { day: string; score: number; so
 export type PatientLogState = {
   protein: {
     goal: number | null;
+    tier: import('@shared/protein').ProteinTier | null;
+    targets: import('@shared/protein').ProteinTargets | null;
+    zone: import('@shared/protein').ProteinZone | null;
     suggested: number;
     grams: number;
     hit: boolean;
     entries: { id: string; grams: number; label: string | null; createdAt: string }[];
   };
+  weight: { latestKg: number | null; heightCm: number | null; olderAdult: boolean; history: { day: string; kg: number }[] };
   trainings: {
     id: string;
     day: string;

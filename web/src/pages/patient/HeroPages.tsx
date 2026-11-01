@@ -643,7 +643,11 @@ function LogTeaser({ d }: { d: HeroState }) {
       <h2 id="log-teaser" className="t-section">{t('Eigen training en eiwit', 'Your own workout and protein')}</h2>
       <p className="mt-1 text-[13.5px] text-ink-600">{t('Vrijblijvend. Een dag overslaan kost niets.', 'Optional. Skipping a day costs nothing.')}</p>
       {p.goal === null ? (
-        <p className="mt-3 text-[15px] text-ink-800">{t(`Stel een eiwitdoel in. Voorstel: ${p.suggested} g.`, `Set a protein goal. Suggestion: ${p.suggested} g.`)}</p>
+        <p className="mt-3 text-[15px] text-ink-800">
+          {p.targets
+            ? t(`Kies je eiwitdoel: minimaal ${p.targets.minimum} g, suboptimaal ${p.targets.suboptimal} g of optimaal ${p.targets.optimal} g per dag.`, `Choose your protein goal: minimum ${p.targets.minimum} g, sub-optimal ${p.targets.suboptimal} g or optimal ${p.targets.optimal} g a day.`)
+            : t('Vul je gewicht in: dan zie je hoeveel eiwit minimaal, suboptimaal en optimaal is voor jou.', 'Enter your weight to see how much protein is minimum, sub-optimal and optimal for you.')}
+        </p>
       ) : (
         <div className="mt-3">
           <div className="flex justify-between text-[14px]">
@@ -681,7 +685,7 @@ export function HeroPage() {
     );
   }
   const L = d.level;
-  const look = { ...d.hero, gear: d.gear.equipped };
+  const look = { ...d.hero, gear: [...d.gear.equipped, ...(d.aids ?? [])] };
   const scene = sceneForTotal(d.totalLevel);
   const emblems = d.skills.filter((s) => !s.locked && s.level >= SKILL_EMBLEM_LEVEL);
   const ownTitles = d.skills.flatMap((s) => {
@@ -855,7 +859,7 @@ export function HeroHomeCard() {
       </Link>
     );
   }
-  const heroLook = { ...d.hero, gear: d.gear.equipped };
+  const heroLook = { ...d.hero, gear: [...d.gear.equipped, ...(d.aids ?? [])] };
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-line bg-white p-4 shadow-card">
       <AvatarLink look={heroLook} size={64} level={d.level.level} />

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Trash2 } from 'lucide-react';
-import { LOG_XP, PROTEIN, STEPS, TRAINING_KINDS, type TrainingKind } from '@shared/patientLogs';
+import { LOG_XP, STEPS, TRAINING_KINDS, type TrainingKind } from '@shared/patientLogs';
 import { SKILLS as HERO_SKILLS } from '@shared/hero';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
@@ -10,15 +10,8 @@ import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
 import { Button, ErrorState, Notice, NumberStepper, ProgressBar, Spinner, useToast } from '@/components/ui';
 import type { HeroState } from '@/lib/types';
+import { ProteinEntries, ProteinLevels, ProteinQuickAdd, ProteinRing, WeightLog, zoneLabel } from '@/components/patient/Nutrition';
 import { useHero } from '@/pages/patient/HeroPages';
-
-const LABELS = [
-  ['Ontbijt', 'Breakfast'],
-  ['Lunch', 'Lunch'],
-  ['Diner', 'Dinner'],
-  ['Shake', 'Shake'],
-  ['Tussendoor', 'Snack'],
-] as const;
 
 async function saved(qc: ReturnType<typeof useQueryClient>, before: number) {
   const after = await qc.fetchQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero'), staleTime: 0 });
@@ -39,8 +32,9 @@ export function LogbookPage() {
         <h1 className="t-page">{t('Logboek', 'Logbook')}</h1>
         <p className="mt-1 text-[15px] text-ink-600">{t('Een eigen training of je eiwit van vandaag. Overslaan kost niets. Een hoge pijnscore levert niet méér op, en stoppen vanwege pijn telt als herstel.', 'A workout of your own, or today’s protein. Skipping costs nothing. A high pain score does not earn more, and stopping because of pain counts as recovery.')}</p>
       </div>
-      <StepsCard d={q.data} />
       <ProteinCard d={q.data} />
+      <WeightCard d={q.data} />
+      <StepsCard d={q.data} />
       <TrainingCard d={q.data} />
     </div>
   );
@@ -48,7 +42,7 @@ export function LogbookPage() {
 
 /** Protein progress on the home screen. */
 export function LogbookHomeCard() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const q = useHero();
   if (!q.data?.hero) return null;
   const p = q.data.logs.protein;
@@ -64,7 +58,7 @@ export function LogbookHomeCard() {
       ) : (
         <>
           <span className="mt-2 flex justify-between text-[14px] text-ink-800">
-            <span>{t(`Eiwit ${p.grams} van ${p.goal} g`, `Protein ${p.grams} of ${p.goal} g`)}</span>
+            <span>{t(`Eiwit ${p.grams} van ${p.goal} g`, `Protein ${p.grams} of ${p.goal} g`)}{p.zone ? <span className="text-ink-600"> · {zoneLabel(p.zone, locale === 'nl')}</span> : null}</span>
             {p.hit && <span className="font-semibold text-ok">{t('gehaald', 'hit')}</span>}
           </span>
           <ProgressBar value={p.grams / p.goal} className="mt-1.5 h-2.5" label={t('Eiwit vandaag', 'Protein today')} />
@@ -158,79 +152,27 @@ function StepsCard({ d }: { d: HeroState }) {
 }
 
 function ProteinCard({ d }: { d: HeroState }) {
-  const { t, locale } = useI18n();
-  const qc = useQueryClient();
-  const toast = useToast();
-  const p = d.logs.protein;
-  const [gramsGoal, setGramsGoal] = useState(String(p.goal ?? p.suggested));
-  const [add, setAdd] = useState<number | null>(25);
-  const [label, setLabel] = useState<string>(LABELS[0][0]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const run = async (fn: () => Promise<unknown>, removed = false) => {
-    setBusy(true);
-    setError(null);
-    try {
-      await fn();
-      const delta = await saved(qc, d.level.xp);
-      toast(removed ? t('Verwijderd', 'Removed') : delta > 0 ? t(`Opgeslagen: +${delta} XP`, `Saved: +${delta} XP`) : t('Opgeslagen', 'Saved'));
-    } catch (e) {
-      setError(describeError(e, locale));
-    } finally {
-      setBusy(false);
-    }
-  };
+  const { t } = useI18n();
   return (
-    <section id="eiwit" className="scroll-mt-24 rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="protein-title">
-      <h2 id="protein-title" className="t-section">{t('Eiwit', 'Protein')}</h2>
-      <p className="mt-1 text-[14px] text-ink-600">{t(`Alleen grammen. Het dagoel levert één keer +${LOG_XP.proteinGoal} XP op, plus Discipline. Niet per hap.`, `Grams only. The daily goal earns +${LOG_XP.proteinGoal} XP once, plus Discipline. Not per bite.`)}</p>
-      {error && <Notice tone="bad" className="mt-3">{error}</Notice>}
-      <div className="mt-3 flex flex-wrap items-end gap-2">
-        <label className="min-w-0 flex-1 text-[14px] font-medium text-ink-800">
-          {t('Dagelijks doel (g)', 'Daily goal (g)')}
-          <input inputMode="numeric" value={gramsGoal} onChange={(e) => setGramsGoal(e.target.value.replace(/[^\d]/g, ''))} className="mt-1 h-11 w-full rounded-lg border border-line px-3 text-[16px]" />
-        </label>
-        <Button size="lg" variant="secondary" loading={busy} onClick={() => {
-          const n = Number(gramsGoal);
-          if (!Number.isInteger(n) || n < PROTEIN.min || n > PROTEIN.max) {
-            setError(t(`Kies tussen ${PROTEIN.min} en ${PROTEIN.max} gram.`, `Choose between ${PROTEIN.min} and ${PROTEIN.max} grams.`));
-            return;
-          }
-          return run(() => api.put('/patient/logs/protein-goal', { grams: n }));
-        }}>{p.goal === null ? t('Doel instellen', 'Set goal') : t('Doel bijwerken', 'Update goal')}</Button>
+    <section id="eiwit" className="scroll-mt-24 space-y-4 rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="protein-title">
+      <div>
+        <h2 id="protein-title" className="t-section">{t('Eiwit', 'Protein')}</h2>
+        <p className="mt-1 text-[14px] text-ink-600">{t('Je doel is afgestemd op je eigen gewicht: minimaal, suboptimaal of optimaal.', 'Your goal is matched to your own weight: minimum, sub-optimal or optimal.')}</p>
       </div>
-      {p.goal === null && <p className="mt-2 text-[13.5px] text-ink-600">{t(`Voorstel: ${p.suggested} g. Je mag het aanpassen.`, `Suggestion: ${p.suggested} g. You can change it.`)}</p>}
-      {p.goal !== null && (
-        <div className="mt-4">
-          <div className="flex justify-between text-[14px]">
-            <span className="font-semibold">{p.grams} / {p.goal} g</span>
-            <span className={p.hit ? 'font-semibold text-ok' : 'text-ink-600'}>{p.hit ? t('Doel gehaald', 'Goal hit') : t(`nog ${Math.max(0, p.goal - p.grams)} g`, `${Math.max(0, p.goal - p.grams)} g to go`)}</span>
-          </div>
-          <ProgressBar value={p.grams / p.goal} className="mt-1.5 h-3" label={t('Eiwit vandaag', 'Protein today')} />
-        </div>
-      )}
-      <div className="mt-4 flex flex-wrap items-end gap-2">
-        <div className="w-36">
-          <NumberStepper large label={t('Grammen toevoegen', 'Grams to add')} suffix="g" min={PROTEIN.perEntryMin} max={PROTEIN.perEntryMax} value={add} onChange={setAdd} />
-        </div>
-        <label className="min-w-[8rem] flex-1 text-[14px] font-medium text-ink-800">
-          {t('Moment', 'When')}
-          <select value={label} onChange={(e) => setLabel(e.target.value)} className="mt-1 h-11 w-full rounded-lg border border-line bg-white px-2 text-[15px]">
-            {LABELS.map(([nl, en]) => <option key={nl} value={nl}>{t(nl, en)}</option>)}
-          </select>
-        </label>
-        <Button size="lg" loading={busy} disabled={!add} onClick={() => add && run(() => api.post('/patient/logs/protein', { grams: add, label }))}>{t('Toevoegen', 'Add')}</Button>
-      </div>
-      {p.entries.length > 0 && (
-        <ul className="mt-3 divide-y divide-line rounded-xl border border-line">
-          {p.entries.map((e) => (
-            <li key={e.id} className="flex items-center gap-2 px-3 py-1">
-              <span className="min-w-0 flex-1 text-[15px]">{e.grams} g{e.label ? ` · ${e.label}` : ''}</span>
-              <button type="button" className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-ink-500 hover:bg-canvas" aria-label={t(`Verwijder ${e.grams} g`, `Remove ${e.grams} g`)} onClick={() => run(() => api.del(`/patient/logs/protein/${e.id}`), true)}><Trash2 className="h-4 w-4" /></button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ProteinRing d={d} />
+      <ProteinQuickAdd d={d} />
+      <ProteinEntries d={d} />
+      <ProteinLevels d={d} />
+    </section>
+  );
+}
+
+function WeightCard({ d }: { d: HeroState }) {
+  const { t } = useI18n();
+  return (
+    <section id="gewicht" className="scroll-mt-24 space-y-3 rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="weight-title">
+      <h2 id="weight-title" className="t-section">{t('Gewicht', 'Weight')}</h2>
+      <WeightLog d={d} />
     </section>
   );
 }

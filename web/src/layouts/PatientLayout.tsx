@@ -11,6 +11,7 @@ import { useI18n, useAccountKind } from '@/lib/i18n';
 import { usePracticeAccent } from '@/lib/accent';
 import { useTextSize } from '@/lib/textSize';
 import { useSession } from '@/lib/session';
+import { QuickLogButton } from '@/components/patient/QuickLog';
 import { cn } from '@/lib/cn';
 
 const HERO_LATER_KEY = 'fp.heroLater';
@@ -87,6 +88,7 @@ export function PatientLayout() {
       <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : 'px-4 pb-28 pt-5')}>
         <Outlet />
       </main>
+      {!inPlayer && !inSetup && <QuickLogButton />}
       {!inPlayer && !inSetup && (
         <nav className="fixed inset-x-0 bottom-0 z-30 print:hidden border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label={t('Navigatie', 'Navigation')}>
           <div className="mx-auto grid max-w-xl grid-cols-4">
