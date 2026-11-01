@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BADGES, BODY_AREAS, CHEST_XP, DEFAULT_LOOK, GEAR, QUEST_XP, SKILLS, averagePain, levelFor, metricInRange, parseMetric, questTimeline, questXp, skillLevel, skillOfWeek, skillXpForLevel, skillsForExercise, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type SkillKey } from './hero';
+import { BADGES, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillXpInput } from './hero';
 
 describe('sports hero rules', () => {
   it('levels grow gently and progress is between 0 and 1', () => {
@@ -100,10 +100,10 @@ describe('weekly quests and gear', () => {
   it('gear unlocks from real progress', () => {
     const none = { skills: {}, sessions: 0, phasesCompleted: 0, chestWeeks: 0, level: 1 };
     expect(GEAR.filter((g) => g.unlocked(none))).toHaveLength(0);
-    expect(GEAR.filter((g) => g.unlocked({ ...none, skills: { discipline: 5 }, sessions: 25 })).map((g) => g.key)).toEqual(['headband', 'gold_shoes']);
+    expect(GEAR.filter((g) => g.unlocked({ ...none, skills: { discipline: 10 }, sessions: 25 })).map((g) => g.key).sort()).toEqual(['captain', 'gold_shoes']);
   });
 
-  it('gear unlocks by hero level and by each skill', () => {
+  it('level-10 gear unlocks per skill; a high hero level does not', () => {
     const base = { skills: {}, sessions: 0, phasesCompleted: 0, chestWeeks: 0, level: 1 };
     expect(new Set(GEAR.map((g) => g.key)).size).toBe(GEAR.length);
     expect(GEAR.find((g) => g.key === 'pin')!.unlocked({ ...base, level: 2 })).toBe(true);
@@ -111,18 +111,17 @@ describe('weekly quests and gear', () => {
     expect(GEAR.find((g) => g.key === 'visor')!.unlocked({ ...base, level: 4 })).toBe(true);
     expect(GEAR.find((g) => g.key === 'crown')!.unlocked({ ...base, level: 11 })).toBe(false);
     expect(GEAR.find((g) => g.key === 'crown')!.unlocked({ ...base, level: 12 })).toBe(true);
-    const bySkill: [string, SkillKey, number][] = [
-      ['headband', 'discipline', 5], ['headphones', 'discipline', 8], ['wristbands', 'strength', 5], ['gloves', 'strength', 8],
-      ['cap', 'mobility', 5], ['watch', 'balance', 5], ['knee_support', 'stability', 5], ['sleeve', 'power', 5],
-      ['crew_socks', 'endurance', 5], ['shin_guards', 'sport', 5], ['scarf', 'recovery', 5],
-    ];
-    for (const [key, skillKey, level] of bySkill) {
-      expect(GEAR.find((g) => g.key === key)!.unlocked({ ...base, skills: { [skillKey]: level - 1 } })).toBe(false);
-      expect(GEAR.find((g) => g.key === key)!.unlocked({ ...base, skills: { [skillKey]: level } })).toBe(true);
+    for (const s of SKILLS) {
+      const key = SKILL_GEAR[s.key];
+      if (!key) {
+        expect(s.key).toBe('knowledge');
+        continue;
+      }
+      expect(GEAR.find((g) => g.key === key)!.unlocked({ ...base, skills: { [s.key]: 9 } })).toBe(false);
+      expect(GEAR.find((g) => g.key === key)!.unlocked({ ...base, skills: { [s.key]: 10 } })).toBe(true);
     }
-    // A high hero level does not unlock a skill item.
-    expect(GEAR.find((g) => g.key === 'cap')!.unlocked({ ...base, level: 99 })).toBe(false);
-    expect(SKILLS.every((s) => GEAR.some((g) => g.unlocked({ ...base, skills: { [s.key]: 8 } })))).toBe(true);
+    expect(GEAR.find((g) => g.key === 'gloves')!.unlocked({ ...base, level: 99 })).toBe(false);
+    expect(GEAR.find((g) => g.key === 'captain')!.key).toBe('captain');
   });
 
   it('parses optional body measurements', () => {
@@ -137,3 +136,293 @@ describe('weekly quests and gear', () => {
     expect(metricInRange('heightCm', 40)).toBe(false);
   });
 });
+
+const emptyXp = (): SkillXpInput => ({
+  exercises: [],
+  measurements: [],
+  sessions: [],
+  fullWeeks: [],
+  recovery: [],
+  criteria: [],
+  accountKind: 'physio',
+});
+
+function ex(partial: Partial<LoggedExercise> & Pick<LoggedExercise, 'date' | 'skills'>): LoggedExercise {
+  return {
+    exerciseId: 'ex',
+    familyId: 'fam',
+    difficulty: 2,
+    planned: true,
+    prescribedSets: null,
+    loggedSets: 0,
+    prescribedHoldS: 0,
+    doneHoldS: 0,
+    prescribedBalanceS: 0,
+    doneBalanceS: 0,
+    pain: null,
+    previousPain: null,
+    ...partial,
+  };
+}
+
+describe('skill locks', () => {
+  const ctx = { active: ['strength'] as SkillKey[], laterPhase: { power: 3 }, phaseNo: 1, strengthCleared: false, powerInProgram: false, sportPhase: false };
+
+  it('locks a skill that is not in the programme, and names a later phase when the series has one', () => {
+    expect(skillLock('mobility', ctx)).toEqual({ locked: true, reason: 'unavailable', phase: null });
+    expect(skillLockLabel('unavailable', null)).toBe('nog niet in je programma');
+    expect(skillLock('power', ctx)).toEqual({ locked: true, reason: 'later', phase: 3 });
+    expect(skillLockLabel('later', 3)).toBe('komt vrij in fase 3');
+    expect(skillLock('sport', { ...ctx, laterPhase: {} })).toMatchObject({ locked: true, reason: 'unavailable' });
+    expect(skillLock('knowledge', ctx)).toEqual({ locked: true, reason: 'soon', phase: null });
+    expect(skillLockLabel('soon', null)).toBe('binnenkort');
+  });
+
+  it('opens power after clearance or from phase 3 with plyometrics, and technique only in a sport phase', () => {
+    expect(skillLock('power', { ...ctx, powerInProgram: true, strengthCleared: true }).locked).toBe(false);
+    expect(skillLock('power', { ...ctx, powerInProgram: true, phaseNo: 3 }).locked).toBe(false);
+    expect(skillLock('power', { ...ctx, powerInProgram: true, phaseNo: 2 }).locked).toBe(true);
+    expect(skillLock('sport', { ...ctx, sportPhase: true }).locked).toBe(false);
+    expect(skillLock('strength', ctx).locked).toBe(false);
+    expect(skillLock('discipline', ctx).locked).toBe(false);
+    expect(skillLock('recovery', ctx).locked).toBe(false);
+  });
+
+  it('a friend card carries the lock and no level 1 stand-in', () => {
+    const card = friendSkillCard({ level: 1, locked: true, reason: 'unavailable', phase: null });
+    expect(card).toEqual({ level: null, locked: true, reason: 'unavailable', phase: null });
+    expect(JSON.stringify(card)).not.toMatch(/kg|pain|program/i);
+    expect(friendSkillCard({ level: 4, locked: false, reason: null, phase: null })).toEqual({ level: 4, locked: false, reason: null, phase: null });
+  });
+});
+
+describe('skill XP', () => {
+  it('scores each skill from its own sources and ignores work above the plan', () => {
+    const day = '2026-03-02';
+    const r = computeSkillXp({
+      ...emptyXp(),
+      exercises: [
+        ex({ date: day, skills: ['strength'], prescribedSets: 3, loggedSets: 5 }),
+        ex({ date: day, exerciseId: 'extra', skills: ['strength'], planned: false, prescribedSets: 3, loggedSets: 3 }),
+        ex({ date: day, exerciseId: 'mob', skills: ['mobility'], prescribedHoldS: 90, doneHoldS: 200 }),
+        ex({ date: day, exerciseId: 'bal', skills: ['balance'], prescribedBalanceS: 30, doneBalanceS: 40, difficulty: 1 }),
+        ex({ date: day, exerciseId: 'stab', skills: ['stability'], pain: 3, previousPain: 4 }),
+        ex({ date: day, exerciseId: 'pow', skills: ['power'] }),
+        ex({ date: day, exerciseId: 'end', skills: ['endurance'] }),
+        ex({ date: day, exerciseId: 'tec', skills: ['sport'] }),
+      ],
+      sessions: [{ date: day, planned: true }, { date: day, planned: false }],
+      criteria: [{ date: day, kind: 'jump' }, { date: day, kind: 'return_to_sport' }],
+      recovery: [{ date: day, kind: 'checkin' }, { date: day, kind: 'pain_after_session' }, { date: day, kind: 'rest_day' }],
+    });
+    // 10 + 3×5. The two sets above the prescription and the unplanned exercise add nothing.
+    expect(r.xp.strength).toBe(SKILL_XP.strengthExercise + 3 * SKILL_XP.strengthSet);
+    // 90 prescribed seconds → 9, not the 200 that were done.
+    expect(r.xp.mobility).toBe(SKILL_XP.mobilityExercise + 9);
+    expect(r.xp.balance).toBe(SKILL_XP.balanceExercise + 6);
+    expect(r.xp.stability).toBe(SKILL_XP.stabilityExercise + SKILL_XP.stabilitySteady);
+    expect(r.xp.power).toBe(SKILL_XP.powerExercise + SKILL_XP.powerCriterion);
+    expect(r.xp.endurance).toBe(SKILL_XP.enduranceExercise);
+    expect(r.xp.sport).toBe(SKILL_XP.techniqueExercise + SKILL_XP.techniqueCriterion);
+    expect(r.xp.discipline).toBe(SKILL_XP.session);
+    expect(r.xp.recovery).toBe(SKILL_XP.checkin + SKILL_XP.painReported + SKILL_XP.restDay);
+    expect(r.xp.knowledge).toBe(0);
+  });
+
+  it('stops the stability bonus when reported pain went up, and never adds XP for a higher pain score', () => {
+    const calm = computeSkillXp({ ...emptyXp(), exercises: [ex({ date: '2026-03-02', skills: ['stability'], pain: 2, previousPain: 2 })] });
+    const up = computeSkillXp({ ...emptyXp(), exercises: [ex({ date: '2026-03-02', skills: ['stability'], pain: 6, previousPain: 2 })] });
+    const quiet = computeSkillXp({ ...emptyXp(), exercises: [ex({ date: '2026-03-02', skills: ['stability'], pain: null, previousPain: 2 })] });
+    expect(calm.xp.stability).toBe(SKILL_XP.stabilityExercise + SKILL_XP.stabilitySteady);
+    expect(up.xp.stability).toBe(SKILL_XP.stabilityExercise);
+    expect(quiet.xp.stability).toBe(SKILL_XP.stabilityExercise);
+    const reported = computeSkillXp({ ...emptyXp(), recovery: [{ date: '2026-03-02', kind: 'pain_after_session' }] });
+    const reportedHigh = computeSkillXp({ ...emptyXp(), recovery: [{ date: '2026-03-02', kind: 'pain_after_session' }, { date: '2026-03-02', kind: 'pain_after_session' }] });
+    expect(reportedHigh.xp.recovery).toBe(reported.xp.recovery * 2);
+  });
+
+  it('caps each skill per calendar day', () => {
+    const exercises = Array.from({ length: 20 }, (_, i) => ex({ date: '2026-03-02', exerciseId: `s${i}`, skills: ['strength'] }));
+    const r = computeSkillXp({ ...emptyXp(), exercises });
+    expect(r.xp.strength).toBe(SKILL_DAILY_CAP.strength);
+    expect(20 * SKILL_XP.strengthExercise).toBeGreaterThan(SKILL_DAILY_CAP.strength);
+  });
+
+  it('pays recovery for a planned rest day and a two-point drop, and withholds the red-flag bonus outside physiotherapy', () => {
+    const rests = plannedRestDates([{ start: '2026-03-02', end: '2026-03-08', weekdays: [1, 3, 5] }], ['2026-03-02'], '2026-03-08');
+    expect(rests).toContain('2026-03-03');
+    expect(rests).not.toContain('2026-03-02');
+    const drops = painDropEvents([
+      { area: 'knee_l', at: '2026-03-01T10:00:00', score: 6 },
+      { area: 'knee_l', at: '2026-03-08T10:00:00', score: 4 },
+      { area: 'knee_l', at: '2026-03-15T10:00:00', score: 1 },
+    ]);
+    expect(drops).toEqual([{ date: '2026-03-08', kind: 'pain_drop' }]);
+    const recovery = [{ date: '2026-03-03', kind: 'rest_day' as const }, { date: '2026-03-03', kind: 'red_flag' as const }, ...drops];
+    expect(computeSkillXp({ ...emptyXp(), recovery }).xp.recovery).toBe(SKILL_XP.restDay + SKILL_XP.redFlag + SKILL_XP.painDrop);
+    expect(computeSkillXp({ ...emptyXp(), accountKind: 'coach', recovery }).xp.recovery).toBe(SKILL_XP.restDay + SKILL_XP.painDrop);
+    expect(computeSkillXp({ ...emptyXp(), accountKind: 'personal', recovery: [{ date: '2026-03-03', kind: 'red_flag' }] }).xp.recovery).toBe(0);
+  });
+
+  it('awards a balance upgrade once, for a harder variant in the same family', () => {
+    const r = computeSkillXp({
+      ...emptyXp(),
+      exercises: [
+        ex({ date: '2026-03-02', skills: ['balance'], familyId: 'sl', difficulty: 1 }),
+        ex({ date: '2026-03-04', skills: ['balance'], familyId: 'sl', difficulty: 3 }),
+        ex({ date: '2026-03-06', skills: ['balance'], familyId: 'sl', difficulty: 3 }),
+        ex({ date: '2026-03-04', exerciseId: 'other', skills: ['balance'], familyId: 'other', difficulty: 3 }),
+      ],
+    });
+    expect(r.xp.balance).toBe(4 * SKILL_XP.balanceExercise + SKILL_XP.balanceUpgrade);
+  });
+
+  it('keeps a discipline streak across one free week in eight', () => {
+    const twoGaps = Array.from({ length: 9 }, (_, i) => ({ full: i !== 4 && i !== 5 }));
+    // Weeks 4 and 5 are both missed. The newer miss is free; the older one breaks the run.
+    expect(disciplineStreak([...twoGaps, { full: true }])).toBe(4);
+    const oneGap = Array.from({ length: 10 }, (_, i) => ({ full: i !== 4 }));
+    expect(disciplineStreak(oneGap)).toBe(9);
+    const full = computeSkillXp({ ...emptyXp(), fullWeeks: [{ date: '2026-03-08' }], sessions: [{ date: '2026-03-06', planned: true }] });
+    expect(full.xp.discipline).toBe(SKILL_XP.fullWeek + SKILL_XP.session);
+  });
+});
+
+describe('estimated 1RM', () => {
+  it('uses Epley and ignores sets outside 1–10 reps or without weight', () => {
+    expect(epley1Rm(60, 5)).toBeCloseTo(60 * (1 + 5 / 30));
+    expect(epley1Rm(60, 1)).toBeCloseTo(60 * (1 + 1 / 30));
+    expect(epley1Rm(60, 11)).toBeNull();
+    expect(epley1Rm(60, 0)).toBeNull();
+    expect(epley1Rm(0, 5)).toBeNull();
+    expect(epley1Rm(null, 5)).toBeNull();
+  });
+
+  it('confirms a record on a second session, blocks it at pain 7, and pays at most one bonus per week', () => {
+    const base = [
+      { exerciseId: 'squat', sessionId: 'a', date: '2026-03-02', estimateKg: 100, pain: 2 },
+      { exerciseId: 'squat', sessionId: 'b', date: '2026-03-05', estimateKg: 100, pain: 2 },
+    ];
+    const pending = { exerciseId: 'squat', sessionId: 'c', date: '2026-03-09', estimateKg: 103, pain: 2 };
+    const confirm = { exerciseId: 'squat', sessionId: 'd', date: '2026-03-16', estimateKg: 101, pain: 2 };
+    const ok = strengthAwards([...base, pending, confirm]);
+    expect(ok.summaries[0]).toMatchObject({ startKg: 100, latestKg: 101, progressPct: 1 });
+    expect(ok.records).toEqual([{ exerciseId: 'squat', date: '2026-03-16' }]);
+
+    const late = strengthAwards([...base, pending, { ...confirm, date: '2026-03-24' }]);
+    expect(late.records).toEqual([]);
+
+    const sore = strengthAwards([...base, pending, { ...confirm, pain: 7 }]);
+    expect(sore.records).toEqual([]);
+    const laterClean = strengthAwards([...base, pending, { ...confirm, pain: 7 }, { ...confirm, sessionId: 'e', date: '2026-03-20', pain: 2 }]);
+    expect(laterClean.records).toEqual([{ exerciseId: 'squat', date: '2026-03-20' }]);
+
+    const second = { exerciseId: 'squat', sessionId: 'f', date: '2026-03-18', estimateKg: 108, pain: 1 };
+    const secondConfirm = { exerciseId: 'squat', sessionId: 'g', date: '2026-03-20', estimateKg: 106, pain: 1 };
+    const twice = strengthAwards([...base, pending, confirm, second, secondConfirm]);
+    expect(twice.records).toHaveLength(1);
+
+    // A successful 1RM test is just a measurement of that weight: it can be the confirming session.
+    const tested = strengthAwards([...base, pending, { exerciseId: 'squat', sessionId: 'test-1', date: '2026-03-12', estimateKg: 103, pain: 1 }]);
+    expect(tested.records).toEqual([{ exerciseId: 'squat', date: '2026-03-12' }]);
+  });
+
+  it('pauses the strength progression bonus on a day with pain of 7 or more, and still counts the session', () => {
+    const day = '2026-03-20';
+    const measurements = [
+      { exerciseId: 'squat', sessionId: 'a', date: '2026-03-02', estimateKg: 100, pain: 1 },
+      { exerciseId: 'squat', sessionId: 'b', date: '2026-03-09', estimateKg: 100, pain: 1 },
+      { exerciseId: 'squat', sessionId: 'c', date: '2026-03-16', estimateKg: 130, pain: 8 },
+      { exerciseId: 'squat', sessionId: 'd', date: day, estimateKg: 128, pain: 2 },
+    ];
+    const paused = computeSkillXp({
+      ...emptyXp(),
+      exercises: [ex({ date: day, skills: ['strength'], prescribedSets: 2, loggedSets: 2, pain: 8 })],
+      measurements,
+    });
+    expect(paused.xp.strength).toBe(SKILL_XP.strengthExercise + 2 * SKILL_XP.strengthSet);
+    const clear = computeSkillXp({
+      ...emptyXp(),
+      exercises: [ex({ date: day, skills: ['strength'], prescribedSets: 2, loggedSets: 2, pain: 3 })],
+      measurements: measurements.map((m) => (m.sessionId === 'c' ? { ...m, pain: 3 } : m)),
+    });
+    expect(clear.xp.strength).toBe(SKILL_XP.strengthExercise + 2 * SKILL_XP.strengthSet + SKILL_XP.strengthRecord + SKILL_XP.strengthMilestone);
+    expect(clear.strength[0].progressPct).toBe(28);
+  });
+});
+
+describe('skill tempo', () => {
+  /** A faithful plan: 4 training days a week, nothing above the prescription, pain stays at 3. */
+  function faithful(weeks: number) {
+    const exercises: LoggedExercise[] = [];
+    const sessions: { date: string; planned: boolean }[] = [];
+    const fullWeeks: { date: string }[] = [];
+    const start = '2026-01-05'; // Monday
+    for (let w = 0; w < weeks; w++) {
+      for (let d = 0; d < 4; d++) {
+        const date = add(start, w * 7 + d);
+        sessions.push({ date, planned: true });
+        for (let i = 0; i < 6; i++) {
+          exercises.push(ex({ date, exerciseId: `s${i}`, skills: ['strength'], prescribedSets: 4, loggedSets: 4, pain: 3, previousPain: 3 }));
+        }
+        for (let i = 0; i < 4; i++) {
+          exercises.push(ex({ date, exerciseId: `m${i}`, skills: ['mobility'], prescribedHoldS: 150, doneHoldS: 150, pain: 2, previousPain: 2 }));
+        }
+      }
+      fullWeeks.push({ date: add(start, w * 7 + 6) });
+    }
+    return computeSkillXp({ ...emptyXp(), exercises, sessions, fullWeeks, accountKind: 'physio' });
+  }
+  const levelOf = (xp: number) => skillLevel(xp).level;
+
+  it('a faithful 12-week plan finishes the main skills between level 20 and 30', () => {
+    const r = faithful(12);
+    // The curve stays 25×(L−1)^1.8. This volume is inside the daily caps, so the level is the plan, not a boost.
+    expect(skillXpForLevel(20)).toBe(Math.round(25 * Math.pow(19, 1.8)));
+    expect(levelOf(r.xp.strength)).toBeGreaterThanOrEqual(20);
+    expect(levelOf(r.xp.strength)).toBeLessThanOrEqual(30);
+    expect(levelOf(r.xp.mobility)).toBeGreaterThanOrEqual(20);
+    expect(levelOf(r.xp.mobility)).toBeLessThanOrEqual(30);
+    // Same week, stretched over a year, lands near level 50; level 99 takes about three to four years.
+    expect(levelOf(faithful(52).xp.strength)).toBeGreaterThanOrEqual(45);
+    expect(levelOf(faithful(52).xp.strength)).toBeLessThanOrEqual(60);
+    expect(levelOf(faithful(52 * 3).xp.strength)).toBeGreaterThanOrEqual(90);
+    expect(levelOf(faithful(52 * 3).xp.strength)).toBeLessThan(99);
+    expect(levelOf(faithful(52 * 4).xp.strength)).toBe(99);
+  });
+});
+
+describe('cosmetic rewards', () => {
+  it('defines emblems, titles, combos and scenes, and does not draw the later steps', () => {
+    expect(REWARDS_ARE_COSMETIC).toBe(true);
+    expect(skillTitle('strength', 19)).toBeNull();
+    expect(skillTitle('strength', 20)).toBe('Krachtpatser');
+    expect(skillTitle('mobility', 20)).toBe('Lenigheidsmeester');
+    expect(skillTitle('balance', 20)).toBe('Evenwichtskunstenaar');
+    expect(skillTitle('stability', 20)).toBe('Rots in de branding');
+    expect(skillTitle('power', 20)).toBe('Springveer');
+    expect(skillTitle('endurance', 20)).toBe('Duurloper');
+    expect(skillTitle('sport', 20)).toBe('Techneut');
+    expect(skillTitle('discipline', 20)).toBe('IJzeren wil');
+    expect(skillTitle('recovery', 20)).toBe('Herstelheld');
+    expect(skillTitle('knowledge', 99)).toBeNull();
+    expect(comboTitles({ strength: 20, stability: 20 }).map((c) => c.name)).toEqual(['De Rots']);
+    expect(comboTitles({ balance: 20, mobility: 20 }).map((c) => c.name)).toEqual(['Danser']);
+    expect(comboTitles({ discipline: 30, recovery: 30 }).map((c) => c.name)).toEqual(['Slimme Atleet']);
+    expect(comboTitles({ strength: 19, stability: 20 })).toEqual([]);
+    expect(COMBO_TITLES).toHaveLength(3);
+    expect(FUTURE_REWARDS.every((r) => r.drawn === false)).toBe(true);
+    expect(FUTURE_REWARDS.map((r) => r.level)).toEqual([30, 50, 75, 99]);
+    expect(sceneForTotal(49)).toBeNull();
+    expect(sceneForTotal(50)?.key).toBe('gym');
+    expect(sceneForTotal(100)?.key).toBe('stadium');
+    expect(sceneForTotal(400)?.key).toBe('stadium');
+    expect(TOTAL_LEVEL_SCENES.filter((s) => !s.drawn).map((s) => s.level)).toEqual([150, 250, 400]);
+  });
+});
+
+function add(date: string, days: number) {
+  const d = new Date(date + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
