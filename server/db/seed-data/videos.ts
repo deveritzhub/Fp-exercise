@@ -39,6 +39,11 @@ export const SEEDANCE_VIDEOS: LibraryVideo[] = [
   { sourceKeys: ['kr_bodyweight_squat'], file: `${HF}hf_20261101_100113_66bb90c8-b419-40c3-bca9-f798ef61c7ec.mp4` },
   { sourceKeys: ['kr_forward_lunge'], file: `${HF}hf_20261101_115959_070fb383-fc07-42e3-bfc4-cfebe8547e4b.mp4` },
   { sourceKeys: ['kr_conventional_deadlift'], file: `${HF}hf_20261101_120000_397d6443-cce6-4150-a60d-9a89e6176ac1.mp4` },
+  // Glute series with the female model (2026-11-01).
+  { sourceKeys: ['kr_hip_thrust'], file: `${HF}hf_20261101_142129_57d3a262-a377-429b-9dab-754cde3f56bc.mp4` },
+  { sourceKeys: ['ex_split_squat_bulgarian'], file: `${HF}hf_20261101_142129_fb7e7bb7-6d36-4f2a-ad4a-4a896680e64d.mp4` },
+  { sourceKeys: ['kr_rdl'], file: `${HF}hf_20261101_142129_79dd7a85-01db-4ddf-b3c8-8fdf1e5477b4.mp4` },
+  { exercise: 'Eenbenige bekkenbrug', file: `${HF}hf_20261101_142129_07f5fd32-cc06-445c-b019-d3bb21a769a8.mp4` },
 ];
 
 /** Resolve a library video `file` to a local seed path or a remote URL. */

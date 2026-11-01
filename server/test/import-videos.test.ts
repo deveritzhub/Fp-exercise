@@ -28,12 +28,17 @@ function fakeMp4(payload: string) {
 describe('Seedance demo videos', () => {
   it('each belongs to an exercise in a library bundle and resolves to a CDN mp4', () => {
     const keys = new Set<string>();
-    for (const f of ['fp-app-update.json', 'fp-videos-v1.json']) {
-      for (const e of (readFpBundle(f) as { seed_data: { krachttraining: { oefeningen: { id: string }[] } } }).seed_data.krachttraining.oefeningen) keys.add(e.id);
+    for (const f of ['fp-library.json', 'fp-app-update.json', 'fp-videos-v1.json']) {
+      const b = readFpBundle(f) as { oefeningen?: { id: string }[]; seed_data?: { revalidatie?: { oefeningen: { id: string }[] }; krachttraining?: { oefeningen: { id: string }[] } } };
+      for (const e of [...(b.oefeningen ?? []), ...(b.seed_data?.revalidatie?.oefeningen ?? []), ...(b.seed_data?.krachttraining?.oefeningen ?? [])]) keys.add(e.id);
     }
-    expect(SEEDANCE_VIDEOS.flatMap((v) => v.sourceKeys)).toEqual(['kr_bodyweight_squat', 'kr_forward_lunge', 'kr_conventional_deadlift']);
+    const central = new Set(EXERCISES.map((e) => e.nl));
+    expect(SEEDANCE_VIDEOS.flatMap((v) => v.sourceKeys ?? [v.exercise])).toEqual([
+      'kr_bodyweight_squat', 'kr_forward_lunge', 'kr_conventional_deadlift', 'kr_hip_thrust', 'ex_split_squat_bulgarian', 'kr_rdl', 'Eenbenige bekkenbrug',
+    ]);
     for (const v of SEEDANCE_VIDEOS) {
-      for (const k of v.sourceKeys!) expect(keys.has(k), k).toBe(true);
+      for (const k of v.sourceKeys ?? []) expect(keys.has(k), k).toBe(true);
+      if (v.exercise) expect(central.has(v.exercise), v.exercise).toBe(true);
       const src = resolveLibraryVideo(v.file);
       expect(src.url?.startsWith('https://d8j0ntlcm91z4.cloudfront.net/')).toBe(true);
       expect(src.storageName).toMatch(/^hf_20261101_\d{6}_[0-9a-f-]{36}\.mp4$/);

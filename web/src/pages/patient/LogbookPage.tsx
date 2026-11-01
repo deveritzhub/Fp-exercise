@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Beef, Droplets, Dumbbell, Footprints, Moon, Scale, Trash2 } from 'lucide-react';
+import { ArrowLeft, Beef, ChevronRight, Droplets, Dumbbell, Footprints, Moon, Scale, Trash2 } from 'lucide-react';
 import { Fold } from '@/components/app/Fold';
 import { SleepLog, WaterLog } from '@/components/patient/Survival';
 import { LOG_XP, STEPS, TRAINING_KINDS, type TrainingKind } from '@shared/patientLogs';
@@ -35,6 +35,14 @@ export function LogbookPage() {
         <h1 className="t-page">{t('Logboek', 'Logbook')}</h1>
         <p className="mt-1 text-[15px] text-ink-600">{t('Een eigen training of je eiwit van vandaag. Overslaan kost niets. Een hoge pijnscore levert niet méér op, en stoppen vanwege pijn telt als herstel.', 'A workout of your own, or today’s protein. Skipping costs nothing. A high pain score does not earn more, and stopping because of pain counts as recovery.')}</p>
       </div>
+      <Link to="/p/kracht" className="tap flex items-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-4 text-white shadow-card">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15"><Dumbbell className="h-5 w-5" aria-hidden /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[16px] font-semibold">{t('Krachtlog en 1RM-meter', 'Strength log and 1RM meter')}</span>
+          <span className="block text-[13.5px] text-white/85">{t('Sets in de sportschool of praktijk, met je records', 'Sets in the gym or practice, with your records')}</span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
+      </Link>
       <Fold id="log-protein" defaultOpen icon={<Beef className="h-5 w-5" />} title={t('Eiwit', 'Protein')}
         summary={d.logs.protein.goal !== null ? t(`${d.logs.protein.grams} van ${d.logs.protein.goal} g vandaag`, `${d.logs.protein.grams} of ${d.logs.protein.goal} g today`) : t(`${d.logs.protein.grams} g vandaag`, `${d.logs.protein.grams} g today`)}>
         <ProteinCard d={d} />

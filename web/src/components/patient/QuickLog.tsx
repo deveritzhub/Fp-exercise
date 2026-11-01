@@ -78,6 +78,9 @@ export function QuickLogButton() {
           ) : (
             <div role="tabpanel"><StepsQuick /></div>
           )}
+          <Link to="/p/kracht" onClick={() => setOpen(false)} className="flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-line text-[14.5px] font-semibold text-ink-900">
+            <Dumbbell className="h-4 w-4 text-accent" aria-hidden />{t('Krachtlog en 1RM-meter', 'Strength log and 1RM meter')}
+          </Link>
           <Link to="/p/logboek" onClick={() => setOpen(false)} className="flex min-h-[44px] items-center justify-center gap-2 text-[14.5px] font-medium text-accent">
             <Dumbbell className="h-4 w-4" aria-hidden />{t('Eigen training loggen of alles bekijken', 'Log your own workout or see everything')}
           </Link>
