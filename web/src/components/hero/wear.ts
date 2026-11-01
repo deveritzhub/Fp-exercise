@@ -47,8 +47,8 @@ export function wearPlacements(gear: string[], frame: string | undefined, kind: 
   const k = SPREAD[kind ?? 'average'] * FRAME_SPREAD[frame === 'm' ? 'm' : 'f'];
   const out: WearPlacement[] = [];
   for (const key of ORDER) {
-    if (!gear.includes(key)) continue;
     const s = WEAR_SLOTS[key];
+    if (!s || !gear.includes(key)) continue;
     const x = s.spread ? 0.5 + (s.x - 0.5) * k : s.x;
     const w = s.scale ? s.w * k : s.w;
     const place = (cx: number, mirror: boolean) => out.push({ key, left: cx - w / 2, top: s.h ? s.y - s.h / 2 : s.y, width: w, height: s.h, mirror });
