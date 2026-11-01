@@ -845,3 +845,12 @@ export const BODY_KIND_LABEL: Record<BodyShape['kind'], [string, string]> = {
   soft: ['Iets voller', 'Slightly fuller'],
   full: ['Voller', 'Fuller'],
 };
+
+/** Which generated photo (see server/db/seed-data/hero-assets.ts) fits this hero: figure, skin group, build. */
+export function heroPhotoKey(look: { frame?: string; skin: string; build?: string }, body: { kind?: BodyShape['kind'] } | null | undefined): string {
+  const n = Number(look.skin.replace(/\D/g, '')) || 4;
+  const skin = n <= 2 ? 's1' : n <= 4 ? 's3' : n <= 6 ? 's5' : n <= 8 ? 's7' : 's9';
+  const fromBuild: Record<string, BodyShape['kind']> = { slim: 'lean', average: 'average', athletic: 'athletic', full: 'full' };
+  const kind = body?.kind ?? fromBuild[look.build ?? 'average'] ?? 'average';
+  return `${look.frame === 'm' ? 'm' : 'f'}_${skin}_${kind}`;
+}

@@ -69,9 +69,11 @@ if (!seeded) {
 await import('../src/index');
 
 // Demo videos: copied from the repo in the background so start-up (and the health check) is not delayed.
+const { syncHeroAssets } = await import('../src/lib/heroAssets');
 const { importLibraryVideos } = await import('./import-videos');
 const { config } = await import('../src/config');
 const { importFpLibrary } = await import('./import-library');
+syncHeroAssets(config.storageDir).catch((e) => console.error('[hero-assets]', e.message));
 importLibraryVideos(process.env.DATABASE_OWNER_URL!, config.storageDir)
   .catch((e) => console.error('[videos]', e.message))
   // The practice's own library (once), then reuse matching library videos.

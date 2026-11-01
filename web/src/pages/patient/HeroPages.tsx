@@ -215,7 +215,7 @@ function AvatarLink({ look, size, level }: { look: HeroLook & { gear?: string[] 
       aria-label={level !== undefined ? t(`Uiterlijk en maten aanpassen, level ${level}`, `Edit look and measurements, level ${level}`) : t(PROFILE_LABEL[0], PROFILE_LABEL[1])}
       className="tap relative inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
     >
-      <HeroAvatar look={look} size={size} level={level} />
+      <HeroAvatar look={look} size={size} level={level} photo />
       <span className="absolute -bottom-1 left-1/2 z-10 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-white text-accent shadow-sm" aria-hidden>
         <Pencil className="h-3.5 w-3.5" />
       </span>
@@ -598,6 +598,19 @@ function WeeklyQuests({ d }: { d: HeroState }) {
 }
 
 /** Gear: unlocked by progress; the patient chooses what the hero wears. */
+/** Product photo of a gear item (generated art); a lock or crown icon when there is none. */
+function GearPhoto({ gearKey, locked }: { gearKey: string; locked: boolean }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <span className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-sand-soft" aria-hidden>
+      {!failed ? (
+        <img src={`/api/hero-assets/item/${gearKey}`} alt="" loading="lazy" onError={() => setFailed(true)} className={cn('h-full w-full object-cover', locked && 'opacity-40 grayscale')} />
+      ) : locked ? <Lock className="h-5 w-5 text-ink-500" /> : <Crown className="h-5 w-5 text-sand-ink" />}
+      {locked && !failed && <Lock className="absolute h-5 w-5 text-ink-700" />}
+    </span>
+  );
+}
+
 function GearCard({ d }: { d: HeroState }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
@@ -629,7 +642,7 @@ function GearCard({ d }: { d: HeroState }) {
           const action = worn ? t('Aan', 'On') : t('Aandoen', 'Wear');
           return (
             <li key={g.key} className={cn('flex items-center gap-3 rounded-xl border p-3', unlocked ? 'border-line' : 'border-line bg-canvas')}>
-              {unlocked ? <Crown className="h-5 w-5 shrink-0 text-sand-ink" aria-hidden /> : <Lock className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />}
+              <GearPhoto gearKey={g.key} locked={!unlocked} />
               <span className="min-w-0 flex-1">
                 <span className="block text-[14.5px] font-semibold text-ink-900">{name}</span>
                 <span className="block text-[13px] text-ink-600">{unlocked ? t('Vrijgespeeld', 'Unlocked') : t(`Nog op slot: ${g.unlockNl}`, `Locked: ${g.unlockEn}`)}</span>

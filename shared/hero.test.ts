@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BADGES, bodyShape, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
+import { BADGES, bodyShape, heroPhotoKey, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
 
 describe('sports hero rules', () => {
   it('levels grow gently and progress is between 0 and 1', () => {
@@ -451,5 +451,13 @@ describe('body shape from measurements', () => {
     expect(s.bodyFatPct).toBeGreaterThan(20);
     expect(bodyShape({ weightKg: 60, heightCm: null, bodyFatPct: 20 }, 'f')).toBeNull();
     expect(bodyShape({ weightKg: 55, heightCm: 172, bodyFatPct: 18 }, 'f')!.kind).toBe('lean');
+  });
+});
+
+describe('hero photo key', () => {
+  it('picks figure, skin group and build', () => {
+    expect(heroPhotoKey({ frame: 'm', skin: 's4', build: 'athletic' }, null)).toBe('m_s3_athletic');
+    expect(heroPhotoKey({ frame: 'f', skin: 's10', build: 'average' }, { kind: 'muscular' })).toBe('f_s9_muscular');
+    expect(heroPhotoKey({ frame: 'f', skin: 's1', build: 'slim' }, undefined)).toBe('f_s1_lean');
   });
 });

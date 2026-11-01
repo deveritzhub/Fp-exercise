@@ -29,7 +29,7 @@ export const KIT: Record<string, { main: string; dark: string; soft: string }> =
 export type FigureLook = Pick<HeroLook, 'skin' | 'hair' | 'outfit'> & Partial<Pick<HeroLook, 'hairColor' | 'eyeColor' | 'frame' | 'build' | 'beard' | 'glasses' | 'sport'>> & {
   gear?: string[];
   /** Body composition from the patient's own measurements (0–1 each); overrides `build`. */
-  body?: { fat: number; muscle: number } | null;
+  body?: { fat: number; muscle: number; kind?: 'lean' | 'athletic' | 'muscular' | 'average' | 'soft' | 'full' } | null;
 };
 
 type Pt = [number, number, number]; // x, y, half width

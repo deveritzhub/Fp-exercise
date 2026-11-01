@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { heroAssetFile, isHeroAsset } from './lib/heroAssets';
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
 import { serveStatic } from '@hono/node-server/serve-static';
@@ -62,6 +64,17 @@ export function createApp() {
   api.use('*', sessionMiddleware);
 
   api.get('/health', (c) => c.json({ ok: true }));
+  // Generated hero art (generic, no personal data): served from private storage, cached by the browser.
+  api.get('/hero-assets/:kind/:key', async (c) => {
+    const kind = c.req.param('kind');
+    const key = c.req.param('key').replace(/\.png$/, '');
+    if (!isHeroAsset(kind, key)) return c.json({ error: 'not_found' }, 404);
+    const buf = await readFile(heroAssetFile(config.storageDir, kind, key)).catch(() => null);
+    if (!buf) return c.json({ error: 'not_found' }, 404);
+    c.header('Content-Type', 'image/png');
+    c.header('Cache-Control', 'public, max-age=604800, immutable');
+    return c.body(new Uint8Array(buf));
+  });
   api.route('/auth', authRoutes);
   api.route('/me', me);
   api.route('/public', publicRoutes);
