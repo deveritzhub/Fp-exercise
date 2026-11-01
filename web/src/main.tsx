@@ -40,13 +40,13 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 }
 
 // An app left open on a phone keeps running the old version after a release. When it comes back to
-// the foreground (at most every 5 minutes), compare the page's entry script with the live one and
+// the foreground (at most once a minute), compare the page's entry script with the live one and
 // reload if a newer release is out. Only on resume, so nobody loses what they are typing.
 if (import.meta.env.PROD) {
   const current = (document.querySelector('script[type="module"][src*="/assets/"]') as HTMLScriptElement | null)?.getAttribute('src');
   let lastCheck = Date.now();
   document.addEventListener('visibilitychange', async () => {
-    if (document.visibilityState !== 'visible' || !current || Date.now() - lastCheck < 5 * 60_000) return;
+    if (document.visibilityState !== 'visible' || !current || Date.now() - lastCheck < 60_000) return;
     lastCheck = Date.now();
     try {
       const html = await (await fetch('/', { cache: 'no-store' })).text();
