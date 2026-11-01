@@ -164,8 +164,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Knie · **Materiaal:** Halter (barbell) · **Moeilijkheid:** 4/5 · **Dosering in app:** 3 sets · 8 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week; Push Pull Legs, 3 dagen per week
 - **Camera:** Vooraanzicht (knie-uitlijning) — eventueel tweede opname van opzij. Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Staand, stang op de bovenrug, voeten iets breder dan heupbreedte.
+- **Uitvoering:** Staand, stang op de bovenrug, voeten iets breder dan heupbreedte. Zak gecontroleerd door heupen en knieën tot de bovenbenen parallel zijn, knieën in lijn met de voeten, en duw weer omhoog.
 - **Aandachtspunten uit de bibliotheek:** Brace voor het afzetten, knie in lijn met de voet, diepte tot parallel of dieper zonder dat het bekken kantelt. Herhalingen: 3-8. Rust: 2-3 min.
 - **Controlepunten bij keuren:**
   - [ ] knie blijft boven de voet, zakt niet naar binnen
@@ -176,7 +176,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front view, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Back squat. 
+Exercise: Back squat. Standing with a barbell on the upper back, feet slightly wider than hip width. Squat down with control until the thighs are parallel, knees tracking over the toes, then drive back up.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -187,8 +187,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Schouder · **Materiaal:** Bank, Halter (barbell) · **Moeilijkheid:** 4/5 · **Dosering in app:** 3 sets · 8 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week; Push Pull Legs, 3 dagen per week
 - **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Ruglig op de bank, schouderbladen samen, voeten stevig op de grond, stang boven de borst.
+- **Uitvoering:** Ruglig op de bank, schouderbladen samen, voeten stevig op de grond, stang boven de borst. Laat de stang gecontroleerd zakken naar de onderste borst en duw weer omhoog.
 - **Aandachtspunten uit de bibliotheek:** Schouderbladen samen, stang naar onderste borst, voeten stevig op de grond. Herhalingen: 3-8. Rust: 2-3 min.
 - **Controlepunten bij keuren:**
   - [ ] schouder laag, niet optrekken naar het oor
@@ -199,7 +199,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Barbell bench press. 
+Exercise: Barbell bench press. Lying on a flat bench, shoulder blades pulled together, feet firmly on the floor, barbell above the chest. Lower the bar with control to the lower chest, then press it back up.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -210,8 +210,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Schouder · **Materiaal:** Muur · **Moeilijkheid:** 2/5 · **Dosering in app:** 2 sets · 30 s vasthouden
 - **Gebruikt in:** Dagelijkse mobiliteit, 10 minuten; Heup en schouder mobiliteit, 6 weken
 - **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Staand in een deuropening, onderarm tegen de deurpost, elleboog op schouderhoogte.
+- **Uitvoering:** Staand in een deuropening, onderarm tegen de deurpost, elleboog op schouderhoogte. Stap licht naar voren tot je een rek voelt in de borst.
 - **Aandachtspunten uit de bibliotheek:** Onderarm tegen de deurpost, licht naar voren. Dosering: 2 sets van 30 sec per kant, dagelijks.
 - **Controlepunten bij keuren:**
   - [ ] schouder laag, niet optrekken naar het oor
@@ -222,7 +222,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Borstspier rek in deuropening.  Hold the end position for 5 seconds in each repetition.
+Exercise: Borstspier rek in deuropening. Standing in a doorway, forearm against the frame, elbow at shoulder height. Step gently forward until a stretch is felt in the chest. Hold the end position for 5 seconds in each repetition.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -233,8 +233,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Schouder · **Materiaal:** Fitnessapparaat, Bank · **Moeilijkheid:** 3/5 · **Dosering in app:** 3 sets · 12 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week; Push Pull Legs, 3 dagen per week
 - **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Borst tegen de steun van de machine of een schuine bank, armen gestrekt naar beneden.
+- **Uitvoering:** Borst tegen de steun van de machine of een schuine bank, armen gestrekt naar beneden. Trek de ellebogen naar achteren tot de handen bij de ribben zijn en laat gecontroleerd zakken.
 - **Aandachtspunten uit de bibliotheek:** Borst op de steun, trek de ellebogen naar achteren. Herhalingen: 8-12. Rust: 1-2 min.
 - **Controlepunten bij keuren:**
   - [ ] schouder laag, niet optrekken naar het oor
@@ -245,7 +245,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Chest-supported row. 
+Exercise: Chest-supported row. Chest against the support of a machine or incline bench, arms hanging straight. Pull the elbows back until the hands reach the ribs, then lower with control.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -279,8 +279,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Heup · **Materiaal:** Halter (barbell) · **Moeilijkheid:** 4/5 · **Dosering in app:** 3 sets · 6 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week; Push Pull Legs, 3 dagen per week
 - **Camera:** Zijaanzicht. Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Voeten op heupbreedte onder de stang, handen net buiten de knieën, rug neutraal.
+- **Uitvoering:** Voeten op heupbreedte onder de stang, handen net buiten de knieën, rug neutraal. Duw de vloer weg en til de stang dicht langs het lichaam tot volledig rechtop, zak gecontroleerd terug.
 - **Aandachtspunten uit de bibliotheek:** Neutrale wervelkolom, druk de vloer weg, stang dicht bij het lichaam. Herhalingen: 3-6. Rust: 3 min.
 - **Controlepunten bij keuren:**
   - [ ] bekken blijft recht, geen draai of kanteling
@@ -291,7 +291,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, side view, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Conventional deadlift. 
+Exercise: Conventional deadlift. Feet hip-width under a barbell on the floor, hands just outside the knees, neutral spine. Push the floor away and lift the bar close to the body to full standing, then lower it with control.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -302,8 +302,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Heup · **Materiaal:** Geen materiaal nodig · **Moeilijkheid:** 2/5 · **Dosering in app:** 3 sets · 30 s vasthouden
 - **Gebruikt in:** Dagelijkse mobiliteit, 10 minuten; Heup en schouder mobiliteit, 6 weken
 - **Camera:** Zijaanzicht. Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Staand, voeten iets breder dan heupbreedte.
+- **Uitvoering:** Staand, voeten iets breder dan heupbreedte. Zak in een diepe squat met de hielen op de grond en de romp rechtop en blijf daar; houd zo nodig een steun vast.
 - **Aandachtspunten uit de bibliotheek:** Hielen op de grond, romp rechtop, gebruik een steun als dat nodig is. Dosering: 3 sets van 30 sec, dagelijks of bij de warming-up.
 - **Controlepunten bij keuren:**
   - [ ] bekken blijft recht, geen draai of kanteling
@@ -314,7 +314,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, side view, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Diepe squat hold.  Hold the end position for 5 seconds in each repetition.
+Exercise: Diepe squat hold. Standing, feet slightly wider than hip width. Sink into a deep squat with heels on the floor and torso upright and hold it, holding onto a support if needed. Hold the end position for 5 seconds in each repetition.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -325,8 +325,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Schouder · **Materiaal:** Dumbbell · **Moeilijkheid:** 3/5 · **Dosering in app:** 3 sets · 15 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week; Push Pull Legs, 3 dagen per week
 - **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Staand, dumbbells naast het lichaam, handpalmen naar voren.
+- **Uitvoering:** Staand, dumbbells naast het lichaam, handpalmen naar voren. Buig de ellebogen en breng de dumbbells naar de schouders, ellebogen blijven op hun plek, en laat gecontroleerd zakken.
 - **Aandachtspunten uit de bibliotheek:** Ellebogen vast, gecontroleerd zakken. Herhalingen: 8-15. Rust: 1 min.
 - **Controlepunten bij keuren:**
   - [ ] schouder laag, niet optrekken naar het oor
@@ -337,7 +337,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Dumbbell curl. 
+Exercise: Dumbbell curl. Standing, dumbbells at the sides, palms facing forward. Bend the elbows to curl the dumbbells to the shoulders, elbows fixed, then lower with control.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -417,8 +417,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Schouder · **Materiaal:** Kabelapparaat · **Moeilijkheid:** 3/5 · **Dosering in app:** 3 sets · 20 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week; Push Pull Legs, 3 dagen per week
 - **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Staand voor de kabel op ooghoogte, touw in beide handen, armen gestrekt.
+- **Uitvoering:** Staand voor de kabel op ooghoogte, touw in beide handen, armen gestrekt. Trek het touw naar het gezicht met de ellebogen hoog en naar buiten, en laat gecontroleerd terug.
 - **Aandachtspunten uit de bibliotheek:** Trek het touw naar het gezicht, ellebogen hoog. Herhalingen: 12-20. Rust: 1 min.
 - **Controlepunten bij keuren:**
   - [ ] schouder laag, niet optrekken naar het oor
@@ -429,7 +429,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Face pull. 
+Exercise: Face pull. Standing at a cable set at eye height, rope in both hands, arms extended. Pull the rope towards the face with elbows high and out, then return with control.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -463,8 +463,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Schouder · **Materiaal:** Bank, Dumbbell · **Moeilijkheid:** 3/5 · **Dosering in app:** 3 sets · 12 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week; Push Pull Legs, 3 dagen per week
 - **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Ruglig op een bank van 30–45 graden, dumbbells op schouderhoogte.
+- **Uitvoering:** Ruglig op een bank van 30–45 graden, dumbbells op schouderhoogte. Duw de dumbbells omhoog boven de borst, ellebogen onder de schouders, en laat ze gecontroleerd zakken.
 - **Aandachtspunten uit de bibliotheek:** Bank op 30 tot 45 graden, elleboog onder de schouder. Herhalingen: 8-12. Rust: 1-2 min.
 - **Controlepunten bij keuren:**
   - [ ] schouder laag, niet optrekken naar het oor
@@ -475,7 +475,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Incline dumbbell press. 
+Exercise: Incline dumbbell press. Lying on a bench inclined to 30–45 degrees, dumbbells at shoulder level. Press the dumbbells up above the chest, elbows under the shoulders, then lower with control.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -509,8 +509,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Schouder · **Materiaal:** Kabelapparaat · **Moeilijkheid:** 3/5 · **Dosering in app:** 3 sets · 12 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week; Push Pull Legs, 3 dagen per week
 - **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Zittend in de lat pulldown, handen breed aan de stang, armen gestrekt.
+- **Uitvoering:** Zittend in de lat pulldown, handen breed aan de stang, armen gestrekt. Trek de stang naar de bovenste borst met de schouderbladen naar beneden en laat gecontroleerd terug omhoog.
 - **Aandachtspunten uit de bibliotheek:** Borst naar de stang, schouderbladen naar beneden. Herhalingen: 8-12. Rust: 1-2 min.
 - **Controlepunten bij keuren:**
   - [ ] schouder laag, niet optrekken naar het oor
@@ -521,7 +521,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Lat pulldown. 
+Exercise: Lat pulldown. Seated at a lat pulldown machine, wide grip, arms extended. Pull the bar to the upper chest, shoulder blades down, then let it return with control.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -555,8 +555,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Knie · **Materiaal:** Fitnessapparaat · **Moeilijkheid:** 3/5 · **Dosering in app:** 3 sets · 15 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week; Push Pull Legs, 3 dagen per week
 - **Camera:** Zijaanzicht. Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Zittend in de leg press, voeten op schouderbreedte op het platform.
+- **Uitvoering:** Zittend in de leg press, voeten op schouderbreedte op het platform. Laat het platform zakken tot de knieën ongeveer 90 graden buigen en duw terug zonder de knieën op slot te zetten.
 - **Aandachtspunten uit de bibliotheek:** Voeten op schouderbreedte, knieën niet volledig op slot. Herhalingen: 8-15. Rust: 1-2 min.
 - **Controlepunten bij keuren:**
   - [ ] knie blijft boven de voet, zakt niet naar binnen
@@ -567,7 +567,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, side view, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Leg press. 
+Exercise: Leg press. Seated in a leg press machine, feet shoulder-width on the platform. Lower the platform until the knees bend to about 90 degrees, then press back without locking the knees.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -578,8 +578,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Knie · **Materiaal:** Fitnessapparaat · **Moeilijkheid:** 3/5 · **Dosering in app:** 3 sets · 15 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week; Push Pull Legs, 3 dagen per week
 - **Camera:** Zijaanzicht. Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Buikligging op de leg curl machine, rol net boven de hielen.
+- **Uitvoering:** Buikligging op de leg curl machine, rol net boven de hielen. Buig de knieën en trek de rol naar de billen, heupen plat op de bank, en laat langzaam terugzakken.
 - **Aandachtspunten uit de bibliotheek:** Heupen plat op de bank, langzame excentrische fase. Herhalingen: 8-15. Rust: 1-2 min.
 - **Controlepunten bij keuren:**
   - [ ] knie blijft boven de voet, zakt niet naar binnen
@@ -590,7 +590,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, side view, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Lying leg curl. 
+Exercise: Lying leg curl. Lying face down on a leg curl machine, pad just above the heels. Bend the knees to bring the pad towards the buttocks, hips flat on the bench, then lower slowly.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -609,14 +609,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
   - [ ] juiste startpositie, bewegingsrichting en eindstand zoals beschreven
   - [ ] geen extra of vreemde bewegingen, handen/voeten op de juiste plek
 
-**Prompt voor Grok Imagine:**
-```
-Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
-The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Median nerve slider. Sit upright, arm out to the side with the elbow bent and the wrist extended. Move the hand and head away from the body at the same time and back again, calmly.
-Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
-No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
-```
+> **Niet met AI maken:** zenuwglijders zijn subtiel en klinisch; neem deze zelf op (zie FILMCHECKLIST).
 
 ## 24. Nordic hamstring
 *Nordic hamstring curl* · `ex_nordic_hamstring`
@@ -647,8 +640,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Schouder · **Materiaal:** Halter (barbell) · **Moeilijkheid:** 4/5 · **Dosering in app:** 3 sets · 8 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week; Push Pull Legs, 3 dagen per week
 - **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Staand, stang op schouderhoogte, billen en buik aangespannen.
+- **Uitvoering:** Staand, stang op schouderhoogte, billen en buik aangespannen. Duw de stang recht omhoog langs het gezicht, hoofd naar voren als de stang passeert, en laat gecontroleerd zakken.
 - **Aandachtspunten uit de bibliotheek:** Bil en buik aan, stang langs het gezicht, hoofd naar voren bij het passeren. Herhalingen: 5-8. Rust: 2-3 min.
 - **Controlepunten bij keuren:**
   - [ ] schouder laag, niet optrekken naar het oor
@@ -659,7 +652,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Overhead press. 
+Exercise: Overhead press. Standing, barbell at shoulder height, glutes and core braced. Press the bar straight overhead past the face, moving the head forward as it passes, then lower with control.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -670,8 +663,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Heup · **Materiaal:** Halter (barbell), Dumbbell · **Moeilijkheid:** 3/5 · **Dosering in app:** 3 sets · 12 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week; Push Pull Legs, 3 dagen per week
 - **Camera:** Zijaanzicht. Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Staand, stang in de handen voor de bovenbenen, knieën licht gebogen.
+- **Uitvoering:** Staand, stang in de handen voor de bovenbenen, knieën licht gebogen. Duw de heupen naar achteren met een rechte rug, stang glijdt langs de benen tot onder de knie, en kom terug omhoog door de heupen te strekken.
 - **Aandachtspunten uit de bibliotheek:** Heupen naar achteren, rechte rug, stang blijft dicht bij het been. Herhalingen: 6-12. Rust: 2 min.
 - **Controlepunten bij keuren:**
   - [ ] bekken blijft recht, geen draai of kanteling
@@ -682,7 +675,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, side view, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Romanian deadlift. 
+Exercise: Romanian deadlift. Standing holding a barbell in front of the thighs, knees slightly bent. Push the hips back with a flat back, the bar sliding down along the legs to just below the knees, then stand up by extending the hips.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -716,8 +709,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Enkel en voet · **Materiaal:** Fitnessapparaat · **Moeilijkheid:** 3/5 · **Dosering in app:** 3 sets · 15 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week; Push Pull Legs, 3 dagen per week
 - **Camera:** Zijaanzicht. Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Staand op de rand van een plateau of in de kuitmachine, hielen omlaag.
+- **Uitvoering:** Staand op de rand van een plateau of in de kuitmachine, hielen omlaag. Kom zo hoog mogelijk op de tenen en zak langzaam terug tot volledige rek.
 - **Aandachtspunten uit de bibliotheek:** Volledige rek onderin, volledige contractie bovenin. Herhalingen: 8-15. Rust: 1 min.
 - **Controlepunten bij keuren:**
   - [ ] hiel/voet volgens beschrijving, enkel klapt niet naar buiten
@@ -728,7 +721,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, side view, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Standing calf raise. 
+Exercise: Standing calf raise. Standing on the edge of a step or in a calf raise machine, heels lowered. Rise as high as possible onto the toes, then lower slowly to a full stretch.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -762,8 +755,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Schouder · **Materiaal:** Kabelapparaat · **Moeilijkheid:** 3/5 · **Dosering in app:** 3 sets · 15 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week; Push Pull Legs, 3 dagen per week
 - **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Staand voor de kabel, handen aan de stang, ellebogen tegen de zij.
+- **Uitvoering:** Staand voor de kabel, handen aan de stang, ellebogen tegen de zij. Strek de ellebogen volledig naar beneden en laat gecontroleerd terugkomen, ellebogen blijven op hun plek.
 - **Aandachtspunten uit de bibliotheek:** Ellebogen vast tegen de zij, volledig strekken. Herhalingen: 10-15. Rust: 1 min.
 - **Controlepunten bij keuren:**
   - [ ] schouder laag, niet optrekken naar het oor
@@ -774,7 +767,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Triceps pushdown. 
+Exercise: Triceps pushdown. Standing at a cable machine, hands on the bar, elbows against the sides. Extend the elbows fully downwards, then return with control, elbows staying in place.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -785,8 +778,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Schouder · **Materiaal:** Dumbbell · **Moeilijkheid:** 3/5 · **Dosering in app:** 3 sets · 20 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week; Push Pull Legs, 3 dagen per week
 - **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Staand, dumbbells naast het lichaam, ellebogen licht gebogen.
+- **Uitvoering:** Staand, dumbbells naast het lichaam, ellebogen licht gebogen. Til de armen zijwaarts tot schouderhoogte zonder te zwaaien en laat langzaam zakken.
 - **Aandachtspunten uit de bibliotheek:** Lichte elleboogbuiging, tot schouderhoogte, geen zwaaien. Herhalingen: 12-20. Rust: 1 min.
 - **Controlepunten bij keuren:**
   - [ ] schouder laag, niet optrekken naar het oor
@@ -797,7 +790,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Dumbbell lateral raise. 
+Exercise: Dumbbell lateral raise. Standing, dumbbells at the sides, elbows slightly bent. Raise the arms out to the sides to shoulder height without swinging, then lower slowly.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -807,9 +800,9 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 
 - **Regio:** Heup · **Materiaal:** Geen materiaal nodig · **Moeilijkheid:** 2/5 · **Dosering in app:** 2 sets · 8 herhalingen
 - **Gebruikt in:** Heup en schouder mobiliteit, 6 weken
-- **Camera:** Zijaanzicht. Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
+- **Startpositie (foto voor beeld-naar-video):** Zittend op de grond, beide knieën in 90 graden, één been voor en één opzij.
+- **Uitvoering:** Zittend op de grond, beide knieën in 90 graden, één been voor en één opzij. Draai het bekken en de knieën rustig naar de andere kant tot de benen gespiegeld liggen, en terug.
 - **Aandachtspunten uit de bibliotheek:** Zit op de grond, beide knieën op 90 graden, draai het bekken van de ene naar de andere zijde. Dosering: 2 sets van 8 wissels, 2 tot 3 keer per week.
 - **Controlepunten bij keuren:**
   - [ ] bekken blijft recht, geen draai of kanteling
@@ -818,9 +811,9 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 
 **Prompt voor Grok Imagine:**
 ```
-Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, side view, full body always in frame.
+Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: 90/90 heupmobiliteit. 
+Exercise: 90/90 heupmobiliteit. Sitting on the floor with both knees bent at 90 degrees, one leg in front and one to the side. Rotate the hips and knees slowly to the other side until the legs are mirrored, then back.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -831,8 +824,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Schouder · **Materiaal:** Halter (barbell) · **Moeilijkheid:** 4/5 · **Dosering in app:** 3 sets · 10 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week
 - **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Voorovergebogen met rechte rug, romp bijna horizontaal, stang in gestrekte armen.
+- **Uitvoering:** Voorovergebogen met rechte rug, romp bijna horizontaal, stang in gestrekte armen. Trek de stang naar de navel en laat gecontroleerd zakken, rug blijft recht.
 - **Aandachtspunten uit de bibliotheek:** Rug rechte hoek met de grond, trek naar de navel. Herhalingen: 6-10. Rust: 2 min.
 - **Controlepunten bij keuren:**
   - [ ] schouder laag, niet optrekken naar het oor
@@ -843,7 +836,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Barbell row. 
+Exercise: Barbell row. Bent over with a flat back, torso nearly horizontal, barbell in straight arms. Row the bar to the navel, then lower with control, back staying flat.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -900,8 +893,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Heup · **Materiaal:** Weerstandsband · **Moeilijkheid:** 2/5 · **Dosering in app:** 2 sets · 30 s vasthouden
 - **Gebruikt in:** Heup en schouder mobiliteit, 6 weken
 - **Camera:** Zijaanzicht. Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Ruglig, band om de voet, been omhoog.
+- **Uitvoering:** Ruglig, band om de voet, been omhoog. Trek het been met de band omhoog tot een lichte rek achter in het bovenbeen; de knie mag licht gebogen zijn.
 - **Aandachtspunten uit de bibliotheek:** Knie licht gebogen mag, rek tot licht ongemak. Dosering: 2-4 sets van 30 sec per been, dagelijks.
 - **Controlepunten bij keuren:**
   - [ ] bekken blijft recht, geen draai of kanteling
@@ -912,7 +905,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, side view, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Hamstring rek op rug met band.  Hold the end position for 5 seconds in each repetition.
+Exercise: Hamstring rek op rug met band. Lying on the back with a strap around one foot, leg raised. Pull the leg up with the strap until a mild stretch is felt at the back of the thigh; the knee may stay slightly bent. Hold the end position for 5 seconds in each repetition.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -946,8 +939,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Heup · **Materiaal:** Bank, Halter (barbell) · **Moeilijkheid:** 3/5 · **Dosering in app:** 3 sets · 12 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week
 - **Camera:** Zijaanzicht. Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Bovenrug tegen een bank, voeten plat op de grond, stang over de heupen.
+- **Uitvoering:** Bovenrug tegen een bank, voeten plat op de grond, stang over de heupen. Duw de heupen omhoog tot volledig gestrekt met de kin licht naar de borst, en zak gecontroleerd terug.
 - **Aandachtspunten uit de bibliotheek:** Kin licht naar de borst, volledig strekken van de heup bovenaan. Herhalingen: 6-12. Rust: 2 min.
 - **Controlepunten bij keuren:**
   - [ ] bekken blijft recht, geen draai of kanteling
@@ -958,7 +951,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, side view, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Hip thrust. 
+Exercise: Hip thrust. Upper back against a bench, feet flat on the floor, barbell across the hips. Drive the hips up to full extension with the chin slightly tucked, then lower with control.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -1153,8 +1146,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Knie · **Materiaal:** Fitnessapparaat · **Moeilijkheid:** 3/5 · **Dosering in app:** 3 sets · 15 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week
 - **Camera:** Zijaanzicht. Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Zittend in de leg extension machine, rol voor de onderbenen.
+- **Uitvoering:** Zittend in de leg extension machine, rol voor de onderbenen. Strek de knieën gecontroleerd tot bijna gestrekt en laat langzaam terugzakken.
 - **Aandachtspunten uit de bibliotheek:** Gecontroleerd strekken en langzaam terug. Herhalingen: 10-15. Rust: 1 min.
 - **Controlepunten bij keuren:**
   - [ ] knie blijft boven de voet, zakt niet naar binnen
@@ -1165,7 +1158,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, side view, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Leg extension. 
+Exercise: Leg extension. Seated in a leg extension machine, pad in front of the shins. Straighten the knees with control, then lower slowly.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -1230,14 +1223,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
   - [ ] juiste startpositie, bewegingsrichting en eindstand zoals beschreven
   - [ ] geen extra of vreemde bewegingen, handen/voeten op de juiste plek
 
-**Prompt voor Grok Imagine:**
-```
-Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, side view, full body always in frame.
-The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Seated sciatic nerve slider. Sit on the edge of a chair. Straighten the leg and neck at the same time, then bend back in the opposite movement.
-Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
-No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
-```
+> **Niet met AI maken:** zenuwglijders zijn subtiel en klinisch; neem deze zelf op (zie FILMCHECKLIST).
 
 ## 51. Pull-up
 *Pull-up* · `kr_pull_up`
@@ -1245,8 +1231,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Schouder · **Materiaal:** Optrekstang · **Moeilijkheid:** 4/5 · **Dosering in app:** 3 sets · 12 herhalingen
 - **Gebruikt in:** Push Pull Legs, 6 dagen per week
 - **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Hangend aan de optrekstang, handen op schouderbreedte.
+- **Uitvoering:** Hangend aan de optrekstang, handen op schouderbreedte. Trek je op tot de kin boven de stang en zak gecontroleerd terug tot gestrekte armen.
 - **Aandachtspunten uit de bibliotheek:** Kin over de stang, gecontroleerd zakken. Herhalingen: 5-12. Rust: 2 min.
 - **Controlepunten bij keuren:**
   - [ ] schouder laag, niet optrekken naar het oor
@@ -1257,7 +1243,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Pull-up. 
+Exercise: Pull-up. Hanging from a pull-up bar, hands shoulder-width apart. Pull up until the chin is above the bar, then lower with control to straight arms.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -1291,8 +1277,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Schouder · **Materiaal:** Geen materiaal nodig · **Moeilijkheid:** 2/5 · **Dosering in app:** 2 sets · 30 s vasthouden
 - **Gebruikt in:** Heup en schouder mobiliteit, 6 weken
 - **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Zijlig op de te rekken schouder, bovenarm voor je, elleboog 90 graden.
+- **Uitvoering:** Zijlig op de te rekken schouder, bovenarm voor je, elleboog 90 graden. Duw met de andere hand de onderarm zacht naar de vloer.
 - **Aandachtspunten uit de bibliotheek:** Lig op de zij, duw de onderarm zacht naar de vloer. Dosering: 2 sets van 30 sec, dagelijks.
 - **Controlepunten bij keuren:**
   - [ ] schouder laag, niet optrekken naar het oor
@@ -1303,7 +1289,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Slaapstretch schouder.  Hold the end position for 5 seconds in each repetition.
+Exercise: Slaapstretch schouder. Lying on the side of the shoulder to be stretched, upper arm in front, elbow at 90 degrees. Use the other hand to gently push the forearm towards the floor. Hold the end position for 5 seconds in each repetition.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -1406,8 +1392,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Schouder · **Materiaal:** Muur · **Moeilijkheid:** 2/5 · **Dosering in app:** 2 sets · 10 herhalingen
 - **Gebruikt in:** Heup en schouder mobiliteit, 6 weken
 - **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Staand met de rug of de onderarmen tegen de muur, ellebogen op schouderhoogte.
+- **Uitvoering:** Staand met de rug of de onderarmen tegen de muur, ellebogen op schouderhoogte. Schuif de armen omhoog langs de muur zonder de onderrug hol te trekken en kom terug.
 - **Aandachtspunten uit de bibliotheek:** Onderarmen tegen de muur, schuif omhoog zonder de onderrug te laten holtrekken. Dosering: 2 sets van 10, dagelijks.
 - **Controlepunten bij keuren:**
   - [ ] schouder laag, niet optrekken naar het oor
@@ -1418,7 +1404,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Wall slide. 
+Exercise: Wall slide. Standing with the forearms against a wall, elbows at shoulder height. Slide the arms up the wall without arching the lower back, then back down.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -1429,8 +1415,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Totale lichaam · **Materiaal:** Geen materiaal nodig · **Moeilijkheid:** 2/5 · **Dosering in app:** 2 sets · 5 herhalingen
 - **Gebruikt in:** Heup en schouder mobiliteit, 6 weken
 - **Camera:** Zijaanzicht. Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Diepe uitvalspas naar voren, handen naast de voorste voet.
+- **Uitvoering:** Diepe uitvalspas naar voren, handen naast de voorste voet. Draai de arm aan de kant van het voorste been open naar het plafond, terug, en strek daarna het voorste been.
 - **Aandachtspunten uit de bibliotheek:** Diepe lunge, draai open naar het plafond, dan het been naar voren. Dosering: 2 sets van 5 per kant, bij warming-up.
 - **Controlepunten bij keuren:**
   - [ ] juiste startpositie, bewegingsrichting en eindstand zoals beschreven
@@ -1440,7 +1426,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, side view, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: World's greatest stretch. 
+Exercise: World's greatest stretch. Deep forward lunge with hands next to the front foot. Rotate the arm on the front-leg side open towards the ceiling, return, then straighten the front leg.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -1520,8 +1506,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Lumbale wervelkolom · **Materiaal:** Geen materiaal nodig · **Moeilijkheid:** 2/5 · **Dosering in app:** 2 sets · 30 s vasthouden
 - **Gebruikt in:** — (los in de bibliotheek)
 - **Camera:** Zijaanzicht. Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Op handen en knieën.
+- **Uitvoering:** Op handen en knieën. Zak met de heupen naar de hielen en strek de armen voor je uit, ontspan.
 - **Aandachtspunten uit de bibliotheek:** Heupen naar de hielen, armen voor je uit. Dosering: 2 sets van 30 sec, dagelijks.
 - **Controlepunten bij keuren:**
   - [ ] rug neutraal, geen hol of bol trekken tenzij de oefening dat vraagt
@@ -1532,7 +1518,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, side view, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Kinderhouding.  Hold the end position for 5 seconds in each repetition.
+Exercise: Kinderhouding. On hands and knees. Sit the hips back towards the heels and stretch the arms forward, relaxing. Hold the end position for 5 seconds in each repetition.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -1543,22 +1529,15 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Cervicale wervelkolom · **Materiaal:** Geen materiaal nodig · **Moeilijkheid:** 2/5 · **Dosering in app:** 2 sets · 10 herhalingen
 - **Gebruikt in:** — (los in de bibliotheek)
 - **Camera:** Schuin vooraanzicht (45°). Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Zie revalidatiebibliotheek, alleen bij klachten.
+- **Uitvoering:** Zie revalidatiebibliotheek, alleen bij klachten.
 - **Aandachtspunten uit de bibliotheek:** Zie revalidatiebibliotheek, alleen bij klachten. Dosering: 2 sets van 10, symptoomgeleid.
 - **Controlepunten bij keuren:**
   - [ ] kin niet naar voren, langzame kleine beweging
   - [ ] juiste startpositie, bewegingsrichting en eindstand zoals beschreven
   - [ ] geen extra of vreemde bewegingen, handen/voeten op de juiste plek
 
-**Prompt voor Grok Imagine:**
-```
-Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
-The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Nek en zenuwglijding, sliders. 
-Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
-No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
-```
+> **Niet met AI maken:** zenuwglijders zijn subtiel en klinisch; neem deze zelf op (zie FILMCHECKLIST).
 
 ## 65. Plank
 *Plank* · `kr_core_plank`
@@ -1566,8 +1545,8 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 - **Regio:** Lumbale wervelkolom · **Materiaal:** Geen materiaal nodig · **Moeilijkheid:** 3/5 · **Dosering in app:** 3 sets · 30 s vasthouden
 - **Gebruikt in:** — (los in de bibliotheek)
 - **Camera:** Zijaanzicht. Hele lichaam in beeld, ook in de eindstand.
-- **Startpositie (foto voor beeld-naar-video):** 
-- **Uitvoering:** 
+- **Startpositie (foto voor beeld-naar-video):** Steun op de onderarmen en tenen.
+- **Uitvoering:** Steun op de onderarmen en tenen. Houd een rechte lijn van hoofd tot hielen met de buik aangespannen, zonder door te zakken.
 - **Aandachtspunten uit de bibliotheek:** Rechte lijn van hoofd tot hielen, buik aan. Herhalingen: 30-60 sec. Rust: 1 min.
 - **Controlepunten bij keuren:**
   - [ ] rug neutraal, geen hol of bol trekken tenzij de oefening dat vraagt
@@ -1578,7 +1557,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
 ```
 Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, side view, full body always in frame.
 The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Plank.  Hold the end position for 5 seconds in each repetition.
+Exercise: Plank. Support on the forearms and toes. Hold a straight line from head to heels with the core braced, without sagging. Hold the end position for 5 seconds in each repetition.
 Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
 No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
 ```
@@ -1597,14 +1576,7 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
   - [ ] juiste startpositie, bewegingsrichting en eindstand zoals beschreven
   - [ ] geen extra of vreemde bewegingen, handen/voeten op de juiste plek
 
-**Prompt voor Grok Imagine:**
-```
-Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, side view, full body always in frame.
-The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Slump slider. Sit slumped with the back slightly rounded. Straighten the knee and bend the neck forward, then return in reverse order.
-Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
-No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
-```
+> **Niet met AI maken:** zenuwglijders zijn subtiel en klinisch; neem deze zelf op (zie FILMCHECKLIST).
 
 ## 67. Ulnaris slider
 *Ulnar nerve slider* · `nd_ulnar_slider`
@@ -1620,11 +1592,4 @@ No extra movements, no text, no logos, no music, realistic anatomy and joint ang
   - [ ] juiste startpositie, bewegingsrichting en eindstand zoals beschreven
   - [ ] geen extra of vreemde bewegingen, handen/voeten op de juiste plek
 
-**Prompt voor Grok Imagine:**
-```
-Physiotherapy exercise demonstration video, 10 seconds, 16:9, static camera at hip height, front three-quarter view at 45 degrees, full body always in frame.
-The same athletic woman in plain dark olive sportswear on a beige exercise mat in a calm warm sand-coloured studio, soft daylight.
-Exercise: Ulnar nerve slider. Elbow bent, wrist flexed and fingers straight. Straighten the elbow and wrist, then bend them back again.
-Hold still in the starting position for 2 seconds, then perform exactly 2 slow, controlled, technically perfect repetitions, then hold still for 2 seconds.
-No extra movements, no text, no logos, no music, realistic anatomy and joint angles.
-```
+> **Niet met AI maken:** zenuwglijders zijn subtiel en klinisch; neem deze zelf op (zie FILMCHECKLIST).
