@@ -22,7 +22,7 @@ test('krachtlog: the patient logs sets with a live 1RM meter; the therapist logs
   // Reachable from the logbook.
   await pp.goto('/p/logboek');
   await pp.getByRole('link', { name: /Krachtlog en 1RM-meter/ }).click();
-  await expect(pp).toHaveURL(/\/p\/kracht$/);
+  await expect(pp).toHaveURL(/\/p\/krachtlog$/);
   await expect(pp.getByRole('heading', { name: 'Krachtlog', level: 1 })).toBeVisible();
 
   // Picking a recent exercise fills in the last weight and reps; the meter shows the estimate.

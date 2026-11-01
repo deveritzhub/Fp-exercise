@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, CheckCircle2, ChevronDown, ChevronRight, Play, X } from 'lucide-react';
+import { Bell, ChevronRight, Dumbbell, HeartPulse, Move, Play, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { fmtDate, fmtRelative, greeting, pct } from '@/lib/format';
+import { greeting, pct } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
-import { Button, ButtonLink, ErrorState, ProgressRing, Skeleton } from '@/components/ui';
+import { ButtonLink, ErrorState, ProgressRing, Skeleton } from '@/components/ui';
 import { RestDayCard, TodayProgramCard } from '@/components/patient/TodayCard';
 import { PausedNotice } from '@/components/patient/Safety';
-import { ConsentToggle, ModeSwitch, StartTemplates, useModes, type Mode } from '@/components/patient/Modules';
+import { useModes } from '@/components/patient/Modules';
 import type { Adherence, Notification, Program } from '@/lib/types';
 import type { DayState } from '@shared/adherence';
 import { cn } from '@/lib/cn';
@@ -34,77 +34,46 @@ export type PatientHomeData = {
   notifications: Notification[];
 };
 
+export type PatientProgramRow = PatientHomeData['programs'][number];
+export type PatientModule = 'revalidatie' | 'kracht' | 'mobiliteit';
+/** Rehabilitation unless the programme says strength or mobility. */
+export const moduleOf = (p: { module?: string | null }): PatientModule => (p.module === 'kracht' || p.module === 'mobiliteit' ? p.module : 'revalidatie');
+export const MODULE_PATH: Record<PatientModule, string> = { revalidatie: '/p/revalidatie', kracht: '/p/kracht', mobiliteit: '/p/mobiliteit' };
+export const MODULE_ICON: Record<PatientModule, typeof HeartPulse> = { revalidatie: HeartPulse, kracht: Dumbbell, mobiliteit: Move };
+export const moduleLabel = (m: PatientModule, nl: boolean) => ({ revalidatie: ['Revalidatie', 'Rehab'], kracht: ['Kracht', 'Strength'], mobiliteit: ['Mobiliteit', 'Mobility'] })[m][nl ? 0 : 1];
+/** Something still to do today in this programme: planned and not finished, or a workout left open. */
+export const openToday = (p: PatientProgramRow) => !p.paused && ((p.today.scheduled > 0 && !p.today.done) || !!p.openSession);
+
+/**
+ * Vandaag: everything for today in one place, across rehabilitation, strength and mobility, with
+ * the hero, the logbook and the week. Each part also has its own tab with the full picture.
+ */
 export function PatientHome() {
   const { t, locale } = useI18n();
+  const nl = locale === 'nl';
   useDocumentMeta(t('Vandaag', 'Today'));
-  const q = useQuery({ queryKey: ['patient-home'], queryFn: () => api.get<PatientHomeData>('/patient/home') });
+  const q = useQuery({ queryKey: ['patient-home'], queryFn: () => api.get<PatientHomeData>('/patient/home'), refetchOnMount: 'always' });
   const modes = useModes();
   const qc = useQueryClient();
-  const [modeChoice, setModeChoice] = useState<Mode | null>(null);
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
   if (!q.data) return <div className="space-y-4"><Skeleton className="h-8 w-2/3" /><Skeleton className="h-56 rounded-2xl" /><Skeleton className="h-28 rounded-2xl" /></div>;
-  const all = q.data;
-  // W01: rehabilitation, strength or mobility. Shown when the patient has more than rehabilitation.
-  const moduleOf = (p: { module?: string | null }) => (p.module === 'kracht' || p.module === 'mobiliteit' ? p.module : 'revalidatie');
-  // Without a physiotherapist (coach, personal) there is no rehab mode: always show the switch.
-  const clinical = !modes.data || modes.data.modules.includes('revalidatie');
-  const showModes = !!modes.data && (!clinical || modes.data.templates.length > 0 || all.programs.some((p) => moduleOf(p) !== 'revalidatie'));
-  const picked: Mode = showModes ? modeChoice ?? modes.data!.active : 'revalidatie';
-  const mode: Mode = !clinical && picked === 'revalidatie' ? 'kracht' : picked;
-  const pickMode = (m: Mode) => {
-    setModeChoice(m);
-    api.put('/patient/mode', { mode: m }).then(() => qc.invalidateQueries({ queryKey: ['patient-modes'] })).catch(() => undefined);
-  };
-  const d = { ...all, programs: all.programs.filter((p) => moduleOf(p) === mode) };
+  const d = q.data;
   const todo = d.programs.filter((p) => p.today.scheduled > 0);
   // A workout started on a day without planned exercises (all exercises) can be resumed as well.
   const resumeOther = d.programs.filter((p) => (p.openSession || p.paused) && p.today.scheduled === 0);
+  const left = d.programs.filter(openToday).length;
+  const startable = (['mobiliteit', 'kracht'] as const).filter((m) => modes.data?.templates.some((x) => x.module === m) && !d.programs.some((p) => moduleOf(p) === m));
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-[15px] text-ink-500">{new Intl.DateTimeFormat(locale === 'nl' ? 'nl-NL' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</p>
+        <p className="text-[15px] text-ink-500">{new Intl.DateTimeFormat(nl ? 'nl-NL' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</p>
         <h1 className="mt-0.5 text-[28px] font-bold leading-tight">{greeting(locale)}, {d.patient.firstName}</h1>
+        {todo.length > 0 && (
+          <p className="mt-1 text-[15px] text-ink-600">
+            {left === 0 ? t('Alles voor vandaag is gedaan. Lekker bezig!', 'Everything for today is done. Well done!') : t(`Vandaag nog ${left} ${left === 1 ? 'training' : 'trainingen'} te doen.`, `${left} ${left === 1 ? 'workout' : 'workouts'} left today.`)}
+          </p>
+        )}
       </div>
-
-      {showModes && <ModeSwitch value={mode} onChange={pickMode} modules={modes.data!.modules} />}
-      {showModes && mode !== 'revalidatie' && modes.data && (
-        <div className="space-y-3">
-          {modes.data.kind !== 'personal' && <ConsentToggle module={mode} since={modes.data.consents[mode]} />}
-          {d.programs.length === 0 ? (
-            <section aria-labelledby="start-title">
-              <h2 id="start-title" className="mb-2 text-lg font-bold">{mode === 'kracht' ? t('Start een krachtprogramma', 'Start a strength programme') : t('Start een mobiliteitsprogramma', 'Start a mobility programme')}</h2>
-              <StartTemplates modes={modes.data} module={mode} />
-            </section>
-          ) : modes.data.templates.some((x) => x.module === mode) && (
-            // Already training here: more programmes stay one tap away.
-            <details className="group rounded-2xl border border-line bg-white shadow-card">
-              <summary className="tap flex min-h-[48px] cursor-pointer list-none items-center gap-2 px-4 py-3 font-semibold text-ink-900">
-                <Play className="h-4 w-4 text-accent" aria-hidden />
-                <span className="flex-1">{t(`Nog een programma starten (${modes.data.templates.filter((x) => x.module === mode).length})`, `Start another programme (${modes.data.templates.filter((x) => x.module === mode).length})`)}</span>
-                <ChevronDown className="h-4 w-4 text-ink-500 transition-transform group-open:rotate-180" aria-hidden />
-              </summary>
-              <div className="px-3 pb-3"><StartTemplates modes={modes.data} module={mode} /></div>
-            </details>
-          )}
-        </div>
-      )}
-      {showModes && mode === 'revalidatie' && modes.data && modes.data.templates.length > 0 && (
-        // Rehabilitation is set by the physiotherapist; mobility and strength the patient can start.
-        <section aria-labelledby="self-start-title" className="rounded-2xl border border-line bg-white p-4 shadow-card">
-          <h2 id="self-start-title" className="font-semibold text-ink-900">{t('Zelf iets starten', 'Start something yourself')}</h2>
-          <p className="mt-0.5 text-[14px] text-ink-600">{t('Naast je revalidatie kun je zelf een mobiliteits- of krachtprogramma kiezen.', 'Next to your rehabilitation you can pick a mobility or strength programme yourself.')}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {(['mobiliteit', 'kracht'] as const).filter((m) => modes.data!.templates.some((x) => x.module === m)).map((m) => (
-              <Button key={m} variant="secondary" size="lg" onClick={() => pickMode(m)}>
-                {m === 'mobiliteit' ? t(`Mobiliteit (${modes.data!.templates.filter((x) => x.module === m).length})`, `Mobility (${modes.data!.templates.filter((x) => x.module === m).length})`) : t(`Kracht (${modes.data!.templates.filter((x) => x.module === m).length})`, `Strength (${modes.data!.templates.filter((x) => x.module === m).length})`)}
-              </Button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <HeroHomeCard />
-      <LogbookHomeCard />
 
       {d.notifications.length > 0 && (
         <div className="space-y-2">
@@ -131,10 +100,10 @@ export function PatientHome() {
         </div>
       )}
 
-      {d.programs.length === 0 && mode !== 'revalidatie' ? null : d.programs.length === 0 ? (
+      {d.programs.length === 0 ? (
         <div className="rounded-2xl border border-line bg-white p-6 text-center shadow-card">
           <h2 className="text-lg font-bold">{t('Nog geen programma', 'No programme yet')}</h2>
-          <p className="mt-1 text-ink-500">{t('Je fysiotherapeut zet je oefenprogramma hier voor je klaar.', 'Your physiotherapist will set up your exercise programme here.')}</p>
+          <p className="mt-1 text-ink-500">{modes.data?.modules.includes('revalidatie') ? t('Je fysiotherapeut zet je oefenprogramma hier voor je klaar. Je kunt ook zelf iets starten.', 'Your physiotherapist will set up your exercise programme here. You can also start something yourself.') : t('Start hieronder zelf een programma.', 'Start a programme yourself below.')}</p>
         </div>
       ) : todo.length === 0 ? (
         <RestDayCard
@@ -144,22 +113,45 @@ export function PatientHome() {
         />
       ) : (
         todo.map((p) => (
-          <TodayProgramCard
-            key={p.id}
-            id={p.id}
-            title={p.title}
-            items={p.today.items}
-            done={p.today.done && !p.openSession && !p.paused}
-            action={p.paused ? <PausedNotice /> : <StartOrResume programId={p.id} open={p.openSession} total={p.today.scheduled} />}
-          />
+          <div key={p.id}>
+            <ModuleTag module={moduleOf(p)} />
+            <TodayProgramCard
+              id={p.id}
+              title={p.title}
+              items={p.today.items}
+              done={p.today.done && !p.openSession && !p.paused}
+              action={p.paused ? <PausedNotice /> : <StartOrResume programId={p.id} open={p.openSession} total={p.today.scheduled} />}
+            />
+          </div>
         ))
       )}
       {resumeOther.map((p) => (
-        <div key={p.id} className="rounded-2xl border border-line bg-white p-4 shadow-card">
-          <p className="mb-3 font-semibold">{p.title}</p>
-          {p.paused ? <PausedNotice /> : <StartOrResume programId={p.id} open={p.openSession} total={p.itemCount} />}
+        <div key={p.id}>
+          <ModuleTag module={moduleOf(p)} />
+          <div className="rounded-2xl border border-line bg-white p-4 shadow-card">
+            <p className="mb-3 font-semibold">{p.title}</p>
+            {p.paused ? <PausedNotice /> : <StartOrResume programId={p.id} open={p.openSession} total={p.itemCount} />}
+          </div>
         </div>
       ))}
+
+      {startable.length > 0 && (
+        // Nothing running in mobility or strength yet: point to what the patient can start alone.
+        <section aria-labelledby="self-start-title" className="rounded-2xl border border-line bg-white p-4 shadow-card">
+          <h2 id="self-start-title" className="font-semibold text-ink-900">{t('Zelf iets starten', 'Start something yourself')}</h2>
+          <p className="mt-0.5 text-[14px] text-ink-600">{t('Kies een programma dat je zelf kunt doen, naast wat je fysiotherapeut klaarzet.', 'Pick a programme you can do on your own, next to what your physiotherapist sets up.')}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {startable.map((m) => (
+              <ButtonLink key={m} to={MODULE_PATH[m]} variant="secondary" size="lg" icon={(() => { const I = MODULE_ICON[m]; return <I className="h-4 w-4" />; })()}>
+                {`${moduleLabel(m, nl)} (${modes.data!.templates.filter((x) => x.module === m).length})`}
+              </ButtonLink>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <HeroHomeCard />
+      <LogbookHomeCard />
 
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="week-title">
         <div className="flex items-center justify-between gap-3">
@@ -186,46 +178,23 @@ export function PatientHome() {
       </section>
 
       <ReminderNudge />
-
-      <section>
-        <h2 className="mb-3 text-lg font-bold">{t('Mijn programma’s', 'My programmes')}</h2>
-        <div className="space-y-2">
-          {d.programs.map((p) => (
-            <Link key={p.id} to={`/p/programma/${p.id}`} className="flex items-center gap-4 rounded-2xl border border-line bg-white p-4 shadow-card">
-              <span className="min-w-0 flex-1">
-                <span className="block font-semibold">{p.title}</span>
-                <span className="block text-[14px] text-ink-500">{p.itemCount} {t('oefeningen', 'exercises')} · {p.therapistName}</span>
-                {p.endDate && <span className="block text-[13px] text-ink-400">{t('Tot', 'Until')} {fmtDate(p.endDate, locale)}</span>}
-              </span>
-              <ChevronRight className="h-5 w-5 text-ink-300" />
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {d.recent.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-lg font-bold">{t('Eerdere trainingen', 'Previous workouts')}</h2>
-          <ul className="divide-y divide-line rounded-2xl border border-line bg-white shadow-card">
-            {d.recent.map((r) => (
-              <li key={r.id} className="flex items-center gap-3 px-4 py-3">
-                <CheckCircle2 className="h-5 w-5 shrink-0 text-ok" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">{r.programTitle}</span>
-                  <span className="text-[14px] text-ink-500">{r.exercisesDone} {t('oefeningen', 'exercises')}</span>
-                </span>
-                <span className="text-[13px] text-ink-400">{fmtRelative(r.completedAt, locale)}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
     </div>
   );
 }
 
+/** Small label above a card on Vandaag: which part of the app it belongs to, linking to that tab. */
+function ModuleTag({ module }: { module: PatientModule }) {
+  const { locale } = useI18n();
+  const I = MODULE_ICON[module];
+  return (
+    <Link to={MODULE_PATH[module]} className="mb-0.5 inline-flex min-h-[44px] items-center gap-1.5 text-[13px] font-semibold uppercase tracking-wide text-ink-600 hover:text-ink-900">
+      <I className="h-4 w-4" aria-hidden />{moduleLabel(module, locale === 'nl')}
+    </Link>
+  );
+}
+
 /** "Start training", or "Training hervatten" with how far the patient got. */
-function StartOrResume({ programId, open, total }: { programId: string; open: { logged: number } | null; total: number }) {
+export function StartOrResume({ programId, open, total }: { programId: string; open: { logged: number } | null; total: number }) {
   const { t } = useI18n();
   if (!open) {
     return (

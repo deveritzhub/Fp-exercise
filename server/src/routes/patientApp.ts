@@ -97,6 +97,7 @@ patientApp.get('/home', async (c) => {
           id: r.id,
           completedAt: r.completed_at,
           programTitle: r.title,
+          module: r.module as string,
           difficulty: r.difficulty,
           pain: r.pain,
           exercisesDone: r.exercises_done,
@@ -266,7 +267,7 @@ patientApp.get('/history', async (c) => {
     await withUser(user.id, async (tx) => {
       const inputs = await loadAdherenceInputs(tx, [patient.id]);
       const { rows } = await tx.query(
-        `SELECT s.id, s.completed_at, s.difficulty, s.pain, s.feedback, pr.title,
+        `SELECT s.id, s.completed_at, s.difficulty, s.pain, s.feedback, pr.title, pr.module,
                 (SELECT count(*) FROM exercise_logs l WHERE l.session_id = s.id AND l.completed) AS exercises_done,
                 (SELECT count(*) FROM program_items i WHERE i.program_id = s.program_id) AS exercises_total
            FROM workout_sessions s JOIN programs pr ON pr.id = s.program_id

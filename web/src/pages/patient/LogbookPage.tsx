@@ -35,7 +35,7 @@ export function LogbookPage() {
         <h1 className="t-page">{t('Logboek', 'Logbook')}</h1>
         <p className="mt-1 text-[15px] text-ink-600">{t('Een eigen training of je eiwit van vandaag. Overslaan kost niets. Een hoge pijnscore levert niet méér op, en stoppen vanwege pijn telt als herstel.', 'A workout of your own, or today’s protein. Skipping costs nothing. A high pain score does not earn more, and stopping because of pain counts as recovery.')}</p>
       </div>
-      <Link to="/p/kracht" className="tap flex items-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-4 text-white shadow-card">
+      <Link to="/p/krachtlog" className="tap flex items-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-4 text-white shadow-card">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15"><Dumbbell className="h-5 w-5" aria-hidden /></span>
         <span className="min-w-0 flex-1">
           <span className="block text-[16px] font-semibold">{t('Krachtlog en 1RM-meter', 'Strength log and 1RM meter')}</span>

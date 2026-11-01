@@ -241,8 +241,9 @@ test('tapping the hero photo opens look and body measurements', async ({ browser
   await pp.screenshot({ path: 'screenshots/hero/profile.png', fullPage: true });
   await pp.getByRole('button', { name: 'Opslaan' }).click();
   await expect(pp).toHaveURL(/\/p\/held$/);
-  await expandFolds(pp);
+  // The confirmation is a short message: check it before unfolding the page.
   await expect(pp.getByText('Uiterlijk en maten opgeslagen')).toBeVisible();
+  await expandFolds(pp);
   const hero = await (await pp.request.get('/api/patient/hero')).json();
   expect(hero.hero).toMatchObject({ hair: 'long', hairColor: 'darkbrown' });
   expect(hero.metrics).toMatchObject({ weightKg: 72.5, bodyFatPct: 24, heightCm: 168 });

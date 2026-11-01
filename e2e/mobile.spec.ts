@@ -13,6 +13,8 @@ test('marketing site navigation on mobile', async ({ page }) => {
 test('patient app on a phone: home, programme, progress', async ({ page }) => {
   await login(page, 'patient@praktijk-a.test');
   await expect(page.getByRole('heading', { name: /Emma/ })).toBeVisible();
+  // Programmes are listed per part (tab); today's card links there as well.
+  await page.getByRole('navigation', { name: 'Navigatie' }).getByRole('link', { name: /^Revalidatie/ }).click();
   await page.getByRole('link', { name: /Knie — patellapees/ }).last().click();
   await expect(page.getByText('Van je fysiotherapeut')).toBeVisible();
   await expectAccessible(page, 'patient-program');

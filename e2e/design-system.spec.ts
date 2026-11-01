@@ -77,7 +77,7 @@ test('patient app: same identity, large tab bar with a clear active state', asyn
   const page = await ctx.newPage();
   await login(page, 'patient@praktijk-a.test');
   await page.locator('h1').first().waitFor();
-  const tab = page.getByRole('navigation', { name: 'Navigatie' }).getByRole('link', { name: 'Vandaag' });
+  const tab = page.getByRole('navigation', { name: 'Navigatie' }).getByRole('link', { name: 'Vandaag', exact: true });
   await expect(tab).toHaveAttribute('aria-current', 'page');
   const box = await tab.boundingBox();
   expect(box!.height).toBeGreaterThanOrEqual(56);

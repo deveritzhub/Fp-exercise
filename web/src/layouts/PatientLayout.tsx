@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
-import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { CalendarCheck2, CloudOff, LineChart, RefreshCw, Trophy, UserRound } from 'lucide-react';
+import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { CalendarCheck2, CloudOff, Dumbbell, HeartPulse, Move, RefreshCw, Trophy, UserRound } from 'lucide-react';
+import type { PatientHomeData } from '@/pages/patient/PatientHome';
+import { isClinical } from '@shared/accountKind';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { HeroState } from '@/lib/types';
@@ -37,15 +39,24 @@ export function PatientLayout() {
     void import('@/pages/patient/PatientHome');
     void import('@/pages/patient/SessionPlayer');
     void import('@/pages/patient/PatientProgress');
+    void import('@/pages/patient/ModulePage');
+    void import('@/pages/patient/GymLogPage');
     void import('@/pages/AccountPage');
     void import('@/pages/patient/HeroPages');
     void import('@/pages/patient/LogbookPage');
   }, []);
   const inPlayer = loc.pathname.includes('/sessie');
+  // Messages appear above the tab bar (and the + button), not on top of the tabs.
+  useEffect(() => {
+    const root = document.documentElement.style;
+    root.setProperty('--toast-bottom', inPlayer ? '1rem' : 'calc(env(safe-area-inset-bottom, 0px) + 148px)');
+    return () => { root.removeProperty('--toast-bottom'); };
+  }, [inPlayer]);
   // Creating the hero is a focused flow: no tab bar.
   const inSetup = loc.pathname === '/p/held/nieuw';
   // First visit: create the sports hero first (once per session it can be postponed with "Later").
   const hero = useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero'), enabled: !!user?.patient });
+  const home = useQuery({ queryKey: ['patient-home'], queryFn: () => api.get<PatientHomeData>('/patient/home'), enabled: !!user?.patient });
   let later = false;
   try {
     later = sessionStorage.getItem(HERO_LATER_KEY) === '1';
@@ -54,11 +65,16 @@ export function PatientLayout() {
   }
   if (!user?.patient) return null;
   if (loc.pathname === '/p' && hero.data && !hero.data.hero && !later) return <Navigate to="/p/held/nieuw" replace />;
+  // Tabs: today's overview, one per part (rehabilitation only with a physiotherapist), and the hero
+  // (logbook inside). A dot marks a part that still has a workout open today. Account is in the header.
+  const clinical = isClinical(user.patient.kind);
+  const openIn = (m: string) => (home.data?.programs ?? []).some((p) => (p.module === m || (m === 'revalidatie' && p.module !== 'kracht' && p.module !== 'mobiliteit')) && !p.paused && ((p.today.scheduled > 0 && !p.today.done) || !!p.openSession));
   const tabs = [
-    { to: '/p', end: true, icon: CalendarCheck2, label: t('Vandaag', 'Today') },
-    { to: '/p/voortgang', icon: LineChart, label: t('Voortgang', 'Progress') },
-    { to: '/p/held', icon: Trophy, label: t('Held', 'Hero') },
-    { to: '/p/account', icon: UserRound, label: t('Account', 'Account') },
+    { to: '/p', end: true, icon: CalendarCheck2, label: t('Vandaag', 'Today'), dot: false },
+    ...(clinical ? [{ to: '/p/revalidatie', end: false, icon: HeartPulse, label: t('Revalidatie', 'Rehab'), dot: openIn('revalidatie') }] : []),
+    { to: '/p/kracht', end: false, icon: Dumbbell, label: t('Kracht', 'Strength'), dot: openIn('kracht') },
+    { to: '/p/mobiliteit', end: false, icon: Move, label: t('Mobiliteit', 'Mobility'), dot: openIn('mobiliteit') },
+    { to: '/p/held', end: false, icon: Trophy, label: t('Held', 'Hero'), dot: false },
   ];
   return (
     <div className="patient-app min-h-screen bg-canvas text-[16px] print:bg-white">
@@ -71,6 +87,9 @@ export function PatientLayout() {
             <div className="flex min-w-0 items-center gap-1">
               <span className="min-w-0 text-right text-[13.5px] font-medium leading-tight text-ink-600">{user.patient.kind === 'personal' ? t('Persoonlijk account', 'Personal account') : user.patient.practiceName}</span>
               <FeedbackButton big />
+              <Link to="/p/account" aria-label={t('Account', 'Account')} title={t('Account', 'Account')} className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100', loc.pathname.startsWith('/p/account') && 'bg-accent-soft text-accent')}>
+                <UserRound className="h-[22px] w-[22px]" aria-hidden />
+              </Link>
             </div>
           </div>
         </header>
@@ -91,16 +110,17 @@ export function PatientLayout() {
       {!inPlayer && !inSetup && <QuickLogButton />}
       {!inPlayer && !inSetup && (
         <nav className="fixed inset-x-0 bottom-0 z-30 print:hidden border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label={t('Navigatie', 'Navigation')}>
-          <div className="mx-auto grid max-w-xl grid-cols-4">
+          <div className={cn('mx-auto grid max-w-xl', tabs.length === 5 ? 'grid-cols-5' : 'grid-cols-4')}>
             {tabs.map((tab) => (
-              <NavLink key={tab.to} to={tab.to} end={tab.end} className={({ isActive }) => cn('tap group flex min-h-[60px] flex-col items-center justify-center gap-1 py-2 text-[13px]', isActive ? 'font-semibold text-accent' : 'font-medium text-ink-500 hover:text-ink-800')}>
+              <NavLink key={tab.to} to={tab.to} end={tab.end} aria-label={tab.dot ? t(`${tab.label} (nog open)`, `${tab.label} (still open)`) : undefined} className={({ isActive }) => cn('tap group flex min-h-[60px] min-w-0 flex-col items-center justify-center gap-1 py-2', tabs.length === 5 ? 'text-[11.5px]' : 'text-[13px]', isActive ? 'font-semibold text-accent' : 'font-medium text-ink-500 hover:text-ink-800')}>
                 {({ isActive }) => (
                   <>
                     {/* Active tab: filled sage pill behind the icon plus bold label, not colour alone. */}
-                    <span className={cn('flex h-8 w-14 items-center justify-center rounded-full transition-colors', isActive ? 'bg-accent-soft' : 'group-hover:bg-ink-100')}>
+                    <span className={cn('relative flex h-8 w-12 items-center justify-center rounded-full transition-colors', isActive ? 'bg-accent-soft' : 'group-hover:bg-ink-100')}>
                       <tab.icon className="h-[22px] w-[22px]" strokeWidth={isActive ? 2.2 : 1.8} aria-hidden />
+                      {tab.dot && <span className="absolute right-1.5 top-0.5 h-2.5 w-2.5 rounded-full bg-[#c2410c] ring-2 ring-white" aria-hidden />}
                     </span>
-                    {tab.label}
+                    <span className="max-w-full truncate px-0.5">{tab.label}</span>
                   </>
                 )}
               </NavLink>

@@ -104,18 +104,24 @@ test('strength: transition check by the therapist, consent and self-start by the
   const ctx = await phone(browser);
   const pp = await ctx.newPage();
   await login(pp, 'patient@praktijk-a.test');
-  // In rehabilitation mode, the home screen points to what the patient can start themselves.
-  if (await pp.getByRole('radio', { name: 'Revalidatie', checked: true }).count()) {
+  // Vandaag points to what the patient can start themselves; each part has its own tab.
+  const selfStart = pp.getByRole('link', { name: /^Kracht \(\d+\)$/ });
+  if (await selfStart.count()) {
     await expect(pp.getByRole('heading', { name: 'Zelf iets starten' })).toBeVisible();
-    await pp.getByRole('button', { name: /^Kracht \(\d+\)$/ }).click();
-    await expect(pp.getByRole('radio', { name: 'Kracht', checked: true })).toBeVisible();
+    await selfStart.click();
+  } else {
+    await pp.getByRole('navigation', { name: 'Navigatie' }).getByRole('link', { name: /^Kracht/ }).click();
   }
-  await pp.getByRole('radio', { name: 'Kracht' }).click();
+  await expect(pp).toHaveURL(/\/p\/kracht$/);
+  await expect(pp.getByRole('heading', { name: 'Kracht', level: 1 })).toBeVisible();
   await expect(pp.getByText('Je krachttraining is alleen voor jou')).toBeVisible();
   await pp.getByRole('button', { name: 'Delen met mijn fysiotherapeut' }).click();
   await expect(pp.getByText('Je deelt krachttraining met je fysiotherapeut')).toBeVisible();
   await expectAccessible(pp, 'patient strength mode');
   await pp.screenshot({ path: `${SHOTS}/patient-mode-strength.png`, fullPage: true });
+  // With a strength programme already running, more programmes are behind a fold-out.
+  const more = pp.getByText(/^Nog een programma starten/);
+  if (await more.count()) await more.click();
   await pp.getByRole('button', { name: 'Starten' }).first().click();
   await expect(pp.getByRole('dialog', { name: 'Kracht basis — E2E' }).getByText('Pijn op de borst')).toBeVisible();
   await pp.getByRole('button', { name: 'Programma starten' }).click();
@@ -148,10 +154,6 @@ test('strength: transition check by the therapist, consent and self-start by the
   await page.reload();
   await expect(page.getByText(/beste 50 kg/)).toBeVisible();
 
-  // Back to rehabilitation for the other specs.
-  await pp.goto('/p');
-  await pp.getByRole('radio', { name: 'Revalidatie' }).click();
-  await expect(pp.getByRole('radio', { name: 'Revalidatie' })).toHaveAttribute('aria-checked', 'true');
   await ctx.close();
 });
 

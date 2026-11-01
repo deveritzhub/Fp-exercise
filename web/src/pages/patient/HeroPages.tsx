@@ -1161,9 +1161,10 @@ export function HeroPage() {
         <SurvivalPanel d={d} />
       </Fold>
       <DailyCheckin d={d} />
-      <Fold id="hero-log" defaultOpen icon={<Utensils className="h-5 w-5" />} title={t('Eigen training en eiwit', 'Your own workout and protein')}
+      <Fold id="hero-log" defaultOpen icon={<Utensils className="h-5 w-5" />} title={t('Logboek', 'Logbook')}
         summary={d.logs.protein.goal !== null ? t(`Eiwit ${d.logs.protein.grams} van ${d.logs.protein.goal} g`, `Protein ${d.logs.protein.grams} of ${d.logs.protein.goal} g`) : t('Eiwit en eigen trainingen bijhouden', 'Track protein and your own workouts')}>
         <LogTeaser d={d} />
+        <Link to="/p/logboek" className="mt-3 inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-accent">{t('Open je logboek: eiwit, gewicht, water, slaap en stappen', 'Open your logbook: protein, weight, water, sleep and steps')}<ChevronRight className="h-4 w-4" aria-hidden /></Link>
       </Fold>
       <Fold id="hero-weekly" defaultOpen icon={<Gift className="h-5 w-5" />} title={t('Weekquests', 'Weekly quests')}
         summary={t(`${d.weekly.quests.filter((x) => x.done).length} van ${d.weekly.quests.length} gehaald`, `${d.weekly.quests.filter((x) => x.done).length} of ${d.weekly.quests.length} done`)}>

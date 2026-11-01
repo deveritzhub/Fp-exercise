@@ -48,6 +48,7 @@ const PainCheckinPage = named(() => import('@/pages/patient/HeroPages'), 'PainCh
 const FriendsPage = named(() => import('@/pages/patient/FriendsPage'), 'FriendsPage');
 const LogbookPage = named(() => import('@/pages/patient/LogbookPage'), 'LogbookPage');
 const GymLogPage = named(() => import('@/pages/patient/GymLogPage'), 'GymLogPage');
+const ModulePage = named(() => import('@/pages/patient/ModulePage'), 'ModulePage');
 const AdminPage = named(() => import('@/pages/admin/AdminPage'), 'AdminPage');
 const AdminAccountPage = named(() => import('@/pages/admin/AdminPage'), 'AdminAccountPage');
 
@@ -137,7 +138,10 @@ export const router = createBrowserRouter([
           { path: 'held/pijn', element: <S><PainCheckinPage /></S> },
           { path: 'held/vrienden', element: <S><FriendsPage /></S> },
           { path: 'logboek', element: <S><LogbookPage /></S> },
-          { path: 'kracht', element: <S><GymLogPage /></S> },
+          { path: 'revalidatie', element: <S><ModulePage key="revalidatie" module="revalidatie" /></S> },
+          { path: 'kracht', element: <S><ModulePage key="kracht" module="kracht" /></S> },
+          { path: 'mobiliteit', element: <S><ModulePage key="mobiliteit" module="mobiliteit" /></S> },
+          { path: 'krachtlog', element: <S><GymLogPage /></S> },
           { path: 'account', element: <S><AccountPage patient /></S> },
         ],
       },

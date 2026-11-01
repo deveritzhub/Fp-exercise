@@ -183,7 +183,7 @@ async function heroState(tx: Tx, patientId: string) {
       )
     ).rows;
     const hit = items.find((r) => skillsForExercise(r.training_categories ?? [], r.movement_category).includes(skillQuest.skill!));
-    skillLink = hit ? `/p/programma/${hit.program_id}/oefening/${hit.id}` : skillQuest.skill === 'strength' ? '/p/kracht' : null;
+    skillLink = hit ? `/p/programma/${hit.program_id}/oefening/${hit.id}` : skillQuest.skill === 'strength' ? '/p/krachtlog' : null;
   }
   const questLinks = { train: '/p', checkin: '/p/held/pijn', skill: skillLink };
 

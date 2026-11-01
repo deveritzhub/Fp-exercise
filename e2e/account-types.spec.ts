@@ -42,11 +42,11 @@ test('someone signs up to train for themselves: hero, fitness modes, self-check 
   await expect(page.getByText('Persoonlijk account')).toBeVisible();
 
   // Only strength and mobility; no sharing with a practice.
-  const modes = page.getByRole('radiogroup', { name: 'Modus' });
-  await expect(modes.getByRole('radio')).toHaveCount(2);
-  await expect(modes.getByRole('radio', { name: 'Revalidatie' })).toHaveCount(0);
+  const nav = page.getByRole('navigation', { name: 'Navigatie' });
+  await expect(nav.getByRole('link')).toHaveCount(4);
+  await expect(nav.getByRole('link', { name: /Revalidatie/ })).toHaveCount(0);
+  await nav.getByRole('link', { name: /^Kracht/ }).click();
   await expect(page.getByText('Delen met mijn fysiotherapeut')).toHaveCount(0);
-  await modes.getByRole('radio', { name: 'Kracht' }).click();
   await expect(page.getByRole('heading', { name: 'Eerst een korte check' })).toBeVisible();
   await expectAccessible(page, 'self-check');
   const questions = page.getByRole('group').filter({ has: page.getByRole('radio', { name: 'Nee' }) });
