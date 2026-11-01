@@ -461,3 +461,21 @@ describe('hero photo key', () => {
     expect(heroPhotoKey({ frame: 'f', skin: 's1', build: 'slim' }, undefined)).toBe('f_s1_lean');
   });
 });
+
+describe('heroNickname', () => {
+  it('alliterates with the first name and cycles on each tap', async () => {
+    const { heroNickname } = await import('./hero');
+    expect(heroNickname('Sanne de Vries', 'f', 0)).toBe('Stalen Sanne');
+    expect(heroNickname('Sanne', 'f', 1)).toBe('Supersnelle Sanne');
+    expect(heroNickname('Émile', 'm', 0)).toBe('Energieke Émile');
+    expect(heroNickname('Tim', 'm', 0)).toBe('Turbo Tim');
+  });
+  it('picks a name when there is none and stays within 40 characters', async () => {
+    const { heroNickname } = await import('./hero');
+    expect(heroNickname('', 'm', 0)).toBe('Turbo Tim');
+    for (let i = 0; i < 40; i++) {
+      expect(heroNickname('', i % 2 ? 'm' : 'f', i).length).toBeLessThanOrEqual(40);
+      expect(heroNickname('Xander', 'm', i)).toMatch(/^\S+ /);
+    }
+  });
+});

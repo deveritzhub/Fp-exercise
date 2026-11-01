@@ -12,7 +12,7 @@ import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { EYE_COLOURS, HAIR_COLOURS, KIT, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
-import { BADGES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, metricInRange, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
+import { BADGES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, heroNickname, metricInRange, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
 import type { HeroState } from '@/lib/types';
 import { PainTrendList } from '@/components/hero/PainTrend';
@@ -147,7 +147,7 @@ export function HeroSetupPage() {
       {step === 1 && (
         <Card className="space-y-5 p-5">
           <div className="flex justify-center"><HeroAvatar look={look} size={112} level={1} /></div>
-          <Input label={t('Naam van je held', 'Name of your hero')} value={look.heroName} maxLength={40} onChange={(e) => set('heroName', e.target.value)} />
+          <HeroNameField value={look.heroName} frame={look.frame} onChange={(v) => set('heroName', v)} />
           <Choice legend={t('Jouw sport', 'Your sport')} name="sport" cols="grid-cols-2" value={look.sport as Opt<'sport'>} options={HERO_OPTIONS.sport} onChange={(v) => set('sport', v)}
             render={(v) => { const Icon = SPORT_ICON[v]; return <><Icon className="h-4 w-4 shrink-0" aria-hidden />{SPORTS[v][nl ? 0 : 1]}</>; }} />
           <Button size="xl" className="w-full" disabled={!look.heroName.trim()} onClick={() => setStep(2)}>{t('Volgende', 'Next')}</Button>
@@ -206,6 +206,29 @@ export function HeroSetupPage() {
 }
 
 const PROFILE_LABEL = ['Uiterlijk en maten aanpassen', 'Edit look and measurements'] as const;
+
+/** Hero name with a "make up a name" button: a playful nickname from the patient's first name. */
+function HeroNameField({ value, frame, onChange }: { value: string; frame: string; onChange: (v: string) => void }) {
+  const { t } = useI18n();
+  const { user } = useSession();
+  const [n, setN] = useState(0);
+  return (
+    <div className="space-y-2">
+      <Input label={t('Naam van je held', 'Name of your hero')} value={value} maxLength={40} onChange={(e) => onChange(e.target.value)} />
+      <button
+        type="button"
+        onClick={() => {
+          onChange(heroNickname(user?.fullName, frame, n));
+          setN((x) => x + 1);
+        }}
+        className="tap inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-accent-soft px-4 text-[14.5px] font-semibold text-accent"
+      >
+        <Sparkles className="h-4 w-4" aria-hidden />
+        {t('Verzin een naam', 'Make up a name')}
+      </button>
+    </div>
+  );
+}
 
 /** The hero page's full-body photo, also the way into look + body measurements. */
 function HeroPhotoLink({ look, level }: { look: FigureLook; level: number }) {
@@ -342,7 +365,7 @@ export function HeroProfilePage() {
       )}
       <Card className="space-y-5 p-5">
         <h2 className="t-section">{t('Uiterlijk', 'Look')}</h2>
-        <Input label={t('Naam van je held', 'Name of your hero')} value={look.heroName} maxLength={40} onChange={(e) => set('heroName', e.target.value)} />
+        <HeroNameField value={look.heroName} frame={look.frame} onChange={(v) => set('heroName', v)} />
         <Choice legend={t('Jouw sport', 'Your sport')} name="sport" cols="grid-cols-2" value={look.sport as Opt<'sport'>} options={HERO_OPTIONS.sport} onChange={(v) => set('sport', v)}
           render={(v) => { const Icon = SPORT_ICON[v]; return <><Icon className="h-4 w-4 shrink-0" aria-hidden />{SPORTS[v][nl ? 0 : 1]}</>; }} />
         <Choice legend={t('Figuur', 'Figure')} name="frame" cols="grid-cols-2" value={look.frame as Opt<'frame'>} options={HERO_OPTIONS.frame} onChange={(v) => set('frame', v)} render={(v) => L('frame', v)} />

@@ -209,6 +209,15 @@ test('tapping the hero photo opens look and body measurements', async ({ browser
   await expect(pp.getByLabel('Gewicht (kg)')).toBeVisible();
   await expect(pp.getByLabel('Lichaamsvet (%)')).toBeVisible();
   await expect(pp.getByLabel('Lengte (cm)')).toBeVisible();
+  // "Verzin een naam" suggests a playful nickname; a second tap gives another one.
+  const nameField = pp.getByLabel('Naam van je held');
+  const original = await nameField.inputValue();
+  await pp.getByRole('button', { name: 'Verzin een naam' }).click();
+  const first = await nameField.inputValue();
+  expect(first).toMatch(/^\S+ \S+$/);
+  await pp.getByRole('button', { name: 'Verzin een naam' }).click();
+  await expect(nameField).not.toHaveValue(first);
+  await nameField.fill(original);
   await pp.getByRole('radio', { name: 'Zand' }).click();
   await pp.getByLabel('Gewicht (kg)').fill('72,5');
   await pp.getByLabel('Lichaamsvet (%)').fill('24');

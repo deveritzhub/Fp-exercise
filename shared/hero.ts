@@ -854,3 +854,35 @@ export function heroPhotoKey(look: { frame?: string; skin: string; build?: strin
   const kind = body?.kind ?? fromBuild[look.build ?? 'average'] ?? 'average';
   return `${look.frame === 'm' ? 'm' : 'f'}_${skin}_${kind}`;
 }
+
+/**
+ * Playful alliterative nicknames for the hero ("Stalen Sanne", "Turbo Tim"). Only cheerful words
+ * about character and energy, never about the body or weight. With a first name the adjective
+ * starts with the same letter; without one a name is picked too.
+ */
+const NICK_ADJ: Record<string, string[]> = {
+  a: ['Atletische', 'Avontuurlijke'], b: ['Bliksem', 'Bikkelharde'], c: ['Coole', 'Charmante'], d: ['Dappere', 'Dynamische'],
+  e: ['Energieke', 'Eervolle'], f: ['Flitsende', 'Fitte'], g: ['Gouden', 'Gedreven'], h: ['Heldhaftige', 'Hardlopende'],
+  i: ['IJzeren', 'Ijverige'], j: ['Jolige', 'Jagende'], k: ['Krachtige', 'Kanjer'], l: ['Lenige', 'Lachende'],
+  m: ['Machtige', 'Moedige'], n: ['Nooit-moe', 'Noeste'], o: ['Onstuitbare', 'Onverslaanbare'], p: ['Pittige', 'Powerende'],
+  q: ['Quick'], r: ['Razendsnelle', 'Rappe'], s: ['Stalen', 'Supersnelle', 'Sterke'], t: ['Turbo', 'Taaie'],
+  u: ['Unieke', 'Ultra'], v: ['Vurige', 'Vliegende'], w: ['Wervelende', 'Winnende'], y: ['Yes-'], z: ['Zonnige', 'Zoevende'],
+};
+const NICK_NAMES = { f: ['Sanne', 'Fleur', 'Lotte', 'Mila', 'Noor', 'Eva', 'Zoë', 'Tess'], m: ['Tim', 'Daan', 'Luuk', 'Sem', 'Bram', 'Finn', 'Max', 'Ruben'] } as const;
+
+export function heroNickname(firstName: string | null | undefined, frame: string | undefined, n: number): string {
+  const name = (firstName ?? '').trim().split(/\s+/)[0]?.slice(0, 24) ?? '';
+  const i = Math.abs(Math.floor(n));
+  if (name) {
+    const key = name.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase()[0] ?? '';
+    const list = NICK_ADJ[key];
+    if (list) {
+      const adj = list[i % list.length];
+      return adj.endsWith('-') ? `${adj}${name}` : `${adj} ${name}`;
+    }
+  }
+  const names = NICK_NAMES[frame === 'm' ? 'm' : 'f'];
+  const pick = names[i % names.length];
+  const list = NICK_ADJ[pick[0].toLowerCase()];
+  return `${list[Math.floor(i / names.length) % list.length]} ${pick}`;
+}
