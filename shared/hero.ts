@@ -751,6 +751,41 @@ export const GEAR: { key: string; nl: string; en: string; unlockNl: string; unlo
 ];
 export const GEAR_KEYS = new Set(GEAR.map((g) => g.key));
 
+/** Character screen slots (RPG paper doll): one piece per slot. */
+export type GearSlot = 'head' | 'neck' | 'chest' | 'back' | 'arm' | 'wrist' | 'hands' | 'waist' | 'legs' | 'feet' | 'held';
+export const GEAR_SLOTS: { key: GearSlot; nl: string; en: string; side: 'left' | 'right' | 'bottom' }[] = [
+  { key: 'head', nl: 'Hoofd', en: 'Head', side: 'left' },
+  { key: 'neck', nl: 'Nek', en: 'Neck', side: 'left' },
+  { key: 'chest', nl: 'Borst', en: 'Chest', side: 'left' },
+  { key: 'back', nl: 'Rug', en: 'Back', side: 'left' },
+  { key: 'arm', nl: 'Arm', en: 'Arm', side: 'left' },
+  { key: 'wrist', nl: 'Pols', en: 'Wrist', side: 'right' },
+  { key: 'hands', nl: 'Handen', en: 'Hands', side: 'right' },
+  { key: 'waist', nl: 'Middel', en: 'Waist', side: 'right' },
+  { key: 'legs', nl: 'Benen', en: 'Legs', side: 'right' },
+  { key: 'feet', nl: 'Voeten', en: 'Feet', side: 'right' },
+  { key: 'held', nl: 'In de hand', en: 'Held', side: 'bottom' },
+];
+export const GEAR_SLOT: Record<string, GearSlot> = {
+  cap: 'head', visor: 'head', headband: 'head', crown: 'head',
+  scarf: 'neck', towel: 'neck', headphones: 'neck', medal: 'neck',
+  pin: 'chest', hr_band: 'chest',
+  yoga_mat: 'back',
+  captain: 'arm',
+  watch: 'wrist', wristbands: 'wrist',
+  gloves: 'hands',
+  belt: 'waist',
+  sleeve: 'legs', shin_guards: 'legs',
+  gold_shoes: 'feet', balance_shoes: 'feet', spikes: 'feet', crew_socks: 'feet',
+  sport_item: 'held',
+};
+/** Keep one piece per slot: the last one in the list wins (newest choice). */
+export function onePerSlot(equipped: string[]): string[] {
+  const by = new Map<string, string>();
+  for (const g of equipped) by.set(GEAR_SLOT[g] ?? g, g);
+  return equipped.filter((g) => by.get(GEAR_SLOT[g] ?? g) === g).filter((g, i, a) => a.indexOf(g) === i);
+}
+
 /** Level-20 name for a skill. Knowledge has none. */
 export const SKILL_TITLES: Partial<Record<SkillKey, { nl: string; en: string }>> = {
   strength: { nl: 'Krachtpatser', en: 'Powerhouse' },

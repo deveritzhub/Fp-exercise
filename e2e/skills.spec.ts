@@ -64,6 +64,12 @@ test('lock reasons are visible, a level-10 item can be worn, and the sheet fits 
   await expect(wear).toBeVisible();
   await wear.click();
   await expect(page.getByRole('button', { name: /^Handschoenen Aan/, pressed: true })).toBeVisible();
+  // Character screen: the hands slot now shows the gloves; a slot opens its own picker.
+  await expect(page.getByRole('button', { name: 'Handen: Handschoenen. Wijzigen' })).toBeVisible();
+  await page.getByRole('button', { name: /^Hoofd/ }).first().click();
+  await expect(page.getByRole('dialog', { name: 'Hoofd' })).toBeVisible();
+  await expectAccessible(page, 'gear slot picker');
+  await page.getByRole('button', { name: 'Sluiten' }).last().click();
   await expectAccessible(page, 'skills gear worn');
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
 });

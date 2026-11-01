@@ -10,7 +10,7 @@ import { loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
 import { loadPatientLogs } from '../lib/patientLogs';
 import { weeklyAdherence } from '../../../shared/adherence';
 import {
-  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
+  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
   questXp, skillOfWeek, skillsForExercise, weeklyQuests, xpFor, type SkillKey, type WeekData,
 } from '../../../shared/hero';
 import { loadSkillSnapshot } from '../lib/skillState';
@@ -455,7 +455,8 @@ heroPatient.put('/hero/gear', async (c) => {
     const state = await heroState(tx, patient.id);
     if (!state.hero) throw badRequest('hero_required');
     if (b.equipped.some((g) => !state.gear.unlocked.includes(g))) throw badRequest('gear_locked');
-    await tx.query('UPDATE patient_heroes SET gear = $2, updated_at = now() WHERE patient_id = $1', [patient.id, [...new Set(b.equipped)]]);
+    // One piece per slot (character screen); the newest choice wins.
+    await tx.query('UPDATE patient_heroes SET gear = $2, updated_at = now() WHERE patient_id = $1', [patient.id, onePerSlot(b.equipped)]);
   });
   return c.json({ ok: true });
 });

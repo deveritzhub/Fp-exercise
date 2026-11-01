@@ -11,7 +11,7 @@ import { WEAR_SLOTS, wearPlacements, type BodyKind } from './wear';
  * product photo. Falls back to the drawn figure when no photo loads.
  * Decorative: callers give the surrounding element its accessible name.
  */
-export function HeroPhoto({ look, className, gearChips = true }: { look: FigureLook; className?: string; gearChips?: boolean }) {
+export function HeroPhoto({ look, className, gearChips = false }: { look: FigureLook; className?: string; gearChips?: boolean }) {
   // Try the personal/guest photo, then this hairstyle, then the base photo, then the drawing.
   const keys = [...new Set([...(look.photo ? [look.photo] : []), heroPhotoKey(look, look.body ?? null), heroPhotoKey(look, look.body ?? null, false)])];
   const [attempt, setAttempt] = useState(0);

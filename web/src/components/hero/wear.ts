@@ -20,24 +20,11 @@ const FRAME_SPREAD = { f: 1, m: 1.1 } as const;
 // (cap, visor, headband, crown, scarf, towel, socks) or sit under the shirt (heart-rate band)
 // look pasted on, so they stay small product photos in the corner.
 export const WEAR_SLOTS: Record<string, Slot> = {
-  // Measured again on a large screenshot of the lean feminine photo (owner's check, 2026-11-01):
-  // neck 0.18, shoulders x 0.35–0.66, hem 0.445, wrists 0.52 (x 0.345 / 0.655), hands 0.56,
-  // knees 0.69 (x 0.42 / 0.58), shins 0.79, shoes 0.935 (x 0.39 / 0.61).
+  // The character screen shows every piece in its slot; on the photo itself only what passed the
+  // owner's visual check (2026-11-01) — headphones around the neck and the chest pin — plus the
+  // crutches the therapist switches on. Measured on a large screenshot of the lean feminine photo.
   headphones: { x: 0.5, y: 0.18, w: 0.17, scale: true },
-  medal: { x: 0.5, y: 0.27, w: 0.1 },
   pin: { x: 0.565, y: 0.265, w: 0.04, spread: true },
-  captain: { x: 0.34, y: 0.255, w: 0.055, spread: true },
-  yoga_mat: { x: 0.72, y: 0.3, w: 0.11, spread: true },
-  belt: { x: 0.5, y: 0.445, w: 0.25, scale: true },
-  watch: { x: 0.345, y: 0.522, w: 0.045, spread: true },
-  wristbands: { x: 0.347, y: 0.515, w: 0.05, side: 'both', spread: true },
-  gloves: { x: 0.352, y: 0.562, w: 0.07, side: 'both', spread: true },
-  sleeve: { x: 0.58, y: 0.69, w: 0.065, spread: true },
-  shin_guards: { x: 0.414, y: 0.79, w: 0.055, side: 'both', spread: true },
-  gold_shoes: { x: 0.392, y: 0.935, w: 0.09, side: 'both', spread: true },
-  balance_shoes: { x: 0.392, y: 0.935, w: 0.09, side: 'both', spread: true },
-  spikes: { x: 0.392, y: 0.935, w: 0.09, side: 'both', spread: true },
-  sport_item: { x: 0.78, y: 0.9, w: 0.13 },
   crutches: { x: 0.285, y: 0.585, w: 0.09, h: 0.73, side: 'both', spread: true },
 };
 

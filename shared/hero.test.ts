@@ -489,3 +489,12 @@ describe('heroNickname', () => {
     }
   });
 });
+
+describe('character screen slots', () => {
+  it('every piece of gear has a slot and one piece per slot wins', async () => {
+    const { GEAR, GEAR_SLOT, onePerSlot } = await import('./hero');
+    for (const g of GEAR) expect(GEAR_SLOT[g.key], g.key).toBeDefined();
+    expect(onePerSlot(['cap', 'watch', 'visor'])).toEqual(['watch', 'visor']);
+    expect(onePerSlot(['pin', 'pin', 'belt'])).toEqual(['pin', 'belt']);
+  });
+});
