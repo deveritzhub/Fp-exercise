@@ -85,7 +85,7 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await expect(pp.getByText('Doe een dagcheck of werk je pijnkaart bij')).toBeVisible();
   await expect(pp.getByText(/Weekkist geopend|Haal alle drie voor de weekkist/)).toBeVisible();
   // Gear: locked items say how to unlock them; unlocked items can be worn.
-  await expect(pp.getByRole('heading', { name: /Uitrusting \(\d van 5\)/ })).toBeVisible();
+  await expect(pp.getByRole('heading', { name: /Uitrusting \(\d+ van \d+\)/ })).toBeVisible();
   await expect(pp.getByText(/Nog op slot: /).first()).toBeVisible();
   const wear = pp.getByRole('button', { name: 'Aandoen' }).first();
   if (await wear.count()) {
@@ -190,6 +190,39 @@ test('no label in the hero creator is cut off on a 360 px phone', async ({ brows
     expect(await pp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
     await pp.getByRole('button', { name: 'Volgende' }).click();
   }
+  await ctx.close();
+});
+
+test('tapping the hero photo opens look and body measurements', async ({ browser }) => {
+  test.setTimeout(90_000);
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, locale: 'nl-NL', timezoneId: 'Europe/Amsterdam' });
+  const pp = await ctx.newPage();
+  await login(pp, 'patient@praktijk-a.test');
+  await pp.goto('/p');
+  // The photo itself, not only a text link buried on the character sheet.
+  await pp.getByRole('link', { name: 'Uiterlijk en maten aanpassen' }).click();
+  await expect(pp).toHaveURL(/\/p\/held\/uiterlijk$/);
+  await expect(pp.getByRole('heading', { name: 'Uiterlijk en maten' })).toBeVisible();
+  await expect(pp.getByRole('img', { name: /Voorbeeld van/ })).toBeVisible();
+  await expect(pp.getByLabel('Gewicht (kg)')).toBeVisible();
+  await expect(pp.getByLabel('Lichaamsvet (%)')).toBeVisible();
+  await expect(pp.getByLabel('Lengte (cm)')).toBeVisible();
+  await pp.getByRole('radio', { name: 'Zand' }).click();
+  await pp.getByLabel('Gewicht (kg)').fill('72,5');
+  await pp.getByLabel('Lichaamsvet (%)').fill('24');
+  await pp.getByLabel('Lengte (cm)').fill('168');
+  await expectAccessible(pp, 'hero profile');
+  expect(await pp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+  await pp.screenshot({ path: 'screenshots/hero/profile.png', fullPage: true });
+  await pp.getByRole('button', { name: 'Opslaan' }).click();
+  await expect(pp).toHaveURL(/\/p\/held$/);
+  await expect(pp.getByText('Uiterlijk en maten opgeslagen')).toBeVisible();
+  const hero = await (await pp.request.get('/api/patient/hero')).json();
+  expect(hero.hero.outfit).toBe('sand');
+  expect(hero.metrics).toMatchObject({ weightKg: 72.5, bodyFatPct: 24, heightCm: 168 });
+  // Photo on the character sheet opens the same editor.
+  await pp.getByRole('link', { name: 'Uiterlijk en maten aanpassen' }).click();
+  await expect(pp.getByLabel('Gewicht (kg)')).toHaveValue('72,5');
   await ctx.close();
 });
 

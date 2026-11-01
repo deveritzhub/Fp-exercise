@@ -42,6 +42,7 @@ const PatientProgramPrintPage = named(() => import('@/pages/PrintPages'), 'Patie
 const ProgressReportPage = named(() => import('@/pages/therapist/ProgressReportPage'), 'ProgressReportPage');
 const HeroPage = named(() => import('@/pages/patient/HeroPages'), 'HeroPage');
 const HeroSetupPage = named(() => import('@/pages/patient/HeroPages'), 'HeroSetupPage');
+const HeroProfilePage = named(() => import('@/pages/patient/HeroPages'), 'HeroProfilePage');
 const PainCheckinPage = named(() => import('@/pages/patient/HeroPages'), 'PainCheckinPage');
 const FriendsPage = named(() => import('@/pages/patient/FriendsPage'), 'FriendsPage');
 const AdminPage = named(() => import('@/pages/admin/AdminPage'), 'AdminPage');
@@ -128,7 +129,7 @@ export const router = createBrowserRouter([
           { path: 'voortgang', element: <S><PatientProgress /></S> },
           { path: 'held', element: <S><HeroPage /></S> },
           { path: 'held/nieuw', element: <S><HeroSetupPage /></S> },
-          { path: 'held/uiterlijk', element: <S><HeroSetupPage edit /></S> },
+          { path: 'held/uiterlijk', element: <S><HeroProfilePage /></S> },
           { path: 'held/pijn', element: <S><PainCheckinPage /></S> },
           { path: 'held/vrienden', element: <S><FriendsPage /></S> },
           { path: 'account', element: <S><AccountPage patient /></S> },

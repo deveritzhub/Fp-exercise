@@ -81,15 +81,41 @@ describe('weekly quests, gear, daily check-in, trends', () => {
     const knee = after.trends.find((t: { area: string }) => t.area === 'knee_l');
     expect(knee.points.at(-1)).toMatchObject({ score: 3, source: 'daily' });
 
-    // Gear: locked items cannot be worn.
+    // Gear: locked items cannot be worn, including level and skill pieces.
     const locked = after.gear.unlocked.includes('gold_shoes') ? null : 'gold_shoes';
     if (locked) expect((await patient.put('/patient/hero/gear', { equipped: [locked] })).body.error).toBe('gear_locked');
+    for (const key of ['pin', 'crown', 'gloves', 'cap']) {
+      if (!after.gear.unlocked.includes(key)) expect((await patient.put('/patient/hero/gear', { equipped: [key] })).body.error).toBe('gear_locked');
+    }
     expect((await patient.put('/patient/hero/gear', { equipped: ['cape'] })).body.error).toBe('unknown_gear');
     expect((await patient.put('/patient/hero/gear', { equipped: after.gear.unlocked })).status).toBe(200);
+    if (after.gear.unlocked.length) {
+      const worn = after.gear.unlocked[0];
+      expect((await patient.put('/patient/hero/gear', { equipped: [worn] })).status).toBe(200);
+      expect((await patient.get('/patient/hero')).body.gear.equipped).toEqual([worn]);
+      expect((await patient.put('/patient/hero/gear', { equipped: [] })).status).toBe(200);
+      expect((await patient.get('/patient/hero')).body.gear.equipped).toEqual([]);
+    }
 
-    // The therapist sees the trend; another practice does not.
+    // Body measurements: the patient saves them; another patient and the practice do not see them.
+    expect((await patient.put('/patient/hero/metrics', { weightKg: 10, bodyFatPct: 24, heightCm: 168 })).status).toBe(400);
+    expect((await patient.put('/patient/hero/metrics', { weightKg: 72.5, bodyFatPct: 80, heightCm: 168 })).status).toBe(400);
+    expect((await patient.put('/patient/hero/metrics', { weightKg: 72.5, bodyFatPct: 24, heightCm: 168 })).status).toBe(200);
+    expect((await patient.get('/patient/hero')).body.metrics).toMatchObject({ weightKg: 72.5, bodyFatPct: 24, heightCm: 168 });
+    expect((await patient.put('/patient/hero/metrics', { weightKg: null, bodyFatPct: null, heightCm: null })).status).toBe(200);
+    expect((await patient.get('/patient/hero')).body.metrics).toMatchObject({ weightKg: null, bodyFatPct: null, heightCm: null });
+    expect((await patient.put('/patient/hero/metrics', { weightKg: 68, bodyFatPct: 22.4, heightCm: 170 })).status).toBe(200);
+    const exp = (await patient.get('/patient/export')).body;
+    expect(Number(exp.bodyMetrics.weight_kg)).toBe(68);
+    expect(Number(exp.bodyMetrics.body_fat_pct)).toBe(22.4);
+    const other = await login('patientB');
+    expect((await other.get('/patient/hero')).body.metrics).toMatchObject({ weightKg: null, bodyFatPct: null, heightCm: null });
+
+    // The therapist sees the trend; another practice does not. Measurements stay off that record.
     const ther = await login('therapistA');
     const seen = (await ther.get(`/patients/${s.patients.emma}/hero`)).body;
+    expect(seen.metrics).toBeUndefined();
+    expect(seen.hero.weight_kg).toBeUndefined();
     expect(seen.trends.find((t: { area: string }) => t.area === 'knee_l')).toBeTruthy();
     expect(seen.weekly.length).toBe(12);
     expect((await (await login('therapistB')).get(`/patients/${s.patients.emma}/hero`)).status).toBe(404);
