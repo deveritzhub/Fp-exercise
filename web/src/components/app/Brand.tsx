@@ -6,14 +6,7 @@ import { Languages } from 'lucide-react';
 export function Logo({ className, to = '/', compact }: { className?: string; to?: string; compact?: boolean }) {
   return (
     <Link to={to} className={cn('inline-flex items-center gap-2.5 text-ink-950', className)} aria-label={compact ? 'FP Flow' : undefined}>
-      <svg viewBox="0 0 32 32" className="h-8 w-8 shrink-0 text-brand-forest" aria-hidden>
-        {/* monogram after the Functional Performance brand mark */}
-        <g fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M11.2 9.9A10 10 0 1 0 20.8 9.9" />
-          <circle cx="16" cy="17.5" r="5.2" />
-          <circle cx="16" cy="9.6" r="3.2" />
-        </g>
-      </svg>
+      <img src="/favicon.svg" alt="" className="h-8 w-8 shrink-0 rounded-lg" aria-hidden="true" />
       {!compact && (
         <span className="flex flex-col whitespace-nowrap leading-none">
           <span className="font-display text-[16px] font-extrabold uppercase tracking-[0.12em] text-brand-forest">FP Flow</span>
