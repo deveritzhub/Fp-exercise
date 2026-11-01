@@ -1,4 +1,4 @@
-# FP Exercise
+# FP Flow
 
 Physiotherapy exercise-prescription platform: a therapist workspace to build and prescribe exercise
 programmes, a mobile-first patient app (PWA) to follow them, progress monitoring, and a public

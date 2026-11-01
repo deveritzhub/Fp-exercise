@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  FP Exercise for Android: a Trusted Web Activity that opens the web app full screen.
+  FP Flow for Android: a Trusted Web Activity that opens the web app full screen.
   All screens and updates come from the website; this shell only sets icon, name, colours and splash.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">

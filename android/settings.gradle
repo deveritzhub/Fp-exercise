@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = 'FP Exercise'
+rootProject.name = 'FP Flow'
 include ':app'

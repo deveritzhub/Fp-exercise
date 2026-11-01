@@ -10,8 +10,8 @@ No real patient data may be imported, and nothing may be published to production
 - [ ] TLS everywhere; HSTS; secure cookies verified on the production domain
 - [ ] MFA enforced for all professional accounts — *implemented; switch on "Verplicht maken voor iedereen" under Praktijk → Instellingen for each real practice*
 - [ ] Backups: automated, encrypted, PITR, restore drill performed and documented
-- [ ] Verwerkersovereenkomst between FP Exercise and each practice (starting with Functional Performance)
-- [ ] DPIA completed (practice as controller, with FP Exercise input) and risks accepted
+- [ ] Verwerkersovereenkomst between FP Flow and each practice (starting with Functional Performance)
+- [ ] DPIA completed (practice as controller, with FP Flow input) and risks accepted
 - [ ] Privacy notice, terms and cookie notice reviewed by a legal/privacy professional and published
 - [ ] Retention periods and deletion workflow decided and implemented
 - [ ] Incident response & data-breach notification procedure (72 h AP) documented

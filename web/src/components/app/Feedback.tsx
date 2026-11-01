@@ -48,7 +48,7 @@ export function FeedbackButton({ big }: { big?: boolean }) {
         onClose={close}
         size="sm"
         title={t('Wat vind je ervan?', 'What do you think?')}
-        description={t('Je bericht gaat naar het FP Exercise-team. Elke opmerking helpt!', 'Your message goes to the FP Exercise team. Every remark helps!')}
+        description={t('Je bericht gaat naar het FP Flow-team. Elke opmerking helpt!', 'Your message goes to the FP Flow team. Every remark helps!')}
         footer={
           <>
             <Button variant="ghost" onClick={close}>{t('Annuleren', 'Cancel')}</Button>

@@ -9,7 +9,7 @@ import { ProductShot } from './ProductShot';
 export function HomePage() {
   const { t } = useI18n();
   useDocumentMeta(
-    t('FP Exercise — Oefentherapie op maat voor fysiotherapiepraktijken', 'FP Exercise — Tailored exercise therapy for physiotherapy practices'),
+    t('FP Flow — Oefentherapie op maat voor fysiotherapiepraktijken', 'FP Flow — Tailored exercise therapy for physiotherapy practices'),
     t('Stel in een paar minuten een oefenprogramma samen, deel het via een eenvoudige patiëntapp en volg therapietrouw en feedback.', 'Build an exercise programme in minutes, share it through a simple patient app and follow adherence and feedback.'),
   );
   useEffect(() => {
@@ -18,7 +18,7 @@ export function HomePage() {
     s.text = JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
-      name: 'FP Exercise',
+      name: 'FP Flow',
       applicationCategory: 'HealthApplication',
       operatingSystem: 'Web, iOS, Android (PWA)',
       inLanguage: ['nl', 'en'],

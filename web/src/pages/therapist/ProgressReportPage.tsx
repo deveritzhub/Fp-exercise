@@ -168,8 +168,8 @@ export function ProgressReportPage() {
 
         <footer className="mt-8 border-t border-line pt-3 text-[12px] text-ink-500">
           {t(
-            `Gegenereerd op ${d(new Date().toISOString())} uit FP Exercise. Scores zijn door de patiënt zelf gemeld; indicatief, geen klinische meting.`,
-            `Generated on ${d(new Date().toISOString())} from FP Exercise. Scores are self-reported by the patient; indicative, not a clinical measurement.`,
+            `Gegenereerd op ${d(new Date().toISOString())} uit FP Flow. Scores zijn door de patiënt zelf gemeld; indicatief, geen klinische meting.`,
+            `Generated on ${d(new Date().toISOString())} from FP Flow. Scores are self-reported by the patient; indicative, not a clinical measurement.`,
           )}
         </footer>
       </div>

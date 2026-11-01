@@ -234,7 +234,7 @@ patientModules.get('/export', async (c) => {
     await audit(tx, user.id, patient.practiceId, 'export_self', 'patient', patient.id);
     return out;
   });
-  c.header('Content-Disposition', 'attachment; filename="mijn-fp-exercise-gegevens.json"');
+  c.header('Content-Disposition', 'attachment; filename="mijn-fp-flow-gegevens.json"');
   return c.json(data);
 });
 

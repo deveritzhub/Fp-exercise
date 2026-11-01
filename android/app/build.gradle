@@ -25,7 +25,7 @@ android {
         resValue 'string', 'hostName', host
         resValue 'color', 'colorPrimary', project.property('fpThemeColor')
         resValue 'color', 'backgroundColor', project.property('fpBackgroundColor')
-        // Must match /.well-known/assetlinks.json on the site (served by the FP Exercise server).
+        // Must match /.well-known/assetlinks.json on the site (served by the FP Flow server).
         resValue 'string', 'assetStatements',
             "[{\\\"relation\\\": [\\\"delegate_permission/common.handle_all_urls\\\"], \\\"target\\\": {\\\"namespace\\\": \\\"web\\\", \\\"site\\\": \\\"https://${host}\\\"}}]"
     }

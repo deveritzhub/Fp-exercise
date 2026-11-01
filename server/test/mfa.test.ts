@@ -50,7 +50,7 @@ describe('two-factor authentication', () => {
     const setup = await c.post('/auth/mfa/setup');
     expect(setup.status).toBe(200);
     expect(setup.body.qrSvg).toContain('<svg');
-    expect(setup.body.uri).toMatch(/^otpauth:\/\/totp\/FP%20Exercise/);
+    expect(setup.body.uri).toMatch(/^otpauth:\/\/totp\/FP%20Flow/);
     secret = setup.body.secret;
     expect((await c.post('/auth/mfa/enable', { code: '000000' })).body.error).toBe('invalid_code');
     const en = await c.post('/auth/mfa/enable', { code: nextCode(secret) });

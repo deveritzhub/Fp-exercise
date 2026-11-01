@@ -1,6 +1,6 @@
 {
-  "name": "FP Exercise",
-  "short_name": "FP Exercise",
+  "name": "FP Flow",
+  "short_name": "FP Flow",
   "description": "Je oefenprogramma van je fysiotherapeut",
   "start_url": "/p",
   "scope": "/",

@@ -38,7 +38,7 @@ const jobs = [
     'android/store/feature-graphic-1024x500.png', 1024, 500,
     `<div style="width:1024px;height:500px;background:${CANVAS};display:flex;align-items:center;gap:56px;padding:0 90px;box-sizing:border-box">
       <div style="border-radius:28px;overflow:hidden;flex:none">${tile(300, 0.4)}</div>
-      <div><div style="font:800 64px Manrope;color:${FOREST};letter-spacing:-0.02em">FP Exercise</div>
+      <div><div style="font:800 64px Manrope;color:${FOREST};letter-spacing:-0.02em">FP Flow</div>
       <div style="font:400 30px Inter;color:${INK};opacity:.75;margin-top:14px;line-height:1.35">Je oefenprogramma van<br>je fysiotherapeut</div></div></div>`,
   ],
 ];

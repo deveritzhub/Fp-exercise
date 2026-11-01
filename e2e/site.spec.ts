@@ -13,7 +13,7 @@ test('marketing pages render with SEO basics and pass accessibility checks', asy
   ] as const) {
     await page.goto(path);
     await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
-    await expect(page).toHaveTitle(/FP Exercise/);
+    await expect(page).toHaveTitle(/FP Flow/);
     expect(await page.locator('meta[name="description"]').getAttribute('content')).toBeTruthy();
     await expectAccessible(page, path);
   }

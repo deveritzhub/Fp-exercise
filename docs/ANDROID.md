@@ -1,6 +1,6 @@
-# FP Exercise in Google Play (Android)
+# FP Flow in Google Play (Android)
 
-De Android-app is een **Trusted Web Activity (TWA)**: een Android-schil die de FP Exercise-webapp
+De Android-app is een **Trusted Web Activity (TWA)**: een Android-schil die de FP Flow-webapp
 schermvullend opent (zonder adresbalk), met eigen icoon, opstartscherm en kleuren. Alle schermen en
 functies komen van de website, dus **elke update die live gaat staat meteen in de app**. Een nieuwe
 versie in de Play Store is alleen nodig als de schil verandert (naam, icoon, kleuren, webadres,

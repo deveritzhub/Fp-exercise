@@ -74,12 +74,12 @@ export async function unsubscribe(userId: string, endpoint: string) {
 }
 
 const MESSAGES = {
-  nl: { title: 'FP Exercise', body: 'Je oefeningen voor vandaag staan klaar. Succes! 💪' },
-  en: { title: 'FP Exercise', body: 'Your exercises for today are ready. Good luck! 💪' },
+  nl: { title: 'FP Flow', body: 'Je oefeningen voor vandaag staan klaar. Succes! 💪' },
+  en: { title: 'FP Flow', body: 'Your exercises for today are ready. Good luck! 💪' },
 };
 const TEST = {
-  nl: { title: 'FP Exercise', body: 'Zo ziet je herinnering eruit. Je ontvangt hem alleen op dagen met oefeningen.' },
-  en: { title: 'FP Exercise', body: 'This is what your reminder looks like. You only get it on exercise days.' },
+  nl: { title: 'FP Flow', body: 'Zo ziet je herinnering eruit. Je ontvangt hem alleen op dagen met oefeningen.' },
+  en: { title: 'FP Flow', body: 'This is what your reminder looks like. You only get it on exercise days.' },
 };
 
 /** Sends to every device of the user; removes subscriptions the push service reports as gone. */

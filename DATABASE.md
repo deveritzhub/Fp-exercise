@@ -78,5 +78,5 @@ Designed to scale to thousands of exercises.
 - Patients are archived (soft) by default; archiving archives open programmes.
 - Hard deletion workflow (planned): delete patient → cascades programmes, sessions, logs; audit entry
   remains with ids only. Requires a documented retention period (Wgbo medical-record retention
-  applies to the practice's EHR; FP Exercise data is supplementary — decision pending).
+  applies to the practice's EHR; FP Flow data is supplementary — decision pending).
 - `GET /api/patients/:id/export` provides a machine-readable export (GDPR access/portability).

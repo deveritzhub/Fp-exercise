@@ -1,5 +1,5 @@
 /**
- * Original demonstration exercise library for FP Exercise.
+ * Original demonstration exercise library for FP Flow.
  *
  * Written from general physiotherapy knowledge for demonstration purposes only.
  * ALL entries are seeded with review_status = 'needs_clinical_review' and must be reviewed by a

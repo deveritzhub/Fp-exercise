@@ -38,7 +38,7 @@ export function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () =
   const { t } = useI18n();
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
-  const text = `FP Exercise — ${t('herstelcodes', 'recovery codes')}\n${t('Elke code werkt één keer.', 'Each code works once.')}\n\n${codes.join('\n')}\n`;
+  const text = `FP Flow — ${t('herstelcodes', 'recovery codes')}\n${t('Elke code werkt één keer.', 'Each code works once.')}\n\n${codes.join('\n')}\n`;
   return (
     <div className="space-y-4">
       <Notice tone="warn" title={t('Bewaar deze herstelcodes', 'Save these recovery codes')}>
@@ -57,7 +57,7 @@ export function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () =
         <Button type="button" size="sm" variant="secondary" icon={<Download className="h-4 w-4" />} onClick={() => {
           const a = document.createElement('a');
           a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
-          a.download = 'fp-exercise-herstelcodes.txt';
+          a.download = 'fp-flow-herstelcodes.txt';
           a.click();
           URL.revokeObjectURL(a.href);
         }}>{t('Downloaden', 'Download')}</Button>

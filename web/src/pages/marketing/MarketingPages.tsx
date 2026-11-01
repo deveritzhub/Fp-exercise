@@ -31,7 +31,7 @@ export function FeaturesPage() {
   ];
   return (
     <>
-      <Hero eyebrow={t('Functies', 'Features')} title={t('Van voorschrijven tot bijsturen, in één rustige omgeving', 'From prescribing to adjusting, in one calm environment')} intro={t('FP Exercise ondersteunt de fysiotherapeut — het systeem stelt geen diagnoses en schrijft niets automatisch voor. Jij houdt de klinische regie.', 'FP Exercise supports the physiotherapist — it does not diagnose or prescribe automatically. You stay in clinical control.')} />
+      <Hero eyebrow={t('Functies', 'Features')} title={t('Van voorschrijven tot bijsturen, in één rustige omgeving', 'From prescribing to adjusting, in one calm environment')} intro={t('FP Flow ondersteunt de fysiotherapeut — het systeem stelt geen diagnoses en schrijft niets automatisch voor. Jij houdt de klinische regie.', 'FP Flow supports the physiotherapist — it does not diagnose or prescribe automatically. You stay in clinical control.')} />
       <section className="mx-auto max-w-6xl space-y-6 px-5 py-20">
         {blocks.map(([Icon, title, text, points]) => (
           <div key={title} className="grid gap-8 rounded-2xl border border-line p-8 shadow-card lg:grid-cols-2">
@@ -56,7 +56,7 @@ export function FeaturesPage() {
 
 export function HowItWorksPage() {
   const { t } = useI18n();
-  useDocumentMeta(t('Hoe het werkt', 'How it works'), t('Zo werkt FP Exercise voor fysiotherapeuten en patiënten.', 'How FP Exercise works for physiotherapists and patients.'));
+  useDocumentMeta(t('Hoe het werkt', 'How it works'), t('Zo werkt FP Flow voor fysiotherapeuten en patiënten.', 'How FP Flow works for physiotherapists and patients.'));
   const steps = (list: [typeof Search, string, string][]) => (
     <ol className="space-y-4">
       {list.map(([Icon, title, text], i) => (
@@ -95,7 +95,7 @@ export function HowItWorksPage() {
       </section>
       <section className="mx-auto max-w-6xl px-5 pb-20">
         <Notice tone="info" icon={<FileWarning className="h-4 w-4" />} title={t('Beoogd gebruik', 'Intended use')}>
-          {t('FP Exercise is een hulpmiddel voor het delen en registreren van door een zorgprofessional voorgeschreven oefeningen. De software stelt geen diagnoses, geeft geen geautomatiseerd behandeladvies en vervangt niet het oordeel van de fysiotherapeut.', 'FP Exercise is a tool to share and log exercises prescribed by a healthcare professional. The software does not diagnose, does not give automated treatment advice and does not replace the physiotherapist’s judgement.')}
+          {t('FP Flow is een hulpmiddel voor het delen en registreren van door een zorgprofessional voorgeschreven oefeningen. De software stelt geen diagnoses, geeft geen geautomatiseerd behandeladvies en vervangt niet het oordeel van de fysiotherapeut.', 'FP Flow is a tool to share and log exercises prescribed by a healthcare professional. The software does not diagnose, does not give automated treatment advice and does not replace the physiotherapist’s judgement.')}
         </Notice>
       </section>
     </>
@@ -151,7 +151,7 @@ export function PricingPage() {
 
 export function ContactPage() {
   const { t, locale } = useI18n();
-  useDocumentMeta(t('Contact', 'Contact'), t('Plan een demo of stel je vraag over FP Exercise.', 'Book a demo or ask a question about FP Exercise.'));
+  useDocumentMeta(t('Contact', 'Contact'), t('Plan een demo of stel je vraag over FP Flow.', 'Book a demo or ask a question about FP Flow.'));
   const [params] = useSearchParams();
   const [startedAt] = useState(() => Date.now());
   const [f, setF] = useState({ name: '', email: '', practice: '', message: '', topic: (params.get('onderwerp') as string) || 'demo', consent: false, website: '' });
@@ -235,9 +235,9 @@ export function PrivacyPage() {
   const { t } = useI18n();
   return (
     <LegalDraft title={t('Privacyverklaring', 'Privacy notice')}>
-      <p>{t('[Concept] Deze privacyverklaring beschrijft hoe FP Exercise persoonsgegevens verwerkt.', '[Draft] This privacy notice describes how FP Exercise processes personal data.')}</p>
+      <p>{t('[Concept] Deze privacyverklaring beschrijft hoe FP Flow persoonsgegevens verwerkt.', '[Draft] This privacy notice describes how FP Flow processes personal data.')}</p>
       <h2>{t('1. Rollen', '1. Roles')}</h2>
-      <p>{t('De fysiotherapiepraktijk is verwerkingsverantwoordelijke voor patiëntgegevens. FP Exercise treedt op als verwerker op basis van een verwerkersovereenkomst. Voor de website en het contactformulier is FP Exercise zelf verwerkingsverantwoordelijke. [In te vullen: rechtspersoon, KvK, contactgegevens, FG indien van toepassing].', 'The physiotherapy practice is the controller for patient data. FP Exercise acts as processor under a data processing agreement. For the website and contact form, FP Exercise is itself the controller. [To complete: legal entity, chamber of commerce, contact details, DPO if applicable].')}</p>
+      <p>{t('De fysiotherapiepraktijk is verwerkingsverantwoordelijke voor patiëntgegevens. FP Flow treedt op als verwerker op basis van een verwerkersovereenkomst. Voor de website en het contactformulier is FP Flow zelf verwerkingsverantwoordelijke. [In te vullen: rechtspersoon, KvK, contactgegevens, FG indien van toepassing].', 'The physiotherapy practice is the controller for patient data. FP Flow acts as processor under a data processing agreement. For the website and contact form, FP Flow is itself the controller. [To complete: legal entity, chamber of commerce, contact details, DPO if applicable].')}</p>
       <h2>{t('2. Welke gegevens', '2. Which data')}</h2>
       <ul>
         <li>{t('Account: naam, e-mailadres, taalvoorkeur.', 'Account: name, email address, language preference.')}</li>
@@ -263,7 +263,7 @@ export function TermsPage() {
       <p>{t('[Concept] Structuur voor de gebruiksvoorwaarden voor praktijken.', '[Draft] Structure of the terms of use for practices.')}</p>
       <h2>{t('1. Definities', '1. Definitions')}</h2><p>[…]</p>
       <h2>{t('2. Dienst en beoogd gebruik', '2. Service and intended use')}</h2>
-      <p>{t('FP Exercise is een hulpmiddel om door een zorgprofessional voorgeschreven oefeningen te delen en te registreren. De zorgprofessional blijft verantwoordelijk voor de klinische geschiktheid van elk programma, ook wanneer een sjabloon of bibliotheekoefening wordt gebruikt.', 'FP Exercise is a tool to share and log exercises prescribed by a healthcare professional. The professional remains responsible for the clinical appropriateness of every programme, including when using a template or library exercise.')}</p>
+      <p>{t('FP Flow is een hulpmiddel om door een zorgprofessional voorgeschreven oefeningen te delen en te registreren. De zorgprofessional blijft verantwoordelijk voor de klinische geschiktheid van elk programma, ook wanneer een sjabloon of bibliotheekoefening wordt gebruikt.', 'FP Flow is a tool to share and log exercises prescribed by a healthcare professional. The professional remains responsible for the clinical appropriateness of every programme, including when using a template or library exercise.')}</p>
       <h2>{t('3. Abonnement, proefperiode en betaling', '3. Subscription, trial and payment')}</h2><p>[…]</p>
       <h2>{t('4. Verwerking van persoonsgegevens', '4. Processing of personal data')}</h2><p>{t('Zie verwerkersovereenkomst. […]', 'See data processing agreement. […]')}</p>
       <h2>{t('5. Beschikbaarheid en ondersteuning', '5. Availability and support')}</h2><p>[…]</p>
@@ -277,7 +277,7 @@ export function CookiesPage() {
   const { t } = useI18n();
   return (
     <LegalDraft title={t('Cookieverklaring', 'Cookie notice')}>
-      <p>{t('[Concept] FP Exercise gebruikt alleen functionele cookies en lokale opslag die nodig zijn om de dienst te laten werken. Er worden geen tracking- of advertentiecookies geplaatst, en daarom tonen we geen cookiebanner.', '[Draft] FP Exercise only uses functional cookies and local storage needed to run the service. No tracking or advertising cookies are set, which is why we do not show a cookie banner.')}</p>
+      <p>{t('[Concept] FP Flow gebruikt alleen functionele cookies en lokale opslag die nodig zijn om de dienst te laten werken. Er worden geen tracking- of advertentiecookies geplaatst, en daarom tonen we geen cookiebanner.', '[Draft] FP Flow only uses functional cookies and local storage needed to run the service. No tracking or advertising cookies are set, which is why we do not show a cookie banner.')}</p>
       <h2>{t('Overzicht', 'Overview')}</h2>
       <TableScroll label={t('Overzicht cookies', 'Cookie overview')}>
         <table className="w-full text-[14px]">

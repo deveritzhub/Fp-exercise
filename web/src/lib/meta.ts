@@ -21,7 +21,7 @@ export function useLabels() {
 /** Per-page <title> and meta description (SPA SEO foundation). */
 export function useDocumentMeta(title: string, description?: string) {
   useEffect(() => {
-    document.title = title.includes('FP Exercise') ? title : `${title} · FP Exercise`;
+    document.title = title.includes('FP Flow') ? title : `${title} · FP Flow`;
     if (description) {
       let m = document.querySelector('meta[name="description"]');
       if (!m) {

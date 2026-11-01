@@ -119,7 +119,7 @@ export function LoginPage() {
   return (
     <AuthLayout
       title={t('Welkom terug', 'Welcome back')}
-      description={t('Log in bij FP Exercise.', 'Log in to FP Exercise.')}
+      description={t('Log in bij FP Flow.', 'Log in to FP Flow.')}
       footer={
         <>
           {t('Nog geen account? Je fysiotherapeut of praktijk stuurt je een uitnodiging.', 'No account yet? Your physiotherapist or practice will send you an invitation.')}

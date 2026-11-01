@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "FP Exercise — physiotherapy exercise prescription platform",
+  "description": "FP Flow — physiotherapy exercise prescription platform",
   "scripts": {
     "dev": "concurrently -n api,web -c blue,magenta \"npm:dev:api\" \"npm:dev:web\"",
     "dev:api": "tsx watch server/src/index.ts",

@@ -25,7 +25,7 @@ Eén A4'tje voor het opnemen van de instructievideo's in de praktijk.
 - [ ] Geen herkenbare andere personen, patiënten of namen (whiteboard, agenda) in beeld.
 - [ ] Bij twijfel opnieuw — de video wordt duizenden keren bekeken.
 
-## Toevoegen in FP Exercise
+## Toevoegen in FP Flow
 1. Ga naar **Oefeningen** en open de oefening.
 2. Kies bij **Video van je praktijk** het bestand (MP4, max. 200 MB) en eventueel een miniatuurfoto.
 3. Klik **Opslaan**. Je patiënten zien de video direct in hun app.

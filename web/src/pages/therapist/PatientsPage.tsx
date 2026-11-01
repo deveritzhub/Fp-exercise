@@ -186,7 +186,7 @@ export function PatientFormDialog({ open, onClose, patient }: { open: boolean; o
           </label>
         )}
         <p className="text-[12.5px] text-ink-500">
-          {t('Geen geboortedatum, BSN of diagnose invullen: FP Exercise is geen EPD.', 'Do not enter date of birth, national ID or diagnosis: FP Exercise is not an EHR.')}
+          {t('Geen geboortedatum, BSN of diagnose invullen: FP Flow is geen EPD.', 'Do not enter date of birth, national ID or diagnosis: FP Flow is not an EHR.')}
         </p>
       </form>
     </Dialog>

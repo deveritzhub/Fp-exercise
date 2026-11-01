@@ -1,6 +1,6 @@
 # Security, privacy and compliance
 
-> FP Exercise is **not** certified or assessed against NEN 7510, ISO 27001, GDPR/AVG or the EU MDR.
+> FP Flow is **not** certified or assessed against NEN 7510, ISO 27001, GDPR/AVG or the EU MDR.
 > This document records the controls implemented so far, known gaps, and what is required before
 > real patient data may be processed. Development uses synthetic data only.
 
@@ -124,16 +124,16 @@
 ## Dutch healthcare requirements — initial assessment (to be validated by specialists)
 
 **NEN 7510 (information security in healthcare).** Practices processing patient data must comply;
-as a processor FP Exercise must support this. Relevant controls already addressed: access control
+as a processor FP Flow must support this. Relevant controls already addressed: access control
 (A.5.15–5.18), logging (A.8.15), secure development (A.8.25–8.29), cryptography in transit.
 Still needed: ISMS/risk assessment, supplier management, incident response, continuity, logging review
 (NEN 7513 for access logging of patient records — our audit log is a starting point), MFA, hosting with
-NEN 7510/ISO 27001 certification. Certification of FP Exercise itself is a business decision.
+NEN 7510/ISO 27001 certification. Certification of FP Flow itself is a business decision.
 
 **GDPR/AVG.** Pain scores and exercise adherence linked to an identifiable patient are health data
-(Art. 9). Practice = controller, FP Exercise = processor → **verwerkersovereenkomst** required.
+(Art. 9). Practice = controller, FP Flow = processor → **verwerkersovereenkomst** required.
 **DPIA: required** in our assessment (large-scale processing of health data via a new technology,
-systematic monitoring of adherence) — at minimum per practice; FP Exercise should provide a template.
+systematic monitoring of adherence) — at minimum per practice; FP Flow should provide a template.
 Sub-processors (hosting, e-mail) must be EU/EEA with DPAs.
 
 **EU MDR (2017/745).** Intended purpose as built: *a tool for healthcare professionals to compose,

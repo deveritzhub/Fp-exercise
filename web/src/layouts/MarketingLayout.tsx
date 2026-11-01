@@ -80,8 +80,8 @@ export function MarketingLayout() {
         </div>
         <div className="border-t border-line">
           <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-5 text-[12.5px] text-ink-500 sm:flex-row sm:justify-between">
-            <span>© {new Date().getFullYear()} FP Exercise</span>
-            <span>{t('FP Exercise is een hulpmiddel voor zorgprofessionals en stelt geen diagnoses.', 'FP Exercise is a tool for healthcare professionals and does not make diagnoses.')}</span>
+            <span>© {new Date().getFullYear()} FP Flow</span>
+            <span>{t('FP Flow is een hulpmiddel voor zorgprofessionals en stelt geen diagnoses.', 'FP Flow is a tool for healthcare professionals and does not make diagnoses.')}</span>
           </div>
         </div>
       </footer>

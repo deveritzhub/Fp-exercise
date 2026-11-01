@@ -1,6 +1,6 @@
-# Putting FP Exercise online (permanent version)
+# Putting FP Flow online (permanent version)
 
-This puts FP Exercise permanently on the internet: always on, data and uploaded videos are kept.
+This puts FP Flow permanently on the internet: always on, data and uploaded videos are kept.
 Currently configured for Render's **free** plan (€0). The Neon database plan is free and does not expire.
 Upgrade later to always-on (~$7.25/month): see "Upgrading" below.
 It currently runs as a **demo with made-up data**.

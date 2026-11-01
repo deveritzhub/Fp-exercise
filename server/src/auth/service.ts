@@ -254,11 +254,11 @@ export async function inviteUser(opts: {
   const body =
     opts.kind === 'patient'
       ? nl
-        ? `Hallo ${opts.fullName},\n\n${opts.practiceName} heeft een oefenprogramma voor je klaargezet in FP Exercise.\nActiveer je account: ${inviteUrl}\n\nDeze link is 7 dagen geldig.`
-        : `Hello ${opts.fullName},\n\n${opts.practiceName} has prepared an exercise programme for you in FP Exercise.\nActivate your account: ${inviteUrl}\n\nThis link is valid for 7 days.`
+        ? `Hallo ${opts.fullName},\n\n${opts.practiceName} heeft een oefenprogramma voor je klaargezet in FP Flow.\nActiveer je account: ${inviteUrl}\n\nDeze link is 7 dagen geldig.`
+        : `Hello ${opts.fullName},\n\n${opts.practiceName} has prepared an exercise programme for you in FP Flow.\nActivate your account: ${inviteUrl}\n\nThis link is valid for 7 days.`
       : nl
-        ? `Hallo ${opts.fullName},\n\nJe bent uitgenodigd voor ${opts.practiceName} in FP Exercise.\nActiveer je account: ${inviteUrl}`
-        : `Hello ${opts.fullName},\n\nYou have been invited to ${opts.practiceName} in FP Exercise.\nActivate your account: ${inviteUrl}`;
+        ? `Hallo ${opts.fullName},\n\nJe bent uitgenodigd voor ${opts.practiceName} in FP Flow.\nActiveer je account: ${inviteUrl}`
+        : `Hello ${opts.fullName},\n\nYou have been invited to ${opts.practiceName} in FP Flow.\nActivate your account: ${inviteUrl}`;
   await sendMail(email, nl ? `Uitnodiging van ${opts.practiceName}` : `Invitation from ${opts.practiceName}`, body);
   return { userId, inviteUrl, existing };
 }

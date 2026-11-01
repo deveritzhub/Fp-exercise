@@ -5,7 +5,7 @@ import { Languages } from 'lucide-react';
 
 export function Logo({ className, to = '/', compact }: { className?: string; to?: string; compact?: boolean }) {
   return (
-    <Link to={to} className={cn('inline-flex items-center gap-2.5 text-ink-950', className)} aria-label={compact ? 'FP Exercise' : undefined}>
+    <Link to={to} className={cn('inline-flex items-center gap-2.5 text-ink-950', className)} aria-label={compact ? 'FP Flow' : undefined}>
       <svg viewBox="0 0 32 32" className="h-8 w-8 shrink-0 text-brand-forest" aria-hidden>
         {/* monogram after the Functional Performance brand mark */}
         <g fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -16,7 +16,7 @@ export function Logo({ className, to = '/', compact }: { className?: string; to?
       </svg>
       {!compact && (
         <span className="flex flex-col whitespace-nowrap leading-none">
-          <span className="font-display text-[16px] font-extrabold uppercase tracking-[0.12em] text-brand-forest">FP Exercise</span>
+          <span className="font-display text-[16px] font-extrabold uppercase tracking-[0.12em] text-brand-forest">FP Flow</span>
           <span className="mt-1 text-[9.5px] font-medium uppercase tracking-[0.24em] text-ink-500">Functional Performance</span>
         </span>
       )}
