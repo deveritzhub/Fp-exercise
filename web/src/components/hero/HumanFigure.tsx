@@ -142,7 +142,7 @@ function Hair({ style, colour, back }: { style: string; colour: string; back: bo
 }
 
 /** Full figure (front or back). Decorative: the meaning is given by the surrounding labels. */
-export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 200 420' }: { look: FigureLook; side?: 'front' | 'back'; className?: string; viewBox?: string }) {
+export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 200 420', portrait = false }: { look: FigureLook; side?: 'front' | 'back'; className?: string; viewBox?: string; portrait?: boolean }) {
   const uid = useId().replace(/:/g, '');
   const g = figureGeometry(look);
   const skin = SKIN_TONES[look.skin] ?? SKIN_TONES.s4;
@@ -167,7 +167,7 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
   const jaw = g.f ? 'M100,13 C120,13 122,32 120,44 C118,55 109,61 100,61 C91,61 82,55 80,44 C78,32 80,13 100,13 Z' : 'M100,12 C121,12 123,32 121,45 C119,57 110,63 100,63 C90,63 81,57 79,45 C77,32 79,12 100,12 Z';
 
   return (
-    <svg viewBox={viewBox} className={className} aria-hidden>
+    <svg viewBox={viewBox} className={className} aria-hidden shapeRendering="geometricPrecision">
       <defs>
         <linearGradient id={`sk${uid}`} x1="0" x2="1" y1="0" y2="0">
           <stop offset="0" stopColor={skinDark} />
@@ -177,9 +177,20 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
         </linearGradient>
         <linearGradient id={`kt${uid}`} x1="0" x2="1" y1="0" y2="0">
           <stop offset="0" stopColor={kit.dark} />
-          <stop offset=".35" stopColor={kit.main} />
-          <stop offset=".65" stopColor={kit.main} />
+          <stop offset=".28" stopColor={kit.main} />
+          <stop offset=".55" stopColor={shade(kit.main, 0.16)} />
+          <stop offset=".78" stopColor={kit.main} />
           <stop offset="1" stopColor={kit.dark} />
+        </linearGradient>
+        <radialGradient id={`iris${uid}`} cx="38%" cy="32%" r="68%">
+          <stop offset="0" stopColor={shade(eye, 0.42)} />
+          <stop offset=".55" stopColor={eye} />
+          <stop offset="1" stopColor={shade(eye, -0.38)} />
+        </radialGradient>
+        <linearGradient id={`face${uid}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity=".28" />
+          <stop offset=".42" stopColor="#fff" stopOpacity="0" />
+          <stop offset="1" stopColor="#000" stopOpacity=".14" />
         </linearGradient>
         <clipPath id={`top${uid}`}><rect x="0" y={front ? 80 : 74} width="200" height={front ? 118 : 124} /></clipPath>
         <clipPath id={`sleeve${uid}`}><rect x="0" y="80" width="200" height="46" /></clipPath>
@@ -225,18 +236,39 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
         </g>
       )}
       {front && g.f && <path d={`M${100 - g.chest + 8},122 q${g.chest - 8},10 ${g.chest * 2 - 16},0`} fill="none" stroke={kit.dark} strokeWidth="1" opacity=".5" />}
+      <path d="M100,92 L100,188" stroke={kit.dark} strokeWidth="1.1" opacity=".28" />
+      <path d={`M${100 - g.chest * 0.45},108 Q${100 - g.waist * 0.55},150 ${100 - g.hip * 0.35},190`} fill="none" stroke="#fff" strokeWidth="1.4" opacity=".16" />
       <g fill="#202b26" opacity=".92">
         <path d={torso} clipPath={`url(#shorts${uid})`} />
         <path d={leg(-1)} clipPath={`url(#shorts${uid})`} />
         <path d={leg(1)} clipPath={`url(#shorts${uid})`} />
       </g>
       <path d={`M${100 - g.hip + 2},197 L${100 + g.hip - 2},197`} stroke={kit.main} strokeWidth="2" />
+      {gear.has('knee_support') && [-1, 1].map((s) => {
+        const x = 100 + s * g.legX * 0.82;
+        return <rect key={s} x={x - 9 * L} y={290} width={18 * L} height={18} rx={5} fill={kit.main} stroke="#fff" strokeWidth=".8" />;
+      })}
+      {gear.has('shin_guards') && [-1, 1].map((s) => {
+        const x = 100 + s * g.legX * 0.8;
+        return <path key={s} d={`M${x - 7},322 h14 v30 q-7,5 -14,0 Z`} fill="#e4ebe7" stroke="#8ea099" strokeWidth=".9" />;
+      })}
+      {gear.has('crew_socks') && [-1, 1].map((s) => {
+        const x = 100 + s * (g.legX - 2);
+        return (
+          <g key={s}>
+            <path d={`M${x - 6.5},362 h13 v28 q-6.5,4 -13,0 Z`} fill={kit.main} />
+            <path d={`M${x - 6.5},370 h13 M${x - 6.5},378 h13`} stroke="#fff" strokeWidth="1.6" opacity=".85" />
+          </g>
+        );
+      })}
       {[-1, 1].map((s) => {
         const x = 100 + s * (g.legX - 2.1);
         return (
           <g key={s}>
-            <path d={`M${x - 7},396 C${x - 8},388 ${x - 5},383 ${x},383 C${x + 5},383 ${x + 8},388 ${x + 7},396 C${x + 7},401 ${x - 7},401 ${x - 7},396 Z`} fill={gold ? '#e2b84a' : '#f7f9f7'} stroke={gold ? '#a77d16' : '#b5c1ba'} strokeWidth="1" />
-            <path d={`M${x - 6.5},396 h13`} stroke={kit.main} strokeWidth="2" />
+            <path d={`M${x - 8.2},397 C${x - 9.2},386 ${x - 4},380 ${x + 1},380 C${x + 6.4},380 ${x + 9.4},386 ${x + 8.2},397 C${x + 9},404 ${x - 9},404 ${x - 8.2},397 Z`} fill={gold ? '#f2d56a' : '#f7faf8'} stroke={gold ? '#a77d16' : '#9aaba3'} strokeWidth="1.1" />
+            <path d={`M${x - 7.4},396.5 h15`} stroke={gold ? '#e2b84a' : kit.main} strokeWidth="2.6" strokeLinecap="round" />
+            <path d={`M${x - 5.5},388 h6`} stroke="#fff" strokeWidth="1.2" opacity=".7" strokeLinecap="round" />
+            <path d={`M${x - 8.6},402 h17.2`} stroke={gold ? '#8a6410' : '#66756e'} strokeWidth="2.4" strokeLinecap="round" />
           </g>
         );
       })}
@@ -248,39 +280,46 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
       <path d={jaw} fill={`url(#sk${uid})`} />
       {front ? (
         <g>
-          <ellipse cx="91" cy="50" rx="4" ry="2.4" fill="#e8846f" opacity={g.f ? 0.22 : 0.12} />
-          <ellipse cx="109" cy="50" rx="4" ry="2.4" fill="#e8846f" opacity={g.f ? 0.22 : 0.12} />
+          <path d={jaw} fill={`url(#face${uid})`} />
+          <ellipse cx="100" cy="26" rx="16" ry="9" fill="#fff" opacity=".16" />
+          <ellipse cx="91" cy="51" rx="5" ry="2.8" fill="#e8846f" opacity={g.f ? 0.28 : 0.14} />
+          <ellipse cx="109" cy="51" rx="5" ry="2.8" fill="#e8846f" opacity={g.f ? 0.28 : 0.14} />
           {[91.5, 108.5].map((x) => (
             <g key={x}>
-              <path d={`M${x - 4.6},39 Q${x},35.2 ${x + 4.6},39 Q${x},42 ${x - 4.6},39 Z`} fill="#fff" />
-              <circle cx={x} cy="38.8" r="2.15" fill={eye} />
-              <circle cx={x} cy="38.8" r="1.05" fill="#141c18" />
-              <circle cx={x + 0.7} cy="38.1" r=".55" fill="#fff" />
-              <path d={`M${x - 4.8},38.6 Q${x},34.6 ${x + 4.8},38.6`} fill="none" stroke="#2a221c" strokeWidth={g.f ? 1.1 : 0.7} />
+              <path d={`M${x - 6.4},${portrait ? 39.4 : 40} Q${x},${portrait ? 33.6 : 34.6} ${x + 6.4},${portrait ? 39.4 : 40} Q${x},${portrait ? 45.6 : 44.8} ${x - 6.4},${portrait ? 39.4 : 40} Z`} fill="#fff" />
+              <circle cx={x} cy={portrait ? 39.6 : 40} r={portrait ? 3.5 : 3.15} fill={`url(#iris${uid})`} />
+              <circle cx={x} cy={portrait ? 39.6 : 40} r={portrait ? 1.7 : 1.5} fill="#141c18" />
+              <circle cx={x + 1.05} cy={portrait ? 38.5 : 38.9} r=".75" fill="#fff" />
+              <path d={`M${x - 6.6},${portrait ? 38.8 : 39.4} Q${x},${portrait ? 32.8 : 33.8} ${x + 6.6},${portrait ? 38.8 : 39.4}`} fill="none" stroke="#2a221c" strokeWidth={g.f ? 1.55 : 1.2} strokeLinecap="round" />
+              <path d={`M${x - 5.4},44 Q${x},45.6 ${x + 5.4},44`} fill="none" stroke={skinDark} strokeWidth=".7" opacity=".65" />
             </g>
           ))}
-          <path d="M84.5,32.2 Q91,29.4 96.5,31.6" fill="none" stroke={hair} strokeWidth={g.f ? 1.3 : 2} strokeLinecap="round" />
-          <path d="M103.5,31.6 Q109,29.4 115.5,32.2" fill="none" stroke={hair} strokeWidth={g.f ? 1.3 : 2} strokeLinecap="round" />
-          <path d="M100,40 Q98.6,46 97.4,47.4 Q99.6,49 102.6,47.4" fill="none" stroke={skinDark} strokeWidth="1" strokeLinecap="round" />
-          <path d="M94.4,53.2 Q100,51.8 105.6,53.2 Q100,54.4 94.4,53.2 Z" fill={shade(skin, -0.3)} />
-          <path d="M94.6,53.4 Q100,57.6 105.4,53.4 Q100,55 94.6,53.4 Z" fill={shade('#c46a5e', 0)} opacity=".75" />
+          <path d="M83,33.2 Q91,29.2 97.2,32.4" fill="none" stroke={hair} strokeWidth={g.f ? 1.7 : 2.3} strokeLinecap="round" />
+          <path d="M102.8,32.4 Q109,29.2 117,33.2" fill="none" stroke={hair} strokeWidth={g.f ? 1.7 : 2.3} strokeLinecap="round" />
+          <path d="M100,41.2 Q98.2,47.6 96.4,49.6" fill="none" stroke={skinDark} strokeWidth="1.2" strokeLinecap="round" />
+          <path d="M96.6,49.8 Q99.2,51.2 103.2,49.8" fill="none" stroke={skinDark} strokeWidth="1" strokeLinecap="round" />
+          <circle cx="96.6" cy="50.2" r=".65" fill={skinDark} opacity=".6" />
+          <circle cx="103.2" cy="50.2" r=".65" fill={skinDark} opacity=".6" />
+          <path d="M92.6,54.4 Q100,52.8 107.4,54.4 Q100,56 92.6,54.4 Z" fill={shade(skin, -0.28)} />
+          <path d="M92.8,54.6 Q100,59.8 107.2,54.6 Q100,56.8 92.8,54.6 Z" fill="#c46a5e" />
+          <path d="M96.2,55.2 Q100,56.6 103.8,55.2" fill="none" stroke="#fff" strokeWidth=".7" opacity=".5" strokeLinecap="round" />
           {look.beard === 'stubble' && <path d={g.f ? '' : 'M80,46 C82,58 90,63 100,63 C110,63 118,58 120,46 C116,52 110,55 100,55 C90,55 84,52 80,46 Z'} fill={hair} opacity=".28" />}
           {look.beard === 'beard' && <path d="M79,44 C80,60 90,67 100,67 C110,67 120,60 121,44 C116,50 112,58 100,57.5 C88,58 84,50 79,44 Z M94,50.6 Q100,49 106,50.6 Q100,52 94,50.6 Z" fill={hair} fillRule="evenodd" />}
           {(look.beard === 'moustache' || look.beard === 'beard') && <path d="M93.4,51.4 Q100,47.6 106.6,51.4 Q100,50.2 93.4,51.4 Z" fill={hair} />}
           {look.glasses && look.glasses !== 'none' && (
-            <g fill="none" stroke="#202b26" strokeWidth="1.3">
+            <g fill="none" stroke="#202b26" strokeWidth="1.45">
               {look.glasses === 'round' ? (
                 <>
-                  <circle cx="91.5" cy="38.8" r="6.2" />
-                  <circle cx="108.5" cy="38.8" r="6.2" />
+                  <circle cx="91.5" cy="40" r="7.5" fill="#fff" fillOpacity=".08" />
+                  <circle cx="108.5" cy="40" r="7.5" fill="#fff" fillOpacity=".08" />
                 </>
               ) : (
                 <>
-                  <rect x="84.6" y="34" width="13.4" height="9.6" rx="2" />
-                  <rect x="102" y="34" width="13.4" height="9.6" rx="2" />
+                  <rect x="83.4" y="33.6" width="15.2" height="12.2" rx="2.2" fill="#fff" fillOpacity=".08" />
+                  <rect x="101.4" y="33.6" width="15.2" height="12.2" rx="2.2" fill="#fff" fillOpacity=".08" />
                 </>
               )}
-              <path d="M97.8,38.2 Q100,36.8 102.2,38.2 M84.6,37.6 L79.8,36.4 M115.4,37.6 L120.2,36.4" />
+              <path d="M99,39.2 Q100,37.6 101,39.2 M83.4,38.4 L78.4,36.8 M116.6,38.4 L121.6,36.8" />
             </g>
           )}
         </g>
@@ -313,6 +352,45 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
         </g>
       )}
       {gear.has('headband') && <path d="M78.6,30 Q100,22 121.4,30 L121,35.5 Q100,28 79,35.5 Z" fill={kit.main} stroke="#fff" strokeWidth=".6" />}
+      {front && look.hair !== 'none' && look.hair !== 'buzz' && (
+        <path d="M88,18 Q98,12 108,19" stroke="#fff" strokeWidth="1.6" fill="none" opacity=".28" strokeLinecap="round" />
+      )}
+      {gear.has('scarf') && (
+        <path d={`M${100 - g.neck - 10},72 Q100,96 ${100 + g.neck + 10},72 L${100 + g.neck + 2},88 Q100,102 ${100 - g.neck - 4},90 Z`} fill={kit.main} stroke="#fff" strokeWidth=".7" />
+      )}
+      {gear.has('sleeve') && <path d={limb([[g.armX(1, 98), 98, 8.4 * L], [g.armX(1, 128), 128, 7.4 * L], [g.armX(1, 156), 156, 6.4 * L]])} fill={kit.dark} />}
+      {gear.has('gloves') && [-1, 1].map((sd) => <ellipse key={sd} cx={g.armX(sd as -1 | 1, 214)} cy={214} rx={6.4 * L} ry={9.2} fill={kit.dark} stroke="#fff" strokeWidth=".7" />)}
+      {gear.has('watch') && (
+        <g>
+          <rect x={g.armX(-1, 192) - 5.5} y={184} width={11} height={12} rx={2.5} fill="#1c2622" />
+          <circle cx={g.armX(-1, 192)} cy={190} r={3.4} fill="#e7f3fb" stroke="#d7e4ee" strokeWidth=".4" />
+          <path d={`M${g.armX(-1, 192)},190 l1.2,-2.1`} stroke="#1c2622" strokeWidth=".7" />
+        </g>
+      )}
+      {front && gear.has('pin') && (
+        <g>
+          <circle cx="112" cy="108" r="5.4" fill="#e2b84a" stroke="#a77d16" strokeWidth=".9" />
+          <path d="M112,104.2 l1.1,2.3 2.5.3 -1.8,1.7.5,2.4 -2.3,-1.2 -2.3,1.2 .5,-2.4 -1.8,-1.7 2.5,-.3 z" fill="#fff" />
+        </g>
+      )}
+      {gear.has('cap') && (
+        <g>
+          <path d="M74,36 C74,12 88,2 100,2 C114,2 128,12 126,36 C116,22 84,22 74,36 Z" fill={kit.dark} />
+          <path d="M116,26 C130,30 140,36 142,40 C130,36 120,33 114,30 Z" fill={kit.main} />
+          <path d="M86,14 Q100,8 116,15" stroke="#fff" strokeWidth="1.3" fill="none" opacity=".35" strokeLinecap="round" />
+        </g>
+      )}
+      {gear.has('visor') && !gear.has('cap') && <path d="M70,30 Q100,20 130,30 L132,37 Q100,28 68,37 Z" fill={kit.main} stroke="#fff" strokeWidth=".6" />}
+      {gear.has('headphones') && (
+        <g fill="#1c2622">
+          <path d="M78,38 Q100,6 122,38" fill="none" stroke="#1c2622" strokeWidth="3.4" />
+          <rect x="70" y="32" width="12" height="18" rx="4" />
+          <rect x="118" y="32" width="12" height="18" rx="4" />
+          <rect x="72.2" y="36" width="7.6" height="10" rx="2" fill="#3d4a44" />
+          <rect x="120.2" y="36" width="7.6" height="10" rx="2" fill="#3d4a44" />
+        </g>
+      )}
+      {gear.has('crown') && <path d="M76,20 L85,3 L94,16 L100,1 L106,16 L115,3 L124,20 L118,23 L82,23 Z" fill="#f0d56e" stroke="#a77d16" strokeWidth=".9" />}
     </svg>
   );
 }
