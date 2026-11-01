@@ -705,15 +705,25 @@ export async function importLibrary(db: Db, practiceId: string, userId: string |
   return { exercises: bundle.exercises.length, created, updated, templates: bundle.templates.length };
 }
 
-/** Fills in library videos for imported exercises that are the same as one in our own library. */
+/**
+ * Points practice copies of a central exercise at that exercise's library video.
+ * Fills a missing link and replaces a previous global clip (so a rejected demo does not stay
+ * stuck after the central video is refreshed). A file the practice uploaded itself
+ * (media.practice_id set) is left in place.
+ */
 export async function linkSharedVideos(db: Db) {
   let n = 0;
   for (const [key, name] of Object.entries(SAME_AS_LIBRARY)) {
     const r = await db.query(
       `UPDATE exercises e SET video_media_id = g.video_media_id
          FROM exercises g
-        WHERE e.source_key = $1 AND e.practice_id IS NOT NULL AND e.video_media_id IS NULL
-          AND g.practice_id IS NULL AND g.name_nl = $2 AND g.video_media_id IS NOT NULL`,
+        WHERE e.source_key = $1 AND e.practice_id IS NOT NULL
+          AND g.practice_id IS NULL AND g.name_nl = $2 AND g.video_media_id IS NOT NULL
+          AND e.video_media_id IS DISTINCT FROM g.video_media_id
+          AND (
+            e.video_media_id IS NULL
+            OR EXISTS (SELECT 1 FROM media m WHERE m.id = e.video_media_id AND m.practice_id IS NULL)
+          )`,
       [key, name],
     );
     n += r.rowCount ?? 0;
