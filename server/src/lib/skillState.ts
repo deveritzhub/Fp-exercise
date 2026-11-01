@@ -84,7 +84,7 @@ function families(ids: string[], links: { a: string; b: string }[]) {
  * Skill levels from the logs that already exist. Nothing is written.
  * `weekly` is the adherence buckets the hero already computed (oldest week first).
  */
-export async function loadSkillSnapshot(tx: Tx, patientId: string, weekly: Week[]): Promise<SkillSnapshot> {
+export async function loadSkillSnapshot(tx: Tx, patientId: string, weekly: Week[], extraXp: Partial<Record<SkillKey, number>> = {}): Promise<SkillSnapshot> {
   const who = (
     await tx.query(
       `SELECT pr.kind, pt.strength_cleared_at IS NOT NULL AS cleared,
@@ -313,6 +313,7 @@ export async function loadSkillSnapshot(tx: Tx, patientId: string, weekly: Week[
     strengthCleared: !!who?.cleared,
     powerInProgram: activeSkills.includes('power'),
     sportPhase: activeSkills.includes('sport'),
+    selfTrained: (Object.keys(extraXp) as SkillKey[]).filter((k) => (extraXp[k] ?? 0) > 0),
   };
 
   const plannedSession = new Set(exercises.filter((e) => e.planned).map((e) => `${e.date}`));
@@ -348,7 +349,7 @@ export async function loadSkillSnapshot(tx: Tx, patientId: string, weekly: Week[
 
   const skills: SkillView[] = SKILLS.map((k) => {
     const lock = skillLock(k.key, ctx);
-    return { key: k.key, ...skillLevel(computed.xp[k.key]), locked: lock.locked, reason: lock.reason, phase: lock.phase };
+    return { key: k.key, ...skillLevel(computed.xp[k.key] + (extraXp[k.key] ?? 0)), locked: lock.locked, reason: lock.reason, phase: lock.phase };
   });
   const gearLevels = Object.fromEntries(skills.map((s) => [s.key, s.locked ? 0 : s.level])) as Partial<Record<SkillKey, number>>;
   const strengthEstimates: StrengthEstimate[] = computed.strength.map((s) => ({

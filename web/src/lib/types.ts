@@ -190,8 +190,37 @@ export type HeroState = {
   metrics?: { weightKg: number | null; bodyFatPct: number | null; heightCm: number | null; updatedAt: string | null };
   checkin: { today: { day: string; area: string; score: number } | null; area: string; total: number };
   trends: PainTrend[];
+  logs: PatientLogState;
 };
 export type PainTrend = { area: string; points: { day: string; score: number; source: 'map' | 'daily' }[] };
+
+/** Own workouts and today's protein, see shared/patientLogs.ts. */
+export type PatientLogState = {
+  protein: {
+    goal: number | null;
+    suggested: number;
+    grams: number;
+    hit: boolean;
+    entries: { id: string; grams: number; label: string | null; createdAt: string }[];
+  };
+  trainings: {
+    id: string;
+    day: string;
+    kind: string;
+    minutes: number;
+    pain: number | null;
+    stoppedForPain: boolean;
+    note: string | null;
+    createdAt: string;
+  }[];
+  steps: {
+    goal: number;
+    today: number;
+    hit: boolean;
+    source: 'manual' | 'google_health' | null;
+    google: { configured: boolean; connected: boolean; syncedAt: string | null };
+  };
+};
 
 /** Hero friends (opt-in): only the hero card is shared. */
 export type HeroFriend = {

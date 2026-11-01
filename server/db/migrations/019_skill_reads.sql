@@ -10,6 +10,8 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
     JOIN program_items i ON i.program_id = p.id
     JOIN exercises e ON e.id = i.exercise_id
    WHERE p.is_template AND p.series_key = p_series AND p.phase_no IS NOT NULL
+     -- Central templates, or templates of a practice the caller belongs to (as staff or as patient).
+     AND (p.practice_id IS NULL OR app.is_member(p.practice_id) OR p.practice_id IN (SELECT app.my_patient_practice_ids()))
      AND (
        app.is_professional()
        OR EXISTS (

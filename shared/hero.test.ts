@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BADGES, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillXpInput } from './hero';
+import { BADGES, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
 
 describe('sports hero rules', () => {
   it('levels grow gently and progress is between 0 and 1', () => {
@@ -426,3 +426,12 @@ function add(date: string, days: number) {
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }
+
+describe('self-trained skills', () => {
+  it('a skill trained via the logbook opens; power keeps its safety lock', () => {
+    const ctx = { active: [], laterPhase: {}, phaseNo: null, strengthCleared: false, powerInProgram: false, sportPhase: false, selfTrained: ['endurance', 'power'] } as SkillLockContext;
+    expect(skillLock('endurance', ctx).locked).toBe(false);
+    expect(skillLock('mobility', ctx)).toMatchObject({ locked: true, reason: 'unavailable' });
+    expect(skillLock('power', ctx).locked).toBe(true);
+  });
+});

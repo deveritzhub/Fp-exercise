@@ -14,6 +14,7 @@ import type { Adherence, Notification, Program } from '@/lib/types';
 import type { DayState } from '@shared/adherence';
 import { cn } from '@/lib/cn';
 import { HeroHomeCard } from '@/pages/patient/HeroPages';
+import { LogbookHomeCard } from '@/pages/patient/LogbookPage';
 import { Check, Flame } from 'lucide-react';
 
 export type PatientHomeData = {
@@ -66,6 +67,7 @@ export function PatientHome() {
       </div>
 
       <HeroHomeCard />
+      <LogbookHomeCard />
 
       {showModes && <ModeSwitch value={mode} onChange={pickMode} modules={modes.data!.modules} />}
       {showModes && mode !== 'revalidatie' && modes.data && (

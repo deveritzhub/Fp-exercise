@@ -255,6 +255,8 @@ export const REWARDS_ARE_COSMETIC = true;
 export type SkillLockCode = 'later' | 'unavailable' | 'soon';
 
 export type SkillLockContext = {
+  /** Skills with XP from the patient's own logbook (own workouts, steps). */
+  selfTrained?: SkillKey[];
   /** Skills trained by exercises in the active programme. */
   active: SkillKey[];
   /** Earliest later phase of the same series that trains the skill. */
@@ -285,7 +287,9 @@ export function skillLock(key: SkillKey, ctx: SkillLockContext): { locked: boole
     if (ctx.sportPhase) return openLock;
     return ctx.laterPhase.sport ? { locked: true, reason: 'later', phase: ctx.laterPhase.sport } : { locked: true, reason: 'unavailable', phase: null };
   }
-  if (ctx.active.includes(key)) return openLock;
+  // A skill the patient trains on their own (logbook: own workouts, steps) opens too. Power and sport
+  // keep their safety locks above: those need clearance or the right phase.
+  if (ctx.active.includes(key) || ctx.selfTrained?.includes(key)) return openLock;
   return ctx.laterPhase[key] ? { locked: true, reason: 'later', phase: ctx.laterPhase[key]! } : { locked: true, reason: 'unavailable', phase: null };
 }
 

@@ -6,6 +6,7 @@ import { rateLimit, requirePatient, requireStaff, type AppEnv } from '../middlew
 import { parse, uuidParam } from '../lib/validate';
 import { HttpError, badRequest, notFound } from '../lib/errors';
 import { loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
+import { loadPatientLogs } from '../lib/patientLogs';
 import { weeklyAdherence } from '../../../shared/adherence';
 import {
   AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
@@ -96,7 +97,9 @@ async function heroState(tx: Tx, patientId: string) {
   const daily = (await tx.query('SELECT day::text AS day, area, score FROM daily_checkins WHERE patient_id = $1 ORDER BY day', [patientId])).rows as { day: string; area: string; score: number }[];
   const painBaseline = map.baseline ? averagePain(map.baseline.entries.map((e) => e.score)) ?? 0 : null;
   const painNow = map.current ? averagePain(map.current.entries.map((e) => e.score)) ?? 0 : null;
-  const skillsSnap = await loadSkillSnapshot(tx, patientId, weekly);
+  // Own workouts, protein and steps (logbook) add skill XP on top of the programme XP.
+  const logged = await loadPatientLogs(tx, patientId);
+  const skillsSnap = await loadSkillSnapshot(tx, patientId, weekly, logged.skillXp);
   // Warning-sign XP is part of physiotherapy. Coach and personal accounts do not earn it.
   let xp = xpFor({
     sessions: s.sessions,
@@ -158,6 +161,7 @@ async function heroState(tx: Tx, patientId: string) {
   const quests = weeklyQuests({ ...weekData(thisWeek), planned: fullWeek.planned }, skillOfWeek(thisWeek, rotation));
   xp += questXp(quests);
   if (quests.every((x) => x.done)) chestWeeks++;
+  xp += logged.heroXp;
 
   // ---- Gear: unlocked by hero level, skill level and other real progress. ----
   const reached = levelFor(xp);
@@ -238,6 +242,7 @@ async function heroState(tx: Tx, patientId: string) {
     metrics,
     checkin,
     trends,
+    logs: logged.view,
   };
 }
 
