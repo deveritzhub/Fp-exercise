@@ -210,6 +210,13 @@ export type PatientLogState = {
     note: string | null;
     createdAt: string;
   }[];
+  steps: {
+    goal: number;
+    today: number;
+    hit: boolean;
+    source: 'manual' | 'google_health' | null;
+    google: { configured: boolean; connected: boolean; syncedAt: string | null };
+  };
 };
 
 /** Hero friends (opt-in): only the hero card is shared. */

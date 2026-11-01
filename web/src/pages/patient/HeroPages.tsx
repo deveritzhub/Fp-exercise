@@ -681,6 +681,7 @@ export function HeroPage() {
             <li>+{XP.painCheckin} XP · {t('je pijnkaart bijgewerkt (1× per week)', 'your body map updated (once a week)')}</li>
             <li>+{LOG_XP.selfSession} XP · {t('een eigen training gelogd (maximaal 2 per dag)', 'a workout you log yourself (at most 2 a day)')}</li>
             <li>+{LOG_XP.proteinGoal} XP · {t('eiwitdoel van de dag gehaald (niet per hap)', 'protein goal for the day hit (not per bite)')}</li>
+            <li>+{LOG_XP.stepGoal} XP · {t('stapdoel van de dag gehaald (niet per extra stap)', 'step goal for the day hit (not per extra step)')}</li>
           </ul>
           <p className="text-ink-600">{t('Elke oefening traint ook skills, zoals Kracht of Balans. Doorgaan met pijn levert nooit extra punten op, en een rustdag kost je niets.', 'Every exercise also trains skills, such as Strength or Balance. Training through pain never earns extra points, and a rest day costs you nothing.')}</p>
         </details>

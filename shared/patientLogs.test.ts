@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LOG_XP, minutesOk, proteinHitDays, rewardProteinDays, rewardSelfTrainings, suggestedProteinGrams } from './patientLogs';
+import { LOG_XP, minutesOk, proteinHitDays, rewardProteinDays, rewardSelfTrainings, rewardStepDays, stepHitDays, suggestedProteinGrams } from './patientLogs';
 
 const log = (over: Partial<Parameters<typeof rewardSelfTrainings>[0][number]> = {}) => ({
   day: '2026-11-02', kind: 'strength' as const, pain: null, stoppedForPain: false, createdAt: '2026-11-02T10:00:00.000Z', ...over,
@@ -50,5 +50,16 @@ describe('protein goal', () => {
     expect(hit.hero).toBe(LOG_XP.proteinGoal);
     expect(hit.skills.discipline).toBe(LOG_XP.proteinDiscipline);
     expect(rewardProteinDays(0).hero).toBe(0);
+  });
+});
+
+describe('step goal', () => {
+  it('pays once per day the goal is met, and not again for more steps', () => {
+    expect(stepHitDays([{ day: '2026-11-01', steps: 5999 }, { day: '2026-11-02', steps: 8000 }], 6000)).toEqual(['2026-11-02']);
+    const one = rewardStepDays(1);
+    expect(one.hero).toBe(LOG_XP.stepGoal);
+    expect(one.skills.endurance).toBe(LOG_XP.stepEndurance);
+    expect(rewardStepDays(1).hero).toBe(rewardStepDays(1).hero);
+    expect(rewardStepDays(0)).toEqual({ hero: 0, skills: {} });
   });
 });

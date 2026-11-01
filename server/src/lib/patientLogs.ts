@@ -1,6 +1,7 @@
 import type { Tx } from '../db';
 import type { SkillKey } from '../../../shared/hero';
-import { proteinHitDays, rewardProteinDays, rewardSelfTrainings, suggestedProteinGrams, type TrainingKind } from '../../../shared/patientLogs';
+import { STEPS, proteinHitDays, rewardProteinDays, rewardSelfTrainings, rewardStepDays, stepHitDays, suggestedProteinGrams, type TrainingKind } from '../../../shared/patientLogs';
+import { healthConfigured } from './googleHealth';
 
 export type TrainingView = {
   id: string;
@@ -22,6 +23,13 @@ export type PatientLogState = {
     entries: { id: string; grams: number; label: string | null; createdAt: string }[];
   };
   trainings: TrainingView[];
+  steps: {
+    goal: number;
+    today: number;
+    hit: boolean;
+    source: 'manual' | 'google_health' | null;
+    google: { configured: boolean; connected: boolean; syncedAt: string | null };
+  };
 };
 
 const iso = (v: unknown) => (v instanceof Date ? v.toISOString() : new Date(String(v)).toISOString());
@@ -64,8 +72,14 @@ export async function loadPatientLogs(tx: Tx, patientId: string) {
   );
   const hits = proteinHitDays(proteinRows.map((r) => ({ day: r.day as string, grams: Number(r.grams) })), goal);
   const protein = rewardProteinDays(hits.length);
+  const stepGoalRow = (await tx.query('SELECT steps FROM step_goals WHERE patient_id = $1', [patientId])).rows[0];
+  const stepGoal = stepGoalRow ? Number(stepGoalRow.steps) : STEPS.defaultGoal;
+  const stepRows = (await tx.query('SELECT day::text AS day, steps, source FROM step_days WHERE patient_id = $1', [patientId])).rows as { day: string; steps: number; source: 'manual' | 'google_health' }[];
+  const stepHits = stepHitDays(stepRows.map((r) => ({ day: r.day, steps: Number(r.steps) })), stepGoal);
+  const stepsReward = rewardStepDays(stepHits.length);
+  const connection = (await tx.query('SELECT synced_at FROM fitness_connections WHERE patient_id = $1 AND provider = $2', [patientId, 'google_health'])).rows[0];
   const skills: Partial<Record<SkillKey, number>> = {};
-  for (const part of [self.skills, protein.skills]) {
+  for (const part of [self.skills, protein.skills, stepsReward.skills]) {
     for (const [k, n] of Object.entries(part)) skills[k as SkillKey] = (skills[k as SkillKey] ?? 0) + (n ?? 0);
   }
   const entries = proteinRows
@@ -73,9 +87,17 @@ export async function loadPatientLogs(tx: Tx, patientId: string) {
     .map((r) => ({ id: r.id as string, grams: Number(r.grams), label: (r.label as string | null) ?? null, createdAt: iso(r.created_at) }));
   const grams = entries.reduce((a, e) => a + e.grams, 0);
   const from = shiftDay(today, -13);
+  const todaySteps = stepRows.find((r) => r.day === today);
   const view: PatientLogState = {
     protein: { goal, suggested: suggestedProteinGrams(weight === null || weight === undefined ? null : Number(weight)), grams, hit: goal !== null && grams >= goal, entries },
     trainings: trainings.filter((t) => t.day >= from),
+    steps: {
+      goal: stepGoal,
+      today: todaySteps ? Number(todaySteps.steps) : 0,
+      hit: stepHits.includes(today),
+      source: todaySteps?.source ?? null,
+      google: { configured: healthConfigured(), connected: !!connection, syncedAt: connection?.synced_at ? iso(connection.synced_at) : null },
+    },
   };
-  return { view, heroXp: self.hero + protein.hero, skillXp: skills };
+  return { view, heroXp: self.hero + protein.hero + stepsReward.hero, skillXp: skills };
 }

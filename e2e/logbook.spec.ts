@@ -10,6 +10,19 @@ test('patient logs protein and an own workout and sees the XP', async ({ browser
 
   await pp.goto('/p/logboek');
   await expect(pp.getByRole('heading', { name: 'Logboek' })).toBeVisible();
+  await expect(pp.getByText('Koppelen staat op deze server nog uit').or(pp.getByRole('link', { name: 'Koppel Google Health' }))).toBeVisible();
+  await pp.getByLabel('Dagelijks doel', { exact: true }).fill('1000');
+  await Promise.all([
+    pp.waitForResponse((r) => r.url().includes('/api/patient/logs/steps/goal') && r.ok()),
+    pp.locator('#stappen').getByRole('button', { name: 'Doel bijwerken' }).click(),
+  ]);
+  await pp.getByRole('textbox', { name: 'Stappen vandaag' }).fill('1000');
+  await Promise.all([
+    pp.waitForResponse((r) => r.url().endsWith('/api/patient/logs/steps') && r.request().method() === 'PUT' && r.ok()),
+    pp.getByRole('button', { name: 'Zelf invullen' }).click(),
+  ]);
+  await expect(pp.locator('#stappen').getByText('Doel gehaald')).toBeVisible();
+
   await pp.getByLabel('Dagelijks doel (g)').fill('40');
   await pp.getByRole('button', { name: 'Doel instellen' }).click();
   await expect(pp.getByText('nog 40 g')).toBeVisible();

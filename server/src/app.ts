@@ -24,6 +24,7 @@ import { reminders } from './routes/reminders';
 import { patientModules } from './routes/patientModules';
 import { heroPatient, heroStaff } from './routes/hero';
 import { patientLogs } from './routes/patientLogs';
+import { stepRoutes } from './routes/steps';
 import { patientCare, redFlags } from './routes/patientCare';
 
 export function createApp() {
@@ -74,6 +75,7 @@ export function createApp() {
   api.route('/patient', patientModules);
   api.route('/patient', heroPatient);
   api.route('/patient', patientLogs);
+  api.route('/patient', stepRoutes);
   api.route('/patients', heroStaff);
   api.route('/dashboard', dashboard);
   api.route('/practice', practice);

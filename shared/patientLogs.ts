@@ -16,7 +16,12 @@ export const LOG_XP = {
   selfStoppedSkill: 25, // Herstel, instead of the training skill
   proteinGoal: 15, // hero, once per day the protein goal is met
   proteinDiscipline: 20, // Discipline, once per such day
+  stepGoal: 15, // hero, once per day the step goal is met
+  stepEndurance: 20, // Conditie, once per such day
 } as const;
+
+/** Daily steps. Extra steps above the goal do not pay more, and a missed day costs nothing. */
+export const STEPS = { goalMin: 1000, goalMax: 20000, defaultGoal: 6000, maxSteps: 100_000, syncDays: 7 } as const;
 
 export const PROTEIN = { min: 40, max: 250, perEntryMin: 1, perEntryMax: 150, perKg: 1.6, fallback: 100, maxEntriesPerDay: 12 } as const;
 export const SELF_LIMITS = { fullPerDay: 2, stoppedPerDay: 1, maxLogsPerDay: 6, noteMax: 280 } as const;
@@ -111,4 +116,20 @@ export function rewardProteinDays(days: number) {
   const skills: Partial<Record<SkillKey, number>> = {};
   if (days > 0) add(skills, 'discipline', days * LOG_XP.proteinDiscipline);
   return { hero: days * LOG_XP.proteinGoal, skills };
+}
+
+export type StepEntry = { day: string; steps: number };
+
+/** Days on which the step count reaches the goal. One award per day, not per step. */
+export function stepHitDays(entries: StepEntry[], goal: number): string[] {
+  if (!goal || goal <= 0) return [];
+  const byDay = new Map<string, number>();
+  for (const e of entries) byDay.set(e.day, e.steps);
+  return [...byDay.entries()].filter(([, n]) => n >= goal).map(([d]) => d);
+}
+
+export function rewardStepDays(days: number) {
+  const skills: Partial<Record<SkillKey, number>> = {};
+  if (days > 0) add(skills, 'endurance', days * LOG_XP.stepEndurance);
+  return { hero: days * LOG_XP.stepGoal, skills };
 }

@@ -74,4 +74,43 @@ describe('self-logged workouts and protein', () => {
     expect((await other.del(`/patient/logs/trainings/${id}`)).status).toBe(404);
     expect((await patient.del(`/patient/logs/trainings/${id}`)).status).toBe(200);
   });
+
+  it('pays the step goal once, keeps the count private, and does not start Google Health when it is off', async () => {
+    const patient = await login('patientA');
+    const before = (await patient.get('/patient/hero')).body;
+    expect(before.logs.steps.goal).toBe(6000);
+    expect(before.logs.steps.hit).toBe(false);
+
+    const start = await patient.get('/patient/logs/steps/google/start');
+    expect(start.status).toBe(302);
+    const loc = start.headers.get('location') ?? '';
+    expect(loc.includes('steps=off') || loc.startsWith('https://accounts.google.com/')).toBe(true);
+
+    expect((await patient.put('/patient/logs/steps/goal', { steps: 500 })).status).toBe(400);
+    expect((await patient.put('/patient/logs/steps/goal', { steps: 1000 })).status).toBe(200);
+    expect((await patient.put('/patient/logs/steps', { steps: 400 })).status).toBe(200);
+    let st = (await patient.get('/patient/hero')).body;
+    expect(st.logs.steps).toMatchObject({ today: 400, hit: false, source: 'manual' });
+    expect(skill(st, 'endurance')).toBe(skill(before, 'endurance'));
+
+    expect((await patient.put('/patient/logs/steps', { steps: 1000 })).status).toBe(200);
+    st = (await patient.get('/patient/hero')).body;
+    expect(st.logs.steps.hit).toBe(true);
+    expect(skill(st, 'endurance')).toBe(skill(before, 'endurance') + LOG_XP.stepEndurance);
+    expect(st.level.xp).toBe(before.level.xp + LOG_XP.stepGoal);
+
+    expect((await patient.put('/patient/logs/steps', { steps: 8000 })).status).toBe(200);
+    st = (await patient.get('/patient/hero')).body;
+    expect(st.logs.steps.today).toBe(8000);
+    expect(skill(st, 'endurance')).toBe(skill(before, 'endurance') + LOG_XP.stepEndurance);
+    expect(st.level.xp).toBe(before.level.xp + LOG_XP.stepGoal);
+
+    const exp = (await patient.get('/patient/export')).body;
+    expect(exp.stepDays).toHaveLength(1);
+    expect(exp.stepDays[0].source).toBe('manual');
+    expect(JSON.stringify(exp.fitnessConnections ?? [])).not.toMatch(/access_token|refresh_token/);
+    const staff = (await (await login('therapistA')).get(`/patients/${s.patients.emma}/export`)).body;
+    expect(staff.stepDays).toBeUndefined();
+    expect((await (await login('patientB')).get('/patient/hero')).body.logs.steps.today).toBe(0);
+  });
 });

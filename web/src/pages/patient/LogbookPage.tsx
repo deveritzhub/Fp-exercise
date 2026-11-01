@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Trash2 } from 'lucide-react';
-import { LOG_XP, PROTEIN, TRAINING_KINDS, type TrainingKind } from '@shared/patientLogs';
+import { LOG_XP, PROTEIN, STEPS, TRAINING_KINDS, type TrainingKind } from '@shared/patientLogs';
 import { SKILLS as HERO_SKILLS } from '@shared/hero';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
@@ -39,6 +39,7 @@ export function LogbookPage() {
         <h1 className="t-page">{t('Logboek', 'Logbook')}</h1>
         <p className="mt-1 text-[15px] text-ink-600">{t('Een eigen training of je eiwit van vandaag. Overslaan kost niets. Een hoge pijnscore levert niet méér op, en stoppen vanwege pijn telt als herstel.', 'A workout of your own, or today’s protein. Skipping costs nothing. A high pain score does not earn more, and stopping because of pain counts as recovery.')}</p>
       </div>
+      <StepsCard d={q.data} />
       <ProteinCard d={q.data} />
       <TrainingCard d={q.data} />
     </div>
@@ -57,6 +58,7 @@ export function LogbookHomeCard() {
         <span className="font-semibold text-ink-900">{t('Logboek', 'Logbook')}</span>
         <span className="text-[13px] font-medium text-accent">{t('Bijhouden', 'Update')}</span>
       </span>
+      <span className="mt-1 block text-[13.5px] text-ink-600">{t(`Stappen ${q.data.logs.steps.today} van ${q.data.logs.steps.goal}`, `Steps ${q.data.logs.steps.today} of ${q.data.logs.steps.goal}`)}{q.data.logs.steps.hit ? t(' · gehaald', ' · hit') : ''}</span>
       {p.goal === null ? (
         <span className="mt-1 block text-[14px] text-ink-600">{t('Stel je eiwitdoel in of log een eigen training.', 'Set your protein goal or log your own workout.')}</span>
       ) : (
@@ -69,6 +71,89 @@ export function LogbookHomeCard() {
         </>
       )}
     </Link>
+  );
+}
+
+function StepsCard({ d }: { d: HeroState }) {
+  const { t, locale } = useI18n();
+  const [params] = useSearchParams();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const s = d.logs.steps;
+  const flag = params.get('steps');
+  const [goal, setGoal] = useState(String(s.goal));
+  const [count, setCount] = useState<number | null>(s.today || null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const note = flag === 'connected' ? t('Google Health is gekoppeld. Je stappen van de afgelopen week zijn opgehaald.', 'Google Health is connected. Your steps from the past week were fetched.')
+    : flag === 'denied' ? t('Je hebt de koppeling afgewezen. Stappen zelf invullen kan nog steeds.', 'You declined the connection. You can still enter steps yourself.')
+    : flag === 'not_linked' ? t('Dit Google-account is nog niet gekoppeld aan Google Health. Koppel het daar eerst (ook voor een Fitbit), en probeer het hier opnieuw.', 'This Google account is not linked to Google Health yet. Link it there first (also for a Fitbit), then try again here.')
+    : flag === 'off' ? t('Google Health is op deze server nog niet ingesteld.', 'Google Health is not set up on this server yet.')
+    : flag === 'error' ? t('Koppelen is niet gelukt. Probeer het opnieuw.', 'Connecting did not work. Please try again.')
+    : null;
+  const run = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await fn();
+      const delta = await saved(qc, d.level.xp);
+      toast(delta > 0 ? t(`Opgeslagen: +${delta} XP`, `Saved: +${delta} XP`) : t('Opgeslagen', 'Saved'));
+    } catch (e) {
+      setError(describeError(e, locale));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section id="stappen" className="scroll-mt-24 rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="steps-title">
+      <h2 id="steps-title" className="t-section">{t('Stappen', 'Steps')}</h2>
+      <p className="mt-1 text-[14px] text-ink-600">{t(`Het dagoel levert één keer +${LOG_XP.stepGoal} XP op, plus Conditie. Meer stappen geven niet méér, en een dag missen kost niets.`, `The daily goal earns +${LOG_XP.stepGoal} XP once, plus Endurance. More steps do not earn more, and missing a day costs nothing.`)}</p>
+      {note && <Notice tone={flag === 'connected' ? 'ok' : 'warn'} className="mt-3">{note}</Notice>}
+      {error && <Notice tone="bad" className="mt-3">{error}</Notice>}
+      <div className="mt-3">
+        <div className="flex justify-between text-[14px]">
+          <span className="font-semibold">{s.today.toLocaleString(locale === 'nl' ? 'nl-NL' : 'en-GB')} / {s.goal.toLocaleString(locale === 'nl' ? 'nl-NL' : 'en-GB')}</span>
+          <span className={s.hit ? 'font-semibold text-ok' : 'text-ink-600'}>{s.hit ? t('Doel gehaald', 'Goal hit') : t(`nog ${Math.max(0, s.goal - s.today).toLocaleString(locale === 'nl' ? 'nl-NL' : 'en-GB')}`, `${Math.max(0, s.goal - s.today).toLocaleString(locale === 'nl' ? 'nl-NL' : 'en-GB')} to go`)}</span>
+        </div>
+        <ProgressBar value={s.today / s.goal} className="mt-1.5 h-3" label={t('Stappen vandaag', 'Steps today')} />
+        {s.source && <p className="mt-1 text-[13px] text-ink-500">{s.source === 'google_health' ? t('Bron: Google Health', 'Source: Google Health') : t('Bron: zelf ingevuld', 'Source: entered by you')}</p>}
+      </div>
+      <div className="mt-4 rounded-xl border border-line p-3">
+        <h3 className="text-[15px] font-semibold">{t('Google Health', 'Google Health')}</h3>
+        <p className="mt-1 text-[13.5px] text-ink-600">{t('Live: stappen uit Google Health, inclusief een Fitbit of Pixel Watch die daar staat. Apple Gezondheid, Health Connect rechtstreeks, Strava en Garmin zitten hier nog niet in.', 'Live: steps from Google Health, including a Fitbit or Pixel Watch that shows up there. Apple Health, Health Connect directly, Strava and Garmin are not in here yet.')}</p>
+        {s.google.connected ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="lg" loading={busy} onClick={() => run(() => api.post('/patient/logs/steps/google/sync'))}>{t('Stappen ophalen', 'Fetch steps')}</Button>
+            <Button size="lg" variant="secondary" loading={busy} onClick={() => run(() => api.del('/patient/logs/steps/google'))}>{t('Ontkoppelen', 'Disconnect')}</Button>
+          </div>
+        ) : s.google.configured ? (
+          <a href="/api/patient/logs/steps/google/start" className="mt-3 inline-flex h-11 items-center justify-center rounded-xl bg-accent px-5 text-[15px] font-semibold text-accent-ink">{t('Koppel Google Health', 'Connect Google Health')}</a>
+        ) : (
+          <p className="mt-2 text-[14px] text-ink-700">{t('Koppelen staat op deze server nog uit. Vul je stappen hieronder zelf in.', 'Connecting is still off on this server. Enter your steps below.')}</p>
+        )}
+      </div>
+      <div className="mt-4 flex flex-wrap items-end gap-2">
+        <label className="text-[14px] font-medium text-ink-800">
+          {t('Dagelijks doel', 'Daily goal')}
+          <input inputMode="numeric" value={goal} onChange={(e) => setGoal(e.target.value.replace(/[^\d]/g, ''))} className="mt-1 h-11 w-28 rounded-lg border border-line px-3 text-[16px]" />
+        </label>
+        <Button size="lg" variant="secondary" loading={busy} onClick={() => {
+          const n = Number(goal);
+          if (!Number.isInteger(n) || n < STEPS.goalMin || n > STEPS.goalMax) {
+            setError(t(`Kies tussen ${STEPS.goalMin} en ${STEPS.goalMax} stappen.`, `Choose between ${STEPS.goalMin} and ${STEPS.goalMax} steps.`));
+            return;
+          }
+          return run(() => api.put('/patient/logs/steps/goal', { steps: n }));
+        }}>{t('Doel bijwerken', 'Update goal')}</Button>
+      </div>
+      <div className="mt-3 flex flex-wrap items-end gap-2">
+        <div className="w-44">
+          <NumberStepper large label={t('Stappen vandaag', 'Steps today')} min={0} max={STEPS.maxSteps} value={count} onChange={setCount} />
+        </div>
+        <Button size="lg" loading={busy} disabled={count === null} onClick={() => count !== null && run(() => api.put('/patient/logs/steps', { steps: count }))}>{t('Zelf invullen', 'Enter yourself')}</Button>
+      </div>
+      <p className="mt-2 text-[12.5px] text-ink-500">{t('Een gekoppelde bron overschrijft deze dag bij de volgende sync. Alleen jij ziet deze stappen.', 'A connected source overwrites this day on the next sync. Only you see these steps.')}</p>
+    </section>
   );
 }
 
