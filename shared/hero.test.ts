@@ -459,6 +459,13 @@ describe('hero photo key', () => {
     expect(heroPhotoKey({ frame: 'm', skin: 's4', build: 'athletic' }, null)).toBe('m_s3_athletic');
     expect(heroPhotoKey({ frame: 'f', skin: 's10', build: 'average' }, { kind: 'muscular' })).toBe('f_s9_muscular');
     expect(heroPhotoKey({ frame: 'f', skin: 's1', build: 'slim' }, undefined)).toBe('f_s1_lean');
+    // Hairstyle presets: h1 is the base photo; older looks map to the closest photo.
+    expect(heroPhotoKey({ frame: 'f', skin: 's3', build: 'average', hair: 'ponytail' }, null)).toBe('f_s3_average');
+    expect(heroPhotoKey({ frame: 'f', skin: 's3', build: 'average', hair: 'long' }, null)).toBe('f_s3_average_h2');
+    expect(heroPhotoKey({ frame: 'f', skin: 's3', build: 'average', hair: 'afro' }, null)).toBe('f_s3_average_h4');
+    expect(heroPhotoKey({ frame: 'm', skin: 's7', build: 'full', hair: 'short', beard: 'stubble' }, null)).toBe('m_s7_full_h2');
+    expect(heroPhotoKey({ frame: 'm', skin: 's7', build: 'full', hair: 'none' }, null)).toBe('m_s7_full_h3');
+    expect(heroPhotoKey({ frame: 'm', skin: 's7', build: 'full', hair: 'short', beard: 'beard' }, null, false)).toBe('m_s7_full');
   });
 });
 

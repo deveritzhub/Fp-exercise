@@ -13,15 +13,16 @@ export const SPORT_ICON: Record<string, LucideIcon> = {
 export function HeroAvatar({ look, size = 96, className, level, plain, photo = true }: { look: FigureLook & { sport: string }; size?: number; className?: string; level?: number; plain?: boolean; photo?: boolean }) {
   const kit = KIT[look.outfit] ?? KIT.forest;
   // Photorealistic portrait (generated art matching figure, skin and build); falls back to the drawing.
-  const [photoFailed, setPhotoFailed] = useState(false);
-  const usePhoto = photo && !photoFailed;
+  const keys = [...new Set([heroPhotoKey(look, look.body ?? null), heroPhotoKey(look, look.body ?? null, false)])];
+  const [attempt, setAttempt] = useState(0);
+  const usePhoto = photo && attempt < keys.length;
   const Icon = SPORT_ICON[look.sport] ?? Trophy;
   return (
     <span className={cn('relative inline-flex shrink-0', className)} style={{ width: size, height: size }} aria-hidden>
       <span className="absolute inset-0 overflow-hidden rounded-full shadow-[inset_0_0_0_1px_rgba(32,43,38,0.14)]" style={{ background: `radial-gradient(120% 90% at 50% 18%, #fff 0%, ${kit.soft} 58%)` }}>
         {/* Tight crop so eyes, hair and kit read sharply inside the circle. */}
         {usePhoto ? (
-          <img src={`/api/hero-assets/avatar/${heroPhotoKey(look, look.body ?? null)}`} alt="" className="h-full w-full scale-[2.4] object-cover object-[50%_0%] [transform-origin:50%_8%]" onError={() => setPhotoFailed(true)} loading="lazy" />
+          <img key={keys[attempt]} src={`/api/hero-assets/avatar/${keys[attempt]}`} alt="" className="h-full w-full scale-[2.4] object-cover object-[50%_0%] [transform-origin:50%_8%]" onError={() => setAttempt((a) => a + 1)} loading="lazy" />
         ) : (
           <HumanFigure look={look} portrait viewBox="68 -4 64 78" className="h-full w-full" />
         )}

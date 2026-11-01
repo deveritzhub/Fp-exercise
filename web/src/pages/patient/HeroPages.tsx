@@ -10,9 +10,9 @@ import { cn } from '@/lib/cn';
 import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, Spinner, useToast } from '@/components/ui';
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
-import { EYE_COLOURS, HAIR_COLOURS, KIT, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
+import { SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
-import { BADGES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, heroNickname, metricInRange, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
+import { BADGES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
 import type { HeroState } from '@/lib/types';
 import { PainTrendList } from '@/components/hero/PainTrend';
@@ -56,6 +56,33 @@ function Choice<T extends string>({ legend, name, value, options, onChange, rend
         ))}
       </div>
     </fieldset>
+  );
+}
+
+const swatch = (bg: string) => <span className="h-7 w-7 shrink-0 rounded-full border border-ink-200 shadow-xs" style={{ background: bg }} aria-hidden />;
+
+/** Five skin tones: the groups the photos exist for. */
+function SkinChoice({ look, onChange }: { look: HeroLook; onChange: (skin: string) => void }) {
+  const { t } = useI18n();
+  return (
+    <Choice legend={t('Huidskleur', 'Skin tone')} name="skin" cols="grid-cols-5" value={skinGroup(look.skin) as (typeof SKIN_GROUPS)[number]} options={SKIN_GROUPS} onChange={onChange}
+      render={(v) => <>{swatch(SKIN_TONES[v])}<span className="sr-only">{t(`Huidskleur ${SKIN_GROUPS.indexOf(v) + 1} van 5`, `Skin tone ${SKIN_GROUPS.indexOf(v) + 1} of 5`)}</span></>} />
+  );
+}
+
+/** Four hairstyles per figure, each shown on the hero's own photo. */
+function HairChoice({ look, onChange }: { look: HeroLook; onChange: (fields: { hair: string; hairColor: string; beard: string }) => void }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const fr = look.frame === 'm' ? 'm' : 'f';
+  const presets = HAIR_PRESETS[fr];
+  return (
+    <Choice legend={t('Kapsel', 'Hairstyle')} name="hairPreset" cols="grid-cols-2" value={hairPreset(look)} options={HAIR_PRESET_KEYS}
+      onChange={(k) => { const p = presets[k]; onChange({ hair: p.hair, hairColor: p.hairColor, beard: p.beard }); }}
+      render={(k) => {
+        const p = presets[k];
+        return <span className="flex flex-col items-center gap-1.5 py-1 text-[13px] leading-tight"><HeroAvatar key={`${fr}${k}${look.skin}`} look={{ ...look, hair: p.hair, hairColor: p.hairColor, beard: p.beard }} size={64} plain />{nl ? p.nl : p.en}</span>;
+      }} />
   );
 }
 
@@ -115,9 +142,8 @@ export function HeroSetupPage() {
   }, [q.data, user]);
   if (q.isError) return <ErrorState error={q.error} />;
   if (!q.data) return <Spinner />;
-  const steps = 5;
+  const steps = 4;
   const set = <K extends keyof HeroLook>(k: K, v: HeroLook[K]) => setLook((l) => ({ ...l, [k]: v }));
-  const swatch = (bg: string) => <span className="h-7 w-7 shrink-0 rounded-full border border-ink-200 shadow-xs" style={{ background: bg }} aria-hidden />;
 
   const finish = async (withPain: boolean) => {
     setBusy(true);
@@ -143,9 +169,8 @@ export function HeroSetupPage() {
   const titles: Record<number, [string, string]> = {
     1: ['Maak je sportheld', 'Create your sports hero'],
     2: ['Je lichaam', 'Your body'],
-    3: ['Gezicht en haar', 'Face and hair'],
-    4: ['Je tenue', 'Your kit'],
-    5: ['Waar heb je pijn?', 'Where does it hurt?'],
+    3: ['Je kapsel', 'Your hairstyle'],
+    4: ['Waar heb je pijn?', 'Where does it hurt?'],
   };
 
   return (
@@ -161,7 +186,7 @@ export function HeroSetupPage() {
         <h1 className="t-page">{titles[step][nl ? 0 : 1]}</h1>
         <p className="mx-auto mt-1 max-w-sm text-[15px] text-ink-600">
           {step === 1 && t('Jij bent de held van je eigen herstel. Maak een sportheld die op jou lijkt: elke training levert XP op.', 'You are the hero of your own recovery. Make a sports hero who looks like you: every workout earns XP.')}
-          {step === 5 && (kind === 'physio'
+          {step === 4 && (kind === 'physio'
             ? t('Tik op je held waar je pijn hebt en geef aan hoeveel. Zo zie je straks hoe je herstelt, en je fysiotherapeut ziet het ook.', 'Tap your hero where it hurts and say how much. Later you see how you recover, and your physiotherapist sees it too.')
             : t('Tik op je held waar je iets voelt en geef aan hoeveel. Dit is een dagboek voor jezelf: zo zie je hoe het verloopt.', 'Tap your hero where you feel something and say how much. This is a diary for yourself: you see how it goes over time.'))}
         </p>
@@ -169,7 +194,7 @@ export function HeroSetupPage() {
 
       {error && <Notice tone="bad">{error}</Notice>}
 
-      {step >= 2 && step <= 4 && (
+      {step >= 2 && step <= 3 && (
         <div className="flex justify-center rounded-2xl bg-sage/60 py-3" role="img" aria-label={t(`Voorbeeld van ${look.heroName || 'je held'}`, `Preview of ${look.heroName || 'your hero'}`)}>
           <HeroPhoto look={look} gearChips={false} className="h-[300px] w-[200px]" />
         </div>
@@ -188,35 +213,19 @@ export function HeroSetupPage() {
         <Card className="space-y-5 p-5">
           <Choice legend={t('Figuur', 'Figure')} name="frame" cols="grid-cols-2" value={look.frame as Opt<'frame'>} options={HERO_OPTIONS.frame} onChange={(v) => set('frame', v)} render={(v) => L('frame', v)} />
           <Choice legend={t('Bouw', 'Build')} name="build" cols="grid-cols-2" value={look.build as Opt<'build'>} options={HERO_OPTIONS.build} onChange={(v) => set('build', v)} render={(v) => L('build', v)} />
-          <Choice legend={t('Huidskleur', 'Skin tone')} name="skin" cols="grid-cols-5" value={look.skin as Opt<'skin'>} options={HERO_OPTIONS.skin} onChange={(v) => set('skin', v)}
-            render={(v) => <>{swatch(SKIN_TONES[v])}<span className="sr-only">{t(`Huidskleur ${v.slice(1)} van 10`, `Skin tone ${v.slice(1)} of 10`)}</span></>} />
+          <SkinChoice look={look} onChange={(skin) => set('skin', skin)} />
           {nextBack(() => setStep(3))}
         </Card>
       )}
 
       {step === 3 && (
         <Card className="space-y-5 p-5">
-          <Choice legend={t('Kapsel', 'Hairstyle')} name="hair" cols="grid-cols-4" value={look.hair as Opt<'hair'>} options={HERO_OPTIONS.hair} onChange={(v) => set('hair', v)}
-            render={(v) => <span className="flex flex-col items-center gap-1 text-[12.5px] leading-tight"><HeroAvatar look={{ ...look, hair: v }} size={44} plain photo={false} />{L('hair', v)}</span>} />
-          <Choice legend={t('Haarkleur', 'Hair colour')} name="hairColor" cols="grid-cols-2" value={look.hairColor as Opt<'hairColor'>} options={HERO_OPTIONS.hairColor} onChange={(v) => set('hairColor', v)}
-            render={(v) => <>{swatch(HAIR_COLOURS[v])}<span className="text-[13px]">{L('hairColor', v)}</span></>} />
-          <Choice legend={t('Oogkleur', 'Eye colour')} name="eyeColor" cols="grid-cols-2" value={look.eyeColor as Opt<'eyeColor'>} options={HERO_OPTIONS.eyeColor} onChange={(v) => set('eyeColor', v)}
-            render={(v) => <>{swatch(EYE_COLOURS[v])}<span className="text-[13px]">{L('eyeColor', v)}</span></>} />
-          <Choice legend={t('Baard', 'Beard')} name="beard" cols="grid-cols-2" value={look.beard as Opt<'beard'>} options={HERO_OPTIONS.beard} onChange={(v) => set('beard', v)} render={(v) => L('beard', v)} />
-          <Choice legend={t('Bril', 'Glasses')} name="glasses" cols="grid-cols-1 min-[400px]:grid-cols-3" value={look.glasses as Opt<'glasses'>} options={HERO_OPTIONS.glasses} onChange={(v) => set('glasses', v)} render={(v) => <span className="text-[13px]">{L('glasses', v)}</span>} />
+          <HairChoice look={look} onChange={(fields) => setLook((l) => ({ ...l, ...fields }))} />
           {nextBack(() => setStep(4))}
         </Card>
       )}
 
       {step === 4 && (
-        <Card className="space-y-5 p-5">
-          <Choice legend={t('Kleur van je tenue', 'Colour of your kit')} name="outfit" cols="grid-cols-2" value={look.outfit as Opt<'outfit'>} options={HERO_OPTIONS.outfit} onChange={(v) => set('outfit', v)}
-            render={(v) => <>{swatch(KIT[v].main)}<span className="text-[13px]">{L('outfit', v)}</span></>} />
-          {nextBack(() => setStep(5))}
-        </Card>
-      )}
-
-      {step === 5 && (
         <Card className="space-y-4 p-5">
           <BodyMap entries={pain} onChange={setPain} look={look} />
           <p className="text-center text-[13.5px] text-ink-600">
@@ -227,7 +236,7 @@ export function HeroSetupPage() {
           <div className="grid gap-2">
             <Button size="xl" loading={busy} disabled={!Object.keys(pain).length} onClick={() => finish(true)}>{t('Klaar: start mijn avontuur', 'Done: start my journey')}</Button>
             <Button size="lg" variant="ghost" disabled={busy} onClick={() => finish(false)}>{t('Ik heb nergens pijn', 'I have no pain anywhere')}</Button>
-            <Button size="lg" variant="ghost" disabled={busy} onClick={() => setStep(4)}>{t('Vorige', 'Back')}</Button>
+            <Button size="lg" variant="ghost" disabled={busy} onClick={() => setStep(3)}>{t('Vorige', 'Back')}</Button>
           </div>
         </Card>
       )}
@@ -343,7 +352,6 @@ export function HeroProfilePage() {
     );
   }
   const set = <K extends keyof HeroLook>(k: K, v: HeroLook[K]) => setLook({ ...look, [k]: v });
-  const swatch = (bg: string) => <span className="h-7 w-7 shrink-0 rounded-full border border-ink-200 shadow-xs" style={{ background: bg }} aria-hidden />;
   const typed = (raw: string, setter: (v: string) => void) => setter(raw.replace(/[^\d.,]/g, '').replace(',', '.').replace(/\.(?=.*\.)/g, ''));
   const save = async () => {
     const weightKg = parseMetric(weight);
@@ -401,18 +409,8 @@ export function HeroProfilePage() {
         {shape ? (
           <p className="rounded-xl bg-canvas px-3 py-2.5 text-[14px] text-ink-700">{t('Je bouw volgt nu je eigen maten (gewicht, lengte en vetpercentage). Laat ze leeg om zelf een bouw te kiezen.', 'Your build now follows your own measurements (weight, height and body fat). Leave them empty to choose a build yourself.')}</p>
         ) : <Choice legend={t('Bouw', 'Build')} name="build" cols="grid-cols-2" value={look.build as Opt<'build'>} options={HERO_OPTIONS.build} onChange={(v) => set('build', v)} render={(v) => L('build', v)} />}
-        <Choice legend={t('Huidskleur', 'Skin tone')} name="skin" cols="grid-cols-5" value={look.skin as Opt<'skin'>} options={HERO_OPTIONS.skin} onChange={(v) => set('skin', v)}
-          render={(v) => <>{swatch(SKIN_TONES[v])}<span className="sr-only">{t(`Huidskleur ${v.slice(1)} van 10`, `Skin tone ${v.slice(1)} of 10`)}</span></>} />
-        <Choice legend={t('Kapsel', 'Hairstyle')} name="hair" cols="grid-cols-4" value={look.hair as Opt<'hair'>} options={HERO_OPTIONS.hair} onChange={(v) => set('hair', v)}
-          render={(v) => <span className="flex flex-col items-center gap-1 text-[12.5px] leading-tight"><HeroAvatar look={{ ...look, hair: v }} size={44} plain photo={false} />{L('hair', v)}</span>} />
-        <Choice legend={t('Haarkleur', 'Hair colour')} name="hairColor" cols="grid-cols-2" value={look.hairColor as Opt<'hairColor'>} options={HERO_OPTIONS.hairColor} onChange={(v) => set('hairColor', v)}
-          render={(v) => <>{swatch(HAIR_COLOURS[v])}<span className="text-[13px]">{L('hairColor', v)}</span></>} />
-        <Choice legend={t('Oogkleur', 'Eye colour')} name="eyeColor" cols="grid-cols-2" value={look.eyeColor as Opt<'eyeColor'>} options={HERO_OPTIONS.eyeColor} onChange={(v) => set('eyeColor', v)}
-          render={(v) => <>{swatch(EYE_COLOURS[v])}<span className="text-[13px]">{L('eyeColor', v)}</span></>} />
-        <Choice legend={t('Baard', 'Beard')} name="beard" cols="grid-cols-2" value={look.beard as Opt<'beard'>} options={HERO_OPTIONS.beard} onChange={(v) => set('beard', v)} render={(v) => L('beard', v)} />
-        <Choice legend={t('Bril', 'Glasses')} name="glasses" cols="grid-cols-1 min-[400px]:grid-cols-3" value={look.glasses as Opt<'glasses'>} options={HERO_OPTIONS.glasses} onChange={(v) => set('glasses', v)} render={(v) => <span className="text-[13px]">{L('glasses', v)}</span>} />
-        <Choice legend={t('Kleur van je tenue', 'Colour of your kit')} name="outfit" cols="grid-cols-2" value={look.outfit as Opt<'outfit'>} options={HERO_OPTIONS.outfit} onChange={(v) => set('outfit', v)}
-          render={(v) => <>{swatch(KIT[v].main)}<span className="text-[13px]">{L('outfit', v)}</span></>} />
+        <SkinChoice look={look} onChange={(skin) => set('skin', skin)} />
+        <HairChoice look={look} onChange={(fields) => setLook({ ...look, ...fields })} />
       </Card>
       <Card className="space-y-4 p-5">
         <h2 className="t-section">{t('Lichaamsmaten', 'Body measurements')}</h2>

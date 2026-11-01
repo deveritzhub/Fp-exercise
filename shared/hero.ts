@@ -851,12 +851,54 @@ export const BODY_KIND_LABEL: Record<BodyShape['kind'], [string, string]> = {
 };
 
 /** Which generated photo (see server/db/seed-data/hero-assets.ts) fits this hero: figure, skin group, build. */
-export function heroPhotoKey(look: { frame?: string; skin: string; build?: string }, body: { kind?: BodyShape['kind'] } | null | undefined): string {
-  const n = Number(look.skin.replace(/\D/g, '')) || 4;
-  const skin = n <= 2 ? 's1' : n <= 4 ? 's3' : n <= 6 ? 's5' : n <= 8 ? 's7' : 's9';
+/**
+ * Hairstyles that exist as photos: four per figure. Each preset sets the stored look fields, so the
+ * drawn hero (and older clients) keep working. The photo set: {figure}_{skin group}_{body type}[_{h2..h4}].
+ */
+export const HAIR_PRESETS = {
+  f: {
+    h1: { hair: 'ponytail', hairColor: 'darkbrown', beard: 'none', nl: 'Paardenstaart', en: 'Ponytail' },
+    h2: { hair: 'long', hairColor: 'darkbrown', beard: 'none', nl: 'Lang los haar', en: 'Long, loose' },
+    h3: { hair: 'short', hairColor: 'blond', beard: 'none', nl: 'Blonde bob', en: 'Blond bob' },
+    h4: { hair: 'curly', hairColor: 'black', beard: 'none', nl: 'Krullen', en: 'Curls' },
+  },
+  m: {
+    h1: { hair: 'short', hairColor: 'darkbrown', beard: 'none', nl: 'Kort', en: 'Short' },
+    h2: { hair: 'short', hairColor: 'darkbrown', beard: 'beard', nl: 'Kort met baard', en: 'Short with beard' },
+    h3: { hair: 'buzz', hairColor: 'black', beard: 'none', nl: 'Kaal', en: 'Shaved' },
+    h4: { hair: 'curly', hairColor: 'brown', beard: 'none', nl: 'Krullen', en: 'Curls' },
+  },
+} as const;
+export type HairPreset = 'h1' | 'h2' | 'h3' | 'h4';
+export const HAIR_PRESET_KEYS: HairPreset[] = ['h1', 'h2', 'h3', 'h4'];
+
+/** The photo hairstyle closest to the stored look (older heroes chose from more options). */
+export function hairPreset(look: { frame?: string; hair: string; beard?: string }): HairPreset {
+  const h = look.hair;
+  if (look.frame === 'm') {
+    if (h === 'buzz' || h === 'none') return 'h3';
+    if (h === 'curly' || h === 'afro' || h === 'long' || h === 'ponytail' || h === 'bun') return 'h4';
+    return look.beard && look.beard !== 'none' ? 'h2' : 'h1';
+  }
+  if (h === 'ponytail' || h === 'bun') return 'h1';
+  if (h === 'long') return 'h2';
+  if (h === 'curly' || h === 'afro') return 'h4';
+  return 'h3';
+}
+
+/** The five skin groups the photos exist for. */
+export const SKIN_GROUPS = ['s1', 's3', 's5', 's7', 's9'] as const;
+export const skinGroup = (skin: string) => {
+  const n = Number(skin.replace(/\D/g, '')) || 4;
+  return n <= 2 ? 's1' : n <= 4 ? 's3' : n <= 6 ? 's5' : n <= 8 ? 's7' : 's9';
+};
+
+export function heroPhotoKey(look: { frame?: string; skin: string; build?: string; hair?: string; beard?: string }, body: { kind?: BodyShape['kind'] } | null | undefined, withHair = true): string {
   const fromBuild: Record<string, BodyShape['kind']> = { slim: 'lean', average: 'average', athletic: 'athletic', full: 'full' };
   const kind = body?.kind ?? fromBuild[look.build ?? 'average'] ?? 'average';
-  return `${look.frame === 'm' ? 'm' : 'f'}_${skin}_${kind}`;
+  const base = `${look.frame === 'm' ? 'm' : 'f'}_${skinGroup(look.skin)}_${kind}`;
+  const preset = withHair && look.hair ? hairPreset({ frame: look.frame, hair: look.hair, beard: look.beard }) : 'h1';
+  return preset === 'h1' ? base : `${base}_${preset}`;
 }
 
 /**

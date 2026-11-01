@@ -10,7 +10,10 @@ import { HumanFigure, type FigureLook } from './HumanFigure';
  * Decorative: callers give the surrounding element its accessible name.
  */
 export function HeroPhoto({ look, className, gearChips = true }: { look: FigureLook; className?: string; gearChips?: boolean }) {
-  const [failed, setFailed] = useState(false);
+  // Try the photo with this hairstyle, then the base photo of the same figure, then the drawing.
+  const keys = [...new Set([heroPhotoKey(look, look.body ?? null), heroPhotoKey(look, look.body ?? null, false)])];
+  const [attempt, setAttempt] = useState(0);
+  const failed = attempt >= keys.length;
   const gear = (look.gear ?? []).filter((g) => g !== 'crutches').slice(0, 3);
   const crutches = (look.gear ?? []).includes('crutches');
   return (
@@ -19,10 +22,11 @@ export function HeroPhoto({ look, className, gearChips = true }: { look: FigureL
         <HumanFigure look={look} className="h-full w-full" />
       ) : (
         <img
-          src={`/api/hero-assets/avatar/${heroPhotoKey(look, look.body ?? null)}`}
+          key={keys[attempt]}
+          src={`/api/hero-assets/avatar/${keys[attempt]}`}
           alt=""
           className="h-full w-full object-cover object-top"
-          onError={() => setFailed(true)}
+          onError={() => setAttempt((a) => a + 1)}
         />
       )}
       {!failed && gearChips && (gear.length > 0 || crutches) && (

@@ -43,24 +43,18 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await expect(pp.getByRole('heading', { name: 'Je lichaam' })).toBeVisible();
   await pp.getByRole('radio', { name: 'Vrouwelijk figuur' }).click();
   await pp.getByRole('radio', { name: 'Sportief' }).click();
-  await pp.getByRole('radio', { name: 'Huidskleur 6 van 10' }).click();
+  await pp.getByRole('radio', { name: 'Huidskleur 3 van 5' }).click();
   await expect(pp.getByRole('img', { name: 'Voorbeeld van Emma de Sprinter' })).toBeVisible();
   await expectAccessible(pp, 'hero body');
   await pp.screenshot({ path: 'screenshots/hero/body-step.png', fullPage: true });
   await pp.getByRole('button', { name: 'Volgende' }).click();
 
-  // Face and hair.
-  await expect(pp.getByRole('heading', { name: 'Gezicht en haar' })).toBeVisible();
+  // Hairstyle: four photo styles per figure.
+  await expect(pp.getByRole('heading', { name: 'Je kapsel' })).toBeVisible();
+  await expect(pp.getByText('Stap 3 van 4')).toBeVisible();
   await pp.getByRole('group', { name: 'Kapsel' }).getByRole('radio', { name: 'Krullen' }).click();
-  await pp.getByRole('group', { name: 'Haarkleur' }).getByRole('radio', { name: 'Zwart' }).click();
-  await pp.getByRole('group', { name: 'Oogkleur' }).getByRole('radio', { name: 'Groen' }).click();
-  await pp.getByRole('radio', { name: 'Ronde bril' }).click();
   await expectAccessible(pp, 'hero face');
   await pp.screenshot({ path: 'screenshots/hero/face-step.png', fullPage: true });
-  await pp.getByRole('button', { name: 'Volgende' }).click();
-
-  // Kit.
-  await pp.getByRole('radio', { name: 'Oceaan' }).click();
   await pp.getByRole('button', { name: 'Volgende' }).click();
 
   await expect(pp.getByRole('heading', { name: 'Waar heb je pijn?' })).toBeVisible();
@@ -188,7 +182,7 @@ test('no label in the hero creator is cut off on a 360 px phone', async ({ brows
   const pp = await ctx.newPage();
   await login(pp, 'patient@praktijk-b.test');
   await pp.getByRole('button', { name: 'Volgende' }).click();
-  for (let step = 2; step <= 4; step++) {
+  for (let step = 2; step <= 3; step++) {
     const cut = await pp.evaluate(() =>
       [...document.querySelectorAll('fieldset label, fieldset label span:not(.sr-only):not([aria-hidden])')]
         .filter((el) => !el.closest('[aria-hidden]') && (el.textContent ?? '').trim() && el.scrollWidth > el.clientWidth + 1)
@@ -224,7 +218,7 @@ test('tapping the hero photo opens look and body measurements', async ({ browser
   await pp.getByRole('button', { name: 'Verzin een naam' }).click();
   await expect(nameField).not.toHaveValue(first);
   await nameField.fill(original);
-  await pp.getByRole('radio', { name: 'Zand' }).click();
+  await pp.getByRole('group', { name: 'Kapsel' }).getByRole('radio', { name: 'Lang los haar' }).click();
   await pp.getByLabel('Gewicht (kg)').fill('72,5');
   await pp.getByLabel('Lichaamsvet (%)').fill('24');
   await pp.getByLabel('Lengte (cm)').fill('168');
@@ -236,7 +230,7 @@ test('tapping the hero photo opens look and body measurements', async ({ browser
   await expandFolds(pp);
   await expect(pp.getByText('Uiterlijk en maten opgeslagen')).toBeVisible();
   const hero = await (await pp.request.get('/api/patient/hero')).json();
-  expect(hero.hero.outfit).toBe('sand');
+  expect(hero.hero).toMatchObject({ hair: 'long', hairColor: 'darkbrown' });
   expect(hero.metrics).toMatchObject({ weightKg: 72.5, bodyFatPct: 24, heightCm: 168 });
   // Photo on the character sheet opens the same editor.
   await pp.getByRole('link', { name: 'Uiterlijk en maten aanpassen' }).click();
