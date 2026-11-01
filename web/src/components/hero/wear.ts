@@ -16,18 +16,13 @@ const FRAME_SPREAD = { f: 1, m: 1.1 } as const;
 
 // Measured on the lean feminine photo: head top 0.03, chin 0.15, shoulders 0.19 (x 0.35–0.65),
 // waist 0.43 (x 0.39–0.61), wrists 0.51 (x 0.35 / 0.65), knees 0.71 (x 0.42 / 0.58), feet 0.96.
+// Only items that can lie flat on (or next to) the photo. Things that wrap around the head or neck
+// (cap, visor, headband, crown, scarf, towel, headphones) or sit under the shirt (heart-rate band)
+// look pasted on, so they stay small product photos in the corner.
 export const WEAR_SLOTS: Record<string, Slot> = {
-  crown: { x: 0.5, y: 0.03, w: 0.13 },
-  cap: { x: 0.5, y: 0.045, w: 0.17 },
-  visor: { x: 0.5, y: 0.06, w: 0.18 },
-  headband: { x: 0.5, y: 0.055, w: 0.14 },
-  headphones: { x: 0.5, y: 0.185, w: 0.17, scale: true },
-  scarf: { x: 0.5, y: 0.22, w: 0.22, scale: true },
-  towel: { x: 0.5, y: 0.23, w: 0.26, scale: true },
   medal: { x: 0.5, y: 0.25, w: 0.11 },
   pin: { x: 0.565, y: 0.265, w: 0.04, spread: true },
   captain: { x: 0.345, y: 0.27, w: 0.06, spread: true },
-  hr_band: { x: 0.5, y: 0.33, w: 0.24, scale: true },
   yoga_mat: { x: 0.69, y: 0.3, w: 0.11, spread: true },
   belt: { x: 0.5, y: 0.43, w: 0.25, scale: true },
   watch: { x: 0.345, y: 0.505, w: 0.045, spread: true },
