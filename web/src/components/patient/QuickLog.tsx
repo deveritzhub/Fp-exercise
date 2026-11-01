@@ -14,7 +14,7 @@ type Tab = 'protein' | 'water' | 'weight' | 'steps' | 'sleep';
 
 /**
  * The + button: log protein, weight or steps in two taps from anywhere in the patient app.
- * Sits above the tab bar, clear of the phone's home indicator.
+ * Sits in the middle of the tab bar, raised a little above it.
  */
 export function QuickLogButton() {
   const { t } = useI18n();
@@ -36,10 +36,9 @@ export function QuickLogButton() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label={t('Snel loggen: eiwit, water, gewicht, stappen of slaap', 'Quick log: protein, water, weight, steps or sleep')}
-        className="tap fixed z-30 flex h-16 w-16 items-center justify-center rounded-full bg-accent text-accent-ink shadow-pop ring-4 ring-white transition-transform hover:scale-105 active:scale-95 motion-reduce:transition-none print:hidden"
-        style={{ right: 'max(16px, calc(env(safe-area-inset-right, 0px) + 16px))', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}
+        className="tap -mt-6 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-ink shadow-pop ring-4 ring-white transition-transform hover:scale-105 active:scale-95 motion-reduce:transition-none print:hidden"
       >
-        <Plus className="h-8 w-8" strokeWidth={2.6} aria-hidden />
+        <Plus className="h-7 w-7" strokeWidth={2.6} aria-hidden />
       </button>
       <Dialog open={open} onClose={() => setOpen(false)} sheet size="md" title={t('Snel loggen', 'Quick log')}>
         <div className="space-y-4">

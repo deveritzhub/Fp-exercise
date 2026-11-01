@@ -46,10 +46,10 @@ export function PatientLayout() {
     void import('@/pages/patient/LogbookPage');
   }, []);
   const inPlayer = loc.pathname.includes('/sessie');
-  // Messages appear above the tab bar (and the + button), not on top of the tabs.
+  // Messages appear above the tab bar (with the + button in it), not on top of the tabs.
   useEffect(() => {
     const root = document.documentElement.style;
-    root.setProperty('--toast-bottom', inPlayer ? '1rem' : 'calc(env(safe-area-inset-bottom, 0px) + 148px)');
+    root.setProperty('--toast-bottom', inPlayer ? '1rem' : 'calc(env(safe-area-inset-bottom, 0px) + 92px)');
     return () => { root.removeProperty('--toast-bottom'); };
   }, [inPlayer]);
   // Creating the hero is a focused flow: no tab bar.
@@ -76,6 +76,20 @@ export function PatientLayout() {
     { to: '/p/mobiliteit', end: false, icon: Move, label: t('Mobiliteit', 'Mobility'), dot: openIn('mobiliteit') },
     { to: '/p/held', end: false, icon: Trophy, label: t('Held', 'Hero'), dot: false },
   ];
+  const renderTab = (tab: (typeof tabs)[number]) => (
+    <NavLink key={tab.to} to={tab.to} end={tab.end} aria-label={tab.dot ? t(`${tab.label} (nog open)`, `${tab.label} (still open)`) : undefined} className={({ isActive }) => cn('tap group flex min-h-[60px] min-w-0 flex-col items-center justify-center gap-1 py-2', tabs.length === 5 ? 'text-[10.5px] tracking-[-0.01em]' : 'text-[12.5px]', isActive ? 'font-semibold text-accent' : 'font-medium text-ink-500 hover:text-ink-800')}>
+      {({ isActive }) => (
+        <>
+          {/* Active tab: filled sage pill behind the icon plus bold label, not colour alone. */}
+          <span className={cn('relative flex h-8 w-11 items-center justify-center rounded-full transition-colors', isActive ? 'bg-accent-soft' : 'group-hover:bg-ink-100')}>
+            <tab.icon className="h-[22px] w-[22px]" strokeWidth={isActive ? 2.2 : 1.8} aria-hidden />
+            {tab.dot && <span className="absolute right-1 top-0.5 h-2.5 w-2.5 rounded-full bg-[#c2410c] ring-2 ring-white" aria-hidden />}
+          </span>
+          <span className="max-w-full truncate">{tab.label}</span>
+        </>
+      )}
+    </NavLink>
+  );
   return (
     <div className="patient-app min-h-screen bg-canvas text-[16px] print:bg-white">
       {!inPlayer && (
@@ -107,24 +121,13 @@ export function PatientLayout() {
       <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : 'px-4 pb-28 pt-5')}>
         <Outlet />
       </main>
-      {!inPlayer && !inSetup && <QuickLogButton />}
       {!inPlayer && !inSetup && (
         <nav className="fixed inset-x-0 bottom-0 z-30 print:hidden border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label={t('Navigatie', 'Navigation')}>
-          <div className={cn('mx-auto grid max-w-xl', tabs.length === 5 ? 'grid-cols-5' : 'grid-cols-4')}>
-            {tabs.map((tab) => (
-              <NavLink key={tab.to} to={tab.to} end={tab.end} aria-label={tab.dot ? t(`${tab.label} (nog open)`, `${tab.label} (still open)`) : undefined} className={({ isActive }) => cn('tap group flex min-h-[60px] min-w-0 flex-col items-center justify-center gap-1 py-2', tabs.length === 5 ? 'text-[11.5px]' : 'text-[13px]', isActive ? 'font-semibold text-accent' : 'font-medium text-ink-500 hover:text-ink-800')}>
-                {({ isActive }) => (
-                  <>
-                    {/* Active tab: filled sage pill behind the icon plus bold label, not colour alone. */}
-                    <span className={cn('relative flex h-8 w-12 items-center justify-center rounded-full transition-colors', isActive ? 'bg-accent-soft' : 'group-hover:bg-ink-100')}>
-                      <tab.icon className="h-[22px] w-[22px]" strokeWidth={isActive ? 2.2 : 1.8} aria-hidden />
-                      {tab.dot && <span className="absolute right-1.5 top-0.5 h-2.5 w-2.5 rounded-full bg-[#c2410c] ring-2 ring-white" aria-hidden />}
-                    </span>
-                    <span className="max-w-full truncate px-0.5">{tab.label}</span>
-                  </>
-                )}
-              </NavLink>
-            ))}
+          {/* The + (quick log) sits exactly in the middle: two tabs on the left, the rest on the right. */}
+          <div className="mx-auto flex max-w-xl">
+            <div className="grid min-w-0 flex-1 grid-cols-2">{tabs.slice(0, 2).map(renderTab)}</div>
+            <div className="flex w-[60px] shrink-0 items-start justify-center">{!inSetup && <QuickLogButton />}</div>
+            <div className={cn('grid min-w-0 flex-1', tabs.length - 2 === 3 ? 'grid-cols-3' : 'grid-cols-2')}>{tabs.slice(2).map(renderTab)}</div>
           </div>
         </nav>
       )}
