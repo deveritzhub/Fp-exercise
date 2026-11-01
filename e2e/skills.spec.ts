@@ -59,11 +59,11 @@ test('lock reasons are visible, a level-10 item can be worn, and the sheet fits 
     SELECT ins.id, ins.practice_id, ins.patient_id, item.item_id, item.exercise_id, true, 3, 8 FROM ins CROSS JOIN item`);
 
   await page.reload();
-  const wear = page.getByRole('button', { name: 'Aandoen: Handschoenen' });
+  const wear = page.getByRole('button', { name: 'Handschoenen Aandoen' });
   await wear.scrollIntoViewIfNeeded();
   await expect(wear).toBeVisible();
   await wear.click();
-  await expect(page.getByRole('button', { name: 'Aan: Handschoenen', pressed: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Handschoenen Aan/, pressed: true })).toBeVisible();
   await expectAccessible(page, 'skills gear worn');
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
 });

@@ -733,7 +733,7 @@ export const GEAR: { key: string; nl: string; en: string; unlockNl: string; unlo
   // Starter pieces: one per skill, at level 1 (as soon as the skill opens).
   ...(Object.entries(SKILL_STARTER) as [SkillKey, { key: string; nl: string; en: string }][]).map(([k, it]) => ({
     key: it.key, nl: it.nl, en: it.en,
-    unlockNl: `${SKILLS.find((x) => x.key === k)?.nl ?? k} level 1`, unlockEn: `${SKILLS.find((x) => x.key === k)?.en ?? k} level 1`,
+    unlockNl: `zodra ${SKILLS.find((x) => x.key === k)?.nl ?? k} opengaat`, unlockEn: `when ${SKILLS.find((x) => x.key === k)?.en ?? k} opens`,
     unlocked: (g: GearInput) => open(g, k),
   })),
   // One level-10 piece per skill. Worn via the existing gear list; it never unlocks an exercise.

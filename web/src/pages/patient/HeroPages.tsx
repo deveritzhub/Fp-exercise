@@ -7,13 +7,13 @@ import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
 import { useSession } from '@/lib/session';
 import { cn } from '@/lib/cn';
-import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, Spinner, useToast } from '@/components/ui';
+import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, Segmented, Spinner, useToast } from '@/components/ui';
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
 import { SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
-import { BADGES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, GEAR, HERO_OPTIONS, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
+import { BADGES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, HERO_OPTIONS, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
 import type { HeroState } from '@/lib/types';
 import { PainTrendList } from '@/components/hero/PainTrend';
@@ -712,27 +712,19 @@ function WeeklyQuests({ d }: { d: HeroState }) {
 
 /** Gear: unlocked by progress; the patient chooses what the hero wears. */
 /** Product photo of a gear item (generated art); a lock or crown icon when there is none. */
-function GearPhoto({ gearKey, locked }: { gearKey: string; locked: boolean }) {
-  const [failed, setFailed] = useState(false);
-  return (
-    <span className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-sand-soft" aria-hidden>
-      {!failed ? (
-        <img src={`/api/hero-assets/item/${gearKey}`} alt="" loading="lazy" onError={() => setFailed(true)} className={cn('h-full w-full object-cover', locked && 'opacity-40 grayscale')} />
-      ) : locked ? <Lock className="h-5 w-5 text-ink-500" /> : <Crown className="h-5 w-5 text-sand-ink" />}
-      {locked && !failed && <Lock className="absolute h-5 w-5 text-ink-700" />}
-    </span>
-  );
-}
 
+/**
+ * Inventory: every piece of gear in a grid. Unlocked pieces in colour, tap to wear or take off;
+ * locked pieces in grey with a lock and how to unlock them; future rewards at the bottom.
+ */
 function GearCard({ d }: { d: HeroState }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const qc = useQueryClient();
   const toast = useToast();
   const [busy, setBusy] = useState<string | null>(null);
-  const toggle = async (key: string) => {
-    const on = d.gear.equipped.includes(key);
-    const next = on ? d.gear.equipped.filter((g) => g !== key) : [...d.gear.equipped, key];
+  const [filter, setFilter] = useState<'all' | 'open' | 'locked'>('all');
+  const save = async (next: string[], key: string) => {
     setBusy(key);
     try {
       await api.put('/patient/hero/gear', { equipped: next });
@@ -743,34 +735,93 @@ function GearCard({ d }: { d: HeroState }) {
       setBusy(null);
     }
   };
+  const toggle = (key: string) => save(d.gear.equipped.includes(key) ? d.gear.equipped.filter((g) => g !== key) : [...d.gear.equipped, key], key);
+  const items = [...GEAR].sort((a, b) => Number(d.gear.unlocked.includes(b.key)) - Number(d.gear.unlocked.includes(a.key)));
+  const shown = items.filter((g) => filter === 'all' || (filter === 'open') === d.gear.unlocked.includes(g.key));
+  const worn = GEAR.filter((g) => d.gear.equipped.includes(g.key));
   return (
     <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="gear-title">
       <h2 id="gear-title" className="t-section">{t(`Uitrusting (${d.gear.unlocked.length} van ${GEAR.length})`, `Gear (${d.gear.unlocked.length} of ${GEAR.length})`)}</h2>
-      <p className="mt-1 text-[13.5px] text-ink-600">{t('Vrijspelen met je level of met een skill. Wat op slot zit, kun je nog niet aandoen.', 'Unlock with your level or with a skill. Locked pieces cannot be worn yet.')}</p>
-      <ul className="mt-3 space-y-2">
-        {[...GEAR].sort((a, b) => Number(d.gear.unlocked.includes(b.key)) - Number(d.gear.unlocked.includes(a.key))).map((g) => {
+      <p className="mt-1 text-[13.5px] text-ink-600">{t('Tik op een item om het aan te doen of af te doen. Grijs met een slotje: nog niet vrijgespeeld.', 'Tap an item to wear it or take it off. Grey with a lock: not unlocked yet.')}</p>
+
+      <div className="mt-3 rounded-xl bg-canvas p-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[14px] font-semibold text-ink-900">{t(`Je held draagt nu (${worn.length})`, `Your hero is wearing (${worn.length})`)}</p>
+          {worn.length > 0 && (
+            <button type="button" onClick={() => save([], 'all')} disabled={busy !== null} className="tap min-h-[44px] px-2 text-[13.5px] font-medium text-accent">{t('Alles afdoen', 'Take all off')}</button>
+          )}
+        </div>
+        {worn.length ? (
+          <ul className="mt-1 flex flex-wrap gap-2">
+            {worn.map((g) => (
+              <li key={g.key}>
+                <button type="button" onClick={() => toggle(g.key)} aria-label={t(`Afdoen: ${g.nl}`, `Take off: ${g.en}`)} className="tap relative block h-14 w-14 overflow-hidden rounded-xl border-2 border-accent bg-white">
+                  <GearImg gearKey={g.key} />
+                  <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-accent-ink" aria-hidden>×</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-1 text-[13.5px] text-ink-600">{t('Nog niets. Kies hieronder iets uit je inventaris.', 'Nothing yet. Pick something from your inventory below.')}</p>
+        )}
+      </div>
+
+      <div className="mt-4">
+        <Segmented label={t('Toon', 'Show')} value={filter} onChange={setFilter} size="sm"
+          options={[
+            { value: 'all', label: t(`Alles (${GEAR.length})`, `All (${GEAR.length})`) },
+            { value: 'open', label: t(`Vrij (${d.gear.unlocked.length})`, `Unlocked (${d.gear.unlocked.length})`) },
+            { value: 'locked', label: t(`Op slot (${GEAR.length - d.gear.unlocked.length})`, `Locked (${GEAR.length - d.gear.unlocked.length})`) },
+          ]} />
+      </div>
+      <ul className="mt-3 grid grid-cols-3 gap-2 min-[520px]:grid-cols-4">
+        {shown.map((g) => {
           const unlocked = d.gear.unlocked.includes(g.key);
-          const worn = d.gear.equipped.includes(g.key);
+          const on = d.gear.equipped.includes(g.key);
           const name = nl ? g.nl : g.en;
-          const action = worn ? t('Aan', 'On') : t('Aandoen', 'Wear');
+          if (!unlocked) {
+            return (
+              <li key={g.key} className="flex flex-col items-center gap-1 rounded-xl border border-dashed border-line bg-canvas p-2 text-center">
+                <span className="relative block h-16 w-16 overflow-hidden rounded-lg bg-white" aria-hidden>
+                  <GearImg gearKey={g.key} className="opacity-35 grayscale" />
+                  <Lock className="absolute inset-0 m-auto h-5 w-5 text-ink-700" />
+                </span>
+                <span className="max-w-full text-[12.5px] font-semibold leading-tight text-ink-600 [hyphens:auto] [overflow-wrap:anywhere]" lang={locale}>{name}</span>
+                <span className="text-[11.5px] leading-tight text-ink-500">{t(`Nog op slot: ${g.unlockNl}`, `Locked: ${g.unlockEn}`)}</span>
+              </li>
+            );
+          }
           return (
-            <li key={g.key} className={cn('flex items-center gap-3 rounded-xl border p-3', unlocked ? 'border-line' : 'border-line bg-canvas')}>
-              <GearPhoto gearKey={g.key} locked={!unlocked} />
-              <span className="min-w-0 flex-1">
-                <span className="block text-[14.5px] font-semibold text-ink-900">{name}</span>
-                <span className="block text-[13px] text-ink-600">{unlocked ? t('Vrijgespeeld', 'Unlocked') : t(`Nog op slot: ${g.unlockNl}`, `Locked: ${g.unlockEn}`)}</span>
-              </span>
-              {unlocked && (
-                <Button size="lg" variant={worn ? 'primary' : 'secondary'} className="shrink-0 px-3" aria-pressed={worn} aria-label={`${action}: ${name}`} loading={busy === g.key} onClick={() => toggle(g.key)}>
-                  {action}
-                </Button>
-              )}
+            <li key={g.key}>
+              <button type="button" aria-pressed={on} disabled={busy !== null} onClick={() => toggle(g.key)}
+                className={cn('tap relative flex h-full w-full flex-col items-center gap-1 rounded-xl border p-2 text-center transition-colors', on ? 'border-accent bg-accent-soft' : 'border-line bg-white hover:border-ink-300')}>
+                <span className="block h-16 w-16 overflow-hidden rounded-lg bg-sand-soft" aria-hidden><GearImg gearKey={g.key} /></span>
+                <span className="max-w-full text-[12.5px] font-semibold leading-tight text-ink-900 [hyphens:auto] [overflow-wrap:anywhere]" lang={locale}>{name}</span>
+                <span className={cn('text-[11.5px] font-medium', on ? 'text-accent' : 'text-ink-600')}>{on ? t('Aan ✓', 'On ✓') : t('Aandoen', 'Wear')}</span>
+              </button>
             </li>
           );
         })}
       </ul>
+
+      <h3 className="mt-5 text-[14.5px] font-semibold text-ink-900">{t('Komt eraan', 'Coming up')}</h3>
+      <ul className="mt-2 grid grid-cols-2 gap-2 min-[520px]:grid-cols-4">
+        {FUTURE_REWARDS.map((r) => (
+          <li key={r.key} className="flex items-center gap-2 rounded-xl border border-dashed border-line bg-canvas p-2.5 text-[12.5px] text-ink-600">
+            <Lock className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
+            <span className="min-w-0"><span className="block font-semibold text-ink-700">{nl ? r.nl : r.en}</span>{t(`Skill level ${r.level}`, `Skill level ${r.level}`)}</span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
+}
+
+function GearImg({ gearKey, className }: { gearKey: string; className?: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <span className={cn('flex h-full w-full items-center justify-center', className)}><Crown className="h-5 w-5 text-sand-ink" /></span>;
+  return <img src={`/api/hero-assets/item/${gearKey}`} alt="" loading="lazy" onError={() => setFailed(true)} className={cn('h-full w-full object-cover', className)} />;
 }
 
 function LogTeaser({ d }: { d: HeroState }) {
