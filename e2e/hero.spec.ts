@@ -86,16 +86,22 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   // Each quest leads to where it is done.
   await expect(pp.getByRole('link', { name: /Doe een dagcheck of werk je pijnkaart bij/ })).toHaveAttribute('href', '/p/held/pijn');
   await expect(pp.getByRole('link', { name: /Train .* dagen|Doe 1 training/ })).toHaveAttribute('href', '/p');
-  // Gear: locked items say how to unlock them; unlocked items can be worn.
-  // The inventory has its own page, one tap from the hero.
-  await pp.getByRole('link', { name: /^Inventaris \(\d+\)$/ }).click();
+  // Gear: bought in the shop with private coins; every item shows its tier and tier score.
+  // The inventory and shop have their own page, one tap from the hero.
+  await pp.getByRole('link', { name: /^Inventaris & winkel · \d+$/ }).click();
   await expect(pp).toHaveURL(/\/p\/held\/inventaris$/);
   await expect(pp.getByRole('heading', { name: /Uitrusting \(\d+ van \d+\)/ })).toBeVisible();
-  await expect(pp.getByText(/Nog op slot: /).first()).toBeVisible();
-  const wear = pp.getByRole('button', { name: 'Aandoen' }).first();
-  if (await wear.count()) {
-    await wear.click();
-    await expect(pp.getByRole('button', { name: 'Aan', pressed: true }).first()).toBeVisible();
+  await expect(pp.getByText(/^\d+ muntjes/).first()).toBeVisible();
+  await expect(pp.getByText(/^Gearscore \d+$/).first()).toBeVisible();
+  await expect(pp.getByText(/Legendarisch · 100/).first()).toBeVisible();
+  const buy = pp.getByRole('button', { name: /^Kopen 15 muntjes: / }).first();
+  if (await buy.count()) {
+    await buy.click();
+    await expect(pp.getByText(/gekocht en aangedaan/)).toBeVisible();
+    // Clear the stacked messages so they do not cover the + button during the next checks.
+    const close = pp.getByRole('status').getByRole('button', { name: 'Sluiten / Close' });
+    while (await close.count()) await close.first().click();
+    await expect(pp.getByRole('button', { name: /Aan ✓/, pressed: true }).first()).toBeVisible();
   }
   await pp.getByRole('link', { name: 'Terug naar je held' }).click();
   await expandFolds(pp);

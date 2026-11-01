@@ -2,7 +2,7 @@ import pg from 'pg';
 import { test, expect } from '@playwright/test';
 import { login, expectAccessible, expandFolds } from './helpers';
 
-/** Skills v2: a locked skill explains itself, level-10 gear can be worn, and the sheet fits a narrow phone. */
+/** Skills v2: a locked skill explains itself, coins from training buy gear, and the sheet fits a narrow phone. */
 async function sql(q: string, p: unknown[] = []) {
   const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
   await db.connect();
@@ -16,11 +16,12 @@ async function sql(q: string, p: unknown[] = []) {
 const clearSeed = () =>
   sql(`DELETE FROM exercise_logs WHERE session_id IN (SELECT id FROM workout_sessions WHERE feedback = 'skills-v2-e2e');
        DELETE FROM workout_sessions WHERE feedback = 'skills-v2-e2e';
-       UPDATE patient_heroes SET gear = '{}', showcase = '{}' FROM patients p WHERE p.id = patient_heroes.patient_id AND p.email = 'patient@praktijk-a.test'`);
+       UPDATE patient_heroes SET gear = '{}', showcase = '{}' FROM patients p WHERE p.id = patient_heroes.patient_id AND p.email = 'patient@praktijk-a.test';
+       DELETE FROM hero_purchases WHERE patient_id IN (SELECT id FROM patients WHERE email = 'patient@praktijk-a.test')`);
 
 test.afterAll(clearSeed);
 
-test('lock reasons are visible, a level-10 item can be worn, and the sheet fits 300px', async ({ page }) => {
+test('lock reasons are visible, training buys gear in the shop, and the sheet fits 300px', async ({ page }) => {
   test.setTimeout(120_000);
   await clearSeed();
   await page.setViewportSize({ width: 300, height: 780 });
@@ -59,11 +60,13 @@ test('lock reasons are visible, a level-10 item can be worn, and the sheet fits 
     SELECT ins.id, ins.practice_id, ins.patient_id, item.item_id, item.exercise_id, true, 3, 8 FROM ins CROSS JOIN item`);
 
   await page.goto('/p/held/inventaris');
-  const wear = page.getByRole('button', { name: 'Handschoenen Aandoen' });
-  await wear.scrollIntoViewIfNeeded();
-  await expect(wear).toBeVisible();
-  await wear.click();
-  await expect(page.getByRole('button', { name: /^Handschoenen Aan/, pressed: true })).toBeVisible();
+  // The training earned coins: buy the gloves (rare, 90 coins); they go on right away.
+  const buy = page.getByRole('button', { name: 'Kopen 90 muntjes: Handschoenen' });
+  await buy.scrollIntoViewIfNeeded();
+  await expect(buy).toBeVisible();
+  await buy.click();
+  await expect(page.getByRole('button', { name: /^Handschoenen.*Aan ✓/, pressed: true })).toBeVisible();
+  await expect(page.getByText(/^Gearscore 45$/).first()).toBeVisible();
   // Character screen: the hands slot now shows the gloves; a slot opens its own picker.
   await expect(page.getByRole('button', { name: 'Handen: Handschoenen. Wijzigen' })).toBeVisible();
   await page.getByRole('button', { name: /^Hoofd/ }).first().click();

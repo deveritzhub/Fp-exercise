@@ -2,6 +2,8 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import pg from 'pg';
 import { Client, login, seedDb, type Seed } from './helpers';
 import { resetRateLimits } from '../src/lib/rateLimit';
+import { GEAR } from '../../shared/hero';
+import { appPool } from '../src/db';
 
 let s: Seed;
 beforeAll(async () => {
@@ -76,7 +78,7 @@ describe('sports hero', () => {
 });
 
 describe('weekly quests, gear, daily check-in, trends', () => {
-  it('gives quests, a daily check-in and a pain trend; gear only when unlocked', async () => {
+  it('gives quests, a daily check-in and a pain trend; gear is bought with private coins', async () => {
     const patient = await login('patientA');
     await patient.put('/patient/hero', LOOK);
     const st = (await patient.get('/patient/hero')).body;
@@ -96,20 +98,39 @@ describe('weekly quests, gear, daily check-in, trends', () => {
     const knee = after.trends.find((t: { area: string }) => t.area === 'knee_l');
     expect(knee.points.at(-1)).toMatchObject({ score: 3, source: 'daily' });
 
-    // Gear: locked items cannot be worn, including level and skill pieces.
-    const locked = after.gear.unlocked.includes('gold_shoes') ? null : 'gold_shoes';
-    if (locked) expect((await patient.put('/patient/hero/gear', { equipped: [locked] })).body.error).toBe('gear_locked');
-    for (const key of ['pin', 'crown', 'gloves', 'yoga_mat']) {
-      if (!after.gear.unlocked.includes(key)) expect((await patient.put('/patient/hero/gear', { equipped: [key] })).body.error).toBe('gear_locked');
-    }
+    // Gear: bought with coins in the shop; only owned pieces can be worn.
+    const g0 = after.gear;
+    expect(g0.coins).toBe(Math.max(0, g0.earned - g0.spent));
+    const cheap = GEAR.filter((g) => g.tier === 1 && !g0.owned.includes(g.key))[0];
+    expect((await patient.put('/patient/hero/gear', { equipped: [cheap.key] })).body.error).toBe('gear_not_owned');
     expect((await patient.put('/patient/hero/gear', { equipped: ['cape'] })).body.error).toBe('unknown_gear');
-    expect((await patient.put('/patient/hero/gear', { equipped: after.gear.unlocked })).status).toBe(200);
-    if (after.gear.unlocked.length) {
-      const worn = after.gear.unlocked[0];
-      expect((await patient.put('/patient/hero/gear', { equipped: [worn] })).status).toBe(200);
-      expect((await patient.get('/patient/hero')).body.gear.equipped).toEqual([worn]);
-      expect((await patient.put('/patient/hero/gear', { equipped: [] })).status).toBe(200);
-      expect((await patient.get('/patient/hero')).body.gear.equipped).toEqual([]);
+    expect((await patient.post('/patient/hero/shop', { item: 'cape' })).body.error).toBe('unknown_gear');
+    const bought = await patient.post('/patient/hero/shop', { item: cheap.key });
+    expect(bought.status).toBe(201);
+    expect(bought.body.owned).toContain(cheap.key);
+    expect(bought.body.equipped).toContain(cheap.key);
+    expect(bought.body.coins).toBe(g0.coins - cheap.price);
+    expect(bought.body.score).toBeGreaterThanOrEqual(cheap.score);
+    expect((await patient.post('/patient/hero/shop', { item: cheap.key })).body.error).toBe('gear_owned');
+    const tooDear = GEAR.filter((g) => !bought.body.owned.includes(g.key) && g.price > bought.body.coins)[0];
+    if (tooDear) expect((await patient.post('/patient/hero/shop', { item: tooDear.key })).body.error).toBe('not_enough_coins');
+    expect((await patient.put('/patient/hero/gear', { equipped: [] })).status).toBe(200);
+    expect((await patient.get('/patient/hero')).body.gear).toMatchObject({ equipped: [], score: 0 });
+    expect((await patient.put('/patient/hero/gear', { equipped: [cheap.key] })).status).toBe(200);
+    expect((await patient.get('/patient/hero')).body.gear.equipped).toEqual([cheap.key]);
+
+    // Coins are private: not in the professional's hero view, and the database refuses staff reads.
+    const therView = (await (await login('therapistA')).get(`/patients/${s.patients.emma}/hero`)).body;
+    expect(JSON.stringify(therView)).not.toMatch(/coins|hero_purchases|"spent"/);
+    const c = await appPool.connect();
+    try {
+      await c.query('BEGIN');
+      await c.query("SELECT set_config('app.user_id', $1, true)", [s.users.therapistA]);
+      expect((await c.query('SELECT * FROM hero_purchases')).rowCount).toBe(0);
+      await expect(c.query('INSERT INTO hero_purchases (patient_id, item, price) VALUES ($1, $2, 0)', [s.patients.emma, 'crown'])).rejects.toThrow(/row-level security/);
+    } finally {
+      await c.query('ROLLBACK');
+      c.release();
     }
 
     // Body measurements: the patient saves them; another patient and the practice do not see them.
@@ -178,6 +199,7 @@ describe('red-flag skill XP follows the account kind', () => {
 
 describe('trophy shelf', () => {
   it('only earned trophies can go on the shelf, at most three', async () => {
+    resetRateLimits();
     const p = await login('patientA');
     const st = (await p.get('/patient/hero')).body;
     expect(st.trophies.length).toBeGreaterThan(0);

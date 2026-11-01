@@ -684,18 +684,10 @@ export function weeklyQuests(w: WeekData, skill: SkillKey): Quest[] {
 export const questXp = (quests: Quest[]) => quests.filter((q) => q.done).length * QUEST_XP + (quests.every((q) => q.done) ? CHEST_XP : 0);
 
 // ----------------------------------------------------------------------------------------------
-// Gear: items for the hero, unlocked by real progress; the patient chooses what to wear.
+// Gear: items for the hero, bought in the shop with coins earned by training; the patient chooses what to wear.
 // ----------------------------------------------------------------------------------------------
 
-/** Hero level counts as 1 when a caller does not pass one (level gear stays locked). */
-export type GearInput = { skills: Partial<Record<SkillKey, number>>; sessions: number; phasesCompleted: number; chestWeeks: number; level?: number };
-
-const lvl = (g: GearInput) => g.level ?? 1;
-const skill = (g: GearInput, key: SkillKey) => g.skills[key] ?? 1;
-/** A skill is open (level 1 or more, not locked). Locked skills are 0 in the gear levels. */
-const open = (g: GearInput, key: SkillKey) => (g.skills[key] ?? 0) >= 1;
-
-/** Starter piece per skill: yours as soon as the skill opens (level 1), so every skill has something to wear right away. */
+/** Starter piece per skill (tier 1, cheap), so every skill has something affordable right away. */
 export const SKILL_STARTER: Partial<Record<SkillKey, { key: string; nl: string; en: string }>> = {
   strength: { key: 'wristbands', nl: 'Polsbandjes', en: 'Wristbands' },
   mobility: { key: 'headband', nl: 'Hoofdband', en: 'Headband' },
@@ -708,7 +700,7 @@ export const SKILL_STARTER: Partial<Record<SkillKey, { key: string; nl: string; 
   recovery: { key: 'scarf', nl: 'Warme sjaal', en: 'Warm scarf' },
 };
 
-/** Level 10 wearable for each trainable skill. Knowledge has none. The captain band is the discipline item. */
+/** The rare piece that belongs to each trainable skill. Knowledge has none. */
 export const SKILL_GEAR: Partial<Record<SkillKey, string>> = {
   strength: 'gloves',
   mobility: 'yoga_mat',
@@ -725,30 +717,51 @@ export const SKILL_EMBLEM_LEVEL = 5;
 export const SKILL_GEAR_LEVEL = 10;
 export const SKILL_TITLE_LEVEL = 20;
 
-export const GEAR: { key: string; nl: string; en: string; unlockNl: string; unlockEn: string; unlocked: (g: GearInput) => boolean }[] = [
-  // Hero level — unchanged closet pieces
-  { key: 'pin', nl: 'Borstspeld', en: 'Chest pin', unlockNl: 'Level 2', unlockEn: 'Level 2', unlocked: (g) => lvl(g) >= 2 },
-  { key: 'visor', nl: 'Klep', en: 'Visor', unlockNl: 'Level 4', unlockEn: 'Level 4', unlocked: (g) => lvl(g) >= 4 },
-  { key: 'crown', nl: 'Kroon', en: 'Crown', unlockNl: 'Level 12', unlockEn: 'Level 12', unlocked: (g) => lvl(g) >= 12 },
-  // Starter pieces: one per skill, at level 1 (as soon as the skill opens).
-  ...(Object.entries(SKILL_STARTER) as [SkillKey, { key: string; nl: string; en: string }][]).map(([k, it]) => ({
-    key: it.key, nl: it.nl, en: it.en,
-    unlockNl: `zodra ${SKILLS.find((x) => x.key === k)?.nl ?? k} opengaat`, unlockEn: `when ${SKILLS.find((x) => x.key === k)?.en ?? k} opens`,
-    unlocked: (g: GearInput) => open(g, k),
-  })),
-  // One level-10 piece per skill. Worn via the existing gear list; it never unlocks an exercise.
-  { key: 'gloves', nl: 'Handschoenen', en: 'Gloves', unlockNl: 'Kracht level 10', unlockEn: 'Strength level 10', unlocked: (g) => skill(g, 'strength') >= SKILL_GEAR_LEVEL },
-  { key: 'yoga_mat', nl: 'Yogamat op de rug', en: 'Yoga mat on the back', unlockNl: 'Mobiliteit level 10', unlockEn: 'Mobility level 10', unlocked: (g) => skill(g, 'mobility') >= SKILL_GEAR_LEVEL },
-  { key: 'balance_shoes', nl: 'Balansschoenen', en: 'Balance shoes', unlockNl: 'Balans level 10', unlockEn: 'Balance level 10', unlocked: (g) => skill(g, 'balance') >= SKILL_GEAR_LEVEL },
-  { key: 'belt', nl: 'Trainingsriem', en: 'Training belt', unlockNl: 'Stabiliteit level 10', unlockEn: 'Stability level 10', unlocked: (g) => skill(g, 'stability') >= SKILL_GEAR_LEVEL },
-  { key: 'spikes', nl: 'Spikes', en: 'Spikes', unlockNl: 'Explosief level 10', unlockEn: 'Power level 10', unlocked: (g) => skill(g, 'power') >= SKILL_GEAR_LEVEL },
-  { key: 'hr_band', nl: 'Hartslagband', en: 'Heart-rate band', unlockNl: 'Conditie level 10', unlockEn: 'Endurance level 10', unlocked: (g) => skill(g, 'endurance') >= SKILL_GEAR_LEVEL },
-  { key: 'sport_item', nl: 'Sportitem', en: 'Sport item', unlockNl: 'Techniek level 10', unlockEn: 'Technique level 10', unlocked: (g) => skill(g, 'sport') >= SKILL_GEAR_LEVEL },
-  { key: 'captain', nl: 'Aanvoerdersband', en: 'Captain’s armband', unlockNl: 'Discipline level 10', unlockEn: 'Discipline level 10', unlocked: (g) => skill(g, 'discipline') >= SKILL_GEAR_LEVEL },
-  { key: 'towel', nl: 'Handdoek om de nek', en: 'Towel around the neck', unlockNl: 'Herstel level 10', unlockEn: 'Recovery level 10', unlocked: (g) => skill(g, 'recovery') >= SKILL_GEAR_LEVEL },
-  { key: 'medal', nl: 'Medaille', en: 'Medal', unlockNl: 'Een fase van je revalidatie voltooid', unlockEn: 'A phase of your rehabilitation completed', unlocked: (g) => g.phasesCompleted >= 1 },
-  { key: 'gold_shoes', nl: 'Gouden schoenen', en: 'Golden shoes', unlockNl: '25 trainingen', unlockEn: '25 workouts', unlocked: (g) => g.sessions >= 25 },
-];
+/** Shop tiers: price in coins. Every item also has its own tier score (like an item level). Colours pass 4.5:1 as text on light backgrounds. */
+export const GEAR_TIERS = [
+  { tier: 1, key: 'common', nl: 'Gewoon', en: 'Common', price: 15, color: '#5c6159' },
+  { tier: 2, key: 'uncommon', nl: 'Goed', en: 'Uncommon', price: 40, color: '#2b6b41' },
+  { tier: 3, key: 'rare', nl: 'Zeldzaam', en: 'Rare', price: 90, color: '#2759a0' },
+  { tier: 4, key: 'epic', nl: 'Episch', en: 'Epic', price: 180, color: '#6f35ab' },
+  { tier: 5, key: 'legendary', nl: 'Legendarisch', en: 'Legendary', price: 350, color: '#855806' },
+] as const;
+export type GearTier = (typeof GEAR_TIERS)[number];
+
+/** Coins: 1 per 10 hero XP, plus a welcome purse so a first item can be bought right away. */
+export const COIN_XP = 10;
+export const WELCOME_COINS = 20;
+export const coinsEarned = (heroXp: number) => WELCOME_COINS + Math.floor(Math.max(0, heroXp) / COIN_XP);
+
+type GearDef = { key: string; nl: string; en: string; tier: 1 | 2 | 3 | 4 | 5; score: number };
+const starter = (key: string, score: number): GearDef => {
+  const it = Object.values(SKILL_STARTER).find((x) => x!.key === key)!;
+  return { key, nl: it.nl, en: it.en, tier: 1, score };
+};
+
+export const GEAR: (GearDef & { price: number })[] = ([
+  // Tier 1: one per skill, plus the chest pin.
+  starter('wristbands', 10), starter('headband', 10), starter('crew_socks', 10), starter('sleeve', 12), starter('cap', 10),
+  starter('watch', 12), starter('shin_guards', 12), starter('headphones', 10), starter('scarf', 10),
+  { key: 'pin', nl: 'Borstspeld', en: 'Chest pin', tier: 1, score: 8 },
+  // Tier 2
+  { key: 'visor', nl: 'Klep', en: 'Visor', tier: 2, score: 22 },
+  { key: 'towel', nl: 'Handdoek om de nek', en: 'Towel around the neck', tier: 2, score: 24 },
+  { key: 'captain', nl: 'Aanvoerdersband', en: 'Captain’s armband', tier: 2, score: 26 },
+  { key: 'belt', nl: 'Trainingsriem', en: 'Training belt', tier: 2, score: 28 },
+  // Tier 3
+  { key: 'yoga_mat', nl: 'Yogamat op de rug', en: 'Yoga mat on the back', tier: 3, score: 42 },
+  { key: 'sport_item', nl: 'Sportitem', en: 'Sport item', tier: 3, score: 44 },
+  { key: 'gloves', nl: 'Handschoenen', en: 'Gloves', tier: 3, score: 45 },
+  { key: 'hr_band', nl: 'Hartslagband', en: 'Heart-rate band', tier: 3, score: 46 },
+  { key: 'balance_shoes', nl: 'Balansschoenen', en: 'Balance shoes', tier: 3, score: 48 },
+  { key: 'spikes', nl: 'Spikes', en: 'Spikes', tier: 3, score: 50 },
+  // Tier 4
+  { key: 'medal', nl: 'Medaille', en: 'Medal', tier: 4, score: 70 },
+  { key: 'gold_shoes', nl: 'Gouden schoenen', en: 'Golden shoes', tier: 4, score: 80 },
+  // Tier 5
+  { key: 'crown', nl: 'Kroon', en: 'Crown', tier: 5, score: 100 },
+] as GearDef[]).map((g) => ({ ...g, price: GEAR_TIERS[g.tier - 1].price }));
+export const gearTier = (key: string) => GEAR_TIERS[(GEAR.find((g) => g.key === key)?.tier ?? 1) - 1];
 export const GEAR_KEYS = new Set(GEAR.map((g) => g.key));
 
 /**
@@ -801,6 +814,11 @@ export function onePerSlot(equipped: string[]): string[] {
   const by = new Map<string, string>();
   for (const g of equipped) by.set(GEAR_SLOT[g] ?? g, g);
   return equipped.filter((g) => by.get(GEAR_SLOT[g] ?? g) === g).filter((g, i, a) => a.indexOf(g) === i);
+}
+
+/** Gear score: the tier scores of what the hero wears, one piece per slot. */
+export function gearScore(equipped: string[]): number {
+  return onePerSlot(equipped).reduce((sum, k) => sum + (GEAR.find((g) => g.key === k)?.score ?? 0), 0);
 }
 
 /** Level-20 name for a skill. Knowledge has none. */

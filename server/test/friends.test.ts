@@ -69,7 +69,7 @@ describe('hero friends (opt-in)', () => {
     await noah.get('/patient/hero'); // refreshes Noah's own card
     const friend = (await emma.get('/patient/hero/friends')).body.friends[0];
     expect(friend.kind).toBe('friend');
-    expect(Object.keys(friend.stats).sort()).toEqual(['level', 'skills', 'totalLevel']);
+    expect(Object.keys(friend.stats).sort()).toEqual(['gearScore', 'level', 'skills', 'totalLevel']);
     expect(Object.keys(friend.stats.skills)).toHaveLength(10);
     expect(Object.values(friend.stats.skills as Record<string, { locked: boolean }>).some((s) => s.locked)).toBe(true);
     expect(friend.stats.skills.knowledge).toMatchObject({ locked: true, reason: 'soon', level: null });

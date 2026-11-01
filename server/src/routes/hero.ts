@@ -10,7 +10,7 @@ import { loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
 import { loadPatientLogs } from '../lib/patientLogs';
 import { weeklyAdherence } from '../../../shared/adherence';
 import {
-  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, skillTrophies, SHOWCASE_MAX, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
+  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, coinsEarned, gearScore, skillTrophies, SHOWCASE_MAX, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
   questXp, skillOfWeek, skillsForExercise, weeklyQuests, xpFor, type SkillKey, type WeekData,
 } from '../../../shared/hero';
 import { loadSkillSnapshot } from '../lib/skillState';
@@ -187,11 +187,13 @@ async function heroState(tx: Tx, patientId: string) {
   }
   const questLinks = { train: '/p', checkin: '/p/held/pijn', skill: skillLink };
 
-  // ---- Gear: unlocked by hero level, skill level and other real progress. ----
+  // ---- Gear: bought in the shop with coins (1 per 10 hero XP); private to the patient. ----
   const reached = levelFor(xp);
-  const gearInput = { skills: skillsSnap.gearLevels, sessions: s.sessions, phasesCompleted: s.phases_done, chestWeeks, level: reached.level };
-  const unlocked = GEAR.filter((g) => g.unlocked(gearInput)).map((g) => g.key);
-  const equipped = ((await tx.query('SELECT gear FROM patient_heroes WHERE patient_id = $1', [patientId])).rows[0]?.gear ?? []).filter((g: string) => unlocked.includes(g));
+  const bought = (await tx.query('SELECT item, price FROM hero_purchases WHERE patient_id = $1 ORDER BY bought_at', [patientId])).rows as { item: string; price: number }[];
+  const owned = bought.map((r) => r.item).filter((k) => GEAR_KEYS.has(k));
+  const earned = coinsEarned(xp);
+  const spent = bought.reduce((sum, r) => sum + r.price, 0);
+  const equipped = onePerSlot(((heroRow?.gear ?? []) as string[]).filter((g) => owned.includes(g)));
 
   // ---- Daily check-in and the pain trend per area. ----
   const today = (await tx.query("SELECT to_char(now(), 'YYYY-MM-DD') AS d")).rows[0].d as string;
@@ -262,7 +264,8 @@ async function heroState(tx: Tx, patientId: string) {
     totals: { sessions: s.sessions, fullWeeks, phasesCompleted: s.phases_done, since, painStart: painBaseline, painNow: map.checkins > 1 ? painNow : null },
     quest,
     weekly: { weekStart: thisWeek, quests, chestWeeks, xpPerQuest: QUEST_XP, chestXp: CHEST_XP, links: questLinks },
-    gear: { unlocked, equipped },
+    // Coins stay with the patient: never on the friend card or the professional's view.
+    gear: { owned, equipped, coins: Math.max(0, earned - spent), earned, spent, score: gearScore(equipped) },
     // Trophy cabinet: per skill at level 10/25/50/75/99; up to three on the shelf behind the hero.
     trophies: skillTrophies(skills),
     showcase: ((heroRow?.showcase ?? []) as string[]).filter((k) => skillTrophies(skills).some((t) => t.key === k && t.earned)),
@@ -318,10 +321,11 @@ heroPatient.get('/hero', async (c) => {
 // ---------------------------------------------------------------------------------------------
 
 type HeroStateT = Awaited<ReturnType<typeof heroState>>;
-/** The only numbers a friend ever sees: levels, or a lock. No kilograms, pain or programme text. */
+/** The only numbers a friend ever sees: levels, gear score, or a lock. No kilograms, pain, programme text or coins. */
 export const friendCard = (s: HeroStateT) => ({
   level: s.level.level,
   totalLevel: s.totalLevel,
+  gearScore: s.gear.score,
   skills: Object.fromEntries(s.skills.map((k) => [k.key, friendSkillCard(k)])) as Record<SkillKey, ReturnType<typeof friendSkillCard>>,
 });
 
@@ -482,7 +486,27 @@ heroPatient.put('/hero/metrics', async (c) => {
   return c.json({ ok: true });
 });
 
-/** Choose which unlocked gear the hero wears. */
+/** Buy a piece of gear with coins; it is worn right away (replacing what was in that slot). */
+heroPatient.post('/hero/shop', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ item: z.string().max(32) }), await c.req.json());
+  const item = GEAR.find((g) => g.key === b.item);
+  if (!item) throw badRequest('unknown_gear');
+  const gear = await withUser(user.id, async (tx) => {
+    // One purchase at a time per patient, so two taps cannot spend the same coins twice.
+    const row = (await tx.query('SELECT gear FROM patient_heroes WHERE patient_id = $1 FOR UPDATE', [patient.id])).rows[0];
+    if (!row) throw badRequest('hero_required');
+    const state = await heroState(tx, patient.id);
+    if (state.gear.owned.includes(item.key)) throw badRequest('gear_owned');
+    if (state.gear.coins < item.price) throw badRequest('not_enough_coins');
+    await tx.query('INSERT INTO hero_purchases (patient_id, item, price) VALUES ($1, $2, $3)', [patient.id, item.key, item.price]);
+    await tx.query('UPDATE patient_heroes SET gear = $2, updated_at = now() WHERE patient_id = $1', [patient.id, onePerSlot([...state.gear.equipped, item.key])]);
+    return (await heroState(tx, patient.id)).gear;
+  });
+  return c.json(gear, 201);
+});
+
+/** Choose which owned gear the hero wears. */
 heroPatient.put('/hero/gear', async (c) => {
   const { user, patient } = requirePatient(c);
   const b = parse(z.object({ equipped: z.array(z.string()).max(24) }), await c.req.json());
@@ -490,7 +514,7 @@ heroPatient.put('/hero/gear', async (c) => {
   await withUser(user.id, async (tx) => {
     const state = await heroState(tx, patient.id);
     if (!state.hero) throw badRequest('hero_required');
-    if (b.equipped.some((g) => !state.gear.unlocked.includes(g))) throw badRequest('gear_locked');
+    if (b.equipped.some((g) => !state.gear.owned.includes(g))) throw badRequest('gear_not_owned');
     // One piece per slot (character screen); the newest choice wins.
     await tx.query('UPDATE patient_heroes SET gear = $2, updated_at = now() WHERE patient_id = $1', [patient.id, onePerSlot(b.equipped)]);
   });

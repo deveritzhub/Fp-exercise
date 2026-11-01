@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BADGES, bodyShape, heroPhotoKey, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
+import { coinsEarned, gearScore, GEAR_TIERS, SKILL_STARTER, WELCOME_COINS, BADGES, bodyShape, heroPhotoKey, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
 
 describe('sports hero rules', () => {
   it('levels grow gently and progress is between 0 and 1', () => {
@@ -97,34 +97,30 @@ describe('weekly quests and gear', () => {
     expect(skillOfWeek('2026-11-02', [])).toBe('mobility');
   });
 
-  it('gear unlocks from real progress', () => {
-    const none = { skills: {}, sessions: 0, phasesCompleted: 0, chestWeeks: 0, level: 1 };
-    expect(GEAR.filter((g) => g.unlocked(none))).toHaveLength(0);
-    expect(GEAR.filter((g) => g.unlocked({ ...none, skills: { discipline: 10 }, sessions: 25 })).map((g) => g.key).sort()).toEqual(['captain', 'gold_shoes', 'headphones']);
-    // Starter pieces: one per open skill at level 1; a locked skill (0) gives none.
-    const starters = GEAR.filter((g) => g.unlocked({ ...none, skills: { strength: 1, balance: 1, power: 0 } })).map((g) => g.key).sort();
-    expect(starters).toEqual(['crew_socks', 'wristbands']);
-  });
-
-  it('level-10 gear unlocks per skill; a high hero level does not', () => {
-    const base = { skills: {}, sessions: 0, phasesCompleted: 0, chestWeeks: 0, level: 1 };
+  it('gear is sold in five tiers; coins come from hero XP; gear score sums one piece per slot', () => {
     expect(new Set(GEAR.map((g) => g.key)).size).toBe(GEAR.length);
-    expect(GEAR.find((g) => g.key === 'pin')!.unlocked({ ...base, level: 2 })).toBe(true);
-    expect(GEAR.find((g) => g.key === 'pin')!.unlocked(base)).toBe(false);
-    expect(GEAR.find((g) => g.key === 'visor')!.unlocked({ ...base, level: 4 })).toBe(true);
-    expect(GEAR.find((g) => g.key === 'crown')!.unlocked({ ...base, level: 11 })).toBe(false);
-    expect(GEAR.find((g) => g.key === 'crown')!.unlocked({ ...base, level: 12 })).toBe(true);
-    for (const s of SKILLS) {
-      const key = SKILL_GEAR[s.key];
-      if (!key) {
-        expect(s.key).toBe('knowledge');
-        continue;
-      }
-      expect(GEAR.find((g) => g.key === key)!.unlocked({ ...base, skills: { [s.key]: 9 } })).toBe(false);
-      expect(GEAR.find((g) => g.key === key)!.unlocked({ ...base, skills: { [s.key]: 10 } })).toBe(true);
+    for (const g of GEAR) {
+      expect(g.price).toBe(GEAR_TIERS[g.tier - 1].price);
+      expect(g.score).toBeGreaterThan(0);
     }
-    expect(GEAR.find((g) => g.key === 'gloves')!.unlocked({ ...base, level: 99 })).toBe(false);
-    expect(GEAR.find((g) => g.key === 'captain')!.key).toBe('captain');
+    // Higher tier: higher price and higher score.
+    for (let i = 1; i < GEAR_TIERS.length; i++) expect(GEAR_TIERS[i].price).toBeGreaterThan(GEAR_TIERS[i - 1].price);
+    const maxOf = (t: number) => Math.max(...GEAR.filter((g) => g.tier === t).map((g) => g.score));
+    const minOf = (t: number) => Math.min(...GEAR.filter((g) => g.tier === t).map((g) => g.score));
+    for (let t = 2; t <= 5; t++) expect(minOf(t)).toBeGreaterThan(maxOf(t - 1));
+    // Every skill has a cheap starter and its own rare-or-better piece in the shop.
+    for (const s of SKILLS) {
+      if (s.key === 'knowledge') continue;
+      expect(GEAR.find((g) => g.key === SKILL_STARTER[s.key]!.key)!.tier).toBe(1);
+      expect(GEAR.find((g) => g.key === SKILL_GEAR[s.key])!.tier).toBeGreaterThanOrEqual(2);
+    }
+    expect(coinsEarned(0)).toBe(WELCOME_COINS);
+    expect(coinsEarned(1000)).toBe(WELCOME_COINS + 100);
+    expect(WELCOME_COINS).toBeGreaterThanOrEqual(GEAR_TIERS[0].price);
+    expect(gearScore([])).toBe(0);
+    expect(gearScore(['cap', 'watch'])).toBe(22);
+    // Two head pieces: only the last one counts.
+    expect(gearScore(['cap', 'crown'])).toBe(100);
   });
 
   it('parses optional body measurements', () => {

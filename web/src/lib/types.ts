@@ -193,7 +193,7 @@ export type HeroState = {
     timeline: { week: number; totalWeeks: number; progress: number; expectedEnd: string; weeksLeft: number } | null;
   } | null;
   weekly: { weekStart: string; quests: import('@shared/hero').Quest[]; chestWeeks: number; xpPerQuest: number; chestXp: number; links?: Partial<Record<string, string | null>> };
-  gear: { unlocked: string[]; equipped: string[] };
+  gear: { owned: string[]; equipped: string[]; coins: number; earned: number; spent: number; score: number };
   /** Self-reported. Absent on the professional view of the hero. */
   metrics?: { weightKg: number | null; bodyFatPct: number | null; heightCm: number | null; updatedAt: string | null };
   checkin: { today: { day: string; area: string; score: number } | null; area: string; total: number };
@@ -247,7 +247,7 @@ export type HeroFriend = {
   kind: 'friend' | 'incoming' | 'outgoing';
   heroName: string;
   look: Omit<import('@shared/hero').HeroLook, 'heroName'> & { gear: string[] };
-  stats: { level: number; totalLevel: number; skills: Record<import('@shared/hero').SkillKey, import('@shared/hero').FriendSkillCard> } | null;
+  stats: { level: number; totalLevel: number; gearScore?: number; skills: Record<import('@shared/hero').SkillKey, import('@shared/hero').FriendSkillCard> } | null;
   statsUpdatedAt: string | null;
   since: string;
 };

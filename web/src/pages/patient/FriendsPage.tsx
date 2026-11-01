@@ -25,6 +25,7 @@ function WhatIsShared() {
           <li>{t('de naam en het uiterlijk van je held', 'your hero’s name and look')}</li>
           <li>{t('je level en totaal level', 'your level and total level')}</li>
           <li>{t('je skill-levels (zoals Kracht en Balans)', 'your skill levels (such as Strength and Balance)')}</li>
+          <li>{t('je gearscore', 'your gear score')}</li>
         </ul>
       </div>
       <div className="rounded-xl border border-line bg-canvas p-3">
@@ -33,6 +34,7 @@ function WhatIsShared() {
           <li>{t('je echte naam of e-mailadres', 'your real name or email address')}</li>
           <li>{t('je pijn, klachten of alarmsignalen', 'your pain, complaints or warning signs')}</li>
           <li>{t('je programma, oefeningen, praktijk of therapeut', 'your programme, exercises, practice or therapist')}</li>
+          <li>{t('je muntjes', 'your coins')}</li>
         </ul>
       </div>
     </div>
@@ -77,7 +79,7 @@ function FriendRow({ f, rank, me }: { f: { heroName: string; look: HeroFriend['l
         <HeroAvatar look={f.look} size={48} plain />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-semibold text-ink-900">{f.heroName}</span>
-          <span className="block text-[13px] text-ink-600">{me && <strong className="font-semibold text-accent">{t('Jij', 'You')} · </strong>}{t(`Level ${f.stats.level}`, `Level ${f.stats.level}`)} · {titleFor(f.stats.level, locale === 'nl')}</span>
+          <span className="block text-[13px] text-ink-600">{me && <strong className="font-semibold text-accent">{t('Jij', 'You')} · </strong>}{t(`Level ${f.stats.level}`, `Level ${f.stats.level}`)} · {titleFor(f.stats.level, locale === 'nl')}{f.stats.gearScore !== undefined && <> · {t('gearscore', 'gear score')} {f.stats.gearScore}</>}</span>
         </span>
         <span className="shrink-0 text-right">
           <span className="block font-display text-[18px] font-bold leading-none tabular-nums text-ink-950">{f.stats.totalLevel}</span>
@@ -143,7 +145,7 @@ export function FriendsPage() {
   const meRow = {
     heroName: H.hero!.heroName,
     look: { ...H.hero!, gear: H.gear.equipped },
-    stats: { level: H.level.level, totalLevel: H.totalLevel, skills: Object.fromEntries(H.skills.map((k) => [k.key, friendSkillCard(k)])) as Record<SkillKey, FriendSkillCard> },
+    stats: { level: H.level.level, totalLevel: H.totalLevel, gearScore: H.gear.score, skills: Object.fromEntries(H.skills.map((k) => [k.key, friendSkillCard(k)])) as Record<SkillKey, FriendSkillCard> },
   };
   // Ranking by total level (then level), the patient included.
   const ranking = [...friends.map((f) => ({ ...f, stats: f.stats!, me: false })), { ...meRow, id: 'me', me: true }].sort(
