@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X, Printer, Trophy } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X, Printer, Trophy, Swords, Coins, Gift } from 'lucide-react';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { useI18n, describeError } from '@/lib/i18n';
 import { toISODate } from '@shared/adherence';
 import { itemsForDate } from '@shared/schedule';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
-import { SKILLS, XP } from '@shared/hero';
+import { BOSSES, SKILLS, XP } from '@shared/hero';
 import { useCountdown } from '@/lib/useCountdown';
 import { isNetworkError, postOrQueue } from '@/lib/outbox';
 import { useSession } from '@/lib/session';
@@ -122,6 +122,7 @@ export function SessionPlayer() {
   const [savedOffline, setSavedOffline] = useState(false);
   const [earned, setEarned] = useState(0);
   const [levelUps, setLevelUps] = useState<{ key: string; from: number; to: number }[]>([]);
+  const [rewards, setRewards] = useState<{ bossKey: string | null; bossDamage: number; bossDefeated: boolean; coins: number; chestReady: boolean } | null>(null);
   // Loaded up front, so level ups can be shown after the workout.
   useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero') });
   const [leaving, setLeaving] = useState(false);
@@ -254,6 +255,16 @@ export function SessionPlayer() {
                       .map((k) => ({ key: k.key, from: before.skills.find((b) => b.key === k.key)?.level ?? k.level, to: k.level }));
                     if (after.level.level > before.level.level) ups.unshift({ key: 'hero' as never, from: before.level.level, to: after.level.level });
                     setLevelUps(ups);
+                    // What this workout did in the game: boss damage, coins, the day chest.
+                    const b0 = before.weekly.boss;
+                    const b1 = after.weekly.boss;
+                    setRewards({
+                      bossKey: b1?.key ?? null,
+                      bossDamage: b0 && b1 && b0.key === b1.key ? Math.max(0, b1.damage - b0.damage) : 0,
+                      bossDefeated: !!b1?.defeated && !b0?.defeated,
+                      coins: Math.max(0, after.gear.coins - before.gear.coins),
+                      chestReady: !!after.chest?.available && !before.chest?.available,
+                    });
                   }
                 }
                 setPhase('done');
@@ -317,6 +328,31 @@ export function SessionPlayer() {
                   })}
                 </ul>
               </div>
+            )}
+            {rewards && (rewards.bossDamage > 0 || rewards.coins > 0 || rewards.chestReady) && (
+              <ul className="mt-4 w-full max-w-xs space-y-2 text-left" aria-label={t('Beloningen', 'Rewards')}>
+                {rewards.bossDamage > 0 && rewards.bossKey && (
+                  <li className="flex items-center gap-3 rounded-xl border border-line bg-white px-3 py-2.5 text-[15px] shadow-card">
+                    <Swords className="h-5 w-5 shrink-0 text-[#c2410c]" aria-hidden />
+                    <span>{(() => { const bm = BOSSES.find((x) => x.key === rewards.bossKey); const n = bm ? (locale === 'nl' ? bm.nl : bm.en) : ''; return rewards.bossDefeated ? t(`${n} verslagen! −${rewards.bossDamage}`, `${n} defeated! −${rewards.bossDamage}`) : t(`−${rewards.bossDamage} schade aan ${n}`, `−${rewards.bossDamage} damage to ${n}`); })()}</span>
+                  </li>
+                )}
+                {rewards.coins > 0 && (
+                  <li className="flex items-center gap-3 rounded-xl border border-line bg-white px-3 py-2.5 text-[15px] shadow-card">
+                    <Coins className="h-5 w-5 shrink-0 text-sand-ink" aria-hidden />
+                    <span>{t(`+${rewards.coins} muntjes voor de winkel`, `+${rewards.coins} coins for the shop`)}</span>
+                  </li>
+                )}
+                {rewards.chestReady && (
+                  <li>
+                    <Link to="/p/held" className="flex min-h-[48px] items-center gap-3 rounded-xl border border-sand/40 bg-sand-soft px-3 py-2.5 text-[15px] font-semibold text-sand-ink shadow-card">
+                      <Gift className="h-5 w-5 shrink-0" aria-hidden />
+                      <span className="flex-1">{t('Je dagkist staat klaar!', 'Your day chest is ready!')}</span>
+                      <ChevronRight className="h-4 w-4" aria-hidden />
+                    </Link>
+                  </li>
+                )}
+              </ul>
             )}
             <Button size="xl" className="mt-8 w-full max-w-xs" onClick={() => nav('/p')}>{t('Terug naar overzicht', 'Back to overview')}</Button>
           </div>

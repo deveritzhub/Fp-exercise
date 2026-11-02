@@ -163,6 +163,9 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   const up = after.skills.some((k: { key: string; level: number }) => k.level > before.skills.find((b: { key: string }) => b.key === k.key).level);
   if (up) await expect(pp.getByText('Level up!')).toBeVisible();
   else await expect(pp.getByText('Level up!')).toHaveCount(0);
+  // The game side of the workout: coins for the shop (and boss damage when a training day counts).
+  await expect(pp.getByRole('list', { name: 'Beloningen' })).toBeVisible();
+  await expect(pp.getByText(/^\+\d+ muntjes voor de winkel$/)).toBeVisible();
   await pp.screenshot({ path: 'screenshots/hero/workout-done.png', fullPage: true });
   await ctx.close();
 
