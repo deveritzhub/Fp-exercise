@@ -10,7 +10,7 @@ import { loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
 import { loadPatientLogs } from '../lib/patientLogs';
 import { weeklyAdherence } from '../../../shared/adherence';
 import {
-  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, coinsEarned, gearScore, dayChestCoins, chestStreak, skillTrophies, SHOWCASE_MAX, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
+  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, coinsEarned, gearScore, dayChestCoins, chestStreak, longestDayRun, skillTrophies, SHOWCASE_MAX, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
   questXp, skillOfWeek, skillsForExercise, weeklyQuests, weeklyBoss, BOSS_XP, xpFor, type SkillKey, type WeekData,
 } from '../../../shared/hero';
 import { loadSkillSnapshot } from '../lib/skillState';
@@ -282,7 +282,7 @@ async function heroState(tx: Tx, patientId: string) {
     hero,
     painMap: map,
     level: reached,
-    badges: BADGES.map((b) => ({ key: b.key, earned: b.earned(badgeInput) })),
+    badges: BADGES.map((b) => ({ key: b.key, earned: b.earned({ ...badgeInput, bossesDefeated, chestRunBest: longestDayRun(chests.map((r) => r.day)) }) })),
     skills,
     totalLevel: skillsSnap.totalLevel,
     disciplineStreak: skillsSnap.disciplineStreak,

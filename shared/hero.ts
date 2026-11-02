@@ -131,6 +131,9 @@ export const titleFor = (level: number, nl = true) => {
 // ----------------------------------------------------------------------------------------------
 
 export type BadgeInput = {
+  /** Weekly bosses beaten, and the longest run of day chests (both optional for older callers). */
+  bossesDefeated?: number;
+  chestRunBest?: number;
   sessions: number;
   sessionsWithPain: number;
   redFlags: number;
@@ -149,7 +152,24 @@ export const BADGES: { key: string; nl: string; en: string; descNl: string; desc
   { key: 'pain_down', nl: 'Op de weg terug', en: 'On the way back', descNl: 'Je pijn is gehalveerd sinds je startmeting.', descEn: 'Your pain has halved since your first check-in.', earned: (b) => b.painBaseline !== null && b.painNow !== null && b.painBaseline > 0 && b.painNow <= b.painBaseline / 2 },
   { key: 'phase_done', nl: 'Fase voltooid', en: 'Phase complete', descNl: 'Een fase van je revalidatie afgerond.', descEn: 'Completed a phase of your rehabilitation.', earned: (b) => b.phasesCompleted >= 1 },
   { key: 'sessions_25', nl: 'Vaste waarde', en: 'Regular', descNl: '25 trainingen afgerond.', descEn: '25 workouts completed.', earned: (b) => b.sessions >= 25 },
+  { key: 'boss_hunter', nl: 'Bazenjager', en: 'Boss hunter', descNl: 'Drie bazen van de week verslagen.', descEn: 'Three bosses of the week defeated.', earned: (b) => (b.bossesDefeated ?? 0) >= 3 },
+  { key: 'chest_week', nl: 'Trouwe kistenopener', en: 'Loyal chest opener', descNl: 'Zeven dagen op rij je dagkist geopend.', descEn: 'Opened your day chest seven days in a row.', earned: (b) => (b.chestRunBest ?? 0) >= 7 },
 ];
+
+/** Longest run of consecutive days (YYYY-MM-DD) in a list. */
+export function longestDayRun(days: string[]): number {
+  const sorted = [...new Set(days)].sort();
+  let best = 0;
+  let run = 0;
+  let prev: number | null = null;
+  for (const d of sorted) {
+    const t = Date.parse(d + 'T12:00:00Z') / 86400_000;
+    run = prev !== null && Math.round(t - prev) === 1 ? run + 1 : 1;
+    best = Math.max(best, run);
+    prev = t;
+  }
+  return best;
+}
 
 /** Average of the scores in one body-map check-in (null without areas). */
 export const averagePain = (scores: number[]) => (scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : null);

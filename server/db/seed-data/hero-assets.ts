@@ -375,7 +375,9 @@ export const HERO_AWARD_FILES: Record<string, string> = {
   "boss_krampkolos": "hf_20261101_235730_3cb8a187-09d7-4f7c-be6f-8676c6b572cb.png",
   "boss_schermschim": "hf_20261101_235729_996c8640-41ed-4c56-af36-a3c99ef34397.png",
   "chest_closed": "hf_20261102_000442_2deea6d7-596d-473c-b699-08be1fad6aa0.png",
-  "chest_open": "hf_20261102_000442_5919fcd6-b0b6-4c62-908b-84bc676196f7.png"
+  "chest_open": "hf_20261102_000442_5919fcd6-b0b6-4c62-908b-84bc676196f7.png",
+  "badge_boss_hunter": "hf_20261102_001138_22e394f1-6520-4fbc-8233-24055358d0c7.png",
+  "badge_chest_week": "hf_20261102_001138_bfc882dd-bec6-4c35-88cf-2810d699174b.png"
 };
 
 export const heroAssetUrl = (file: string) => BASE + file;

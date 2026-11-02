@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayChestCoins, chestStreak, weeklyBoss, bossOf, BOSSES, BOSS_HP, coinsEarned, gearScore, wornOutfit, OUTFITS, GEAR_TIERS, SKILL_STARTER, WELCOME_COINS, BADGES, bodyShape, heroPhotoKey, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
+import { longestDayRun, dayChestCoins, chestStreak, weeklyBoss, bossOf, BOSSES, BOSS_HP, coinsEarned, gearScore, wornOutfit, OUTFITS, GEAR_TIERS, SKILL_STARTER, WELCOME_COINS, BADGES, bodyShape, heroPhotoKey, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
 
 describe('sports hero rules', () => {
   it('levels grow gently and progress is between 0 and 1', () => {
@@ -155,6 +155,13 @@ describe('weekly quests and gear', () => {
     expect(chestStreak(['2026-10-30', '2026-10-31', '2026-11-01'], '2026-11-02')).toBe(3);
     expect(chestStreak(['2026-10-30', '2026-11-01'], '2026-11-02')).toBe(1);
     expect(chestStreak([], '2026-11-02')).toBe(0);
+    expect(longestDayRun(['2026-10-28', '2026-10-30', '2026-10-31', '2026-11-01', '2026-11-03'])).toBe(3);
+    expect(longestDayRun([])).toBe(0);
+    const badge = (k: string) => BADGES.find((b) => b.key === k)!;
+    const base = { sessions: 0, sessionsWithPain: 0, redFlags: 0, fullWeeks: 0, phasesCompleted: 0, painBaseline: null, painNow: null };
+    expect(badge('boss_hunter').earned({ ...base, bossesDefeated: 3 })).toBe(true);
+    expect(badge('boss_hunter').earned(base)).toBe(false);
+    expect(badge('chest_week').earned({ ...base, chestRunBest: 7 })).toBe(true);
   });
 
   it('parses optional body measurements', () => {
