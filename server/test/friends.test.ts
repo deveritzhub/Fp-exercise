@@ -85,6 +85,9 @@ describe('hero friends (opt-in)', () => {
     // The export lists the friends and the sharing setting.
     const exp = (await emma.get('/patient/export')).body;
     expect(exp.heroSharing.share_with_friends).toBe(true);
+    // Shop purchases and day chests are part of the patient's own export.
+    expect(Array.isArray(exp.heroShop.purchases)).toBe(true);
+    expect(Array.isArray(exp.heroShop.dayChests)).toBe(true);
     expect(exp.heroFriends).toEqual([expect.objectContaining({ kind: 'friend', heroName: 'Noah' })]);
 
     // Therapists cannot see friends: no route, and the database refuses the table outright.

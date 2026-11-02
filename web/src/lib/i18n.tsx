@@ -129,6 +129,8 @@ const ERRORS: Record<string, [string, string]> = {
   passkey_limit: ['Je hebt het maximum van 10 passkeys bereikt.', 'You have reached the maximum of 10 passkeys.'],
   gear_not_owned: ['Dit item heb je nog niet gekocht.', 'You have not bought this item yet.'],
   gear_owned: ['Dit item heb je al.', 'You already own this item.'],
+  chest_opened: ['Je dagkist is vandaag al open. Morgen weer!', 'You already opened today’s chest. Back tomorrow!'],
+  chest_locked: ['Doe eerst je dagcheck of een training, dan gaat je dagkist open.', 'Do your daily check-in or a workout first to open your chest.'],
   not_enough_coins: ['Je hebt nog niet genoeg muntjes. Train verder om er meer te verdienen.', 'Not enough coins yet. Keep training to earn more.'],
   sharing_off: ['Zet eerst "Deel mijn held met vrienden" aan.', 'Switch on "Share my hero with friends" first.'],
   friend_code_not_found: ['Geen held gevonden met deze vriendcode. Controleer de code; je vriend moet delen ook aan hebben staan.', 'No hero found with this friend code. Check the code; your friend must have sharing switched on too.'],

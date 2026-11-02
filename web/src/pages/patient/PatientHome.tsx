@@ -13,7 +13,7 @@ import { useModes } from '@/components/patient/Modules';
 import type { Adherence, Notification, Program } from '@/lib/types';
 import type { DayState } from '@shared/adherence';
 import { cn } from '@/lib/cn';
-import { BossHomeCard, HeroHomeCard } from '@/pages/patient/HeroPages';
+import { BossHomeCard, DayChestHomeCard, HeroHomeCard } from '@/pages/patient/HeroPages';
 import { LogbookHomeCard } from '@/pages/patient/LogbookPage';
 import { Check, Flame } from 'lucide-react';
 
@@ -151,6 +151,7 @@ export function PatientHome() {
       )}
 
       <HeroHomeCard />
+      <DayChestHomeCard />
       <BossHomeCard />
       <LogbookHomeCard />
 

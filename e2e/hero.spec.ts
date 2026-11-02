@@ -81,6 +81,10 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await checkin.getByRole('button', { name: 'Opslaan' }).click();
   await expect(pp.getByText(/Dagcheck gedaan: 6\/10/)).toBeVisible();
   await expect(pp.getByRole('heading', { name: 'Weekquests' })).toBeVisible();
+  // The day chest opens after today's check-in (once a day).
+  const chestBtn = pp.getByRole('button', { name: 'Openen' });
+  if (await chestBtn.count()) await chestBtn.first().click();
+  await expect(pp.getByText(/^\+\d+ muntjes vandaag/).first()).toBeVisible();
   // The weekly boss: a health bar that training and check-ins wear down.
   await expect(pp.getByText('Baas van de week').first()).toBeVisible();
   await expect(pp.getByRole('progressbar', { name: /^Leven van / }).first()).toBeVisible();

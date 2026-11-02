@@ -741,6 +741,58 @@ export function BossCard({ d, compact = false }: { d: HeroState; compact?: boole
   );
 }
 
+/**
+ * Day chest: after today's check-in or a workout, open it for a few coins (more for days in a row).
+ * The server decides the amount; opening is once a day.
+ */
+export function DayChestCard({ d }: { d: HeroState }) {
+  const { t, locale } = useI18n();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const [won, setWon] = useState<number | null>(null);
+  const [artFailed, setArtFailed] = useState(false);
+  const c = d.chest;
+  if (!c) return null;
+  const open = async () => {
+    setBusy(true);
+    try {
+      const r = await api.post<{ coins: number }>('/patient/hero/chest');
+      setWon(r.coins);
+      await qc.invalidateQueries({ queryKey: ['patient-hero'] });
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const opened = c.opened ?? (won !== null ? { coins: won } : null);
+  const art = !artFailed && <img src={`/api/hero-assets/award/chest_${opened ? 'open' : 'closed'}`} alt="" loading="lazy" onError={() => setArtFailed(true)} className={cn('h-full w-full object-contain', won !== null && 'motion-safe:animate-[bounce_0.6s_ease-out_2]', !opened && !c.available && 'opacity-60 grayscale')} />;
+  return (
+    <section className={cn('flex items-center gap-3 rounded-2xl border p-3 shadow-card', opened ? 'border-line bg-white' : c.available ? 'border-sand/40 bg-sand-soft' : 'border-line bg-white')} aria-labelledby="chest-title">
+      <span className="flex h-16 w-16 shrink-0 items-center justify-center" aria-hidden>{art || <Gift className="h-8 w-8 text-sand-ink" />}</span>
+      <div className="min-w-0 flex-1">
+        <h2 id="chest-title" className="font-semibold text-ink-900">{t('Dagkist', 'Day chest')}{c.streak > 1 ? <span className="ml-1.5 text-[13px] font-medium text-ink-600">{t(`· ${c.streak} dagen op rij`, `· ${c.streak} days in a row`)}</span> : null}</h2>
+        {opened ? (
+          <p className="text-[14.5px] text-ink-700" role={won !== null ? 'status' : undefined}>{t(`+${opened.coins} muntjes vandaag. Morgen weer een kist!`, `+${opened.coins} coins today. Another chest tomorrow!`)}</p>
+        ) : c.available ? (
+          <p className="text-[14.5px] text-ink-700">{t('Je hebt hem verdiend. Wat zit erin?', 'You earned it. What’s inside?')}</p>
+        ) : (
+          <p className="text-[14.5px] text-ink-600">{t('Doe je dagcheck of een training om hem te openen.', 'Do your check-in or a workout to open it.')}</p>
+        )}
+      </div>
+      {!opened && c.available && <Button size="lg" loading={busy} onClick={open}>{t('Openen', 'Open')}</Button>}
+    </section>
+  );
+}
+
+/** Day chest on Vandaag, once the patient has a hero. */
+export function DayChestHomeCard() {
+  const q = useHero();
+  if (!q.data?.hero) return null;
+  return <DayChestCard d={q.data} />;
+}
+
 /** The boss on Vandaag, once the patient has a hero. */
 export function BossHomeCard() {
   const q = useHero();
@@ -1253,6 +1305,7 @@ export function HeroPage() {
         summary={d.logs.protein.goal !== null ? t(`Eiwit ${d.logs.protein.grams} van ${d.logs.protein.goal} g`, `Protein ${d.logs.protein.grams} of ${d.logs.protein.goal} g`) : t('Eiwit en eigen trainingen bijhouden', 'Track protein and your own workouts')}>
         <LogTeaser d={d} />
       </Fold>
+      <DayChestCard d={d} />
       <BossCard d={d} />
       <Fold id="hero-weekly" defaultOpen icon={<Gift className="h-5 w-5" />} title={t('Weekquests', 'Weekly quests')}
         summary={t(`${d.weekly.quests.filter((x) => x.done).length} van ${d.weekly.quests.length} gehaald`, `${d.weekly.quests.filter((x) => x.done).length} of ${d.weekly.quests.length} done`)}>

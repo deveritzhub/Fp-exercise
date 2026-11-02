@@ -98,12 +98,21 @@ describe('weekly quests, gear, daily check-in, trends', () => {
     expect((await patient.post('/patient/hero/checkin', { area: 'tail', score: 3 })).body.error).toBe('unknown_body_area');
     const after = (await patient.get('/patient/hero')).body;
     expect(after.checkin.today).toMatchObject({ area: 'knee_l', score: 3 });
+    // Day chest: the check-in earns it; it opens once a day for a few coins, privately.
+    expect(after.chest).toMatchObject({ available: true, opened: null });
+    const before = after.gear.coins;
+    const opened = await patient.post('/patient/hero/chest', {});
+    expect(opened.status).toBe(201);
+    expect(opened.body.coins).toBeGreaterThanOrEqual(5);
+    expect(opened.body.gear.coins).toBe(before + opened.body.coins);
+    expect(opened.body.chest).toMatchObject({ available: false, opened: { coins: opened.body.coins } });
+    expect((await patient.post('/patient/hero/chest', {})).body.error).toBe('chest_opened');
     expect(after.weekly.quests[1].done).toBe(true);
     const knee = after.trends.find((t: { area: string }) => t.area === 'knee_l');
     expect(knee.points.at(-1)).toMatchObject({ score: 3, source: 'daily' });
 
     // Gear: bought with coins in the shop; only owned pieces can be worn.
-    const g0 = after.gear;
+    const g0 = (await patient.get('/patient/hero')).body.gear;
     expect(g0.coins).toBe(Math.max(0, g0.earned - g0.spent));
     const cheap = GEAR.filter((g) => g.tier === 1 && !g0.owned.includes(g.key))[0];
     expect((await patient.put('/patient/hero/gear', { equipped: [cheap.key] })).body.error).toBe('gear_not_owned');
@@ -131,6 +140,7 @@ describe('weekly quests, gear, daily check-in, trends', () => {
       await c.query('BEGIN');
       await c.query("SELECT set_config('app.user_id', $1, true)", [s.users.therapistA]);
       expect((await c.query('SELECT * FROM hero_purchases')).rowCount).toBe(0);
+      expect((await c.query('SELECT * FROM hero_daily_chests')).rowCount).toBe(0);
       await expect(c.query('INSERT INTO hero_purchases (patient_id, item, price) VALUES ($1, $2, 0)', [s.patients.emma, 'crown'])).rejects.toThrow(/row-level security/);
     } finally {
       await c.query('ROLLBACK');

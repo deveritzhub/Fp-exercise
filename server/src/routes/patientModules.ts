@@ -263,6 +263,10 @@ patientModules.get('/export', async (c) => {
       stepDays: await q('SELECT day, steps, source, updated_at FROM step_days WHERE patient_id = $1 ORDER BY day'),
       fitnessConnections: await q(`SELECT provider, external_user_id, scope, connected_at, synced_at FROM fitness_connections WHERE patient_id = $1`),
       heroSharing: (await q('SELECT share_with_friends, friend_code, shared_stats, stats_updated_at FROM patient_heroes WHERE patient_id = $1'))[0] ?? null,
+      heroShop: {
+        purchases: await q('SELECT item, price, bought_at FROM hero_purchases WHERE patient_id = $1 ORDER BY bought_at'),
+        dayChests: await q('SELECT day, coins, opened_at FROM hero_daily_chests WHERE patient_id = $1 ORDER BY day'),
+      },
       heroFriends: (await q('SELECT kind, hero_name, since FROM app.hero_friends($1)')).map((f) => ({ kind: f.kind, heroName: f.hero_name, since: f.since })),
     };
     await audit(tx, user.id, patient.practiceId, 'export_self', 'patient', patient.id);

@@ -10,7 +10,7 @@ import { loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
 import { loadPatientLogs } from '../lib/patientLogs';
 import { weeklyAdherence } from '../../../shared/adherence';
 import {
-  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, coinsEarned, gearScore, skillTrophies, SHOWCASE_MAX, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
+  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, coinsEarned, gearScore, dayChestCoins, chestStreak, skillTrophies, SHOWCASE_MAX, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
   questXp, skillOfWeek, skillsForExercise, weeklyQuests, weeklyBoss, BOSS_XP, xpFor, type SkillKey, type WeekData,
 } from '../../../shared/hero';
 import { loadSkillSnapshot } from '../lib/skillState';
@@ -203,7 +203,8 @@ async function heroState(tx: Tx, patientId: string) {
   const reached = levelFor(xp);
   const bought = (await tx.query('SELECT item, price FROM hero_purchases WHERE patient_id = $1 ORDER BY bought_at', [patientId])).rows as { item: string; price: number }[];
   const owned = bought.map((r) => r.item).filter((k) => GEAR_KEYS.has(k));
-  const earned = coinsEarned(xp);
+  const chests = (await tx.query("SELECT to_char(day, 'YYYY-MM-DD') AS day, coins FROM hero_daily_chests WHERE patient_id = $1 ORDER BY day", [patientId])).rows as { day: string; coins: number }[];
+  const earned = coinsEarned(xp) + chests.reduce((sum, r) => sum + r.coins, 0);
   const spent = bought.reduce((sum, r) => sum + r.price, 0);
   const equipped = onePerSlot(((heroRow?.gear ?? []) as string[]).filter((g) => owned.includes(g)));
 
@@ -211,6 +212,19 @@ async function heroState(tx: Tx, patientId: string) {
   const today = (await tx.query("SELECT to_char(now(), 'YYYY-MM-DD') AS d")).rows[0].d as string;
   const mainArea = [...(map.current?.entries ?? [])].sort((a, b) => b.score - a.score)[0]?.area ?? GENERAL_AREA;
   const checkin = { today: daily.find((d) => d.day === today) ?? null, area: mainArea, total: daily.length };
+  // Day chest: earned by today's check-in or a workout finished today; opened once a day.
+  const trainedToday = (
+    await tx.query(
+      "SELECT EXISTS (SELECT 1 FROM workout_sessions WHERE patient_id = $1 AND completed_at IS NOT NULL AND to_char(completed_at, 'YYYY-MM-DD') = $2) AS ok",
+      [patientId, today],
+    )
+  ).rows[0].ok as boolean;
+  const openedToday = chests.find((r) => r.day === today) ?? null;
+  const chest = {
+    available: !openedToday && (!!checkin.today || trainedToday),
+    opened: openedToday ? { coins: openedToday.coins } : null,
+    streak: chestStreak(chests.map((r) => r.day), today) + (openedToday ? 1 : 0),
+  };
   const trends = await painTrends(tx, patientId);
 
   // ---- Quest: the goal of the current programme and the road there. ----
@@ -283,6 +297,7 @@ async function heroState(tx: Tx, patientId: string) {
     showcase: ((heroRow?.showcase ?? []) as string[]).filter((k) => skillTrophies(skills).some((t) => t.key === k && t.earned)),
     metrics,
     checkin,
+    chest,
     trends,
     logs: logged.view,
     // Walking aids the professional switched on (e.g. crutches); drawn on the hero, never on the friend card.
@@ -496,6 +511,24 @@ heroPatient.put('/hero/metrics', async (c) => {
     ),
   );
   return c.json({ ok: true });
+});
+
+/** Open today's chest: a few coins, more for days in a row. Once a day, after a check-in or workout. */
+heroPatient.post('/hero/chest', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const out = await withUser(user.id, async (tx) => {
+    const row = (await tx.query('SELECT 1 FROM patient_heroes WHERE patient_id = $1 FOR UPDATE', [patient.id])).rows[0];
+    if (!row) throw badRequest('hero_required');
+    const state = await heroState(tx, patient.id);
+    if (state.chest.opened) throw badRequest('chest_opened');
+    if (!state.chest.available) throw badRequest('chest_locked');
+    const today = (await tx.query("SELECT to_char(now(), 'YYYY-MM-DD') AS d")).rows[0].d as string;
+    const coins = dayChestCoins(patient.id, today, state.chest.streak);
+    await tx.query('INSERT INTO hero_daily_chests (patient_id, day, coins) VALUES ($1, $2, $3)', [patient.id, today, coins]);
+    const after = await heroState(tx, patient.id);
+    return { coins, chest: after.chest, gear: after.gear };
+  });
+  return c.json(out, 201);
 });
 
 /** Buy a piece of gear with coins; it is worn right away (replacing what was in that slot). */

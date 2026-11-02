@@ -769,6 +769,26 @@ export type GearTier = (typeof GEAR_TIERS)[number];
 /** Coins: 1 per 10 hero XP, plus a welcome purse so a first item can be bought right away. */
 export const COIN_XP = 10;
 export const WELCOME_COINS = 20;
+/**
+ * Day chest: 5 to 15 coins, the same roll for a patient on a given day (so reloading changes
+ * nothing), plus 2 per day in a row that a chest was opened before (at most +10).
+ */
+export function dayChestCoins(seed: string, day: string, streak: number): number {
+  let h = 2166136261;
+  for (const c of `${seed}|${day}`) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
+  return 5 + (h % 11) + Math.min(10, Math.max(0, streak) * 2);
+}
+/** Days in a row before `day` (YYYY-MM-DD) with an opened chest. */
+export function chestStreak(openedDays: string[], day: string): number {
+  const set = new Set(openedDays);
+  let n = 0;
+  const d = new Date(day + 'T12:00:00Z');
+  for (;;) {
+    d.setUTCDate(d.getUTCDate() - 1);
+    if (!set.has(d.toISOString().slice(0, 10))) return n;
+    n++;
+  }
+}
 export const coinsEarned = (heroXp: number) => WELCOME_COINS + Math.floor(Math.max(0, heroXp) / COIN_XP);
 
 type GearDef = { key: string; nl: string; en: string; tier: 1 | 2 | 3 | 4 | 5; score: number };

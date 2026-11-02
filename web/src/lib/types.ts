@@ -197,6 +197,7 @@ export type HeroState = {
   /** Self-reported. Absent on the professional view of the hero. */
   metrics?: { weightKg: number | null; bodyFatPct: number | null; heightCm: number | null; updatedAt: string | null };
   checkin: { today: { day: string; area: string; score: number } | null; area: string; total: number };
+  chest?: { available: boolean; opened: { coins: number } | null; streak: number };
   trends: PainTrend[];
   logs: PatientLogState;
 };

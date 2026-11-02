@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { weeklyBoss, bossOf, BOSSES, BOSS_HP, coinsEarned, gearScore, wornOutfit, OUTFITS, GEAR_TIERS, SKILL_STARTER, WELCOME_COINS, BADGES, bodyShape, heroPhotoKey, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
+import { dayChestCoins, chestStreak, weeklyBoss, bossOf, BOSSES, BOSS_HP, coinsEarned, gearScore, wornOutfit, OUTFITS, GEAR_TIERS, SKILL_STARTER, WELCOME_COINS, BADGES, bodyShape, heroPhotoKey, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
 
 describe('sports hero rules', () => {
   it('levels grow gently and progress is between 0 and 1', () => {
@@ -141,6 +141,20 @@ describe('weekly quests and gear', () => {
     // A different boss each week, the same for everyone; all six come round.
     const keys = new Set(Array.from({ length: 6 }, (_, i) => bossOf(new Date(Date.UTC(2026, 10, 2 + 7 * i)).toISOString().slice(0, 10)).key));
     expect(keys.size).toBe(BOSSES.length);
+  });
+
+  it('day chest: 5 to 15 coins, stable per day, +2 per day in a row (max +10)', () => {
+    for (let i = 0; i < 50; i++) {
+      const c = dayChestCoins('p1', `2026-11-${String((i % 28) + 1).padStart(2, '0')}`, 0);
+      expect(c).toBeGreaterThanOrEqual(5);
+      expect(c).toBeLessThanOrEqual(15);
+    }
+    expect(dayChestCoins('p1', '2026-11-02', 0)).toBe(dayChestCoins('p1', '2026-11-02', 0));
+    expect(dayChestCoins('p1', '2026-11-02', 3) - dayChestCoins('p1', '2026-11-02', 0)).toBe(6);
+    expect(dayChestCoins('p1', '2026-11-02', 20) - dayChestCoins('p1', '2026-11-02', 0)).toBe(10);
+    expect(chestStreak(['2026-10-30', '2026-10-31', '2026-11-01'], '2026-11-02')).toBe(3);
+    expect(chestStreak(['2026-10-30', '2026-11-01'], '2026-11-02')).toBe(1);
+    expect(chestStreak([], '2026-11-02')).toBe(0);
   });
 
   it('parses optional body measurements', () => {
