@@ -1,16 +1,27 @@
 {
+  "id": "/p",
   "name": "FP Flow",
   "short_name": "FP Flow",
-  "description": "Je oefenprogramma van je fysiotherapeut",
+  "description": "Je oefenprogramma van je fysiotherapeut of trainer, met video's, je voortgang en een sportheld die met je meegroeit.",
   "start_url": "/p",
   "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#f7f9f7",
   "theme_color": "#29483c",
   "lang": "nl",
+  "dir": "ltr",
+  "categories": ["health", "fitness", "medical"],
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
     { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Vandaag", "short_name": "Vandaag", "url": "/p", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Mijn held", "short_name": "Held", "url": "/p/held", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Krachtlog", "short_name": "Krachtlog", "url": "/p/krachtlog", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
   ]
 }

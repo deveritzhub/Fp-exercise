@@ -242,6 +242,8 @@ export function PrivacyPage() {
       <ul>
         <li>{t('Account: naam, e-mailadres, taalvoorkeur.', 'Account: name, email address, language preference.')}</li>
         <li>{t('Patiënt: naam, e-mailadres, optionele praktijkreferentie; voorgeschreven oefeningen; registraties (uitvoering, ervaren zwaarte, pijnscore, opmerkingen). Pijnscores zijn gezondheidsgegevens (bijzondere persoonsgegevens).', 'Patient: name, email address, optional practice reference; prescribed exercises; logs (completion, perceived difficulty, pain score, comments). Pain scores are health data (special category data).')}</li>
+        <li>{t('Zelf bijgehouden (optioneel): lichaamskaart en dagcheck (pijn), gewicht, lichaamsvet, lengte, eiwit, water, slaap, stappen, eigen trainingen en krachtlog (sets, geschatte 1RM). Kracht- en mobiliteitsgegevens ziet de praktijk alleen met toestemming van de patiënt.', 'Self-tracked (optional): body map and daily check-in (pain), weight, body fat, height, protein, water, sleep, steps, own workouts and strength log (sets, estimated 1RM). The practice only sees strength and mobility data with the patient’s consent.')}</li>
+        <li>{t('Sportheld (spel): uiterlijk van de held, levels, muntjes, aankopen in de winkel en geopende dagkisten. Muntjes zijn spelpunten zonder geldwaarde; alleen de patiënt ziet ze. Vrienden zien alleen naam, uiterlijk en levels van de held, en alleen als beide dat aanzetten.', 'Sports hero (game): the hero’s look, levels, coins, shop purchases and opened day chests. Coins are game points with no monetary value; only the patient sees them. Friends see only the hero’s name, look and levels, and only when both turn it on.')}</li>
         <li>{t('Technisch: sessiecookie voor inloggen, beveiligingslogs zonder inhoud van medische gegevens.', 'Technical: session cookie for login, security logs without medical content.')}</li>
       </ul>
       <h2>{t('3. Doelen en grondslagen', '3. Purposes and legal bases')}</h2>
@@ -252,6 +254,7 @@ export function PrivacyPage() {
       <p>{t('Gegevens worden versleuteld verzonden en opgeslagen bij een hostingpartij binnen de EU/EER. Toegang is rolgebaseerd en wordt gelogd. [Details in te vullen na keuze productie-infrastructuur.]', 'Data is encrypted in transit and stored with a hosting provider in the EU/EEA. Access is role-based and logged. [Details to complete after choosing production infrastructure.]')}</p>
       <h2>{t('6. Je rechten', '6. Your rights')}</h2>
       <p>{t('Inzage, rectificatie, verwijdering, beperking, overdraagbaarheid en bezwaar. Patiënten richten verzoeken bij voorkeur aan hun eigen praktijk. [Contactgegevens en klachtrecht bij de Autoriteit Persoonsgegevens toevoegen.]', 'Access, rectification, erasure, restriction, portability and objection. Patients preferably address requests to their own practice. [Add contact details and the right to complain to the Dutch DPA.]')}</p>
+      <p>{t('In de app: Instellingen → Gegevens en privacy. Daar download je al je gegevens en vraag je verwijdering van je account en gegevens aan; je praktijk handelt het verzoek af.', 'In the app: Settings → Data and privacy. There you download all your data and request deletion of your account and data; your practice handles the request.')}</p>
     </LegalDraft>
   );
 }
