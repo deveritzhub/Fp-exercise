@@ -46,7 +46,7 @@ describe('importing the bundles into the demo practice', () => {
     const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
     await db.connect();
     try {
-      const expected = Object.fromEntries(toBundle(readFpBundle('fp-mobiliteit-v2.json')).templates.map((t) => [t.key, t.items.length]));
+      const expected = Object.fromEntries(['fp-mobiliteit-v2.json', 'fp-kracht-v2.json'].flatMap((f) => toBundle(readFpBundle(f)).templates.map((t) => [t.key, t.items.length])));
       const rows = (
         await db.query(
           `SELECT p.source_key, count(i.id)::int AS n FROM programs p LEFT JOIN program_items i ON i.program_id = p.id
@@ -65,4 +65,25 @@ describe('importing the bundles into the demo practice', () => {
       await db.end();
     }
   }, 120_000);
+});
+
+describe('extra strength programmes (fp-kracht-v2)', () => {
+  const bundle = toBundle(readFpBundle('fp-kracht-v2.json'));
+  it('adds four strength programmes built from library exercises plus the push-up, spread over the week', () => {
+    expect(bundle.exercises.map((e) => e.key)).toEqual(['kr_push_up']);
+    expect(bundle.templates.map((t) => t.key).sort()).toEqual(['kr2_bilspieren_2d', 'kr2_fullbody_2d', 'kr2_fullbody_3d', 'kr2_thuis_3d']);
+    const known = new Set([
+      'kr_push_up',
+      ...FP_BUNDLES.filter((b) => b.name !== 'fp-kracht-v2').flatMap((b) => toBundle(readFpBundle(b.file)).exercises.map((e) => e.key)),
+    ]);
+    for (const tp of bundle.templates) {
+      expect(tp.module).toBe('kracht');
+      expect(tp.redFlags).toContain('Pijn op de borst');
+      for (const i of tp.items) expect(known.has(i.ex), `${tp.key}: ${i.ex}`).toBe(true);
+    }
+    // Two training days land on Monday and Thursday, three on Monday, Wednesday and Friday.
+    const days = (k: string) => [...new Set(bundle.templates.find((t) => t.key === k)!.items.flatMap((i) => i.days))].sort();
+    expect(days('kr2_fullbody_2d')).toEqual([1, 4]);
+    expect(days('kr2_thuis_3d')).toEqual([1, 3, 5]);
+  });
 });

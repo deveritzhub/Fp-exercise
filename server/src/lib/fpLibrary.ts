@@ -17,6 +17,8 @@ export const FP_BUNDLES = [
   { name: 'fp-videos-v1', file: 'fp-videos-v1.json' },
   // Seven extra mobility programmes patients can start themselves (existing exercises only).
   { name: 'fp-mobiliteit-v2', file: 'fp-mobiliteit-v2.json' },
+  // Four strength programmes to start yourself (beginner 2x/3x, at home, glutes) plus the push-up.
+  { name: 'fp-kracht-v2', file: 'fp-kracht-v2.json' },
 ] as const;
 
 const DIR = path.join(import.meta.dirname, '../../db/seed-data');
