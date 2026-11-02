@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { CalendarCheck2, CloudOff, Dumbbell, HeartPulse, Move, RefreshCw, Trophy, UserRound } from 'lucide-react';
+import { CalendarCheck2, CloudOff, Dumbbell, HeartPulse, Move, RefreshCw, Settings, Trophy } from 'lucide-react';
 import type { PatientHomeData } from '@/pages/patient/PatientHome';
 import { isClinical } from '@shared/accountKind';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -41,11 +41,26 @@ export function PatientLayout() {
     void import('@/pages/patient/PatientProgress');
     void import('@/pages/patient/ModulePage');
     void import('@/pages/patient/GymLogPage');
+    void import('@/pages/patient/SettingsPage');
     void import('@/pages/AccountPage');
     void import('@/pages/patient/HeroPages');
     void import('@/pages/patient/LogbookPage');
   }, []);
   const inPlayer = loc.pathname.includes('/sessie');
+  // Links with a #section (e.g. /p/held#boss) scroll to it once the page has rendered its data.
+  useEffect(() => {
+    if (!loc.hash) return;
+    const id = decodeURIComponent(loc.hash.slice(1));
+    let tries = 0;
+    const timer = setInterval(() => {
+      const el = document.getElementById(id);
+      if (el || ++tries > 20) {
+        clearInterval(timer);
+        el?.scrollIntoView({ block: 'start' });
+      }
+    }, 100);
+    return () => clearInterval(timer);
+  }, [loc.pathname, loc.hash]);
   // Messages appear above the tab bar (with the + button in it), not on top of the tabs.
   useEffect(() => {
     const root = document.documentElement.style;
@@ -101,8 +116,8 @@ export function PatientLayout() {
             <div className="flex min-w-0 items-center gap-1">
               <span className="min-w-0 text-right text-[13.5px] font-medium leading-tight text-ink-600">{user.patient.kind === 'personal' ? t('Persoonlijk account', 'Personal account') : user.patient.practiceName}</span>
               <FeedbackButton big />
-              <Link to="/p/account" aria-label={t('Account', 'Account')} title={t('Account', 'Account')} className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100', loc.pathname.startsWith('/p/account') && 'bg-accent-soft text-accent')}>
-                <UserRound className="h-[22px] w-[22px]" aria-hidden />
+              <Link to="/p/instellingen" aria-label={t('Instellingen', 'Settings')} title={t('Instellingen', 'Settings')} className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100', (loc.pathname.startsWith('/p/instellingen') || loc.pathname.startsWith('/p/account')) && 'bg-accent-soft text-accent')}>
+                <Settings className="h-[22px] w-[22px]" aria-hidden />
               </Link>
             </div>
           </div>

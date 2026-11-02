@@ -1,6 +1,6 @@
 import { Link, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, ChevronDown, ChevronRight, Dumbbell, Play } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, Dumbbell, Lock, Play, ShieldCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtRelative } from '@/lib/format';
@@ -8,7 +8,7 @@ import { useDocumentMeta } from '@/lib/meta';
 import { ErrorState, Skeleton } from '@/components/ui';
 import { TodayProgramCard } from '@/components/patient/TodayCard';
 import { PausedNotice } from '@/components/patient/Safety';
-import { ConsentToggle, StartTemplates, useModes } from '@/components/patient/Modules';
+import { StartTemplates, useModes } from '@/components/patient/Modules';
 import { StrengthProgress } from '@/components/patient/Strength';
 import { MODULE_ICON, moduleLabel, moduleOf, StartOrResume, type PatientHomeData, type PatientModule } from '@/pages/patient/PatientHome';
 
@@ -48,7 +48,14 @@ export function ModulePage({ module }: { module: PatientModule }) {
         <p className="mt-1 text-[15px] text-ink-600">{t(...INTRO[module])}</p>
       </div>
 
-      {module !== 'revalidatie' && modes.data.kind !== 'personal' && <ConsentToggle module={module} since={modes.data.consents[module]} />}
+      {module !== 'revalidatie' && modes.data.kind !== 'personal' && (
+        // Sharing is changed in Instellingen; here only a short status.
+        <Link to="/p/instellingen#delen" className="inline-flex min-h-[44px] items-center gap-2 text-[14.5px] text-ink-700">
+          {modes.data.consents[module] ? <ShieldCheck className="h-4 w-4 text-ok" aria-hidden /> : <Lock className="h-4 w-4 text-ink-500" aria-hidden />}
+          {modes.data.consents[module] ? t('Gedeeld met je fysiotherapeut', 'Shared with your physiotherapist') : t('Alleen voor jou', 'Just for you')}
+          <span className="font-medium text-accent">{t('· wijzigen', '· change')}</span>
+        </Link>
+      )}
 
       {/* Today in this part */}
       {todo.map((p) => (

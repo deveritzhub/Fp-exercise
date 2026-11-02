@@ -118,7 +118,7 @@ test('a patient adds a passkey and logs in with it', async ({ browser }) => {
   await page.goto('/login');
   await page.getByRole('button', { name: 'Inloggen met passkey' }).click();
   await page.waitForURL(/\/p(\/|$)/);
-  await expect(page.getByRole('link', { name: 'Account' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Instellingen' })).toBeVisible();
   const used = await sql(`SELECT last_used_at FROM webauthn_credentials WHERE name = 'Testtelefoon'`);
   expect(used[0].last_used_at).not.toBeNull();
   await sql(`DELETE FROM webauthn_credentials WHERE name = 'Testtelefoon'`);

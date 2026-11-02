@@ -246,7 +246,7 @@ test('patient app touch targets are at least 44×44', async ({ browser }) => {
   const home = await (await page.request.get('/api/patient/home')).json();
   const small: string[] = [];
   let measured = 0;
-  for (const url of ['/p', `/p/programma/${home.programs[0].id}`, `/p/sessie/${home.programs[0].id}`, '/p/account']) {
+  for (const url of ['/p', `/p/programma/${home.programs[0].id}`, `/p/sessie/${home.programs[0].id}`, '/p/instellingen']) {
     await page.goto(url);
     await page.locator('main button, main a').first().waitFor();
     await page.waitForTimeout(300);

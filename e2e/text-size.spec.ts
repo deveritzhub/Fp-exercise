@@ -9,7 +9,7 @@ test('patient sets extra large text; every screen still fits a 360 px phone', as
   const home = await (await page.request.get('/api/patient/home')).json();
   const id = home.programs[0].id as string;
 
-  await page.goto('/p/account');
+  await page.goto('/p/instellingen');
   const group = page.getByRole('radiogroup', { name: 'Tekstgrootte' });
   await expect(group.getByRole('radio', { name: 'Normaal' })).toHaveAttribute('aria-checked', 'true');
   const before = (await page.getByRole('heading', { name: 'Tekstgrootte' }).boundingBox())!.height;
@@ -21,7 +21,7 @@ test('patient sets extra large text; every screen still fits a 360 px phone', as
 
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-text-size', 'xlarge');
-  for (const url of ['/p', `/p/programma/${id}`, '/p/voortgang', '/p/account']) {
+  for (const url of ['/p', `/p/programma/${id}`, '/p/voortgang', '/p/instellingen']) {
     await page.goto(url);
     await page.locator('h1').first().waitFor();
     await page.waitForTimeout(300);
@@ -29,7 +29,7 @@ test('patient sets extra large text; every screen still fits a 360 px phone', as
   }
   await page.screenshot({ path: 'screenshots/print/patient-home-xlarge.png', fullPage: true });
 
-  await page.goto('/p/account');
+  await page.goto('/p/instellingen');
   await page.getByRole('radiogroup', { name: 'Tekstgrootte' }).getByRole('radio', { name: 'Normaal' }).click();
   await expect(page.locator('html')).not.toHaveAttribute('data-text-size', /.+/);
   await ctx.close();

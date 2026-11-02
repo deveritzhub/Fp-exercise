@@ -1,16 +1,14 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { LogOut } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n, describeError } from '@/lib/i18n';
-import { useLogout, useSession } from '@/lib/session';
+import { useSession } from '@/lib/session';
 import { useDocumentMeta } from '@/lib/meta';
 import { Button, Card, CardHeader, Input, Notice, PageHeader, Segmented, Select, useToast } from '@/components/ui';
 import { Link } from 'react-router-dom';
 import { MfaCard } from '@/components/app/Mfa';
 import { LoginMethodsCard } from '@/pages/auth/SocialLogin';
-import { ReminderCard } from '@/components/app/Reminders';
-import { MyDataCard } from '@/components/patient/Modules';
 import { useTextSize, type TextSize } from '@/lib/textSize';
 
 export function AccountPage({ patient }: { patient?: boolean }) {
@@ -19,7 +17,6 @@ export function AccountPage({ patient }: { patient?: boolean }) {
   const { user } = useSession();
   const qc = useQueryClient();
   const toast = useToast();
-  const logout = useLogout();
   const [name, setName] = useState(user?.fullName ?? '');
   const [lang, setLang] = useState<'nl' | 'en'>(user?.locale ?? locale);
   const [pw, setPw] = useState({ current: '', next: '' });
@@ -27,7 +24,8 @@ export function AccountPage({ patient }: { patient?: boolean }) {
   if (!user) return null;
   return (
     <div className={patient ? 'space-y-5' : 'max-w-2xl space-y-6'}>
-      {patient ? <h1 className="text-2xl font-bold">{t('Account', 'Account')}</h1> : <PageHeader title={t('Account', 'Account')} />}
+      {patient && <Link to="/p/instellingen" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" aria-hidden />{t('Instellingen', 'Settings')}</Link>}
+      {patient ? <h1 className="text-2xl font-bold">{t('Profiel en inloggen', 'Profile and login')}</h1> : <PageHeader title={t('Account', 'Account')} />}
       <Card>
         <CardHeader title={t('Profiel', 'Profile')} />
         <form className="space-y-4 p-5" onSubmit={async (e) => {
@@ -66,24 +64,11 @@ export function AccountPage({ patient }: { patient?: boolean }) {
       </Card>
       <LoginMethodsCard />
       {!patient && <MfaCard />}
-      {patient && (
-        <>
-          <TextSizeCard />
-          <ReminderCard />
-          <MyDataCard />
-          <Card className="p-5 text-[14px] leading-relaxed text-ink-600">
-            <h2 className="mb-1 font-bold text-ink-900">{t('Privacy', 'Privacy')}</h2>
-            {t('Je oefengegevens worden alleen gedeeld met je eigen praktijk. Vragen over je gegevens? Neem contact op met je fysiotherapeut.', 'Your exercise data is only shared with your own practice. Questions about your data? Contact your physiotherapist.')}{' '}
-            <Link to="/privacy" className="link">{t('Privacyverklaring', 'Privacy notice')}</Link>
-          </Card>
-          <Button variant="secondary" size="xl" className="w-full" icon={<LogOut className="h-5 w-5" />} onClick={() => logout()}>{t('Uitloggen', 'Log out')}</Button>
-        </>
-      )}
     </div>
   );
 }
 
-function TextSizeCard() {
+export function TextSizeCard() {
   const { t } = useI18n();
   const [size, setSize] = useTextSize();
   return (

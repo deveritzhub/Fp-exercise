@@ -793,6 +793,32 @@ export function DayChestHomeCard() {
   return <DayChestCard d={q.data} />;
 }
 
+/** Everything the hero has collected, at a glance: coins, trophies, badges, bosses. Each tile opens where it lives. */
+function HeroTotals({ d }: { d: HeroState }) {
+  const { t } = useI18n();
+  const trophies = d.trophies.filter((x) => x.earned).length;
+  const badges = d.badges.filter((b) => b.earned).length;
+  const tiles = [
+    { to: '/p/held/inventaris', icon: Coins, value: d.gear.coins, label: t('muntjes', 'coins') },
+    { to: '/p/held/inventaris#trophies-title', icon: Trophy, value: `${trophies}/${d.trophies.length}`, label: t('prijzen', 'trophies') },
+    { to: '/p/held#fold-hero-badges', icon: Award, value: `${badges}/${d.badges.length}`, label: t('badges', 'badges') },
+    { to: '/p/held#boss', icon: Swords, value: d.weekly.bossesDefeated ?? 0, label: t('bazen', 'bosses') },
+  ];
+  return (
+    <ul className="mt-3 grid grid-cols-4 gap-1.5" aria-label={t('Verzameld', 'Collected')}>
+      {tiles.map((x) => (
+        <li key={x.label}>
+          <Link to={x.to} className="tap flex min-h-[64px] flex-col items-center justify-center rounded-xl bg-canvas px-1 py-2 text-center hover:bg-ink-100">
+            <x.icon className="h-4 w-4 text-sand-ink" aria-hidden />
+            <span className="mt-0.5 font-display text-[16px] font-bold leading-none tabular-nums text-ink-950">{x.value}</span>
+            <span className="mt-0.5 text-[11.5px] text-ink-600"><span className="sr-only"> </span>{x.label}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** The boss on Vandaag, once the patient has a hero. */
 export function BossHomeCard() {
   const q = useHero();
@@ -1131,7 +1157,7 @@ function TrophyCabinet({ d }: { d: HeroState }) {
   };
   return (
     <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="trophies-title">
-      <h2 id="trophies-title" className="t-section">{t(`Prijzenkast (${earnedCount} van ${d.trophies.length})`, `Trophy cabinet (${earnedCount} of ${d.trophies.length})`)}</h2>
+      <h2 id="trophies-title" className="t-section scroll-mt-20">{t(`Prijzenkast (${earnedCount} van ${d.trophies.length})`, `Trophy cabinet (${earnedCount} of ${d.trophies.length})`)}</h2>
       <p className="mt-1 text-[13.5px] text-ink-600">{t(`Per skill een prijs bij level ${TROPHY_TIERS.map((x) => x.level).join(', ')}. Tik op een gewonnen prijs om hem op je plank te zetten (max. ${SHOWCASE_MAX}).`, `A trophy per skill at level ${TROPHY_TIERS.map((x) => x.level).join(', ')}. Tap a won trophy to put it on your shelf (max ${SHOWCASE_MAX}).`)}</p>
       <div className="mt-3 rounded-xl bg-[linear-gradient(180deg,#efe6d4_0%,#f7f9f7_100%)] p-3"><TrophyShelf d={d} /></div>
       <ul className="mt-4 space-y-3">
@@ -1281,6 +1307,7 @@ export function HeroPage() {
           </div>
           <ProgressBar value={L.progress} className="mt-1.5 h-3" label={t(`Voortgang naar level ${L.level + 1}`, `Progress to level ${L.level + 1}`)} />
         </div>
+        <HeroTotals d={d} />
         <details className="mt-3 text-[14px] text-ink-700">
           <summary className="min-h-[44px] cursor-pointer py-2 font-medium text-ink-800">{t('Hoe verdien ik XP?', 'How do I earn XP?')}</summary>
           <ul className="space-y-1 pb-1">

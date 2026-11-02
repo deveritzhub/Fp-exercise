@@ -1,10 +1,12 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
 const KEY = (id: string) => `fp.fold.${id}`;
 
 function initial(id: string, defaultOpen: boolean) {
+  // A link to #fold-<id> (e.g. from the hero's totals) opens the section.
+  if (typeof window !== 'undefined' && window.location.hash === `#fold-${id}`) return true;
   try {
     const v = localStorage.getItem(KEY(id));
     if (v === '1') return true;
@@ -23,6 +25,9 @@ function initial(id: string, defaultOpen: boolean) {
 export function Fold({ id, title, summary, icon, defaultOpen = false, children }: { id: string; title: string; summary?: ReactNode; icon?: ReactNode; defaultOpen?: boolean; children: ReactNode }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(() => initial(id, defaultOpen));
+  useEffect(() => {
+    if (window.location.hash === `#fold-${id}`) document.getElementById(`fold-${id}`)?.scrollIntoView({ block: 'start' });
+  }, [id]);
   const toggle = (v: boolean) => {
     setOpen(v);
     try {
@@ -51,7 +56,7 @@ export function Fold({ id, title, summary, icon, defaultOpen = false, children }
     );
   }
   return (
-    <div id={`fold-${id}`} className="relative" data-fold={id}>
+    <div id={`fold-${id}`} className="relative scroll-mt-20" data-fold={id}>
       {children}
       <button
         type="button"

@@ -39,7 +39,7 @@ test('patient app fits a phone with large text', async ({ browser }) => {
   await page.getByRole('button', { name: 'Inloggen', exact: true }).click();
   await page.waitForURL(/\/p(\/|$)/);
   const problems: string[] = [];
-  for (const path of ['/p', '/p/voortgang', '/p/held', '/p/held/vrienden', '/p/account']) {
+  for (const path of ['/p', '/p/voortgang', '/p/held', '/p/held/vrienden', '/p/instellingen', '/p/account']) {
     await page.goto(path);
     await page.waitForLoadState('networkidle');
     const r = await page.evaluate(() => {

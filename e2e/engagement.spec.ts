@@ -56,7 +56,7 @@ test('patient trains without internet; the workout is sent once back online', as
 test('patient sees the reminder option (needs the installed app on iPhone)', async ({ page }) => {
   await login(page, 'patient@praktijk-b.test');
   await expect(page.getByText('Wil je een herinnering?')).toBeVisible();
-  await page.goto('/p/account');
+  await page.goto('/p/instellingen');
   await expect(page.getByRole('heading', { name: 'Herinnering' })).toBeVisible();
   await expectAccessible(page, 'patient account');
 });

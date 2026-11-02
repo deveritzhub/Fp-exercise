@@ -49,6 +49,7 @@ const FriendsPage = named(() => import('@/pages/patient/FriendsPage'), 'FriendsP
 const LogbookPage = named(() => import('@/pages/patient/LogbookPage'), 'LogbookPage');
 const GymLogPage = named(() => import('@/pages/patient/GymLogPage'), 'GymLogPage');
 const ModulePage = named(() => import('@/pages/patient/ModulePage'), 'ModulePage');
+const SettingsPage = named(() => import('@/pages/patient/SettingsPage'), 'SettingsPage');
 const AdminPage = named(() => import('@/pages/admin/AdminPage'), 'AdminPage');
 const AdminAccountPage = named(() => import('@/pages/admin/AdminPage'), 'AdminAccountPage');
 
@@ -142,6 +143,7 @@ export const router = createBrowserRouter([
           { path: 'kracht', element: <S><ModulePage key="kracht" module="kracht" /></S> },
           { path: 'mobiliteit', element: <S><ModulePage key="mobiliteit" module="mobiliteit" /></S> },
           { path: 'krachtlog', element: <S><GymLogPage /></S> },
+          { path: 'instellingen', element: <S><SettingsPage /></S> },
           { path: 'account', element: <S><AccountPage patient /></S> },
         ],
       },

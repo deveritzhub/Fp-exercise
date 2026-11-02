@@ -114,9 +114,16 @@ test('strength: transition check by the therapist, consent and self-start by the
   }
   await expect(pp).toHaveURL(/\/p\/kracht$/);
   await expect(pp.getByRole('heading', { name: 'Kracht', level: 1 })).toBeVisible();
+  // Sharing lives in Instellingen; the tab shows the status with a link.
+  await expect(pp.getByRole('link', { name: /Alleen voor jou/ })).toBeVisible();
+  await pp.getByRole('link', { name: /Alleen voor jou/ }).click();
+  await expect(pp).toHaveURL(/\/p\/instellingen#delen$/);
   await expect(pp.getByText('Je krachttraining is alleen voor jou')).toBeVisible();
-  await pp.getByRole('button', { name: 'Delen met mijn fysiotherapeut' }).click();
+  await pp.getByRole('button', { name: 'Delen met mijn fysiotherapeut' }).first().click();
   await expect(pp.getByText('Je deelt krachttraining met je fysiotherapeut')).toBeVisible();
+  await expectAccessible(pp, 'patient settings sharing');
+  await pp.goto('/p/kracht');
+  await expect(pp.getByRole('link', { name: /Gedeeld met je fysiotherapeut/ })).toBeVisible();
   await expectAccessible(pp, 'patient strength mode');
   await pp.screenshot({ path: `${SHOTS}/patient-mode-strength.png`, fullPage: true });
   // With a strength programme already running, more programmes are behind a fold-out.
@@ -161,7 +168,7 @@ test('patient downloads their data and requests deletion; the owner declines wit
   const ctx = await phone(browser);
   const pp = await ctx.newPage();
   await login(pp, 'patient@praktijk-a.test');
-  await pp.goto('/p/account');
+  await pp.goto('/p/instellingen');
   const dl = pp.getByRole('link', { name: 'Download al mijn gegevens' });
   await expect(dl).toHaveAttribute('href', '/api/patient/export');
   const exp = await (await pp.request.get('/api/patient/export')).json();
