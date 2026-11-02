@@ -87,8 +87,8 @@ export function ModulePage({ module }: { module: PatientModule }) {
         <Link to="/p/krachtlog" className="tap flex items-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-4 text-white shadow-card">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15"><Dumbbell className="h-6 w-6" aria-hidden /></span>
           <span className="min-w-0 flex-1">
-            <span className="block font-semibold">{t('Krachtlog en 1RM', 'Strength log and 1RM')}</span>
-            <span className="block text-[14px] text-white/80">{t('Log je sets in de sportschool of praktijk', 'Log your sets in the gym or practice')}</span>
+            <span className="block font-semibold">{t('Krachtlog, eigen schema’s en 1RM', 'Strength log, own routines and 1RM')}</span>
+            <span className="block text-[14px] text-white/80">{t('Bewaar je eigen trainingen en log ze set voor set', 'Save your own workouts and log them set by set')}</span>
           </span>
           <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
         </Link>

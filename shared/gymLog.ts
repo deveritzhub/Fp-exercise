@@ -7,7 +7,14 @@ import { estimate1RM, MAX_REPS_FOR_ESTIMATE } from './strength';
  */
 export const GYM_PLACES = ['gym', 'home', 'practice'] as const;
 export type GymPlace = (typeof GYM_PLACES)[number];
-export const GYM_LIMITS = { weightMax: 1000, repsMax: 100, setsPerDay: 30, nameMin: 2, nameMax: 80 } as const;
+export const GYM_LIMITS = { weightMax: 1000, repsMax: 100, setsPerDay: 30, nameMin: 2, nameMax: 80, rirMax: 10, routineItems: 20, routineSets: 10 } as const;
+
+/** One exercise in an own routine: target sets and a rep range. */
+export type RoutineItem = { exerciseId: string | null; exerciseName: string; sets: number; repsMin: number; repsMax: number; restS: number | null };
+export type GymRoutine = { id: string; name: string; items: RoutineItem[]; updatedAt: string };
+
+/** RIR options shown in the logger: 0 (nothing left) to 5+ (easy). */
+export const RIR_OPTIONS = [0, 1, 2, 3, 4, 5] as const;
 
 export type GymSet = {
   id: string;
@@ -18,6 +25,8 @@ export type GymSet = {
   weightKg: number;
   reps: number;
   rpe: number | null;
+  /** Reps in reserve (advanced, optional): how many more reps would have been possible. */
+  rir: number | null;
   place: GymPlace;
   byPatient: boolean;
   mine: boolean;

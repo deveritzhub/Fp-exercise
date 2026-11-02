@@ -7,6 +7,7 @@ import { cn } from '@/lib/cn';
 import { Badge, Button, Input, Notice, Segmented, Sparkline, Spinner, ErrorState, useToast } from '@/components/ui';
 import { GYM_LIMITS, PERCENT_TABLE, gymKey, loadFor, setEstimate, type GymExerciseSummary, type GymPlace, type GymSet } from '@shared/gymLog';
 import { parseMetric } from '@shared/hero';
+import { RirPicker, useGymAdvanced } from '@/components/GymRoutines';
 
 type GymData = { sets: GymSet[]; exercises: GymExerciseSummary[]; library: { id: string; nameNl: string; nameEn: string }[]; sharedByPatient?: boolean };
 
@@ -30,6 +31,8 @@ export function GymLog({ base, staff = false }: { base: string; staff?: boolean 
   const [place, setPlace] = useState<GymPlace>(staff ? 'practice' : 'gym');
   const [busy, setBusy] = useState(false);
   const [calc, setCalc] = useState(false);
+  const [advanced] = useGymAdvanced();
+  const [rir, setRir] = useState<number | null>(null);
 
   const data = q.data;
   const recent = useMemo(() => (data?.exercises ?? []).slice(0, 8), [data]);
@@ -57,8 +60,9 @@ export function GymLog({ base, staff = false }: { base: string; staff?: boolean 
     try {
       const lib = data.library.find((l) => gymKey(l.nameNl) === gymKey(name) || gymKey(l.nameEn) === gymKey(name));
       const r = await api.post<{ setNo: number; estimate: number | null; pr: boolean }>(`${base}/gym/sets`, {
-        exerciseName: name.trim(), exerciseId: lib?.id ?? null, weightKg: w, reps, place: staff ? 'practice' : place,
+        exerciseName: name.trim(), exerciseId: lib?.id ?? null, weightKg: w, reps, rir: advanced ? rir : null, place: staff ? 'practice' : place,
       });
+      setRir(null);
       await qc.invalidateQueries({ queryKey: ['gym', base] });
       if (r.pr) toast(t(`Nieuw record! Geschat 1RM ${kg(r.estimate!, true)} 🏆`, `New record! Estimated 1RM ${kg(r.estimate!, false)} 🏆`), 'ok');
       else toast(t(`Set ${r.setNo} opgeslagen`, `Set ${r.setNo} saved`), 'ok');
@@ -123,6 +127,8 @@ export function GymLog({ base, staff = false }: { base: string; staff?: boolean 
             </div>
           </div>
 
+          {advanced && <RirPicker value={rir} onChange={setRir} idBase="gym-quick" />}
+
           {/* The 1RM meter: live, before saving. */}
           <OneRmMeter est={est} best={current?.best?.value ?? null} reps={reps} />
 
@@ -151,7 +157,7 @@ export function GymLog({ base, staff = false }: { base: string; staff?: boolean 
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[15px] font-semibold text-ink-900">{s.exerciseName} · {t('set', 'set')} {s.setNo}</span>
                     <span className="block text-[13.5px] text-ink-600">
-                      {kg(s.weightKg, nl)} × {s.reps}{e !== null && <> · 1RM ≈ {kg(e, nl)}</>} · {PLACE_LABEL[s.place][nl ? 0 : 1]}{!s.byPatient && !staff && <> · {t('door je praktijk', 'by your practice')}</>}
+                      {kg(s.weightKg, nl)} × {s.reps}{s.rir !== null && <> · RIR {s.rir}</>}{e !== null && <> · 1RM ≈ {kg(e, nl)}</>} · {PLACE_LABEL[s.place][nl ? 0 : 1]}{!s.byPatient && !staff && <> · {t('door je praktijk', 'by your practice')}</>}
                     </span>
                   </span>
                   {s.mine && (

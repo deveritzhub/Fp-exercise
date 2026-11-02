@@ -1,0 +1,317 @@
+{
+ "_meta": {
+  "naam": "Extra krachtoefeningen",
+  "versie": "fp-kracht-v3",
+  "toelichting": "Twintig veelgebruikte krachtoefeningen (vrije gewichten, machines, kabel, lichaamsgewicht) voor de Krachtlog en eigen schema's. Herhalingen en rust volgens de krachtmodule."
+ },
+ "seed_data": {
+  "krachttraining": {
+   "oefeningen": [
+    {
+     "id": "kr_goblet_squat",
+     "naam": "Goblet squat",
+     "categorie": "legs",
+     "hoofdspier": "quadriceps, bilspieren",
+     "materiaal": "Dumbbell of kettlebell",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "8-15",
+     "rust_min": "1-2",
+     "cues": "Houd het gewicht voor je borst, ellebogen omlaag. Zak tussen je knieën, borst omhoog, hielen op de grond.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_step_up",
+     "naam": "Step-up met dumbbells",
+     "categorie": "legs",
+     "hoofdspier": "quadriceps, bilspieren",
+     "materiaal": "Dumbbells, bank of box",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "8-12",
+     "rust_min": "1-2",
+     "cues": "Hele voet op de bank, duw je omhoog via de hiel van het voorste been. Rustig weer omlaag.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_walking_lunge",
+     "naam": "Walking lunge",
+     "categorie": "legs",
+     "hoofdspier": "quadriceps, bilspieren",
+     "materiaal": "Dumbbells (optioneel)",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "8-12",
+     "rust_min": "1-2",
+     "cues": "Grote stap, achterste knie zakt richting de grond, voorste knie boven de voet. Wissel elke stap.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_hack_squat",
+     "naam": "Hack squat",
+     "categorie": "legs",
+     "hoofdspier": "quadriceps",
+     "materiaal": "Hack squat-machine",
+     "niveau": "basis",
+     "1rm_relevant": true,
+     "herhalingen_range": "6-12",
+     "rust_min": "2-3",
+     "cues": "Rug tegen het kussen, voeten op schouderbreedte. Zak tot minstens 90 graden in de knie.",
+     "tags": [
+      "kracht",
+      "1rm"
+     ]
+    },
+    {
+     "id": "kr_hip_abduction",
+     "naam": "Heupabductie machine",
+     "categorie": "legs",
+     "hoofdspier": "bilspieren (gluteus medius)",
+     "materiaal": "Abductiemachine",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "12-20",
+     "rust_min": "1",
+     "cues": "Zit rechtop, duw je knieën naar buiten tegen de kussens en kom gecontroleerd terug.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_back_extension",
+     "naam": "Rugstrekken op bank",
+     "categorie": "core",
+     "hoofdspier": "rugstrekkers, bilspieren",
+     "materiaal": "Back extension-bank",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "10-15",
+     "rust_min": "1-2",
+     "cues": "Heupen op het kussen, buig voorover vanuit de heup en kom terug tot een rechte lijn. Niet overstrekken.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_db_bench_press",
+     "naam": "Dumbbell bench press",
+     "categorie": "push",
+     "hoofdspier": "borst, triceps",
+     "materiaal": "Dumbbells, vlakke bank",
+     "niveau": "basis",
+     "1rm_relevant": true,
+     "herhalingen_range": "6-12",
+     "rust_min": "2",
+     "cues": "Schouderbladen samen, dumbbells boven je borst. Zak gecontroleerd tot je ellebogen net onder de bank zijn.",
+     "tags": [
+      "kracht",
+      "1rm"
+     ]
+    },
+    {
+     "id": "kr_db_shoulder_press",
+     "naam": "Dumbbell schouderdrukken",
+     "categorie": "push",
+     "hoofdspier": "schouders, triceps",
+     "materiaal": "Dumbbells, bank met rugleuning",
+     "niveau": "basis",
+     "1rm_relevant": true,
+     "herhalingen_range": "6-12",
+     "rust_min": "2",
+     "cues": "Zit rechtop, druk de dumbbells boven je hoofd zonder je rug hol te maken.",
+     "tags": [
+      "kracht",
+      "1rm"
+     ]
+    },
+    {
+     "id": "kr_dips",
+     "naam": "Dips",
+     "categorie": "push",
+     "hoofdspier": "borst, triceps",
+     "materiaal": "Dipstation",
+     "niveau": "gevorderd",
+     "1rm_relevant": false,
+     "herhalingen_range": "6-12",
+     "rust_min": "2",
+     "cues": "Schouders laag, zak tot je bovenarm ongeveer horizontaal is. Te zwaar: met ondersteuning of op een bank.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_cable_fly",
+     "naam": "Cable fly",
+     "categorie": "push",
+     "hoofdspier": "borst",
+     "materiaal": "Kabelstation",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "10-15",
+     "rust_min": "1",
+     "cues": "Lichte buiging in de ellebogen, breng je handen voor je borst samen in een boog.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_overhead_triceps",
+     "naam": "Triceps extension boven het hoofd",
+     "categorie": "push",
+     "hoofdspier": "triceps",
+     "materiaal": "Dumbbell of kabel",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "10-15",
+     "rust_min": "1",
+     "cues": "Ellebogen naar voren gericht en dicht bij je hoofd, strek je armen volledig.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_db_row",
+     "naam": "Eenarmige dumbbell row",
+     "categorie": "pull",
+     "hoofdspier": "rug, biceps",
+     "materiaal": "Dumbbell, bank",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "8-12",
+     "rust_min": "1-2",
+     "cues": "Steun met hand en knie op de bank, rug plat. Trek de dumbbell naar je heup.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_seated_cable_row",
+     "naam": "Seated cable row",
+     "categorie": "pull",
+     "hoofdspier": "rug, biceps",
+     "materiaal": "Kabelstation",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "8-12",
+     "rust_min": "2",
+     "cues": "Borst omhoog, trek het handvat naar je buik en knijp je schouderbladen samen.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_chin_up",
+     "naam": "Chin-up",
+     "categorie": "pull",
+     "hoofdspier": "rug, biceps",
+     "materiaal": "Optrekstang",
+     "niveau": "gevorderd",
+     "1rm_relevant": false,
+     "herhalingen_range": "4-10",
+     "rust_min": "2",
+     "cues": "Handpalmen naar je toe, trek je op tot je kin boven de stang is. Te zwaar: met elastiek of machine.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_inverted_row",
+     "naam": "Inverted row",
+     "categorie": "pull",
+     "hoofdspier": "rug, biceps",
+     "materiaal": "Stang op heuphoogte of TRX",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "8-15",
+     "rust_min": "1-2",
+     "cues": "Lichaam in één lijn, trek je borst naar de stang. Lichter: voeten dichterbij, lichaam rechter.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_reverse_fly",
+     "naam": "Reverse fly",
+     "categorie": "pull",
+     "hoofdspier": "achterkant schouders, bovenrug",
+     "materiaal": "Dumbbells of kabel",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "12-20",
+     "rust_min": "1",
+     "cues": "Voorovergebogen met platte rug, armen zijwaarts omhoog tot schouderhoogte, licht gewicht.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_hammer_curl",
+     "naam": "Hammer curl",
+     "categorie": "pull",
+     "hoofdspier": "biceps, onderarm",
+     "materiaal": "Dumbbells",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "8-15",
+     "rust_min": "1",
+     "cues": "Duimen omhoog, ellebogen langs je lichaam, buig je armen zonder te zwaaien.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_pallof_press",
+     "naam": "Pallof press",
+     "categorie": "core",
+     "hoofdspier": "buikspieren (anti-rotatie)",
+     "materiaal": "Kabel of weerstandsband",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "10-12",
+     "rust_min": "1",
+     "cues": "Sta zijwaarts naar de kabel, duw je handen recht naar voren en weersta het draaien.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_farmer_carry",
+     "naam": "Farmer carry",
+     "categorie": "core",
+     "hoofdspier": "grip, romp, schouders",
+     "materiaal": "Zware dumbbells of kettlebells",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "30-40 sec",
+     "rust_min": "1-2",
+     "cues": "Loop rechtop met in elke hand een zwaar gewicht, schouders laag, kleine stappen.",
+     "tags": [
+      "kracht"
+     ]
+    },
+    {
+     "id": "kr_kettlebell_swing",
+     "naam": "Kettlebell swing",
+     "categorie": "legs",
+     "hoofdspier": "bilspieren, hamstrings",
+     "materiaal": "Kettlebell",
+     "niveau": "gevorderd",
+     "1rm_relevant": false,
+     "herhalingen_range": "10-15",
+     "rust_min": "1-2",
+     "cues": "Beweging komt uit de heup: kantel voorover met platte rug, duw je heupen krachtig naar voren. Armen sturen alleen.",
+     "tags": [
+      "kracht"
+     ]
+    }
+   ],
+   "programmas": []
+  }
+ }
+}

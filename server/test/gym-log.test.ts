@@ -83,3 +83,37 @@ describe('Strength level follows real lifts', () => {
     expect(c.cap).toBeLessThan(72);
   });
 });
+
+describe('own routines and RIR', () => {
+  it('saves routines on the patient account only, and stores RIR with a set', async () => {
+    resetRateLimits();
+    const p = await login('patientA');
+    // RIR is optional and validated.
+    const set = await p.post('/patient/gym/sets', { exerciseName: 'Goblet squat', weightKg: 20, reps: 10, rir: 2 });
+    expect(set.status).toBe(201);
+    expect((await p.post('/patient/gym/sets', { exerciseName: 'Goblet squat', weightKg: 20, reps: 10, rir: 11 })).status).toBe(400);
+    const sets = (await p.get('/patient/gym')).body.sets as { id: string; rir: number | null }[];
+    expect(sets.find((s) => s.id === set.body.id)?.rir).toBe(2);
+
+    // A routine: create, read, update, delete.
+    const body = { name: 'Benen', items: [{ exerciseName: 'Goblet squat', sets: 3, repsMin: 8, repsMax: 12 }, { exerciseName: 'Hip thrust', sets: 4, repsMin: 6, repsMax: 10, restS: 120 }] };
+    const made = await p.post('/patient/gym/routines', body);
+    expect(made.status).toBe(201);
+    expect(made.body.items).toHaveLength(2);
+    expect((await p.post('/patient/gym/routines', { name: 'X', items: [] })).status).toBe(400);
+    expect((await p.post('/patient/gym/routines', { name: 'Fout', items: [{ exerciseName: 'Squat', sets: 3, repsMin: 12, repsMax: 8 }] })).status).toBe(400);
+    const upd = await p.put(`/patient/gym/routines/${made.body.id}`, { ...body, name: 'Benen zwaar' });
+    expect(upd.body.name).toBe('Benen zwaar');
+    expect((await p.get('/patient/gym/routines')).body.map((r: { name: string }) => r.name)).toContain('Benen zwaar');
+
+    // Another patient cannot see, change or delete it.
+    const other = await login('patientB');
+    expect((await other.get('/patient/gym/routines')).body.map((r: { id: string }) => r.id)).not.toContain(made.body.id);
+    expect((await other.put(`/patient/gym/routines/${made.body.id}`, body)).status).toBe(404);
+    expect((await other.del(`/patient/gym/routines/${made.body.id}`)).status).toBe(404);
+
+    expect((await p.del(`/patient/gym/routines/${made.body.id}`)).status).toBe(200);
+    expect((await p.get('/patient/gym/routines')).body.map((r: { id: string }) => r.id)).not.toContain(made.body.id);
+    await p.del(`/patient/gym/sets/${set.body.id}`);
+  });
+});

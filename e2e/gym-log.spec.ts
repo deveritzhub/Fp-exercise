@@ -71,3 +71,47 @@ test('krachtlog: the patient logs sets with a live 1RM meter; the therapist logs
   await expectAccessible(tp, 'gym log therapist');
   await tctx.close();
 });
+
+test('own routine: build it, log it set by set with RIR, then delete it', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, locale: 'nl-NL', timezoneId: 'Europe/Amsterdam' });
+  const pp = await ctx.newPage();
+  await login(pp, 'patient@praktijk-b.test');
+  await pp.goto('/p/krachtlog');
+  await expect(pp.getByRole('heading', { name: 'Mijn schema’s' })).toBeVisible();
+
+  // Build a routine with two exercises.
+  await pp.getByRole('button', { name: 'Nieuw', exact: true }).click();
+  const dlg = pp.getByRole('dialog', { name: 'Nieuw schema' });
+  await dlg.getByLabel('Naam').fill('E2E benen');
+  await dlg.getByRole('combobox', { name: 'Oefening toevoegen' }).fill('Squat');
+  await dlg.getByRole('button', { name: 'Toevoegen' }).click();
+  await dlg.getByRole('combobox', { name: 'Oefening toevoegen' }).fill('Hip thrust');
+  await dlg.getByRole('button', { name: 'Toevoegen' }).click();
+  await dlg.getByRole('button', { name: 'Sets Hip thrust: meer' }).click();
+  await expectAccessible(pp, 'routine editor');
+  await dlg.getByRole('button', { name: 'Opslaan' }).click();
+  await expect(pp.getByText('E2E benen')).toBeVisible();
+
+  // Advanced: track RIR. Start the routine: last time's squat weight is filled in.
+  await pp.getByRole('checkbox', { name: /Geavanceerd: RIR bijhouden/ }).check();
+  await pp.getByRole('button', { name: 'Start E2E benen' }).click();
+  await expect(pp.getByRole('heading', { name: 'E2E benen' })).toBeVisible();
+  await expect(pp.getByLabel('Gewicht set 1 Squat (kg)')).not.toHaveValue('');
+  await pp.getByRole('radiogroup').first().getByRole('radio', { name: '2' }).click();
+  await pp.getByRole('button', { name: 'Set 1 Squat opslaan' }).click();
+  await expect(pp.getByRole('button', { name: 'Set 1 Squat opgeslagen' })).toBeVisible();
+  await expect(pp.getByText(/RIR 2/).first()).toBeVisible();
+  await expectAccessible(pp, 'routine session');
+  await pp.screenshot({ path: 'screenshots/gym/routine.png', fullPage: true });
+  await pp.getByRole('button', { name: 'Training afronden' }).click();
+  await expect(pp.getByRole('heading', { name: 'Training gelogd!' })).toBeVisible();
+  await pp.getByRole('button', { name: 'Klaar' }).click();
+
+  // Clean up: delete the routine and today's squat set.
+  await pp.getByRole('button', { name: 'E2E benen bewerken' }).click();
+  await pp.getByRole('dialog', { name: 'Schema bewerken' }).getByRole('button', { name: 'Verwijderen' }).click();
+  await expect(pp.getByText('Schema verwijderd')).toBeVisible();
+  const gym = await (await pp.request.get('/api/patient/gym', { headers: { 'x-requested-with': 'fp' } })).json();
+  for (const s of gym.sets.filter((x: { rir: number | null; mine: boolean }) => x.rir === 2 && x.mine)) await pp.request.delete(`/api/patient/gym/sets/${s.id}`, { headers: { 'x-requested-with': 'fp' } });
+  await ctx.close();
+});

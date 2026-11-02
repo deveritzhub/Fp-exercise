@@ -3,7 +3,7 @@ import { gymKey, loadFor, setEstimate, summariseGym, type GymSet } from './gymLo
 
 const set = (p: Partial<GymSet>): GymSet => ({
   id: Math.random().toString(36).slice(2), day: '2026-10-01', exerciseId: null, exerciseName: 'Squat', setNo: 1,
-  weightKg: 100, reps: 5, rpe: null, place: 'gym', byPatient: true, mine: true, createdAt: '', ...p,
+  weightKg: 100, reps: 5, rpe: null, rir: null, place: 'gym', byPatient: true, mine: true, createdAt: '', ...p,
 });
 
 describe('krachtlog', () => {

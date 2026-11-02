@@ -87,3 +87,21 @@ describe('extra strength programmes (fp-kracht-v2)', () => {
     expect(days('kr2_thuis_3d')).toEqual([1, 3, 5]);
   });
 });
+
+describe('extra strength exercises (fp-kracht-v3)', () => {
+  it('adds twenty strength exercises with valid regions and no programmes', async () => {
+    const { BODY_REGIONS } = await import('../../shared/taxonomy');
+    const b = toBundle(readFpBundle('fp-kracht-v3.json'));
+    expect(b.exercises).toHaveLength(20);
+    expect(b.templates).toHaveLength(0);
+    const regions = new Set(BODY_REGIONS.map((r: { key: string }) => r.key));
+    for (const e of b.exercises) {
+      expect(regions.has(e.region), `${e.key}: ${e.region}`).toBe(true);
+      expect(e.training).toEqual(['strength']);
+      expect(e.cuesNl.length).toBeGreaterThan(20);
+    }
+    // No key clashes with earlier bundles.
+    const earlier = new Set(FP_BUNDLES.filter((x) => x.name !== 'fp-kracht-v3').flatMap((x) => toBundle(readFpBundle(x.file)).exercises.map((e) => e.key)));
+    for (const e of b.exercises) expect(earlier.has(e.key), e.key).toBe(false);
+  });
+});

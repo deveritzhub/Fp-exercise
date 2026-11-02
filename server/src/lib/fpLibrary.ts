@@ -19,6 +19,8 @@ export const FP_BUNDLES = [
   { name: 'fp-mobiliteit-v2', file: 'fp-mobiliteit-v2.json' },
   // Four strength programmes to start yourself (beginner 2x/3x, at home, glutes) plus the push-up.
   { name: 'fp-kracht-v2', file: 'fp-kracht-v2.json' },
+  // Twenty more strength exercises for the strength log and own routines.
+  { name: 'fp-kracht-v3', file: 'fp-kracht-v3.json' },
 ] as const;
 
 const DIR = path.join(import.meta.dirname, '../../db/seed-data');
