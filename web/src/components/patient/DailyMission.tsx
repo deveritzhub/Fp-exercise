@@ -20,7 +20,6 @@ export function DailyMissionCard({ programs }: { programs: PatientHomeData['prog
 
   return (
     <section aria-labelledby="fp-daily-mission" className="relative overflow-hidden rounded-2xl bg-[#343F2A] p-5 text-[#F5F0E7] shadow-card sm:p-6">
-      <div className="pointer-events-none absolute -right-12 -top-20 h-52 w-52 rounded-full border-[26px] border-white/[0.05]" aria-hidden="true" />
       <div className="relative">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="inline-flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.14em] text-[#E8DFCD]">
