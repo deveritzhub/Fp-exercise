@@ -8,6 +8,7 @@ import { greeting, pct } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
 import { ButtonLink, ErrorState, ProgressRing, Skeleton } from '@/components/ui';
 import { RestDayCard, TodayProgramCard } from '@/components/patient/TodayCard';
+import { DailyMissionCard } from '@/components/patient/DailyMission';
 import { PausedNotice } from '@/components/patient/Safety';
 import { useModes } from '@/components/patient/Modules';
 import type { Adherence, Notification, Program } from '@/lib/types';
@@ -101,6 +102,8 @@ export function PatientHome() {
           ))}
         </div>
       )}
+
+      <DailyMissionCard programs={d.programs} />
 
       {d.programs.length === 0 ? (
         <div className="rounded-2xl border border-line bg-white p-6 text-center shadow-card">
