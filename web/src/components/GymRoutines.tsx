@@ -26,10 +26,10 @@ export function useGymAdvanced(): [boolean, (v: boolean) => void] {
 const kg = (n: number, nl: boolean) => `${n.toLocaleString(nl ? 'nl-NL' : 'en-GB', { maximumFractionDigits: 1 })} kg`;
 
 /** Small stepper: − value + (min 44 px targets). */
-function Stepper({ label, value, onChange, min, max, step = 1, format }: { label: string; value: number; onChange: (v: number) => void; min: number; max: number; step?: number; format?: (v: number) => string }) {
+function Stepper({ label, value, onChange, min, max, step = 1, format, compact = false }: { label: string; value: number; onChange: (v: number) => void; min: number; max: number; step?: number; format?: (v: number) => string; compact?: boolean }) {
   const { t } = useI18n();
   return (
-    <div className="flex items-center gap-1 rounded-xl border border-line bg-white p-1" role="group" aria-label={label}>
+    <div className={cn('flex items-center rounded-xl border border-line bg-white', compact ? 'gap-0 p-0.5' : 'gap-1 p-1')} role="group" aria-label={label}>
       <button type="button" aria-label={t(`${label}: minder`, `${label}: less`)} onClick={() => onChange(Math.max(min, value - step))} className="tap flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-canvas"><Minus className="h-4 w-4" /></button>
       <output className="min-w-0 flex-1 text-center font-display text-[18px] font-bold tabular-nums">{format ? format(value) : value}</output>
       <button type="button" aria-label={t(`${label}: meer`, `${label}: more`)} onClick={() => onChange(Math.min(max, value + step))} className="tap flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-canvas"><Plus className="h-4 w-4" /></button>
@@ -270,13 +270,13 @@ function RoutineSession({ routine, gym, advanced, onClose }: { routine: GymRouti
                 const est = setEstimate(parseMetric(s.weight) ?? 0, s.reps);
                 return (
                   <li key={j} className={cn('rounded-xl border p-2', s.done ? 'border-ok/40 bg-ok-soft' : 'border-line')}>
-                    <div className="flex items-center gap-2">
-                      <span className="w-12 shrink-0 text-[13px] font-semibold text-ink-700">{t('Set', 'Set')} {j + 1}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-canvas text-[13px] font-bold text-ink-700"><span className="sr-only">{t('Set', 'Set')} </span>{j + 1}</span>
                       <label className="sr-only" htmlFor={`rw-${i}-${j}`}>{t(`Gewicht set ${j + 1} ${it.exerciseName} (kg)`, `Weight set ${j + 1} ${it.exerciseName} (kg)`)}</label>
-                      <input id={`rw-${i}-${j}`} inputMode="decimal" value={s.weight} disabled={s.done} placeholder="kg" onChange={(e) => upd(i, j, { weight: e.target.value })} className="h-11 w-20 shrink-0 rounded-lg border border-line bg-white text-center font-display text-[17px] font-bold tabular-nums disabled:bg-transparent" />
+                      <input id={`rw-${i}-${j}`} inputMode="decimal" value={s.weight} disabled={s.done} placeholder="kg" onChange={(e) => upd(i, j, { weight: e.target.value })} className="h-11 w-16 shrink-0 rounded-lg border border-line bg-white text-center font-display text-[17px] font-bold tabular-nums disabled:bg-transparent" />
                       <span className="text-ink-500" aria-hidden>×</span>
-                      <div className="min-w-0 flex-1">
-                        {s.done ? <span className="font-display text-[17px] font-bold tabular-nums">{s.reps}</span> : <Stepper label={t(`Herhalingen set ${j + 1} ${it.exerciseName}`, `Reps set ${j + 1} ${it.exerciseName}`)} value={s.reps} min={1} max={GYM_LIMITS.repsMax} onChange={(v) => upd(i, j, { reps: v })} />}
+                      <div className="min-w-[128px] flex-1">
+                        {s.done ? <span className="font-display text-[17px] font-bold tabular-nums">{s.reps}</span> : <Stepper compact label={t(`Herhalingen set ${j + 1} ${it.exerciseName}`, `Reps set ${j + 1} ${it.exerciseName}`)} value={s.reps} min={1} max={GYM_LIMITS.repsMax} onChange={(v) => upd(i, j, { reps: v })} />}
                       </div>
                       <button type="button" disabled={s.done || busy !== null || parseMetric(s.weight || '0') === null} onClick={() => logSet(i, j)}
                         aria-label={s.done ? t(`Set ${j + 1} ${it.exerciseName} opgeslagen`, `Set ${j + 1} ${it.exerciseName} saved`) : t(`Set ${j + 1} ${it.exerciseName} opslaan`, `Save set ${j + 1} ${it.exerciseName}`)}
