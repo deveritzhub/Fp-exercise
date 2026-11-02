@@ -47,9 +47,9 @@ describe('daily patient mission', () => {
     });
   });
 
-  it('prioritises actionable prescribed work but keeps a separate paused warning', () => {
+  it('prioritises a safety pause even when another prescribed session is available', () => {
     const result = dailyMission([p('paused', 3, false, true), p('ready', 2)]);
-    expect(result).toMatchObject({ status: 'ready', paused: 1, completed: 0, total: 1 });
+    expect(result).toMatchObject({ status: 'paused', paused: 1, completed: 0, total: 1 });
     expect(result.next?.id).toBe('ready');
   });
 
