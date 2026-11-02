@@ -12,6 +12,7 @@ import { PausedNotice } from '@/components/patient/Safety';
 import { useModes } from '@/components/patient/Modules';
 import type { Adherence, Notification, Program } from '@/lib/types';
 import type { DayState } from '@shared/adherence';
+import { isActionableToday, summarizePatientDay } from '@shared/todayView';
 import { cn } from '@/lib/cn';
 import { BossHomeCard, DayChestHomeCard, HeroHomeCard } from '@/pages/patient/HeroPages';
 import { LogbookHomeCard } from '@/pages/patient/LogbookPage';
@@ -42,7 +43,7 @@ export const MODULE_PATH: Record<PatientModule, string> = { revalidatie: '/p/rev
 export const MODULE_ICON: Record<PatientModule, typeof HeartPulse> = { revalidatie: HeartPulse, kracht: Dumbbell, mobiliteit: Move };
 export const moduleLabel = (m: PatientModule, nl: boolean) => ({ revalidatie: ['Revalidatie', 'Rehab'], kracht: ['Kracht', 'Strength'], mobiliteit: ['Mobiliteit', 'Mobility'] })[m][nl ? 0 : 1];
 /** Something still to do today in this programme: planned and not finished, or a workout left open. */
-export const openToday = (p: PatientProgramRow) => !p.paused && ((p.today.scheduled > 0 && !p.today.done) || !!p.openSession);
+export const openToday = (p: PatientProgramRow) => isActionableToday(p);
 
 /**
  * Vandaag: everything for today in one place, across rehabilitation, strength and mobility, with
@@ -58,10 +59,7 @@ export function PatientHome() {
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
   if (!q.data) return <div className="space-y-4"><Skeleton className="h-8 w-2/3" /><Skeleton className="h-56 rounded-2xl" /><Skeleton className="h-28 rounded-2xl" /></div>;
   const d = q.data;
-  const todo = d.programs.filter((p) => p.today.scheduled > 0);
-  // A workout started on a day without planned exercises (all exercises) can be resumed as well.
-  const resumeOther = d.programs.filter((p) => (p.openSession || p.paused) && p.today.scheduled === 0);
-  const left = d.programs.filter(openToday).length;
+  const { scheduled: todo, resumeOther, remaining: left, pausedToday } = summarizePatientDay(d.programs);
   const startable = (['mobiliteit', 'kracht'] as const).filter((m) => modes.data?.templates.some((x) => x.module === m) && !d.programs.some((p) => moduleOf(p) === m));
   return (
     <div className="space-y-6">
@@ -70,7 +68,11 @@ export function PatientHome() {
         <h1 className="mt-0.5 text-[28px] font-bold leading-tight">{greeting(locale)}, {d.patient.firstName}</h1>
         {todo.length > 0 && (
           <p className="mt-1 text-[15px] text-ink-600">
-            {left === 0 ? t('Alles voor vandaag is gedaan. Lekker bezig!', 'Everything for today is done. Well done!') : t(`Vandaag nog ${left} ${left === 1 ? 'training' : 'trainingen'} te doen.`, `${left} ${left === 1 ? 'workout' : 'workouts'} left today.`)}
+            {left > 0
+              ? t(`Vandaag nog ${left} ${left === 1 ? 'training' : 'trainingen'} te doen.`, `${left} ${left === 1 ? 'workout' : 'workouts'} left today.`)
+              : pausedToday > 0
+                ? t('Je programma staat tijdelijk stil. Volg het advies van je fysiotherapeut.', 'Your programme is temporarily paused. Follow your physiotherapist’s advice.')
+                : t('Alles voor vandaag is gedaan. Lekker bezig!', 'Everything for today is done. Well done!')}
           </p>
         )}
       </div>
@@ -105,7 +107,7 @@ export function PatientHome() {
           <h2 className="text-lg font-bold">{t('Nog geen programma', 'No programme yet')}</h2>
           <p className="mt-1 text-ink-500">{modes.data?.modules.includes('revalidatie') ? t('Je fysiotherapeut zet je oefenprogramma hier voor je klaar. Je kunt ook zelf iets starten.', 'Your physiotherapist will set up your exercise programme here. You can also start something yourself.') : t('Start hieronder zelf een programma.', 'Start a programme yourself below.')}</p>
         </div>
-      ) : todo.length === 0 ? (
+      ) : todo.length === 0 && resumeOther.length === 0 ? (
         <RestDayCard
           status={d.programs.every((p) => p.upcoming) ? 'not_started' : 'rest'}
           startDate={d.programs[0].startDate}
