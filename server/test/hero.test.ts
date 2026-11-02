@@ -86,6 +86,10 @@ describe('weekly quests, gear, daily check-in, trends', () => {
     expect(st.weekly.quests[0].target).toBeLessThanOrEqual(3);
     // Each quest points to where it is done: today's training, the body map, an exercise for the skill.
     expect(st.weekly.links).toMatchObject({ train: '/p', checkin: '/p/held/pijn' });
+    // The weekly boss comes with the quests.
+    expect(st.weekly.boss).toMatchObject({ hp: 100, xp: 60 });
+    expect(st.weekly.boss.damage).toBeGreaterThanOrEqual(0);
+    expect(st.weekly.boss.hits.map((h: { source: string }) => h.source)).toEqual(['train', 'checkin']);
     if (st.weekly.links.skill) expect(st.weekly.links.skill).toMatch(/^\/p\/(programma\/[\w-]+\/oefening\/[\w-]+|kracht)$/);
 
     // Daily check-in: once per day, can be changed; counts as this week's check-in.

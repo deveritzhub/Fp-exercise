@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Award, BookOpen, CalendarCheck, Check, ChevronRight, CircleCheck, Coins, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Utensils, Droplets, Zap, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Award, BookOpen, CalendarCheck, Check, ChevronRight, CircleCheck, Coins, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Utensils, Droplets, Zap, Swords, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -13,7 +13,7 @@ import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
 import { SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
-import { BADGES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
+import { BADGES, BOSSES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
 import type { HeroState } from '@/lib/types';
 import { PainTrendList } from '@/components/hero/PainTrend';
@@ -673,6 +673,81 @@ function DailyCheckin({ d }: { d: HeroState }) {
   );
 }
 
+/**
+ * Weekly boss: this week's monster and its health. Training days and check-ins do the damage; doing
+ * what is planned is enough. Compact on Vandaag, full on the hero page.
+ */
+export function BossCard({ d, compact = false }: { d: HeroState; compact?: boolean }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const b = d.weekly.boss;
+  const [artFailed, setArtFailed] = useState(false);
+  if (!b) return null;
+  const meta = BOSSES.find((x) => x.key === b.key)!;
+  const left = b.hp - b.damage;
+  const name = nl ? meta.nl : meta.en;
+  const art = !artFailed && <img src={`/api/hero-assets/award/boss_${b.key}`} alt="" loading="lazy" onError={() => setArtFailed(true)} className={cn('h-full w-full object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.25)]', b.defeated && 'opacity-50 grayscale')} />;
+  const bar = (
+    <div className="h-3 overflow-hidden rounded-full bg-ink-100" role="progressbar" aria-valuemin={0} aria-valuemax={b.hp} aria-valuenow={left} aria-label={t(`Leven van ${name}`, `${name}'s health`)}>
+      <div className="h-full rounded-full bg-[#c2410c] transition-[width] duration-500" style={{ width: `${(left / b.hp) * 100}%` }} />
+    </div>
+  );
+  if (compact) {
+    return (
+      <Link to="/p/held#boss" className="tap flex items-center gap-3 rounded-2xl border border-line bg-white p-3 shadow-card">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#f3e9e2_0%,#fff_100%)]" aria-hidden>{art || <Swords className="h-6 w-6 text-[#c2410c]" />}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[12px] font-semibold uppercase tracking-wide text-ink-600">{t('Baas van de week', 'Boss of the week')}</span>
+          <span className="block truncate font-semibold text-ink-900">{b.defeated ? t(`${name} is verslagen!`, `${name} is defeated!`) : name}</span>
+          <span className="mt-1 block">{bar}</span>
+        </span>
+        <span className="shrink-0 text-right text-[13px] font-semibold tabular-nums text-ink-700">{b.defeated ? `+${b.xp} XP` : `${left}/${b.hp}`}</span>
+      </Link>
+    );
+  }
+  return (
+    <section id="boss" className="scroll-mt-20 overflow-hidden rounded-2xl border border-line bg-white shadow-card" aria-labelledby="boss-title">
+      <div className="flex items-center gap-4 bg-[linear-gradient(180deg,#f3e9e2_0%,#fff_100%)] p-4">
+        <span className="flex h-24 w-24 shrink-0 items-center justify-center" aria-hidden>{art || <Swords className="h-10 w-10 text-[#c2410c]" />}</span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-600">{t('Baas van de week', 'Boss of the week')}</p>
+          <h2 id="boss-title" className="font-display text-[20px] font-bold leading-tight text-ink-950">{name}</h2>
+          <p className="mt-0.5 text-[14px] italic text-ink-600">{b.defeated ? t('“Nee! Je was te sterk…”', '“No! You were too strong…”') : `“${t(meta.taunt[0], meta.taunt[1])}”`}</p>
+        </div>
+      </div>
+      <div className="space-y-3 p-4 pt-3">
+        <div>
+          <div className="mb-1 flex justify-between text-[14px] font-medium text-ink-700">
+            <span>{b.defeated ? t('Verslagen!', 'Defeated!') : t('Leven', 'Health')}</span>
+            <span className="tabular-nums">{left} / {b.hp}</span>
+          </div>
+          {bar}
+        </div>
+        <ul className="space-y-1.5 text-[14.5px] text-ink-800">
+          {b.hits.map((h) => (
+            <li key={h.source} className="flex items-center gap-2">
+              {h.count >= h.max ? <CircleCheck className="h-5 w-5 shrink-0 text-ok" aria-hidden /> : <Target className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />}
+              <span className="min-w-0 flex-1">{h.source === 'train' ? t(`Trainingsdagen ${h.count}/${h.max}`, `Training days ${h.count}/${h.max}`) : t(`Dagchecks ${h.count}/${h.max}`, `Daily check-ins ${h.count}/${h.max}`)}</span>
+              <span className="shrink-0 font-semibold tabular-nums text-[#9a3412]">−{h.damage}</span>
+            </li>
+          ))}
+        </ul>
+        <p className={cn('rounded-lg px-3 py-2.5 text-[14px]', b.defeated ? 'bg-sand-soft font-semibold text-sand-ink' : 'bg-canvas text-ink-700')}>
+          {b.defeated ? t(`Gewonnen: +${b.xp} XP (en dus muntjes). Volgende week wacht een nieuwe baas.`, `Won: +${b.xp} XP (and so coins). A new boss waits next week.`) : t(`Versla hem met je geplande trainingen en twee dagchecks: +${b.xp} XP. Extra trainen doet geen extra schade; rust is ook training.`, `Beat it with your planned workouts and two check-ins: +${b.xp} XP. Extra training does no extra damage; rest is training too.`)}
+        </p>
+        {(d.weekly.bossesDefeated ?? 0) > 0 && <p className="text-[13px] text-ink-600">{t(`Bazen verslagen: ${d.weekly.bossesDefeated}`, `Bosses defeated: ${d.weekly.bossesDefeated}`)}</p>}
+      </div>
+    </section>
+  );
+}
+
+/** The boss on Vandaag, once the patient has a hero. */
+export function BossHomeCard() {
+  const q = useHero();
+  if (!q.data?.hero) return null;
+  return <BossCard d={q.data} compact />;
+}
+
 /** This week's three quests and the week chest. */
 function WeeklyQuests({ d }: { d: HeroState }) {
   const { t } = useI18n();
@@ -1178,6 +1253,7 @@ export function HeroPage() {
         summary={d.logs.protein.goal !== null ? t(`Eiwit ${d.logs.protein.grams} van ${d.logs.protein.goal} g`, `Protein ${d.logs.protein.grams} of ${d.logs.protein.goal} g`) : t('Eiwit en eigen trainingen bijhouden', 'Track protein and your own workouts')}>
         <LogTeaser d={d} />
       </Fold>
+      <BossCard d={d} />
       <Fold id="hero-weekly" defaultOpen icon={<Gift className="h-5 w-5" />} title={t('Weekquests', 'Weekly quests')}
         summary={t(`${d.weekly.quests.filter((x) => x.done).length} van ${d.weekly.quests.length} gehaald`, `${d.weekly.quests.filter((x) => x.done).length} of ${d.weekly.quests.length} done`)}>
         <WeeklyQuests d={d} />

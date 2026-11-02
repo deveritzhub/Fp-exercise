@@ -681,6 +681,45 @@ export function weeklyQuests(w: WeekData, skill: SkillKey): Quest[] {
   ];
 }
 
+/**
+ * Weekly boss: a silly monster that stands for what keeps people from training (the couch, stiffness,
+ * putting things off). This week's training and check-ins wear down its health. Doing what is
+ * planned is enough to beat it: extra workouts do no extra damage, because rest is training too.
+ */
+export const BOSSES = [
+  { key: 'bankhanger', nl: 'De Bankhanger', en: 'The Couch Hugger', taunt: ['Blijf lekker zitten, morgen kan ook…', 'Stay seated, tomorrow works too…'] },
+  { key: 'stijve_steven', nl: 'Stijve Steven', en: 'Stiff Steven', taunt: ['Krak krak. Bewegen? Nee hoor.', 'Creak creak. Move? No thanks.'] },
+  { key: 'gaapdraak', nl: 'De Gaapdraak', en: 'The Yawn Dragon', taunt: ['Eerst nog even een dutje…', 'Just one more nap first…'] },
+  { key: 'uitsteller', nl: 'De Uitsteller', en: 'The Procrastinator', taunt: ['Straks. Echt. Straks.', 'Later. Really. Later.'] },
+  { key: 'krampkolos', nl: 'De Krampkolos', en: 'The Cramp Colossus', taunt: ['Ik knoop alles in de war!', 'I tie everything in knots!'] },
+  { key: 'schermschim', nl: 'De Schermschim', en: 'The Screen Shade', taunt: ['Nog één filmpje kijken…', 'Just one more video…'] },
+] as const;
+export type BossKey = (typeof BOSSES)[number]['key'];
+export const BOSS_XP = 60;
+export const BOSS_HP = 100;
+
+/** Same boss for everyone in a given week; it rotates weekly. */
+export function bossOf(weekStart: string) {
+  const weeks = Math.floor(Date.parse(weekStart + 'T12:00:00Z') / (7 * 86400_000));
+  return BOSSES[((weeks % BOSSES.length) + BOSSES.length) % BOSSES.length];
+}
+
+export type BossHit = { source: 'train' | 'checkin'; count: number; max: number; damage: number };
+export type WeeklyBoss = { key: BossKey; hp: number; damage: number; defeated: boolean; hits: BossHit[] };
+
+/** Training days do 80 damage in total (spread over the week's training goal), check-in days 10 each (max 2). */
+export function weeklyBoss(weekStart: string, w: WeekData): WeeklyBoss {
+  const target = w.planned > 0 ? Math.min(w.planned, 3) : 1;
+  const trained = Math.min(w.trainedDays, target);
+  const checks = Math.min(w.checkins, 2);
+  const hits: BossHit[] = [
+    { source: 'train', count: trained, max: target, damage: Math.round((80 * trained) / target) },
+    { source: 'checkin', count: checks, max: 2, damage: checks * 10 },
+  ];
+  const damage = Math.min(BOSS_HP, hits.reduce((s, h) => s + h.damage, 0));
+  return { key: bossOf(weekStart).key, hp: BOSS_HP, damage, defeated: damage >= BOSS_HP, hits };
+}
+
 export const questXp = (quests: Quest[]) => quests.filter((q) => q.done).length * QUEST_XP + (quests.every((q) => q.done) ? CHEST_XP : 0);
 
 // ----------------------------------------------------------------------------------------------

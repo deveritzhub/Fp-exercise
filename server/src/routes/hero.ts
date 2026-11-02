@@ -11,7 +11,7 @@ import { loadPatientLogs } from '../lib/patientLogs';
 import { weeklyAdherence } from '../../../shared/adherence';
 import {
   AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, coinsEarned, gearScore, skillTrophies, SHOWCASE_MAX, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
-  questXp, skillOfWeek, skillsForExercise, weeklyQuests, xpFor, type SkillKey, type WeekData,
+  questXp, skillOfWeek, skillsForExercise, weeklyQuests, weeklyBoss, BOSS_XP, xpFor, type SkillKey, type WeekData,
 } from '../../../shared/hero';
 import { loadSkillSnapshot } from '../lib/skillState';
 
@@ -153,11 +153,17 @@ async function heroState(tx: Tx, patientId: string) {
   };
   const activeWeeks = new Set([...perWeek.map((r) => r.week as string), ...checkinWeeks.map((r) => r.week as string)]);
   let chestWeeks = 0;
+  let bossesDefeated = 0;
   for (const w of weekly.slice(0, -1)) {
     if (!activeWeeks.has(w.weekStart)) continue;
-    const q = weeklyQuests(weekData(w.weekStart), skillOfWeek(w.weekStart, rotation));
+    const wd = weekData(w.weekStart);
+    const q = weeklyQuests(wd, skillOfWeek(w.weekStart, rotation));
     xp += questXp(q);
     if (q.every((x) => x.done)) chestWeeks++;
+    if (weeklyBoss(w.weekStart, wd).defeated) {
+      xp += BOSS_XP;
+      bossesDefeated++;
+    }
   }
   const thisWeek = weekly[weekly.length - 1].weekStart;
   // This week's training goal uses all days planned this week (not only those up to today), so it does not grow mid-week.
@@ -167,6 +173,12 @@ async function heroState(tx: Tx, patientId: string) {
   const quests = weeklyQuests({ ...weekData(thisWeek), planned: fullWeek.planned }, skillOfWeek(thisWeek, rotation));
   xp += questXp(quests);
   if (quests.every((x) => x.done)) chestWeeks++;
+  // This week's boss, on the same numbers as the quests.
+  const boss = weeklyBoss(thisWeek, { ...weekData(thisWeek), planned: fullWeek.planned });
+  if (boss.defeated) {
+    xp += BOSS_XP;
+    bossesDefeated++;
+  }
   xp += logged.heroXp;
 
   // Where each quest is done: today's training, the body map, and an exercise for the skill of the week.
@@ -263,7 +275,7 @@ async function heroState(tx: Tx, patientId: string) {
     strengthEstimates: skillsSnap.strengthEstimates,
     totals: { sessions: s.sessions, fullWeeks, phasesCompleted: s.phases_done, since, painStart: painBaseline, painNow: map.checkins > 1 ? painNow : null },
     quest,
-    weekly: { weekStart: thisWeek, quests, chestWeeks, xpPerQuest: QUEST_XP, chestXp: CHEST_XP, links: questLinks },
+    weekly: { weekStart: thisWeek, quests, chestWeeks, xpPerQuest: QUEST_XP, chestXp: CHEST_XP, links: questLinks, boss: { ...boss, xp: BOSS_XP }, bossesDefeated },
     // Coins stay with the patient: never on the friend card or the professional's view.
     gear: { owned, equipped, coins: Math.max(0, earned - spent), earned, spent, score: gearScore(equipped) },
     // Trophy cabinet: per skill at level 10/25/50/75/99; up to three on the shelf behind the hero.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coinsEarned, gearScore, wornOutfit, OUTFITS, GEAR_TIERS, SKILL_STARTER, WELCOME_COINS, BADGES, bodyShape, heroPhotoKey, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
+import { weeklyBoss, bossOf, BOSSES, BOSS_HP, coinsEarned, gearScore, wornOutfit, OUTFITS, GEAR_TIERS, SKILL_STARTER, WELCOME_COINS, BADGES, bodyShape, heroPhotoKey, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
 
 describe('sports hero rules', () => {
   it('levels grow gently and progress is between 0 and 1', () => {
@@ -126,6 +126,21 @@ describe('weekly quests and gear', () => {
     expect(wornOutfit(['cap', 'team_kit'])).toBe('team_kit');
     expect(wornOutfit(['cap'])).toBeNull();
     expect(gearScore(['tracksuit', 'champion'])).toBe(100);
+  });
+
+  it('weekly boss: planned training plus two check-ins beat it; extra training does no extra damage', () => {
+    const w = (planned: number, trainedDays: number, checkins: number) => ({ planned, trainedDays, checkins, skillLogs: {} });
+    expect(weeklyBoss('2026-11-02', w(3, 0, 0))).toMatchObject({ damage: 0, defeated: false, hp: BOSS_HP });
+    expect(weeklyBoss('2026-11-02', w(3, 3, 2))).toMatchObject({ damage: 100, defeated: true });
+    expect(weeklyBoss('2026-11-02', w(3, 3, 1)).defeated).toBe(false);
+    // Training more than planned, or checking in every day, does not add damage.
+    expect(weeklyBoss('2026-11-02', w(2, 6, 7)).damage).toBe(100);
+    expect(weeklyBoss('2026-11-02', w(5, 2, 0)).damage).toBe(53); // goal is at most 3 days
+    // Nothing planned: one training day counts as the full training part.
+    expect(weeklyBoss('2026-11-02', w(0, 1, 2)).defeated).toBe(true);
+    // A different boss each week, the same for everyone; all six come round.
+    const keys = new Set(Array.from({ length: 6 }, (_, i) => bossOf(new Date(Date.UTC(2026, 10, 2 + 7 * i)).toISOString().slice(0, 10)).key));
+    expect(keys.size).toBe(BOSSES.length);
   });
 
   it('parses optional body measurements', () => {
