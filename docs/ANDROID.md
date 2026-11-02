@@ -25,7 +25,7 @@ Android-instellingen).
 
 ## Stappen
 
-1. **Pakketnaam kiezen** (staat vast na de eerste upload). Nu: `nl.functionalperformance.oefenapp`
+1. **Pakketnaam** (staat vast na de eerste upload): `nl.fpflow.app` (gekozen 2 nov 2026).
    (`fpPackageName` in `android/gradle.properties`).
 2. **Domein**: koppel het domein in Render, zet daar `APP_ORIGIN=https://<domein>` en zet
    `fpHost=<domein>` in `android/gradle.properties`.
@@ -40,7 +40,7 @@ Android-instellingen).
 5. **Play Console**: maak de app aan, kies *Play App Signing*, upload de AAB bij *Testen → Interne test*.
 6. **App en site koppelen**: kopieer in de Play Console bij *App-integriteit* de **SHA-256** van het
    *certificaat van de app-ondertekeningssleutel*. Zet in Render:
-   - `ANDROID_PACKAGE_NAME=nl.functionalperformance.oefenapp`
+   - `ANDROID_PACKAGE_NAME=nl.fpflow.app`
    - `ANDROID_CERT_SHA256=<die SHA-256>` (meerdere: gescheiden door komma's)
 
    Controleer `https://<domein>/.well-known/assetlinks.json`. Zonder deze stap werkt de app wel, maar
