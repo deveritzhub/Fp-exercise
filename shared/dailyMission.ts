@@ -23,7 +23,8 @@ export function dailyMission<T extends MissionProgram>(programs: readonly T[]): 
   // Resume a workout already in progress before suggesting a new one.
   const next = unfinished.find((p) => Boolean(p.openSession)) ?? unfinished[0] ?? null;
   const paused = programs.filter((p) => p.paused).length;
-  const status = next ? 'ready' : paused ? 'paused' : completed ? 'done' : 'none';
+  // Safety takes priority across the daily game UI; the underlying programmes remain unchanged.
+  const status = paused ? 'paused' : next ? 'ready' : completed ? 'done' : 'none';
   const total = active.length;
   return {
     status,
