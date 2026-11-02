@@ -61,7 +61,7 @@ describe('daily patient mission', () => {
 
   it('counts only the work that was prescribed and not paused', () => {
     expect(dailyMission([p('a', 2, true), p('b', 3), p('c', 1, false, true)])).toMatchObject({
-      status: 'ready', completed: 1, total: 2, progress: 50, paused: 1,
+      status: 'paused', completed: 1, total: 2, progress: 50, paused: 1,
     });
   });
 });
