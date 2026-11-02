@@ -59,7 +59,7 @@ export function PatientHome() {
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
   if (!q.data) return <div className="space-y-4"><Skeleton className="h-8 w-2/3" /><Skeleton className="h-56 rounded-2xl" /><Skeleton className="h-28 rounded-2xl" /></div>;
   const d = q.data;
-  const { scheduled: todo, resumeOther, remaining: left, pausedToday } = summarizePatientDay(d.programs);
+  const { scheduled: todo, resumeOther, remaining: left, pausedToday, showRestCard } = summarizePatientDay(d.programs);
   const startable = (['mobiliteit', 'kracht'] as const).filter((m) => modes.data?.templates.some((x) => x.module === m) && !d.programs.some((p) => moduleOf(p) === m));
   return (
     <div className="space-y-6">
@@ -107,7 +107,7 @@ export function PatientHome() {
           <h2 className="text-lg font-bold">{t('Nog geen programma', 'No programme yet')}</h2>
           <p className="mt-1 text-ink-500">{modes.data?.modules.includes('revalidatie') ? t('Je fysiotherapeut zet je oefenprogramma hier voor je klaar. Je kunt ook zelf iets starten.', 'Your physiotherapist will set up your exercise programme here. You can also start something yourself.') : t('Start hieronder zelf een programma.', 'Start a programme yourself below.')}</p>
         </div>
-      ) : todo.length === 0 && resumeOther.length === 0 ? (
+      ) : showRestCard ? (
         <RestDayCard
           status={d.programs.every((p) => p.upcoming) ? 'not_started' : 'rest'}
           startDate={d.programs[0].startDate}
