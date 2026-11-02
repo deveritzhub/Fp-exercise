@@ -20,6 +20,7 @@ import { PainTrendList } from '@/components/hero/PainTrend';
 import { Fold } from '@/components/app/Fold';
 import { SurvivalPanel } from '@/components/patient/Survival';
 import { FriendsCard } from './FriendsPage';
+import { RehabRoute } from '@/components/hero/RehabRoute';
 
 export const HERO_LATER_KEY = 'fp.heroLater';
 export const useHero = () => useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero') });
@@ -591,25 +592,7 @@ function Quest({ d }: { d: HeroState }) {
           ) : (
             <p className="mt-2 text-[14px] text-ink-600">{t('Voor dit programma is geen einddatum gepland; je fysiotherapeut bepaalt de duur.', 'This programme has no planned end date; your physiotherapist decides the duration.')}</p>
           )}
-          {q.phases.length > 1 && (
-            <ol className="mt-4 space-y-2" aria-label={t('Route van je revalidatie', 'Route of your rehabilitation')}>
-              {q.phases.map((ph) => (
-                <li key={ph.no} className={cn('flex gap-3 rounded-xl border p-3', ph.status === 'current' ? 'border-accent/40 bg-accent-soft' : 'border-line')}>
-                  <span className={cn('mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full', ph.status === 'done' ? 'bg-accent text-accent-ink' : ph.status === 'current' ? 'bg-white text-accent ring-2 ring-accent' : 'bg-ink-100 text-ink-500')} aria-hidden>
-                    {ph.status === 'done' ? <CircleCheck className="h-4 w-4" /> : ph.status === 'current' ? <MapPin className="h-4 w-4" /> : <Lock className="h-3.5 w-3.5" />}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-[14.5px] font-semibold text-ink-900">
-                      {ph.name ?? t(`Fase ${ph.no}`, `Phase ${ph.no}`)}
-                      {ph.weeks && <span className="font-normal text-ink-600"> · {t('week', 'week')} {ph.weeks}</span>}
-                      <span className="sr-only"> ({ph.status === 'done' ? t('voltooid', 'completed') : ph.status === 'current' ? t('je bent hier', 'you are here') : t('nog op slot', 'still locked')})</span>
-                    </span>
-                    {ph.goal && <span className="block text-[13.5px] text-ink-700">{ph.goal}</span>}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          )}
+          {q.phases.length > 0 && <RehabRoute phases={q.phases} currentNo={q.phaseNo} />}
         </>
       )}
       <dl className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-4 text-center">
