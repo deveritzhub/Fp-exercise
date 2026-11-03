@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Brain, Check, ChevronDown, Dumbbell, HeartPulse, Move, Search, Sparkles, X, Zap } from 'lucide-react';
@@ -7,7 +7,7 @@ import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
 import { Button, ErrorState, Spinner, useToast } from '@/components/ui';
-import { ATLAS_REGIONS, LEVEL2_UNLOCK, MUSCLES, NERVES, nervesOf, quizQuestions, type AtlasExerciseKind, type AtlasRegion, type Muscle, type NerveKey, type QuizQuestion } from '@shared/muscleAtlas';
+import { ATLAS_REGIONS, LEVEL2_UNLOCK, MUSCLES, NERVES, antagonistsOf, nervesOf, quizQuestions, type AtlasExerciseKind, type AtlasRegion, type Muscle, type NerveKey, type QuizQuestion } from '@shared/muscleAtlas';
 
 type AtlasExercise = { id: string; nameNl: string; nameEn: string; kind: AtlasExerciseKind; muscles: string[]; nerve: string | null; movementNl: string; movementEn: string; instructionsNl: string; instructionsEn: string };
 type QuizState = { correct: string[]; todayCount: number; dailyCap: number; xpPerAnswer: number; xpPerLevel?: Record<1 | 2, number>; level2?: boolean; xp: number };
@@ -56,20 +56,28 @@ export function AtlasPage() {
           <button key={k} role="tab" type="button" aria-selected={tab === k} onClick={() => setTab(k)} className={cn('tap min-h-[44px] rounded-lg text-[14.5px] font-semibold', tab === k ? 'bg-white text-ink-950 shadow-sm' : 'text-ink-600')}>{label}</button>
         ))}
       </div>
-      {tab === 'spieren' && <MusclesView data={q.data} from={from} onQuiz={(m) => setTab('quiz', { spier: m })} />}
-      {tab === 'zenuwen' && <NervesView data={q.data} />}
+      {tab === 'spieren' && <MusclesView data={q.data} from={from} focus={params.get('open')} onQuiz={(m) => setTab('quiz', { spier: m })} onNerve={(n) => setTab('zenuwen', { zenuw: n })} onMuscle={(m) => setTab('spieren', { open: m })} />}
+      {tab === 'zenuwen' && <NervesView data={q.data} focus={params.get('zenuw')} onMuscle={(m) => setTab('spieren', { open: m })} />}
       {tab === 'quiz' && <QuizView data={q.data} muscle={params.get('spier')} onAll={() => { params.delete('spier'); setParams(params, { replace: true }); }} />}
       <p className="text-[12.5px] text-ink-500">{t('Uitleg over je lichaam, geen diagnose of behandeladvies. Twijfel je bij een oefening? Vraag het je fysiotherapeut.', 'Explanation about your body, not a diagnosis or treatment advice. In doubt about an exercise? Ask your physiotherapist.')}</p>
     </div>
   );
 }
 
-function MusclesView({ data, from, onQuiz }: { data: AtlasData; from: From; onQuiz: (muscle: string) => void }) {
+function MusclesView({ data, from, focus, onQuiz, onNerve, onMuscle }: { data: AtlasData; from: From; focus: string | null; onQuiz: (muscle: string) => void; onNerve: (nerve: string) => void; onMuscle: (muscle: string) => void }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const [region, setRegion] = useState<AtlasRegion | 'alle'>('alle');
   const [query, setQuery] = useState('');
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(focus);
+  // Opened from a nerve or an antagonist: show that muscle, whatever the filters were.
+  useEffect(() => {
+    if (!focus) return;
+    setRegion('alle');
+    setQuery('');
+    setOpen(focus);
+    requestAnimationFrame(() => document.getElementById(`spier-${focus}`)?.scrollIntoView({ block: 'start' }));
+  }, [focus]);
   const qn = query.trim().toLowerCase();
   const list = MUSCLES.filter((m) => (region === 'alle' || m.region === region) && (!qn || [m.nl, m.en, m.latin, ...m.functions.map((f) => f[nl ? 0 : 1])].some((s) => s.toLowerCase().includes(qn))));
   return (
@@ -87,13 +95,13 @@ function MusclesView({ data, from, onQuiz }: { data: AtlasData; from: From; onQu
       </div>
       {list.length === 0 && <p className="rounded-xl bg-canvas p-3 text-[14px] text-ink-700">{t('Geen spier gevonden. Probeer een ander woord.', 'No muscle found. Try another word.')}</p>}
       <ul className="space-y-2">
-        {list.map((m) => <MuscleCard key={m.key} m={m} data={data} from={from} open={open === m.key} onToggle={() => setOpen(open === m.key ? null : m.key)} onQuiz={() => onQuiz(m.key)} />)}
+        {list.map((m) => <MuscleCard key={m.key} m={m} data={data} from={from} open={open === m.key} onToggle={() => setOpen(open === m.key ? null : m.key)} onQuiz={() => onQuiz(m.key)} onNerve={onNerve} onMuscle={onMuscle} />)}
       </ul>
     </section>
   );
 }
 
-function MuscleCard({ m, data, from, open, onToggle, onQuiz }: { m: Muscle; data: AtlasData; from: From; open: boolean; onToggle: () => void; onQuiz: () => void }) {
+function MuscleCard({ m, data, from, open, onToggle, onQuiz, onNerve, onMuscle }: { m: Muscle; data: AtlasData; from: From; open: boolean; onToggle: () => void; onQuiz: () => void; onNerve: (nerve: string) => void; onMuscle: (muscle: string) => void }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const nerve = NERVES.find((n) => n.key === m.nerve)!;
@@ -103,7 +111,7 @@ function MuscleCard({ m, data, from, open, onToggle, onQuiz }: { m: Muscle; data
   const doneCount = done.filter((q) => data.quiz.correct.includes(q.id)).length;
   const region = ATLAS_REGIONS.find((r) => r.key === m.region)!;
   return (
-    <li className="rounded-2xl border border-line bg-white shadow-card">
+    <li id={`spier-${m.key}`} className="scroll-mt-20 rounded-2xl border border-line bg-white shadow-card">
       <button type="button" aria-expanded={open} onClick={onToggle} className="tap flex w-full items-center gap-3 p-4 text-left">
         <span className="min-w-0 flex-1">
           <span className="block font-semibold text-ink-900">{nl ? m.nl : m.en}</span>
@@ -120,9 +128,26 @@ function MuscleCard({ m, data, from, open, onToggle, onQuiz }: { m: Muscle; data
             <ul className="mt-1 space-y-0.5 text-[14.5px] text-ink-900">{m.functions.map((f) => <li key={f[0]}>• {nl ? f[0] : f[1]}</li>)}</ul>
           </div>
           <dl className="grid grid-cols-2 gap-2 text-[14px]">
-            <div className="rounded-xl bg-canvas p-2.5"><dt className="text-[12px] font-semibold text-ink-600">{t('Zenuw', 'Nerve')}</dt><dd className="font-medium text-ink-900">{nl ? nerve.nl : nerve.en}{(m.also ?? []).length > 0 && <span className="block text-[12px] text-ink-600">{t('ook:', 'also:')} {(m.also ?? []).map((k) => { const n = NERVES.find((x) => x.key === k)!; return nl ? n.nl : n.en; }).join(', ')}</span>}</dd></div>
+            <div className="rounded-xl bg-canvas p-2.5">
+              <dt className="text-[12px] font-semibold text-ink-600">{t('Zenuw', 'Nerve')}</dt>
+              <dd className="font-medium text-ink-900">
+                <button type="button" onClick={() => onNerve(m.nerve)} className="inline-flex min-h-[44px] items-center gap-1 text-left text-accent underline-offset-2 hover:underline"><Zap className="h-3.5 w-3.5 shrink-0" aria-hidden />{nl ? nerve.nl : nerve.en}</button>
+                {(m.also ?? []).length > 0 && (
+                  <span className="block text-[12px] text-ink-600">{t('ook:', 'also:')} {(m.also ?? []).map((k, i) => { const n = NERVES.find((x) => x.key === k)!; return <span key={k}>{i > 0 && ', '}<button type="button" onClick={() => onNerve(k)} className="inline-flex min-h-[32px] items-center text-accent hover:underline">{nl ? n.nl : n.en}</button></span>; })}</span>
+                )}
+              </dd>
+            </div>
             <div className="rounded-xl bg-canvas p-2.5"><dt className="text-[12px] font-semibold text-ink-600">{t('Waar', 'Where')}</dt><dd className="font-medium text-ink-900">{nl ? region.nl : region.en}</dd></div>
           </dl>
+          {antagonistsOf(m.key).length > 0 && (
+            <div className="rounded-xl border border-line p-2.5 text-[14px]">
+              <p className="text-[12px] font-semibold text-ink-600">{t('Tegenspeler (antagonist)', 'Antagonist')}</p>
+              <p className="mt-0.5 flex flex-wrap gap-x-3">
+                {antagonistsOf(m.key).map((k) => { const a = MUSCLES.find((x) => x.key === k)!; return <button key={k} type="button" onClick={() => onMuscle(k)} className="inline-flex min-h-[44px] items-center font-medium text-accent hover:underline">{nl ? a.nl : a.en}</button>; })}
+              </p>
+              <p className="text-[12.5px] text-ink-600">{t('Doet de tegengestelde beweging. Train je de ene, vergeet de andere niet.', 'Does the opposite movement. Train one, do not forget the other.')}</p>
+            </div>
+          )}
           <div className="space-y-3">
             {ORDER[from].map((kind) => {
               const list = exs.filter((e) => e.kind === kind);
@@ -167,9 +192,12 @@ function ExerciseRow({ e }: { e: AtlasExercise }) {
   );
 }
 
-function NervesView({ data }: { data: AtlasData }) {
+function NervesView({ data, focus, onMuscle }: { data: AtlasData; focus: string | null; onMuscle: (muscle: string) => void }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
+  useEffect(() => {
+    if (focus) requestAnimationFrame(() => document.getElementById(`zenuw-${focus}`)?.scrollIntoView({ block: 'start' }));
+  }, [focus]);
   // Nerves with a muscle in the atlas or an exercise; the main limb nerves first.
   const main: NerveKey[] = ['radialis', 'medianus', 'ulnaris', 'musculocutaneus', 'axillaris', 'ischiadicus', 'tibialis', 'fibularis', 'femoralis'];
   const nerves = [...NERVES].sort((a, b) => (main.indexOf(a.key) + 1 || 99) - (main.indexOf(b.key) + 1 || 99));
@@ -183,10 +211,23 @@ function NervesView({ data }: { data: AtlasData }) {
           const exs = data.exercises.filter((e) => e.nerve === n.key);
           if (!muscles.length && !exs.length) return null;
           return (
-            <li key={n.key} className="rounded-2xl border border-line bg-white p-4 shadow-card">
+            <li key={n.key} id={`zenuw-${n.key}`} className={cn('scroll-mt-20 rounded-2xl border bg-white p-4 shadow-card', focus === n.key ? 'border-2 border-accent' : 'border-line')}>
               <h3 className="flex items-center gap-1.5 font-semibold text-ink-900"><Zap className="h-4 w-4 text-accent" aria-hidden />{nl ? n.nl : n.en}</h3>
               <p className="text-[13px] text-ink-600">{nl ? n.areaNl : n.areaEn}</p>
-              {own.length > 0 && <p className="mt-1.5 text-[14px] text-ink-800"><span className="font-medium">{t('Stuurt aan:', 'Drives:')}</span> {own.map((m) => (nl ? m.nl : m.en).toLowerCase()).join(', ')}</p>}
+              {muscles.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-[13px] font-medium text-ink-800">{t(`Stuurt aan (${muscles.length})`, `Drives (${muscles.length})`)}</p>
+                  <ul className="mt-1 flex flex-wrap gap-1.5">
+                    {muscles.map((m) => (
+                      <li key={m.key}>
+                        <button type="button" onClick={() => onMuscle(m.key)} className={cn('tap inline-flex min-h-[40px] items-center rounded-full border px-3 text-[13.5px]', own.includes(m) ? 'border-accent/40 bg-accent-soft font-medium text-accent' : 'border-line bg-white text-ink-700')}>
+                          {nl ? m.nl : m.en}{!own.includes(m) && <span className="ml-1 text-[12px] text-ink-500">({t('deels', 'partly')})</span>}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {exs.length > 0 ? (
                 <ul className="mt-2 space-y-1">{exs.map((e) => <ExerciseRow key={e.id} e={e} />)}</ul>
               ) : (

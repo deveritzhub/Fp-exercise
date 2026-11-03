@@ -33,6 +33,18 @@ test('spierenatlas: muscles with nerve and exercises, nerves with sliders, and a
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: 'screenshots/atlas/muscle.png', fullPage: true });
 
+  // The nerve is clickable and lists every muscle it drives; a muscle there leads back.
+  await page.getByRole('button', { name: 'n. musculocutaneus' }).click();
+  const mc = page.locator('#zenuw-musculocutaneus');
+  await expect(mc).toBeVisible();
+  await expect(mc.getByRole('button', { name: 'Opperarmspier' })).toBeVisible();
+  await mc.getByRole('button', { name: 'Tweehoofdige armspier' }).click();
+  await expect(page.getByRole('button', { name: /Tweehoofdige armspier/, expanded: true })).toBeVisible();
+  // Antagonist: the triceps, one tap away.
+  await page.locator('#spier-biceps').getByRole('button', { name: 'Driehoofdige armspier' }).click();
+  await expect(page.getByRole('button', { name: /Driehoofdige armspier/, expanded: true })).toBeVisible();
+  await expectAccessible(page, 'atlas antagonist');
+
   // Nerves: the radial nerve has its own slider.
   await page.getByRole('tab', { name: 'Zenuwen' }).click();
   const radial = page.locator('li', { has: page.getByRole('heading', { name: 'n. radialis' }) });

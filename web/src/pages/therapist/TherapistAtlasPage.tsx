@@ -9,7 +9,7 @@ import { cn } from '@/lib/cn';
 import { Button, ErrorState, PageHeader, Spinner, useToast } from '@/components/ui';
 import { QuickAddSheet } from '@/components/app/QuickAdd';
 import type { Exercise } from '@/lib/types';
-import { ATLAS_REGIONS, MUSCLES, NERVES, nervesOf, type AtlasExerciseKind, type AtlasRegion, type Muscle } from '@shared/muscleAtlas';
+import { ATLAS_REGIONS, MUSCLES, NERVES, antagonistsOf, nervesOf, type AtlasExerciseKind, type AtlasRegion, type Muscle } from '@shared/muscleAtlas';
 
 type AtlasExercise = { id: string; nameNl: string; nameEn: string; kind: AtlasExerciseKind; muscles: string[]; nerve: string | null; own: boolean };
 
@@ -80,6 +80,10 @@ function Muscles({ exercises, focus, onAdd, nl }: { exercises: AtlasExercise[]; 
   const [open, setOpen] = useState<string | null>(focus);
   useEffect(() => {
     if (!focus) return;
+    // Jumped here (from a nerve, an antagonist or an exercise): show it whatever the filters were.
+    setRegion('alle');
+    setQuery('');
+    setGapsOnly(false);
     setOpen(focus);
     requestAnimationFrame(() => document.getElementById(`spier-${focus}`)?.scrollIntoView({ block: 'start' }));
   }, [focus]);
@@ -137,9 +141,33 @@ function Muscles({ exercises, focus, onAdd, nl }: { exercises: AtlasExercise[]; 
                     </div>
                     <div>
                       <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-600">{t('Innervatie', 'Innervation')}</p>
-                      <p className="mt-1 text-ink-900">{nl ? nerve.nl : nerve.en}{(m.also ?? []).length > 0 && <span className="block text-[13px] text-ink-600">{t('ook:', 'also:')} {(m.also ?? []).map((k) => { const n = NERVES.find((x) => x.key === k)!; return nl ? n.nl : n.en; }).join(', ')}</span>}</p>
+                      <p className="mt-1 text-ink-900">
+                        <Link to={`/app/spieren?tab=zenuwen&zenuw=${m.nerve}`} className="inline-flex min-h-[40px] items-center gap-1 font-medium text-accent hover:underline"><Zap className="h-3.5 w-3.5" aria-hidden />{nl ? nerve.nl : nerve.en}</Link>
+                        {(m.also ?? []).length > 0 && <span className="block text-[13px] text-ink-600">{t('ook:', 'also:')} {(m.also ?? []).map((k, i) => { const n = NERVES.find((x) => x.key === k)!; return <span key={k}>{i > 0 && ', '}<Link to={`/app/spieren?tab=zenuwen&zenuw=${k}`} className="text-accent hover:underline">{nl ? n.nl : n.en}</Link></span>; })}</span>}
+                      </p>
                     </div>
                   </div>
+                  {antagonistsOf(m.key).length > 0 && (
+                    <div className="rounded-xl border border-line p-3 text-[14px]">
+                      <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-600">{t('Tegenspeler (antagonist)', 'Antagonist')}</p>
+                      <ul className="mt-1 space-y-1">
+                        {antagonistsOf(m.key).map((k) => {
+                          const a = MUSCLES.find((x) => x.key === k)!;
+                          const mine = exs.filter((e) => e.kind === 'kracht').length;
+                          const theirs = exercises.filter((e) => e.muscles.includes(k) && e.kind === 'kracht').length;
+                          const off = Math.max(mine, theirs) >= 3 && Math.min(mine, theirs) * 3 <= Math.max(mine, theirs);
+                          return (
+                            <li key={k} className="flex flex-wrap items-center gap-x-2">
+                              <Link to={`/app/spieren?spier=${k}`} className="inline-flex min-h-[40px] items-center font-medium text-accent hover:underline">{nl ? a.nl : a.en}</Link>
+                              <span className={cn('text-[13px]', off ? 'font-semibold text-warn' : 'text-ink-600')}>
+                                {t(`Krachtoefeningen: ${mine} hier, ${theirs} voor de ${a.nl.toLowerCase()}`, `Strength exercises: ${mine} here, ${theirs} for the ${a.en.toLowerCase()}`)}{off && t(' · scheef verdeeld', ' · unbalanced')}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                   {MUSCLE_KINDS.map((kind) => <KindGroup key={kind} kind={kind} list={exs.filter((e) => e.kind === kind)} newHref={newExerciseHref(m, kind)} onAdd={onAdd} nl={nl} />)}
                   <Link to={`/app/oefeningen?muscle=${m.key}`} className="inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-medium text-accent">{t('Alle oefeningen voor deze spier in de bibliotheek', 'All exercises for this muscle in the library')}</Link>
                 </div>

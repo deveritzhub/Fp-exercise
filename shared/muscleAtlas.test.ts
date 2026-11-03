@@ -84,3 +84,17 @@ describe('quiz', () => {
     for (const q of quizQuestions().filter((x) => x.level === 1)) expect(MUSCLES.find((m) => m.key === q.muscle)?.level, q.id).toBeUndefined();
   });
 });
+
+describe('antagonists', () => {
+  it('pairs both ways, only known muscles, and a quiz question per first muscle', async () => {
+    const { antagonistsOf } = await import('./muscleAtlas');
+    expect(antagonistsOf('biceps')).toEqual(['triceps']);
+    expect(antagonistsOf('triceps').sort()).toEqual(['biceps', 'brachialis']);
+    expect(antagonistsOf('quadriceps')).toEqual(['hamstrings']);
+    for (const m of MUSCLES) for (const a of antagonistsOf(m.key)) expect(MUSCLES.some((x) => x.key === a), `${m.key}→${a}`).toBe(true);
+    const q = quizQuestions().find((x) => x.id === 'tegen:biceps')!;
+    expect(q.level).toBe(2);
+    expect(q.answer).toBe('triceps');
+    for (const o of q.options) if (o.id !== q.answer) expect(antagonistsOf('biceps')).not.toContain(o.id);
+  });
+});

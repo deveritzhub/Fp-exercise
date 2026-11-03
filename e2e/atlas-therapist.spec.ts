@@ -15,6 +15,9 @@ test('therapist atlas: muscle card with exercises to add, library gaps, filter a
   await page.getByRole('button', { name: /toevoegen aan programma$/ }).first().click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Escape');
+  // Antagonist with the balance of strength exercises, and the nerve as a link.
+  await expect(page.getByText(/Krachtoefeningen: \d+ hier, \d+ voor de hamstrings/)).toBeVisible();
+  await expect(page.getByRole('link', { name: 'n. femoralis' }).first()).toHaveAttribute('href', '/app/spieren?tab=zenuwen&zenuw=femoralis');
   // The sticky header covers scrolled-past buttons; check from the top.
   await page.evaluate(() => window.scrollTo(0, 0));
   await expectAccessible(page, 'therapist atlas muscle');

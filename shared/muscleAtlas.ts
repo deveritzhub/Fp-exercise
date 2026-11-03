@@ -149,6 +149,24 @@ export const MUSCLES: Muscle[] = [
   { key: 'voetspieren', level: 2, plural: true, nl: 'Kleine voetspieren', en: 'Intrinsic foot muscles', latin: 'mm. pedis', region: 'onderbeen', nerve: 'plantares', also: ['tibialis'], functions: [['Voetboog ondersteunen', 'Supporting the foot arch'], ['Balans en grip met de tenen', 'Balance and toe grip']], match: ['voetspier', 'intrinsieke voet', 'foot intrinsic', 'teen-yoga', 'korte voet'] },
 ];
 
+/**
+ * Antagonists (tegenspelers): muscles that do the opposite movement. Information for balance in a
+ * programme, not a stretch: a biceps curl does not stretch the triceps, it lets it relax.
+ */
+const ANTAGONIST_PAIRS: [string, string][] = [
+  ['biceps', 'triceps'], ['brachialis', 'triceps'],
+  ['polsstrekkers', 'polsbuigers'], ['supinator', 'pronator'],
+  ['deltoideus', 'latissimus'], ['infraspinatus', 'subscapularis'],
+  ['rectus_abdominis', 'erector_spinae'],
+  ['iliopsoas', 'gluteus_maximus'], ['gluteus_medius', 'adductoren'],
+  ['quadriceps', 'hamstrings'],
+  ['tibialis_anterior', 'gastrocnemius'], ['tibialis_anterior', 'soleus'], ['peronei', 'tibialis_posterior'],
+];
+/** The antagonists of a muscle (both directions of each pair). */
+export function antagonistsOf(key: string): string[] {
+  return ANTAGONIST_PAIRS.flatMap(([a, b]) => (a === key ? [b] : b === key ? [a] : []));
+}
+
 export const muscleByKey = (key: string) => MUSCLES.find((m) => m.key === key) ?? null;
 export const nerveByKey = (key: string) => NERVES.find((n) => n.key === key) ?? null;
 
@@ -292,6 +310,23 @@ function buildQuestions(): QuizQuestion[] {
       options: shuffle([{ id: right.key, label: [right.nl, right.en] as Fn }, ...wrong.map((m) => ({ id: m.key, label: [m.nl, m.en] as Fn }))], n.key + 'o'),
       answer: right.key,
       explain: [`De ${n.nl} stuurt onder andere: ${own.map((m) => m.nl.toLowerCase()).join(', ')}.`, `The ${n.en} drives among others: ${own.map((m) => m.en.toLowerCase()).join(', ')}.`],
+    });
+  }
+  // 4. Antagonists (level 2): one question per pair, asked from its first muscle.
+  const asked = new Set<string>();
+  for (const [a, b] of ANTAGONIST_PAIRS) {
+    if (asked.has(a)) continue;
+    asked.add(a);
+    const m = MUSCLES.find((x) => x.key === a)!;
+    const right = MUSCLES.find((x) => x.key === b)!;
+    const exclude = new Set([a, ...antagonistsOf(a)]);
+    const wrong = pickOthers(MUSCLES.filter((x) => !exclude.has(x.key) && x.region !== m.region && !x.level), 3, a + 'ant');
+    out.push({
+      id: `tegen:${a}`, level: 2, muscle: a, nerve: null,
+      q: [`Wat is de tegenspeler (antagonist) van de ${m.nl.toLowerCase()}?`, `What is the antagonist of the ${m.en.toLowerCase()}?`],
+      options: shuffle([{ id: b, label: [right.nl, right.en] as Fn }, ...wrong.map((x) => ({ id: x.key, label: [x.nl, x.en] as Fn }))], a + 'anto'),
+      answer: b,
+      explain: [`De ${right.nl.toLowerCase()} doet de tegengestelde beweging: ${right.functions[0][0].toLowerCase()} tegenover ${m.functions[0][0].toLowerCase()}.`, `The ${right.en.toLowerCase()} does the opposite movement: ${right.functions[0][1].toLowerCase()} versus ${m.functions[0][1].toLowerCase()}.`],
     });
   }
   return [...out, ...LEVEL2_SPECIALS];
