@@ -18,6 +18,8 @@ test('outcomes are validated, practice-isolated and included in export',async ({
   expect(progress.outcomes.some((o:any)=>o.id===out.id)).toBe(true);
   const exportJson=await (await page.request.get(`/api/patients/${patient.id}/export`)).json();
   expect(exportJson.outcomeMeasurements.some((o:any)=>o.id===out.id)).toBe(true);
+  const impossibleDate=await page.request.post(`/api/patients/${patient.id}/outcomes`,{data:{...input,measuredOn:'2026-02-31'}});
+  expect(impossibleDate.status()).toBe(400);
   // A patient can export only their own clinical measurements, not access the staff endpoint.
   const patientCtx=await browser.newContext();
   const patientPage=await patientCtx.newPage();
