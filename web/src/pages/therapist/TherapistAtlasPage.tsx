@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, Brain, ChevronDown, Dumbbell, HeartPulse, Move, Plus, Search, X, Zap } from 'lucide-react';
+import { AlertCircle, Brain, ChevronDown, Dumbbell, HeartPulse, Move, Plus, Search, Send, X, Zap } from 'lucide-react';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
-import { Button, ErrorState, PageHeader, Spinner, useToast } from '@/components/ui';
+import { Button, Dialog, ErrorState, PageHeader, Select, Spinner, Textarea, useToast } from '@/components/ui';
 import { QuickAddSheet } from '@/components/app/QuickAdd';
-import type { Exercise } from '@/lib/types';
+import type { Exercise, PatientListItem } from '@/lib/types';
 import { ATLAS_REGIONS, MUSCLES, NERVES, antagonistsOf, nervesOf, type AtlasExerciseKind, type AtlasRegion, type Muscle } from '@shared/muscleAtlas';
 
 type AtlasExercise = { id: string; nameNl: string; nameEn: string; kind: AtlasExerciseKind; muscles: string[]; nerve: string | null; own: boolean };
@@ -78,6 +78,7 @@ function Muscles({ exercises, focus, onAdd, nl }: { exercises: AtlasExercise[]; 
   const [query, setQuery] = useState('');
   const [gapsOnly, setGapsOnly] = useState(false);
   const [open, setOpen] = useState<string | null>(focus);
+  const [sending, setSending] = useState<Muscle | null>(null);
   useEffect(() => {
     if (!focus) return;
     // Jumped here (from a nerve, an antagonist or an exercise): show it whatever the filters were.
@@ -169,14 +170,60 @@ function Muscles({ exercises, focus, onAdd, nl }: { exercises: AtlasExercise[]; 
                     </div>
                   )}
                   {MUSCLE_KINDS.map((kind) => <KindGroup key={kind} kind={kind} list={exs.filter((e) => e.kind === kind)} newHref={newExerciseHref(m, kind)} onAdd={onAdd} nl={nl} />)}
-                  <Link to={`/app/oefeningen?muscle=${m.key}`} className="inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-medium text-accent">{t('Alle oefeningen voor deze spier in de bibliotheek', 'All exercises for this muscle in the library')}</Link>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <Button variant="secondary" icon={<Send className="h-4 w-4" aria-hidden />} onClick={() => setSending(m)}>{t('Stuur naar patiënt', 'Send to a patient')}</Button>
+                    <Link to={`/app/oefeningen?muscle=${m.key}`} className="inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-medium text-accent">{t('Alle oefeningen voor deze spier in de bibliotheek', 'All exercises for this muscle in the library')}</Link>
+                  </div>
                 </div>
               )}
             </li>
           );
         })}
       </ul>
+      <SendMuscleDialog muscle={sending} onClose={() => setSending(null)} />
     </section>
+  );
+}
+
+/** Send a muscle card to a patient: it arrives as a message on their Vandaag, opening the card. */
+function SendMuscleDialog({ muscle, onClose }: { muscle: Muscle | null; onClose: () => void }) {
+  const { t, locale } = useI18n();
+  const toast = useToast();
+  const [patientId, setPatientId] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const list = useQuery({ queryKey: ['patients', 'atlas-send'], queryFn: () => api.get<{ items: PatientListItem[] }>('/patients?status=active&scope=practice'), enabled: !!muscle });
+  useEffect(() => {
+    if (muscle) { setPatientId(''); setNote(''); }
+  }, [muscle]);
+  if (!muscle) return null;
+  const patients = list.data?.items ?? [];
+  const chosen = patients.find((p) => p.id === patientId);
+  const send = async () => {
+    setBusy(true);
+    try {
+      const r = await api.post<{ delivered: boolean }>('/atlas/send', { patientId, muscle: muscle.key, note });
+      toast(r.delivered ? t('Verstuurd: de patiënt ziet het op Vandaag', 'Sent: the patient sees it on Today') : t('De patiënt heeft nog geen account; het bericht komt niet aan', 'The patient has no account yet; the message does not arrive'), r.delivered ? 'ok' : 'bad');
+      if (r.delivered) onClose();
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Dialog open onClose={onClose} title={t(`Stuur "${muscle.nl}" naar een patiënt`, `Send "${muscle.en}" to a patient`)} description={t('De patiënt krijgt een bericht op Vandaag dat deze spierkaart opent.', 'The patient gets a message on Today that opens this muscle card.')}
+      footer={<><Button variant="secondary" onClick={onClose}>{t('Annuleren', 'Cancel')}</Button><Button onClick={send} loading={busy} disabled={!patientId} icon={<Send className="h-4 w-4" aria-hidden />}>{t('Versturen', 'Send')}</Button></>}>
+      <div className="space-y-3">
+        <Select label={t('Patiënt', 'Patient')} value={patientId} onChange={(e) => setPatientId(e.target.value)}>
+          <option value="">{list.isLoading ? t('Laden…', 'Loading…') : t('Kies een patiënt', 'Choose a patient')}</option>
+          {patients.map((p) => <option key={p.id} value={p.id}>{p.firstName} {p.lastName}{p.hasAccount ? '' : t(' (nog geen account)', ' (no account yet)')}</option>)}
+        </Select>
+        {chosen && !chosen.hasAccount && <p className="text-[13px] text-warn">{t('Deze patiënt heeft de uitnodiging nog niet geaccepteerd.', 'This patient has not accepted the invitation yet.')}</p>}
+        <Textarea label={t('Korte toelichting (optioneel)', 'Short note (optional)')} maxLength={200} rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('Bijv. "Deze spier trainen we met de bilbrug."', 'E.g. "We train this muscle with the glute bridge."')} />
+        <p className="text-[12.5px] text-ink-600">{t('Zet hier geen diagnose of medische details in; het bericht is een herinnering, geen dossier.', 'Do not put a diagnosis or medical details here; the message is a reminder, not a record.')}</p>
+      </div>
+    </Dialog>
   );
 }
 

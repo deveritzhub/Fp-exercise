@@ -84,3 +84,24 @@ describe('spierenatlas for professionals', () => {
     expect((await pro.get('/exercises?muscle=nope')).body.error).toBe('unknown_muscle');
   });
 });
+
+describe('sending a muscle card to a patient', () => {
+  it('a professional sends it to their own patient; it arrives as a notification that opens the card', async () => {
+    resetRateLimits();
+    const pro = await login('therapistA');
+    const pid = (await ownerQuery(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`)).rows[0].id;
+    const r = await pro.post('/atlas/send', { patientId: pid, muscle: 'gluteus_medius', note: 'Deze trainen we met de schelp.' });
+    expect(r.body).toEqual({ ok: true, delivered: true });
+    const home = (await (await login('patientA')).get('/patient/home')).body;
+    const n = home.notifications.find((x: { link: string }) => x.link === '/p/spieren?tab=spieren&open=gluteus_medius');
+    expect(n).toMatchObject({ title: 'Lees over de middelste bilspier', body: 'Deze trainen we met de schelp.' });
+    expect((await pro.post('/atlas/send', { patientId: pid, muscle: 'nope' })).body.error).toBe('unknown_muscle');
+  });
+
+  it('not to a patient of another practice, and not by a patient', async () => {
+    resetRateLimits();
+    const other = (await ownerQuery(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-b.test'`)).rows[0].id;
+    expect((await (await login('therapistA')).post('/atlas/send', { patientId: other, muscle: 'biceps' })).status).toBe(404);
+    expect((await (await login('patientA')).post('/atlas/send', { patientId: other, muscle: 'biceps' })).status).toBe(403);
+  });
+});

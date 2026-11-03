@@ -1,3 +1,4 @@
+import { demoSettings, isDemoEmail } from '../lib/demo';
 import { Hono } from 'hono';
 import { setCookie, deleteCookie, getCookie } from 'hono/cookie';
 import type { Context } from 'hono';
@@ -29,6 +30,8 @@ const minute = 60_000;
 
 authRoutes.post('/login', rateLimit('login', 10, 15 * minute), async (c) => {
   const b = parse(z.object({ email: z.string().trim().email().max(254), password: z.string().min(1).max(200) }), await c.req.json());
+  // Demo accounts switched off on this environment (DEMO_ACCOUNTS=off).
+  if (isDemoEmail(b.email) && !demoSettings().enabled) throw new HttpError(403, 'demo_disabled');
   const r = await auth.login(b.email, b.password, c.req.header('user-agent'));
   if ('mfaToken' in r) return c.json({ mfaRequired: true, mfaToken: r.mfaToken });
   setSession(c, r.token);

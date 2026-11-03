@@ -9,6 +9,7 @@ import { useDocumentMeta } from '@/lib/meta';
 import { ButtonLink, ErrorState, ProgressRing, Skeleton } from '@/components/ui';
 import { RestDayCard, TodayProgramCard } from '@/components/patient/TodayCard';
 import { DailyMissionCard } from '@/components/patient/DailyMission';
+import { DailyQuizCard } from '@/components/patient/DailyQuiz';
 import { PausedNotice } from '@/components/patient/Safety';
 import { useModes } from '@/components/patient/Modules';
 import type { Adherence, Notification, Program } from '@/lib/types';
@@ -86,6 +87,11 @@ export function PatientHome() {
               <div className="min-w-0 flex-1">
                 <div className="font-semibold text-ink-900">{n.title}</div>
                 <div className="text-[14.5px] text-ink-600">{n.body}</div>
+                {n.link && n.link !== '/p' && n.link.startsWith('/p/') && (
+                  <Link to={n.link} onClick={() => { void api.post(`/me/notifications/${n.id}/read`).then(() => qc.invalidateQueries({ queryKey: ['patient-home'] })); }} className="mt-1 inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">
+                    {t('Bekijken', 'View')}<ChevronRight className="h-4 w-4" aria-hidden />
+                  </Link>
+                )}
               </div>
               <button
                 type="button"
@@ -159,6 +165,7 @@ export function PatientHome() {
       <HeroHomeCard />
       <DayChestHomeCard />
       <BossHomeCard />
+      <DailyQuizCard />
       <LogbookHomeCard />
 
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="week-title">

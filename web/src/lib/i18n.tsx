@@ -110,6 +110,7 @@ const ERRORS: Record<string, [string, string]> = {
   hero_required: ['Maak eerst je sportheld aan.', 'Create your sports hero first.'],
   email_in_use: ['Er bestaat al een account met dit e-mailadres. Log in, of herstel je wachtwoord via “Wachtwoord vergeten”.', 'An account with this email address already exists. Log in, or reset your password via “Forgot password”.'],
   signup_closed: ['Aanmelden is nu niet mogelijk.', 'Sign-up is not available right now.'],
+  demo_disabled: ['De demo-accounts zijn op deze omgeving uitgezet.', 'The demo accounts are switched off on this environment.'],
   rehab_needs_physio: ['Revalidatieprogramma’s zijn alleen voor fysiotherapiepraktijken.', 'Rehabilitation programmes are for physiotherapy practices only.'],
   red_flag_needs_physio: ['Meldingen gaan naar een fysiotherapeut. Stop met trainen en bel bij twijfel je huisarts, of 112 bij spoed.', 'Reports go to a physiotherapist. Stop training and call your GP if in doubt, or 112 in an emergency.'],
   social_cancelled: ['Inloggen is geannuleerd.', 'Login was cancelled.'],

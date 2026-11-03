@@ -1,6 +1,36 @@
 import { test, expect } from '@playwright/test';
 import { login, expectAccessible } from './helpers';
 
+test('therapist sends a muscle card; the patient opens it from Vandaag, with the question of the day', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const pro = await ctx.newPage();
+  await login(pro, 'therapeut@praktijk-a.test');
+  await pro.goto('/app/spieren?spier=gluteus_medius');
+  await pro.getByRole('button', { name: 'Stuur naar patiënt' }).click();
+  const dlg = pro.getByRole('dialog', { name: /Stuur "Middelste bilspier" naar een patiënt/ });
+  await dlg.getByLabel('Patiënt').selectOption({ label: 'Emma de Jong' });
+  await dlg.getByLabel(/Korte toelichting/).fill('Deze trainen we met de schelp.');
+  await expectAccessible(pro, 'send muscle dialog');
+  await dlg.getByRole('button', { name: 'Versturen' }).click();
+  await expect(pro.getByText('Verstuurd: de patiënt ziet het op Vandaag')).toBeVisible();
+  await ctx.close();
+
+  const pctx = await browser.newContext({ viewport: { width: 360, height: 800 } });
+  const p = await pctx.newPage();
+  await login(p, 'patient@praktijk-a.test');
+  await p.goto('/p');
+  const msg = p.locator('div', { hasText: 'Lees over de middelste bilspier' }).filter({ has: p.getByRole('link', { name: 'Bekijken' }) }).last();
+  await expect(msg.getByText('Deze trainen we met de schelp.')).toBeVisible();
+  // Question of the day on Vandaag.
+  await expect(p.getByRole('heading', { level: 2 }).filter({ hasText: /\?$/ }).first()).toBeVisible();
+  await expect(p.getByText('Vraag van de dag')).toBeVisible();
+  await expectAccessible(p, 'patient home with message and question of the day');
+  await msg.getByRole('link', { name: 'Bekijken' }).click();
+  await expect(p).toHaveURL(/\/p\/spieren\?tab=spieren&open=gluteus_medius/);
+  await expect(p.getByRole('button', { name: /Middelste bilspier/, expanded: true })).toBeVisible();
+  await pctx.close();
+});
+
 test('therapist atlas: muscle card with exercises to add, library gaps, filter and links both ways', async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 390, height: 844 });

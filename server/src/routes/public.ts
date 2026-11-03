@@ -1,3 +1,4 @@
+import { publicDemoInfo } from '../lib/demo';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { withUser } from '../db';
@@ -13,6 +14,9 @@ export const publicRoutes = new Hono<AppEnv>();
 publicRoutes.get('/meta', (c) =>
   c.json({ bodyRegions: BODY_REGIONS, trainingCategories: TRAINING_CATEGORIES, movementCategories: MOVEMENT_CATEGORIES, equipment: EQUIPMENT, weekdays: WEEKDAYS }),
 );
+
+/** Whether the site may show the demo accounts and their public password. */
+publicRoutes.get('/demo', (c) => c.json(publicDemoInfo()));
 
 publicRoutes.get('/plans', async (c) => {
   const rows = await withUser(null, async (tx) => (await tx.query('SELECT * FROM plans WHERE public ORDER BY sort_order')).rows);

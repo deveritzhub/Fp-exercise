@@ -23,6 +23,14 @@ export const DEMO_ACCOUNTS = [
 ];
 export const DEMO_PASSWORD = 'Demo-wachtwoord-1';
 export const showDemoAccounts = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEMO_ACCOUNTS === '1';
+/**
+ * The demo accounts and their password are shown only while the server still uses the public seed
+ * password (the owner can set an own DEMO_PASSWORD or switch the accounts off).
+ */
+export function useShowDemoAccounts() {
+  const q = useQuery({ queryKey: ['public-demo'], queryFn: () => api.get<{ accounts: boolean; publicPassword: boolean }>('/public/demo'), enabled: showDemoAccounts, staleTime: 5 * 60_000 });
+  return showDemoAccounts && !!q.data?.publicPassword;
+}
 
 function safeNext(next: string | null) {
   // Same-site paths only. Backslashes are refused too: browsers treat "/\evil.example" as "//evil.example".
@@ -38,6 +46,7 @@ export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const demoVisible = useShowDemoAccounts();
   const [busy, setBusy] = useState(false);
   // After Google/Apple for an account with two-step verification: the server sends #mfa=<token>.
   const [mfaToken, setMfaToken] = useState<string | null>(() => {
@@ -155,7 +164,7 @@ export function LoginPage() {
         <Button type="submit" size="lg" className="w-full" loading={busy}>{t('Inloggen', 'Log in')}</Button>
       </form>
       <SocialButtons intent="login" next={safeNext(params.get('next'))} onPasskeyLogin={signedIn} />
-      {showDemoAccounts && (
+      {demoVisible && (
         <div className="mt-6 border-t border-line pt-5">
           <p className="mb-2 text-[12.5px] font-medium text-ink-500">{t('Demo-accounts (synthetische gegevens)', 'Demo accounts (synthetic data)')}</p>
           <div className="grid grid-cols-[minmax(0,1fr)] gap-1.5">

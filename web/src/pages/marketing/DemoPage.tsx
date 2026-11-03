@@ -4,7 +4,7 @@ import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
 import { Badge, Button, ButtonLink, Notice, ProgressRing } from '@/components/ui';
-import { DEMO_ACCOUNTS, DEMO_PASSWORD, showDemoAccounts } from '../auth/AuthPages';
+import { DEMO_ACCOUNTS, DEMO_PASSWORD, useShowDemoAccounts } from '../auth/AuthPages';
 
 /** Fully client-side interactive demo with synthetic data (no backend, no personal data). */
 const LIB = [
@@ -21,6 +21,7 @@ export function DemoPage() {
   const { t, locale } = useI18n();
   useDocumentMeta(t('Interactieve demo', 'Interactive demo'), t('Probeer zelf hoe je een programma bouwt en hoe de patiënt het ziet — met fictieve gegevens.', 'Try building a programme and see how the patient sees it — with fictional data.'));
   const [items, setItems] = useState<Item[]>([{ ...LIB[1], key: 1 }, { ...LIB[0], key: 2 }]);
+  const showDemoAccounts = useShowDemoAccounts();
   const [done, setDone] = useState<Set<number>>(new Set());
   const [seq, setSeq] = useState(3);
   const name = (x: { nl: string; en: string }) => (locale === 'nl' ? x.nl : x.en);

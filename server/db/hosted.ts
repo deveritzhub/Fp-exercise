@@ -66,6 +66,12 @@ if (!seeded) {
   process.env.NODE_ENV = env;
 }
 
+// Demo accounts: an own password or switched off, as set in the environment (DEMO_PASSWORD / DEMO_ACCOUNTS).
+{
+  const { applyDemoSettings } = await import('./demo-accounts');
+  await applyDemoSettings(process.env.DATABASE_OWNER_URL!);
+}
+
 await import('../src/index');
 
 // Demo videos: copied from the repo in the background so start-up (and the health check) is not delayed.
