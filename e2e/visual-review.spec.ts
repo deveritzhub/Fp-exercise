@@ -50,7 +50,9 @@ test('daily mission and rehabilitation route render safely at narrow and desktop
       console.log('FP_VISUAL_JPEG:mission:' + width + ':' + jpg.toString('base64'));
     }
 
+    let heroMockCalls = 0;
     await page.route('**/api/patient/hero', async (route) => {
+      heroMockCalls++;
       const response = await route.fetch();
       const data = await response.json();
       await route.fulfill({
@@ -77,6 +79,16 @@ test('daily mission and rehabilitation route render safely at narrow and desktop
     const collapsed = page.locator('button[data-fold="hero-quest"]');
     if (await collapsed.count()) await collapsed.click();
     const rehab = page.locator('section[aria-labelledby="rehab-route-heading"]');
+    if (!(await rehab.count())) {
+      const diagnostic = {
+        heroMockCalls,
+        url: page.url(),
+        headings: await page.getByRole('heading').allTextContents(),
+        folds: await page.locator('[data-fold="hero-quest"]').allTextContents(),
+        excerpt: (await page.locator('main').innerText()).slice(0,1300),
+      };
+      console.log('FP_VISUAL_DIAGNOSTIC:' + JSON.stringify(diagnostic));
+    }
     await expect(rehab).toBeVisible();
     await expect(rehab.getByRole('button', { name: /Hoofdstuk 2/ })).toHaveAttribute('aria-current', 'step');
     await rehab.getByRole('button', { name: /Hoofdstuk 3/ }).click();
