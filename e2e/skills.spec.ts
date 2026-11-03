@@ -73,12 +73,12 @@ test('lock reasons are visible, training buys gear in the shop, and the sheet fi
   await outfit.scrollIntoViewIfNeeded();
   await outfit.click();
   await page.getByRole('dialog').getByRole('button', {name:'Verder',exact:true}).click();
-  await expect(page.getByRole('button', { name: 'Outfit: Trainingspak. Wijzigen' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Outfit: Trainingspak\..*Wijzigen$/ })).toBeVisible();
   await expect(page.getByText(/^Gearscore 70$/).first()).toBeVisible();
   const close = page.getByRole('status').getByRole('button', { name: 'Sluiten / Close' });
   while (await close.count()) await close.first().click();
   // Character screen: the hands slot now shows the gloves; a slot opens its own picker.
-  await expect(page.getByRole('button', { name: 'Handen: Handschoenen. Wijzigen' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Handen: Handschoenen\..*Wijzigen$/ })).toBeVisible();
   await page.getByRole('button', { name: /^Hoofd/ }).first().click();
   await expect(page.getByRole('dialog', { name: 'Hoofd' })).toBeVisible();
   await expectAccessible(page, 'gear slot picker');

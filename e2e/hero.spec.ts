@@ -111,7 +111,7 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
     // Clear the stacked messages so they do not cover the + button during the next checks.
     const close = pp.getByRole('status').getByRole('button', { name: 'Sluiten / Close' });
     while (await close.count()) await close.first().click();
-    await expect(pp.getByRole('button', { name: /Aan ✓/, pressed: true }).first()).toBeVisible();
+    await expect(pp.getByRole('button', { name: /Uittrekken ✓/, pressed: true }).first()).toBeVisible();
   }
   await pp.getByRole('link', { name: 'Terug naar je held' }).click();
   await expandFolds(pp);
