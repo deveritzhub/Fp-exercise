@@ -193,7 +193,7 @@ export const SKILLS: { key: SkillKey; nl: string; en: string; howNl: string; how
   { key: 'sport', nl: 'Techniek', en: 'Technique', howNl: 'Sportspecifieke oefeningen in de sportfase.', howEn: 'Sport-specific exercises in the sport phase.' },
   { key: 'discipline', nl: 'Discipline', en: 'Discipline', howNl: 'Geplande trainingen en volle weken. Eén vrije week per 8 weken telt niet als breuk.', howEn: 'Planned workouts and full weeks. One free week per 8 weeks does not break the run.' },
   { key: 'recovery', nl: 'Herstel', en: 'Recovery', howNl: 'Een dagcheck, pijn doorgeven, een geplande rustdag en een daling op je pijnkaart.', howEn: 'A daily check-in, reporting pain, a planned rest day and a drop on your body map.' },
-  { key: 'knowledge', nl: 'Kennis', en: 'Knowledge', howNl: 'Binnenkort.', howEn: 'Coming soon.' },
+  { key: 'knowledge', nl: 'Kennis', en: 'Knowledge', howNl: 'Goede antwoorden in de quiz van de spierenatlas, ook de vraag van de dag.', howEn: 'Right answers in the muscle atlas quiz, including the question of the day.' },
 ];
 
 /** Which skills an exercise trains, from its training categories and movement category. */
@@ -244,7 +244,7 @@ export const SKILL_XP = {
   painDrop: 50, // a site 2 points under its own first score, once
 } as const;
 
-/** Per calendar day in Europe/Amsterdam. Knowledge has no lessons and no XP. */
+/** Per calendar day in Europe/Amsterdam. Knowledge comes from the atlas quiz (which has its own daily cap). */
 export const SKILL_DAILY_CAP: Record<SkillKey, number> = {
   strength: 150,
   mobility: 120,
@@ -255,10 +255,35 @@ export const SKILL_DAILY_CAP: Record<SkillKey, number> = {
   sport: 150,
   discipline: 100,
   recovery: 80,
-  knowledge: 0,
+  knowledge: 80,
 };
 
 export const MOBILITY_ROUTINE_S = 600;
+
+/** Krachtlog: XP per logged set for the skills of its exercise, at most this much per skill per day. */
+export const GYM_SET_XP = 5;
+export const GYM_SKILL_DAY_CAP = 50;
+/**
+ * Skill XP from the Krachtlog (gym, home, practice): every set with weight or reps gives GYM_SET_XP to
+ * the skills of the linked library exercise (Strength when there is none), capped per skill per day.
+ */
+export function gymSkillXp(sets: readonly { day: string; skills: SkillKey[] }[]): Partial<Record<SkillKey, number>> {
+  const perDay = new Map<string, number>();
+  const out: Partial<Record<SkillKey, number>> = {};
+  for (const s of sets) {
+    for (const k of s.skills.length ? s.skills : (['strength'] as SkillKey[])) {
+      // Power and sport keep their safety locks: a logged jump does not open them.
+      if (k === 'power' || k === 'sport') continue;
+      const key = `${s.day}|${k}`;
+      const had = perDay.get(key) ?? 0;
+      const add = Math.min(GYM_SET_XP, GYM_SKILL_DAY_CAP - had);
+      if (add <= 0) continue;
+      perDay.set(key, had + add);
+      out[k] = (out[k] ?? 0) + add;
+    }
+  }
+  return out;
+}
 /** Reporting this much pain (or more) still counts the session, but pauses Strength progression bonuses that day. */
 export const PAIN_PAUSE_STRENGTH = 7;
 
@@ -302,7 +327,8 @@ const openLock = { locked: false as const, reason: null, phase: null };
 
 /** Why a skill shows a lock instead of a level. Discipline and recovery are always open. */
 export function skillLock(key: SkillKey, ctx: SkillLockContext): { locked: boolean; reason: SkillLockCode | null; phase: number | null } {
-  if (key === 'knowledge') return { locked: true, reason: 'soon', phase: null };
+  // Knowledge opens with the first right answer in the atlas quiz.
+  if (key === 'knowledge') return ctx.selfTrained?.includes('knowledge') ? openLock : { locked: true, reason: 'soon', phase: null };
   if (key === 'discipline' || key === 'recovery') return openLock;
   if (key === 'power') {
     const cleared = ctx.strengthCleared || (ctx.phaseNo !== null && ctx.phaseNo >= 3);

@@ -3,7 +3,7 @@ import { strengthCap, type StrengthCap } from '../../../shared/strengthStandards
 import { gymKey, setEstimate } from '../../../shared/gymLog';
 import { isoWeekday, parseDate } from '../../../shared/adherence';
 import {
-  SKILLS, addDays, computeSkillXp, epley1Rm, friendSkillCard, painDropEvents, plannedRestDates, skillLevel, skillLock, skillXpForLevel, skillsForExercise,
+  SKILLS, addDays, computeSkillXp, gymSkillXp, epley1Rm, friendSkillCard, painDropEvents, plannedRestDates, skillLevel, skillLock, skillXpForLevel, skillsForExercise,
   type FriendSkillCard, type LoggedExercise, type RecoveryEvent, type RmMeasurement, type SkillKey, type SkillLockCode, type SkillLockContext,
 } from '../../../shared/hero';
 
@@ -142,10 +142,15 @@ export async function loadSkillSnapshot(tx: Tx, patientId: string, weekly: Week[
   // Krachtlog (any place) and the body weight for the Strength ceiling.
   const gym = (
     await tx.query(
-      `SELECT exercise_name, weight_kg, reps, to_char(day, 'YYYY-MM-DD') AS day FROM gym_sets WHERE patient_id = $1`,
+      `SELECT g.exercise_name, g.weight_kg, g.reps, to_char(g.day, 'YYYY-MM-DD') AS day, e.training_categories, e.movement_category
+         FROM gym_sets g LEFT JOIN exercises e ON e.id = g.exercise_id WHERE g.patient_id = $1`,
       [patientId],
     )
   ).rows;
+  // Krachtlog sets count for the skills of their exercise (and open them), capped per day.
+  const fromGym = gymSkillXp(gym.map((g) => ({ day: g.day, skills: skillsForExercise(g.training_categories ?? [], g.movement_category ?? null) })));
+  extraXp = { ...extraXp };
+  for (const [k, n] of Object.entries(fromGym)) extraXp[k as SkillKey] = (extraXp[k as SkillKey] ?? 0) + (n ?? 0);
   const body = (
     await tx.query(
       `SELECT (SELECT kg FROM weight_logs WHERE patient_id = $1 ORDER BY day DESC LIMIT 1) AS logged,

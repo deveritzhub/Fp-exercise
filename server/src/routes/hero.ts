@@ -107,7 +107,9 @@ async function heroState(tx: Tx, patientId: string) {
   const painNow = map.current ? averagePain(map.current.entries.map((e) => e.score)) ?? 0 : null;
   // Own workouts, protein and steps (logbook) add skill XP on top of the programme XP.
   const logged = await loadPatientLogs(tx, patientId);
-  const skillsSnap = await loadSkillSnapshot(tx, patientId, weekly, logged.skillXp);
+  // Kennis: the atlas quiz (XP once per right answer, its own daily cap).
+  const quizXpNow = await quizXpFor(tx, patientId);
+  const skillsSnap = await loadSkillSnapshot(tx, patientId, weekly, { ...logged.skillXp, ...(quizXpNow ? { knowledge: quizXpNow } : {}) });
   // Warning-sign XP is part of physiotherapy. Coach and personal accounts do not earn it.
   let xp = xpFor({
     sessions: s.sessions,
@@ -198,7 +200,7 @@ async function heroState(tx: Tx, patientId: string) {
   const season = seasonList.find((x) => x.month === thisMonth) ?? { month: thisMonth, key: seasonOf(thisMonth).key, weeks: 1, bossesBeaten: 0, goal: SEASON_GOAL, won: false };
   xp += logged.heroXp;
   // Anatomy quiz in the muscle atlas: XP per first correct answer, capped per day.
-  xp += await quizXpFor(tx, patientId);
+  xp += quizXpNow;
 
   // Where each quest is done: today's training, the body map, and an exercise for the skill of the week.
   const skillQuest = quests.find((x) => x.key === 'skill');

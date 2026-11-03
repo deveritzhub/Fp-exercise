@@ -116,6 +116,7 @@ export function PatientHome() {
         <div className="rounded-2xl border border-line bg-white p-6 text-center shadow-card">
           <h2 className="text-lg font-bold">{t('Nog geen programma', 'No programme yet')}</h2>
           <p className="mt-1 text-ink-500">{modes.data?.modules.includes('revalidatie') ? t('Je fysiotherapeut zet je oefenprogramma hier voor je klaar. Je kunt ook zelf iets starten.', 'Your physiotherapist will set up your exercise programme here. You can also start something yourself.') : t('Start hieronder zelf een programma.', 'Start a programme yourself below.')}</p>
+                  <p className="mt-3 rounded-xl bg-accent-soft px-3 py-2 text-[14px] text-ink-800">{t('Tip: start een programma, log een set in de ', 'Tip: start a programme, log a set in the ')}<Link to="/p/krachtlog" className="font-semibold text-accent underline-offset-2 hover:underline">{t('Krachtlog', 'strength log')}</Link>{t(' of doe de ', ' or take the ')}<Link to="/p/spieren?tab=quiz" className="font-semibold text-accent underline-offset-2 hover:underline">{t('quiz', 'quiz')}</Link>{t('. Zo gaan je eerste skills open.', '. That opens your first skills.')}</p>
         </div>
       ) : showRestCard ? (
         <RestDayCard

@@ -17,7 +17,9 @@ const clearSeed = () =>
   sql(`DELETE FROM exercise_logs WHERE session_id IN (SELECT id FROM workout_sessions WHERE feedback = 'skills-v2-e2e');
        DELETE FROM workout_sessions WHERE feedback = 'skills-v2-e2e';
        UPDATE patient_heroes SET gear = '{}', showcase = '{}' FROM patients p WHERE p.id = patient_heroes.patient_id AND p.email = 'patient@praktijk-a.test';
-       DELETE FROM hero_purchases WHERE patient_id IN (SELECT id FROM patients WHERE email = 'patient@praktijk-a.test')`);
+       DELETE FROM hero_purchases WHERE patient_id IN (SELECT id FROM patients WHERE email = 'patient@praktijk-a.test');
+       -- Quiz answers open Kennis; this test starts from a hero without them.
+       DELETE FROM hero_quiz_answers WHERE patient_id IN (SELECT id FROM patients WHERE email = 'patient@praktijk-a.test')`);
 
 test.afterAll(clearSeed);
 

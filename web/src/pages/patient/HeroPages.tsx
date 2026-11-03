@@ -530,7 +530,11 @@ function Skills({ d }: { d: HeroState }) {
         {sel && info && (
           <div className="space-y-3 text-[15px]">
             {sel.locked ? (
-              <p className="text-ink-700">{skillLockLabel(sel.reason, sel.phase, nl)}. {nl ? info.howNl : info.howEn}</p>
+              <>
+                <p className="text-ink-700">{skillLockLabel(sel.reason, sel.phase, nl)}. {nl ? info.howNl : info.howEn}</p>
+                {(sel.key === 'power' || sel.key === 'sport') && <p className="text-[14px] text-ink-600">{t('Je fysiotherapeut zet dit vrij zodra je er veilig aan toe bent.', 'Your physiotherapist unlocks this once you are ready for it safely.')}</p>}
+                <SkillActions skill={sel.key} onGo={() => setOpen(null)} />
+              </>
             ) : (
               <>
                 <p className="text-ink-700">{t('Zo train je deze skill:', 'How to train this skill:')} {nl ? info.howNl : info.howEn}</p>
@@ -544,6 +548,7 @@ function Skills({ d }: { d: HeroState }) {
                     ))}
                   </ul>
                 )}
+                <SkillActions skill={sel.key} onGo={() => setOpen(null)} />
                 <div>
                   <div className="flex justify-between text-[14px]"><span>{sel.xp} XP</span><span className="text-ink-600">{sel.level < 99 ? t(`nog ${sel.to - sel.xp} XP tot level ${sel.level + 1}`, `${sel.to - sel.xp} XP to level ${sel.level + 1}`) : t('Maximaal level!', 'Maximum level!')}</span></div>
                   <ProgressBar value={sel.progress} className="mt-1.5 h-2.5" label={t('Voortgang naar het volgende level', 'Progress to the next level')} />
@@ -554,6 +559,32 @@ function Skills({ d }: { d: HeroState }) {
         )}
       </Dialog>
     </section>
+  );
+}
+
+/** Where to earn XP for a skill: one or two buttons straight to the right place. */
+const SKILL_ACTIONS: Partial<Record<SkillKey, { to: string; nl: string; en: string }[]>> = {
+  strength: [{ to: '/p/krachtlog', nl: 'Log een set in de Krachtlog', en: 'Log a set in the strength log' }, { to: '/p/kracht', nl: 'Start een krachtprogramma', en: 'Start a strength programme' }],
+  mobility: [{ to: '/p/mobiliteit', nl: 'Start een mobiliteitsprogramma', en: 'Start a mobility programme' }],
+  balance: [{ to: '/p/logboek', nl: 'Log een eigen training', en: 'Log your own workout' }],
+  stability: [{ to: '/p/krachtlog', nl: 'Log bijv. een plank in de Krachtlog', en: 'Log e.g. a plank in the strength log' }, { to: '/p/logboek', nl: 'Log een eigen training', en: 'Log your own workout' }],
+  endurance: [{ to: '/p/logboek', nl: 'Log een eigen training', en: 'Log your own workout' }],
+  knowledge: [{ to: '/p/spieren?tab=quiz', nl: 'Doe de quiz in de spierenatlas', en: 'Take the muscle atlas quiz' }],
+  discipline: [{ to: '/p', nl: 'Naar je training van vandaag', en: 'To today’s workout' }],
+  recovery: [{ to: '/p/held/pijn', nl: 'Doe je dagcheck', en: 'Do your daily check-in' }],
+};
+function SkillActions({ skill, onGo }: { skill: SkillKey; onGo: () => void }) {
+  const { t } = useI18n();
+  const acts = SKILL_ACTIONS[skill] ?? [];
+  if (!acts.length) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      {acts.map((a, i) => (
+        <Link key={a.to} to={a.to} onClick={onGo} className={cn('tap inline-flex min-h-[48px] items-center justify-between gap-2 rounded-xl px-4 text-[15px] font-semibold', i === 0 ? 'bg-accent text-accent-ink' : 'border border-line bg-white text-ink-900')}>
+          {t(a.nl, a.en)}<ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+        </Link>
+      ))}
+    </div>
   );
 }
 

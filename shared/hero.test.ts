@@ -557,3 +557,19 @@ describe('monthly seasons', () => {
     expect(b.earned({ ...base, seasonsWon: 1 })).toBe(true);
   });
 });
+
+describe('krachtlog and quiz feed the skills', () => {
+  it('a logged set gives XP to the skills of its exercise, capped per day; power and sport stay locked', async () => {
+    const { gymSkillXp, GYM_SET_XP, GYM_SKILL_DAY_CAP } = await import('./hero');
+    expect(gymSkillXp([{ day: '2026-11-03', skills: [] }])).toEqual({ strength: GYM_SET_XP });
+    expect(gymSkillXp([{ day: '2026-11-03', skills: ['stability'] }, { day: '2026-11-03', skills: ['stability'] }])).toEqual({ stability: 2 * GYM_SET_XP });
+    const many = Array.from({ length: 30 }, () => ({ day: '2026-11-03', skills: ['strength'] as SkillKey[] }));
+    expect(gymSkillXp([...many, { day: '2026-11-04', skills: ['strength'] }]).strength).toBe(GYM_SKILL_DAY_CAP + GYM_SET_XP);
+    expect(gymSkillXp([{ day: '2026-11-03', skills: ['power', 'sport'] }])).toEqual({});
+  });
+  it('Kennis opens with a right quiz answer, not before', () => {
+    const ctx = { active: [], laterPhase: {}, phaseNo: null, strengthCleared: false, powerInProgram: false, sportPhase: false };
+    expect(skillLock('knowledge', ctx).locked).toBe(true);
+    expect(skillLock('knowledge', { ...ctx, selfTrained: ['knowledge'] }).locked).toBe(false);
+  });
+});

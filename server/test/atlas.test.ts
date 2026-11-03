@@ -105,3 +105,20 @@ describe('sending a muscle card to a patient', () => {
     expect((await (await login('patientA')).post('/atlas/send', { patientId: other, muscle: 'biceps' })).status).toBe(403);
   });
 });
+
+describe('skills from the quiz and the strength log', () => {
+  it('a right quiz answer opens Kennis; a logged set gives Strength XP', async () => {
+    resetRateLimits();
+    const noah = await login('patientB');
+    const skill = async (k: string) => (await noah.get('/patient/hero')).body.skills.find((s: { key: string }) => s.key === k);
+    expect((await skill('knowledge')).locked).toBe(true);
+    const q = quizQuestions().find((x) => x.level === 1)!;
+    await noah.post('/patient/atlas/quiz', { questionId: q.id, answer: q.answer });
+    const k = await skill('knowledge');
+    expect(k.locked).toBe(false);
+    expect(k.xp).toBeGreaterThan(0);
+    const before = (await skill('strength')).xp as number;
+    expect((await noah.post('/patient/gym/sets', { exerciseName: 'Atlas test press', weightKg: 20, reps: 8 })).status).toBe(201);
+    expect((await skill('strength')).xp).toBe(before + 5);
+  });
+});
