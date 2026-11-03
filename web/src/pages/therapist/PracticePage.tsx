@@ -7,6 +7,7 @@ import { useSession } from '@/lib/session';
 import { fmtDateTime, fmtDate } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
 import { accentVars, DEFAULT_ACCENT } from '@/lib/accent';
+import { PracticeBrandPreview } from '@/components/therapist/PracticeBrandPreview';
 import { Avatar, Badge, Button, buttonClass, Card, CardHeader, Dialog, EmptyState, Input, Notice, PageHeader, ProgressBar, Select, Spinner, Tabs, useToast, TableScroll } from '@/components/ui';
 import type { Member, Role } from '@/lib/types';
 import { FeedbackList } from '@/components/app/Feedback';
@@ -187,6 +188,7 @@ function Settings() {
             {f.accent.toLowerCase() !== DEFAULT_ACCENT && <Button size="sm" variant="ghost" onClick={() => setF({ ...f, accent: DEFAULT_ACCENT })}>{t('Standaardkleur', 'Default colour')}</Button>}
           </div>
         </div>
+        <PracticeBrandPreview name={f.name} accent={f.accent} />
         <div className="flex justify-end"><Button type="submit">{t('Opslaan', 'Save')}</Button></div>
       </form>
     </Card>
