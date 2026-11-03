@@ -255,13 +255,13 @@ export function FriendsPage() {
 
           <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="friends-title">
             <h2 id="friends-title" className="t-section">{t(`Teamgenoten (${friends.length} ${friends.length === 1 ? 'vriend' : 'vrienden'})`, `Companions (${friends.length} ${friends.length === 1 ? 'friend' : 'friends'})`)}</h2>
-            <p className="text-[13.5px] text-ink-600">{t('Op totaal level. Tik op een held voor de skills.', 'By total level. Tap a hero for the skills.')}</p>
+            <p className="text-[13.5px] text-ink-600">{t('Vrijwillig gedeelde sporthelden, zonder rangorde op herstel of kracht.', 'Voluntarily shared heroes, without recovery or strength ranking.')}</p>
             {friends.length === 0 && (
               <p className="mt-3 flex items-center gap-2 rounded-xl bg-canvas p-3 text-[14px] text-ink-700"><Users className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />{t('Nog geen vrienden. Deel je vriendcode om te beginnen.', 'No friends yet. Share your friend code to get started.')}</p>
             )}
-            <ol className="mt-3 space-y-2" aria-label={t('Ranglijst', 'Leaderboard')}>
+            <ul className="mt-3 space-y-2" aria-label={t('Teamgenoten', 'Companions')}>
               {companions.map((f) => <FriendRow key={f.id} f={f} rank={0} me={f.me} />)}
-            </ol>
+            </ul>
             {friends.length > 0 && (
               <details className="mt-3 text-[14px]">
                 <summary className="min-h-[44px] cursor-pointer py-2 font-medium text-ink-700">{t('Vriend verwijderen', 'Remove a friend')}</summary>
