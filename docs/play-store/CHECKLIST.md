@@ -4,7 +4,7 @@ Vink af wat klaar is. ✋ = jij (account, betaling, beslissing). 🤖 = Claude.
 
 ## 1. Voorbereiding
 - [ ] ✋ **Render op Starter** (±$7/mnd): dashboard.render.com → fp-exercise → Settings → Instance Type → *Starter*. Anders valt de app in slaap en opent hij traag.
-- [ ] ✋ **Domein kiezen**: eigen domein (bijv. `app.fpflow.nl`) of voorlopig `fp-exercise.onrender.com`. Eigen domein: koop het, voeg het in Render toe (Settings → Custom Domains), zet het CNAME-record bij je provider en geef de naam aan Claude.
+- [x] ✋ **Domein gekoppeld**: `app.fpflow.nl` is geverifieerd door Render en heeft een HTTPS-certificaat. `APP_ORIGIN=https://app.fpflow.nl` is ingesteld.
 - [ ] ✋ **Privacyverklaring afmaken** op `/privacy`: de stukken tussen [vierkante haken] (bewaartermijnen, contactgegevens, klachtrecht AP). Google keurt een onvolledige verklaring af. Claude kan de tekst aanpassen zodra jij de gegevens geeft.
 - [x] 🤖 Pakketnaam `nl.fpflow.app`, manifest, winkelteksten (`LISTING.md`), formulieranswoorden (`FORMS.md`), testaccount-instructie (`REVIEW.md`).
 
@@ -13,7 +13,7 @@ Vink af wat klaar is. ✋ = jij (account, betaling, beslissing). 🤖 = Claude.
 - [ ] ✋ Identiteit laten verifiëren (een paar dagen).
 
 ## 3. Android-pakket maken met PWABuilder
-1. ✋ Ga naar **pwabuilder.com**, vul in: `https://fp-exercise.onrender.com/p` (of je eigen domein) → *Start*.
+1. ✋ Ga naar **pwabuilder.com**, vul in: `https://app.fpflow.nl/p` → *Start*.
 2. ✋ *Package for stores* → **Android** → *Generate Package* → *Options*, en vul in:
 
    | Veld | Waarde |
@@ -22,7 +22,7 @@ Vink af wat klaar is. ✋ = jij (account, betaling, beslissing). 🤖 = Claude.
    | App name | `FP Flow` |
    | Launcher name | `FP Flow` |
    | App version / version code | `1.0.0` / `1` |
-   | Host | `fp-exercise.onrender.com` (of je domein) |
+   | Host | `app.fpflow.nl` |
    | Start URL | `/p` |
    | Theme color / Background color | `#29483C` / `#F7F9F7` |
    | Display mode | Standalone |
