@@ -52,7 +52,7 @@ export function PhotoEquipment({look, source}: {look:FigureLook;source:string}) 
     const anchors=body && (['wristbands','watch','gloves'].includes(key) ? body.hands : ['gold_shoes','balance_shoes','spikes','crew_socks'].includes(key) ? body.feet : key==='shin_guards' ? body.shins : null);
     const x=anchors ? anchors[mirror?1:0] : HEAD_ITEMS.has(key) ? head.x : .5+((mirror ? (['shin_guards','crew_socks'].includes(key) ? .99 : .965)-px:px)-.5)*spread;
     const width=w*(['belt','hr_band','captain'].includes(key)?spread:1);
-    return <svg key={key+mirror} data-photo-gear={key} data-tier={gearTier(key).tier} className="photo-worn" x={(x-width/2)*1000} y={(y+(HEAD_ITEMS.has(key)?head.dy:0))*1333.33} width={width*1000} height={h*1333.33} viewBox={box.join(' ')} preserveAspectRatio="none" overflow="hidden">
+    return <svg key={key+mirror} data-photo-gear={key} data-tier={gearTier(key).tier} style={{filter:`drop-shadow(0 0 ${gearTier(key).tier * .18}px ${gearTier(key).glow})`}} className="photo-worn"  x={(x-width/2)*1000} y={(y+(HEAD_ITEMS.has(key)?head.dy:0))*1333.33} width={width*1000} height={h*1333.33} viewBox={box.join(' ')} preserveAspectRatio="none" overflow="hidden">
       <image href={`/api/hero-assets/wear/${key}`} width={asset.size[0]} height={asset.size[1]} clipPath={key==='headphones'?`url(#ears${uid})`:undefined} filter={`url(#cut${uid})`} transform={mirror?`translate(${asset.box[0]*2+asset.box[2]} 0) scale(-1 1)`:undefined}/>
     </svg>;
   };

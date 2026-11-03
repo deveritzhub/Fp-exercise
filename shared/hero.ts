@@ -778,11 +778,11 @@ export const SKILL_TITLE_LEVEL = 20;
 
 /** Shop tiers: price in coins. Every item also has its own tier score (like an item level). Colours pass 4.5:1 as text on light backgrounds. */
 export const GEAR_TIERS = [
-  { tier: 1, key: 'common', nl: 'Gewoon', en: 'Common', price: 15, color: '#5c6159' },
-  { tier: 2, key: 'uncommon', nl: 'Goed', en: 'Uncommon', price: 40, color: '#2b6b41' },
-  { tier: 3, key: 'rare', nl: 'Zeldzaam', en: 'Rare', price: 90, color: '#2759a0' },
-  { tier: 4, key: 'epic', nl: 'Episch', en: 'Epic', price: 180, color: '#6f35ab' },
-  { tier: 5, key: 'legendary', nl: 'Legendarisch', en: 'Legendary', price: 350, color: '#855806' },
+  { tier: 1, key: 'common', nl: 'Alledaags', en: 'Everyday', price: 15, color: '#5c6159', glow: '#A3AAA5' },
+  { tier: 2, key: 'uncommon', nl: 'Premium', en: 'Premium', price: 40, color: '#2b6b41', glow: '#53A878' },
+  { tier: 3, key: 'rare', nl: 'Designer', en: 'Designer', price: 90, color: '#2759a0', glow: '#5595DF' },
+  { tier: 4, key: 'epic', nl: 'Legendarisch', en: 'Legendary', price: 180, color: '#6f35ab', glow: '#AD79DE' },
+  { tier: 5, key: 'legendary', nl: 'Goddelijk', en: 'Divine', price: 350, color: '#855806', glow: '#E4BC63' },
 ] as const;
 export type GearTier = (typeof GEAR_TIERS)[number];
 

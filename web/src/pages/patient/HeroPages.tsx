@@ -913,11 +913,17 @@ function GearCard({ d }: { d: HeroState }) {
       <GearStats d={d} />
       <p className="mt-2 text-[13.5px] text-ink-600">{t('Verzamel je eigen uitrusting. Tier toont de zeldzaamheid; itemlevel is de cosmetische waarde die meetelt voor je gearscore. Je hoeft geen hoger heldlevel te halen om een item te dragen.', 'Collect your own equipment. Tier shows rarity; item level is the cosmetic value contributing to your gear score. No hero-level requirement applies to wearing items.')}</p>
 
+      <ul className="my-3 flex flex-wrap gap-2" aria-label={t('Uitrustingstiers', 'Equipment tiers')}>
+        {GEAR_TIERS.map(tier => <li key={tier.key} className="rounded-lg border bg-white px-2 py-1 text-xs" style={{borderColor:tier.glow,color:tier.color}}>
+          <span className="font-semibold">{tier.tier} · {nl ? tier.nl : tier.en}</span>
+          <span className="ml-1">{(tier.tier-1)*20+1}–{tier.tier*20}</span>
+        </li>)}
+      </ul>
       <CharacterScreen d={d} onPreview={setPreview} preview={preview} busy={busy} onSave={save} onBuy={buy} />
 
       {preview && <div className="my-3 flex flex-wrap items-center gap-3" role="status"><span>{t('Paskamer — nog niet gekocht:', 'Preview — not purchased:')} {nl ? GEAR.find(g=>g.key===preview)?.nl : GEAR.find(g=>g.key===preview)?.en}</span><Button variant="secondary" onClick={()=>setPreview(null)}>{t('Preview sluiten','Close preview')}</Button></div>}
       <Dialog open={!!loot} onClose={()=>setLoot(null)} title={t('Nieuw in je collectie','New in your collection')} footer={<Button onClick={()=>setLoot(null)}>{t('Verder','Continue')}</Button>}>
-        {loot && <div className="rpg-loot text-center"><div className="mx-auto h-40 w-40"><GearImg gearKey={loot}/></div><p className="font-bold">{nl ? GEAR.find(g=>g.key===loot)?.nl : GEAR.find(g=>g.key===loot)?.en}</p><p>{t('Je nieuwe item is aangetrokken.','Your new item is equipped.')}</p></div>}
+        {loot && <div className="rpg-loot text-center" style={{'--gear-color':GEAR_TIERS[(GEAR.find(g=>g.key===loot)?.tier ?? 1)-1].glow} as CSSProperties}><div className="mx-auto h-40 w-40"><GearImg gearKey={loot}/></div><p className="font-bold">{nl ? GEAR.find(g=>g.key===loot)?.nl : GEAR.find(g=>g.key===loot)?.en}</p><p>{t('Je nieuwe item is aangetrokken.','Your new item is equipped.')}</p></div>}
       </Dialog>
       <div className="mt-4">
         <Segmented label={t('Toon', 'Show')} value={filter} onChange={setFilter} size="sm"
@@ -927,7 +933,7 @@ function GearCard({ d }: { d: HeroState }) {
             { value: 'shop', label: t(`Winkel (${GEAR.length - d.gear.owned.length})`, `Shop (${GEAR.length - d.gear.owned.length})`) },
           ]} />
       </div>
-      <ul className="mt-3 grid grid-cols-2 gap-2 min-[340px]:grid-cols-3 min-[620px]:grid-cols-4">
+      <ul className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-2">
         {shown.map((g) => (
           <li key={g.key}>
             <GearTile g={g} d={d} busy={busy} onPreview={() => setPreview(g.key)} onToggle={() => toggle(g.key)} onBuy={() => buy(g.key)} />
@@ -994,7 +1000,7 @@ function GearTile({ g, d, busy, onToggle, onBuy, onPreview }: { onPreview?: () =
       <button type="button" aria-pressed={on} disabled={busy !== null} onClick={onToggle}
         data-tier={g.tier} data-item={g.key}
         className={cn('gear-tile tap relative flex h-full w-full flex-col items-center gap-1 rounded-xl border-2 p-2 text-center transition-colors', on ? 'border-accent bg-accent-soft' : 'bg-white hover:border-ink-300')}
-        style={{'--gear-color':tier.color,borderColor:tier.color} as CSSProperties}>
+        style={{'--gear-color':tier.glow,borderColor:tier.color} as CSSProperties}>
         <span className="gear-art block h-20 w-20 overflow-hidden rounded-lg" aria-hidden><GearImg gearKey={g.key} /></span>
         <span className="max-w-full text-[12.5px] font-semibold leading-tight text-ink-900 [hyphens:auto] [overflow-wrap:anywhere]" lang={locale}>{name}</span>
         <TierTag g={g} />
@@ -1004,7 +1010,7 @@ function GearTile({ g, d, busy, onToggle, onBuy, onPreview }: { onPreview?: () =
   }
   const short = g.price - d.gear.coins;
   return (
-    <div data-tier={g.tier} data-item={g.key} className="gear-tile flex h-full flex-col items-center gap-1 rounded-xl border-2 bg-canvas p-2 text-center" style={{'--gear-color':tier.color,borderColor:tier.color} as CSSProperties}>
+    <div data-tier={g.tier} data-item={g.key} className="gear-tile flex h-full flex-col items-center gap-1 rounded-xl border-2 bg-canvas p-2 text-center" style={{'--gear-color':tier.glow,borderColor:tier.color} as CSSProperties}>
       <span className="gear-art block h-20 w-20 overflow-hidden rounded-lg" aria-hidden><GearImg gearKey={g.key} className={short > 0 ? 'opacity-60' : ''} /></span>
       <span className="max-w-full text-[12.5px] font-semibold leading-tight text-ink-800 [hyphens:auto] [overflow-wrap:anywhere]" lang={locale}>{name}</span>
       <TierTag g={g} />

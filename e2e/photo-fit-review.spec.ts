@@ -1,4 +1,4 @@
-import {GEAR} from '../shared/hero';
+import {GEAR,GEAR_TIERS} from '../shared/hero';
 import {test,expect} from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -45,7 +45,7 @@ test('photographic inventory equips and keeps photographic preview on mobile', a
   state.gear.owned=GEAR.map(g=>g.key);state.gear.equipped=[];await page.reload();
   for(const item of GEAR){
     const card=page.locator(`[data-item="${item.key}"]`).first();
-    await expect(card).toContainText(`Tier ${item.tier}`);await expect(card).toContainText(`Itemlevel ${item.itemLevel}`);
+    await expect(card).toContainText(`Tier ${item.tier} · ${GEAR_TIERS[item.tier-1].nl}`);await expect(card).toContainText(`Itemlevel ${item.itemLevel}`);
     await card.click();await expect(card).toHaveAttribute('aria-pressed','true');
     if(['tracksuit','team_kit','champion'].includes(item.key)) await expect(photo.locator(`img[src$="__${item.key}"]`)).toBeVisible();
     else expect(await photo.locator(`[data-photo-gear="${item.key}"]`).count()).toBeGreaterThan(0);

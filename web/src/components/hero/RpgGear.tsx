@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import type { FigureLook } from './HumanFigure';
 import { figureGeometry } from './figureGeometry';
-import { GEAR_SLOT } from '@shared/hero';
+import { GEAR_SLOT, gearTier } from '@shared/hero';
 
 // Original vector artwork. The inventory and character use exactly these same shapes.
 export function RpgGear({ item, look, shapes }: { item: string; look: FigureLook; shapes?: { torso: string; arm: (s: -1 | 1) => string; leg: (s: -1 | 1) => string } }) {
@@ -12,7 +12,7 @@ export function RpgGear({ item, look, shapes }: { item: string; look: FigureLook
   const jewel = (x: number, y: number, r = 4) => <path d={`M${x},${y-r} l${r},${r} -${r},${r} -${r},-${r}Z`} fill="#8affdc" stroke="#e9ffe7" strokeWidth=".7" />;
   const shoe = ['gold_shoes', 'balance_shoes', 'spikes'].includes(item);
   const outfit = ['tracksuit', 'team_kit', 'champion'].includes(item);
-  return <g data-rpg-item={item} className="rpg-item" strokeLinejoin="round" strokeLinecap="round">
+  return <g data-rpg-item={item} className="rpg-item" style={{filter:`drop-shadow(0 0 ${gearTier(item).tier * .25}px ${gearTier(item).glow})`}} strokeLinejoin="round" strokeLinecap="round">
     <defs>
       <linearGradient id={`gold${id}`} x2="90%" y2="100%"><stop stopColor="#fff1b8"/><stop offset=".35" stopColor="#dbaa4e"/><stop offset=".6" stopColor="#8e591d"/><stop offset=".8" stopColor="#f6d887"/><stop offset="1" stopColor="#a47332"/></linearGradient>
       <linearGradient id={`teal${id}`}><stop stopColor="#102b35"/><stop offset=".45" stopColor="#347e79"/><stop offset=".7" stopColor="#245655"/><stop offset="1" stopColor="#0a222c"/></linearGradient>
