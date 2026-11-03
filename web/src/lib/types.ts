@@ -149,11 +149,17 @@ export type PatientDetail = Omit<PatientListItem, 'activePrograms' | 'lastActivi
 };
 
 export type SessionLog = { exerciseId: string; nameNl: string; nameEn: string; completed: boolean; setsDone: number | null; repsDone: number | null; difficulty: number | null; pain: number | null; feedback: string | null; plannedHoldS?: number | null; plannedSets?: number | null };
+export type PatientOutcome = {
+  id:string; measuredOn:string; domain:'rom'|'strength'|'function'|'confidence';
+  metric:string; value:number; unit:'degrees'|'kg'|'N'|'score_0_10'|'percent';
+  side:'left'|'right'|'bilateral'|'not_applicable'; note:string; createdAt:string;
+};
 export type Progress = {
   weekly: (Adherence & { weekStart: string })[];
   adherence7d: Adherence;
   adherence28d: Adherence;
   completedSessions: number;
+  outcomes: PatientOutcome[];
   sessions: { id: string; programId: string; programTitle: string; startedAt: string; completedAt: string | null; difficulty: number | null; pain: number | null; feedback: string | null; reviewedAt: string | null; logs: SessionLog[] }[];
   perExercise: { exerciseId: string; nameNl: string; nameEn: string; completed: number; logged: number; avgDifficulty: number | null; avgPain: number | null; maxPain: number | null }[];
 };
