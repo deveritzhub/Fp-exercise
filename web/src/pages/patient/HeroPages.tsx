@@ -13,7 +13,7 @@ import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, Segmented
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
-import { HumanFigure, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
+import { SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
 import { BADGES, BOSSES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, WALL_BADGES_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
@@ -871,7 +871,6 @@ function GearCard({ d }: { d: HeroState }) {
   const toast = useToast();
   const [busy, setBusy] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [cape, setCape] = useState(false);
   const [loot, setLoot] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'open' | 'shop'>('all');
   const save = async (next: string[], key: string) => {
@@ -929,21 +928,17 @@ function GearCard({ d }: { d: HeroState }) {
       <ul className="mt-3 grid grid-cols-2 gap-2 min-[340px]:grid-cols-3 min-[620px]:grid-cols-4">
         {shown.map((g) => (
           <li key={g.key}>
-            <GearTile g={g} d={d} busy={busy} onPreview={() => setPreview(g.key)} onToggle={() => toggle(g.key)} onBuy={() => buy(g.key)} />
+            <GearTile g={g} d={d} busy={busy} onPreview={GEAR_SLOT[g.key] === 'outfit' ? () => setPreview(g.key) : undefined} onToggle={() => toggle(g.key)} onBuy={() => buy(g.key)} />
           </li>
         ))}
       </ul>
 
-      <Dialog open={cape} onClose={()=>setCape(false)} title={t('Meestercape — ontwerpvoorproefje','Master cape — design preview')} footer={<Button onClick={()=>setCape(false)}>{t('Sluiten','Close')}</Button>}>
-        <p>{t('Toekomstige cosmetische beloning. Nog niet te verdienen of uit te rusten.','Future cosmetic reward. Not yet available to earn or equip.')}</p>
-        <div className="rpg-stage rounded-xl mt-3"><HumanFigure rpg look={{...d.hero!,gear:['master_cape']}} viewBox="0 -10 200 440" className="mx-auto h-[400px]"/></div>
-      </Dialog>
       <h3 className="mt-5 text-[14.5px] font-semibold text-ink-900">{t('Komt eraan', 'Coming up')}</h3>
       <ul className="mt-2 grid grid-cols-2 gap-2 min-[520px]:grid-cols-4">
         {FUTURE_REWARDS.map((r) => (
           <li key={r.key} className="flex items-center gap-2 rounded-xl border border-dashed border-line bg-canvas p-2.5 text-[12.5px] text-ink-600">
             <Lock className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
-            <span className="min-w-0"><span className="block font-semibold text-ink-700">{nl ? r.nl : r.en}</span>{t(`Skill level ${r.level}`, `Skill level ${r.level}`)}{r.key === 'master_cape' && <button type="button" onClick={()=>setCape(true)} className="block min-h-[44px] underline text-accent">{t('Ontwerp bekijken','View design')}</button>}</span>
+            <span className="min-w-0"><span className="block font-semibold text-ink-700">{nl ? r.nl : r.en}</span>{t(`Skill level ${r.level}`, `Skill level ${r.level}`)}</span>
           </li>
         ))}
       </ul>
@@ -1029,7 +1024,6 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const [open, setOpen] = useState<GearSlot | null>(null);
-  const [illustrated, setIllustrated] = useState(true);
   const look = { ...d.hero!, gear: [...(preview ? onePerSlot([...d.gear.equipped, preview]) : d.gear.equipped), ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero!.frame) : null, photo: d.customPhoto ?? null };
   const inSlot = (k: GearSlot) => d.gear.equipped.find((g) => GEAR_SLOT[g] === k) ?? null;
   const slotBtn = (k: GearSlot) => {
@@ -1054,13 +1048,10 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
       <TrophyWall d={d} compact className="mb-2" />
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-[12.5px] text-[#d3e4dc]">{t('Verander je outfit zonder je behandelschema te veranderen.', 'Change your outfit without changing your treatment.')}</p>
-        <button type="button" onClick={() => setIllustrated(x => !x)} aria-pressed={illustrated} className="tap inline-flex min-h-[44px] items-center rounded-full border border-accent bg-white px-3 text-[13px] font-semibold text-accent hover:bg-accent-soft">
-          {illustrated ? t('Fotoweergave', 'Photo view') : t('RPG-weergave', 'RPG view')}
-        </button>
       </div>
       <div className="grid grid-cols-[44px_1fr_44px] sm:grid-cols-[64px_1fr_64px] items-start gap-2">
         <div className="grid gap-2">{side('left')}</div>
-        {illustrated || preview ? <span className="flex h-full min-h-[300px] min-w-0 items-center justify-center overflow-hidden rounded-2xl rpg-podium" role="img" aria-label={t('Je geïllustreerde held met je gedragen uitrusting', 'Your illustrated hero wearing equipped items')}><HumanFigure rpg look={look} viewBox="0 -10 200 440" className="h-[420px] sm:h-[520px] w-full max-w-[260px]" /></span> : <HeroPhoto look={look} className="h-full min-h-[300px] w-full" />}
+        <HeroPhoto look={look} className="h-full min-h-[300px] w-full" />
         <div className="grid gap-2">{side('right')}</div>
       </div>
       <div className="mx-auto mt-2 grid w-[136px] grid-cols-2 gap-2">{GEAR_SLOTS.filter((x) => x.side === 'bottom').map((x) => slotBtn(x.key))}</div>
@@ -1073,7 +1064,7 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
               const on = d.gear.equipped.includes(g.key);
               return (
                 <li key={g.key}>
-                  <GearTile g={g} d={d} busy={busy} onPreview={()=>{onPreview(g.key);setOpen(null);}}
+                  <GearTile g={g} d={d} busy={busy} onPreview={GEAR_SLOT[g.key] === 'outfit' ? ()=>{onPreview(g.key);setOpen(null);} : undefined}
                     onToggle={async () => { await onSave(on ? d.gear.equipped.filter((x) => x !== g.key) : onePerSlot([...d.gear.equipped, g.key]), g.key); setOpen(null); }}
                     onBuy={async () => { await onBuy(g.key); if (!mine) setOpen(null); }} />
                 </li>
