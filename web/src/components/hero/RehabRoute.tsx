@@ -3,6 +3,7 @@ import { Check, ChevronRight, Flag, LockKeyhole, MapPin, ShieldCheck } from 'luc
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import { inspectedPhase, rehabRoute, type RehabPhase } from '@shared/rehabRoute';
+import { chapterBossState } from '@shared/chapterBoss';
 
 /**
  * Read-only map of the existing treatment phases.
@@ -96,6 +97,21 @@ export function RehabRoute({ phases, currentNo }: { phases: readonly RehabPhase[
             ? <><strong>{t('Doel:', 'Goal:')}</strong> {selected.goal}</>
             : t('Voor deze fase is nog geen patiëntdoel ingevuld.', 'No patient-facing goal has been set for this phase.')}
         </p>
+        <div className="mt-3 rounded-xl border border-[#D5C8AF] bg-[#343F2A] p-3 text-white">
+          <p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.1em] text-[#E8DFCD]">
+            <Flag className="h-4 w-4" aria-hidden="true" />{t('Hoofdstukbaas · klinische mijlpaal', 'Chapter boss · clinical milestone')}
+          </p>
+          <p className="mt-1 text-[14px] font-semibold text-white">
+            {chapterBossState(selected.status)==='past'
+              ? t('Dit hoofdstuk ligt achter je', 'This chapter is behind you')
+              : chapterBossState(selected.status)==='review'
+                ? t('Laat je voortgang beoordelen', 'Have your progress assessed')
+                : t('Nog niet beschikbaar', 'Not available yet')}
+          </p>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-[#E8DFCD]">
+            {t('Je fysiotherapeut gebruikt de afgesproken meetcriteria voor de faseovergang. Deze kaart geeft geen vrijgave, en XP of weken tellen niet als test.', 'Your physiotherapist uses your agreed assessment criteria for the phase transition. This card never grants clearance, and XP or elapsed weeks are not tests.')}
+          </p>
+        </div>
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#E0D5BF] bg-white p-3 text-[13px] leading-relaxed text-ink-800">
           {selected.status === 'done'
             ? <Flag aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
