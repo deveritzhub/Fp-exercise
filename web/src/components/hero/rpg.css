@@ -1,11 +1,11 @@
-.rpg-stage{background:radial-gradient(ellipse at 50% 42%,#386858 0%,#183b37 36%,#10242b 75%);border:1px solid #ac925b;box-shadow:inset 0 0 45px #071d29aa}
-.rpg-podium{position:relative;background:radial-gradient(ellipse at 50% 94%,#c9b57480 0%,#72bca22a 12%,transparent 45%)}
-.rpg-podium svg{filter:drop-shadow(0 7px 5px #041b20aa)}
+.rpg-stage{background:linear-gradient(180deg,#efe6d4 0%,#f7f9f7 100%);border:1px solid #edece5}
+.rpg-podium{position:relative;background:radial-gradient(ellipse at 50% 94%,#c9b57440 0%,#e6eee830 18%,transparent 45%)}
+.rpg-podium svg{filter:drop-shadow(0 5px 4px #4c473526)}
 .rpg-item{animation:rpg-equip .28s ease-out}
 .rpg-loot{background:radial-gradient(ellipse,#e8cf8177,transparent 65%);animation:rpg-reveal .6s ease-out}
 @keyframes rpg-equip{from{opacity:.2}to{opacity:1}}
 @keyframes rpg-reveal{from{opacity:0;transform:translateY(12px) scale(.92)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.rpg-item,.rpg-loot{animation:none}}
-.rpg-shelf .text-ink-600,.rpg-shelf .text-ink-700{color:#d3e4dc}
-.rpg-stage button:focus-visible{outline:3px solid #f1d58c;outline-offset:3px}
+.rpg-shelf .text-ink-600,.rpg-shelf .text-ink-700{color:#566359}
+.rpg-stage button:focus-visible{outline:3px solid #29483c;outline-offset:3px}
 .rpg-item[data-rpg-item="crown"],.rpg-item[data-rpg-item="gold_shoes"]{filter:drop-shadow(0 0 1.5px #e9c86b80)}

@@ -1,5 +1,7 @@
 # Photographic equipment review
 
+The inventory surround uses the original warm sand-to-off-white palette, dark readable text and forest-green focus accents. Desktop and mobile screenshots below were regenerated and visually checked after this palette correction.
+
 The inventory now starts with the existing photographic avatar and reuses the existing photographic outfit and accessory assets. The illustrated view is retained as an optional alternative. Try-on stays in the selected view; view choice lasts for the browser session. The thumbnail and worn accessory use the same photographic texture.
 
 This iteration reduces the cap from 16.5% to 14.5% of the photo width, lowers its dome, preserves space above the eyes, and positions headwear against the face centre rather than the image centre. Seven source images have explicit reviewed head anchors. A smoother alpha cutoff removes the old product-image halo while retaining edge antialiasing; a small shadow helps the contact edge. Hand and foot pairs use the asymmetric pose of the source photograph rather than blindly reflecting around 50%.

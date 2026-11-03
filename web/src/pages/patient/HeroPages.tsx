@@ -1055,7 +1055,7 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
     <div className="rpg-stage mt-3 rounded-2xl p-3 sm:p-6">
       <div className="mb-2 rpg-shelf"><TrophyShelf d={d} compact /></div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[12.5px] text-[#d3e4dc]">{t('Verander je outfit zonder je behandelschema te veranderen.', 'Change your outfit without changing your treatment.')}</p>
+        <p className="text-[12.5px] text-ink-700">{t('Verander je outfit zonder je behandelschema te veranderen.', 'Change your outfit without changing your treatment.')}</p>
         <button type="button" onClick={() => setIllustrated(x => !x)} aria-pressed={illustrated} className="tap inline-flex min-h-[44px] items-center rounded-full border border-accent bg-white px-3 text-[13px] font-semibold text-accent hover:bg-accent-soft">
           {illustrated ? t('Fotoweergave', 'Photo view') : t('RPG-weergave', 'RPG view')}
         </button>
