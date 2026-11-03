@@ -1,7 +1,8 @@
 import { Link, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, ChevronLeft, ChevronRight, Copy, Film, Layers, Lock, Pencil, Plus, ShieldAlert, Shuffle, TrendingDown, TrendingUp, Undo2, VideoOff } from 'lucide-react';
+import { Brain, CheckCircle2, ChevronLeft, ChevronRight, Copy, Film, Layers, Lock, Pencil, Plus, ShieldAlert, Shuffle, TrendingDown, TrendingUp, Undo2, VideoOff, Zap } from 'lucide-react';
+import { MUSCLES, NERVES, musclesOf, nerveOf } from '@shared/muscleAtlas';
 import { api, mediaUrl, qs } from '@/lib/api';
 import { useI18n, describeError } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
@@ -166,6 +167,7 @@ export function ExerciseDetailPage() {
           <Card className="p-5">
             <dl className="space-y-3 text-sm">
               <Row k={t('Doelspieren', 'Target muscles')} v={e.targetMuscles.join(', ') || '—'} />
+              <AtlasRow e={e} />
               <Row k={t('Bewegingspatroon', 'Movement')} v={L.movement(e.movementCategory) || '—'} />
               <Row k={t('Materiaal', 'Equipment')} v={L.equipmentList(e.equipment)} />
               <Row k={t('Niveau', 'Level')} v={<Difficulty value={e.difficulty} />} />
@@ -403,5 +405,36 @@ function Variants({ e }: { e: Exercise }) {
         </table>
       </TableScroll>
     </section>
+  );
+}
+
+/** The atlas muscles (and nerve) this exercise works, each linking to its card in the muscle atlas. */
+function AtlasRow({ e }: { e: Exercise }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const input = { name: `${e.nameNl} ${e.nameEn}`, muscles: e.targetMuscles, training: e.trainingCategories, movement: e.movementCategory, sourceKey: null, tags: e.tags };
+  const muscles = musclesOf(input).map((k) => MUSCLES.find((m) => m.key === k)!).filter(Boolean);
+  const nerveKey = nerveOf(input);
+  const nerve = nerveKey ? NERVES.find((n) => n.key === nerveKey) : null;
+  if (!muscles.length && !nerve) return null;
+  return (
+    <Row
+      k={t('In de spierenatlas', 'In the muscle atlas')}
+      v={
+        <span className="flex flex-wrap gap-1.5">
+          {muscles.map((m) => (
+            <Link key={m.key} to={`/app/spieren?spier=${m.key}`} title={m.functions.map((f) => (nl ? f[0] : f[1])).join(' · ')}
+              className="inline-flex min-h-[32px] items-center gap-1 rounded-full bg-accent-soft px-2.5 text-[13px] font-medium text-accent hover:underline">
+              <Brain className="h-3.5 w-3.5" aria-hidden />{nl ? m.nl : m.en}
+            </Link>
+          ))}
+          {nerve && (
+            <Link to={`/app/spieren?tab=zenuwen&zenuw=${nerve.key}`} className="inline-flex min-h-[32px] items-center gap-1 rounded-full bg-sand-soft px-2.5 text-[13px] font-medium text-sand-ink hover:underline">
+              <Zap className="h-3.5 w-3.5" aria-hidden />{nl ? nerve.nl : nerve.en}
+            </Link>
+          )}
+        </span>
+      }
+    />
   );
 }

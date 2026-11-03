@@ -27,7 +27,7 @@ import { patientModules } from './routes/patientModules';
 import { heroPatient, heroStaff } from './routes/hero';
 import { patientLogs } from './routes/patientLogs';
 import { gymPatient, gymStaff } from './routes/gymLog';
-import { atlasPatient } from './routes/atlas';
+import { atlasPatient, atlasStaff } from './routes/atlas';
 import { stepRoutes } from './routes/steps';
 import { patientCare, redFlags } from './routes/patientCare';
 
@@ -92,6 +92,7 @@ export function createApp() {
   api.route('/patient', patientLogs);
   api.route('/patient', gymPatient);
   api.route('/patient', atlasPatient);
+  api.route('/atlas', atlasStaff);
   api.route('/patient', stepRoutes);
   api.route('/patients', heroStaff);
   api.route('/patients', gymStaff);

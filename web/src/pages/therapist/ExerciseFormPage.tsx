@@ -53,6 +53,21 @@ export function ExerciseFormPage() {
   useEffect(() => {
     if (src.data) setF(toForm(src.data, !id));
   }, [src.data, id]);
+  // From the muscle atlas: a new exercise for this muscle and purpose (?spier=…&soort=…&regio=…).
+  useEffect(() => {
+    if (sourceId) return;
+    const spier = params.get('spier');
+    const soort = params.get('soort');
+    const regio = params.get('regio');
+    if (!spier && !soort && !regio) return;
+    setF((x) => ({
+      ...x,
+      targetMuscles: spier ?? x.targetMuscles,
+      trainingCategories: soort ? [soort] : x.trainingCategories,
+      movementCategory: soort === 'mobility' ? 'stretch' : x.movementCategory,
+      bodyRegion: regio ?? x.bodyRegion,
+    }));
+  }, [sourceId, params]);
   if (sourceId && src.isLoading) return <Spinner />;
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }));

@@ -175,6 +175,20 @@ export function musclesOf(e: AtlasExerciseInput): string[] {
   return MUSCLES.filter((m) => m.match.some((w) => hay.includes(norm(w)))).sort((a, b) => at(a) - at(b)).map((m) => m.key);
 }
 
+/**
+ * LIKE patterns (lowercase, no accents) to find a muscle's exercises in the database, or a
+ * nerve's: the muscles it drives and its own nerve-mobility exercises (by name).
+ */
+export const atlasMatch = {
+  muscle: (key: string) => (muscleByKey(key)?.match ?? []).map((w) => `%${norm(w)}%`),
+  nerve: (key: string) => {
+    const n = nerveByKey(key);
+    if (!n) return [];
+    const words = [...n.match, ...MUSCLES.filter((m) => m.nerve === key).flatMap((m) => m.match)];
+    return [...new Set(words)].map((w) => `%${norm(w)}%`);
+  },
+};
+
 /** The nerve an exercise mobilises (nerve exercises only). */
 export function nerveOf(e: AtlasExerciseInput): NerveKey | null {
   if (exerciseKind(e) !== 'zenuw') return null;

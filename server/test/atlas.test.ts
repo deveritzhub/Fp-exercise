@@ -63,3 +63,24 @@ describe('spierenatlas', () => {
     expect(rows).toBeGreaterThan(0);
   });
 });
+
+describe('spierenatlas for professionals', () => {
+  it('lists the library linked to muscles; patients cannot use it', async () => {
+    const pro = await login('therapistA');
+    const r = await pro.get('/atlas');
+    expect(r.status).toBe(200);
+    expect(r.body.exercises.some((e: { muscles: string[] }) => e.muscles.includes('quadriceps'))).toBe(true);
+    expect((await (await login('patientA')).get('/atlas')).status).toBe(403);
+  });
+
+  it('the library filters on an atlas muscle or nerve', async () => {
+    const pro = await login('therapistA');
+    const all = (await pro.get('/exercises?limit=100')).body.total as number;
+    const quad = (await pro.get('/exercises?muscle=quadriceps&limit=100')).body;
+    expect(quad.total).toBeGreaterThan(0);
+    expect(quad.total).toBeLessThan(all);
+    for (const e of quad.items) expect(JSON.stringify([e.targetMuscles, e.nameNl, e.nameEn]).toLowerCase()).toMatch(/quadriceps|vastus|rectus femoris|dijspier|quads/);
+    expect((await pro.get('/exercises?nerve=femoralis&limit=100')).body.total).toBeGreaterThan(0);
+    expect((await pro.get('/exercises?muscle=nope')).body.error).toBe('unknown_muscle');
+  });
+});

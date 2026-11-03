@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { withUser, type Tx } from '../db';
-import { requirePatient, type AppEnv } from '../middleware';
+import { requirePatient, requireStaff, type AppEnv } from '../middleware';
 import { parse } from '../lib/validate';
 import { badRequest } from '../lib/errors';
 import { QUIZ_DAILY_CAP, QUIZ_LEVEL_XP, exerciseKind, level2Open, musclesOf, nerveOf, questionById, quizXp, type AtlasExerciseKind } from '../../../shared/muscleAtlas';
@@ -31,10 +31,8 @@ export async function quizXpFor(tx: Tx, patientId: string) {
   return (await quizState(tx, patientId)).xp;
 }
 
-atlasPatient.get('/atlas', async (c) => {
-  const { user, patient } = requirePatient(c);
-  return c.json(
-    await withUser(user.id, async (tx) => {
+/** Exercises the logged-in user may see (RLS), linked to atlas muscles and nerves. */
+async function atlasExercises(tx: Tx) {
       const rows = (
         await tx.query(
           `SELECT id, practice_id, name_nl, name_en, target_muscles, training_categories, movement_category, source_key, tags,
@@ -45,7 +43,7 @@ atlasPatient.get('/atlas', async (c) => {
       ).rows;
       // A practice copy of a central exercise shows once (the practice's own wins: it is listed first).
       const seen = new Set<string>();
-      const exercises: { id: string; nameNl: string; nameEn: string; kind: AtlasExerciseKind; muscles: string[]; nerve: string | null; movementNl: string; movementEn: string; instructionsNl: string; instructionsEn: string }[] = [];
+      const exercises: { id: string; nameNl: string; nameEn: string; kind: AtlasExerciseKind; muscles: string[]; nerve: string | null; movementNl: string; movementEn: string; instructionsNl: string; instructionsEn: string; own: boolean }[] = [];
       for (const r of rows) {
         const key = (r.name_nl as string).toLowerCase().trim();
         if (seen.has(key)) continue;
@@ -57,11 +55,22 @@ atlasPatient.get('/atlas', async (c) => {
         exercises.push({
           id: r.id, nameNl: r.name_nl, nameEn: r.name_en, kind: exerciseKind(input), muscles, nerve,
           movementNl: r.movement_nl ?? '', movementEn: r.movement_en ?? '', instructionsNl: r.instructions_nl ?? '', instructionsEn: r.instructions_en ?? '',
+          own: r.practice_id !== null,
         });
       }
-      return { exercises, quiz: await quizState(tx, patient.id) };
-    }),
-  );
+      return exercises;
+}
+
+atlasPatient.get('/atlas', async (c) => {
+  const { user, patient } = requirePatient(c);
+  return c.json(await withUser(user.id, async (tx) => ({ exercises: await atlasExercises(tx), quiz: await quizState(tx, patient.id) })));
+});
+
+/** The atlas for professionals: every exercise of the practice and the central library. */
+export const atlasStaff = new Hono<AppEnv>();
+atlasStaff.get('/', async (c) => {
+  const { user } = requireStaff(c);
+  return c.json(await withUser(user.id, async (tx) => ({ exercises: await atlasExercises(tx) })));
 });
 
 /** Answer a quiz question. A first correct answer is stored and earns XP (up to the daily cap). */

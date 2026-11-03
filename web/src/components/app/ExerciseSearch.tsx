@@ -10,8 +10,8 @@ import { cn } from '@/lib/cn';
 import type { Exercise } from '@/lib/types';
 
 /** source (central/practice/mine), review status and favourites combine freely. */
-export type ExerciseFilters = { q: string; region: string; category: string; equipment: string; difficulty: string; source: string; review: string; favorites: string };
-export const emptyFilters: ExerciseFilters = { q: '', region: '', category: '', equipment: '', difficulty: '', source: 'all', review: 'all', favorites: '' };
+export type ExerciseFilters = { q: string; region: string; category: string; equipment: string; difficulty: string; source: string; review: string; favorites: string; muscle: string; nerve: string };
+export const emptyFilters: ExerciseFilters = { q: '', region: '', category: '', equipment: '', difficulty: '', source: 'all', review: 'all', favorites: '', muscle: '', nerve: '' };
 const KEYS = Object.keys(emptyFilters) as (keyof ExerciseFilters)[];
 const LAST_SEARCH = 'fp.library.search';
 
@@ -30,8 +30,10 @@ const toQuery = (f: ExerciseFilters) => ({
   source: f.source === 'all' ? undefined : f.source,
   review: f.review === 'all' ? undefined : f.review,
   favorites: f.favorites === '1' ? '1' : undefined,
+  muscle: f.muscle || undefined,
+  nerve: f.nerve || undefined,
 });
-export const scopeFiltered = (f: ExerciseFilters) => f.source !== 'all' || f.review !== 'all' || f.favorites === '1';
+export const scopeFiltered = (f: ExerciseFilters) => f.source !== 'all' || f.review !== 'all' || f.favorites === '1' || !!f.muscle || !!f.nerve;
 
 /**
  * Search results never show a count or an empty state that belongs to an earlier search:

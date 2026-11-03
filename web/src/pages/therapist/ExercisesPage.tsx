@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, CheckCircle2, Dumbbell, Loader2, Play, Plus, SearchX } from 'lucide-react';
+import { BookOpen, Brain, CheckCircle2, Dumbbell, Loader2, Play, Plus, SearchX, X } from 'lucide-react';
+import { muscleByKey, nerveByKey } from '@shared/muscleAtlas';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta, useLabels } from '@/lib/meta';
 import { cn } from '@/lib/cn';
@@ -65,10 +66,16 @@ export function ExercisesPage() {
         title={t('Oefenbibliotheek', 'Exercise library')}
         description={<span className="hidden sm:inline">{t('Centrale bibliotheek plus de eigen oefeningen van je praktijk.', 'Central library plus your practice’s own exercises.')}</span>}
         actions={
+          <>
+          <ButtonLink to="/app/spieren" variant="secondary" icon={<Brain className="h-4 w-4" />}>
+            <span className="hidden sm:inline">{t('Spierenatlas', 'Muscle atlas')}</span>
+            <span className="sr-only">{t('Spierenatlas', 'Muscle atlas')}</span>
+          </ButtonLink>
           <ButtonLink to="/app/oefeningen/nieuw" variant="secondary" icon={<Plus className="h-4 w-4" />}>
             <span className="hidden sm:inline">{t('Eigen oefening', 'Custom exercise')}</span>
             <span className="sr-only min-[360px]:not-sr-only sm:hidden">{t('Nieuw', 'New')}</span>
           </ButtonLink>
+          </>
         }
       />
 
@@ -86,6 +93,7 @@ export function ExercisesPage() {
         <div className="lg:hidden"><ActiveFilters value={{ ...f, region: '' }} onChange={(next) => setF({ ...next, region: f.region })} /></div>
         <div className="hidden lg:block"><ActiveFilters value={f} onChange={setF} /></div>
         <ScopeFilters value={f} onChange={setF} />
+        {(f.muscle || f.nerve) && <AtlasFilterChip f={f} onClear={() => setF({ ...f, muscle: '', nerve: '' })} />}
       </div>
 
       <div className="mb-3 flex h-5 items-center gap-2 text-[13px] text-ink-500" aria-live="polite">
@@ -237,3 +245,21 @@ const ExerciseCard = memo(function ExerciseCard({ e, onPreview, onAdd }: { e: Ex
     </article>
   );
 });
+
+/** The muscle or nerve the library is filtered on (from the muscle atlas), with a way back and out. */
+function AtlasFilterChip({ f, onClear }: { f: { muscle: string; nerve: string }; onClear: () => void }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const m = f.muscle ? muscleByKey(f.muscle) : null;
+  const n = f.nerve ? nerveByKey(f.nerve) : null;
+  const label = m ? (nl ? m.nl : m.en) : n ? (nl ? n.nl : n.en) : f.muscle || f.nerve;
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-[13.5px]">
+      <span className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full bg-accent-soft pl-3 pr-1 font-semibold text-accent">
+        <Brain className="h-4 w-4" aria-hidden />{m ? t('Spier', 'Muscle') : t('Zenuw', 'Nerve')}: {label}
+        <button type="button" onClick={onClear} aria-label={t(`Filter ${label} weghalen`, `Remove filter ${label}`)} className="tap flex h-9 w-9 items-center justify-center rounded-full hover:bg-white/60"><X className="h-4 w-4" aria-hidden /></button>
+      </span>
+      <Link to={`/app/spieren?${m ? `spier=${f.muscle}` : `tab=zenuwen&zenuw=${f.nerve}`}`} className="inline-flex min-h-[44px] items-center font-medium text-accent">{t('Bekijk in de atlas', 'View in the atlas')}</Link>
+    </div>
+  );
+}

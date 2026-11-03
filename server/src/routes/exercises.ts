@@ -8,6 +8,7 @@ import { notFound, badRequest } from '../lib/errors';
 import { uuid } from '../lib/crypto';
 import { BODY_REGIONS, EQUIPMENT, MOVEMENT_CATEGORIES, TRAINING_CATEGORIES, isKey } from '../../../shared/taxonomy';
 import { synonymsFor } from '../../../shared/synonyms';
+import { atlasMatch } from '../../../shared/muscleAtlas';
 
 export const exercises = new Hono<AppEnv>();
 
@@ -113,6 +114,9 @@ const listQuery = z.object({
   source: z.enum(['all', 'global', 'practice', 'mine']).optional().default('all'),
   review: z.enum(['all', 'reviewed', 'unreviewed']).optional().default('all'),
   favorites: z.enum(['0', '1']).optional().default('0'),
+  // Muscle atlas: a muscle key or a nerve key (shared/muscleAtlas.ts).
+  muscle: z.string().max(40).optional(),
+  nerve: z.string().max(40).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional().default(48),
   offset: z.coerce.number().int().min(0).optional().default(0),
 });
@@ -124,6 +128,9 @@ exercises.get('/', async (c) => {
   const source = ['global', 'practice', 'mine'].includes(f.scope) ? f.scope : f.source;
   const review = ['reviewed', 'unreviewed'].includes(f.scope) ? f.scope : f.review;
   const favorites = f.scope === 'favorites' || f.favorites === '1';
+  // Words that mean this muscle (or the nerve's muscles and its own exercises), as LIKE patterns.
+  const atlasWords = f.muscle ? atlasMatch.muscle(f.muscle) : f.nerve ? atlasMatch.nerve(f.nerve) : null;
+  if ((f.muscle || f.nerve) && !atlasWords?.length) throw badRequest('unknown_muscle');
   return c.json(
     await withUser(user.id, async (tx) => {
       const { rows } = await tx.query(
@@ -148,11 +155,14 @@ exercises.get('/', async (c) => {
                  OR ($11 = 'unreviewed' AND rv.exercise_id IS NULL)
                  OR ($11 = 'reviewed' AND rv.exercise_id IS NOT NULL))
             AND (NOT $12 OR fav.user_id IS NOT NULL)
+            AND ($13::text[] IS NULL OR EXISTS (
+                  SELECT 1 FROM unnest(e.target_muscles || ARRAY[e.name_nl, e.name_en]) t
+                   WHERE lower(unaccent(t)) LIKE ANY($13::text[])))
           ORDER BY ($8 <> '' AND (e.name_nl ILIKE $8 || '%' OR e.name_en ILIKE $8 || '%')) DESC,
                    ($8 <> '' AND (e.name_nl ILIKE '%' || $8 || '%' OR e.name_en ILIKE '%' || $8 || '%')) DESC,
                    rank DESC, e.name_nl
           LIMIT $6 OFFSET $7`,
-        [tsq, f.region ?? null, f.category ?? null, f.equipment ?? null, f.difficulty ?? null, f.limit, f.offset, f.q.trim().slice(0, 60), source, mediaPracticeId(c), review, favorites],
+        [tsq, f.region ?? null, f.category ?? null, f.equipment ?? null, f.difficulty ?? null, f.limit, f.offset, f.q.trim().slice(0, 60), source, mediaPracticeId(c), review, favorites, atlasWords],
       );
       return { items: rows.map((r) => ({ ...mapExercise(r), variantCount: r.variant_count })), total: rows[0]?.total ?? 0 };
     }),
