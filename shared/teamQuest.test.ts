@@ -8,7 +8,11 @@ describe('privacy-safe future cooperative quest boundaries',()=>{
  it('does not count extra non-prescribed training',()=>expect(aggregateTeamDay([p('a',{prescribed:false,didPlan:true}),p('b',{didPlan:true})])).toMatchObject({contributed:1,status:'in_progress'}));
  it('never outputs participant tokens or health facts to friends',()=>{
   const x=publicTeamSummary(aggregateTeamDay([p('secret1',{medicalHold:true}),p('secret2',{didPlan:true})]));
-  expect(Object.keys(x).sort()).toEqual(['contributed','participants','status']);
-  expect(JSON.stringify(x)).not.toMatch(/secret|medicalHold|restDay|pain|practice/);
+  expect(Object.keys(x).sort()).toEqual(['available','status']);
+  expect(JSON.stringify(x)).not.toMatch(/secret|medicalHold|restDay|pain|practice|contributed|participants/);
+ });
+ it('only exposes a coarse summary for a cohort of at least five',()=>{
+  const d=aggregateTeamDay([p('a',{didPlan:true}),p('b',{didPlan:true}),p('c',{didPlan:true}),p('d',{didPlan:true}),p('e',{didPlan:true})]);
+  expect(publicTeamSummary(d)).toEqual({available:true,participantsBand:'5+',status:'complete'});
  });
 });
