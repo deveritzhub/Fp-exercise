@@ -946,7 +946,7 @@ function PreviewDialog({ open, onClose, meta, items, unsaved }: { open: boolean;
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-[13px] font-medium text-ink-700">
           {t('Voorbeelddatum', 'Preview date')}
-          <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} className="h-11 rounded-lg border border-line bg-white px-3 text-[14px] focus:outline-none focus:ring-2 focus:ring-accent/40" />
+          <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} className="h-11 rounded-lg border border-line bg-white px-3 text-[16px] focus:outline-none lg:text-[14px] focus:ring-2 focus:ring-accent/40" />
         </label>
         <div role="tablist" aria-label={t('Scherm', 'Screen')} className="flex rounded-lg bg-ink-100 p-1">
           {(['today', 'program'] as const).map((v) => (

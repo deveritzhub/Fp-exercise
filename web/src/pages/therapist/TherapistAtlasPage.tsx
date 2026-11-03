@@ -100,7 +100,7 @@ function Muscles({ exercises, focus, onAdd, nl }: { exercises: AtlasExercise[]; 
         <label className="flex min-h-[48px] flex-1 items-center gap-2 rounded-xl border border-line bg-white px-3">
           <Search className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
           <span className="sr-only">{t('Zoek een spier of beweging', 'Search a muscle or movement')}</span>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Zoek spier of beweging, bijv. "exorotatie"', 'Search muscle or movement, e.g. "external rotation"')} className="min-w-0 flex-1 bg-transparent text-[15px] outline-none" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Zoek spier of beweging, bijv. "exorotatie"', 'Search muscle or movement, e.g. "external rotation"')} className="min-w-0 flex-1 bg-transparent text-[16px] outline-none" />
           {query && <button type="button" onClick={() => setQuery('')} aria-label={t('Zoekveld leegmaken', 'Clear search')} className="tap flex h-9 w-9 items-center justify-center rounded-lg"><X className="h-4 w-4" /></button>}
         </label>
         <button type="button" aria-pressed={gapsOnly} onClick={() => setGapsOnly((v) => !v)} className={cn('tap inline-flex min-h-[48px] items-center gap-2 rounded-xl border px-3 text-[14px] font-semibold', gapsOnly ? 'border-warn bg-warn-soft text-warn' : 'border-line bg-white text-ink-700')}>

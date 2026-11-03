@@ -88,7 +88,7 @@ function MusclesView({ data, from, focus, onQuiz, onNerve, onMuscle }: { data: A
       <label className="flex min-h-[48px] items-center gap-2 rounded-xl border border-line bg-white px-3">
         <Search className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
         <span className="sr-only">{t('Zoek een spier of beweging', 'Search a muscle or movement')}</span>
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Zoek spier of beweging, bijv. "elleboog buigen"', 'Search muscle or movement, e.g. "bend elbow"')} className="min-w-0 flex-1 bg-transparent text-[15px] outline-none" />
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Zoek spier of beweging, bijv. "elleboog buigen"', 'Search muscle or movement, e.g. "bend elbow"')} className="min-w-0 flex-1 bg-transparent text-[16px] outline-none" />
         {query && <button type="button" onClick={() => setQuery('')} aria-label={t('Zoekveld leegmaken', 'Clear search')} className="tap flex h-9 w-9 items-center justify-center rounded-lg"><X className="h-4 w-4" /></button>}
       </label>
       <div role="group" aria-label={t('Lichaamsdeel', 'Body part')} className="flex flex-wrap gap-1.5">

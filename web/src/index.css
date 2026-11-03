@@ -78,3 +78,19 @@
   .cv-auto { content-visibility: auto; contain-intrinsic-size: auto 112px; }
   .tap { -webkit-tap-highlight-color: transparent; }
 }
+
+/*
+ * iPhone/iPad: Safari zooms into any text field under 16 px when you tap it, and stays zoomed
+ * after logging in. On touch screens the standard field is therefore 16 px; other small fields
+ * use text-[16px] on phones. (Pinch-zoom stays allowed: the viewport does not block it.)
+ */
+@media (pointer: coarse), (max-width: 1023px) {
+  /*
+   * Every field, also those with their own (smaller) size class; the :not(#\#) raises the weight
+   * above utility classes. Fields that are deliberately larger (17 px and up, text-lg and up) keep
+   * their size.
+   */
+  :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), select, textarea):not(#\#):not([class*='text-[17']):not([class*='text-[18']):not([class*='text-[19']):not([class*='text-[2']):not([class*='text-[3']):not([class*='text-lg']):not([class*='text-xl']):not([class*='text-2xl']):not([class*='text-3xl']) {
+    font-size: 16px;
+  }
+}
