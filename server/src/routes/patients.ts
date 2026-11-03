@@ -239,10 +239,15 @@ patients.post('/:id/invite', async (c) => {
   return c.json({ ok: true, ...(exposeInviteLinks ? { inviteUrl: res.inviteUrl } : {}) });
 });
 
+const measuredDate=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>{
+  const d=new Date(v+'T12:00:00Z');
+  return !Number.isNaN(d.getTime())&&d.toISOString().slice(0,10)===v;
+},{message:'Invalid calendar date'});
+
 const outcomeBody = z.discriminatedUnion('domain', [
-  z.object({ domain: z.literal('rom'), metric: z.string().trim().min(1).max(80), value:z.number().finite().min(0).max(360), unit:z.literal('degrees'), side:z.enum(['left','right','bilateral','not_applicable']).default('not_applicable'), measuredOn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/), note:z.string().trim().max(300).default('') }),
-  z.object({ domain: z.literal('strength'), metric: z.string().trim().min(1).max(80), value:z.number().finite().min(0).max(100000), unit:z.enum(['kg','N']), side:z.enum(['left','right','bilateral','not_applicable']).default('not_applicable'), measuredOn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/), note:z.string().trim().max(300).default('') }),
-  z.object({ domain: z.enum(['function','confidence']), metric: z.string().trim().min(1).max(80), value:z.number().finite().min(0).max(100), unit:z.enum(['score_0_10','percent']), side:z.enum(['left','right','bilateral','not_applicable']).default('not_applicable'), measuredOn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/), note:z.string().trim().max(300).default('') }),
+  z.object({ domain: z.literal('rom'), metric: z.string().trim().min(1).max(80), value:z.number().finite().min(0).max(360), unit:z.literal('degrees'), side:z.enum(['left','right','bilateral','not_applicable']).default('not_applicable'), measuredOn:measuredDate, note:z.string().trim().max(300).default('') }),
+  z.object({ domain: z.literal('strength'), metric: z.string().trim().min(1).max(80), value:z.number().finite().min(0).max(100000), unit:z.enum(['kg','N']), side:z.enum(['left','right','bilateral','not_applicable']).default('not_applicable'), measuredOn:measuredDate, note:z.string().trim().max(300).default('') }),
+  z.object({ domain: z.enum(['function','confidence']), metric: z.string().trim().min(1).max(80), value:z.number().finite().min(0).max(100), unit:z.enum(['score_0_10','percent']), side:z.enum(['left','right','bilateral','not_applicable']).default('not_applicable'), measuredOn:measuredDate, note:z.string().trim().max(300).default('') }),
 ]).superRefine((v,ctx)=>{
   if(v.unit==='score_0_10' && v.value>10)ctx.addIssue({code:z.ZodIssueCode.custom,message:'score above 10',path:['value']});
 });
