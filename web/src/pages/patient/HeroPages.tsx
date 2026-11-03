@@ -11,7 +11,7 @@ import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, Segmented
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
-import { SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
+import { HumanFigure, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
 import { BADGES, BOSSES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, WALL_BADGES_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
@@ -20,6 +20,7 @@ import { PainTrendList } from '@/components/hero/PainTrend';
 import { Fold } from '@/components/app/Fold';
 import { SurvivalPanel } from '@/components/patient/Survival';
 import { FriendsCard } from './FriendsPage';
+import { RehabRoute } from '@/components/hero/RehabRoute';
 
 export const HERO_LATER_KEY = 'fp.heroLater';
 export const useHero = () => useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero') });
@@ -591,25 +592,7 @@ function Quest({ d }: { d: HeroState }) {
           ) : (
             <p className="mt-2 text-[14px] text-ink-600">{t('Voor dit programma is geen einddatum gepland; je fysiotherapeut bepaalt de duur.', 'This programme has no planned end date; your physiotherapist decides the duration.')}</p>
           )}
-          {q.phases.length > 1 && (
-            <ol className="mt-4 space-y-2" aria-label={t('Route van je revalidatie', 'Route of your rehabilitation')}>
-              {q.phases.map((ph) => (
-                <li key={ph.no} className={cn('flex gap-3 rounded-xl border p-3', ph.status === 'current' ? 'border-accent/40 bg-accent-soft' : 'border-line')}>
-                  <span className={cn('mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full', ph.status === 'done' ? 'bg-accent text-accent-ink' : ph.status === 'current' ? 'bg-white text-accent ring-2 ring-accent' : 'bg-ink-100 text-ink-500')} aria-hidden>
-                    {ph.status === 'done' ? <CircleCheck className="h-4 w-4" /> : ph.status === 'current' ? <MapPin className="h-4 w-4" /> : <Lock className="h-3.5 w-3.5" />}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-[14.5px] font-semibold text-ink-900">
-                      {ph.name ?? t(`Fase ${ph.no}`, `Phase ${ph.no}`)}
-                      {ph.weeks && <span className="font-normal text-ink-600"> · {t('week', 'week')} {ph.weeks}</span>}
-                      <span className="sr-only"> ({ph.status === 'done' ? t('voltooid', 'completed') : ph.status === 'current' ? t('je bent hier', 'you are here') : t('nog op slot', 'still locked')})</span>
-                    </span>
-                    {ph.goal && <span className="block text-[13.5px] text-ink-700">{ph.goal}</span>}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          )}
+          {q.phases.length > 0 && <RehabRoute phases={q.phases} currentNo={q.phaseNo} />}
         </>
       )}
       <dl className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-4 text-center">
@@ -1029,6 +1012,7 @@ function CharacterScreen({ d, busy, onSave, onBuy }: { d: HeroState; busy: strin
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const [open, setOpen] = useState<GearSlot | null>(null);
+  const [illustrated, setIllustrated] = useState(false);
   const look = { ...d.hero!, gear: [...d.gear.equipped, ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero!.frame) : null, photo: d.customPhoto ?? null };
   const inSlot = (k: GearSlot) => d.gear.equipped.find((g) => GEAR_SLOT[g] === k) ?? null;
   const slotBtn = (k: GearSlot) => {
@@ -1051,9 +1035,15 @@ function CharacterScreen({ d, busy, onSave, onBuy }: { d: HeroState; busy: strin
   return (
     <div className={cn('mt-3 rounded-2xl p-3', wallPlaced(d) ? WALL_BG : 'bg-[linear-gradient(180deg,#efe6d4_0%,#f7f9f7_100%)]')}>
       <TrophyWall d={d} compact className="mb-2" />
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className={cn('text-[12.5px]', wallPlaced(d) ? 'text-white/90' : 'text-ink-700')}>{t('Verander je outfit zonder je behandelschema te veranderen.', 'Change your outfit without changing your treatment.')}</p>
+        <button type="button" onClick={() => setIllustrated(x => !x)} aria-pressed={illustrated} className="tap inline-flex min-h-[44px] items-center rounded-full border border-accent bg-white px-3 text-[13px] font-semibold text-accent hover:bg-accent-soft">
+          {illustrated ? t('Fotoweergave', 'Photo view') : t('RPG-weergave', 'RPG view')}
+        </button>
+      </div>
       <div className="grid grid-cols-[minmax(52px,64px)_1fr_minmax(52px,64px)] items-start gap-2">
         <div className="grid gap-2">{side('left')}</div>
-        <HeroPhoto look={look} className="h-full min-h-[300px] w-full" />
+        {illustrated ? <span className="flex h-full min-h-[300px] min-w-0 items-center justify-center overflow-hidden rounded-2xl bg-white/75" role="img" aria-label={t('Je geïllustreerde held met je gedragen uitrusting', 'Your illustrated hero wearing equipped items')}><HumanFigure look={look} className="h-[300px] w-full max-w-[190px]" /></span> : <HeroPhoto look={look} className="h-full min-h-[300px] w-full" />}
         <div className="grid gap-2">{side('right')}</div>
       </div>
       <div className="mx-auto mt-2 grid w-[136px] grid-cols-2 gap-2">{GEAR_SLOTS.filter((x) => x.side === 'bottom').map((x) => slotBtn(x.key))}</div>

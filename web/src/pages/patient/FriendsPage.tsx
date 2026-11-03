@@ -75,7 +75,7 @@ function FriendRow({ f, rank, me }: { f: { heroName: string; look: HeroFriend['l
   return (
     <li className={cn('rounded-xl border p-3', me ? 'border-accent/30 bg-accent-soft' : 'border-line bg-white')}>
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="tap flex w-full items-center gap-3 text-left">
-        <span className="w-6 shrink-0 text-center font-display text-[15px] font-bold tabular-nums text-ink-600"><span className="sr-only">{t('plek', 'rank')} </span>{rank}</span>
+        {rank > 0 && <span className="w-6 shrink-0 text-center font-display text-[15px] font-bold tabular-nums text-ink-600"><span className="sr-only">{t('plek', 'rank')} </span>{rank}</span>}
         <HeroAvatar look={f.look} size={48} plain />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-semibold text-ink-900">{f.heroName}</span>
@@ -147,10 +147,8 @@ export function FriendsPage() {
     look: { ...H.hero!, gear: H.gear.equipped },
     stats: { level: H.level.level, totalLevel: H.totalLevel, gearScore: H.gear.score, skills: Object.fromEntries(H.skills.map((k) => [k.key, friendSkillCard(k)])) as Record<SkillKey, FriendSkillCard> },
   };
-  // Ranking by total level (then level), the patient included.
-  const ranking = [...friends.map((f) => ({ ...f, stats: f.stats!, me: false })), { ...meRow, id: 'me', me: true }].sort(
-    (a, b) => b.stats.totalLevel - a.stats.totalLevel || b.stats.level - a.stats.level || Number(b.me) - Number(a.me),
-  );
+  // Companions, never ranked by strength, clinical progress or recovery speed.
+  const companions = [{ ...meRow, id: 'me', me: true }, ...friends.map((f) => ({ ...f, stats: f.stats!, me: false })).sort((a, b) => a.heroName.localeCompare(b.heroName))];
 
   const copy = async () => {
     try {
@@ -256,14 +254,14 @@ export function FriendsPage() {
           )}
 
           <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="friends-title">
-            <h2 id="friends-title" className="t-section">{t(`Ranglijst (${friends.length} ${friends.length === 1 ? 'vriend' : 'vrienden'})`, `Leaderboard (${friends.length} ${friends.length === 1 ? 'friend' : 'friends'})`)}</h2>
-            <p className="text-[13.5px] text-ink-600">{t('Op totaal level. Tik op een held voor de skills.', 'By total level. Tap a hero for the skills.')}</p>
+            <h2 id="friends-title" className="t-section">{t(`Teamgenoten (${friends.length} ${friends.length === 1 ? 'vriend' : 'vrienden'})`, `Companions (${friends.length} ${friends.length === 1 ? 'friend' : 'friends'})`)}</h2>
+            <p className="text-[13.5px] text-ink-600">{t('Vrijwillig gedeelde sporthelden, zonder rangorde op herstel of kracht.', 'Voluntarily shared heroes, without recovery or strength ranking.')}</p>
             {friends.length === 0 && (
               <p className="mt-3 flex items-center gap-2 rounded-xl bg-canvas p-3 text-[14px] text-ink-700"><Users className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />{t('Nog geen vrienden. Deel je vriendcode om te beginnen.', 'No friends yet. Share your friend code to get started.')}</p>
             )}
-            <ol className="mt-3 space-y-2" aria-label={t('Ranglijst', 'Leaderboard')}>
-              {ranking.map((f, i) => <FriendRow key={f.id} f={f} rank={i + 1} me={f.me} />)}
-            </ol>
+            <ul className="mt-3 space-y-2" aria-label={t('Teamgenoten', 'Companions')}>
+              {companions.map((f) => <FriendRow key={f.id} f={f} rank={0} me={f.me} />)}
+            </ul>
             {friends.length > 0 && (
               <details className="mt-3 text-[14px]">
                 <summary className="min-h-[44px] cursor-pointer py-2 font-medium text-ink-700">{t('Vriend verwijderen', 'Remove a friend')}</summary>

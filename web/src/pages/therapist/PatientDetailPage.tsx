@@ -14,6 +14,7 @@ import { OpenRedFlagsBanner, PatientModulesTab } from './PatientModulesTab';
 import { GymLog } from '@/components/GymLog';
 import type { Member, PatientDetail, Progress } from '@/lib/types';
 import { PainMapCard } from '@/components/hero/PainMapCard';
+import { ClinicalTimeline } from '@/components/therapist/ClinicalTimeline';
 
 type Tab = 'overzicht' | 'programmas' | 'sessies' | 'kracht' | 'modules' | 'gegevens';
 
@@ -155,6 +156,7 @@ function Overview({ patientId, progress, programs }: { patientId: string; progre
         <Stat label={t('Actieve programma’s', 'Active programmes')} value={active.length} hint={active[0]?.title} />
       </div>
       <PainMapCard patientId={patientId} />
+      <ClinicalTimeline patientId={patientId} sessions={progress.sessions} outcomes={progress.outcomes ?? []} />
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-3">
           <CardHeader title={t('Therapietrouw per week', 'Weekly adherence')} description={t('Gedane ten opzichte van geplande trainingsdagen per week (start op maandag). Zelfde berekening als op het dashboard en in de patiëntapp.', 'Completed versus planned training days per week (starting Monday). Same calculation as the dashboard and the patient app.')} />
