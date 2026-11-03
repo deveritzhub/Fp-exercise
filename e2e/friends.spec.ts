@@ -2,7 +2,7 @@ import pg from 'pg';
 import { test, expect, type Browser } from '@playwright/test';
 import { login, expectAccessible } from './helpers';
 
-/** Hero friends: opt-in sharing, friend code, request + accept, leaderboard with skills, switch off. */
+/** Hero friends: opt-in sharing, friend code, request + accept, companions with skills, switch off. */
 async function sql(q: string, p: unknown[] = []) {
   const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
   await db.connect();
@@ -25,7 +25,7 @@ async function patientPage(browser: Browser, email: string) {
   return page;
 }
 
-test('two patients from different practices become friends and compare levels', async ({ browser }) => {
+test('two patients from different practices become friends and join without a recovery ranking', async ({ browser }) => {
   test.setTimeout(120_000);
   await sql(`UPDATE patient_heroes SET hero_name = 'Sprinter Emma' FROM patients p WHERE p.id = patient_heroes.patient_id AND p.email = 'patient@praktijk-a.test'`);
   await sql(`UPDATE patient_heroes SET hero_name = 'Keeper Noah' FROM patients p WHERE p.id = patient_heroes.patient_id AND p.email = 'patient@praktijk-b.test'`);
@@ -63,8 +63,8 @@ test('two patients from different practices become friends and compare levels', 
   await emma.reload();
   await expect(emma.getByRole('heading', { name: 'Verzoeken (1)' })).toBeVisible();
   await emma.getByRole('button', { name: 'Accepteren' }).click();
-  await expect(emma.getByRole('heading', { name: /Ranglijst \(1 vriend\)/ })).toBeVisible();
-  const board = emma.getByRole('list', { name: 'Ranglijst' });
+  await expect(emma.getByRole('heading', { name: /Teamgenoten \(1 vriend\)/ })).toBeVisible();
+  const board = emma.getByRole('list', { name: 'Teamgenoten' });
   await expect(board.getByRole('listitem')).toHaveCount(2);
   await expect(board.getByText('Keeper Noah')).toBeVisible();
   await expect(board.getByText('Jij ·')).toBeVisible();
@@ -72,7 +72,7 @@ test('two patients from different practices become friends and compare levels', 
   await board.getByRole('button', { name: /Keeper Noah/ }).click();
   await expect(board.getByText('Kracht')).toBeVisible();
   await expect(board.getByText('Herstel')).toBeVisible();
-  await expectAccessible(emma, 'friends leaderboard');
+  await expectAccessible(emma, 'friends companions');
   await emma.screenshot({ path: 'screenshots/hero/friends.png', fullPage: true });
 
   // The character sheet links to the friends page with the count.
