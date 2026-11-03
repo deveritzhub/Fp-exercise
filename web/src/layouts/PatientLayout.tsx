@@ -35,6 +35,16 @@ export function PatientLayout() {
   });
   // Load every patient screen up front, so all of them also open without internet later on
   // (the service worker keeps the files).
+  // Load the main patient screens ahead, so they still open when the connection drops
+  // during a workout (in a basement gym, on the train).
+  useEffect(() => {
+    const warm = () => {
+      void import('@/pages/patient/PatientHome').catch(() => {});
+      void import('@/pages/patient/SessionPlayer').catch(() => {});
+      void import('@/pages/patient/ModulePage').catch(() => {});
+    };
+    warm();
+  }, []);
   useEffect(() => {
     void import('@/pages/patient/PatientHome');
     void import('@/pages/patient/SessionPlayer');

@@ -30,6 +30,8 @@ test('patient trains without internet; the workout is sent once back online', as
 
   await page.goto(`/p/sessie/${programId}`);
   await expect(page.getByRole('button', { name: /Beginnen|Verder met training/ })).toBeVisible();
+  // The app loads its main screens ahead while online; let that finish before the connection drops.
+  await page.waitForLoadState('networkidle');
   await context.setOffline(true);
   await page.getByRole('button', { name: /Beginnen|Verder met training/ }).click();
 

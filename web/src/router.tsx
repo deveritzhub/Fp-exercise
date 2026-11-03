@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react';
-import { createBrowserRouter, Link, Outlet, ScrollRestoration } from 'react-router-dom';
+import { createBrowserRouter, Link, Outlet, ScrollRestoration, useRouteError } from 'react-router-dom';
 import { Spinner } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { MarketingLayout } from '@/layouts/MarketingLayout';
@@ -64,6 +64,22 @@ function Root() {
   );
 }
 
+/** A screen's code could not be downloaded (offline or a new version was just deployed). */
+const isChunkError = (e: unknown) => e instanceof Error && /dynamically imported module|Importing a module script failed|error loading dynamically imported module|Loading chunk/i.test(e.message);
+
+function RouteError() {
+  const { t } = useI18n();
+  const error = useRouteError();
+  if (!isChunkError(error)) return <NotFound />;
+  return (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
+      <h1 className="text-2xl font-bold">{t('Geen verbinding', 'No connection')}</h1>
+      <p className="mt-2 max-w-sm text-[15px] text-ink-600">{t('Dit scherm kon niet worden geladen. Je gegevens zijn veilig. Controleer je internet en probeer het opnieuw.', 'This screen could not be loaded. Your data is safe. Check your internet and try again.')}</p>
+      <button type="button" onClick={() => window.location.reload()} className="mt-5 inline-flex min-h-[48px] items-center rounded-xl bg-accent px-5 font-semibold text-accent-ink">{t('Opnieuw proberen', 'Try again')}</button>
+    </div>
+  );
+}
+
 function NotFound() {
   const { t } = useI18n();
   return (
@@ -78,7 +94,7 @@ function NotFound() {
 export const router = createBrowserRouter([
   {
     element: <Root />,
-    errorElement: <NotFound />,
+    errorElement: <RouteError />,
     children: [
       {
         element: <MarketingLayout />,
