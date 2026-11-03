@@ -23,6 +23,8 @@ export const FP_BUNDLES = [
   { name: 'fp-kracht-v3', file: 'fp-kracht-v3.json' },
   // The backward lunge, so the lunge demo video (which steps backwards) has the right exercise.
   { name: 'fp-kracht-v4', file: 'fp-kracht-v4.json' },
+  // Radial and femoral nerve sliders, so every nerve in the muscle atlas has an exercise.
+  { name: 'fp-neuro-v1', file: 'fp-neuro-v1.json' },
 ] as const;
 
 const DIR = path.join(import.meta.dirname, '../../db/seed-data');

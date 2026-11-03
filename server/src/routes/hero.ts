@@ -1,4 +1,5 @@
 import { teamWeekSummary } from '../../../shared/teamQuest';
+import { quizXpFor } from './atlas';
 import { Hono } from 'hono';
 import { config } from '../config';
 import { z } from 'zod';
@@ -196,6 +197,8 @@ async function heroState(tx: Tx, patientId: string) {
   const thisMonth = seasonMonth(thisWeek);
   const season = seasonList.find((x) => x.month === thisMonth) ?? { month: thisMonth, key: seasonOf(thisMonth).key, weeks: 1, bossesBeaten: 0, goal: SEASON_GOAL, won: false };
   xp += logged.heroXp;
+  // Anatomy quiz in the muscle atlas: XP per first correct answer, capped per day.
+  xp += await quizXpFor(tx, patientId);
 
   // Where each quest is done: today's training, the body map, and an exercise for the skill of the week.
   const skillQuest = quests.find((x) => x.key === 'skill');

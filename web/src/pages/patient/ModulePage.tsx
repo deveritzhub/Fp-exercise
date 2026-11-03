@@ -1,6 +1,6 @@
 import { Link, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, ChevronDown, ChevronRight, Dumbbell, Lock, Play, ShieldCheck } from 'lucide-react';
+import { Brain, CheckCircle2, ChevronDown, ChevronRight, Dumbbell, Lock, Play, ShieldCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtRelative } from '@/lib/format';
@@ -103,6 +103,16 @@ export function ModulePage({ module }: { module: PatientModule }) {
           <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
         </Link>
       )}
+
+      {/* Muscle atlas: opens on this part (strength exercises first from Kracht, stretches from Mobiliteit). */}
+      <Link to={`/p/spieren?van=${module}`} className="tap flex items-center gap-3 rounded-2xl border border-line bg-white p-4 shadow-card hover:border-ink-300">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft"><Brain className="h-6 w-6 text-accent" aria-hidden /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold text-ink-900">{t('Spierenatlas en quiz', 'Muscle atlas and quiz')}</span>
+          <span className="block text-[14px] text-ink-600">{module === 'mobiliteit' ? t('Welke spier rek je, en met welke oefening', 'Which muscle you stretch, and with which exercise') : module === 'kracht' ? t('Welke spier train je, en wat doet hij', 'Which muscle you train, and what it does') : t('Spieren, zenuwen en je oefeningen; verdien XP met de quiz', 'Muscles, nerves and your exercises; earn XP with the quiz')}</span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />
+      </Link>
 
       {/* Programmes in this part */}
       <section aria-labelledby="mod-programs">
