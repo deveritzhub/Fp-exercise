@@ -61,7 +61,7 @@ test('all cosmetics, persistence, previews, character variants and keyboard', as
   const before=writes;await page.getByRole('button',{name:'Passen: '+GEAR.find(g=>g.key==='cap')!.nl,exact:true}).click();
   await expect(character.locator('[data-rpg-item="cap"]')).toHaveCount(1);expect(writes).toBe(before);
   await page.getByRole('button',{name:'Preview sluiten'}).click();await expect(character.locator('[data-rpg-item="crown"]')).toHaveCount(1);
-  await page.getByRole('button',{name:/Kopen .*: .*pet/i}).click();await expect(page.getByRole('dialog')).toBeVisible();await page.getByRole('dialog').screenshot({path:'docs/rpg-screenshots/loot.png'});await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).not.toBeVisible();
+  await page.getByRole('button',{name:/Kopen .*: .*pet/i}).click();await expect(page.getByRole('dialog')).toBeVisible();await page.getByRole('dialog').screenshot({animations:'disabled',path:'docs/rpg-screenshots/loot.png'});await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).not.toBeVisible();
   await page.getByRole('button',{name:/Hoofd:.*Wijzigen/}).focus();await page.keyboard.press('Enter');await expect(page.getByRole('dialog')).toBeVisible();await page.keyboard.press('Escape');
   await page.setViewportSize({width:390,height:844});await page.emulateMedia({reducedMotion:'reduce'});await page.reload();await expect(character).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
