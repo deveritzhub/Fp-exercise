@@ -53,10 +53,10 @@ export function DashboardPage() {
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {d ? (
             <>
-              <Stat label={t('Mijn patiënten', 'My patients')} value={d.stats.patients} icon={<Users className="h-4 w-4" />} hint={d.stats.activePrograms === 1 ? t('1 actief programma', '1 active programme') : t(`${d.stats.activePrograms} actieve programma’s`, `${d.stats.activePrograms} active programmes`)} />
-              <Stat label={t('Therapietrouw 7 dagen', 'Adherence 7 days')} value={pct(d.stats.adherence7d)} icon={<Activity className="h-4 w-4" />} hint={t(`${d.stats.adherence.completed} van ${d.stats.adherence.planned} geplande trainingsdagen gedaan`, `${d.stats.adherence.completed} of ${d.stats.adherence.planned} planned training days done`)} />
-              <Stat label={t('Sessies 7 dagen', 'Sessions 7 days')} value={d.stats.sessions7d} icon={<Layers className="h-4 w-4" />} hint={t('Afgeronde oefensessies', 'Completed exercise sessions')} />
-              <Stat label={t('Vraagt aandacht', 'Needs attention')} value={d.stats.attention + d.alerts.length} tone="warn" icon={<AlertCircle className="h-4 w-4" />} hint={t('Werklijst hieronder', 'Work list below')} />
+              <Stat to="/app/patienten?bereik=mijn" label={t('Mijn patiënten', 'My patients')} value={d.stats.patients} icon={<Users className="h-4 w-4" />} hint={d.stats.activePrograms === 1 ? t('1 actief programma', '1 active programme') : t(`${d.stats.activePrograms} actieve programma’s`, `${d.stats.activePrograms} active programmes`)} />
+              <Stat to="/app/patienten?bereik=mijn" label={t('Therapie\u00ADtrouw 7 dagen', 'Adherence 7 days')} value={pct(d.stats.adherence7d)} icon={<Activity className="h-4 w-4" />} hint={t(`${d.stats.adherence.completed} van ${d.stats.adherence.planned} geplande trainingsdagen gedaan`, `${d.stats.adherence.completed} of ${d.stats.adherence.planned} planned training days done`)} />
+              <Stat href="#recente-activiteit" label={t('Sessies 7 dagen', 'Sessions 7 days')} value={d.stats.sessions7d} icon={<Layers className="h-4 w-4" />} hint={t('Afgeronde oefensessies', 'Completed exercise sessions')} />
+              <Stat href="#vraagt-aandacht" label={t('Vraagt aandacht', 'Needs attention')} value={d.stats.attention + d.alerts.length} tone="warn" icon={<AlertCircle className="h-4 w-4" />} hint={t('Werklijst hieronder', 'Work list below')} />
             </>
           ) : (
             Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[112px] rounded-xl" />)
@@ -69,7 +69,7 @@ export function DashboardPage() {
       <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-5">
         <div className="min-w-0 lg:col-span-3">{d && <ActivityChart daily={d.daily} />}</div>
 
-        <Card className="lg:col-span-2">
+        <Card className="scroll-mt-20 lg:col-span-2" id="recente-activiteit">
           <CardHeader title={t('Recente activiteit', 'Recent activity')} />
           {!d ? (
             <div className="space-y-3 p-5">{Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-10" />)}</div>
@@ -188,7 +188,7 @@ function WorkList({ d }: { d?: Dashboard }) {
     }
   };
   return (
-    <Card className="mt-6">
+    <Card className="mt-6 scroll-mt-20" id="vraagt-aandacht">
       <CardHeader title={t('Vraagt aandacht', 'Needs attention')} description={t('Werklijst op basis van meldingen, scores en activiteit — geen diagnose.', 'Work list based on reports, scores and activity — not a diagnosis.')} />
       {!d ? (
         <div className="space-y-3 p-5">{Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-12" />)}</div>

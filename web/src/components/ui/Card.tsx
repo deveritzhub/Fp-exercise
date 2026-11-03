@@ -1,4 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 export function Card({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
@@ -31,15 +33,25 @@ export function PageHeader({ title, description, actions, eyebrow, children }: {
   );
 }
 
-export function Stat({ label, value, hint, icon, tone }: { label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode; tone?: 'default' | 'warn' }) {
-  return (
-    <div className="card p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-3 text-[13.5px] font-medium text-ink-600">
-        <span className="pt-1">{label}</span>
+/**
+ * A key figure. With `to` (a route) or `href` (an anchor on the same page) the whole card is a link,
+ * with a small arrow so it reads as tappable.
+ */
+export function Stat({ label, value, hint, icon, tone, to, href }: { label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode; tone?: 'default' | 'warn'; to?: string; href?: string }) {
+  const body = (
+    <>
+      <div className="flex items-start justify-between gap-2 text-[13.5px] font-medium text-ink-600">
+        {/* min-w-0 + anywhere: a long word like "Therapietrouw" wraps instead of pushing the icon out */}
+        <span className="min-w-0 pt-1 [overflow-wrap:anywhere]">{label}</span>
         {icon && <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', tone === 'warn' ? 'bg-warn-soft text-warn' : 'bg-sage text-accent')} aria-hidden>{icon}</span>}
       </div>
       <div className="mt-2 font-display text-[28px] font-bold leading-none tabular-nums tracking-tight text-ink-950">{value}</div>
       {hint && <div className="mt-1 text-[12.5px] text-ink-500">{hint}</div>}
-    </div>
+      {(to || href) && <ChevronRight className="absolute bottom-3 right-3 h-4 w-4 text-ink-400 transition-transform group-hover:translate-x-0.5" aria-hidden />}
+    </>
   );
+  const cls = 'card group relative block p-4 pb-8 transition-colors hover:border-ink-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent sm:p-5 sm:pb-8';
+  if (to) return <Link to={to} className={cls}>{body}</Link>;
+  if (href) return <a href={href} className={cls}>{body}</a>;
+  return <div className="card p-4 sm:p-5">{body}</div>;
 }

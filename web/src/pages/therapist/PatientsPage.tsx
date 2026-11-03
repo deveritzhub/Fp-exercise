@@ -17,7 +17,8 @@ export function PatientsPage() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const [q, setQ] = useState('');
-  const [scope, setScope] = useState<'mine' | 'practice'>('practice');
+  // ?bereik=mijn (from the dashboard's "Mijn patiënten") opens on your own patients.
+  const [scope, setScope] = useState<'mine' | 'practice'>(() => (params.get('bereik') === 'mijn' ? 'mine' : 'practice'));
   const [status, setStatus] = useState<'active' | 'archived'>('active');
   const dq = useDebounced(q);
   const list = useQuery({
