@@ -43,10 +43,13 @@ export function AtlasPage() {
   const setTab = (v: string, extra: Record<string, string> = {}) => setParams({ ...Object.fromEntries(params), tab: v, ...extra }, { replace: true });
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
   if (!q.data) return <Spinner />;
-  const back = from === 'mobiliteit' ? '/p/mobiliteit' : from === 'revalidatie' ? '/p/revalidatie' : '/p/kracht';
+  // Back to where you came from: an exercise (?terug=/p/…), a module tab, or the hero page (default).
+  const terug = params.get('terug');
+  const van = params.get('van');
+  const back = terug && terug.startsWith('/p/') && !terug.startsWith('//') ? terug : van === 'mobiliteit' ? '/p/mobiliteit' : van === 'revalidatie' ? '/p/revalidatie' : van === 'kracht' ? '/p/kracht' : '/p/held';
   return (
     <div className="space-y-5">
-      <Link to={back} className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" aria-hidden />{t('Terug', 'Back')}</Link>
+      <Link to={back} className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" aria-hidden />{terug ? t('Terug naar de oefening', 'Back to the exercise') : back === '/p/held' ? t('Terug naar je held', 'Back to your hero') : t('Terug', 'Back')}</Link>
       <div>
         <h1 className="t-page flex items-center gap-2"><Brain className="h-7 w-7 text-accent" aria-hidden />{t('Spierenatlas', 'Muscle atlas')}</h1>
         <p className="mt-1 text-[15px] text-ink-600">{t('Welke spier doet wat, welke zenuw hoort erbij, en met welke oefeningen train of rek je hem.', 'Which muscle does what, which nerve belongs to it, and which exercises train or stretch it.')}</p>
@@ -278,6 +281,7 @@ function QuizView({ data, muscle, onAll }: { data: AtlasData; muscle: string | n
       setResult({ correct: r.correct, answer: r.answer, picked: opt, explain: r.explain, xp: r.xp });
       qc.setQueryData<AtlasData>(['patient-atlas'], (old) => (old ? { ...old, quiz: r.quiz } : old));
       if (r.xp) void qc.invalidateQueries({ queryKey: ['patient-hero'] });
+      void qc.invalidateQueries({ queryKey: ['patient-atlas-quiz'] });
     } catch (e) {
       toast(describeError(e, locale), 'bad');
     } finally {

@@ -40,6 +40,7 @@ function fromExercise(e: Exercise): BItem {
       id: e.id, nameNl: e.nameNl, nameEn: e.nameEn, bodyRegion: e.bodyRegion, thumbnailMediaId: e.thumbnailMediaId, videoMediaId: e.videoMediaId,
       difficulty: e.difficulty, instructionsNl: e.instructionsNl, instructionsEn: e.instructionsEn, startingPositionNl: e.startingPositionNl,
       startingPositionEn: e.startingPositionEn, movementNl: e.movementNl, movementEn: e.movementEn, equipment: e.equipment,
+      targetMuscles: e.targetMuscles, trainingCategories: e.trainingCategories, movementCategory: e.movementCategory, tags: e.tags,
     },
   };
 }

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X, Printer, Trophy, Swords, Coins, Gift } from 'lucide-react';
+import { ArrowLeft, Brain, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X, Printer, Trophy, Swords, Coins, Gift } from 'lucide-react';
+import { MUSCLES, musclesOf } from '@shared/muscleAtlas';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { useI18n, describeError } from '@/lib/i18n';
 import { toISODate } from '@shared/adherence';
@@ -99,8 +100,33 @@ export function PatientExercisePage() {
     <div className="space-y-5">
       <Link to={`/p/programma/${id}`} className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" />{q.data.title}</Link>
       <ExerciseInfo item={item} />
+      <TrainsMuscles e={item.exercise} back={`/p/programma/${id}/oefening/${itemId}`} />
       <p className="text-[14px] text-ink-600">{t('Je bekijkt deze oefening alleen; er wordt geen training geregistreerd.', 'You are only viewing this exercise; no workout is recorded.')}</p>
     </div>
+  );
+}
+
+/** "Deze oefening traint: …" with each muscle linking to its card in the muscle atlas. */
+function TrainsMuscles({ e, back }: { e: { nameNl: string; nameEn: string; targetMuscles: string[]; trainingCategories: string[]; movementCategory: string | null; tags: string[] }; back: string }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const keys = musclesOf({ name: `${e.nameNl} ${e.nameEn}`, muscles: e.targetMuscles ?? [], training: e.trainingCategories ?? [], movement: e.movementCategory, sourceKey: null, tags: e.tags ?? [] }).slice(0, 4);
+  if (!keys.length) return null;
+  const stretch = e.movementCategory === 'stretch' || (e.trainingCategories ?? []).includes('mobility');
+  return (
+    <p className="flex flex-wrap items-center gap-x-1.5 text-[14px] text-ink-700">
+      <Brain className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+      <span>{stretch ? t('Deze oefening rekt:', 'This exercise stretches:') : t('Deze oefening traint:', 'This exercise trains:')}</span>
+      {keys.map((k, i) => {
+        const m = MUSCLES.find((x) => x.key === k)!;
+        return (
+          <span key={k}>
+            {i > 0 && <span aria-hidden>· </span>}
+            <Link to={`/p/spieren?tab=spieren&open=${k}&terug=${encodeURIComponent(back)}`} className="inline-flex min-h-[44px] items-center font-medium text-accent underline-offset-2 hover:underline">{nl ? m.nl : m.en}</Link>
+          </span>
+        );
+      })}
+    </p>
   );
 }
 

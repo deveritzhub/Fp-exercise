@@ -18,9 +18,16 @@ test('spierenatlas: muscles with nerve and exercises, nerves with sliders, and a
   const ctx = await browser.newContext({ viewport: { width: 360, height: 800 }, hasTouch: true, locale: 'nl-NL', timezoneId: 'Europe/Amsterdam' });
   const page = await ctx.newPage();
   await login(page, 'patient@praktijk-a.test');
+  // The training tabs stay about training; the one entry is on the hero page.
   await page.goto('/p/kracht');
-  await page.getByRole('link', { name: /Spierenatlas en quiz/ }).click();
-  await expect(page).toHaveURL(/\/p\/spieren\?van=kracht$/);
+  await expect(page.getByRole('heading', { name: 'Kracht', level: 1 })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Spierenatlas/ })).toHaveCount(0);
+  await page.goto('/p/held');
+  const later = page.getByRole('button', { name: 'Later' });
+  if (await later.count()) await later.first().click();
+  await page.getByRole('link', { name: /Spierenatlas & quiz/ }).click();
+  await expect(page).toHaveURL(/\/p\/spieren$/);
+  await expect(page.getByRole('link', { name: 'Terug naar je held' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Spierenatlas', level: 1 })).toBeVisible();
 
   // Find a muscle by its movement; it shows its functions, nerve and linked exercises.
@@ -71,6 +78,18 @@ test('spierenatlas: muscles with nerve and exercises, nerves with sliders, and a
   await page.getByRole('tab', { name: 'Spieren' }).click();
   await page.getByPlaceholder(/Zoek spier of beweging/).fill('gracilis');
   await expect(page.getByRole('button', { name: /Slanke spier/ })).toBeVisible();
+  // From an exercise in the programme: "Deze oefening traint: …" opens that muscle, and back.
+  const prog = (await (await page.request.get('/api/patient/home')).json()).programs[0];
+  const detail = await (await page.request.get(`/api/patient/programs/${prog.id}`)).json();
+  const item = detail.items.find((i: { exercise: { targetMuscles: string[] } }) => i.exercise.targetMuscles.length > 0);
+  await page.goto(`/p/programma/${prog.id}/oefening/${item.id}`);
+  const trains = page.getByText(/Deze oefening (traint|rekt):/);
+  await expect(trains).toBeVisible();
+  await trains.locator('xpath=..').getByRole('link').first().click();
+  await expect(page).toHaveURL(/\/p\/spieren\?tab=spieren&open=/);
+  await expect(page.getByRole('button', { expanded: true }).first()).toBeVisible();
+  await page.getByRole('link', { name: 'Terug naar de oefening' }).click();
+  await expect(page).toHaveURL(new RegExp(`/p/programma/${prog.id}/oefening/${item.id}$`));
   await ctx.close();
   const done = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
   await done.connect();

@@ -73,6 +73,12 @@ atlasStaff.get('/', async (c) => {
   return c.json(await withUser(user.id, async (tx) => ({ exercises: await atlasExercises(tx) })));
 });
 
+/** Just the quiz progress (for the card on the hero page), without the exercise list. */
+atlasPatient.get('/atlas/quiz', async (c) => {
+  const { user, patient } = requirePatient(c);
+  return c.json(await withUser(user.id, (tx) => quizState(tx, patient.id)));
+});
+
 /** Answer a quiz question. A first correct answer is stored and earns XP (up to the daily cap). */
 atlasPatient.post('/atlas/quiz', async (c) => {
   const { user, patient } = requirePatient(c);

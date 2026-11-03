@@ -3,7 +3,7 @@ import '../../components/hero/rpg.css';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Award, BookOpen, CalendarCheck, Check, ChevronRight, CircleCheck, Coins, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Utensils, Droplets, Zap, Swords, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Award, BookOpen, Brain, CalendarCheck, Check, ChevronRight, CircleCheck, Coins, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Utensils, Droplets, Zap, Swords, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -17,6 +17,7 @@ import { SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
 import { BADGES, BOSSES, SEASONS, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, WALL_BADGES_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
+import { quizQuestions } from '@shared/muscleAtlas';
 import type { HeroState } from '@/lib/types';
 import { PainTrendList } from '@/components/hero/PainTrend';
 import { Fold } from '@/components/app/Fold';
@@ -1352,6 +1353,26 @@ function LogTeaser({ d }: { d: HeroState }) {
   );
 }
 
+/** The muscle atlas and its quiz: the one entry in the app, next to the skills. */
+function AtlasCard() {
+  const { t } = useI18n();
+  const q = useQuery({ queryKey: ['patient-atlas-quiz'], queryFn: () => api.get<{ correct: string[]; level2?: boolean }>('/patient/atlas/quiz'), staleTime: 60_000 });
+  const total = quizQuestions().filter((x) => x.level === 1).length;
+  const done = q.data ? quizQuestions().filter((x) => x.level === 1 && q.data.correct.includes(x.id)).length : null;
+  return (
+    <Link to="/p/spieren" className="tap flex w-full items-center gap-3 rounded-2xl border border-line bg-white px-4 py-3.5 shadow-card hover:border-ink-300">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent" aria-hidden><Brain className="h-5 w-5" /></span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[16px] font-semibold text-ink-900">{t('Spierenatlas & quiz', 'Muscle atlas & quiz')}</span>
+        <span className="block text-[13.5px] text-ink-600">
+          {done === null ? t('Spieren, zenuwen en je oefeningen', 'Muscles, nerves and your exercises') : t(`${done} van ${total} goed${q.data?.level2 ? ' · level 2 open' : ' · level 2 op slot'}`, `${done} of ${total} right${q.data?.level2 ? ' · level 2 open' : ' · level 2 locked'}`)}
+        </span>
+      </span>
+      <ChevronRight className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />
+    </Link>
+  );
+}
+
 /** The character sheet: the hero with their pain, the main quest, skills and badges. */
 export function HeroPage() {
   const { t, locale } = useI18n();
@@ -1484,6 +1505,7 @@ export function HeroPage() {
       <Fold id="hero-skills" icon={<Zap className="h-5 w-5" />} title={t('Skills', 'Skills')} summary={t(`Totaal level ${d.totalLevel}`, `Total level ${d.totalLevel}`)}>
         <Skills d={d} />
       </Fold>
+      <AtlasCard />
       <FriendsCard />
       <Link to="/p/held/inventaris" className="tap flex w-full items-center gap-3 rounded-2xl border border-line bg-white px-4 py-3.5 shadow-card hover:border-ink-300">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sand-soft text-sand-ink" aria-hidden><Crown className="h-5 w-5" /></span>

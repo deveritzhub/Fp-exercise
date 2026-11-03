@@ -83,6 +83,10 @@ export type ProgramItem = {
     movementNl: string;
     movementEn: string;
     equipment: string[];
+    targetMuscles: string[];
+    trainingCategories: string[];
+    movementCategory: string | null;
+    tags: string[];
   };
 };
 
