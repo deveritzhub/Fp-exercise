@@ -223,4 +223,21 @@ describe('trophy shelf', () => {
     expect((await p.put('/patient/hero/showcase', { trophies: ['a', 'b', 'c', 'd'] })).status).toBe(400);
     expect((await p.put('/patient/hero/showcase', { trophies: [] })).status).toBe(200);
   });
+
+  it('only earned badges can hang on the wall, at most four, and the wall can be emptied', async () => {
+    resetRateLimits();
+    const p = await login('patientA');
+    const st = (await p.get('/patient/hero')).body;
+    expect(st.wallBadges).toEqual([]);
+    const locked = st.badges.find((x: { earned: boolean }) => !x.earned);
+    expect((await p.put('/patient/hero/wall-badges', { badges: [locked.key] })).body.error).toBe('badge_not_earned');
+    expect((await p.put('/patient/hero/wall-badges', { badges: ['a', 'b', 'c', 'd', 'e'] })).status).toBe(400);
+    const earned = st.badges.find((x: { earned: boolean }) => x.earned);
+    if (earned) {
+      expect((await p.put('/patient/hero/wall-badges', { badges: [earned.key] })).status).toBe(200);
+      expect((await p.get('/patient/hero')).body.wallBadges).toEqual([earned.key]);
+    }
+    expect((await p.put('/patient/hero/wall-badges', { badges: [] })).status).toBe(200);
+    expect((await p.get('/patient/hero')).body.wallBadges).toEqual([]);
+  });
 });

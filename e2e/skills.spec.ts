@@ -81,12 +81,16 @@ test('lock reasons are visible, training buys gear in the shop, and the sheet fi
   await expect(page.getByRole('dialog', { name: 'Hoofd' })).toBeVisible();
   await expectAccessible(page, 'gear slot picker');
   await page.getByRole('button', { name: 'Sluiten' }).last().click();
-  // Trophy cabinet: Strength level 10 won bronze; put it on the shelf behind the hero.
+  // Trophy cabinet: Strength level 10 won bronze. The wall stays away until something is placed.
+  await expect(page.getByRole('img', { name: /^Muur achter je held/ })).toHaveCount(0);
+  await expect(page.getByText(/Je muur is leeg en staat uit/)).toBeVisible();
   const bronze = page.getByRole('button', { name: /^Kracht Brons/ });
   await bronze.scrollIntoViewIfNeeded();
   await bronze.click();
   await expect(page.getByRole('button', { name: /^Kracht Brons/, pressed: true })).toBeVisible();
-  await expect(page.getByRole('group', { name: 'Prijzenplank' }).first().locator('[title^="Kracht"]')).toBeVisible();
+  await expect(page.getByRole('img', { name: /^Muur achter je held: Kracht Brons/ }).first()).toBeVisible();
+  await page.getByRole('img', { name: /^Muur achter je held/ }).first().scrollIntoViewIfNeeded();
+  await page.screenshot({ path: 'screenshots/hero/trophy-wall.png' });
   await expectAccessible(page, 'skills gear worn');
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
 });

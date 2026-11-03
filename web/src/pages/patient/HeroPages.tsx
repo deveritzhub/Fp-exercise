@@ -13,7 +13,7 @@ import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
 import { SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
-import { BADGES, BOSSES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
+import { BADGES, BOSSES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, WALL_BADGES_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
 import type { HeroState } from '@/lib/types';
 import { PainTrendList } from '@/components/hero/PainTrend';
@@ -1049,8 +1049,8 @@ function CharacterScreen({ d, busy, onSave, onBuy }: { d: HeroState; busy: strin
   const sel = open ? GEAR_SLOTS.find((x) => x.key === open)! : null;
   const options = open ? GEAR.filter((x) => GEAR_SLOT[x.key] === open) : [];
   return (
-    <div className="mt-3 rounded-2xl bg-[linear-gradient(180deg,#efe6d4_0%,#f7f9f7_100%)] p-3">
-      <div className="mb-2"><TrophyShelf d={d} compact /></div>
+    <div className={cn('mt-3 rounded-2xl p-3', wallPlaced(d) ? WALL_BG : 'bg-[linear-gradient(180deg,#efe6d4_0%,#f7f9f7_100%)]')}>
+      <TrophyWall d={d} compact className="mb-2" />
       <div className="grid grid-cols-[minmax(52px,64px)_1fr_minmax(52px,64px)] items-start gap-2">
         <div className="grid gap-2">{side('left')}</div>
         <HeroPhoto look={look} className="h-full min-h-[300px] w-full" />
@@ -1103,22 +1103,88 @@ function TrophyIcon({ tier, earned = true, size = 'md', art }: { tier: string; e
   );
 }
 
-/** The shelf behind the hero: up to three chosen trophies. */
-function TrophyShelf({ d, compact = false }: { d: HeroState; compact?: boolean }) {
+/** Pin an earned badge on the wall behind the hero, or take it off. */
+function WallToggle({ d, badge, name }: { d: HeroState; badge: string; name: string }) {
+  const { t, locale } = useI18n();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const pinned = d.wallBadges ?? [];
+  const on = pinned.includes(badge);
+  const toggle = async () => {
+    if (!on && pinned.length >= WALL_BADGES_MAX) {
+      toast(t(`Er passen ${WALL_BADGES_MAX} badges op je muur. Haal er eerst een af.`, `Your wall holds ${WALL_BADGES_MAX} badges. Take one off first.`), 'bad');
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.put('/patient/hero/wall-badges', { badges: on ? pinned.filter((k) => k !== badge) : [...pinned, badge] });
+      await qc.invalidateQueries({ queryKey: ['patient-hero'] });
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button type="button" aria-pressed={on} disabled={busy} onClick={toggle}
+      className={cn('tap mt-2 inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-lg border px-2 text-[13.5px] font-semibold', on ? 'border-accent bg-white text-accent' : 'border-line bg-white text-ink-700')}>
+      <span className="sr-only">{name}: </span>{on ? t('Op je muur', 'On your wall') : t('Aan muur hangen', 'Hang on wall')}
+    </button>
+  );
+}
+
+/** Wall colours: a dark green wall with soft vertical planks, so trophies and badges stand out. */
+const WALL_BG = 'bg-[repeating-linear-gradient(90deg,rgba(255,255,255,0.035)_0px,rgba(255,255,255,0.035)_2px,transparent_2px,transparent_46px),linear-gradient(180deg,#22392f_0%,#2f4d40_55%,#3d6150_100%)]';
+const wallPlaced = (d: HeroState) => d.showcase.length > 0 || (d.wallBadges ?? []).length > 0;
+const badgeName = (k: string, nl: boolean) => { const b = BADGES.find((x) => x.key === k); return b ? (nl ? b.nl : b.en) : k; };
+
+function WallBadge({ k, nl, compact }: { k: string; nl: boolean; compact: boolean }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <span className="flex flex-col items-center" title={badgeName(k, nl)}>
+      <span className={cn('relative flex items-center justify-center rounded-full bg-[radial-gradient(circle_at_35%_30%,#fff8e6_0%,#e9dcc0_70%,#c9b48a_100%)] shadow-[0_3px_6px_rgba(0,0,0,0.35)] ring-2 ring-[#b8946a]', compact ? 'h-10 w-10' : 'h-14 w-14')}>
+        {/* the pin it hangs on */}
+        <span className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-[#d4a72c] shadow" aria-hidden />
+        {failed ? <Award className={cn('text-[#8a6a46]', compact ? 'h-5 w-5' : 'h-7 w-7')} aria-hidden /> : (
+          <img src={`/api/hero-assets/award/badge_${k}`} alt="" loading="lazy" onError={() => setFailed(true)} className="h-[86%] w-[86%] object-contain" />
+        )}
+      </span>
+      {!compact && <span className="mt-1 max-w-[72px] truncate text-[10.5px] font-semibold text-white/90">{badgeName(k, nl)}</span>}
+    </span>
+  );
+}
+
+/**
+ * The wall behind the hero: the trophies the patient put on the shelf and the badges they pinned.
+ * Shows nothing when nothing is placed; the patient chooses in the trophy cabinet and badge list.
+ */
+function TrophyWall({ d, compact = false, className }: { d: HeroState; compact?: boolean; className?: string }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
+  if (!wallPlaced(d)) return null;
   const shown = d.showcase.map((k) => d.trophies.find((x) => x.key === k)).filter(Boolean) as HeroState['trophies'];
+  const badges = d.wallBadges ?? [];
+  const left = badges.slice(0, Math.ceil(badges.length / 2));
+  const right = badges.slice(Math.ceil(badges.length / 2));
+  const label = [...shown.map((x) => `${skillName(x.skill, nl)} ${nl ? tierOf(x.tier).nl : tierOf(x.tier).en}`), ...badges.map((k) => badgeName(k, nl))].join(', ');
   return (
-    <div className="relative" aria-label={t('Prijzenplank', 'Trophy shelf')} role="group">
-      <div className={cn('flex items-end justify-center gap-3', compact ? 'min-h-[40px]' : 'min-h-[56px]')}>
-        {shown.length ? shown.map((x) => (
-          <span key={x.key} className="flex flex-col items-center" title={`${skillName(x.skill, nl)} · ${nl ? tierOf(x.tier).nl : tierOf(x.tier).en}`}>
-            <TrophyIcon tier={x.tier} size={compact ? 'sm' : 'md'} art={`${x.skill}_${x.level}`} />
-            {!compact && <span className="mt-0.5 text-[10.5px] font-semibold text-ink-700">{skillName(x.skill, nl)}</span>}
-          </span>
-        )) : <span className="pb-1 text-[12.5px] text-ink-600">{t('Je prijzenplank is nog leeg', 'Your trophy shelf is still empty')}</span>}
-      </div>
-      <div className="mt-1 h-2 rounded-full bg-[linear-gradient(180deg,#b8946a_0%,#8a6a46_100%)] shadow-[0_2px_0_rgba(0,0,0,0.15)]" aria-hidden />
+    <div className={cn('flex items-end justify-center gap-3', className)} role="img" aria-label={t(`Muur achter je held: ${label}`, `Wall behind your hero: ${label}`)}>
+      {left.length > 0 && <div className="flex gap-2 pb-2">{left.map((k) => <WallBadge key={k} k={k} nl={nl} compact={compact} />)}</div>}
+      {shown.length > 0 && (
+        <div className="min-w-[96px]">
+          <div className={cn('flex items-end justify-center gap-2 px-2', compact ? 'min-h-[44px]' : 'min-h-[64px]')}>
+            {shown.map((x) => (
+              <span key={x.key} className="flex flex-col items-center">
+                <TrophyIcon tier={x.tier} size={compact ? 'sm' : 'md'} art={`${x.skill}_${x.level}`} />
+                {!compact && <span className="mt-0.5 text-[10.5px] font-semibold text-white/90">{skillName(x.skill, nl)}</span>}
+              </span>
+            ))}
+          </div>
+          <div className="h-2 rounded-full bg-[linear-gradient(180deg,#c9a77a_0%,#8a6a46_100%)] shadow-[0_3px_0_rgba(0,0,0,0.3)]" />
+        </div>
+      )}
+      {right.length > 0 && <div className="flex gap-2 pb-2">{right.map((k) => <WallBadge key={k} k={k} nl={nl} compact={compact} />)}</div>}
     </div>
   );
 }
@@ -1158,8 +1224,10 @@ function TrophyCabinet({ d }: { d: HeroState }) {
   return (
     <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="trophies-title">
       <h2 id="trophies-title" className="t-section scroll-mt-20">{t(`Prijzenkast (${earnedCount} van ${d.trophies.length})`, `Trophy cabinet (${earnedCount} of ${d.trophies.length})`)}</h2>
-      <p className="mt-1 text-[13.5px] text-ink-600">{t(`Per skill een prijs bij level ${TROPHY_TIERS.map((x) => x.level).join(', ')}. Tik op een gewonnen prijs om hem op je plank te zetten (max. ${SHOWCASE_MAX}).`, `A trophy per skill at level ${TROPHY_TIERS.map((x) => x.level).join(', ')}. Tap a won trophy to put it on your shelf (max ${SHOWCASE_MAX}).`)}</p>
-      <div className="mt-3 rounded-xl bg-[linear-gradient(180deg,#efe6d4_0%,#f7f9f7_100%)] p-3"><TrophyShelf d={d} /></div>
+      <p className="mt-1 text-[13.5px] text-ink-600">{t(`Per skill een prijs bij level ${TROPHY_TIERS.map((x) => x.level).join(', ')}. Tik op een gewonnen prijs om hem op de muur achter je held te zetten (max. ${SHOWCASE_MAX}).`, `A trophy per skill at level ${TROPHY_TIERS.map((x) => x.level).join(', ')}. Tap a won trophy to put it on the wall behind your hero (max ${SHOWCASE_MAX}).`)}</p>
+      {wallPlaced(d) ? <div className={cn('mt-3 rounded-xl p-3', WALL_BG)}><TrophyWall d={d} /></div> : (
+        <p className="mt-3 rounded-xl border border-dashed border-line bg-canvas p-3 text-[13.5px] text-ink-600">{t('Je muur is leeg en staat uit. Hang een prijs of badge op, dan verschijnt hij achter je held.', 'Your wall is empty and hidden. Hang up a trophy or badge and it appears behind your hero.')}</p>
+      )}
       <ul className="mt-4 space-y-3">
         {SKILLS.filter((s) => d.trophies.some((x) => x.skill === s.key)).map((s) => (
           <li key={s.key}>
@@ -1295,9 +1363,9 @@ export function HeroPage() {
             </div>
           </div>
         </div>
-        {d.trophies?.some((x) => x.earned) && (
-          <Link to="/p/held/inventaris" className="mt-3 block rounded-xl bg-[linear-gradient(180deg,#efe6d4_0%,#fff_100%)] px-3 py-2" aria-label={t('Prijzenplank, naar je prijzenkast', 'Trophy shelf, to your trophy cabinet')}>
-            <TrophyShelf d={d} compact />
+        {wallPlaced(d) && (
+          <Link to="/p/held/inventaris" className={cn('mt-3 block rounded-xl px-3 py-2', WALL_BG)} aria-label={t('Je muur, naar je prijzenkast', 'Your wall, to your trophy cabinet')}>
+            <TrophyWall d={d} compact />
           </Link>
         )}
         <div className="mt-3">
@@ -1396,6 +1464,7 @@ export function HeroPage() {
                 </div>
                 <p className="mt-0.5 text-[13px] text-ink-600">{nl ? b.descNl : b.descEn}</p>
                 <p className="sr-only">{has ? t('Behaald', 'Earned') : t('Nog te halen', 'Not earned yet')}</p>
+                {has && <WallToggle d={d} badge={b.key} name={nl ? b.nl : b.en} />}
               </li>
             );
           })}

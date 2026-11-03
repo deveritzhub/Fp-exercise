@@ -171,6 +171,8 @@ export type HeroState = {
   customPhoto?: string | null;
   trophies: import('@shared/hero').Trophy[];
   showcase: string[];
+  /** Earned badges pinned on the wall behind the hero. */
+  wallBadges: string[];
   /** Guest heroes a patient may play as (real people who agreed). */
   heroGuests?: { key: string; name: string }[];
   hero: (import('@shared/hero').HeroLook & { createdAt: string; gear?: string[] }) | null;

@@ -10,7 +10,7 @@ import { loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
 import { loadPatientLogs } from '../lib/patientLogs';
 import { weeklyAdherence } from '../../../shared/adherence';
 import {
-  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, coinsEarned, gearScore, dayChestCoins, chestStreak, longestDayRun, skillTrophies, SHOWCASE_MAX, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
+  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, coinsEarned, gearScore, dayChestCoins, chestStreak, longestDayRun, skillTrophies, SHOWCASE_MAX, WALL_BADGES_MAX, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
   questXp, skillOfWeek, skillsForExercise, weeklyQuests, weeklyBoss, BOSS_XP, xpFor, type SkillKey, type WeekData,
 } from '../../../shared/hero';
 import { loadSkillSnapshot } from '../lib/skillState';
@@ -278,11 +278,12 @@ async function heroState(tx: Tx, patientId: string) {
     updatedAt: (metricsRow?.updated_at as string | undefined) ?? null,
   };
 
+  const badges = BADGES.map((b) => ({ key: b.key, earned: b.earned({ ...badgeInput, bossesDefeated, chestRunBest: longestDayRun(chests.map((r) => r.day)) }) }));
   return {
     hero,
     painMap: map,
     level: reached,
-    badges: BADGES.map((b) => ({ key: b.key, earned: b.earned({ ...badgeInput, bossesDefeated, chestRunBest: longestDayRun(chests.map((r) => r.day)) }) })),
+    badges,
     skills,
     totalLevel: skillsSnap.totalLevel,
     disciplineStreak: skillsSnap.disciplineStreak,
@@ -295,6 +296,8 @@ async function heroState(tx: Tx, patientId: string) {
     // Trophy cabinet: per skill at level 10/25/50/75/99; up to three on the shelf behind the hero.
     trophies: skillTrophies(skills),
     showcase: ((heroRow?.showcase ?? []) as string[]).filter((k) => skillTrophies(skills).some((t) => t.key === k && t.earned)),
+    // Badges pinned on the wall behind the hero; only earned ones count.
+    wallBadges: ((heroRow?.wall_badges ?? []) as string[]).filter((k) => badges.some((b) => b.key === k && b.earned)),
     metrics,
     checkin,
     chest,
@@ -493,6 +496,20 @@ heroPatient.put('/hero/showcase', async (c) => {
     const earned = new Set(state.trophies.filter((t) => t.earned).map((t) => t.key));
     if (b.trophies.some((k) => !earned.has(k))) throw badRequest('trophy_not_earned');
     await tx.query('UPDATE patient_heroes SET showcase = $2, updated_at = now() WHERE patient_id = $1', [patient.id, [...new Set(b.trophies)]]);
+  });
+  return c.json({ ok: true });
+});
+
+/** Pin up to four earned badges on the wall behind the hero (an empty list takes the wall down). */
+heroPatient.put('/hero/wall-badges', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ badges: z.array(z.string().max(40)).max(WALL_BADGES_MAX) }), await c.req.json());
+  await withUser(user.id, async (tx) => {
+    const state = await heroState(tx, patient.id);
+    if (!state.hero) throw badRequest('hero_required');
+    const earned = new Set(state.badges.filter((x) => x.earned).map((x) => x.key));
+    if (b.badges.some((k) => !earned.has(k))) throw badRequest('badge_not_earned');
+    await tx.query('UPDATE patient_heroes SET wall_badges = $2, updated_at = now() WHERE patient_id = $1', [patient.id, [...new Set(b.badges)]]);
   });
   return c.json({ ok: true });
 });

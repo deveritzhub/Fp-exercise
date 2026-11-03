@@ -862,6 +862,8 @@ export const TROPHY_TIERS = [
   { level: 99, key: 'master', nl: 'Meester', en: 'Master', color: '#7c4dff' },
 ] as const;
 export const SHOWCASE_MAX = 3;
+/** Badges a patient can pin on the wall behind the hero. */
+export const WALL_BADGES_MAX = 4;
 export type Trophy = { key: string; skill: SkillKey; level: number; tier: (typeof TROPHY_TIERS)[number]['key']; earned: boolean };
 export function skillTrophies(skills: { key: SkillKey; level: number; locked: boolean }[]): Trophy[] {
   return skills.flatMap((s) => TROPHY_TIERS.map((t) => ({ key: `${s.key}:${t.level}`, skill: s.key, level: t.level, tier: t.key, earned: !s.locked && s.level >= t.level })));
