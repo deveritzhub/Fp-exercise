@@ -32,5 +32,9 @@ CREATE POLICY outcomes_staff_insert ON patient_outcomes FOR INSERT TO fp_app WIT
   app.can_manage_patient(patient_id) AND app.is_professional() AND practice_id=app.patient_practice(patient_id)
   AND recorded_by=app.uid()
 );
+-- A patient may inspect/export only their own recorded measurements.
+CREATE POLICY outcomes_patient_self_read ON patient_outcomes FOR SELECT TO fp_app USING (
+  patient_id IN (SELECT app.my_patient_ids()) AND practice_id=app.patient_practice(patient_id)
+);
 -- Corrections and deletions are deliberately disabled: preserve an audit trail until an
 -- explicit correction/cancellation workflow and retention policy are reviewed.
