@@ -51,6 +51,9 @@ describe('spierenatlas', () => {
     expect(capped.quiz.correct).not.toContain(over.id);
     expect(capped.quiz.todayCount).toBe(QUIZ_DAILY_CAP);
     expect((await emma.post('/patient/atlas/quiz', { questionId: 'nope:nope', answer: 'a' })).body.error).toBe('unknown_question');
+    // Level 2 stays closed until most of level 1 is right.
+    const l2 = qs.find((q) => q.level === 2)!;
+    expect((await emma.post('/patient/atlas/quiz', { questionId: l2.id, answer: l2.answer })).body.error).toBe('quiz_level_locked');
   });
 
   it('answers are private to the patient', async () => {

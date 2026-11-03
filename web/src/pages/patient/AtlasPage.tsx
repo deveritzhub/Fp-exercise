@@ -7,10 +7,10 @@ import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
 import { Button, ErrorState, Spinner, useToast } from '@/components/ui';
-import { ATLAS_REGIONS, MUSCLES, NERVES, nervesOf, quizQuestions, type AtlasExerciseKind, type AtlasRegion, type Muscle, type NerveKey, type QuizQuestion } from '@shared/muscleAtlas';
+import { ATLAS_REGIONS, LEVEL2_UNLOCK, MUSCLES, NERVES, nervesOf, quizQuestions, type AtlasExerciseKind, type AtlasRegion, type Muscle, type NerveKey, type QuizQuestion } from '@shared/muscleAtlas';
 
 type AtlasExercise = { id: string; nameNl: string; nameEn: string; kind: AtlasExerciseKind; muscles: string[]; nerve: string | null; movementNl: string; movementEn: string; instructionsNl: string; instructionsEn: string };
-type QuizState = { correct: string[]; todayCount: number; dailyCap: number; xpPerAnswer: number; xp: number };
+type QuizState = { correct: string[]; todayCount: number; dailyCap: number; xpPerAnswer: number; xpPerLevel?: Record<1 | 2, number>; level2?: boolean; xp: number };
 type AtlasData = { exercises: AtlasExercise[]; quiz: QuizState };
 type From = 'kracht' | 'revalidatie' | 'mobiliteit';
 
@@ -206,7 +206,17 @@ function QuizView({ data, muscle, onAll }: { data: AtlasData; muscle: string | n
   const qc = useQueryClient();
   const toast = useToast();
   const all = useMemo(() => quizQuestions(), []);
-  const pool = muscle ? all.filter((q) => q.muscle === muscle && !q.id.startsWith('zenuw:')) : all;
+  const muscleLevel = muscle ? (MUSCLES.find((x) => x.key === muscle)?.level ?? 1) : null;
+  const [levelPick, setLevelPick] = useState<1 | 2>(1);
+  const level = muscleLevel ?? levelPick;
+  const open2 = !!data.quiz.level2;
+  const l1 = all.filter((x) => x.level === 1);
+  const l1Done = l1.filter((x) => data.quiz.correct.includes(x.id)).length;
+  const need = Math.ceil(l1.length * LEVEL2_UNLOCK);
+  const locked = level === 2 && !open2;
+  const pool = locked ? [] : muscle ? all.filter((q) => q.muscle === muscle && !q.id.startsWith('zenuw:')) : all.filter((q) => q.level === level);
+  const levelAll = all.filter((q) => q.level === level);
+  const xpHere = data.quiz.xpPerLevel?.[level] ?? data.quiz.xpPerAnswer;
   const [skipped, setSkipped] = useState<string[]>([]);
   const [current, setCurrent] = useState<QuizQuestion | null>(null);
   const [result, setResult] = useState<{ correct: boolean; answer: string; picked: string; explain: [string, string]; xp: number } | null>(null);
@@ -242,10 +252,21 @@ function QuizView({ data, muscle, onAll }: { data: AtlasData; muscle: string | n
   return (
     <section aria-label={t('Quiz', 'Quiz')} className="space-y-3">
       <div className="flex flex-wrap items-center gap-2 text-[13.5px]">
-        <span className="rounded-full bg-accent-soft px-3 py-1 font-semibold text-accent">{t(`${data.quiz.correct.length} van ${all.length} goed`, `${data.quiz.correct.length} of ${all.length} right`)}</span>
+        <span className="rounded-full bg-accent-soft px-3 py-1 font-semibold text-accent">{t(`Level ${level}: ${levelAll.filter((x) => data.quiz.correct.includes(x.id)).length} van ${levelAll.length} goed`, `Level ${level}: ${levelAll.filter((x) => data.quiz.correct.includes(x.id)).length} of ${levelAll.length} right`)}</span>
         <span className="rounded-full bg-sand-soft px-3 py-1 font-semibold text-sand-ink">{t(`Vandaag ${data.quiz.todayCount}/${data.quiz.dailyCap} met XP`, `Today ${data.quiz.todayCount}/${data.quiz.dailyCap} with XP`)}</span>
-        <span className="text-ink-600">{t(`+${data.quiz.xpPerAnswer} XP per nieuw goed antwoord`, `+${data.quiz.xpPerAnswer} XP per new right answer`)}</span>
+        <span className="text-ink-600">{t(`+${xpHere} XP per nieuw goed antwoord`, `+${xpHere} XP per new right answer`)}</span>
       </div>
+      {!muscle && (
+        <div role="group" aria-label={t('Quizniveau', 'Quiz level')} className="grid grid-cols-2 gap-2">
+          {([1, 2] as const).map((lv) => (
+            <button key={lv} type="button" aria-pressed={level === lv} onClick={() => { setLevelPick(lv); setResult(null); setCurrent(null); }}
+              className={cn('tap min-h-[48px] rounded-xl border-2 px-3 text-left text-[14px] font-semibold', level === lv ? 'border-accent bg-accent-soft text-accent' : 'border-line bg-white text-ink-800')}>
+              {t(`Level ${lv}`, `Level ${lv}`)}
+              <span className="block text-[12px] font-normal text-ink-600">{lv === 1 ? t('De basis', 'The basics') : open2 ? t('Meer spieren, moeilijkere vragen', 'More muscles, harder questions') : t(`Op slot · ${l1Done}/${need}`, `Locked · ${l1Done}/${need}`)}</span>
+            </button>
+          ))}
+        </div>
+      )}
       {m && (
         <p className="flex items-center justify-between gap-2 text-[14px] text-ink-700">
           <span>{t('Vragen over', 'Questions about')} <strong>{nl ? m.nl : m.en}</strong></span>
@@ -253,7 +274,13 @@ function QuizView({ data, muscle, onAll }: { data: AtlasData; muscle: string | n
         </p>
       )}
       {capped && <p className="rounded-xl bg-canvas p-3 text-[13.5px] text-ink-700">{t('Je daglimiet voor XP is bereikt. Je kunt gewoon verder oefenen; je goede antwoorden tellen morgen weer mee.', 'You reached today’s XP limit. You can keep practising; right answers count again tomorrow.')}</p>}
-      {!q ? (
+      {locked ? (
+        <div className="rounded-2xl border border-line bg-canvas p-5 text-center">
+          <p className="font-display text-[18px] font-bold text-ink-900">{t('Level 2 zit nog op slot', 'Level 2 is still locked')}</p>
+          <p className="mt-1 text-[14px] text-ink-700">{t(`Beantwoord eerst ${need} vragen van level 1 goed. Je hebt er nu ${l1Done}.`, `First answer ${need} level 1 questions right. You have ${l1Done} now.`)}</p>
+          {muscle ? <Button variant="secondary" className="mt-3" onClick={onAll}>{t('Naar level 1', 'To level 1')}</Button> : <Button variant="secondary" className="mt-3" onClick={() => setLevelPick(1)}>{t('Naar level 1', 'To level 1')}</Button>}
+        </div>
+      ) : !q ? (
         <div className="rounded-2xl border border-ok/30 bg-ok-soft p-5 text-center">
           <p className="font-display text-[18px] font-bold text-ok">{t('Alles goed beantwoord! 🎉', 'All answered correctly! 🎉')}</p>
           {m && <Button variant="secondary" className="mt-3" onClick={onAll}>{t('Naar alle vragen', 'To all questions')}</Button>}

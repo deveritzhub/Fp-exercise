@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ATLAS_REGIONS, MUSCLES, NERVES, QUIZ_DAILY_CAP, QUIZ_XP, exerciseKind, musclesOf, nerveOf, nervesOf, questionById, quizQuestions, quizXp } from './muscleAtlas';
+import { ATLAS_REGIONS, MUSCLES, NERVES, QUIZ_DAILY_CAP, QUIZ_LEVEL_XP, QUIZ_XP, LEVEL2_UNLOCK, level2Open, exerciseKind, musclesOf, nerveOf, nervesOf, questionById, quizQuestions, quizXp } from './muscleAtlas';
 
 const ex = (p: Partial<Parameters<typeof musclesOf>[0]>) => ({ name: '', muscles: [], training: [], movement: null, sourceKey: null, tags: [], ...p });
 
@@ -65,9 +65,22 @@ describe('quiz', () => {
     }
   });
   it('XP: once per question, capped per day', () => {
-    expect(quizXp([3])).toBe(3 * QUIZ_XP);
-    expect(quizXp([QUIZ_DAILY_CAP + 7, 2])).toBe((QUIZ_DAILY_CAP + 2) * QUIZ_XP);
+    const l1 = quizQuestions().filter((q) => q.level === 1).map((q) => q.id);
+    const l2 = quizQuestions().filter((q) => q.level === 2).map((q) => q.id);
+    expect(quizXp(l1.slice(0, 3).map((questionId) => ({ day: '2026-11-03', questionId })))).toBe(3 * QUIZ_XP);
+    expect(quizXp(l1.slice(0, QUIZ_DAILY_CAP + 7).map((questionId) => ({ day: '2026-11-03', questionId })).concat(l1.slice(20, 22).map((questionId) => ({ day: '2026-11-04', questionId }))))).toBe((QUIZ_DAILY_CAP + 2) * QUIZ_XP);
+    expect(quizXp([{ day: '2026-11-03', questionId: l2[0] }])).toBe(QUIZ_LEVEL_XP[2]);
     expect(questionById('biceps:zenuw')?.answer).toBe('musculocutaneus');
     expect(questionById('nope')).toBeNull();
+  });
+  it('level 2 opens after most of level 1 and has its own muscles and harder questions', () => {
+    const l1 = quizQuestions().filter((q) => q.level === 1).map((q) => q.id);
+    const l2 = quizQuestions().filter((q) => q.level === 2);
+    expect(l2.length).toBeGreaterThanOrEqual(50);
+    expect(l2.some((q) => q.id.startsWith('l2:'))).toBe(true);
+    expect(level2Open(l1.slice(0, Math.ceil(l1.length * LEVEL2_UNLOCK) - 1))).toBe(false);
+    expect(level2Open(l1.slice(0, Math.ceil(l1.length * LEVEL2_UNLOCK)))).toBe(true);
+    // Level-1 nerve questions only use level-1 muscles, so nothing from level 2 leaks in.
+    for (const q of quizQuestions().filter((x) => x.level === 1)) expect(MUSCLES.find((m) => m.key === q.muscle)?.level, q.id).toBeUndefined();
   });
 });

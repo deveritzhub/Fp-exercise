@@ -4,7 +4,7 @@ import { withUser, type Tx } from '../db';
 import { requirePatient, type AppEnv } from '../middleware';
 import { parse } from '../lib/validate';
 import { badRequest } from '../lib/errors';
-import { QUIZ_DAILY_CAP, QUIZ_XP, exerciseKind, musclesOf, nerveOf, questionById, quizXp, type AtlasExerciseKind } from '../../../shared/muscleAtlas';
+import { QUIZ_DAILY_CAP, QUIZ_LEVEL_XP, exerciseKind, level2Open, musclesOf, nerveOf, questionById, quizXp, type AtlasExerciseKind } from '../../../shared/muscleAtlas';
 
 /**
  * Spierenatlas for the patient: the exercises they may see (central library and their own
@@ -16,11 +16,14 @@ export const atlasPatient = new Hono<AppEnv>();
 const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Amsterdam' });
 
 async function quizState(tx: Tx, patientId: string) {
-  const rows = (await tx.query(`SELECT question_id, to_char(day, 'YYYY-MM-DD') AS day FROM hero_quiz_answers WHERE patient_id = $1`, [patientId])).rows as { question_id: string; day: string }[];
-  const perDay = new Map<string, number>();
-  for (const r of rows) perDay.set(r.day, (perDay.get(r.day) ?? 0) + 1);
-  const todayCount = perDay.get(today()) ?? 0;
-  return { correct: rows.map((r) => r.question_id), todayCount, dailyCap: QUIZ_DAILY_CAP, xpPerAnswer: QUIZ_XP, xp: quizXp([...perDay.values()]) };
+  const rows = (await tx.query(`SELECT question_id, to_char(day, 'YYYY-MM-DD') AS day FROM hero_quiz_answers WHERE patient_id = $1 ORDER BY created_at`, [patientId])).rows as { question_id: string; day: string }[];
+  const correct = rows.map((r) => r.question_id);
+  const todayCount = rows.filter((r) => r.day === today()).length;
+  return {
+    correct, todayCount, dailyCap: QUIZ_DAILY_CAP, xpPerAnswer: QUIZ_LEVEL_XP[1], xpPerLevel: QUIZ_LEVEL_XP,
+    level2: level2Open(correct),
+    xp: quizXp(rows.map((r) => ({ day: r.day, questionId: r.question_id }))),
+  };
 }
 
 /** XP from the quiz, for the hero's level (used by heroState). */
@@ -69,12 +72,14 @@ atlasPatient.post('/atlas/quiz', async (c) => {
   if (!q) throw badRequest('unknown_question');
   return c.json(
     await withUser(user.id, async (tx) => {
+      const state = await quizState(tx, patient.id);
+      if (q.level === 2 && !state.level2) throw badRequest('quiz_level_locked');
       const correct = b.answer === q.answer;
       let xp = 0;
       // Past today's cap a right answer is not stored, so it can still earn XP another day.
-      if (correct && (await quizState(tx, patient.id)).todayCount < QUIZ_DAILY_CAP) {
+      if (correct && state.todayCount < QUIZ_DAILY_CAP) {
         const r = await tx.query('INSERT INTO hero_quiz_answers(patient_id, question_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [patient.id, q.id]);
-        if (r.rowCount) xp = QUIZ_XP;
+        if (r.rowCount) xp = QUIZ_LEVEL_XP[q.level];
       }
       return { correct, answer: q.answer, explain: q.explain, xp, quiz: await quizState(tx, patient.id) };
     }),

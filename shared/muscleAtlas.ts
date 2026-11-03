@@ -37,6 +37,11 @@ export const NERVES = [
   { key: 'rami_dorsales', nl: 'rami dorsales', en: 'dorsal rami', areaNl: 'rugstrekkers', areaEn: 'back extensors', match: [] },
   { key: 'thoracoabdominales', nl: 'nn. thoracoabdominales', en: 'thoracoabdominal nerves', areaNl: 'buikwand', areaEn: 'abdominal wall', match: [] },
   { key: 'plexus_lumbalis', nl: 'plexus lumbalis', en: 'lumbar plexus', areaNl: 'onderrug en lies', areaEn: 'low back and groin', match: [] },
+  { key: 'suboccipitalis', nl: 'n. suboccipitalis', en: 'suboccipital nerve', areaNl: 'achterhoofd', areaEn: 'back of the head', match: [] },
+  { key: 'phrenicus', nl: 'n. phrenicus', en: 'phrenic nerve', areaNl: 'middenrif', areaEn: 'diaphragm', match: [] },
+  { key: 'intercostales', nl: 'nn. intercostales', en: 'intercostal nerves', areaNl: 'tussen de ribben', areaEn: 'between the ribs', match: [] },
+  { key: 'pudendus', nl: 'n. pudendus', en: 'pudendal nerve', areaNl: 'bekkenbodem', areaEn: 'pelvic floor', match: [] },
+  { key: 'plantares', nl: 'nn. plantares', en: 'plantar nerves', areaNl: 'voetzool', areaEn: 'sole of the foot', match: [] },
   { key: 'plexus_sacralis', nl: 'plexus sacralis', en: 'sacral plexus', areaNl: 'diepe heupspieren', areaEn: 'deep hip muscles', match: [] },
   { key: 'femoralis', nl: 'n. femoralis', en: 'femoral nerve', areaNl: 'voorkant bovenbeen', areaEn: 'front of the thigh', match: ['femoralis', 'femoral'] },
   { key: 'obturatorius', nl: 'n. obturatorius', en: 'obturator nerve', areaNl: 'binnenkant bovenbeen', areaEn: 'inner thigh', match: [] },
@@ -57,6 +62,8 @@ export type Muscle = {
   region: AtlasRegion;
   functions: Fn[];
   nerve: NerveKey;
+  /** Quiz level: 1 the basics, 2 the extra muscles (unlocked after most of level 1). */
+  level?: 2;
   /** A group of muscles (Dutch "de rugstrekkers"): the quiz then asks "Wat doen de …". */
   plural?: boolean;
   /** Nerves that also supply part of it: never offered as a wrong answer. */
@@ -89,7 +96,7 @@ export const MUSCLES: Muscle[] = [
   { key: 'supinator', nl: 'Supinator', en: 'Supinator', latin: 'm. supinator', region: 'onderarm', nerve: 'radialis', functions: [['Onderarm naar buiten draaien (supinatie)', 'Turning the forearm palm-up (supination)']], match: ['supinator'] },
   { key: 'pronator', nl: 'Ronde binnenwaartse draaier', en: 'Pronator teres', latin: 'm. pronator teres', region: 'onderarm', nerve: 'medianus', functions: [['Onderarm naar binnen draaien (pronatie)', 'Turning the forearm palm-down (pronation)'], ['Helpt bij elleboog buigen', 'Helps bend the elbow']], match: ['pronator'] },
   { key: 'polsbuigers', plural: true, nl: 'Pols- en vingerbuigers', en: 'Wrist and finger flexors', latin: 'mm. flexor carpi radialis et digitorum', region: 'onderarm', nerve: 'medianus', also: ['ulnaris'], functions: [['Pols buigen (hand omlaag)', 'Flexing the wrist (hand down)'], ['Vingers buigen, grijpkracht', 'Bending the fingers, grip strength']], match: ['flexor carpi radialis', 'flexor digitorum', 'vingerflexor', 'polsflexor', 'grijpkracht', 'grip'] },
-  { key: 'fcu', nl: 'Ellepijpszijdige polsbuiger', en: 'Flexor carpi ulnaris', latin: 'm. flexor carpi ulnaris', region: 'onderarm', nerve: 'ulnaris', functions: [['Pols buigen naar de pinkkant', 'Bending the wrist towards the little finger'], ['Kleine handspieren: vingers spreiden', 'Small hand muscles: spreading the fingers']], match: ['flexor carpi ulnaris', 'handspier', 'interossei'] },
+  { key: 'fcu', nl: 'Ellepijpszijdige polsbuiger', en: 'Flexor carpi ulnaris', latin: 'm. flexor carpi ulnaris', region: 'onderarm', nerve: 'ulnaris', functions: [['Pols buigen naar de pinkkant', 'Bending the wrist towards the little finger'], ['Helpt bij pols buigen en grijpen', 'Helps flex the wrist and grip']], match: ['flexor carpi ulnaris'] },
   // Back
   { key: 'latissimus', nl: 'Brede rugspier', en: 'Latissimus dorsi', latin: 'm. latissimus dorsi', region: 'rug', nerve: 'thoracodorsalis', functions: [['Arm van boven naar beneden trekken', 'Pulling the arm down from overhead'], ['Arm naar achteren en naar binnen draaien', 'Moving the arm back and turning it inward']], match: ['latissimus', 'brede rugspier', 'lats'] },
   { key: 'rhomboideus', plural: true, nl: 'Ruitvormige spieren', en: 'Rhomboids', latin: 'mm. rhomboidei', region: 'rug', nerve: 'dorsalis_scapulae', functions: [['Schouderbladen naar elkaar trekken', 'Drawing the shoulder blades together']], match: ['rhomboid'] },
@@ -103,10 +110,10 @@ export const MUSCLES: Muscle[] = [
   // Hip
   { key: 'iliopsoas', nl: 'Heupbuiger', en: 'Iliopsoas', latin: 'm. iliopsoas', region: 'heup', nerve: 'plexus_lumbalis', also: ['femoralis'], functions: [['Heup buigen (knie optillen)', 'Bending the hip (lifting the knee)']], match: ['iliopsoas', 'heupflexor', 'hip flexor', 'psoas'] },
   { key: 'gluteus_maximus', nl: 'Grote bilspier', en: 'Gluteus maximus', latin: 'm. gluteus maximus', region: 'heup', nerve: 'gluteus_inferior', functions: [['Heup strekken (been naar achteren)', 'Extending the hip (leg back)'], ['Opstaan, traplopen, springen', 'Standing up, climbing stairs, jumping'], ['Been naar buiten draaien', 'Turning the leg outward']], match: ['gluteus maximus', 'bilspier', 'glute', 'bil'] },
-  { key: 'gluteus_medius', nl: 'Middelste bilspier', en: 'Gluteus medius', latin: 'm. gluteus medius', region: 'heup', nerve: 'gluteus_superior', functions: [['Been zijwaarts heffen (abductie)', 'Raising the leg sideways (abduction)'], ['Bekken recht houden als je op één been staat', 'Keeping the pelvis level when standing on one leg']], match: ['gluteus medius', 'gluteus minimus', 'heupabductor', 'abductor'] },
+  { key: 'gluteus_medius', nl: 'Middelste bilspier', en: 'Gluteus medius', latin: 'm. gluteus medius', region: 'heup', nerve: 'gluteus_superior', functions: [['Been zijwaarts heffen (abductie)', 'Raising the leg sideways (abduction)'], ['Bekken recht houden als je op één been staat', 'Keeping the pelvis level when standing on one leg']], match: ['gluteus medius', 'heupabductor', 'abductoren heup', 'hip abductor'] },
   { key: 'tfl', nl: 'Spanner van de brede peesplaat', en: 'Tensor fasciae latae', latin: 'm. tensor fasciae latae', region: 'heup', nerve: 'gluteus_superior', functions: [['Heup buigen en been zijwaarts', 'Bending the hip and moving the leg sideways'], ['Knie stabiliseren via de IT-band', 'Steadying the knee via the IT band']], match: ['tensor fasciae', 'tfl'] },
   { key: 'exorotatoren', plural: true, nl: 'Diepe heupdraaiers', en: 'Deep hip rotators', latin: 'm. piriformis e.a.', region: 'heup', nerve: 'plexus_sacralis', functions: [['Heup naar buiten draaien', 'Turning the hip outward'], ['Heupkop in de kom houden', 'Keeping the hip joint centred']], match: ['piriformis', 'heupexorotator', 'exorotatoren heup', 'hip rotator'] },
-  { key: 'adductoren', plural: true, nl: 'Binnenkant bovenbeen', en: 'Adductors', latin: 'mm. adductores', region: 'heup', nerve: 'obturatorius', also: ['ischiadicus', 'tibialis'], functions: [['Been naar binnen trekken (adductie)', 'Pulling the leg inward (adduction)']], match: ['adductor', 'lies', 'groin'] },
+  { key: 'adductoren', plural: true, nl: 'Binnenkant bovenbeen', en: 'Adductors', latin: 'mm. adductores', region: 'heup', nerve: 'obturatorius', also: ['ischiadicus', 'tibialis'], functions: [['Been naar binnen trekken (adductie)', 'Pulling the leg inward (adduction)']], match: ['adductor longus', 'adductor magnus', 'adductor brevis', 'adductoren', 'heupadductor', 'hip adductor', 'lies', 'groin'] },
   // Thigh
   { key: 'quadriceps', nl: 'Vierhoofdige dijspier', en: 'Quadriceps', latin: 'm. quadriceps femoris', region: 'bovenbeen', nerve: 'femoralis', functions: [['Knie strekken', 'Straightening the knee'], ['Heup buigen (rectus femoris)', 'Bending the hip (rectus femoris)'], ['Afremmen bij hurken en traplopen', 'Braking when squatting and going downstairs']], match: ['quadriceps', 'vastus', 'rectus femoris', 'dijspier', 'quads'] },
   { key: 'hamstrings', plural: true, nl: 'Hamstrings', en: 'Hamstrings', latin: 'mm. biceps femoris, semitendinosus, semimembranosus', region: 'bovenbeen', nerve: 'ischiadicus', also: ['tibialis', 'fibularis'], functions: [['Knie buigen', 'Bending the knee'], ['Heup strekken', 'Extending the hip'], ['Afremmen bij sprinten', 'Braking when sprinting']], match: ['hamstring', 'biceps femoris', 'semitendinosus', 'achterkant bovenbeen'] },
@@ -115,7 +122,31 @@ export const MUSCLES: Muscle[] = [
   { key: 'soleus', nl: 'Scholspier', en: 'Soleus', latin: 'm. soleus', region: 'onderbeen', nerve: 'tibialis', functions: [['Op de tenen gaan (met gebogen knie)', 'Rising onto the toes (knee bent)'], ['Rechtop blijven staan, lopen', 'Staying upright, walking']], match: ['soleus', 'kuit', 'achillespees', 'calf'] },
   { key: 'tibialis_anterior', nl: 'Voorste scheenbeenspier', en: 'Tibialis anterior', latin: 'm. tibialis anterior', region: 'onderbeen', nerve: 'fibularis', functions: [['Voet optrekken (dorsaalflexie)', 'Pulling the foot up (dorsiflexion)'], ['Voorvoet afremmen bij het neerzetten', 'Lowering the forefoot when the foot lands']], match: ['tibialis anterior', 'dorsaalflex', 'tibialis raise'] },
   { key: 'peronei', plural: true, nl: 'Kuitbeenspieren', en: 'Peroneals', latin: 'mm. fibulares (peronei)', region: 'onderbeen', nerve: 'fibularis', functions: [['Voet naar buiten kantelen (eversie)', 'Tilting the foot outward (eversion)'], ['Enkel stabiliseren tegen omzwikken', 'Steadying the ankle against rolling over']], match: ['perone', 'fibular', 'enkelstabilisator', 'ankle stabil'] },
-  { key: 'tibialis_posterior', nl: 'Achterste scheenbeenspier', en: 'Tibialis posterior', latin: 'm. tibialis posterior', region: 'onderbeen', nerve: 'tibialis', functions: [['Voet naar binnen kantelen (inversie)', 'Tilting the foot inward (inversion)'], ['Voetboog ondersteunen', 'Supporting the foot arch']], match: ['tibialis posterior', 'voetspier', 'voetboog'] },
+  { key: 'tibialis_posterior', nl: 'Achterste scheenbeenspier', en: 'Tibialis posterior', latin: 'm. tibialis posterior', region: 'onderbeen', nerve: 'tibialis', functions: [['Voet naar binnen kantelen (inversie)', 'Tilting the foot inward (inversion)'], ['Voetboog ondersteunen', 'Supporting the foot arch']], match: ['tibialis posterior', 'voetboog'] },
+  // ---- Level 2: more muscles, in the atlas from the start; their quiz questions unlock later. ----
+  { key: 'scm', level: 2, nl: 'Borstbeen-sleutelbeen-tepelspier', en: 'Sternocleidomastoid', latin: 'm. sternocleidomastoideus', region: 'nek', nerve: 'accessorius', functions: [['Hoofd draaien naar de andere kant', 'Turning the head to the other side'], ['Nek buigen (beide kanten samen)', 'Bending the neck (both sides together)']], match: ['sternocleidomastoid', 'scm'] },
+  { key: 'levator_scapulae', level: 2, nl: 'Schouderbladheffer', en: 'Levator scapulae', latin: 'm. levator scapulae', region: 'nek', nerve: 'dorsalis_scapulae', also: ['cervicaal'], functions: [['Schouderblad optrekken', 'Lifting the shoulder blade']], match: ['levator scapulae'] },
+  { key: 'suboccipitaal', level: 2, plural: true, nl: 'Kleine achterhoofdsspieren', en: 'Suboccipital muscles', latin: 'mm. suboccipitales', region: 'nek', nerve: 'suboccipitalis', functions: [['Kleine knikbewegingen van het hoofd', 'Small nodding movements of the head'], ['Hoofdhouding fijn afstellen', 'Fine-tuning head posture']], match: ['suboccipita'] },
+  { key: 'teres_major', level: 2, nl: 'Grote ronde spier', en: 'Teres major', latin: 'm. teres major', region: 'schouder', nerve: 'subscapularis', functions: [['Arm van boven naar beneden en naar achteren', 'Pulling the arm down and back'], ['Arm naar binnen draaien', 'Turning the arm inward']], match: ['teres major'] },
+  { key: 'pectoralis_minor', level: 2, nl: 'Kleine borstspier', en: 'Pectoralis minor', latin: 'm. pectoralis minor', region: 'borst', nerve: 'pectorales', functions: [['Schouderblad naar voren en omlaag kantelen', 'Tilting the shoulder blade forward and down']], match: ['pectoralis minor'] },
+  { key: 'coracobrachialis', level: 2, nl: 'Ravenbek-armspier', en: 'Coracobrachialis', latin: 'm. coracobrachialis', region: 'bovenarm', nerve: 'musculocutaneus', functions: [['Arm naar voren en naar het lichaam toe', 'Bringing the arm forward and towards the body']], match: ['coracobrachialis'] },
+  { key: 'pronator_quadratus', level: 2, nl: 'Vierkante binnenwaartse draaier', en: 'Pronator quadratus', latin: 'm. pronator quadratus', region: 'onderarm', nerve: 'medianus', functions: [['Onderarm naar binnen draaien (pronatie), de hoofdspier hiervoor', 'Turning the forearm palm-down (pronation), the main muscle for it']], match: ['pronator quadratus'] },
+  { key: 'extensor_digitorum', level: 2, nl: 'Vingerstrekker', en: 'Extensor digitorum', latin: 'm. extensor digitorum', region: 'onderarm', nerve: 'radialis', functions: [['Vingers strekken', 'Straightening the fingers']], match: ['extensor digitorum communis', 'vingerstrekker', 'vingerextensor', 'finger extensor'] },
+  { key: 'fdp', level: 2, nl: 'Diepe vingerbuiger', en: 'Flexor digitorum profundus', latin: 'm. flexor digitorum profundus', region: 'onderarm', nerve: 'medianus', also: ['ulnaris'], functions: [['Vingertoppen buigen', 'Bending the fingertips']], match: ['flexor digitorum profundus'] },
+  { key: 'thenar', level: 2, plural: true, nl: 'Duimmuisspieren', en: 'Thenar muscles', latin: 'mm. thenares (o.a. opponens pollicis)', region: 'onderarm', nerve: 'medianus', functions: [['Duim tegenover de vingers zetten (opponeren)', 'Bringing the thumb opposite the fingers (opposition)']], match: ['thenar', 'opponens pollicis', 'duimmuis'] },
+  { key: 'ulnaire_handspieren', level: 2, plural: true, nl: 'Kleine handspieren (pinkzijde en tussen de botjes)', en: 'Small hand muscles (little-finger side and interossei)', latin: 'mm. interossei, hypothenar, m. adductor pollicis', region: 'onderarm', nerve: 'ulnaris', also: ['medianus'], functions: [['Vingers spreiden en sluiten', 'Spreading and closing the fingers'], ['Knijpgreep tussen duim en wijsvinger', 'Pinch grip between thumb and index finger']], match: ['interossei', 'hypothenar', 'adductor pollicis', 'handspier'] },
+  { key: 'diafragma', level: 2, nl: 'Middenrif', en: 'Diaphragm', latin: 'diaphragma', region: 'buik', nerve: 'phrenicus', functions: [['Inademen', 'Breathing in'], ['Romp onder druk zetten bij tillen', 'Pressurising the trunk when lifting']], match: ['diafragma', 'diaphragm', 'middenrif', 'ademhaling'] },
+  { key: 'bekkenbodem', level: 2, nl: 'Bekkenbodem', en: 'Pelvic floor', latin: 'm. levator ani e.a.', region: 'buik', nerve: 'pudendus', also: ['plexus_sacralis'], functions: [['Bekkenorganen ondersteunen', 'Supporting the pelvic organs'], ['Plas en ontlasting ophouden', 'Holding urine and stool']], match: ['bekkenbodem', 'pelvic floor', 'levator ani'] },
+  { key: 'intercostales', level: 2, plural: true, nl: 'Tussenribspieren', en: 'Intercostal muscles', latin: 'mm. intercostales', region: 'buik', nerve: 'intercostales', functions: [['Ribben bewegen bij het ademen', 'Moving the ribs when breathing']], match: ['intercostal', 'tussenrib'] },
+  { key: 'gracilis', level: 2, nl: 'Slanke spier', en: 'Gracilis', latin: 'm. gracilis', region: 'heup', nerve: 'obturatorius', functions: [['Been naar binnen trekken (adductie)', 'Pulling the leg inward (adduction)'], ['Knie buigen', 'Bending the knee'], ['Onderbeen naar binnen draaien', 'Turning the lower leg inward']], match: ['gracilis', 'pes anserinus'] },
+  { key: 'sartorius', level: 2, nl: 'Kleermakersspier', en: 'Sartorius', latin: 'm. sartorius', region: 'bovenbeen', nerve: 'femoralis', functions: [['Heup buigen en naar buiten draaien (kleermakerszit)', 'Bending and turning the hip outward (cross-legged sitting)'], ['Knie buigen', 'Bending the knee']], match: ['sartorius', 'pes anserinus'] },
+  { key: 'pectineus', level: 2, nl: 'Kamspier', en: 'Pectineus', latin: 'm. pectineus', region: 'heup', nerve: 'femoralis', also: ['obturatorius'], functions: [['Heup buigen en been naar binnen trekken', 'Bending the hip and pulling the leg inward']], match: ['pectineus'] },
+  { key: 'gluteus_minimus', level: 2, nl: 'Kleine bilspier', en: 'Gluteus minimus', latin: 'm. gluteus minimus', region: 'heup', nerve: 'gluteus_superior', functions: [['Been zijwaarts heffen (abductie)', 'Raising the leg sideways (abduction)'], ['Heup naar binnen draaien', 'Turning the hip inward']], match: ['gluteus minimus'] },
+  { key: 'popliteus', level: 2, nl: 'Knieholtespier', en: 'Popliteus', latin: 'm. popliteus', region: 'onderbeen', nerve: 'tibialis', functions: [['Gestrekte knie "ontgrendelen" bij het begin van buigen', 'Unlocking the straight knee as it starts to bend']], match: ['popliteus'] },
+  { key: 'ehl', level: 2, nl: 'Lange grote-teenstrekker', en: 'Extensor hallucis longus', latin: 'm. extensor hallucis longus', region: 'onderbeen', nerve: 'fibularis', functions: [['Grote teen optrekken', 'Lifting the big toe']], match: ['extensor hallucis'] },
+  { key: 'fhl', level: 2, nl: 'Lange grote-teenbuiger', en: 'Flexor hallucis longus', latin: 'm. flexor hallucis longus', region: 'onderbeen', nerve: 'tibialis', functions: [['Grote teen buigen', 'Bending the big toe'], ['Afzetten bij lopen en springen', 'Pushing off when walking and jumping']], match: ['flexor hallucis'] },
+  { key: 'edl', level: 2, nl: 'Lange tenenstrekker', en: 'Extensor digitorum longus', latin: 'm. extensor digitorum longus', region: 'onderbeen', nerve: 'fibularis', functions: [['Tenen optrekken', 'Lifting the toes'], ['Helpt bij voet optrekken', 'Helps pull the foot up']], match: ['extensor digitorum longus'] },
+  { key: 'voetspieren', level: 2, plural: true, nl: 'Kleine voetspieren', en: 'Intrinsic foot muscles', latin: 'mm. pedis', region: 'onderbeen', nerve: 'plantares', also: ['tibialis'], functions: [['Voetboog ondersteunen', 'Supporting the foot arch'], ['Balans en grip met de tenen', 'Balance and toe grip']], match: ['voetspier', 'intrinsieke voet', 'foot intrinsic', 'teen-yoga', 'korte voet'] },
 ];
 
 export const muscleByKey = (key: string) => MUSCLES.find((m) => m.key === key) ?? null;
@@ -156,11 +187,16 @@ export function nerveOf(e: AtlasExerciseInput): NerveKey | null {
 // ------------------------------------------------------------------------------------------------
 
 export const QUIZ_XP = 5;
+/** XP per first right answer, by quiz level. */
+export const QUIZ_LEVEL_XP: Record<1 | 2, number> = { 1: 5, 2: 8 };
+/** Share of level 1 to answer right before level 2 opens. */
+export const LEVEL2_UNLOCK = 0.6;
 /** Most correct answers that earn XP per day (so it stays a bonus, not a grind). */
 export const QUIZ_DAILY_CAP = 10;
 
 export type QuizQuestion = {
   id: string;
+  level: 1 | 2;
   muscle: string | null;
   nerve: NerveKey | null;
   q: Fn;
@@ -176,7 +212,7 @@ function hash(s: string) {
   return h >>> 0;
 }
 /** Branches of the same nerve: the tibial and fibular nerves are the two parts of the sciatic nerve. */
-const SAME: Partial<Record<NerveKey, NerveKey[]>> = { ischiadicus: ['tibialis', 'fibularis'], tibialis: ['ischiadicus'], fibularis: ['ischiadicus'], femoralis: ['plexus_lumbalis'], plexus_lumbalis: ['femoralis', 'obturatorius'], obturatorius: ['plexus_lumbalis'] };
+const SAME: Partial<Record<NerveKey, NerveKey[]>> = { ischiadicus: ['tibialis', 'fibularis'], tibialis: ['ischiadicus', 'plantares'], plantares: ['tibialis', 'ischiadicus'], pudendus: ['plexus_sacralis'], plexus_sacralis: ['pudendus'], fibularis: ['ischiadicus'], femoralis: ['plexus_lumbalis'], plexus_lumbalis: ['femoralis', 'obturatorius'], obturatorius: ['plexus_lumbalis'] };
 /** Every nerve that (partly) supplies a muscle, including the trunk it branches from. */
 export const nervesOf = (m: Muscle): NerveKey[] => {
   const base = [m.nerve, ...(m.also ?? [])];
@@ -195,16 +231,24 @@ const fnCore = (f: Fn) => norm(f[0]).replace(/\(.*?\)/g, '').replace(/^helpt (bi
 /** True when a function is (also) done by this muscle, so it can never be a wrong option. */
 const doesIt = (m: Muscle, f: Fn) => m.functions.some((g) => { const a = fnCore(g); const b = fnCore(f); return a.includes(b) || b.includes(a); });
 
+let builtQuestions: QuizQuestion[] | null = null;
+/** All quiz questions; built once (the data never changes while the app runs). */
 export function quizQuestions(): QuizQuestion[] {
+  builtQuestions ??= buildQuestions();
+  return builtQuestions;
+}
+
+function buildQuestions(): QuizQuestion[] {
   const out: QuizQuestion[] = [];
   for (const m of MUSCLES) {
     const n = nerveByKey(m.nerve)!;
     // 1. What does it do? Distractors: main functions of muscles elsewhere in the body.
     const main = m.functions[0];
     // Wrong options come from other regions and are never something this muscle also does.
-    const others = pickOthers(MUSCLES.filter((x) => x.region !== m.region && !doesIt(m, x.functions[0])), 3, m.key + 'f').map((x) => x.functions[0]);
+    // Level 1 only draws on level 1 muscles, so its questions stay about the basics.
+    const others = pickOthers(MUSCLES.filter((x) => x.region !== m.region && (m.level || !x.level) && !doesIt(m, x.functions[0])), 3, m.key + 'f').map((x) => x.functions[0]);
     out.push({
-      id: `${m.key}:functie`, muscle: m.key, nerve: null,
+      id: `${m.key}:functie`, level: m.level ?? 1, muscle: m.key, nerve: null,
       q: m.plural
         ? [`Wat doen de ${m.nl.toLowerCase()} (${m.latin})?`, `What do the ${m.en.toLowerCase()} (${m.latin}) do?`]
         : [`Wat doet de ${m.nl.toLowerCase()} (${m.latin})?`, `What does the ${m.en.toLowerCase()} (${m.latin}) do?`],
@@ -215,7 +259,7 @@ export function quizQuestions(): QuizQuestion[] {
     // 2. Which nerve? Distractors: other nerves.
     const wrong = pickOthers(NERVES.filter((x) => !nervesOf(m).includes(x.key)), 3, m.key + 'n');
     out.push({
-      id: `${m.key}:zenuw`, muscle: m.key, nerve: m.nerve,
+      id: `${m.key}:zenuw`, level: m.level ?? 1, muscle: m.key, nerve: m.nerve,
       q: [`Welke zenuw stuurt de ${m.nl.toLowerCase()} aan?`, `Which nerve drives the ${m.en.toLowerCase()}?`],
       options: shuffle([{ id: m.nerve, label: [n.nl, n.en] as Fn }, ...wrong.map((x) => ({ id: x.key, label: [x.nl, x.en] as Fn }))], m.key + 'no'),
       answer: m.nerve,
@@ -224,19 +268,90 @@ export function quizQuestions(): QuizQuestion[] {
   }
   // 3. Per nerve with two or more muscles: which of these does it drive?
   for (const n of NERVES) {
-    const own = MUSCLES.filter((m) => m.nerve === n.key);
+    const own = MUSCLES.filter((m) => m.nerve === n.key && !m.level);
     if (own.length < 2) continue;
     const right = pickOthers(own, 1, n.key + 'r')[0];
     const wrong = pickOthers(MUSCLES.filter((m) => !nervesOf(m).includes(n.key)), 3, n.key + 'w');
     out.push({
-      id: `zenuw:${n.key}`, muscle: right.key, nerve: n.key,
+      id: `zenuw:${n.key}`, level: 1, muscle: right.key, nerve: n.key,
       q: [`Welke spier wordt aangestuurd door de ${n.nl}?`, `Which muscle is driven by the ${n.en}?`],
       options: shuffle([{ id: right.key, label: [right.nl, right.en] as Fn }, ...wrong.map((m) => ({ id: m.key, label: [m.nl, m.en] as Fn }))], n.key + 'o'),
       answer: right.key,
       explain: [`De ${n.nl} stuurt onder andere: ${own.map((m) => m.nl.toLowerCase()).join(', ')}.`, `The ${n.en} drives among others: ${own.map((m) => m.en.toLowerCase()).join(', ')}.`],
     });
   }
-  return out;
+  return [...out, ...LEVEL2_SPECIALS];
+}
+
+const opt = (id: string, nl: string, en: string) => ({ id, label: [nl, en] as Fn });
+/**
+ * Level 2: questions that connect muscles, nerves and complaints. Hand-written, with one clear
+ * answer each (a wrong option is never also true).
+ */
+const LEVEL2_SPECIALS: QuizQuestion[] = [
+  {
+    id: 'l2:pes_anserinus', level: 2, muscle: 'gracilis', nerve: null,
+    q: ['Welke spier hoort níet bij de pes anserinus (binnenkant knie)?', 'Which muscle is not part of the pes anserinus (inner knee)?'],
+    options: [opt('sartorius', 'Kleermakersspier (m. sartorius)', 'Sartorius'), opt('bf', 'M. biceps femoris', 'Biceps femoris'), opt('gracilis', 'Slanke spier (m. gracilis)', 'Gracilis'), opt('st', 'M. semitendinosus', 'Semitendinosus')],
+    answer: 'bf',
+    explain: ['De pes anserinus is de gezamenlijke aanhechting van sartorius, gracilis en semitendinosus aan de binnenkant van de knie. De biceps femoris hecht aan de buitenkant aan.', 'The pes anserinus is the shared attachment of sartorius, gracilis and semitendinosus on the inner knee. The biceps femoris attaches on the outside.'],
+  },
+  {
+    id: 'l2:twee_gewrichten', level: 2, muscle: 'gastrocnemius', nerve: null,
+    q: ['Welke spier loopt over twee gewrichten?', 'Which muscle crosses two joints?'],
+    options: [opt('gastrocnemius', 'Tweelingkuitspier (knie én enkel)', 'Gastrocnemius'), opt('soleus', 'Scholspier', 'Soleus'), opt('brachialis', 'Opperarmspier', 'Brachialis'), opt('gluteus_medius', 'Middelste bilspier', 'Gluteus medius')],
+    answer: 'gastrocnemius',
+    explain: ['De gastrocnemius loopt over knie en enkel; daarom rek je hem met een gestrekte knie en de soleus met een gebogen knie.', 'The gastrocnemius crosses knee and ankle; that is why you stretch it with a straight knee and the soleus with a bent knee.'],
+  },
+  {
+    id: 'l2:carpaal', level: 2, muscle: 'thenar', nerve: 'medianus',
+    q: ['Welke zenuw raakt bekneld bij een carpaletunnelsyndroom?', 'Which nerve is compressed in carpal tunnel syndrome?'],
+    options: [opt('medianus', 'n. medianus', 'median nerve'), opt('ulnaris', 'n. ulnaris', 'ulnar nerve'), opt('radialis', 'n. radialis', 'radial nerve'), opt('musculocutaneus', 'n. musculocutaneus', 'musculocutaneous nerve')],
+    answer: 'medianus',
+    explain: ['De n. medianus loopt door de carpale tunnel in de pols. Klachten zitten vaak in duim, wijs- en middelvinger.', 'The median nerve runs through the carpal tunnel in the wrist. Symptoms are often in the thumb, index and middle finger.'],
+  },
+  {
+    id: 'l2:radialis_uitval', level: 2, muscle: 'polsstrekkers', nerve: 'radialis',
+    q: ['Welke beweging wordt moeilijk als de n. radialis niet goed werkt?', 'Which movement becomes hard when the radial nerve does not work well?'],
+    options: [opt('pols_strekken', 'Pols en vingers strekken (hand omhoog)', 'Extending the wrist and fingers (hand up)'), opt('opponeren', 'Duim tegenover de vingers zetten', 'Bringing the thumb opposite the fingers'), opt('spreiden', 'Vingers spreiden', 'Spreading the fingers'), opt('schouder_op', 'Schouders optrekken', 'Shrugging the shoulders')],
+    answer: 'pols_strekken',
+    explain: ['De n. radialis stuurt de pols- en vingerstrekkers aan. Bij uitval hangt de hand slap naar beneden ("dropping hand").', 'The radial nerve drives the wrist and finger extensors. When it fails, the hand hangs down ("wrist drop").'],
+  },
+  {
+    id: 'l2:telefoonbotje', level: 2, muscle: 'ulnaire_handspieren', nerve: 'ulnaris',
+    q: ['Welke zenuw voel je als je je "telefoonbotje" bij de elleboog stoot?', 'Which nerve do you feel when you hit your "funny bone" at the elbow?'],
+    options: [opt('ulnaris', 'n. ulnaris', 'ulnar nerve'), opt('medianus', 'n. medianus', 'median nerve'), opt('radialis', 'n. radialis', 'radial nerve'), opt('axillaris', 'n. axillaris', 'axillary nerve')],
+    answer: 'ulnaris',
+    explain: ['De n. ulnaris loopt vlak onder de huid aan de binnenkant van de elleboog; daarom tintelt je pinkzijde als je hem stoot.', 'The ulnar nerve runs just under the skin on the inner elbow; that is why your little-finger side tingles when you hit it.'],
+  },
+  {
+    id: 'l2:klapvoet', level: 2, muscle: 'tibialis_anterior', nerve: 'fibularis',
+    q: ['Bij uitval van de n. fibularis (peroneus) wordt vooral moeilijk:', 'When the fibular (peroneal) nerve fails, what mainly becomes hard?'],
+    options: [opt('optrekken', 'De voet optrekken (klapvoet)', 'Lifting the foot (foot drop)'), opt('tenen_staan', 'Op de tenen staan', 'Standing on the toes'), opt('knie_strekken', 'De knie strekken', 'Straightening the knee'), opt('heup_buigen', 'De heup buigen', 'Bending the hip')],
+    answer: 'optrekken',
+    explain: ['De n. fibularis stuurt de voetheffers aan, zoals de tibialis anterior. Bij uitval sleept of klapt de voorvoet bij het lopen.', 'The fibular nerve drives the foot lifters such as tibialis anterior. When it fails, the forefoot drags or slaps when walking.'],
+  },
+  {
+    id: 'l2:rotator_cuff', level: 2, muscle: 'supraspinatus', nerve: null,
+    q: ['Welke spier hoort níet bij de rotator cuff?', 'Which muscle is not part of the rotator cuff?'],
+    options: [opt('deltoideus', 'Deltaspier', 'Deltoid'), opt('supraspinatus', 'Bovengratspier', 'Supraspinatus'), opt('infraspinatus', 'Ondergratspier', 'Infraspinatus'), opt('subscapularis', 'Onderschouderbladspier', 'Subscapularis')],
+    answer: 'deltoideus',
+    explain: ['De rotator cuff bestaat uit supraspinatus, infraspinatus, teres minor en subscapularis. Ze houden de schouderkop in de kom; de deltaspier ligt eroverheen.', 'The rotator cuff is supraspinatus, infraspinatus, teres minor and subscapularis. They keep the shoulder head in its socket; the deltoid lies over them.'],
+  },
+  {
+    id: 'l2:quadriceps_koppen', level: 2, muscle: 'quadriceps', nerve: null,
+    q: ['Uit hoeveel spierkoppen bestaat de quadriceps?', 'How many heads does the quadriceps have?'],
+    options: [opt('4', 'Vier', 'Four'), opt('2', 'Twee', 'Two'), opt('3', 'Drie', 'Three'), opt('5', 'Vijf', 'Five')],
+    answer: '4',
+    explain: ['Vier: rectus femoris, vastus lateralis, vastus medialis en vastus intermedius. Alleen de rectus femoris loopt ook over de heup.', 'Four: rectus femoris, vastus lateralis, vastus medialis and vastus intermedius. Only the rectus femoris also crosses the hip.'],
+  },
+];
+
+/** Level 2 is open when enough of level 1 is answered right. */
+export function level2Open(correct: readonly string[]): boolean {
+  const l1 = quizQuestions().filter((q) => q.level === 1);
+  const done = l1.filter((q) => correct.includes(q.id)).length;
+  return done >= Math.ceil(l1.length * LEVEL2_UNLOCK);
 }
 
 export const questionById = (() => {
@@ -247,7 +362,15 @@ export const questionById = (() => {
   };
 })();
 
-/** XP from correct answers: QUIZ_XP each, at most QUIZ_DAILY_CAP per day. */
-export function quizXp(correctPerDay: number[]): number {
-  return correctPerDay.reduce((s, n) => s + Math.min(n, QUIZ_DAILY_CAP), 0) * QUIZ_XP;
+/** XP from right answers in the order given (oldest first): by level, at most QUIZ_DAILY_CAP per day. */
+export function quizXp(answers: readonly { day: string; questionId: string }[]): number {
+  const perDay = new Map<string, number>();
+  let xp = 0;
+  for (const a of answers) {
+    const n = perDay.get(a.day) ?? 0;
+    if (n >= QUIZ_DAILY_CAP) continue;
+    perDay.set(a.day, n + 1);
+    xp += QUIZ_LEVEL_XP[questionById(a.questionId)?.level ?? 1];
+  }
+  return xp;
 }

@@ -51,6 +51,14 @@ test('spierenatlas: muscles with nerve and exercises, nerves with sliders, and a
   await page.screenshot({ path: 'screenshots/atlas/quiz.png', fullPage: true });
   await page.getByRole('button', { name: 'Volgende vraag' }).click();
   await expect(page.locator('#quiz-q')).not.toHaveText(qText);
+  // Level 2 stays locked until most of level 1 is right.
+  await page.getByRole('button', { name: /^Level 2/ }).click();
+  await expect(page.getByText('Level 2 zit nog op slot')).toBeVisible();
+  await expectAccessible(page, 'atlas quiz level 2 locked');
+  // The gracilis has its own card now.
+  await page.getByRole('tab', { name: 'Spieren' }).click();
+  await page.getByPlaceholder(/Zoek spier of beweging/).fill('gracilis');
+  await expect(page.getByRole('button', { name: /Slanke spier/ })).toBeVisible();
   await ctx.close();
   const done = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
   await done.connect();
