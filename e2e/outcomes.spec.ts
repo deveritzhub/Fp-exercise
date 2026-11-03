@@ -18,6 +18,17 @@ test('outcomes are validated, practice-isolated and included in export',async ({
   expect(progress.outcomes.some((o:any)=>o.id===out.id)).toBe(true);
   const exportJson=await (await page.request.get(`/api/patients/${patient.id}/export`)).json();
   expect(exportJson.outcomeMeasurements.some((o:any)=>o.id===out.id)).toBe(true);
+  // A patient can export only their own clinical measurements, not access the staff endpoint.
+  const patientCtx=await browser.newContext();
+  const patientPage=await patientCtx.newPage();
+  await login(patientPage,'patient@praktijk-a.test');
+  const selfExport=await patientPage.request.get('/api/patient/export');
+  expect(selfExport.status()).toBe(200);
+  const ownData=await selfExport.json();
+  expect(ownData.outcomeMeasurements.some((o:any)=>o.metric==='Knie flexie'&&Number(o.value)===123)).toBe(true);
+  const forbiddenStaffView=await patientPage.request.get(`/api/patients/${patient.id}/progress`);
+  expect(forbiddenStaffView.status()).not.toBe(200);
+  await patientCtx.close();
   const bad=await page.request.post(`/api/patients/${patient.id}/outcomes`,{data:{...input,value:5000}});
   expect(bad.status()).toBe(400);
   const ctxB=await browser.newContext();
