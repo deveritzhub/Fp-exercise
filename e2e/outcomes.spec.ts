@@ -5,7 +5,7 @@ import {login} from './helpers';
 test('outcomes are validated, practice-isolated and included in export',async ({browser})=>{
   const ctx=await browser.newContext();
   const page=await ctx.newPage();
-  await login(page,'therapeut@praktijk-a.test');
+  await login(page,'eigenaar@praktijk-a.test');
   const patients=await (await page.request.get('/api/patients?q=emma')).json();
   const patient=patients.items[0];
   expect(patient?.id).toBeTruthy();
