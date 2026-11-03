@@ -27,7 +27,7 @@ export function ClinicalTimeline({ patientId, sessions, outcomes }: { patientId:
   const [value,setValue]=useState('');
   const [unit,setUnit]=useState<PatientOutcome['unit']>('degrees');
   const [side,setSide]=useState<PatientOutcome['side']>('not_applicable');
-  const [measuredOn,setMeasuredOn]=useState(new Date().toISOString().slice(0,10));
+  const [measuredOn,setMeasuredOn]=useState(()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()));
   const [note,setNote]=useState('');
   const record=async()=>{
     const n=Number(value);
