@@ -10,7 +10,7 @@ import { loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
 import { loadPatientLogs } from '../lib/patientLogs';
 import { weeklyAdherence } from '../../../shared/adherence';
 import {
-  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, coinsEarned, gearScore, dayChestCoins, chestStreak, longestDayRun, skillTrophies, SHOWCASE_MAX, WALL_BADGES_MAX, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
+  AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, coinsEarned, gearScore, dayChestCoins, chestStreak, longestDayRun, skillTrophies, SHOWCASE_MAX, WALL_BADGES_MAX, seasons, seasonMonth, seasonOf, SEASON_GOAL, SEASON_XP, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
   questXp, skillOfWeek, skillsForExercise, weeklyQuests, weeklyBoss, BOSS_XP, xpFor, type SkillKey, type WeekData,
 } from '../../../shared/hero';
 import { loadSkillSnapshot } from '../lib/skillState';
@@ -154,13 +154,17 @@ async function heroState(tx: Tx, patientId: string) {
   const activeWeeks = new Set([...perWeek.map((r) => r.week as string), ...checkinWeeks.map((r) => r.week as string)]);
   let chestWeeks = 0;
   let bossesDefeated = 0;
+  // Per week whether its boss fell, for the monthly seasons.
+  const bossWeeks: { weekStart: string; bossDefeated: boolean }[] = [];
   for (const w of weekly.slice(0, -1)) {
     if (!activeWeeks.has(w.weekStart)) continue;
     const wd = weekData(w.weekStart);
     const q = weeklyQuests(wd, skillOfWeek(w.weekStart, rotation));
     xp += questXp(q);
     if (q.every((x) => x.done)) chestWeeks++;
-    if (weeklyBoss(w.weekStart, wd).defeated) {
+    const fell = weeklyBoss(w.weekStart, wd).defeated;
+    bossWeeks.push({ weekStart: w.weekStart, bossDefeated: fell });
+    if (fell) {
       xp += BOSS_XP;
       bossesDefeated++;
     }
@@ -179,6 +183,13 @@ async function heroState(tx: Tx, patientId: string) {
     xp += BOSS_XP;
     bossesDefeated++;
   }
+  bossWeeks.push({ weekStart: thisWeek, bossDefeated: boss.defeated });
+  // Monthly seasons: three weekly bosses in a month beat the season boss (XP and a trophy).
+  const seasonList = seasons(bossWeeks);
+  const seasonsWon = seasonList.filter((x) => x.won).length;
+  xp += seasonsWon * SEASON_XP;
+  const thisMonth = seasonMonth(thisWeek);
+  const season = seasonList.find((x) => x.month === thisMonth) ?? { month: thisMonth, key: seasonOf(thisMonth).key, weeks: 1, bossesBeaten: 0, goal: SEASON_GOAL, won: false };
   xp += logged.heroXp;
 
   // Where each quest is done: today's training, the body map, and an exercise for the skill of the week.
@@ -278,7 +289,7 @@ async function heroState(tx: Tx, patientId: string) {
     updatedAt: (metricsRow?.updated_at as string | undefined) ?? null,
   };
 
-  const badges = BADGES.map((b) => ({ key: b.key, earned: b.earned({ ...badgeInput, bossesDefeated, chestRunBest: longestDayRun(chests.map((r) => r.day)) }) }));
+  const badges = BADGES.map((b) => ({ key: b.key, earned: b.earned({ ...badgeInput, bossesDefeated, chestRunBest: longestDayRun(chests.map((r) => r.day)), seasonsWon }) }));
   return {
     hero,
     painMap: map,
@@ -290,7 +301,9 @@ async function heroState(tx: Tx, patientId: string) {
     strengthEstimates: skillsSnap.strengthEstimates,
     totals: { sessions: s.sessions, fullWeeks, phasesCompleted: s.phases_done, since, painStart: painBaseline, painNow: map.checkins > 1 ? painNow : null },
     quest,
-    weekly: { weekStart: thisWeek, quests, chestWeeks, xpPerQuest: QUEST_XP, chestXp: CHEST_XP, links: questLinks, boss: { ...boss, xp: BOSS_XP }, bossesDefeated },
+    weekly: { weekStart: thisWeek, quests, chestWeeks, xpPerQuest: QUEST_XP, chestXp: CHEST_XP, links: questLinks, boss: { ...boss, xp: BOSS_XP }, bossesDefeated,
+      // This month's season and the trophies of seasons won (newest first).
+      season: { ...season, xp: SEASON_XP, trophies: seasonList.filter((x) => x.won).map((x) => ({ month: x.month, key: x.key })).reverse() } },
     // Coins stay with the patient: never on the friend card or the professional's view.
     gear: { owned, equipped, coins: Math.max(0, earned - spent), earned, spent, score: gearScore(equipped) },
     // Trophy cabinet: per skill at level 10/25/50/75/99; up to three on the shelf behind the hero.

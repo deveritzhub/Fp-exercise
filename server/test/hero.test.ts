@@ -211,6 +211,15 @@ describe('red-flag skill XP follows the account kind', () => {
   });
 });
 
+describe('monthly season', () => {
+  it('the hero state carries this month\'s season with its goal', async () => {
+    resetRateLimits();
+    const p = await login('patientA');
+    const st = (await p.get('/patient/hero')).body;
+    expect(st.weekly.season).toMatchObject({ month: expect.stringMatching(/^\d{4}-\d{2}$/), goal: 3, xp: 150, trophies: expect.any(Array) });
+  });
+});
+
 describe('trophy shelf', () => {
   it('only earned trophies can go on the shelf, at most three', async () => {
     resetRateLimits();

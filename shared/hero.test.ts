@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { longestDayRun, dayChestCoins, chestStreak, weeklyBoss, bossOf, BOSSES, BOSS_HP, coinsEarned, gearScore, wornOutfit, OUTFITS, GEAR_TIERS, SKILL_STARTER, WELCOME_COINS, BADGES, bodyShape, heroPhotoKey, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
+import { seasons, seasonOf, longestDayRun, dayChestCoins, chestStreak, weeklyBoss, bossOf, BOSSES, BOSS_HP, coinsEarned, gearScore, wornOutfit, OUTFITS, GEAR_TIERS, SKILL_STARTER, WELCOME_COINS, BADGES, bodyShape, heroPhotoKey, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
 
 describe('sports hero rules', () => {
   it('levels grow gently and progress is between 0 and 1', () => {
@@ -533,5 +533,27 @@ describe('character screen slots', () => {
     for (const g of GEAR) expect(GEAR_SLOT[g.key], g.key).toBeDefined();
     expect(onePerSlot(['cap', 'watch', 'visor'])).toEqual(['watch', 'visor']);
     expect(onePerSlot(['pin', 'pin', 'belt'])).toEqual(['pin', 'belt']);
+  });
+});
+
+describe('monthly seasons', () => {
+  it('a month is won with three weekly bosses; weeks belong to the month of their Monday', () => {
+    const list = seasons([
+      { weekStart: '2026-10-26', bossDefeated: true }, // October
+      { weekStart: '2026-11-02', bossDefeated: true },
+      { weekStart: '2026-11-09', bossDefeated: false },
+      { weekStart: '2026-11-16', bossDefeated: true },
+      { weekStart: '2026-11-23', bossDefeated: true },
+    ]);
+    expect(list.map((x) => [x.month, x.bossesBeaten, x.won])).toEqual([['2026-10', 1, false], ['2026-11', 3, true]]);
+    expect(list[1].key).toBe('mist');
+    expect(seasonOf('2026-01').key).toBe('ijs');
+    expect(seasonOf('2026-12').key).toBe('feest');
+  });
+  it('the season badge needs one won season', () => {
+    const b = BADGES.find((x) => x.key === 'season_champ')!;
+    const base = { sessions: 0, sessionsWithPain: 0, redFlags: 0, fullWeeks: 0, phasesCompleted: 0, painBaseline: null, painNow: null };
+    expect(b.earned(base)).toBe(false);
+    expect(b.earned({ ...base, seasonsWon: 1 })).toBe(true);
   });
 });

@@ -15,7 +15,7 @@ import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
 import { SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
-import { BADGES, BOSSES, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, WALL_BADGES_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
+import { BADGES, BOSSES, SEASONS, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, WALL_BADGES_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
 import type { HeroState } from '@/lib/types';
 import { PainTrendList } from '@/components/hero/PainTrend';
@@ -662,6 +662,55 @@ function DailyCheckin({ d }: { d: HeroState }) {
  * Weekly boss: this week's monster and its health. Training days and check-ins do the damage; doing
  * what is planned is enough. Compact on Vandaag, full on the hero page.
  */
+const monthName = (month: string, locale: string, year = true) => new Date(month + '-15T12:00:00').toLocaleDateString(locale === 'nl' ? 'nl-NL' : 'en-GB', year ? { month: 'long', year: 'numeric' } : { month: 'long' });
+
+/**
+ * This month's season: the season boss falls after three bosses of the week in the month.
+ * Won seasons stay as trophies. Same fair rules as the weekly boss.
+ */
+export function SeasonCard({ d }: { d: HeroState }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const s = d.weekly.season;
+  if (!s) return null;
+  const meta = SEASONS.find((x) => x.key === s.key)!;
+  const boss = nl ? meta.bossNl : meta.bossEn;
+  const beaten = Math.min(s.bossesBeaten, s.goal);
+  return (
+    <section id="seizoen" className="scroll-mt-20 overflow-hidden rounded-2xl border border-line bg-white shadow-card" aria-labelledby="season-title">
+      <div className="bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-4 text-white">
+        <p className="text-[12px] font-semibold uppercase tracking-wide text-white/80">{t('Seizoen', 'Season')} · {monthName(s.month, locale)}</p>
+        <h2 id="season-title" className="font-display text-[20px] font-bold leading-tight text-white">{nl ? meta.nl : meta.en}: {boss}</h2>
+        <p className="mt-0.5 text-[14px] italic text-white/85">{s.won ? t('“Mijn seizoen is voorbij… jij wint.”', '“My season is over… you win.”') : `“${t(meta.taunt[0], meta.taunt[1])}”`}</p>
+      </div>
+      <div className="space-y-3 p-4">
+        <div>
+          <p className="mb-2 text-[14px] font-medium text-ink-800">{s.won ? t(`Verslagen! +${s.xp} XP en een seizoensprijs.`, `Defeated! +${s.xp} XP and a season trophy.`) : t(`Versla ${s.goal} bazen van de week deze maand`, `Beat ${s.goal} bosses of the week this month`)}</p>
+          <ol className="flex gap-2" aria-label={t(`${beaten} van ${s.goal} weekbazen verslagen`, `${beaten} of ${s.goal} weekly bosses beaten`)}>
+            {Array.from({ length: s.goal }, (_, i) => (
+              <li key={i} className={cn('flex h-11 flex-1 items-center justify-center rounded-xl border-2 text-[13px] font-semibold', i < beaten ? 'border-accent bg-accent-soft text-accent' : 'border-dashed border-line bg-canvas text-ink-500')} aria-hidden>
+                {i < beaten ? <Check className="h-5 w-5" /> : `${t('Week', 'Week')} ${i + 1}`}
+              </li>
+            ))}
+          </ol>
+        </div>
+        <p className="text-[13px] text-ink-600">{t('Doe wat gepland staat: extra trainen telt niet, een rustweek kost niets.', 'Do what is planned: extra training does not count, a rest week costs nothing.')}</p>
+        {s.trophies.length > 0 && (
+          <div>
+            <p className="mb-1.5 text-[13px] font-semibold text-ink-800">{t(`Seizoensprijzen (${s.trophies.length})`, `Season trophies (${s.trophies.length})`)}</p>
+            <ul className="flex flex-wrap gap-1.5">
+              {s.trophies.map((x) => {
+                const m = SEASONS.find((y) => y.key === x.key)!;
+                return <li key={x.month} className="inline-flex items-center gap-1 rounded-full bg-sand-soft px-2.5 py-1 text-[12.5px] font-semibold text-sand-ink"><Trophy className="h-3.5 w-3.5" aria-hidden />{nl ? m.nl : m.en} · {monthName(x.month, locale)}</li>;
+              })}
+            </ul>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function BossCard({ d, compact = false }: { d: HeroState; compact?: boolean }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
@@ -1397,6 +1446,7 @@ export function HeroPage() {
       </Fold>
       <DayChestCard d={d} />
       <BossCard d={d} />
+      <SeasonCard d={d} />
       <Fold id="hero-weekly" defaultOpen icon={<Gift className="h-5 w-5" />} title={t('Weekquests', 'Weekly quests')}
         summary={t(`${d.weekly.quests.filter((x) => x.done).length} van ${d.weekly.quests.length} gehaald`, `${d.weekly.quests.filter((x) => x.done).length} of ${d.weekly.quests.length} done`)}>
         <WeeklyQuests d={d} />

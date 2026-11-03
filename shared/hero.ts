@@ -134,6 +134,8 @@ export type BadgeInput = {
   /** Weekly bosses beaten, and the longest run of day chests (both optional for older callers). */
   bossesDefeated?: number;
   chestRunBest?: number;
+  /** Monthly seasons won (optional for older callers). */
+  seasonsWon?: number;
   sessions: number;
   sessionsWithPain: number;
   redFlags: number;
@@ -152,6 +154,7 @@ export const BADGES: { key: string; nl: string; en: string; descNl: string; desc
   { key: 'pain_down', nl: 'Op de weg terug', en: 'On the way back', descNl: 'Je pijn is gehalveerd sinds je startmeting.', descEn: 'Your pain has halved since your first check-in.', earned: (b) => b.painBaseline !== null && b.painNow !== null && b.painBaseline > 0 && b.painNow <= b.painBaseline / 2 },
   { key: 'phase_done', nl: 'Fase voltooid', en: 'Phase complete', descNl: 'Een fase van je revalidatie afgerond.', descEn: 'Completed a phase of your rehabilitation.', earned: (b) => b.phasesCompleted >= 1 },
   { key: 'sessions_25', nl: 'Vaste waarde', en: 'Regular', descNl: '25 trainingen afgerond.', descEn: '25 workouts completed.', earned: (b) => b.sessions >= 25 },
+  { key: 'season_champ', nl: 'Seizoenskampioen', en: 'Season champion', descNl: 'Een seizoensbaas verslagen: drie weekbazen in één maand.', descEn: 'A season boss defeated: three weekly bosses in one month.', earned: (b) => (b.seasonsWon ?? 0) >= 1 },
   { key: 'boss_hunter', nl: 'Bazenjager', en: 'Boss hunter', descNl: 'Drie bazen van de week verslagen.', descEn: 'Three bosses of the week defeated.', earned: (b) => (b.bossesDefeated ?? 0) >= 3 },
   { key: 'chest_week', nl: 'Trouwe kistenopener', en: 'Loyal chest opener', descNl: 'Zeven dagen op rij je dagkist geopend.', descEn: 'Opened your day chest seven days in a row.', earned: (b) => (b.chestRunBest ?? 0) >= 7 },
 ];
@@ -738,6 +741,46 @@ export function weeklyBoss(weekStart: string, w: WeekData): WeeklyBoss {
   ];
   const damage = Math.min(BOSS_HP, hits.reduce((s, h) => s + h.damage, 0));
   return { key: bossOf(weekStart).key, hp: BOSS_HP, damage, defeated: damage >= BOSS_HP, hits };
+}
+
+/**
+ * Monthly season: a theme with its own season boss. Beat three bosses of the week in a month and
+ * the season boss falls; that earns XP and a season trophy that stays in your collection. Like the
+ * weekly boss it only counts what was planned: extra training does nothing, a rest week costs nothing.
+ * A week belongs to the month its Monday is in.
+ */
+export const SEASONS = [
+  { key: 'ijs', nl: 'IJsmaand', en: 'Ice month', bossNl: 'De IJskoning', bossEn: 'The Ice King', taunt: ['Brr, blijf lekker onder de deken.', 'Brr, stay under the blanket.'] },
+  { key: 'storm', nl: 'Stormmaand', en: 'Storm month', bossNl: 'De Windvlaag', bossEn: 'The Gust', taunt: ['Te veel wind om naar buiten te gaan!', 'Far too windy to go out!'] },
+  { key: 'lente', nl: 'Ontdooimaand', en: 'Thaw month', bossNl: 'De Moddermol', bossEn: 'The Mud Mole', taunt: ['Alles is nog nat, wacht maar even.', 'Everything is still wet, just wait.'] },
+  { key: 'bloei', nl: 'Bloeimaand', en: 'Bloom month', bossNl: 'De Pollenprins', bossEn: 'The Pollen Prince', taunt: ['Hatsjoe! Vandaag maar niet.', 'Achoo! Not today.'] },
+  { key: 'zon', nl: 'Zonnemaand', en: 'Sun month', bossNl: 'De Terrasreus', bossEn: 'The Terrace Giant', taunt: ['Eerst nog een drankje op het terras.', 'First another drink on the terrace.'] },
+  { key: 'zomer', nl: 'Zomermaand', en: 'Summer month', bossNl: 'De Hittegolf', bossEn: 'The Heatwave', taunt: ['Veel te warm om te bewegen…', 'Much too hot to move…'] },
+  { key: 'vakantie', nl: 'Vakantiemaand', en: 'Holiday month', bossNl: 'De Hangmatheks', bossEn: 'The Hammock Witch', taunt: ['Lekker liggen, de hele dag.', 'Lie back, all day long.'] },
+  { key: 'oogst', nl: 'Oogstmaand', en: 'Harvest month', bossNl: 'De Bankbaron', bossEn: 'The Couch Baron', taunt: ['De vakantie is voorbij, rust maar uit.', 'Holiday is over, just rest.'] },
+  { key: 'herfst', nl: 'Herfstmaand', en: 'Autumn month', bossNl: 'De Bladerblazer', bossEn: 'The Leaf Blower', taunt: ['Het regent, blijf binnen!', 'It is raining, stay in!'] },
+  { key: 'donker', nl: 'Donkere maand', en: 'Dark month', bossNl: 'De Schemerschim', bossEn: 'The Dusk Shade', taunt: ['Het is al donker, morgen beter.', 'It is dark already, tomorrow is better.'] },
+  { key: 'mist', nl: 'Mistmaand', en: 'Fog month', bossNl: 'De Mistreus', bossEn: 'The Fog Giant', taunt: ['Ik zie je niet… dus je hoeft niet.', 'I cannot see you… so you need not go.'] },
+  { key: 'feest', nl: 'Feestmaand', en: 'Festive month', bossNl: 'De Kerstkoekjes-kolos', bossEn: 'The Cookie Colossus', taunt: ['Nog één koekje dan.', 'Just one more cookie then.'] },
+] as const;
+export type SeasonKey = (typeof SEASONS)[number]['key'];
+export const SEASON_GOAL = 3;
+export const SEASON_XP = 150;
+/** 'YYYY-MM' of a week, by its Monday. */
+export const seasonMonth = (weekStart: string) => weekStart.slice(0, 7);
+export const seasonOf = (month: string) => SEASONS[(Number(month.slice(5, 7)) - 1 + 12) % 12];
+export type Season = { month: string; key: SeasonKey; weeks: number; bossesBeaten: number; goal: number; won: boolean };
+/** Every month with weeks in it, oldest first, from (weekStart, weekly boss beaten) pairs. */
+export function seasons(weeks: readonly { weekStart: string; bossDefeated: boolean }[]): Season[] {
+  const by = new Map<string, { weeks: number; beaten: number }>();
+  for (const w of weeks) {
+    const m = seasonMonth(w.weekStart);
+    const cur = by.get(m) ?? { weeks: 0, beaten: 0 };
+    by.set(m, { weeks: cur.weeks + 1, beaten: cur.beaten + (w.bossDefeated ? 1 : 0) });
+  }
+  return [...by].sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({
+    month, key: seasonOf(month).key, weeks: v.weeks, bossesBeaten: v.beaten, goal: SEASON_GOAL, won: v.beaten >= SEASON_GOAL,
+  }));
 }
 
 export const questXp = (quests: Quest[]) => quests.filter((q) => q.done).length * QUEST_XP + (quests.every((q) => q.done) ? CHEST_XP : 0);

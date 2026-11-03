@@ -88,6 +88,10 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   // The weekly boss: a health bar that training and check-ins wear down.
   await expect(pp.getByText('Baas van de week').first()).toBeVisible();
   await expect(pp.getByRole('progressbar', { name: /^Leven van / }).first()).toBeVisible();
+  // The monthly season: three weekly bosses in a month beat the season boss.
+  const season = pp.locator('section#seizoen');
+  await expect(season.getByText(/^Seizoen · /)).toBeVisible();
+  await expect(season.getByRole('list', { name: /van 3 weekbazen verslagen/ })).toBeVisible();
   await expect(pp.getByText('Doe een dagcheck of werk je pijnkaart bij')).toBeVisible();
   await expect(pp.getByText(/Weekkist geopend|Haal alle drie voor de weekkist/)).toBeVisible();
   // Each quest leads to where it is done.

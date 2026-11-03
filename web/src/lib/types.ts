@@ -200,7 +200,7 @@ export type HeroState = {
     phases: { no: number; name: string | null; weeks: string | null; goal: string | null; status: 'done' | 'current' | 'next' }[];
     timeline: { week: number; totalWeeks: number; progress: number; expectedEnd: string; weeksLeft: number } | null;
   } | null;
-  weekly: { weekStart: string; quests: import('@shared/hero').Quest[]; chestWeeks: number; xpPerQuest: number; chestXp: number; links?: Partial<Record<string, string | null>>; boss?: import('@shared/hero').WeeklyBoss & { xp: number }; bossesDefeated?: number };
+  weekly: { weekStart: string; quests: import('@shared/hero').Quest[]; chestWeeks: number; xpPerQuest: number; chestXp: number; links?: Partial<Record<string, string | null>>; boss?: import('@shared/hero').WeeklyBoss & { xp: number }; bossesDefeated?: number; season?: import('@shared/hero').Season & { xp: number; trophies: { month: string; key: import('@shared/hero').SeasonKey }[] } };
   gear: { owned: string[]; equipped: string[]; coins: number; earned: number; spent: number; score: number };
   /** Self-reported. Absent on the professional view of the hero. */
   metrics?: { weightKg: number | null; bodyFatPct: number | null; heightCm: number | null; updatedAt: string | null };
