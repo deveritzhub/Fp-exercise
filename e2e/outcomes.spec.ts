@@ -31,6 +31,14 @@ test('outcomes are validated, practice-isolated and included in export',async ({
   await patientCtx.close();
   const bad=await page.request.post(`/api/patients/${patient.id}/outcomes`,{data:{...input,value:5000}});
   expect(bad.status()).toBe(400);
+  // Clinician-facing form: a real measured outcome appears in the timeline after saving.
+  await page.goto(`/app/patienten/${patient.id}`);
+  await page.getByRole('button',{name:'Meetmoment vastleggen'}).click();
+  await page.getByLabel('Meetdomein').selectOption('function');
+  await page.getByLabel('Testnaam / schaal').fill('PSFS fictief');
+  await page.getByLabel('Gemeten waarde').fill('7');
+  await page.getByRole('button',{name:'Meetmoment opslaan'}).click();
+  await expect(page.getByText('PSFS fictief')).toBeVisible();
   const ctxB=await browser.newContext();
   const pageB=await ctxB.newPage();
   await login(pageB,'therapeut@praktijk-b.test');
