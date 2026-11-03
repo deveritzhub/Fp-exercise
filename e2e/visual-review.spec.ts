@@ -50,8 +50,9 @@ test('daily mission and rehabilitation route render safely at narrow and desktop
       console.log('FP_VISUAL_JPEG:mission:' + width + ':' + jpg.toString('base64'));
     }
 
+    const routePage = await ctx.newPage();
     let heroMockCalls = 0;
-    await page.route('**/api/patient/hero', async (route) => {
+    await routePage.route('**/api/patient/hero', async (route) => {
       heroMockCalls++;
       const response = await route.fetch();
       const data = await response.json();
@@ -75,17 +76,19 @@ test('daily mission and rehabilitation route render safely at narrow and desktop
         },
       });
     });
-    await page.goto('/p/held');
-    const collapsed = page.locator('button[data-fold="hero-quest"]');
-    if (await collapsed.count()) await collapsed.click();
-    const rehab = page.locator('section[aria-labelledby="rehab-route-heading"]');
+    await login(routePage, 'patient@praktijk-a.test');
+    await routePage.goto('/p/held');
+    const collapsed = routePage.locator('button[data-fold="hero-quest"]');
+    await expect(collapsed).toBeVisible();
+    await collapsed.click();
+    const rehab = routePage.locator('section[aria-labelledby="rehab-route-heading"]');
     if (!(await rehab.count())) {
       const diagnostic = {
         heroMockCalls,
-        url: page.url(),
-        headings: await page.getByRole('heading').allTextContents(),
-        folds: await page.locator('[data-fold="hero-quest"]').allTextContents(),
-        excerpt: (await page.locator('main').innerText()).slice(0,1300),
+        url: routePage.url(),
+        headings: await routePage.getByRole('heading').allTextContents(),
+        folds: await routePage.locator('[data-fold="hero-quest"]').allTextContents(),
+        excerpt: (await routePage.locator('main').innerText()).slice(0,1300),
       };
       console.log('FP_VISUAL_DIAGNOSTIC:' + JSON.stringify(diagnostic));
     }
@@ -97,7 +100,7 @@ test('daily mission and rehabilitation route render safely at narrow and desktop
       const jpg = await rehab.screenshot({ type: 'jpeg', quality: 35, animations: 'disabled' });
       console.log('FP_VISUAL_JPEG:route:' + width + ':' + jpg.toString('base64'));
     }
-    const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    const horizontalOverflow = await routePage.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(horizontalOverflow).toBeLessThanOrEqual(1);
     await ctx.close();
   }
