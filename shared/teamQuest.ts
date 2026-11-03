@@ -14,5 +14,8 @@ export function aggregateTeamDay(days: readonly TeamDay[]): TeamProgress {
 }
 /** A deliberately minimal output: participant IDs and individual health behaviour stay server-side. */
 export function publicTeamSummary(progress:TeamProgress){
-  return { participants:progress.participants,contributed:progress.contributed,status:progress.status };
+  // Small cohorts can reveal one friend's participation via differences over time.
+  // Do not publish any contribution or completion signals with fewer than five opt-ins.
+  if(progress.participants<5) return { available:false as const,status:'not_started' as const };
+  return {available:true as const,participantsBand:'5+' as const,status:progress.status};
 }
