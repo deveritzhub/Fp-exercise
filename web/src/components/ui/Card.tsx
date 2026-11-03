@@ -34,24 +34,26 @@ export function PageHeader({ title, description, actions, eyebrow, children }: {
 }
 
 /**
- * A key figure. With `to` (a route) or `href` (an anchor on the same page) the whole card is a link,
- * with a small arrow so it reads as tappable.
+ * A key figure: label, the number with its icon beside it, and a short hint. With `to` (a route) or
+ * `href` (an anchor on the same page) the whole card is a link, with a small arrow by the label.
  */
 export function Stat({ label, value, hint, icon, tone, to, href }: { label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode; tone?: 'default' | 'warn'; to?: string; href?: string }) {
+  const link = !!(to || href);
   const body = (
     <>
-      <div className="flex items-start justify-between gap-2 text-[13.5px] font-medium text-ink-600">
-        {/* min-w-0 + anywhere: a long word like "Therapietrouw" wraps instead of pushing the icon out */}
-        <span className="min-w-0 pt-1 [overflow-wrap:anywhere]">{label}</span>
-        {icon && <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', tone === 'warn' ? 'bg-warn-soft text-warn' : 'bg-sage text-accent')} aria-hidden>{icon}</span>}
+      <div className="flex items-start justify-between gap-1">
+        <span className="min-w-0 text-[13.5px] font-medium leading-snug text-ink-600 [overflow-wrap:anywhere]">{label}</span>
+        {link && <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-ink-400 transition-transform group-hover:translate-x-0.5" aria-hidden />}
       </div>
-      <div className="mt-2 font-display text-[28px] font-bold leading-none tabular-nums tracking-tight text-ink-950">{value}</div>
-      {hint && <div className="mt-1 text-[12.5px] text-ink-500">{hint}</div>}
-      {(to || href) && <ChevronRight className="absolute bottom-3 right-3 h-4 w-4 text-ink-400 transition-transform group-hover:translate-x-0.5" aria-hidden />}
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <span className="font-display text-[28px] font-bold leading-none tabular-nums tracking-tight text-ink-950">{value}</span>
+        {icon && <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', tone === 'warn' ? 'bg-warn-soft text-warn' : 'bg-sage text-accent')} aria-hidden>{icon}</span>}
+      </div>
+      {hint && <div className="mt-1.5 text-[12.5px] leading-snug text-ink-500">{hint}</div>}
     </>
   );
-  const cls = 'card group relative block p-4 pb-8 transition-colors hover:border-ink-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent sm:p-5 sm:pb-8';
+  const cls = 'card group block h-full p-4 transition-colors hover:border-ink-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent sm:p-5';
   if (to) return <Link to={to} className={cls}>{body}</Link>;
   if (href) return <a href={href} className={cls}>{body}</a>;
-  return <div className="card p-4 sm:p-5">{body}</div>;
+  return <div className="card h-full p-4 sm:p-5">{body}</div>;
 }

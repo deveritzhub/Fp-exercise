@@ -53,10 +53,10 @@ export function DashboardPage() {
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {d ? (
             <>
-              <Stat to="/app/patienten?bereik=mijn" label={t('Mijn patiënten', 'My patients')} value={d.stats.patients} icon={<Users className="h-4 w-4" />} hint={d.stats.activePrograms === 1 ? t('1 actief programma', '1 active programme') : t(`${d.stats.activePrograms} actieve programma’s`, `${d.stats.activePrograms} active programmes`)} />
-              <Stat to="/app/patienten?bereik=mijn" label={t('Trouw 7 dagen', 'Adherence 7 days')} value={pct(d.stats.adherence7d)} icon={<Activity className="h-4 w-4" />} hint={t(`${d.stats.adherence.completed} van ${d.stats.adherence.planned} geplande trainingsdagen gedaan`, `${d.stats.adherence.completed} of ${d.stats.adherence.planned} planned training days done`)} />
-              <Stat href="#recente-activiteit" label={t('Sessies 7 dagen', 'Sessions 7 days')} value={d.stats.sessions7d} icon={<Layers className="h-4 w-4" />} hint={t('Afgeronde oefensessies', 'Completed exercise sessions')} />
-              <Stat href="#vraagt-aandacht" label={t('Vraagt aandacht', 'Needs attention')} value={d.stats.attention + d.alerts.length} tone="warn" icon={<AlertCircle className="h-4 w-4" />} hint={t('Werklijst hieronder', 'Work list below')} />
+              <Stat to="/app/patienten?bereik=mijn" label={t('Mijn patiënten', 'My patients')} value={d.stats.patients} icon={<Users className="h-4 w-4" />} hint={d.stats.activePrograms === 1 ? t('1 programma actief', '1 programme active') : t(`${d.stats.activePrograms} programma’s actief`, `${d.stats.activePrograms} programmes active`)} />
+              <Stat to="/app/patienten?bereik=mijn" label={t('Trouw 7 dagen', 'Adherence 7 days')} value={pct(d.stats.adherence7d)} icon={<Activity className="h-4 w-4" />} hint={t(`${d.stats.adherence.completed} van ${d.stats.adherence.planned} dagen gedaan`, `${d.stats.adherence.completed} of ${d.stats.adherence.planned} days done`)} />
+              <Stat href="#recente-activiteit" label={t('Sessies', 'Sessions')} value={d.stats.sessions7d} icon={<Layers className="h-4 w-4" />} hint={t('Afgerond in 7 dagen', 'Completed in 7 days')} />
+              <Stat href="#vraagt-aandacht" label={t('Aandacht', 'Attention')} value={d.stats.attention + d.alerts.length} tone="warn" icon={<AlertCircle className="h-4 w-4" />} hint={t('Zie werklijst', 'See work list')} />
             </>
           ) : (
             Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[112px] rounded-xl" />)

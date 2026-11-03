@@ -16,9 +16,9 @@ test('dashboard figures are links: own patients, and the lists further down', as
     }
   }
   await expectAccessible(page, 'dashboard stat links');
-  await page.getByRole('link', { name: /^Vraagt aandacht/ }).click();
+  await page.getByRole('link', { name: /^Aandacht/ }).click();
   await expect(page).toHaveURL(/#vraagt-aandacht$/);
-  await page.getByRole('link', { name: /^Sessies 7 dagen/ }).click();
+  await page.getByRole('link', { name: /^Sessies/ }).click();
   await expect(page).toHaveURL(/#recente-activiteit$/);
   await page.goto('/app');
   await page.getByRole('link', { name: /^Mijn patiënten/ }).click();
