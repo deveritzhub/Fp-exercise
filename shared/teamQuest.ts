@@ -19,3 +19,9 @@ export function publicTeamSummary(progress:TeamProgress){
   if(progress.participants<5) return { available:false as const,status:'not_started' as const };
   return {available:true as const,participantsBand:'5+' as const,status:progress.status};
 }
+
+/** From the group counts the database returns (never per person) to the coarse public summary. */
+export function teamWeekSummary(participants: number, contributed: number) {
+  const status: TeamProgress['status'] = participants < 2 ? 'not_started' : contributed >= participants ? 'complete' : 'in_progress';
+  return publicTeamSummary({ participants, contributed: participants < 2 ? 0 : contributed, protectedRest: 0, status });
+}

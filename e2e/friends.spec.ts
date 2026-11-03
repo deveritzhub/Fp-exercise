@@ -14,7 +14,7 @@ async function sql(q: string, p: unknown[] = []) {
 }
 
 const reset = () =>
-  sql(`DELETE FROM hero_friendships; UPDATE patient_heroes SET share_with_friends = false, friend_code = NULL, shared_stats = NULL, stats_updated_at = NULL`);
+  sql(`DELETE FROM hero_friendships; UPDATE patient_heroes SET share_with_friends = false, friend_code = NULL, shared_stats = NULL, stats_updated_at = NULL, team_opt_in = false, team_week = NULL, team_done = NULL`);
 test.beforeAll(reset);
 test.afterAll(reset);
 
@@ -73,6 +73,13 @@ test('two patients from different practices become friends and join without a re
   await expect(board.getByText('Kracht')).toBeVisible();
   await expect(board.getByText('Herstel')).toBeVisible();
   await expectAccessible(emma, 'friends companions');
+  // Team quest: its own opt-in; with fewer than five participants there is no status at all.
+  const team = emma.getByRole('region', { name: /Teamquest: samen sterk/ }).or(emma.locator('section[aria-labelledby="team-title"]'));
+  await team.getByRole('button', { name: 'Meedoen aan de teamquest' }).click();
+  await expect(team.getByRole('status')).toContainText('Nog niet genoeg deelnemers');
+  await expectAccessible(emma, 'team quest joined');
+  await team.getByRole('button', { name: 'Niet meer meedoen' }).click();
+  await expect(team.getByRole('button', { name: 'Meedoen aan de teamquest' })).toBeVisible();
   await emma.screenshot({ path: 'screenshots/hero/friends.png', fullPage: true });
 
   // The character sheet links to the friends page with the count.

@@ -1,3 +1,4 @@
+import { teamWeekSummary } from '../../../shared/teamQuest';
 import { Hono } from 'hono';
 import { config } from '../config';
 import { z } from 'zod';
@@ -184,6 +185,10 @@ async function heroState(tx: Tx, patientId: string) {
     bossesDefeated++;
   }
   bossWeeks.push({ weekStart: thisWeek, bossDefeated: boss.defeated });
+  // Team quest: my own weekly goal is done, or this week asks nothing (rest) or there is an open
+  // medical stop. Only this yes/no ever reaches the team, as part of a group count.
+  const medicalHold = (await tx.query('SELECT 1 FROM red_flag_reports WHERE patient_id = $1 AND handled_at IS NULL LIMIT 1', [patientId])).rows.length > 0;
+  const teamDone = fullWeek.planned === 0 || medicalHold || !!quests.find((x) => x.key === 'train')?.done;
   // Monthly seasons: three weekly bosses in a month beat the season boss (XP and a trophy).
   const seasonList = seasons(bossWeeks);
   const seasonsWon = seasonList.filter((x) => x.won).length;
@@ -303,6 +308,7 @@ async function heroState(tx: Tx, patientId: string) {
     quest,
     weekly: { weekStart: thisWeek, quests, chestWeeks, xpPerQuest: QUEST_XP, chestXp: CHEST_XP, links: questLinks, boss: { ...boss, xp: BOSS_XP }, bossesDefeated,
       // This month's season and the trophies of seasons won (newest first).
+      teamDone,
       season: { ...season, xp: SEASON_XP, trophies: seasonList.filter((x) => x.won).map((x) => ({ month: x.month, key: x.key })).reverse() } },
     // Coins stay with the patient: never on the friend card or the professional's view.
     gear: { owned, equipped, coins: Math.max(0, earned - spent), earned, spent, score: gearScore(equipped) },
@@ -347,10 +353,15 @@ heroPatient.get('/hero', async (c) => {
     await withUser(user.id, async (tx) => {
       const state = await heroState(tx, patient.id);
       await refreshFriendCard(tx, patient.id, state);
+      const team = await teamView(tx, patient.id, state);
       // A personal photo (own likeness, by request) replaces the generated one on this account only.
       const guest = state.hero?.photoKey && config.heroGuests.has(state.hero.photoKey) ? state.hero.photoKey : null;
+      // teamDone is my own answer: it stays server-side, only the group status goes out.
+      const { teamDone: _own, ...weekly } = state.weekly;
       return {
         ...state,
+        weekly,
+        team,
         customPhoto: config.personalHeroPhotos.get(user.email.toLowerCase()) ?? guest,
         heroGuests: [...config.heroGuests].map(([key, name]) => ({ key, name })),
       };
@@ -371,6 +382,19 @@ export const friendCard = (s: HeroStateT) => ({
   gearScore: s.gear.score,
   skills: Object.fromEntries(s.skills.map((k) => [k.key, friendSkillCard(k)])) as Record<SkillKey, ReturnType<typeof friendSkillCard>>,
 });
+
+/** Write my own team snapshot (this week, done or not) and read the group's coarse status. */
+async function teamView(tx: Tx, patientId: string, state: HeroStateT) {
+  const row = (await tx.query('SELECT share_with_friends, team_opt_in, team_week, team_done FROM patient_heroes WHERE patient_id = $1', [patientId])).rows[0];
+  const enabled = !!row?.share_with_friends && !!row?.team_opt_in;
+  if (!enabled) return { enabled: false, canJoin: !!row?.share_with_friends, available: false as const, status: 'not_started' as const };
+  const week = state.weekly.weekStart;
+  const iso = (d: Date | string | null) => (d ? (typeof d === 'string' ? d.slice(0, 10) : d.toLocaleDateString('sv-SE')) : null);
+  if (iso(row.team_week) !== week || row.team_done !== state.weekly.teamDone)
+    await tx.query('UPDATE patient_heroes SET team_week = $2, team_done = $3 WHERE patient_id = $1', [patientId, week, state.weekly.teamDone]);
+  const c = (await tx.query('SELECT participants, contributed FROM app.hero_team_week($1, $2::date)', [patientId, week])).rows[0];
+  return { enabled: true, canJoin: true, ...teamWeekSummary(c?.participants ?? 0, c?.contributed ?? 0) };
+}
 
 /** Update the shared card when the patient shares and something changed. */
 async function refreshFriendCard(tx: Tx, patientId: string, state?: HeroStateT) {
@@ -434,11 +458,29 @@ heroPatient.put('/hero/sharing', async (c) => {
       } else {
         await tx.query('SELECT app.hero_friends_clear($1)', [patient.id]);
         await tx.query(
-          'UPDATE patient_heroes SET share_with_friends = false, friend_code = NULL, shared_stats = NULL, stats_updated_at = NULL WHERE patient_id = $1',
+          'UPDATE patient_heroes SET share_with_friends = false, friend_code = NULL, shared_stats = NULL, stats_updated_at = NULL, team_opt_in = false, team_week = NULL, team_done = NULL WHERE patient_id = $1',
           [patient.id],
         );
       }
       return friendsView(tx, patient.id);
+    }),
+  );
+});
+
+/** Join or leave the team quest. Needs friend sharing; leaving removes my snapshot right away. */
+heroPatient.put('/hero/team', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ enabled: z.boolean() }), await c.req.json());
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const me = (await tx.query('SELECT share_with_friends FROM patient_heroes WHERE patient_id = $1', [patient.id])).rows[0];
+      if (!me) throw badRequest('hero_required');
+      if (b.enabled && !me.share_with_friends) throw badRequest('sharing_off');
+      await tx.query(
+        b.enabled ? 'UPDATE patient_heroes SET team_opt_in = true WHERE patient_id = $1' : 'UPDATE patient_heroes SET team_opt_in = false, team_week = NULL, team_done = NULL WHERE patient_id = $1',
+        [patient.id],
+      );
+      return teamView(tx, patient.id, await heroState(tx, patient.id));
     }),
   );
 });

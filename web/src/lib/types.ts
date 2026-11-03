@@ -179,6 +179,8 @@ export type HeroState = {
   showcase: string[];
   /** Earned badges pinned on the wall behind the hero. */
   wallBadges: string[];
+  /** Team quest: only a coarse group status, shown from five participants. */
+  team?: { enabled: boolean; canJoin: boolean; available: boolean; participantsBand?: '5+'; status: 'not_started' | 'in_progress' | 'complete' };
   /** Guest heroes a patient may play as (real people who agreed). */
   heroGuests?: { key: string; name: string }[];
   hero: (import('@shared/hero').HeroLook & { createdAt: string; gear?: string[] }) | null;

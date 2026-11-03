@@ -279,6 +279,8 @@ export function FriendsPage() {
             )}
           </section>
 
+          {hero.data && <TeamQuest d={hero.data} />}
+
           {outgoing.length > 0 && (
             <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="outgoing-title">
               <h2 id="outgoing-title" className="t-section">{t('Wacht op antwoord', 'Waiting for an answer')}</h2>
@@ -325,6 +327,59 @@ export function FriendsPage() {
 }
 
 /** Entry on the character sheet. */
+/**
+ * Team quest: together everyone does their own weekly goal. Separate consent on top of friend
+ * sharing. The team only ever sees a group status, and only from five participants, so nobody's
+ * week can be singled out. No XP or coins hang on it: no reason to train through pain for others.
+ */
+function TeamQuest({ d }: { d: import('@/lib/types').HeroState }) {
+  const { t, locale } = useI18n();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const team = d.team;
+  if (!team) return null;
+  const set = async (enabled: boolean) => {
+    setBusy(true);
+    try {
+      await api.put('/patient/hero/team', { enabled });
+      await qc.invalidateQueries({ queryKey: ['patient-hero'] });
+      toast(enabled ? t('Je doet mee aan de teamquest', 'You joined the team quest') : t('Je doet niet meer mee; je gegevens voor de teamquest zijn gewist', 'You left; your team quest data is removed'), 'ok');
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const status = !team.available
+    ? t('Nog niet genoeg deelnemers. De teamquest start vanaf 5 teamgenoten die meedoen, zodat niemand herkenbaar is.', 'Not enough participants yet. The team quest starts from 5 companions who join, so nobody can be singled out.')
+    : team.status === 'complete'
+      ? t('Gehaald! Iedereen heeft deze week zijn eigen doel gedaan. 🎉', 'Done! Everyone did their own goal this week. 🎉')
+      : t('Bezig: nog niet iedereen heeft zijn weekdoel gedaan. Er is nog tijd.', 'In progress: not everyone has done their weekly goal yet. There is still time.');
+  return (
+    <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="team-title">
+      <h2 id="team-title" className="t-section flex items-center gap-2"><Users className="h-5 w-5 text-accent" aria-hidden />{t('Teamquest: samen sterk', 'Team quest: stronger together')}</h2>
+      <p className="mt-1 text-[14px] text-ink-700">{t('Deze week doet iedereen zijn eigen weekdoel. Een rustweek of een pauze van je fysiotherapeut telt ook als gehaald.', 'This week everyone does their own weekly goal. A rest week or a pause from your physiotherapist also counts as done.')}</p>
+      {team.enabled ? (
+        <>
+          <p className={cn('mt-3 rounded-xl p-3 text-[14.5px] font-medium', team.available && team.status === 'complete' ? 'bg-ok-soft text-ok' : 'bg-canvas text-ink-800')} role="status">{status}</p>
+          <Button variant="ghost" className="mt-2" loading={busy} onClick={() => set(false)}>{t('Niet meer meedoen', 'Leave the team quest')}</Button>
+        </>
+      ) : (
+        <>
+          <ul className="mt-3 space-y-1 text-[13.5px] text-ink-700">
+            <li>• {t('Je team ziet alleen of het team als geheel zijn doel haalt, nooit wie wat deed.', 'Your team only sees whether the team as a whole makes it, never who did what.')}</li>
+            <li>• {t('Er gaat geen pijn, programma of kracht naar je team.', 'No pain, programme or strength goes to your team.')}</li>
+            <li>• {t('Je kunt altijd stoppen; dan worden je teamgegevens direct gewist.', 'You can stop any time; your team data is then removed straight away.')}</li>
+          </ul>
+          <Button className="mt-3" loading={busy} disabled={!team.canJoin} onClick={() => set(true)}>{t('Meedoen aan de teamquest', 'Join the team quest')}</Button>
+          {!team.canJoin && <p className="mt-1 text-[13px] text-ink-600">{t('Zet eerst delen met vrienden aan.', 'Switch on sharing with friends first.')}</p>}
+        </>
+      )}
+    </section>
+  );
+}
+
 export function FriendsCard() {
   const { t } = useI18n();
   const q = useFriends();
