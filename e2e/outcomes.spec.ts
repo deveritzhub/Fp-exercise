@@ -11,8 +11,9 @@ test('outcomes are validated, practice-isolated and included in export',async ({
   expect(patient?.id).toBeTruthy();
   const input={domain:'rom',metric:'Knie flexie',value:123,unit:'degrees',side:'left',measuredOn:'2026-11-02',note:'Fictieve testmeting'};
   const created=await page.request.post(`/api/patients/${patient.id}/outcomes`,{data:input});
-  expect(created.status()).toBe(201);
-  const out=(await created.json()).item;
+  const createBody=await created.json();
+  expect(created.status(),JSON.stringify(createBody)).toBe(201);
+  const out=createBody.item;
   expect(out).toMatchObject({domain:'rom',metric:'Knie flexie',value:123,unit:'degrees',side:'left'});
   const progress=await (await page.request.get(`/api/patients/${patient.id}/progress`)).json();
   expect(progress.outcomes.some((o:any)=>o.id===out.id)).toBe(true);
