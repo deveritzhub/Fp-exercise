@@ -10,7 +10,8 @@ test('outcomes are validated, practice-isolated and included in export',async ({
   const patient=patients.items[0];
   expect(patient?.id).toBeTruthy();
   const input={domain:'rom',metric:'Knie flexie',value:123,unit:'degrees',side:'left',measuredOn:'2026-11-02',note:'Fictieve testmeting'};
-  const created=await page.request.post(`/api/patients/${patient.id}/outcomes`,{data:input});
+  const csrf={ 'x-requested-with':'fp' };
+  const created=await page.request.post(`/api/patients/${patient.id}/outcomes`,{data:input,headers:csrf});
   const createBody=await created.json();
   expect(created.status(),JSON.stringify(createBody)).toBe(201);
   const out=createBody.item;
@@ -19,7 +20,7 @@ test('outcomes are validated, practice-isolated and included in export',async ({
   expect(progress.outcomes.some((o:any)=>o.id===out.id)).toBe(true);
   const exportJson=await (await page.request.get(`/api/patients/${patient.id}/export`)).json();
   expect(exportJson.outcomeMeasurements.some((o:any)=>o.id===out.id)).toBe(true);
-  const impossibleDate=await page.request.post(`/api/patients/${patient.id}/outcomes`,{data:{...input,measuredOn:'2026-02-31'}});
+  const impossibleDate=await page.request.post(`/api/patients/${patient.id}/outcomes`,{data:{...input,measuredOn:'2026-02-31'},headers:csrf});
   expect(impossibleDate.status()).toBe(400);
   // A patient can export only their own clinical measurements, not access the staff endpoint.
   const patientCtx=await browser.newContext();
@@ -32,7 +33,7 @@ test('outcomes are validated, practice-isolated and included in export',async ({
   const forbiddenStaffView=await patientPage.request.get(`/api/patients/${patient.id}/progress`);
   expect(forbiddenStaffView.status()).not.toBe(200);
   await patientCtx.close();
-  const bad=await page.request.post(`/api/patients/${patient.id}/outcomes`,{data:{...input,value:5000}});
+  const bad=await page.request.post(`/api/patients/${patient.id}/outcomes`,{data:{...input,value:5000},headers:csrf});
   expect(bad.status()).toBe(400);
   // Clinician-facing form: a real measured outcome appears in the timeline after saving.
   await page.goto(`/app/patienten/${patient.id}`);
@@ -47,7 +48,7 @@ test('outcomes are validated, practice-isolated and included in export',async ({
   await login(pageB,'therapeut@praktijk-b.test');
   const deniedRead=await pageB.request.get(`/api/patients/${patient.id}/progress`);
   expect(deniedRead.status()).toBe(404);
-  const deniedWrite=await pageB.request.post(`/api/patients/${patient.id}/outcomes`,{data:input});
+  const deniedWrite=await pageB.request.post(`/api/patients/${patient.id}/outcomes`,{data:input,headers:csrf});
   expect(deniedWrite.status()).toBe(404);
   await ctxB.close();
   await ctx.close();
