@@ -44,7 +44,7 @@ export function ClinicalTimeline({ sessions }: { sessions: Progress['sessions'] 
       ) : (
         <div className="border-t border-line px-4 py-4 sm:px-5">
           <p className="mb-3 flex items-center gap-2 text-[13px] font-medium text-ink-700"><ClipboardList className="h-4 w-4" aria-hidden="true"/>{t('Laatste sessies: pijn en ervaren zwaarte (0–10)', 'Recent sessions: pain and perceived difficulty (0–10)')}</p>
-          <div className="max-h-[300px] space-y-2 overflow-y-auto">
+          <div className="max-h-[300px] space-y-2 overflow-y-auto" tabIndex={0} role="region" aria-label={t('Sessietijdlijn, scrollbaar met toetsenbord', 'Session timeline, keyboard scrollable')}>
             {data.points.map(p=>(
               <div key={p.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-xl border border-line px-3 py-2 text-[13px]">
                 <span className="min-w-0 text-ink-700">{new Date(p.day+'T12:00:00').toLocaleDateString(locale==='nl'?'nl-NL':'en-GB',{day:'numeric',month:'short',year:'numeric'})}</span>
