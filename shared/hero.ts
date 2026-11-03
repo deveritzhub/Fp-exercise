@@ -817,7 +817,8 @@ const starter = (key: string, score: number): GearDef => {
   return { key, nl: it.nl, en: it.en, tier: 1, score };
 };
 
-export const GEAR: (GearDef & { price: number })[] = ([
+/** Cosmetic item level reuses the established score; it is not a patient-level requirement. */
+export const GEAR: (GearDef & { price: number; itemLevel: number })[] = ([
   // Tier 1: one per skill, plus the chest pin.
   starter('wristbands', 10), starter('headband', 10), starter('crew_socks', 10), starter('sleeve', 12), starter('cap', 10),
   starter('watch', 12), starter('shin_guards', 12), starter('headphones', 10), starter('scarf', 10),
@@ -843,7 +844,7 @@ export const GEAR: (GearDef & { price: number })[] = ([
   { key: 'tracksuit', nl: 'Trainingspak', en: 'Tracksuit', tier: 2, score: 25 },
   { key: 'team_kit', nl: 'Teamtenue', en: 'Team kit', tier: 3, score: 47 },
   { key: 'champion', nl: 'Kampioenspak', en: 'Champion suit', tier: 5, score: 100 },
-] as GearDef[]).map((g) => ({ ...g, price: GEAR_TIERS[g.tier - 1].price }));
+] as GearDef[]).map((g) => ({ ...g, itemLevel: g.score, price: GEAR_TIERS[g.tier - 1].price }));
 export const OUTFITS = ['tracksuit', 'team_kit', 'champion'] as const;
 /** The outfit the hero wears, if any (one per slot, so at most one). */
 export const wornOutfit = (gear: readonly string[]) => (OUTFITS as readonly string[]).find((o) => gear.includes(o)) ?? null;

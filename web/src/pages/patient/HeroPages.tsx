@@ -1,7 +1,7 @@
 import { PhotoGearThumbnail } from '../../components/hero/PhotoEquipment';
 import { GearArtwork } from '../../components/hero/RpgGear';
 import '../../components/hero/rpg.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Award, BookOpen, CalendarCheck, Check, ChevronRight, CircleCheck, Coins, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Utensils, Droplets, Zap, Swords, type LucideIcon } from 'lucide-react';
@@ -911,7 +911,7 @@ function GearCard({ d }: { d: HeroState }) {
     <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="gear-title">
       <h2 id="gear-title" className="t-section">{t(`Uitrusting (${d.gear.owned.length} van ${GEAR.length})`, `Gear (${d.gear.owned.length} of ${GEAR.length})`)}</h2>
       <GearStats d={d} />
-      <p className="mt-2 text-[13.5px] text-ink-600">{t('Verdien muntjes met trainen (1 muntje per 10 XP) en koop kleding in de winkel. Hoe hoger de tier, hoe hoger je gearscore. Je muntjes ziet alleen jij.', 'Earn coins by training (1 coin per 10 XP) and buy gear in the shop. The higher the tier, the higher your gear score. Only you can see your coins.')}</p>
+      <p className="mt-2 text-[13.5px] text-ink-600">{t('Verzamel je eigen uitrusting. Tier toont de zeldzaamheid; itemlevel is de cosmetische waarde die meetelt voor je gearscore. Je hoeft geen hoger heldlevel te halen om een item te dragen.', 'Collect your own equipment. Tier shows rarity; item level is the cosmetic value contributing to your gear score. No hero-level requirement applies to wearing items.')}</p>
 
       <CharacterScreen d={d} onPreview={setPreview} preview={preview} busy={busy} onSave={save} onBuy={buy} />
 
@@ -975,9 +975,9 @@ function TierTag({ g }: { g: GearItem }) {
   const { locale } = useI18n();
   const tier = GEAR_TIERS[g.tier - 1];
   return (
-    <span className="inline-flex items-center gap-1 text-[11.5px] font-semibold leading-tight" style={{ color: tier.color }}>
-      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: tier.color }} aria-hidden />
-      {locale === 'nl' ? tier.nl : tier.en} · {g.score}
+    <span className="gear-labels">
+      <span className="gear-rarity" style={{color:tier.color}}>Tier {g.tier} · {locale === 'nl' ? tier.nl : tier.en}</span>
+      <span className="gear-level">{locale === 'nl' ? 'Itemlevel' : 'Item level'} {g.itemLevel}</span>
     </span>
   );
 }
@@ -992,19 +992,20 @@ function GearTile({ g, d, busy, onToggle, onBuy, onPreview }: { onPreview?: () =
     const on = d.gear.equipped.includes(g.key);
     return (
       <button type="button" aria-pressed={on} disabled={busy !== null} onClick={onToggle}
-        className={cn('tap relative flex h-full w-full flex-col items-center gap-1 rounded-xl border-2 p-2 text-center transition-colors', on ? 'border-accent bg-accent-soft' : 'bg-white hover:border-ink-300')}
-        style={on ? undefined : { borderColor: `${tier.color}55` }}>
-        <span className="block h-14 w-14 overflow-hidden rounded-lg bg-sand-soft" aria-hidden><GearImg gearKey={g.key} /></span>
+        data-tier={g.tier} data-item={g.key}
+        className={cn('gear-tile tap relative flex h-full w-full flex-col items-center gap-1 rounded-xl border-2 p-2 text-center transition-colors', on ? 'border-accent bg-accent-soft' : 'bg-white hover:border-ink-300')}
+        style={{'--gear-color':tier.color,borderColor:tier.color} as CSSProperties}>
+        <span className="gear-art block h-20 w-20 overflow-hidden rounded-lg" aria-hidden><GearImg gearKey={g.key} /></span>
         <span className="max-w-full text-[12.5px] font-semibold leading-tight text-ink-900 [hyphens:auto] [overflow-wrap:anywhere]" lang={locale}>{name}</span>
         <TierTag g={g} />
-        <span className={cn('text-[11.5px] font-medium', on ? 'text-accent' : 'text-ink-600')}>{on ? t('Aan ✓', 'On ✓') : t('Aandoen', 'Wear')}</span>
+        <span className={cn('text-[11.5px] font-medium', on ? 'text-accent' : 'text-ink-600')}>{on ? t('Uittrekken ✓', 'Unequip ✓') : t('Aandoen', 'Wear')}</span>
       </button>
     );
   }
   const short = g.price - d.gear.coins;
   return (
-    <div className="flex h-full flex-col items-center gap-1 rounded-xl border border-dashed bg-canvas p-2 text-center" style={{ borderColor: `${tier.color}88` }}>
-      <span className="block h-14 w-14 overflow-hidden rounded-lg bg-white" aria-hidden><GearImg gearKey={g.key} className={short > 0 ? 'opacity-60' : ''} /></span>
+    <div data-tier={g.tier} data-item={g.key} className="gear-tile flex h-full flex-col items-center gap-1 rounded-xl border-2 bg-canvas p-2 text-center" style={{'--gear-color':tier.color,borderColor:tier.color} as CSSProperties}>
+      <span className="gear-art block h-20 w-20 overflow-hidden rounded-lg" aria-hidden><GearImg gearKey={g.key} className={short > 0 ? 'opacity-60' : ''} /></span>
       <span className="max-w-full text-[12.5px] font-semibold leading-tight text-ink-800 [hyphens:auto] [overflow-wrap:anywhere]" lang={locale}>{name}</span>
       <TierTag g={g} />
       {onPreview && <Button variant="secondary" size="sm" onClick={onPreview} aria-label={t(`Passen: ${name}`, `Try on: ${name}`)}>{t('Passen', 'Try on')}</Button>}
@@ -1039,10 +1040,10 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
     const g = item ? GEAR.find((x) => x.key === item) : null;
     const free = GEAR.filter((x) => GEAR_SLOT[x.key] === k && d.gear.owned.includes(x.key)).length;
     return (
-      <button key={k} type="button" onClick={() => setOpen(k)}
-        aria-label={g ? t(`${slotLabel(k, true)}: ${g.nl}. Wijzigen`, `${slotLabel(k, false)}: ${g.en}. Change`) : t(`${slotLabel(k, true)}${free ? ` +${free}` : ''}: leeg${free ? `, ${free} beschikbaar` : ''}`, `${slotLabel(k, false)}${free ? ` +${free}` : ''}: empty${free ? `, ${free} available` : ''}`)}
+      <button key={k} type="button" onClick={() => setOpen(k)} data-tier={g?.tier} title={g ? `${nl ? g.nl : g.en} · Tier ${g.tier} · Itemlevel ${g.itemLevel}` : undefined} style={g ? {borderColor:GEAR_TIERS[g.tier-1].color} : undefined}
+        aria-label={g ? t(`${slotLabel(k, true)}: ${g.nl}. Tier ${g.tier}, itemlevel ${g.itemLevel}. Wijzigen`, `${slotLabel(k, false)}: ${g.en}. Tier ${g.tier}, item level ${g.itemLevel}. Change`) : t(`${slotLabel(k, true)}${free ? ` +${free}` : ''}: leeg${free ? `, ${free} beschikbaar` : ''}`, `${slotLabel(k, false)}${free ? ` +${free}` : ''}: empty${free ? `, ${free} available` : ''}`)}
         className={cn('tap relative flex aspect-square w-full flex-col items-center justify-center overflow-hidden rounded-xl border-2 text-center', g ? 'border-accent bg-white' : 'border-dashed border-line bg-canvas')}>
-        {g ? <span className="absolute inset-1 overflow-hidden rounded-lg" aria-hidden><GearImg gearKey={g.key} /></span> : (
+        {g ? <><span className="absolute inset-1 bottom-4 overflow-hidden rounded-lg" aria-hidden><GearImg gearKey={g.key} /></span><span className="absolute bottom-0.5 rounded bg-white/95 px-1 text-[10px] font-bold text-ink-800" aria-hidden>IL {g.itemLevel}</span></> : (
           <span className="px-0.5 text-[10.5px] font-semibold uppercase leading-tight tracking-wide text-ink-500" aria-hidden>{slotLabel(k, nl)}{free > 0 && <span className="mt-0.5 block text-[10px] font-bold text-accent">+{free}</span>}</span>
         )}
       </button>

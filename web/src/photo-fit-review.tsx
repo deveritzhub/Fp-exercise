@@ -1,3 +1,4 @@
+import {GEAR} from '@shared/hero';
 import {createRoot} from 'react-dom/client';
 import {HeroPhoto} from './components/hero/HeroPhoto';
 import {I18nProvider} from './lib/i18n';
@@ -12,6 +13,8 @@ const variants=[
  {skin:'s9',hair:'short',beard:'beard',frame:'m',build:'full'},
  {skin:'s1',hair:'buzz',frame:'m',build:'slim'},
 ];
-const matrix=new URLSearchParams(location.search).has('matrix');
-const examples=matrix?variants.map(v=>({...v,outfit:'forest',gear:['cap']})):[[],['cap','wristbands','gold_shoes'],['crown','medal','champion','gloves','gold_shoes']].map(gear=>({...variants[0],outfit:'forest',gear}));
-createRoot(document.getElementById('root')!).render(<I18nProvider><div style={{display:'grid',gridTemplateColumns:`repeat(${matrix?4:3},1fr)`,gap:12,padding:20}}>{examples.map((look,i)=><div key={i}><h2 style={{color:'white',textAlign:'center'}}>{matrix?`${look.frame} · ${look.build} · ${look.hair}`:['Bestaande avatar','Accessoires','Kampioensoutfit'][i]}</h2><HeroPhoto fittedGear look={look} className={matrix?'h-[480px] w-[360px]':'h-[640px] w-[480px]'}/></div>)}</div></I18nProvider>);
+const params=new URLSearchParams(location.search);
+const catalog=params.has('catalog') ? GEAR.slice(Number(params.get('catalog'))*8,Number(params.get('catalog'))*8+8) : null;
+const matrix=params.has('matrix') || !!catalog;
+const examples=catalog ? catalog.map(g=>({...variants[0],outfit:'forest',gear:[g.key]})) : matrix?variants.map(v=>({...v,outfit:'forest',gear:['cap']})):[[],['cap','wristbands','gold_shoes'],['crown','medal','champion','gloves','gold_shoes']].map(gear=>({...variants[0],outfit:'forest',gear}));
+createRoot(document.getElementById('root')!).render(<I18nProvider><div style={{display:'grid',gridTemplateColumns:`repeat(${matrix?4:3},1fr)`,gap:12,padding:20}}>{examples.map((look,i)=><div key={i}><h2 style={{color:'white',textAlign:'center'}}>{catalog?catalog[i].nl:matrix?`${look.frame} · ${look.build} · ${look.hair}`:['Bestaande avatar','Accessoires','Kampioensoutfit'][i]}</h2><HeroPhoto fittedGear look={look} className={matrix?'h-[480px] w-[360px]':'h-[640px] w-[480px]'}/></div>)}</div></I18nProvider>);

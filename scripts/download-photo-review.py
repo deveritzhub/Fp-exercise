@@ -12,3 +12,11 @@ more={**wear,'avatar':avatars['f_s5_average'],'champion':'hf_20261101_214510_ae6
 for key,file in more.items():
  p=pathlib.Path('.local-photo-review')/(key+'.png')
  if not p.exists():p.write_bytes(urllib.request.urlopen('https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/'+file,timeout=45).read())
+
+# Actual distinct outfits and their inventory art for the 26-item review.
+for kind in ['OUTFIT','SHOP']:
+ pairs=dict(re.findall(r'"([^"]+)": "([^"]+)"',s.split('export const HERO_'+kind+'_FILES')[1].split('};')[0]))
+ for key,file in pairs.items():
+  if (kind=='OUTFIT' and key.startswith('f_s5_average__')) or (kind=='SHOP' and key in ['tracksuit','team_kit','champion']):
+   p=pathlib.Path('.local-photo-review')/(('shop_' if kind=='SHOP' else '')+key+'.png')
+   if not p.exists():p.write_bytes(urllib.request.urlopen('https://d8j0ntlcm91z4.cloudfront.net/user_3Fqm6YLMCboRqZzqeVY5m3hJkxK/'+file,timeout=45).read())
