@@ -21,6 +21,7 @@ test('all cosmetics, persistence, previews, character variants and keyboard', as
   });
   mkdirSync('docs/rpg-screenshots',{recursive:true});
   await page.goto('/p/held/inventaris');
+  await page.getByRole('button',{name:'RPG-weergave',exact:true}).click();
   const character=page.getByRole('img',{name:'Je geïllustreerde held met je gedragen uitrusting'});
   await expect(character).toBeVisible();
   await page.locator('.rpg-stage').screenshot({style:'header, nav { visibility:hidden !important }',path:'docs/rpg-screenshots/unequipped.png'});

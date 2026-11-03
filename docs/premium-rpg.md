@@ -1,8 +1,10 @@
 # FP Flow RPG character review
 
+**Updated direction:** the inventory now defaults to existing photographic avatars. See [photographic fitting review](photo-fitting/README.md) for current screenshots, verification and remaining limits. The SVG implementation below remains the optional illustrated mode.
+
 Stacked on PR #19 (`68cd3f9`). Original SVG artwork; no downloaded game assets, new economy, or patient data changes.
 
-The inventory defaults to the illustrated character. All 26 existing cosmetics now have authored art, shared between inventory thumbnails and the worn figure. Full outfits follow the existing body geometry, with layered fabric, piping and champion shoulder pieces. The mat renders behind the body. The compression sleeve follows its existing **legs** slot. A held sports ball replaces the old chest-only sport marker in RPG view. Photo rendering and clinical body-map rendering retain their existing behavior.
+The optional illustrated mode renders the character as SVG. All 26 existing cosmetics now have authored art, shared between inventory thumbnails and the worn figure. Full outfits follow the existing body geometry, with layered fabric, piping and champion shoulder pieces. The mat renders behind the body. The compression sleeve follows its existing **legs** slot. A held sports ball replaces the old chest-only sport marker in RPG view. Photo rendering and clinical body-map rendering retain their existing behavior.
 
 Shop tiles and slot dialogs offer a reversible try-on before purchase. Purchase uses the existing endpoint and shows a dismissible loot reveal only after success. Equip uses the existing one-per-slot rule and save endpoint. Motion obeys `prefers-reduced-motion`. Item tier text supplements rarity color.
 

@@ -1,3 +1,4 @@
+import { PhotoGearThumbnail } from '../../components/hero/PhotoEquipment';
 import { GearArtwork } from '../../components/hero/RpgGear';
 import '../../components/hero/rpg.css';
 import { useEffect, useState } from 'react';
@@ -1029,7 +1030,8 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const [open, setOpen] = useState<GearSlot | null>(null);
-  const [illustrated, setIllustrated] = useState(true);
+  const [illustrated, setIllustrated] = useState(() => { try { return sessionStorage.getItem('fp.inventory.illustrated') === 'true'; } catch { return false; } });
+  useEffect(() => { try { sessionStorage.setItem('fp.inventory.illustrated', String(illustrated)); } catch { /* storage optional */ } }, [illustrated]);
   const look = { ...d.hero!, gear: [...(preview ? onePerSlot([...d.gear.equipped, preview]) : d.gear.equipped), ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero!.frame) : null, photo: d.customPhoto ?? null };
   const inSlot = (k: GearSlot) => d.gear.equipped.find((g) => GEAR_SLOT[g] === k) ?? null;
   const slotBtn = (k: GearSlot) => {
@@ -1060,7 +1062,7 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
       </div>
       <div className="grid grid-cols-[44px_1fr_44px] sm:grid-cols-[64px_1fr_64px] items-start gap-2">
         <div className="grid gap-2">{side('left')}</div>
-        {illustrated || preview ? <span className="flex h-full min-h-[300px] min-w-0 items-center justify-center overflow-hidden rounded-2xl rpg-podium" role="img" aria-label={t('Je geïllustreerde held met je gedragen uitrusting', 'Your illustrated hero wearing equipped items')}><HumanFigure rpg look={look} viewBox="0 -10 200 440" className="h-[420px] sm:h-[520px] w-full max-w-[260px]" /></span> : <HeroPhoto look={look} className="h-full min-h-[300px] w-full" />}
+        {illustrated ? <span className="flex h-full min-h-[300px] min-w-0 items-center justify-center overflow-hidden rounded-2xl rpg-podium" role="img" aria-label={t('Je geïllustreerde held met je gedragen uitrusting', 'Your illustrated hero wearing equipped items')}><HumanFigure rpg look={look} viewBox="0 -10 200 440" className="h-[420px] sm:h-[520px] w-full max-w-[260px]" /></span> : <span role="img" aria-label={t('Je fotorealistische held met je gedragen uitrusting', 'Your photographic hero wearing equipped items')} className="min-w-0"><HeroPhoto fittedGear look={look} className="h-[420px] sm:h-[520px] w-full" /></span>}
         <div className="grid gap-2">{side('right')}</div>
       </div>
       <div className="mx-auto mt-2 grid w-[136px] grid-cols-2 gap-2">{GEAR_SLOTS.filter((x) => x.side === 'bottom').map((x) => slotBtn(x.key))}</div>
@@ -1210,7 +1212,7 @@ function BadgeArt({ k, earned }: { k: string; earned: boolean }) {
 }
 
 function GearImg({ gearKey, className }: { gearKey: string; className?: string }) {
-  return <GearArtwork item={gearKey} className={cn('h-full w-full p-1', className)} />;
+  return <PhotoGearThumbnail key={gearKey} item={gearKey} className={cn('h-full w-full object-contain p-1', className)} fallback={<GearArtwork item={gearKey} className={cn('h-full w-full p-1', className)} />} />;
 }
 
 function LogTeaser({ d }: { d: HeroState }) {
