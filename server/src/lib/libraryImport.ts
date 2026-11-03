@@ -261,15 +261,15 @@ const MOBILITY_SAME_AS: Record<string, string> = {
   mb_thoracic_rotatie: 'ex_thoracic_rotatie',
   mb_cat_camel: 'ex_cat_camel',
 };
-const STRENGTH_EN: Record<string, string> = { kr_step_up: 'Dumbbell step-up', kr_hip_abduction: 'Hip abduction machine', kr_back_extension: 'Back extension', kr_db_shoulder_press: 'Dumbbell shoulder press', kr_overhead_triceps: 'Overhead triceps extension', kr_db_row: 'One-arm dumbbell row', kr_push_up: 'Push-up', kr_bodyweight_squat: 'Bodyweight squat', kr_forward_lunge: 'Forward lunge', kr_leg_curl: 'Lying leg curl', kr_standing_calf_raise: 'Standing calf raise', kr_lateral_raise: 'Dumbbell lateral raise' };
+const STRENGTH_EN: Record<string, string> = { kr_step_up: 'Dumbbell step-up', kr_hip_abduction: 'Hip abduction machine', kr_back_extension: 'Back extension', kr_db_shoulder_press: 'Dumbbell shoulder press', kr_overhead_triceps: 'Overhead triceps extension', kr_db_row: 'One-arm dumbbell row', kr_push_up: 'Push-up', kr_bodyweight_squat: 'Bodyweight squat', kr_forward_lunge: 'Forward lunge', kr_reverse_lunge: 'Reverse lunge', kr_leg_curl: 'Lying leg curl', kr_standing_calf_raise: 'Standing calf raise', kr_lateral_raise: 'Dumbbell lateral raise' };
 export const STRENGTH_REGION: Record<string, string> = {
-  kr_bodyweight_squat: 'knee', kr_forward_lunge: 'knee', kr_back_squat: 'knee', kr_leg_press: 'knee', kr_leg_curl: 'knee', kr_leg_extension: 'knee', kr_rdl: 'hip', kr_conventional_deadlift: 'hip',
+  kr_bodyweight_squat: 'knee', kr_forward_lunge: 'knee', kr_reverse_lunge: 'knee', kr_back_squat: 'knee', kr_leg_press: 'knee', kr_leg_curl: 'knee', kr_leg_extension: 'knee', kr_rdl: 'hip', kr_conventional_deadlift: 'hip',
   kr_hip_thrust: 'hip', kr_standing_calf_raise: 'ankle_foot', kr_core_plank: 'lumbar_spine',
   kr_goblet_squat: 'knee', kr_step_up: 'knee', kr_walking_lunge: 'knee', kr_hack_squat: 'knee', kr_hip_abduction: 'hip', kr_back_extension: 'lumbar_spine', kr_db_bench_press: 'shoulder', kr_db_shoulder_press: 'shoulder', kr_dips: 'shoulder', kr_cable_fly: 'shoulder', kr_overhead_triceps: 'elbow', kr_db_row: 'thoracic_spine', kr_seated_cable_row: 'thoracic_spine', kr_chin_up: 'thoracic_spine', kr_inverted_row: 'thoracic_spine', kr_reverse_fly: 'shoulder', kr_hammer_curl: 'elbow', kr_pallof_press: 'lumbar_spine', kr_farmer_carry: 'full_body', kr_kettlebell_swing: 'hip',
 };
 const STRENGTH_MOVEMENT: Record<string, string> = { legs: 'squat', push: 'push', pull: 'pull', core: 'core_stability' };
 const HINGE = new Set(['kr_rdl', 'kr_conventional_deadlift', 'kr_hip_thrust', 'kr_back_extension', 'kr_kettlebell_swing']);
-const LUNGE = new Set(['kr_forward_lunge', 'kr_step_up', 'kr_walking_lunge']);
+const LUNGE = new Set(['kr_forward_lunge', 'kr_reverse_lunge', 'kr_step_up', 'kr_walking_lunge']);
 
 const criteriaFrom = (groups: z.infer<typeof criteriaGroups> | undefined, from: string): Criteria =>
   (groups ?? [])

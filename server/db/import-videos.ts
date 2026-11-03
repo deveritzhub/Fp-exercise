@@ -106,3 +106,23 @@ export async function importLibraryVideos(ownerUrl: string, storageDir: string, 
   }
   console.log(`[videos] ${ok}/${videos.length} library videos available`);
 }
+
+/** Remove a clip from exercises it was wrongly linked to; a different video on them is left alone. */
+export async function unlinkLibraryVideos(ownerUrl: string, unlinks: readonly LibraryVideo[]) {
+  const db = new pg.Client({ connectionString: ownerUrl });
+  await db.connect();
+  try {
+    for (const v of unlinks) {
+      const key = `global/${resolveLibraryVideo(v.file).storageName}`;
+      const r = await db.query(
+        `UPDATE exercises SET video_media_id = NULL
+          WHERE (source_key = ANY($1::text[]) OR (practice_id IS NULL AND name_nl = $2))
+            AND video_media_id IN (SELECT id FROM media WHERE storage_key = $3)`,
+        [v.sourceKeys ?? [], v.exercise ?? null, key],
+      );
+      if (r.rowCount) console.log(`[videos] unlinked ${key} from ${r.rowCount} exercise(s)`);
+    }
+  } finally {
+    await db.end();
+  }
+}

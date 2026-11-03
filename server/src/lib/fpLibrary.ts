@@ -21,6 +21,8 @@ export const FP_BUNDLES = [
   { name: 'fp-kracht-v2', file: 'fp-kracht-v2.json' },
   // Twenty more strength exercises for the strength log and own routines.
   { name: 'fp-kracht-v3', file: 'fp-kracht-v3.json' },
+  // The backward lunge, so the lunge demo video (which steps backwards) has the right exercise.
+  { name: 'fp-kracht-v4', file: 'fp-kracht-v4.json' },
 ] as const;
 
 const DIR = path.join(import.meta.dirname, '../../db/seed-data');

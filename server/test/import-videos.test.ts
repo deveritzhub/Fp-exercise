@@ -5,7 +5,7 @@ import path from 'node:path';
 import pg from 'pg';
 import { seedDb, type Seed } from './helpers';
 import { EXERCISES } from '../db/seed-data/exercises';
-import { LIBRARY_VIDEOS, SEEDANCE_VIDEOS, resolveLibraryVideo } from '../db/seed-data/videos';
+import { KLING_VIDEOS, LIBRARY_VIDEOS, SEEDANCE_VIDEOS, resolveLibraryVideo } from '../db/seed-data/videos';
 import { readFpBundle } from '../src/lib/fpLibrary';
 import { sniff } from '../src/routes/media';
 
@@ -28,13 +28,13 @@ function fakeMp4(payload: string) {
 describe('Seedance demo videos', () => {
   it('each belongs to an exercise in a library bundle and resolves to a CDN mp4', () => {
     const keys = new Set<string>();
-    for (const f of ['fp-library.json', 'fp-app-update.json', 'fp-videos-v1.json']) {
+    for (const f of ['fp-library.json', 'fp-app-update.json', 'fp-videos-v1.json', 'fp-kracht-v4.json']) {
       const b = readFpBundle(f) as { oefeningen?: { id: string }[]; seed_data?: { revalidatie?: { oefeningen: { id: string }[] }; krachttraining?: { oefeningen: { id: string }[] } } };
       for (const e of [...(b.oefeningen ?? []), ...(b.seed_data?.revalidatie?.oefeningen ?? []), ...(b.seed_data?.krachttraining?.oefeningen ?? [])]) keys.add(e.id);
     }
     const central = new Set(EXERCISES.map((e) => e.nl));
     expect(SEEDANCE_VIDEOS.flatMap((v) => v.sourceKeys ?? [v.exercise])).toEqual([
-      'kr_bodyweight_squat', 'kr_forward_lunge', 'kr_conventional_deadlift', 'kr_hip_thrust', 'ex_split_squat_bulgarian', 'kr_rdl', 'Eenbenige bekkenbrug',
+      'kr_bodyweight_squat', 'kr_reverse_lunge', 'kr_conventional_deadlift', 'kr_hip_thrust', 'ex_split_squat_bulgarian', 'kr_rdl', 'Eenbenige bekkenbrug',
     ]);
     for (const v of SEEDANCE_VIDEOS) {
       for (const k of v.sourceKeys ?? []) expect(keys.has(k), k).toBe(true);
@@ -42,6 +42,22 @@ describe('Seedance demo videos', () => {
       const src = resolveLibraryVideo(v.file);
       expect(src.url?.startsWith('https://d8j0ntlcm91z4.cloudfront.net/')).toBe(true);
       expect(src.storageName).toMatch(/^hf_20261101_\d{6}_[0-9a-f-]{36}\.mp4$/);
+    }
+  });
+
+  it('links the Kling clips to existing practice-library exercises, from local mp4 files', async () => {
+    const keys = new Set<string>();
+    for (const f of ['fp-library.json', 'fp-app-update.json', 'fp-kracht-v2.json', 'fp-kracht-v3.json']) {
+      const b = readFpBundle(f) as { oefeningen?: { id: string }[]; seed_data?: { revalidatie?: { oefeningen: { id: string }[] }; krachttraining?: { oefeningen: { id: string }[] } } };
+      for (const e of [...(b.oefeningen ?? []), ...(b.seed_data?.revalidatie?.oefeningen ?? []), ...(b.seed_data?.krachttraining?.oefeningen ?? [])]) keys.add(e.id);
+    }
+    expect(KLING_VIDEOS.flatMap((v) => v.sourceKeys ?? [])).toEqual(['kr_push_up', 'ex_glute_bridge']);
+    for (const v of KLING_VIDEOS) {
+      for (const k of v.sourceKeys ?? []) expect(keys.has(k), k).toBe(true);
+      const src = resolveLibraryVideo(v.file);
+      expect(src.localPath).toBeTruthy();
+      const head = (await fs.readFile(src.localPath!)).subarray(4, 8).toString('latin1');
+      expect(head).toBe('ftyp');
     }
   });
 });
@@ -147,6 +163,31 @@ describe('importing library videos', () => {
     );
     expect(c2.id).toBe(c1.video_media_id);
     expect(Number(c2.size_bytes)).toBe(v2.length);
+  });
+
+  it('unlinks a wrongly linked clip, but leaves exercises that now have another video', async () => {
+    const { unlinkLibraryVideos } = await import('../db/import-videos');
+    const [wrong] = await q(
+      `INSERT INTO media(practice_id, kind, mime_type, size_bytes, storage_key, original_name)
+       VALUES (NULL,'video','video/mp4',4,'global/wrong-lunge-test.mp4','w.mp4') RETURNING id`,
+    );
+    const [other] = await q(
+      `INSERT INTO media(practice_id, kind, mime_type, size_bytes, storage_key, original_name)
+       VALUES (NULL,'video','video/mp4',4,'global/own-lunge-test.mp4','o.mp4') RETURNING id`,
+    );
+    const ins = (practice: 'A' | 'B', key: string, media: string) => q(
+      `INSERT INTO exercises(practice_id, created_by, source_key, name_nl, name_en, body_region, video_media_id)
+       VALUES ($1,$2,$3,'Uitval test','Lunge test','knee',$4) RETURNING id`,
+      [s.practices[practice], practice === 'A' ? s.users.therapistA : s.users.therapistB, key, media],
+    );
+    const [a] = await ins('A', 'ex_unlink_test', wrong.id);
+    const [b] = await ins('B', 'ex_unlink_test', other.id);
+    const [c] = await ins('A', 'ex_unlink_keep', wrong.id);
+    await unlinkLibraryVideos(url(), [{ sourceKeys: ['ex_unlink_test'], file: 'https://example.test/x/wrong-lunge-test.mp4' }]);
+    const v = async (id: string) => (await q('SELECT video_media_id FROM exercises WHERE id = $1', [id]))[0].video_media_id;
+    expect(await v(a.id)).toBeNull();
+    expect(await v(b.id)).toBe(other.id);
+    expect(await v(c.id)).toBe(wrong.id);
   });
 
   it('links the 13 approved clips onto the central exercises, replacing a previous video', async () => {

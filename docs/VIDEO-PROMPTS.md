@@ -14,9 +14,9 @@ Maak elke video in Kling AI met deze instellingen, zodat ze passen bij de video'
 
 | Bestand | Oefening | Prompt (na de vaste stijl) |
 |---|---|---|
-| `opdrukken.mp4` | Opdrukken | Doing push-ups on a mat: hands slightly wider than shoulders, body in one straight line from head to heels, lowering until the chest is just above the floor, then pushing back up. |
+| `opdrukken.mp4` ✅ in de app | Opdrukken | Doing push-ups on a mat: hands slightly wider than shoulders, body in one straight line from head to heels, lowering until the chest is just above the floor, then pushing back up. |
 | `plank.mp4` | Plank | Holding a forearm plank on a mat: elbows under the shoulders, body in one straight line, neutral neck, breathing calmly, holding still. |
-| `bilbrug.mp4` | Bilbrug | Lying on the back on a mat, knees bent and feet flat, lifting the hips until knees, hips and shoulders form a straight line, squeezing the glutes, then lowering slowly. |
+| `bilbrug.mp4` ✅ in de app | Bilbrug | Lying on the back on a mat, knees bent and feet flat, lifting the hips until knees, hips and shoulders form a straight line, squeezing the glutes, then lowering slowly. |
 | `leg-press.mp4` | Leg press | Using a 45-degree leg press machine: feet hip-width on the platform, lowering the sled until the knees are bent about 90 degrees, then pressing up without locking the knees. Three-quarter front view. |
 | `lat-pulldown.mp4` | Lat pulldown | Seated at a lat pulldown machine, pulling the wide bar down to the upper chest with elbows driving down, chest up, then letting the bar rise slowly. Three-quarter back view. |
 | `chest-supported-row.mp4` | Chest-supported row | Lying chest-down on an incline bench holding two dumbbells, rowing them up towards the hips with the shoulder blades squeezing together, then lowering slowly. |

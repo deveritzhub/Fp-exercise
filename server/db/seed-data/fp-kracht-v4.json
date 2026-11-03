@@ -1,0 +1,30 @@
+{
+ "_meta": {
+  "naam": "Achterwaartse uitvalspas",
+  "versie": "fp-kracht-v4",
+  "toelichting": "De achterwaartse uitvalspas, zodat de bestaande demovideo (die een stap naar achteren laat zien) bij de juiste oefening staat."
+ },
+ "seed_data": {
+  "krachttraining": {
+   "oefeningen": [
+    {
+     "id": "kr_reverse_lunge",
+     "naam": "Achterwaartse uitvalspas",
+     "categorie": "legs",
+     "hoofdspier": "quadriceps, bilspieren",
+     "materiaal": "Geen",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "6-12 per been",
+     "rust_min": "1-2",
+     "cues": "Romp rechtop, handen in de zij. Stap naar achteren en zak tot de voorste knie ongeveer 90 graden boven de enkel staat en de achterste knie net boven de grond. Duw via de voorste hiel terug naar de start.",
+     "tags": [
+      "kracht",
+      "basis"
+     ]
+    }
+   ],
+   "programmas": []
+  }
+ }
+}

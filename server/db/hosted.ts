@@ -83,7 +83,9 @@ importLibraryVideos(process.env.DATABASE_OWNER_URL!, config.storageDir)
   .then(async () => {
     const { completeExerciseTexts } = await import('./complete-exercises');
     await completeExerciseTexts(process.env.DATABASE_OWNER_URL!);
-    const { LIBRARY_VIDEOS, SEEDANCE_VIDEOS } = await import('./seed-data/videos');
-    await importLibraryVideos(process.env.DATABASE_OWNER_URL!, config.storageDir, [...LIBRARY_VIDEOS, ...SEEDANCE_VIDEOS]);
+    const { LIBRARY_VIDEOS, SEEDANCE_VIDEOS, KLING_VIDEOS, VIDEO_UNLINKS } = await import('./seed-data/videos');
+    const { unlinkLibraryVideos } = await import('./import-videos');
+    await unlinkLibraryVideos(process.env.DATABASE_OWNER_URL!, VIDEO_UNLINKS);
+    await importLibraryVideos(process.env.DATABASE_OWNER_URL!, config.storageDir, [...LIBRARY_VIDEOS, ...SEEDANCE_VIDEOS, ...KLING_VIDEOS]);
   })
   .catch((e) => console.error('[library]', e.message));
