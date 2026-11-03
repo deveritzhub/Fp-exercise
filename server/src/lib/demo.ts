@@ -30,5 +30,10 @@ export const demoSettings = () => {
 /** What the public site may show: the password only while it is still the public seed one. */
 export const publicDemoInfo = () => {
   const s = demoSettings();
-  return { accounts: s.enabled, publicPassword: s.enabled && !s.ownPassword };
+  return {
+    accounts: s.enabled,
+    publicPassword: s.enabled && !s.ownPassword,
+    /** Test version (DEMO_MODE=1 or TEST_VERSION=1): the app shows a "no real medical data" banner. */
+    testVersion: process.env.DEMO_MODE === '1' || process.env.TEST_VERSION === '1',
+  };
 };

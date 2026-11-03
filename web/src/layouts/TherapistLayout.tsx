@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { TestBanner } from '@/components/app/TestBanner';
 import { useEffect, useState } from 'react';
 import { BookOpen, Brain, Building2, ChevronsUpDown, LayoutDashboard, LogOut, Menu, Plus, Search, Settings, Users, Layers, X, UserRound, Check } from 'lucide-react';
 import { Logo, LocaleSwitch } from '@/components/app/Brand';
@@ -174,6 +175,7 @@ export function TherapistLayout() {
           )}
         </Popover>
       </header>
+      <TestBanner />
       <main className="mx-auto w-full max-w-[1320px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 print:max-w-none print:p-0">
         <Outlet />
       </main>

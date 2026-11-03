@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { TestBanner } from '@/components/app/TestBanner';
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { CalendarCheck2, CloudOff, Dumbbell, HeartPulse, Move, RefreshCw, Settings, Trophy } from 'lucide-react';
 import type { PatientHomeData } from '@/pages/patient/PatientHome';
@@ -143,6 +144,7 @@ export function PatientLayout() {
             : t('Je training wordt verstuurd…', 'Sending your workout…')}
         </div>
       )}
+      <TestBanner />
       <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : 'px-4 pb-28 pt-5')}>
         <Outlet />
       </main>

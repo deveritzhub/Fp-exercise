@@ -26,10 +26,10 @@ describe('demo accounts can be closed on a hosted environment', () => {
   it('DEMO_ACCOUNTS=off refuses demo logins; the public page then hides the password', async () => {
     process.env.DEMO_ACCOUNTS = 'off';
     expect((await tryLogin('patient@praktijk-a.test', DEMO_PASSWORD)).body.error).toBe('demo_disabled');
-    expect((await new Client().get('/public/demo')).body).toEqual({ accounts: false, publicPassword: false });
+    expect((await new Client().get('/public/demo')).body).toMatchObject({ accounts: false, publicPassword: false });
     delete process.env.DEMO_ACCOUNTS;
     expect((await tryLogin('patient@praktijk-a.test', DEMO_PASSWORD)).status).toBe(200);
-    expect((await new Client().get('/public/demo')).body).toEqual({ accounts: true, publicPassword: true });
+    expect((await new Client().get('/public/demo')).body).toMatchObject({ accounts: true, publicPassword: true });
   });
 
   it('an own DEMO_PASSWORD replaces the public one, and the site stops showing it', async () => {
@@ -37,9 +37,22 @@ describe('demo accounts can be closed on a hosted environment', () => {
     await applyDemoSettings(process.env.DATABASE_OWNER_URL!);
     expect((await tryLogin('therapeut@praktijk-a.test', DEMO_PASSWORD)).status).toBe(401);
     expect((await tryLogin('therapeut@praktijk-a.test', 'Eigen-demo-wachtwoord-42')).status).toBe(200);
-    expect((await new Client().get('/public/demo')).body).toEqual({ accounts: true, publicPassword: false });
+    expect((await new Client().get('/public/demo')).body).toMatchObject({ accounts: true, publicPassword: false });
     // Back to the seed password for the other tests.
     delete process.env.DEMO_PASSWORD;
     await seedDb();
+  });
+});
+
+describe('test version banner', () => {
+  it('is on with DEMO_MODE=1 or TEST_VERSION=1', async () => {
+    const before = { d: process.env.DEMO_MODE, t: process.env.TEST_VERSION };
+    delete process.env.DEMO_MODE;
+    delete process.env.TEST_VERSION;
+    expect((await new Client().get('/public/demo')).body.testVersion).toBe(false);
+    process.env.TEST_VERSION = '1';
+    expect((await new Client().get('/public/demo')).body.testVersion).toBe(true);
+    if (before.d === undefined) delete process.env.DEMO_MODE; else process.env.DEMO_MODE = before.d;
+    if (before.t === undefined) delete process.env.TEST_VERSION; else process.env.TEST_VERSION = before.t;
   });
 });
