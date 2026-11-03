@@ -1,0 +1,2 @@
+import { defineConfig } from '@playwright/test';
+export default defineConfig({testDir:'e2e',testMatch:'premium-rpg.spec.ts',workers:1,use:{baseURL:'http://localhost:5175',launchOptions:{executablePath:process.env.PW_CHROMIUM_PATH ?? '/usr/bin/chromium',args:['--no-sandbox']},screenshot:'only-on-failure'},webServer:{command:'npx vite --port 5175 --host 127.0.0.1',url:'http://localhost:5175',reuseExistingServer:true}});

@@ -1,3 +1,6 @@
+import { figureGeometry } from './figureGeometry';
+export { figureGeometry } from './figureGeometry';
+import { RpgGear } from './RpgGear';
 import { useId } from 'react';
 import type { HeroLook } from '@shared/hero';
 
@@ -74,55 +77,6 @@ function limb(points: Pt[]) {
   return d + 'Z';
 }
 
-/** Body proportions for a body type and build (all positions in the 200 × 420 frame). */
-export function figureGeometry(look: Pick<FigureLook, 'frame' | 'build' | 'body'>) {
-  const f = look.frame === 'f';
-  const b = { slim: 0.9, average: 1, athletic: 1.04, full: 1.16 }[look.build ?? 'average'] ?? 1;
-  let shoulder = (f ? 31 : 36) * (look.build === 'athletic' ? 1.1 : look.build === 'full' ? 1.08 : b);
-  let chest = (f ? 28 : 31) * b;
-  let waist = (f ? 21 : 26) * (look.build === 'full' ? 1.32 : look.build === 'athletic' ? 0.96 : b);
-  let hip = (f ? 31 : 27) * (look.build === 'full' ? 1.2 : b);
-  let neck = (f ? 6.5 : 8) * (look.build === 'athletic' ? 1.12 : b);
-  let limbW = look.build === 'full' ? 1.2 : look.build === 'athletic' ? 1.12 : b;
-  let armW = limbW;
-  let legW = limbW;
-  let belly = look.build === 'full' ? 0.12 : 0;
-  // Own measurements win: fat mostly widens waist and hips, muscle mostly shoulders, neck and limbs.
-  if (look.body) {
-    const fat = Math.min(1, Math.max(0, look.body.fat));
-    const mus = Math.min(1, Math.max(0, look.body.muscle));
-    shoulder = (f ? 31 : 36) * (0.86 + 0.42 * mus + 0.1 * fat);
-    chest = (f ? 28 : 31) * (0.84 + 0.3 * mus + 0.42 * fat);
-    waist = (f ? 21 : 26) * (0.78 + 0.02 * mus + 1.3 * fat);
-    hip = (f ? 31 : 27) * (0.84 + 0.05 * mus + 0.6 * fat);
-    neck = (f ? 6.5 : 8) * (0.86 + 0.5 * mus + 0.25 * fat);
-    limbW = 0.82 + 0.45 * mus + 0.5 * fat;
-    armW = 0.76 + 0.75 * mus + 0.45 * fat;
-    legW = 0.8 + 0.42 * mus + 0.75 * fat;
-    belly = 0.45 * fat;
-  }
-  const legX = hip * 0.52 + 1;
-  return {
-    f, b, shoulder, chest, waist, hip, neck, limbW, armW, legW, belly, legX,
-    armX: (side: -1 | 1, y: number) => 100 + side * (shoulder - 3 + (y - 92) * 0.14),
-    /** Where each body-map area sits on this figure. */
-    points: {
-      head: [100, 34], neck: [100, 66],
-      shoulder_r: [100 - shoulder + 4, 94], shoulder_l: [100 + shoulder - 4, 94],
-      chest: [100, 118], upper_back: [100, 116],
-      elbow_r: [100 - shoulder - 7, 152], elbow_l: [100 + shoulder + 7, 152],
-      abdomen: [100, 166], lower_back: [100, 176],
-      wrist_r: [100 - shoulder - 12, 214], wrist_l: [100 + shoulder + 12, 214],
-      hip_r: [100 - hip + 6, 206], hip_l: [100 + hip - 6, 206],
-      buttock_l: [100 - legX, 222], buttock_r: [100 + legX, 222],
-      thigh_r: [100 - legX, 256], thigh_l: [100 + legX, 256],
-      hamstring_l: [100 - legX, 262], hamstring_r: [100 + legX, 262],
-      knee_r: [100 - legX * 0.82, 300], knee_l: [100 + legX * 0.82, 300],
-      calf_l: [100 - legX * 0.8, 340], calf_r: [100 + legX * 0.8, 340],
-      ankle_r: [100 - legX * 0.8, 388], ankle_l: [100 + legX * 0.8, 388],
-    } as Record<string, [number, number]>,
-  };
-}
 
 function Hair({ style, colour, back }: { style: string; colour: string; back: boolean }) {
   const hi = shade(colour, 0.18);
@@ -178,7 +132,7 @@ function SportMark({ sport }: { sport: string }) {
 }
 
 /** Full figure (front or back). Decorative: the meaning is given by the surrounding labels. */
-export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 200 420', portrait = false }: { look: FigureLook; side?: 'front' | 'back'; className?: string; viewBox?: string; portrait?: boolean }) {
+export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 200 420', portrait = false, rpg = false }: { rpg?: boolean; look: FigureLook; side?: 'front' | 'back'; className?: string; viewBox?: string; portrait?: boolean }) {
   const uid = useId().replace(/:/g, '');
   const g = figureGeometry(look);
   const skin = SKIN_TONES[look.skin] ?? SKIN_TONES.s4;
@@ -188,7 +142,8 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
   const kit = KIT[look.outfit] ?? KIT.forest;
   const front = side === 'front';
   const L = g.limbW;
-  const gear = new Set(look.gear ?? []);
+  const gear = new Set(rpg ? (look.gear ?? []).filter(k => k === 'crutches') : look.gear ?? []);
+  const worn = look.gear ?? [];
   const gold = gear.has('gold_shoes');
 
   // A fuller body gets a belly between chest and waist; a muscular one a V-shape (wide shoulders, narrow waist).
@@ -237,7 +192,9 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
       </defs>
 
       <ellipse cx="100" cy="410" rx={46 * g.b} ry="5" fill="#202b26" opacity=".08" />
-      <Hair style={look.hair} colour={hair} back />
+      {rpg && worn.includes('master_cape') && <RpgGear item="master_cape" look={look} />}
+      {rpg && worn.includes('yoga_mat') && <RpgGear item="yoga_mat" look={look} />}
+      <Hair style={rpg && worn.includes('cap') && look.hair === 'afro' ? 'short' : look.hair} colour={hair} back />
 
       {/* Skin: arms, legs, neck, torso */}
       <g fill={`url(#sk${uid})`}>
@@ -312,6 +269,13 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
         );
       })}
 
+      {rpg && <g>
+        {([-1,1] as const).map(s => <g key={s}><path d={leg(s)} fill="#243d40" stroke="#0f292c" strokeWidth="1.5"/><path d={`M${100+s*g.legX+s*7},222 L${100+s*g.legX+s*4},375`} fill="none" stroke="#72958a" strokeWidth="1.5"/><path d={`M${100+s*(g.legX-2)-8},375 h16 l4,25 q-8,7 -20,0Z`} fill="#283439" stroke="#a99a70"/></g>)}
+        <path d={`M${100-g.hip},182 Q100,194 ${100+g.hip},182 L${100+g.hip+2},222 100,239 ${100-g.hip-2},222Z`} fill={`url(#kt${uid})`} stroke="#a99a70" strokeWidth="1.2"/>
+        <path d={`M${100-g.shoulder+4},91 Q100,115 ${100+g.shoulder-4},91`} fill="none" stroke="#c2b17e" strokeWidth="2"/>
+        <path d={`M${100-g.chest+3},124 L${100-g.waist+4},180 M${100+g.chest-3},124 L${100+g.waist-4},180`} fill="none" stroke="#85ada0" strokeWidth="1.5"/>
+        {worn.filter(k => ['tracksuit','team_kit','champion'].includes(k)).map(item => <RpgGear key={item} item={item} look={look} shapes={{torso,arm,leg}}/>)}
+      </g>}
       {/* Head */}
       <ellipse cx="79.5" cy="41" rx="3.6" ry="6" fill={skin} stroke={skinDark} strokeWidth=".6" />
       <ellipse cx="120.5" cy="41" rx="3.6" ry="6" fill={skin} stroke={skinDark} strokeWidth=".6" />
@@ -366,13 +330,14 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
         <path d="M86,58 Q100,64 114,58" fill="none" stroke={skinDark} strokeWidth=".8" opacity=".5" />
       )}
       {front ? (
-        <Hair style={look.hair} colour={hair} back={false} />
+        <Hair style={rpg && worn.includes('cap') && ['afro','bun','curly'].includes(look.hair) ? 'short' : look.hair} colour={hair} back={false} />
       ) : look.hair !== 'none' ? (
         <path d="M78,42 C74,14 90,8 100,8 C112,8 128,14 122,42 C120,52 112,56 100,56 C88,56 80,52 78,42 Z" fill={hair} opacity={look.hair === 'buzz' ? 0.75 : 1} />
       ) : null}
       {!front && look.hair === 'ponytail' && <path d="M96,40 C88,62 92,84 100,92 C108,84 112,62 104,40 Z" fill={hair} />}
       {!front && look.hair === 'bun' && <circle cx="100" cy="14" r="9" fill={hair} />}
       {!front && look.hair === 'long' && <path d="M78,40 C76,70 80,92 84,98 L116,98 C120,92 124,70 122,40 Z" fill={hair} />}
+      {rpg && ['crew_socks','shin_guards','balance_shoes','spikes','gold_shoes','sleeve','captain','wristbands','watch','gloves','belt','hr_band','sport_item','pin','scarf','towel','medal','headphones','headband','visor','cap','crown'].filter(k => worn.includes(k)).map(item => <RpgGear key={item} item={item} look={look}/>)}
       {/* Gear unlocked by progress */}
       {gear.has('wristbands') && [-1, 1].map((sd) => (
         <rect key={sd} x={g.armX(sd as -1 | 1, 200) - 5 * L} y="196" width={10 * L} height="6" rx="2" fill={kit.main} stroke="#fff" strokeWidth=".8" />
