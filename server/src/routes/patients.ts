@@ -239,6 +239,36 @@ patients.post('/:id/invite', async (c) => {
   return c.json({ ok: true, ...(exposeInviteLinks ? { inviteUrl: res.inviteUrl } : {}) });
 });
 
+const outcomeBody = z.discriminatedUnion('domain', [
+  z.object({ domain: z.literal('rom'), metric: z.string().trim().min(1).max(80), value:z.number().finite().min(0).max(360), unit:z.literal('degrees'), side:z.enum(['left','right','bilateral','not_applicable']).default('not_applicable'), measuredOn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/), note:z.string().trim().max(300).default('') }),
+  z.object({ domain: z.literal('strength'), metric: z.string().trim().min(1).max(80), value:z.number().finite().min(0).max(100000), unit:z.enum(['kg','N']), side:z.enum(['left','right','bilateral','not_applicable']).default('not_applicable'), measuredOn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/), note:z.string().trim().max(300).default('') }),
+  z.object({ domain: z.enum(['function','confidence']), metric: z.string().trim().min(1).max(80), value:z.number().finite().min(0).max(100), unit:z.enum(['score_0_10','percent']), side:z.enum(['left','right','bilateral','not_applicable']).default('not_applicable'), measuredOn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/), note:z.string().trim().max(300).default('') }),
+]).superRefine((v,ctx)=>{
+  if(v.unit==='score_0_10' && v.value>10)ctx.addIssue({code:z.ZodIssueCode.custom,message:'score above 10',path:['value']});
+});
+
+patients.post('/:id/outcomes', async (c)=>{
+  const {user}=requireStaff(c);
+  const id=parse(uuidParam,c.req.param('id'));
+  const b=parse(outcomeBody,await c.req.json());
+  return c.json(await withUser(user.id,async(tx)=>{
+    const p=await loadPatient(tx,id);
+    if(!p)throw notFound();
+    const r=await tx.query(`INSERT INTO patient_outcomes
+      (patient_id,practice_id,recorded_by,measured_on,domain,metric,value,unit,side,note)
+      VALUES ($1,$2,app.uid(),$3,$4,$5,$6,$7,$8,$9)
+      RETURNING id,measured_on,domain,metric,value,unit,side,note,created_at`,
+      [id,p.practice_id,b.measuredOn,b.domain,b.metric,b.value,b.unit,b.side,b.note]);
+    await audit(tx,user.id,p.practice_id,'create','patient_outcome',r.rows[0].id,{domain:b.domain});
+    return {item:mapOutcome(r.rows[0])};
+  }),201);
+});
+
+const mapOutcome=(r:any)=>({
+  id:r.id,measuredOn:r.measured_on,domain:r.domain,metric:r.metric,
+  value:Number(r.value),unit:r.unit,side:r.side,note:r.note,createdAt:r.created_at,
+});
+
 patients.get('/:id/progress', async (c) => {
   const { user } = requireStaff(c);
   const id = parse(uuidParam, c.req.param('id'));
@@ -263,6 +293,10 @@ patients.get('/:id/progress', async (c) => {
           ORDER BY s.started_at DESC LIMIT 100`,
         [id],
       );
+      const outcomes=await tx.query(
+        `SELECT id,measured_on,domain,metric,value,unit,side,note,created_at
+           FROM patient_outcomes WHERE patient_id=$1
+           ORDER BY measured_on DESC,created_at DESC LIMIT 100`,[id]);
       const perExercise = await tx.query(
         `SELECT l.exercise_id, e.name_nl, e.name_en, count(*) FILTER (WHERE l.completed) AS completed,
                 count(*) AS logged, round(avg(l.difficulty)::numeric, 1) AS avg_difficulty,
@@ -289,6 +323,7 @@ patients.get('/:id/progress', async (c) => {
           reviewedAt: s.reviewed_at,
           logs: s.logs,
         })),
+        outcomes: outcomes.rows.map(mapOutcome),
         perExercise: perExercise.rows.map((r) => ({
           exerciseId: r.exercise_id,
           nameNl: r.name_nl,
@@ -319,6 +354,7 @@ patients.get('/:id/export', async (c) => {
       programItems: await q('SELECT i.* FROM program_items i JOIN programs p ON p.id = i.program_id WHERE p.patient_id = $1'),
       sessions: await q('SELECT * FROM workout_sessions WHERE patient_id = $1'),
       exerciseLogs: await q('SELECT * FROM exercise_logs WHERE patient_id = $1'),
+      outcomeMeasurements: await q('SELECT * FROM patient_outcomes WHERE patient_id = $1'),
     };
     await audit(tx, user.id, p.practice_id, 'export', 'patient', id);
     return out;
