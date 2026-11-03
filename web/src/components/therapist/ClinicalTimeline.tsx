@@ -29,8 +29,10 @@ export function ClinicalTimeline({ sessions }: { sessions: Progress['sessions'] 
           {domains.map(d => (
             <div key={d.en} className="rounded-xl border border-line bg-canvas p-3">
               <dt className="text-[12px] text-ink-600">{t(d.nl,d.en)}</dt>
-              <dd className="mt-1 text-[18px] font-bold tabular-nums text-ink-900">{d.value}</dd>
-              {!d.available && <span className="text-[11px] text-ink-500">{t('Geen meting', 'No measurement')}</span>}
+              <dd className="mt-1 text-[18px] font-bold tabular-nums text-ink-900">
+                {d.value}
+                {!d.available && <span className="block text-[11px] font-normal text-ink-500">{t('Geen meting', 'No measurement')}</span>}
+              </dd>
             </div>
           ))}
         </dl>
@@ -51,7 +53,7 @@ export function ClinicalTimeline({ sessions }: { sessions: Progress['sessions'] 
         {!points.length ? (
           <p className="flex items-center gap-2 text-[13px] text-ink-600"><ClipboardList className="h-4 w-4" />{t('Nog geen afgeronde sessies met meetgegevens.', 'No completed sessions with measurements yet.')}</p>
         ) : (
-          <ol className="max-h-80 space-y-2 overflow-y-auto" aria-label={t('Sessiemetingen op datum', 'Session observations by date')}>
+          <ol tabIndex={0} className="max-h-80 space-y-2 overflow-y-auto focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2" aria-label={t('Sessiemetingen op datum', 'Session observations by date')}>
             {[...points].reverse().slice(0, 30).map(p => (
               <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-line px-3 py-2 text-[13px]">
                 <time className="min-w-32 font-semibold text-ink-900" dateTime={p.at}>{fmtDateTime(p.at, locale)}</time>
