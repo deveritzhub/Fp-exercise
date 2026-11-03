@@ -1,5 +1,5 @@
 import { ShieldCheck } from 'lucide-react';
-import { accentVars, DEFAULT_ACCENT } from '@/lib/accent';
+import { accentVars } from '@/lib/accent';
 import { useI18n } from '@/lib/i18n';
 
 /** The current draft branding only; changing this preview never saves any settings. */
@@ -28,7 +28,6 @@ export function PracticeBrandPreview({ name, accent }: { name: string; accent: s
       <p className="mt-2 text-[12px] leading-relaxed text-ink-600">
         {t('Naam en accentkleur zijn al per praktijk instelbaar. Een eigen logo per praktijk vereist nog veilige upload- en opslagfunctionaliteit; deze preview wijzigt niets aan patiëntgegevens.', 'Each practice already has its own name and accent colour. A practice-specific logo still requires secure upload and storage; this preview changes no patient data.')}
       </p>
-      <span className="sr-only">{DEFAULT_ACCENT}</span>
     </section>
   );
 }
