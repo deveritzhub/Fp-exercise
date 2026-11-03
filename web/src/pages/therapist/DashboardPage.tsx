@@ -54,7 +54,7 @@ export function DashboardPage() {
           {d ? (
             <>
               <Stat to="/app/patienten?bereik=mijn" label={t('Mijn patiënten', 'My patients')} value={d.stats.patients} icon={<Users className="h-4 w-4" />} hint={d.stats.activePrograms === 1 ? t('1 actief programma', '1 active programme') : t(`${d.stats.activePrograms} actieve programma’s`, `${d.stats.activePrograms} active programmes`)} />
-              <Stat to="/app/patienten?bereik=mijn" label={t('Therapie\u00ADtrouw 7 dagen', 'Adherence 7 days')} value={pct(d.stats.adherence7d)} icon={<Activity className="h-4 w-4" />} hint={t(`${d.stats.adherence.completed} van ${d.stats.adherence.planned} geplande trainingsdagen gedaan`, `${d.stats.adherence.completed} of ${d.stats.adherence.planned} planned training days done`)} />
+              <Stat to="/app/patienten?bereik=mijn" label={t('Trouw 7 dagen', 'Adherence 7 days')} value={pct(d.stats.adherence7d)} icon={<Activity className="h-4 w-4" />} hint={t(`${d.stats.adherence.completed} van ${d.stats.adherence.planned} geplande trainingsdagen gedaan`, `${d.stats.adherence.completed} of ${d.stats.adherence.planned} planned training days done`)} />
               <Stat href="#recente-activiteit" label={t('Sessies 7 dagen', 'Sessions 7 days')} value={d.stats.sessions7d} icon={<Layers className="h-4 w-4" />} hint={t('Afgeronde oefensessies', 'Completed exercise sessions')} />
               <Stat href="#vraagt-aandacht" label={t('Vraagt aandacht', 'Needs attention')} value={d.stats.attention + d.alerts.length} tone="warn" icon={<AlertCircle className="h-4 w-4" />} hint={t('Werklijst hieronder', 'Work list below')} />
             </>
