@@ -377,6 +377,8 @@ export const HERO_AWARD_FILES: Record<string, string> = {
   "chest_closed": "hf_20261102_000442_2deea6d7-596d-473c-b699-08be1fad6aa0.png",
   "chest_open": "hf_20261102_000442_5919fcd6-b0b6-4c62-908b-84bc676196f7.png",
   "badge_boss_hunter": "hf_20261102_001138_22e394f1-6520-4fbc-8233-24055358d0c7.png",
+  // Temporary: same art as the boss hunter until its own season badge is made.
+  "badge_season_champ": "hf_20261102_001138_22e394f1-6520-4fbc-8233-24055358d0c7.png",
   "badge_chest_week": "hf_20261102_001138_bfc882dd-bec6-4c35-88cf-2810d699174b.png"
 };
 
