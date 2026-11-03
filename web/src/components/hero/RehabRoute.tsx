@@ -18,9 +18,9 @@ export function RehabRoute({ phases, currentNo }: { phases: readonly RehabPhase[
 
   const statusName = (status: RehabPhase['status']) =>
     status === 'done'
-      ? t('Eerder hoofdstuk', 'Previous chapter')
+      ? t('Eerdere fase', 'Earlier phase')
       : status === 'current'
-        ? t('Je bent hier', 'You are here')
+        ? t('Huidige fase', 'Current phase')
         : t('Vooruitblik · nog vergrendeld', 'Preview · still locked');
 
   return (
@@ -32,7 +32,7 @@ export function RehabRoute({ phases, currentNo }: { phases: readonly RehabPhase[
             {t('Jouw revalidatieroute', 'Your rehabilitation route')}
           </h3>
           <span className="rounded-full bg-white/10 px-3 py-1 text-[12px] font-semibold text-[#E8DFCD]">
-            {t(`${route.completed} van ${route.total} eerdere fases`, `${route.completed} of ${route.total} past phases`)}
+            {t(`${route.completed} van ${route.total} hoofdstukken achter de rug`, `${route.completed} of ${route.total} chapters behind you`)}
           </span>
         </div>
         <p className="mt-1 text-[13px] leading-relaxed text-[#E9E9DF]">
@@ -88,7 +88,7 @@ export function RehabRoute({ phases, currentNo }: { phases: readonly RehabPhase[
             {selected.status === 'next' ? <LockKeyhole aria-hidden="true" className="h-3.5 w-3.5" /> : selected.status === 'current' ? <MapPin aria-hidden="true" className="h-3.5 w-3.5" /> : <Check aria-hidden="true" className="h-3.5 w-3.5" />}
             {statusName(selected.status)}
           </span>
-          {selected.weeks && <span className="text-[12px] text-ink-600">{t('Indicatieve periode:', 'Indicative weeks:')} {selected.weeks}</span>}
+          {selected.weeks && <span className="text-[12px] text-ink-600">{t('Indicatieve weken:', 'Indicative weeks:')} {selected.weeks}</span>}
         </div>
         <h4 className="mt-2 font-display text-[17px] font-bold text-ink-950">{selected.name || t(`Fase ${selected.no}`, `Phase ${selected.no}`)}</h4>
         <p className="mt-1 text-[14px] leading-relaxed text-ink-800">
