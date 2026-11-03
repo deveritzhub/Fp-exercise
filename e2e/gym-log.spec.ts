@@ -115,3 +115,38 @@ test('own routine: build it, log it set by set with RIR, then delete it', async 
   for (const s of gym.sets.filter((x: { rir: number | null; mine: boolean }) => x.rir === 2 && x.mine)) await pp.request.delete(`/api/patient/gym/sets/${s.id}`, { headers: { 'x-requested-with': 'fp' } });
   await ctx.close();
 });
+
+test('next-time suggestion from RIR and the history chart per exercise', async ({ browser }) => {
+  const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
+  await db.connect();
+  await db.query(`DELETE FROM gym_sets WHERE exercise_name = 'Bench press'`);
+  const pid = (await db.query(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-b.test'`)).rows[0].id;
+  // Two earlier sessions; the last one had 3 reps in reserve.
+  for (const [ago, w, rir] of [[6, 55, 1], [2, 60, 3]] as const) {
+    await db.query(
+      `INSERT INTO gym_sets(patient_id, practice_id, day, exercise_name, set_no, weight_kg, reps, rir, place, logged_by)
+       SELECT p.id, p.practice_id, current_date - $2::int, 'Bench press', 1, $3, 8, $4, 'gym', p.user_id FROM patients p WHERE p.id = $1`,
+      [pid, ago, w, rir],
+    );
+  }
+  await db.end();
+
+  const ctx = await browser.newContext({ viewport: { width: 360, height: 800 }, hasTouch: true, locale: 'nl-NL', timezoneId: 'Europe/Amsterdam' });
+  const pp = await ctx.newPage();
+  await login(pp, 'patient@praktijk-b.test');
+  await pp.goto('/p/krachtlog');
+  await pp.getByRole('button', { name: 'Bench press' }).first().click();
+  const next = pp.getByRole('group', { name: /^Voorstel/ });
+  await expect(next).toContainText('62,5 kg × 8');
+  await expect(next).toContainText('nog 3 over');
+  await next.getByRole('button', { name: 'Gebruik' }).click();
+  await expect(pp.getByRole('textbox', { name: 'Gewicht' }).or(pp.locator('input[aria-labelledby="gym-w"]'))).toHaveValue('62,5');
+
+  const card = pp.locator('li', { has: pp.getByRole('button', { name: /^Bench press/ }) }).last();
+  await card.getByRole('button', { name: /Verloop \(2 trainingen\)/ }).click();
+  await expect(card.getByText('RIR 3')).toBeVisible();
+  await expectAccessible(pp, 'krachtlog suggestion and history');
+  expect(await pp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+  await pp.screenshot({ path: 'screenshots/gym/suggestion.png', fullPage: true });
+  await ctx.close();
+});

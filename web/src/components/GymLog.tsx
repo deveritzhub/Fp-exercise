@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Calculator, Dumbbell, Minus, Plus, Trash2, Trophy } from 'lucide-react';
+import { Calculator, ChevronDown, Dumbbell, Lightbulb, Minus, Plus, Trash2, Trophy } from 'lucide-react';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
@@ -112,20 +112,25 @@ export function GymLog({ base, staff = false }: { base: string; staff?: boolean 
             <div>
               <span className="label mb-1.5 block" id="gym-w">{t('Gewicht', 'Weight')}</span>
               <div className="flex items-center gap-1 rounded-xl border border-line bg-white p-1">
-                <button type="button" aria-label={t('2,5 kg minder', '2.5 kg less')} onClick={() => step(-2.5)} className="tap flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-canvas"><Minus className="h-4 w-4" /></button>
-                <input aria-labelledby="gym-w" inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} className="min-w-0 flex-1 bg-transparent text-center font-display text-[20px] font-bold tabular-nums outline-none" />
-                <button type="button" aria-label={t('2,5 kg meer', '2.5 kg more')} onClick={() => step(2.5)} className="tap flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-canvas"><Plus className="h-4 w-4" /></button>
+                <button type="button" aria-label={t('2,5 kg minder', '2.5 kg less')} onClick={() => step(-2.5)} className="tap flex h-11 w-10 shrink-0 items-center justify-center rounded-lg bg-canvas"><Minus className="h-4 w-4" /></button>
+                <input aria-labelledby="gym-w" inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-0 min-w-0 flex-1 bg-transparent px-0 text-center font-display text-[19px] font-bold tabular-nums outline-none" />
+                <button type="button" aria-label={t('2,5 kg meer', '2.5 kg more')} onClick={() => step(2.5)} className="tap flex h-11 w-10 shrink-0 items-center justify-center rounded-lg bg-canvas"><Plus className="h-4 w-4" /></button>
               </div>
             </div>
             <div>
               <span className="label mb-1.5 block" id="gym-r">{t('Herhalingen', 'Reps')}</span>
               <div className="flex items-center gap-1 rounded-xl border border-line bg-white p-1">
-                <button type="button" aria-label={t('1 herhaling minder', '1 rep less')} onClick={() => setReps((r) => Math.max(1, r - 1))} className="tap flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-canvas"><Minus className="h-4 w-4" /></button>
+                <button type="button" aria-label={t('1 herhaling minder', '1 rep less')} onClick={() => setReps((r) => Math.max(1, r - 1))} className="tap flex h-11 w-10 shrink-0 items-center justify-center rounded-lg bg-canvas"><Minus className="h-4 w-4" /></button>
                 <output aria-labelledby="gym-r" className="min-w-0 flex-1 text-center font-display text-[20px] font-bold tabular-nums">{reps}</output>
-                <button type="button" aria-label={t('1 herhaling meer', '1 rep more')} onClick={() => setReps((r) => Math.min(GYM_LIMITS.repsMax, r + 1))} className="tap flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-canvas"><Plus className="h-4 w-4" /></button>
+                <button type="button" aria-label={t('1 herhaling meer', '1 rep more')} onClick={() => setReps((r) => Math.min(GYM_LIMITS.repsMax, r + 1))} className="tap flex h-11 w-10 shrink-0 items-center justify-center rounded-lg bg-canvas"><Plus className="h-4 w-4" /></button>
               </div>
             </div>
           </div>
+
+          {/* Next-time suggestion: from the last session (not today's sets), by its RIR. */}
+          {current?.next && current.last && current.last.day !== todayIso() && (
+            <NextSuggestion ex={current} nl={nl} onUse={() => { setWeight(String(current.next!.weightKg).replace('.', nl ? ',' : '.')); setReps(current.next!.reps); }} />
+          )}
 
           {advanced && <RirPicker value={rir} onChange={setRir} idBase="gym-quick" />}
 
@@ -197,6 +202,7 @@ export function GymLog({ base, staff = false }: { base: string; staff?: boolean 
                 {e.history.length > 1 && (
                   <Sparkline values={e.history.map((h) => h.value)} max={Math.max(...e.history.map((h) => h.value)) * 1.1} className="mt-2 h-12 w-full" />
                 )}
+                {e.days.length > 1 && <ExerciseHistory ex={e} nl={nl} />}
                 <p className="mt-1 text-[12.5px] text-ink-500">{t(`${e.totalSets} ${e.totalSets === 1 ? 'set' : 'sets'} · ${e.volumeKg.toLocaleString('nl-NL')} kg totaal verzet`, `${e.totalSets} ${e.totalSets === 1 ? 'set' : 'sets'} · ${e.volumeKg.toLocaleString('en-GB')} kg lifted in total`)}</p>
               </li>
             ))}
@@ -206,6 +212,82 @@ export function GymLog({ base, staff = false }: { base: string; staff?: boolean 
       <p className="text-[12.5px] text-ink-500">
         {t('De 1RM is een schatting (gemiddelde van Epley en Brzycki) uit sets van 1 tot 10 herhalingen. Test je maximum alleen onder begeleiding.', 'The 1RM is an estimate (mean of Epley and Brzycki) from sets of 1 to 10 reps. Only test your maximum under supervision.')}
       </p>
+    </div>
+  );
+}
+
+const WHY: Record<NonNullable<GymExerciseSummary['next']>['why'], [string, string]> = {
+  add_weight: ['Je had nog herhalingen over: een stap zwaarder.', 'You had reps left: one step heavier.'],
+  small_step: ['Nog 2 over: het kleinste stapje zwaarder.', '2 left: the smallest step heavier.'],
+  add_rep: ['Zelfde gewicht, één herhaling meer.', 'Same weight, one more rep.'],
+  repeat: ['Dat was je maximum: doe dezelfde set nog eens, netjes.', 'That was your max: repeat the same set, cleanly.'],
+};
+
+function NextSuggestion({ ex, nl, onUse }: { ex: GymExerciseSummary; nl: boolean; onUse: () => void }) {
+  const { t } = useI18n();
+  const n = ex.next!;
+  const last = ex.days[ex.days.length - 1];
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-accent/30 bg-accent-soft p-3" role="group" aria-labelledby="gym-next">
+      <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
+      <div className="min-w-0 flex-1">
+        <p id="gym-next" className="text-[14.5px] font-semibold text-ink-900">{t('Voorstel', 'Suggestion')}: {n.weightKg > 0 ? `${kg(n.weightKg, nl)} × ${n.reps}` : t(`${n.reps} herhalingen`, `${n.reps} reps`)}</p>
+        <p className="text-[13px] text-ink-700">
+          {t('Vorige keer', 'Last time')} {last.weightKg > 0 ? `${kg(last.weightKg, nl)} × ${last.reps}` : `${last.reps}×`}{last.rir !== null ? t(`, nog ${last.rir} over`, `, ${last.rir} left`) : ''}. {t(...WHY[n.why])}
+        </p>
+        <p className="mt-0.5 text-[12px] text-ink-600">{t('Pijn of slecht geslapen? Houd het gewicht gelijk.', 'Pain or slept badly? Keep the weight the same.')}</p>
+      </div>
+      <Button size="sm" variant="secondary" onClick={onUse}>{t('Gebruik', 'Use')}</Button>
+    </div>
+  );
+}
+
+/** The top set per training day as a small bar chart with values, plus the list. */
+function ExerciseHistory({ ex, nl }: { ex: GymExerciseSummary; nl: boolean }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const days = ex.days;
+  const metric = (d: GymExerciseSummary['days'][number]) => d.estimate ?? d.weightKg;
+  const max = Math.max(...days.map(metric), 1);
+  // Bars start from a baseline just under the lowest value, so a few kilos of progress are visible.
+  const lo = Math.max(0, Math.min(...days.map(metric)) * 0.85);
+  const date = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(nl ? 'nl-NL' : 'en-GB', { day: 'numeric', month: 'short' });
+  const first = metric(days[0]);
+  const lastV = metric(days[days.length - 1]);
+  const diff = Math.round((lastV - first) * 10) / 10;
+  return (
+    <div className="mt-2">
+      <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="tap inline-flex min-h-[44px] items-center gap-1 text-[14px] font-medium text-accent">
+        {open ? t('Verloop verbergen', 'Hide history') : t(`Verloop (${days.length} trainingen)`, `History (${days.length} sessions)`)}
+        <ChevronDown className={cn('h-4 w-4 transition-transform', open && 'rotate-180')} aria-hidden />
+      </button>
+      {open && (
+        <div className="mt-1">
+          <p className="text-[13px] text-ink-700">
+            {t('Geschat 1RM per training', 'Estimated 1RM per session')}{days.length > 1 && ` · ${diff >= 0 ? '+' : ''}${kg(diff, nl)} ${t('sinds', 'since')} ${date(days[0].day)}`}
+          </p>
+          <div className="mt-2 flex h-28 items-end gap-1" aria-hidden>
+            {days.map((d) => (
+              <div key={d.day} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1">
+                <span className="text-[10px] font-semibold tabular-nums text-ink-700">{Math.round(metric(d))}</span>
+                <div className="w-full max-w-[44px] rounded-t-md bg-accent/80" style={{ height: `${Math.max(8, ((metric(d) - lo) / Math.max(1, max - lo)) * 80)}px` }} />
+              </div>
+            ))}
+          </div>
+          <div className="mt-1 flex gap-1 text-[10px] text-ink-500" aria-hidden>
+            {days.map((d) => <span key={d.day} className="min-w-0 flex-1 truncate text-center">{date(d.day)}</span>)}
+          </div>
+          <ul className="mt-3 divide-y divide-line rounded-xl border border-line text-[13.5px]">
+            {[...days].reverse().map((d) => (
+              <li key={d.day} className="flex items-center justify-between gap-2 px-3 py-2">
+                <span className="text-ink-700">{date(d.day)}</span>
+                <span className="tabular-nums text-ink-900">{d.weightKg > 0 ? `${kg(d.weightKg, nl)} × ${d.reps}` : `${d.reps}×`}{d.rir !== null && <span className="text-ink-500"> · RIR {d.rir}</span>}</span>
+                <span className="tabular-nums text-ink-600">{d.estimate !== null ? `1RM ${kg(d.estimate, nl)}` : '—'}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

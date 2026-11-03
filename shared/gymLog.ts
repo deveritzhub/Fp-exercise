@@ -45,7 +45,41 @@ export type GymExerciseSummary = {
   latestIsPr: boolean;
   totalSets: number;
   volumeKg: number;
+  /** What to try next time, from the last session's top set and its RIR. */
+  next: NextLoad | null;
+  /** Top set per training day, newest last (max 12): for the detail chart. */
+  days: { day: string; weightKg: number; reps: number; rir: number | null; estimate: number | null }[];
 };
+
+/**
+ * Why the suggestion is what it is:
+ * - 'add_weight': reps left over (RIR 3+, or 12+ reps without RIR) → a step heavier, same reps;
+ * - 'small_step': RIR 2 → the smallest step heavier;
+ * - 'add_rep': RIR 1, or no RIR → same weight, one rep more (at 12+ reps the weight goes up instead);
+ * - 'repeat': RIR 0 (a max effort) → the same set again.
+ */
+export type NextLoad = { weightKg: number; reps: number; why: 'add_weight' | 'small_step' | 'add_rep' | 'repeat' };
+
+/** The smallest jump a gym usually allows: 1 kg for light dumbbells, 2.5 kg for bars and machines. */
+export const loadStep = (weightKg: number) => (weightKg < 20 ? 1 : 2.5);
+const roundTo = (v: number, step: number) => Math.round(v / step) * step;
+
+/**
+ * Double progression guided by RIR. Conservative on purpose: never more than one step or 5 percent
+ * at a time, and nothing when the last set had no weight (bodyweight work progresses in reps).
+ */
+export function nextLoad(top: { weightKg: number; reps: number; rir: number | null }): NextLoad {
+  const { weightKg: w, reps: r, rir } = top;
+  if (w <= 0) return { weightKg: 0, reps: Math.min(r + 1, GYM_LIMITS.repsMax), why: 'add_rep' };
+  const step = loadStep(w);
+  const heavier = (pct: number) => Math.max(w + step, roundTo(w * (1 + pct), step));
+  if (rir !== null && rir >= 3) return { weightKg: Math.min(heavier(0.05), GYM_LIMITS.weightMax), reps: r, why: 'add_weight' };
+  if (rir === 2) return { weightKg: Math.min(w + step, GYM_LIMITS.weightMax), reps: r, why: 'small_step' };
+  if (r >= 12) return { weightKg: Math.min(heavier(0.05), GYM_LIMITS.weightMax), reps: Math.max(6, r - 4), why: 'add_weight' };
+  // RIR 0: it was a max effort; the same set again, cleaner, before adding anything.
+  if (rir === 0) return { weightKg: w, reps: r, why: 'repeat' };
+  return { weightKg: w, reps: r + 1, why: 'add_rep' };
+}
 
 /** Same exercise, written slightly differently: "Bench press" and " bench  Press " match. */
 export const gymKey = (name: string) => name.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase();
@@ -89,7 +123,12 @@ export function summariseGym(sets: GymSet[]): GymExerciseSummary[] {
     const history = [...days].map(([day, value]) => ({ day, value })).slice(-20);
     const lastDay = sorted[sorted.length - 1].day;
     const lastSets = sorted.filter((s) => s.day === lastDay);
-    const top = lastSets.reduce((a, b) => (b.weightKg > a.weightKg || (b.weightKg === a.weightKg && b.reps > a.reps) ? b : a));
+    const topOf = (l: GymSet[]) => l.reduce((a, b) => (b.weightKg > a.weightKg || (b.weightKg === a.weightKg && b.reps > a.reps) ? b : a));
+    const top = topOf(lastSets);
+    const dayList = [...new Set(sorted.map((s) => s.day))].slice(-12).map((day) => {
+      const t = topOf(sorted.filter((s) => s.day === day));
+      return { day, weightKg: t.weightKg, reps: t.reps, rir: t.rir, estimate: setEstimate(t.weightKg, t.reps) };
+    });
     const before = history.filter((h) => h.day < lastDay);
     const latest = days.get(lastDay);
     out.push({
@@ -102,6 +141,8 @@ export function summariseGym(sets: GymSet[]): GymExerciseSummary[] {
       latestIsPr: latest !== undefined && before.length > 0 && latest > Math.max(...before.map((h) => h.value)),
       totalSets: sorted.length,
       volumeKg: Math.round(volume),
+      next: nextLoad({ weightKg: top.weightKg, reps: top.reps, rir: top.rir }),
+      days: dayList,
     });
   }
   // Most recently trained first.
