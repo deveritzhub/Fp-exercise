@@ -1,8 +1,9 @@
-import { Activity, AlertTriangle, ClipboardList, Plus } from 'lucide-react';
+import { Activity, AlertTriangle, Check, ClipboardList, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { PatientOutcome } from '@/lib/types';
+import { cn } from '@/lib/cn';
 import { useI18n } from '@/lib/i18n';
 import type { Progress } from '@/lib/types';
 import { clinicalTimeline } from '@shared/clinicalTimeline';
@@ -42,6 +43,8 @@ export function ClinicalTimeline({ patientId, sessions, outcomes }: { patientId:
   };
   const domainOutcomes=(key:Domain)=>outcomes.some(o=>o.domain===key);
   const data = clinicalTimeline(sessions);
+  const domainLabel = (d: Domain) => ({ rom: 'ROM', strength: t('Kracht', 'Strength'), function: t('Functie', 'Function'), confidence: t('Vertrouwen', 'Confidence') })[d];
+  const sideLabel = (x: PatientOutcome['side']) => ({ left: t('links', 'left'), right: t('rechts', 'right'), bilateral: t('beide', 'both'), not_applicable: '' })[x];
   const labels = [
     [t('Pijn (NRS)', 'Pain (NRS)'), data.available.pain],
     [t('Ervaren trainingszwaarte', 'Perceived workout difficulty'), data.available.perceivedExertion],
@@ -99,19 +102,23 @@ export function ClinicalTimeline({ patientId, sessions, outcomes }: { patientId:
           <p className="self-center text-[12px] text-ink-600">{t('Controleer de meting: na opslaan kan dit record niet worden gewijzigd.','Verify the measurement: this record cannot yet be edited after saving.')}</p>
         </form>}
       </div>
-      <div className="grid gap-2 p-4 sm:grid-cols-3">
-        {labels.map(([label, available])=>(
-          <div key={label} className="rounded-xl border border-line bg-canvas p-3">
-            <p className="text-[13px] font-semibold text-ink-900">{label}</p>
-            <p className="mt-1 text-[12px] text-ink-600">{available ? t('Gegevens beschikbaar', 'Data available') : t('Niet geregistreerd', 'Not recorded')}</p>
-          </div>
-        ))}
+      {/* One compact line: what is recorded, and what has not been measured yet. */}
+      <div className="space-y-2 px-4 py-3 sm:px-5">
+        {labels.some(([, a]) => a) && (
+          <p className="flex flex-wrap items-center gap-1.5 text-[13px]">
+            <span className="font-medium text-ink-700">{t('Geregistreerd:', 'Recorded:')}</span>
+            {labels.filter(([, a]) => a).map(([label]) => <span key={label} className="inline-flex items-center gap-1 rounded-full bg-ok-soft px-2.5 py-1 text-[12.5px] font-semibold text-ok"><Check className="h-3.5 w-3.5" aria-hidden="true" />{label}</span>)}
+          </p>
+        )}
+        {labels.some(([, a]) => !a) && (
+          <p className="text-[13px] text-ink-600"><span className="font-medium text-ink-700">{t('Nog niet gemeten:', 'Not measured yet:')}</span> {labels.filter(([, a]) => !a).map(([label]) => label).join(', ')}</p>
+        )}
       </div>
       {outcomes.length>0&&<div className="border-t border-line p-4 sm:p-5">
         <h3 className="mb-3 text-[14px] font-semibold text-ink-900">{t('Objectieve en patiëntgerapporteerde meetmomenten','Recorded clinical assessments')}</h3>
         <ul className="space-y-2">{outcomes.slice(0,30).map(o=>(
           <li key={o.id} className="flex flex-wrap justify-between gap-2 rounded-xl border border-line px-3 py-2 text-[13px]">
-            <span><strong>{o.metric}</strong> · {o.domain.toUpperCase()}{o.side!=='not_applicable'?` · ${o.side}`:''}<span className="block text-[12px] text-ink-600">{o.measuredOn}</span></span>
+            <span><strong>{o.metric}</strong> · {domainLabel(o.domain)}{o.side!=='not_applicable'?` · ${sideLabel(o.side)}`:''}<span className="block text-[12px] text-ink-600">{new Date(o.measuredOn.slice(0,10)+'T12:00:00').toLocaleDateString(locale==='nl'?'nl-NL':'en-GB',{day:'numeric',month:'short',year:'numeric'})}</span></span>
             <span className="font-semibold tabular-nums">{o.value} {displayUnit(o.unit)}</span>
           </li>
         ))}</ul>
@@ -122,10 +129,10 @@ export function ClinicalTimeline({ patientId, sessions, outcomes }: { patientId:
         <div className="border-t border-line px-4 py-4 sm:px-5">
           <p className="mb-3 flex items-center gap-2 text-[13px] font-medium text-ink-700"><ClipboardList className="h-4 w-4" aria-hidden="true"/>{t('Laatste sessies: pijn en ervaren zwaarte (0–10)', 'Recent sessions: pain and perceived difficulty (0–10)')}</p>
           <div className="max-h-[300px] space-y-2 overflow-y-auto" tabIndex={0} role="region" aria-label={t('Sessietijdlijn, scrollbaar met toetsenbord', 'Session timeline, keyboard scrollable')}>
-            {data.points.map(p=>(
+            {[...data.points].reverse().map(p=>(
               <div key={p.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-xl border border-line px-3 py-2 text-[13px]">
                 <span className="min-w-0 text-ink-700">{new Date(p.day+'T12:00:00').toLocaleDateString(locale==='nl'?'nl-NL':'en-GB',{day:'numeric',month:'short',year:'numeric'})}</span>
-                <span className="whitespace-nowrap font-medium tabular-nums text-ink-900">{t('Pijn', 'Pain')}: {p.pain===null?'—':`${p.pain}/10`}</span>
+                <span className={cn('whitespace-nowrap font-medium tabular-nums', p.pain!==null&&p.pain>=6?'text-bad':'text-ink-900')}>{t('Pijn', 'Pain')}: {p.pain===null?'—':`${p.pain}/10`}</span>
                 <span className="whitespace-nowrap font-medium tabular-nums text-ink-900">{t('Zwaarte', 'Effort')}: {p.exertion===null?'—':`${p.exertion}/10`}</span>
               </div>
             ))}

@@ -103,7 +103,8 @@ export function PatientHome() {
         </div>
       )}
 
-      <DailyMissionCard programs={d.programs} />
+      {/* With one workout today the mission only repeats its card; it earns its place when it picks between several. */}
+      {todo.length > 1 && <DailyMissionCard programs={d.programs} />}
 
       {d.programs.length === 0 ? (
         <div className="rounded-2xl border border-line bg-white p-6 text-center shadow-card">

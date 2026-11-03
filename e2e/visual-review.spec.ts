@@ -30,11 +30,17 @@ test('daily mission and rehabilitation route render safely at narrow and desktop
         json: {
           ...data,
           patient: { ...data.patient, firstName: 'Testpatiënt' },
+          // Two workouts today: the mission then picks the next step.
           programs: [{
             ...p, title: 'Knieherstel — kracht en controle',
             paused: false,
             openSession: null,
             today: { ...p.today, scheduled: 3, done: false },
+          }, {
+            ...p, id: '00000000-0000-4000-8000-0000000000aa', title: 'Mobiliteit heup',
+            paused: false,
+            openSession: null,
+            today: { ...p.today, scheduled: 2, done: false },
           }],
         },
       });

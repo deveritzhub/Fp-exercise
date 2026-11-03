@@ -10,6 +10,8 @@ import { TodayProgramCard } from '@/components/patient/TodayCard';
 import { PausedNotice } from '@/components/patient/Safety';
 import { StartTemplates, useModes } from '@/components/patient/Modules';
 import { StrengthProgress } from '@/components/patient/Strength';
+import { RehabRoute } from '@/components/hero/RehabRoute';
+import type { HeroState } from '@/lib/types';
 import { MODULE_ICON, moduleLabel, moduleOf, StartOrResume, type PatientHomeData, type PatientModule } from '@/pages/patient/PatientHome';
 
 type History = { sessions: { id: string; completedAt: string; programTitle: string; module?: string | null; exercisesDone: number; exercisesTotal: number }[] };
@@ -31,6 +33,8 @@ export function ModulePage({ module }: { module: PatientModule }) {
   const home = useQuery({ queryKey: ['patient-home'], queryFn: () => api.get<PatientHomeData>('/patient/home'), refetchOnMount: 'always' });
   const history = useQuery({ queryKey: ['patient-history'], queryFn: () => api.get<History>('/patient/history') });
   const modes = useModes();
+  // The phase route of the rehabilitation programme (same data as the hero's main quest).
+  const hero = useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero'), enabled: module === 'revalidatie' });
   if (home.isError) return <ErrorState error={home.error} onRetry={() => home.refetch()} />;
   if (!home.data || !modes.data) return <div className="space-y-4"><Skeleton className="h-8 w-1/2" /><Skeleton className="h-40 rounded-2xl" /></div>;
   // Coach and personal accounts have no rehabilitation.
@@ -41,6 +45,8 @@ export function ModulePage({ module }: { module: PatientModule }) {
   const templates = modes.data.templates.filter((x) => x.module === module);
   const sessions = (history.data?.sessions ?? []).filter((s) => moduleOf(s) === module);
   const Icon = MODULE_ICON[module];
+  // One programme: every row would repeat its title, so the date leads instead.
+  const oneProgram = new Set(sessions.map((s) => s.programTitle)).size === 1;
   return (
     <div className="space-y-6">
       <div>
@@ -81,6 +87,10 @@ export function ModulePage({ module }: { module: PatientModule }) {
             return next ? t(`Vandaag niets gepland. Volgende training: ${fmtDate(next, locale, { weekday: 'long', day: 'numeric', month: 'long' })}.`, `Nothing planned today. Next workout: ${fmtDate(next, locale, { weekday: 'long', day: 'numeric', month: 'long' })}.`) : t('Vandaag niets gepland.', 'Nothing planned today.');
           })()}
         </p>
+      )}
+
+      {module === 'revalidatie' && hero.data?.quest && hero.data.quest.phases.length > 0 && (
+        <RehabRoute phases={hero.data.quest.phases} currentNo={hero.data.quest.phaseNo} />
       )}
 
       {module === 'kracht' && (
@@ -145,16 +155,16 @@ export function ModulePage({ module }: { module: PatientModule }) {
           <p className="rounded-2xl border border-line bg-white p-4 text-[15px] text-ink-600 shadow-card">{t('Nog geen afgeronde trainingen in dit onderdeel.', 'No completed workouts in this part yet.')}</p>
         ) : (
           <div className="rounded-2xl border border-line bg-white shadow-card">
-            <p className="border-b border-line px-4 py-3 text-[15px] text-ink-700">{t(`${sessions.length} ${sessions.length === 1 ? 'training' : 'trainingen'} gedaan`, `${sessions.length} ${sessions.length === 1 ? 'workout' : 'workouts'} done`)}</p>
+            <p className="border-b border-line px-4 py-3 text-[15px] text-ink-700">{t(`${sessions.length} ${sessions.length === 1 ? 'training' : 'trainingen'} gedaan`, `${sessions.length} ${sessions.length === 1 ? 'workout' : 'workouts'} done`)}{oneProgram && <span className="block truncate text-[13.5px] text-ink-500">{sessions[0].programTitle}</span>}</p>
             <ul className="divide-y divide-line">
               {sessions.slice(0, 5).map((s) => (
                 <li key={s.id} className="flex items-center gap-3 px-4 py-3">
                   <CheckCircle2 className="h-5 w-5 shrink-0 text-ok" aria-hidden />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{s.programTitle}</span>
+                    <span className="block truncate font-medium first-letter:uppercase">{oneProgram ? fmtDate(s.completedAt, locale, { weekday: 'long', day: 'numeric', month: 'long' }) : s.programTitle}</span>
                     <span className="text-[14px] text-ink-500">{s.exercisesDone}/{s.exercisesTotal} {t('oefeningen', 'exercises')}</span>
                   </span>
-                  <span className="text-[13px] text-ink-500">{fmtRelative(s.completedAt, locale)}</span>
+                  {!oneProgram && <span className="shrink-0 text-[13px] text-ink-500">{fmtRelative(s.completedAt, locale)}</span>}
                 </li>
               ))}
             </ul>
