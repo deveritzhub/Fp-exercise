@@ -100,10 +100,13 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await expect(pp.getByRole('heading', { name: /Uitrusting \(\d+ van \d+\)/ })).toBeVisible();
   await expect(pp.getByText(/^\d+ muntjes/).first()).toBeVisible();
   await expect(pp.getByText(/^Gearscore \d+$/).first()).toBeVisible();
-  await expect(pp.getByText(/Legendarisch · 100/).first()).toBeVisible();
+  const crown=pp.locator('[data-item="crown"]').first();
+  await expect(crown).toContainText('Tier 5 · Goddelijk');
+  await expect(crown).toContainText('Itemlevel 100');
   const buy = pp.getByRole('button', { name: /^Kopen 15 muntjes: / }).first();
   if (await buy.count()) {
     await buy.click();
+    await pp.getByRole('dialog').getByRole('button', {name:'Verder',exact:true}).click();
     await expect(pp.getByText(/gekocht en aangedaan/)).toBeVisible();
     // Clear the stacked messages so they do not cover the + button during the next checks.
     const close = pp.getByRole('status').getByRole('button', { name: 'Sluiten / Close' });
