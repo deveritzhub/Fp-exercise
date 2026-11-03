@@ -104,6 +104,8 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   const buy = pp.getByRole('button', { name: /^Kopen 15 muntjes: / }).first();
   if (await buy.count()) {
     await buy.click();
+    // A purchase opens the "new in your collection" reveal; continue past it.
+    await pp.getByRole('dialog', { name: 'Nieuw in je collectie' }).getByRole('button', { name: 'Verder' }).click();
     await expect(pp.getByText(/gekocht en aangedaan/)).toBeVisible();
     // Clear the stacked messages so they do not cover the + button during the next checks.
     const close = pp.getByRole('status').getByRole('button', { name: 'Sluiten / Close' });

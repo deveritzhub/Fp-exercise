@@ -65,12 +65,16 @@ test('lock reasons are visible, training buys gear in the shop, and the sheet fi
   await buy.scrollIntoViewIfNeeded();
   await expect(buy).toBeVisible();
   await buy.click();
+  // A purchase opens the "new in your collection" reveal; continue past it.
+  const reveal = page.getByRole('dialog', { name: 'Nieuw in je collectie' });
+  await reveal.getByRole('button', { name: 'Verder' }).click();
   await expect(page.getByRole('button', { name: /^Handschoenen.*Aan ✓/, pressed: true })).toBeVisible();
   await expect(page.getByText(/^Gearscore 45$/).first()).toBeVisible();
   // Outfits are sold too and fill their own slot on the character screen.
   const outfit = page.getByRole('button', { name: 'Kopen 40 muntjes: Trainingspak' });
   await outfit.scrollIntoViewIfNeeded();
   await outfit.click();
+  await reveal.getByRole('button', { name: 'Verder' }).click();
   await expect(page.getByRole('button', { name: 'Outfit: Trainingspak. Wijzigen' })).toBeVisible();
   await expect(page.getByText(/^Gearscore 70$/).first()).toBeVisible();
   const close = page.getByRole('status').getByRole('button', { name: 'Sluiten / Close' });
