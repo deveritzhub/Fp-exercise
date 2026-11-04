@@ -165,3 +165,33 @@ export function sideDifference(trends: MobilityTrend[]) {
   const r = trends.find((x) => x.side === 'right')?.latest;
   return l == null || r == null ? null : roundCm(Math.abs(l - r));
 }
+
+// ------------------------------------------------------------------------------------------------
+// Measuring regularly: hero XP for the measurement itself (never for the result, so there is no
+// reason to fill in nicer numbers) and a reminder when it is time to measure again.
+// ------------------------------------------------------------------------------------------------
+
+/** XP for one measurement moment. */
+export const MOBILITY_MEASURE_XP = 20;
+/** Measuring again makes sense after about two weeks; earlier moments give no extra XP. */
+export const MOBILITY_REMEASURE_DAYS = 14;
+
+const dayNo = (d: string) => Math.round(Date.parse(d + 'T12:00:00Z') / 86_400_000);
+
+/** Measurement moments that count: the first, then each one at least 14 days after the last counted. */
+export function mobilityMoments(days: string[]) {
+  const sorted = [...new Set(days)].sort();
+  const counted: string[] = [];
+  for (const d of sorted) if (!counted.length || dayNo(d) - dayNo(counted.at(-1)!) >= MOBILITY_REMEASURE_DAYS) counted.push(d);
+  return { moments: counted.length, xp: counted.length * MOBILITY_MEASURE_XP, lastCounted: counted.at(-1) ?? null };
+}
+
+/** When the next measurement is due. `due` is true when there is none yet or the last is 14+ days old. */
+export function mobilityDue(days: string[], today: string) {
+  const last = [...days].sort().at(-1) ?? null;
+  if (!last) return { last: null, daysSince: null, due: true, xpAvailable: true };
+  const since = dayNo(today) - dayNo(last);
+  const { lastCounted } = mobilityMoments(days);
+  const xpAvailable = !lastCounted || dayNo(today) - dayNo(lastCounted) >= MOBILITY_REMEASURE_DAYS;
+  return { last, daysSince: since, due: since >= MOBILITY_REMEASURE_DAYS, xpAvailable };
+}

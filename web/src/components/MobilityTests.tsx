@@ -5,12 +5,13 @@ import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { Button, Dialog, ErrorState, Input, Notice, Segmented, Spinner, useToast } from '@/components/ui';
 import { cn } from '@/lib/cn';
-import { MOBILITY_TESTS, mobilityTrends, sideDifference, validMobilityValue, type MobilityResult, type MobilitySide, type MobilityTest, type MobilityTrend } from '@shared/mobilityTests';
+import { MOBILITY_MEASURE_XP, MOBILITY_TESTS, mobilityDue, mobilityTrends, sideDifference, validMobilityValue, type MobilityResult, type MobilitySide, type MobilityTest, type MobilityTrend } from '@shared/mobilityTests';
 
 type Row = MobilityResult & { id: string };
 type Data = { results: Row[]; sharedByPatient?: boolean };
 
 const SIDE: Record<MobilitySide, [string, string]> = { left: ['Links', 'Left'], right: ['Rechts', 'Right'], none: ['', ''] };
+export const localToday = () => new Date().toLocaleDateString('sv-SE');
 const cm = (v: number) => `${String(v).replace('.', ',')} cm`;
 
 /**
@@ -28,6 +29,7 @@ export function MobilityTests({ base, staff = false }: { base: string; staff?: b
   const results = q.data.results;
   return (
     <div className="space-y-3">
+      {!staff && <DueBanner days={results.map((r) => r.day)} />}
       {!staff && (
         <p className="text-[14px] text-ink-600">
           {t('Meet elke 2 tot 4 weken, steeds op dezelfde manier en rond hetzelfde moment van de dag. Je vergelijkt met jezelf, niet met anderen. Je fysiotherapeut ziet dit alleen als je Mobiliteit deelt.', 'Measure every 2 to 4 weeks, always the same way and around the same time of day. You compare with yourself, not with others. Your physiotherapist only sees this if you share Mobility.')}
@@ -36,6 +38,24 @@ export function MobilityTests({ base, staff = false }: { base: string; staff?: b
       {staff && results.length === 0 && <p className="text-[15px] text-ink-600">{t('Nog geen mobiliteitsmetingen.', 'No mobility measurements yet.')}</p>}
       {MOBILITY_TESTS.map((test) => (staff && !results.some((r) => r.test === test.key) ? null : <TestCard key={test.key} test={test} results={results} base={base} staff={staff} />))}
     </div>
+  );
+}
+
+/** When to measure again, and whether this measurement still earns XP. */
+function DueBanner({ days }: { days: string[] }) {
+  const { t } = useI18n();
+  const d = mobilityDue(days, localToday());
+  const left = d.daysSince === null ? 0 : Math.max(0, 14 - d.daysSince);
+  return (
+    <p className={cn('rounded-xl px-3 py-2 text-[14px]', d.due ? 'bg-accent-soft text-ink-900' : 'bg-canvas text-ink-700')} role="status">
+      {d.last === null
+        ? t(`Nog niet gemeten. Je eerste meting is je startpunt: +${MOBILITY_MEASURE_XP} XP.`, `Not measured yet. Your first measurement is your starting point: +${MOBILITY_MEASURE_XP} XP.`)
+        : d.due
+          ? t(`Tijd om opnieuw te meten: je laatste meting is ${d.daysSince} dagen oud. +${MOBILITY_MEASURE_XP} XP.`, `Time to measure again: your last measurement is ${d.daysSince} days old. +${MOBILITY_MEASURE_XP} XP.`)
+          : d.daysSince === 0
+            ? t('Vandaag gemeten. Over 2 weken weer.', 'Measured today. Again in 2 weeks.')
+            : t(`Laatst gemeten ${d.daysSince} ${d.daysSince === 1 ? 'dag' : 'dagen'} geleden. Over ${left} ${left === 1 ? 'dag' : 'dagen'} weer${d.xpAvailable ? '' : ', dan ook weer XP'}.`, `Last measured ${d.daysSince} ${d.daysSince === 1 ? 'day' : 'days'} ago. Again in ${left} ${left === 1 ? 'day' : 'days'}${d.xpAvailable ? '' : ', with XP again'}.`)}
+    </p>
   );
 }
 
@@ -210,9 +230,12 @@ function MeasureDialog({ test, base, onClose }: { test: MobilityTest; base: stri
     setBusy(true);
     setError(null);
     try {
+      const before = qc.getQueryData<{ results: Row[] }>(['mobility-tests', base]);
+      const earns = mobilityDue((before?.results ?? []).map((r) => r.day), localToday()).xpAvailable;
       await api.post(`${base}/mobility-tests`, { test: test.key, values });
       await qc.invalidateQueries({ queryKey: ['mobility-tests', base] });
-      toast(t('Meting opgeslagen', 'Measurement saved'));
+      void qc.invalidateQueries({ queryKey: ['patient-hero'] });
+      toast(earns ? t(`Meting opgeslagen: +${MOBILITY_MEASURE_XP} XP`, `Measurement saved: +${MOBILITY_MEASURE_XP} XP`) : t('Meting opgeslagen', 'Measurement saved'));
       onClose();
     } catch (e) {
       setError(describeError(e, locale));

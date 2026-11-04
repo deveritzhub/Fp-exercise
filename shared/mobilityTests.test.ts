@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MOBILITY_TESTS, mobilityTest, mobilityTrends, sideDifference, validMobilityValue, roundCm, type MobilityResult } from './mobilityTests';
+import { MOBILITY_MEASURE_XP, MOBILITY_TESTS, mobilityDue, mobilityMoments, mobilityTest, mobilityTrends, sideDifference, validMobilityValue, roundCm, type MobilityResult } from './mobilityTests';
 
 const r = (test: MobilityResult['test'], side: MobilityResult['side'], day: string, cm: number): MobilityResult => ({ test, side, day, cm });
 
@@ -47,5 +47,21 @@ describe('mobility self-tests', () => {
     expect(t[0]).toMatchObject({ latest: -6, gain: null, verdict: 'unknown' });
     expect(t[1].latest).toBeNull();
     expect(sideDifference(t)).toBeNull();
+  });
+});
+
+
+describe('measuring regularly', () => {
+  it('gives XP once per two weeks, for measuring, not for the result', () => {
+    expect(mobilityMoments([])).toMatchObject({ moments: 0, xp: 0 });
+    // Same day twice and a re-measure after 3 days count once; after 14 days it counts again.
+    expect(mobilityMoments(['2026-10-01', '2026-10-01', '2026-10-04', '2026-10-15', '2026-10-20'])).toMatchObject({ moments: 2, xp: 2 * MOBILITY_MEASURE_XP, lastCounted: '2026-10-15' });
+  });
+  it('reminds after 14 days', () => {
+    expect(mobilityDue([], '2026-11-04')).toMatchObject({ due: true, xpAvailable: true, last: null });
+    expect(mobilityDue(['2026-10-25'], '2026-11-04')).toMatchObject({ due: false, daysSince: 10, xpAvailable: false });
+    expect(mobilityDue(['2026-10-15', '2026-10-21'], '2026-11-04')).toMatchObject({ due: true, daysSince: 14, xpAvailable: true });
+    // A re-measure 6 days after a counted moment: not due yet, and no XP until 14 days after the counted one.
+    expect(mobilityDue(['2026-10-25', '2026-10-31'], '2026-11-04')).toMatchObject({ due: false, xpAvailable: false });
   });
 });

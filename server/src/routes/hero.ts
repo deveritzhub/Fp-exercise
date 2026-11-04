@@ -1,5 +1,6 @@
 import { teamWeekSummary } from '../../../shared/teamQuest';
 import { quizXpFor } from './atlas';
+import { mobilityMoments } from '../../../shared/mobilityTests';
 import { Hono } from 'hono';
 import { config } from '../config';
 import { z } from 'zod';
@@ -109,7 +110,13 @@ async function heroState(tx: Tx, patientId: string) {
   const logged = await loadPatientLogs(tx, patientId);
   // Kennis: the atlas quiz (XP once per right answer, its own daily cap).
   const quizXpNow = await quizXpFor(tx, patientId);
-  const skillsSnap = await loadSkillSnapshot(tx, patientId, weekly, { ...logged.skillXp, ...(quizXpNow ? { knowledge: quizXpNow } : {}) });
+  // Mobility self-tests: XP for measuring (once per two weeks), never for the result.
+  const mobilityDays = (await tx.query("SELECT DISTINCT to_char(day, 'YYYY-MM-DD') AS d FROM mobility_tests WHERE patient_id = $1", [patientId])).rows.map((r) => r.d as string);
+  const measureXp = mobilityMoments(mobilityDays).xp;
+  const extraSkillXp: Record<string, number> = { ...logged.skillXp };
+  if (quizXpNow) extraSkillXp.knowledge = (extraSkillXp.knowledge ?? 0) + quizXpNow;
+  if (measureXp) extraSkillXp.mobility = (extraSkillXp.mobility ?? 0) + measureXp;
+  const skillsSnap = await loadSkillSnapshot(tx, patientId, weekly, extraSkillXp);
   // Warning-sign XP is part of physiotherapy. Coach and personal accounts do not earn it.
   let xp = xpFor({
     sessions: s.sessions,
@@ -201,6 +208,7 @@ async function heroState(tx: Tx, patientId: string) {
   xp += logged.heroXp;
   // Anatomy quiz in the muscle atlas: XP per first correct answer, capped per day.
   xp += quizXpNow;
+  xp += measureXp;
 
   // Where each quest is done: today's training, the body map, and an exercise for the skill of the week.
   const skillQuest = quests.find((x) => x.key === 'skill');

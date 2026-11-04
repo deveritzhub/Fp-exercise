@@ -24,7 +24,10 @@ test('patient measures mobility with a published test and sees the trend; staff 
     const page = await ctx.newPage();
     await login(page, 'patient@praktijk-a.test');
     await page.goto('/p/mobiliteit');
+    // The last measurement is two weeks old: time to measure again.
+    await expect(page.getByRole('link', { name: /Mobiliteit meten.*Tijd om opnieuw te meten/ })).toBeVisible();
     await page.getByRole('link', { name: /Mobiliteit meten/ }).click();
+    await expect(page.getByRole('status').filter({ hasText: /Tijd om opnieuw te meten: je laatste meting is 14 dagen oud/ })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Mobiliteit meten', level: 1 })).toBeVisible();
     const card = page.locator('section', { has: page.getByRole('heading', { name: /Knie-tot-muur-test/ }) });
     await expect(card.locator('dl').getByText('7 cm')).toBeVisible();
@@ -38,6 +41,9 @@ test('patient measures mobility with a published test and sees the trend; staff 
     await dlg.getByLabel('Rechts (cm)').fill('9');
     await dlg.getByRole('button', { name: 'Opslaan' }).click();
     await expect(dlg).toBeHidden();
+    // XP for measuring (not for the result), once per two weeks.
+    await expect(page.getByText('Meting opgeslagen: +20 XP')).toBeVisible();
+    await expect(page.getByRole('status').filter({ hasText: 'Vandaag gemeten. Over 2 weken weer.' })).toBeVisible();
     // Left: 3.5 cm more than the first, beyond the measurement error; right: no change.
     await expect(card.locator('dl').getByText('10,5 cm')).toBeVisible();
     await expect(card.getByText(/beweeglijker dan je eerste meting \(3,5 cm\)/)).toBeVisible();
@@ -53,6 +59,7 @@ test('patient measures mobility with a published test and sees the trend; staff 
     await d2.getByRole('radiogroup', { name: /Richting rechts/ }).getByRole('radio', { name: 'Overlap' }).click();
     await d2.getByLabel('Rechts (cm)').fill('2');
     await d2.getByRole('button', { name: 'Opslaan' }).click();
+    await expect(page.getByText('Meting opgeslagen', { exact: true })).toBeVisible();
     await expect(scratch.locator('dl').getByText('-6 cm')).toBeVisible();
     await expect(scratch.locator('dl').getByText('2 cm', { exact: true })).toBeVisible();
     await expectAccessible(page, 'mobility tests page');

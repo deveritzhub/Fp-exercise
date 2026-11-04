@@ -16,6 +16,7 @@ import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
 import { HumanFigure, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
+import { MOBILITY_MEASURE_XP } from '@shared/mobilityTests';
 import { BADGES, BOSSES, SEASONS, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, WALL_BADGES_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
 import { quizQuestions } from '@shared/muscleAtlas';
@@ -566,7 +567,7 @@ function Skills({ d }: { d: HeroState }) {
 /** Where to earn XP for a skill: one or two buttons straight to the right place. */
 const SKILL_ACTIONS: Partial<Record<SkillKey, { to: string; nl: string; en: string }[]>> = {
   strength: [{ to: '/p/krachtlog', nl: 'Log een set in de Krachtlog', en: 'Log a set in the strength log' }, { to: '/p/kracht', nl: 'Start een krachtprogramma', en: 'Start a strength programme' }],
-  mobility: [{ to: '/p/mobiliteit', nl: 'Start een mobiliteitsprogramma', en: 'Start a mobility programme' }],
+  mobility: [{ to: '/p/mobiliteit', nl: 'Start een mobiliteitsprogramma', en: 'Start a mobility programme' }, { to: '/p/mobiliteit/meten', nl: 'Meet je mobiliteit (1× per 2 weken XP)', en: 'Measure your mobility (XP once per 2 weeks)' }],
   balance: [{ to: '/p/logboek', nl: 'Log een eigen training', en: 'Log your own workout' }],
   stability: [{ to: '/p/krachtlog', nl: 'Log bijv. een plank in de Krachtlog', en: 'Log e.g. a plank in the strength log' }, { to: '/p/logboek', nl: 'Log een eigen training', en: 'Log your own workout' }],
   endurance: [{ to: '/p/logboek', nl: 'Log een eigen training', en: 'Log your own workout' }],
@@ -1534,6 +1535,7 @@ export function HeroPage() {
             <li>+{LOG_XP.selfSession} XP · {t('een eigen training gelogd (maximaal 2 per dag)', 'a workout you log yourself (at most 2 a day)')}</li>
             <li>+{LOG_XP.proteinGoal} XP · {t('eiwitdoel van de dag gehaald (niet per hap)', 'protein goal for the day hit (not per bite)')}</li>
             <li>+{LOG_XP.stepGoal} XP · {t('stapdoel van de dag gehaald (niet per extra stap)', 'step goal for the day hit (not per extra step)')}</li>
+            <li>+{MOBILITY_MEASURE_XP} XP · {t('je mobiliteit gemeten (1× per 2 weken, voor het meten, niet voor de uitslag)', 'your mobility measured (once per 2 weeks, for measuring, not for the result)')}</li>
           </ul>
           <p className="text-ink-600">{t('Elke oefening traint ook skills, zoals Kracht of Balans. Doorgaan met pijn levert nooit extra punten op, en een rustdag kost je niets.', 'Every exercise also trains skills, such as Strength or Balance. Training through pain never earns extra points, and a rest day costs you nothing.')}</p>
         </details>
