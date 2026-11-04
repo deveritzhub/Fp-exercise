@@ -43,9 +43,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 14. [x] **Opruimen.** Dubbele code en oude teksten weg, documentatie bij (`docs/MOBILITEIT_METEN.md`).
 
 ## Nog open (Claude)
-15. [ ] **Uitlogtest soms rood.** De test "therapeut na 30 minuten uitgelogd" faalt af en toe als
-    eerste test na het starten (scherm blijft op /app). Los slaagt hij steeds. Oorzaak nog niet
-    gevonden; het uitloggen zelf werkt.
+15. [x] **Uitlogtest soms rood.** Oorzaak gevonden: als de inactiviteitstimer opnieuw startte
+    (bijv. na het verversen van de sessie), telde dat als activiteit en begon de 30 minuten
+    opnieuw. Een therapeut kon zo langer ingelogd blijven. Opgelost; test 3× in de reeks groen.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
