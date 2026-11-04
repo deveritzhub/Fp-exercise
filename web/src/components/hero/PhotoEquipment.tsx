@@ -2,6 +2,7 @@ import { gearTier, heroPhotoKey } from '@shared/hero';
 import { useId, useState, type ReactNode } from 'react';
 import type { FigureLook } from './HumanFigure';
 import bounds from './photoGearBounds.json';
+import { PhotoHeadphones } from './PhotoHeadphones';
 import { PhotoIdentity } from './PhotoIdentity';
 import { measuredPlacement, photoFit } from './photoFit';
 
@@ -28,6 +29,7 @@ export function PhotoEquipment({look, source}: {look:FigureLook;source:string}) 
   const piece=(key:string,mirror=false)=>{
     const fit=FIT[key], asset=bounds[key as keyof typeof bounds];
     if(!fit || !asset)return null;
+    if(key==='headphones' && photoFit(source))return <PhotoHeadphones key={key} source={source} originalKey={heroPhotoKey(look,look.body ?? null)} cap={gear.includes('cap')}/>;
     const [px,oldY,w,oldH]=fit;
     const measured=measuredPlacement(source,key,mirror,heroPhotoKey(look,look.body ?? null));
     const y=measured?.y ?? oldY;
@@ -44,7 +46,7 @@ export function PhotoEquipment({look, source}: {look:FigureLook;source:string}) 
     <clipPath id={`body${uid}`}><path d={photoFit(source)?.silhouette ?? `M400,20 H600 V235 L${500+180*spread},280  ${500+170*spread},760 620,1290 H350 L${500-170*spread},760 ${500-180*spread},280 400,235Z`}/></clipPath></defs>
     {gear.includes('yoga_mat') && <>{piece('yoga_mat')}<image href={source} width="1000" height="1333.33" preserveAspectRatio="none" clipPath={`url(#body${uid})`}/></>}
     <PhotoIdentity key={source+'|'+heroPhotoKey(look,look.body ?? null)} look={look} source={source}/>
-    {Object.keys(FIT).filter(key=>key!=='yoga_mat' && gear.includes(key)).sort((a,b)=>Number(['scarf','towel','medal'].includes(a))-Number(['scarf','towel','medal'].includes(b))).map(key=><g key={key} clipPath={['sleeve','crew_socks'].includes(key)?`url(#body${uid})`:undefined}>{piece(key)}{PAIRED.has(key)&&piece(key,true)}</g>)}
+    {Object.keys(FIT).filter(key=>key!=='yoga_mat' && gear.includes(key)).sort((a,b)=>(['scarf','towel','medal'].includes(a)?2:a==='crown'?1:0)-(['scarf','towel','medal'].includes(b)?2:b==='crown'?1:0)).map(key=><g key={key} clipPath={['sleeve','crew_socks'].includes(key)?`url(#body${uid})`:undefined}>{piece(key)}{PAIRED.has(key)&&piece(key,true)}</g>)}
   </svg>;
 }
 
@@ -54,6 +56,7 @@ export function PhotoGearThumbnail({ item, className, fallback }: { item: string
   const thumbId=useId().replace(/:/g,'');
   const asset = bounds[item as keyof typeof bounds];
   if (failed) return <>{fallback}</>;
+  if(item==='headphones')return <svg aria-hidden viewBox="390 10 220 210" className={className}><PhotoHeadphones source="f_s5_average" originalKey="f_s5_average" onError={()=>setFailed(true)}/></svg>;
   if (!asset) return <img src={`/api/hero-assets/shop/${item}`} alt="" className={className} onError={() => setFailed(true)} />;
   return <svg aria-hidden viewBox={(FRONT_BOX[item] ?? asset.box).join(' ')} className={className}>
     <defs><clipPath id={`thumb${thumbId}`}><path d="M100,130 H920 V390 H100Z M100,390 H290 V880 H100Z M735,390 H930 V880 H735Z"/></clipPath></defs>
