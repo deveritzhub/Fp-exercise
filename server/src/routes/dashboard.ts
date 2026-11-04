@@ -57,6 +57,9 @@ dashboard.get('/', async (c) => {
         if (!p.activated) {
           // Without an activated account a patient cannot register anything: say that, not "low adherence".
           if (p.invited_at && Date.now() - new Date(p.invited_at).getTime() > 3 * 86400_000) signals.push({ reason: 'not_activated', date: p.invited_at });
+        } else if (p.active_programs > 0 && p.last_activity && Date.now() - new Date(p.last_activity).getTime() >= 21 * 86400_000) {
+          // Three weeks or more without any workout, also with a programme of once a week.
+          signals.push({ reason: 'inactive_long', date: p.last_activity, value: Math.floor((Date.now() - new Date(p.last_activity).getTime()) / 86400_000) });
         } else if (p.active_programs > 0 && a.planned >= 2 && a.completed === 0) {
           signals.push({ reason: 'no_registration', date: p.last_activity, planned: a.planned, completed: 0 });
         } else if (p.active_programs > 0 && a.planned >= 2 && (a.rate ?? 0) < 0.5) {
@@ -66,7 +69,7 @@ dashboard.get('/', async (c) => {
         if (p.active_programs === 0) signals.push({ reason: 'no_active_program', date: null });
         if (signals.length) attention.push({ patientId: p.id, name: `${p.first_name} ${p.last_name}`, reasons: signals.map((x) => x.reason), signals });
       }
-      const order = ['high_pain', 'new_feedback', 'no_registration', 'low_adherence', 'program_ending', 'not_activated', 'no_active_program'];
+      const order = ['high_pain', 'new_feedback', 'inactive_long', 'no_registration', 'low_adherence', 'program_ending', 'not_activated', 'no_active_program'];
       attention.sort((x, y) => order.indexOf(x.reasons[0]) - order.indexOf(y.reasons[0]));
 
       const activity = await tx.query(

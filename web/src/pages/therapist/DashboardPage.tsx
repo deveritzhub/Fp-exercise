@@ -173,6 +173,8 @@ function WorkList({ d }: { d?: Dashboard }) {
         return { text: t(`Pijnscore ${s.value}/10 gemeld${s.date ? ` op ${date(s.date)}` : ''}.`, `Pain score ${s.value}/10 reported${s.date ? ` on ${date(s.date)}` : ''}.`), action: { label: t('Bekijk sessie', 'View session'), to: `${p}?tab=sessies` } };
       case 'new_feedback':
         return { text: t(`${s.value} ${s.value === 1 ? 'sessie' : 'sessies'} met feedback te beoordelen${s.date ? `, laatste ${date(s.date)}` : ''}.`, `${s.value} session(s) with feedback to review${s.date ? `, latest ${date(s.date)}` : ''}.`), action: { label: t('Feedback beoordelen', 'Review feedback'), to: `${p}?tab=sessies` } };
+      case 'inactive_long':
+        return { text: t(`${s.value} dagen geen training; laatst actief ${date(s.date)}.`, `${s.value} days without a workout; last active ${date(s.date)}.`), action: { label: t('Contact opnemen', 'Get in touch'), to: p } };
       case 'no_registration':
         return { text: t(`Geen training geregistreerd: 0 van ${s.planned} geplande dagen (7 dagen)${s.date ? `; laatst actief ${date(s.date)}` : '; nog nooit getraind'}.`, `No workout registered: 0 of ${s.planned} planned days (7 days)${s.date ? `; last active ${date(s.date)}` : '; never trained'}.`), action: { label: t('Contact opnemen', 'Get in touch'), to: p } };
       case 'low_adherence':

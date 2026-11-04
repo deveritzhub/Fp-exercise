@@ -33,7 +33,7 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 9. [x] **Overzicht per patiënt.** In het tabblad Overzicht: laatste mobiliteitsmeting en
    krachtrecords (alleen als de patiënt dat deelt).
 10. [x] **Rapport.** Het voortgangsrapport (print/PDF) krijgt de mobiliteitsmetingen erbij.
-11. [ ] **Dashboard.** "Vraagt aandacht" ook bij een patiënt die al 3 weken niets deed.
+11. [x] **Dashboard.** "Vraagt aandacht" ook bij een patiënt die al 3 weken niets deed.
 
 ## Fase 4 – Snelheid en onderhoud
 12. [ ] **Held-pagina sneller.** Het grootste stuk code (148 kB) opsplitsen, zodat Held
