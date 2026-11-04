@@ -1,6 +1,6 @@
 import pg from 'pg';
 import { test, expect } from '@playwright/test';
-import { expectAccessible, login } from './helpers';
+import { expectAccessible, login, skipWelcomeTour } from './helpers';
 
 /** Self-signup (personal / coach), the non-medical patient app, and passkey login. */
 async function sql(q: string, p: unknown[] = []) {
@@ -18,6 +18,7 @@ const stamp = Date.now();
 test('someone signs up to train for themselves: hero, fitness modes, self-check and safety advice', async ({ browser }) => {
   test.setTimeout(120_000);
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, locale: 'nl-NL', timezoneId: 'Europe/Amsterdam' });
+  await skipWelcomeTour(ctx);
   const page = await ctx.newPage();
   await page.goto('/login');
   await page.getByRole('link', { name: 'Account aanmaken' }).click();
@@ -97,6 +98,7 @@ test('a patient adds a passkey and logs in with it', async ({ browser }) => {
   test.setTimeout(90_000);
   await sql(`DELETE FROM webauthn_credentials WHERE user_id = (SELECT id FROM users WHERE email = 'patient@praktijk-b.test')`);
   const ctx = await browser.newContext({ locale: 'nl-NL' });
+  await skipWelcomeTour(ctx);
   const page = await ctx.newPage();
   // A virtual authenticator with Face ID-like user verification.
   const cdp = await ctx.newCDPSession(page);
