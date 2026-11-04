@@ -104,7 +104,9 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await expect(pp.getByRole('heading', { name: /Uitrusting \(\d+ van \d+\)/ })).toBeVisible();
   await expect(pp.getByText(/^\d+ muntjes/).first()).toBeVisible();
   await expect(pp.getByText(/^Gearscore \d+$/).first()).toBeVisible();
-  await expect(pp.getByText(/Legendarisch · 100/).first()).toBeVisible();
+  const crown=pp.locator('[data-item="crown"]').first();
+  await expect(crown).toContainText('Tier 5 · Goddelijk');
+  await expect(crown).toContainText('Itemlevel 100');
   const buy = pp.getByRole('button', { name: /^Kopen 15 muntjes: / }).first();
   if (await buy.count()) {
     await buy.click();
@@ -114,7 +116,7 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
     // Clear the stacked messages so they do not cover the + button during the next checks.
     const close = pp.getByRole('status').getByRole('button', { name: 'Sluiten / Close' });
     while (await close.count()) await close.first().click();
-    await expect(pp.getByRole('button', { name: /Aan ✓/, pressed: true }).first()).toBeVisible();
+    await expect(pp.getByRole('button', { name: /Uittrekken ✓/, pressed: true }).first()).toBeVisible();
   }
   await pp.getByRole('link', { name: 'Terug naar je held' }).click();
   await expandFolds(pp);
