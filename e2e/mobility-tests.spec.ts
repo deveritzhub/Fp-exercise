@@ -39,6 +39,12 @@ test('patient measures mobility with a published test and sees the trend; staff 
     const card = page.locator('section', { has: page.getByRole('heading', { name: /Knie-tot-muur-test/ }) });
     await expect(card.locator('dl').getByText('7 cm')).toBeVisible();
 
+    // Keyboard: open with Enter, close with Escape, open again.
+    await card.getByRole('button', { name: 'Opnieuw meten' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('dialog', { name: /Knie-tot-muur-test/ })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog', { name: /Knie-tot-muur-test/ })).toHaveCount(0);
     await card.getByRole('button', { name: 'Opnieuw meten' }).click();
     const dlg = page.getByRole('dialog', { name: /Knie-tot-muur-test/ });
     await expect(dlg.getByText(/hiel blijft op de grond/)).toBeVisible();

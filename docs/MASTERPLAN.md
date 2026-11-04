@@ -36,11 +36,11 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 11. [x] **Dashboard.** "Vraagt aandacht" ook bij een patiënt die al 3 weken niets deed.
 
 ## Fase 4 – Snelheid en onderhoud
-12. [ ] **Held-pagina sneller.** Het grootste stuk code (148 kB) opsplitsen, zodat Held
-    sneller opent op een oude telefoon.
-13. [ ] **Toegankelijkheid nieuwe schermen.** Toetsenbord en schermlezer nalopen op
+12. [x] **Held-pagina sneller.** Uitgezocht: 42 kB gecomprimeerd, en de app laadt hem al vooraf
+    en bewaart hem voor offline. Opsplitsen kost een grote verbouwing voor zo'n 0,1 s winst; niet gedaan.
+13. [x] **Toegankelijkheid nieuwe schermen.** Toetsenbord en schermlezer nalopen op
     Mobiliteit meten, Prijzenkast en Dagcheck.
-14. [ ] **Opruimen.** Dubbele code en oude teksten weg, documentatie bij.
+14. [x] **Opruimen.** Dubbele code en oude teksten weg, documentatie bij (`docs/MOBILITEIT_METEN.md`).
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
