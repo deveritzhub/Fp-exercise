@@ -31,6 +31,8 @@ export type MobilityTest = {
   steps: readonly Fn[];
   howToRead: Fn;
   source: string;
+  /** Words in a mobility programme title that work on this movement (for a gentle suggestion). */
+  programHints: readonly string[];
   /** Who should not do it without asking their physiotherapist first. */
   caution: Fn;
 };
@@ -55,6 +57,7 @@ export const MOBILITY_TESTS: readonly MobilityTest[] = [
     ],
     howToRead: ['Meer centimeters is een beweeglijkere enkel. Vergelijk links met rechts.', 'More centimetres is a more mobile ankle. Compare left with right.'],
     source: 'Bennell e.a. 1998; Powden e.a. 2015 (systematische review)',
+    programHints: ['squat', 'enkel', 'kuit', 'hardlopen'],
     caution: ['Niet doen bij een verse enkelblessure of als je niet op het been mag steunen.', 'Do not do it with a fresh ankle injury or if you may not bear weight on the leg.'],
   },
   {
@@ -73,6 +76,7 @@ export const MOBILITY_TESTS: readonly MobilityTest[] = [
     ],
     howToRead: ['Minder centimeters is beter: 0 betekent dat je de grond raakt.', 'Fewer centimetres is better: 0 means you touch the floor.'],
     source: 'Perret e.a. 2001',
+    programHints: ['onderrug', 'hamstring', 'heup'],
     caution: ['Niet doen als voorover buigen je is afgeraden, bijvoorbeeld kort na een heup- of rugoperatie of bij botontkalking.', 'Do not do it if bending forward has been advised against, for example shortly after hip or back surgery or with osteoporosis.'],
   },
   {
@@ -93,6 +97,7 @@ export const MOBILITY_TESTS: readonly MobilityTest[] = [
     ],
     howToRead: ['Hoger is beter. Verschil tussen links en rechts is heel gewoon; volg vooral je eigen verloop.', 'Higher is better. A difference between left and right is very common; mainly follow your own trend.'],
     source: 'Rikli & Jones, Senior Fitness Test (1999, 2001)',
+    programHints: ['schouder', 'bovenrug'],
     caution: ['Niet doen kort na een schouderoperatie of bij een schouder die uit de kom is geweest, tenzij je fysiotherapeut het goed vindt.', 'Do not do it shortly after shoulder surgery or after a dislocated shoulder, unless your physiotherapist agrees.'],
   },
   {
@@ -113,6 +118,7 @@ export const MOBILITY_TESTS: readonly MobilityTest[] = [
     ],
     howToRead: ['Hoger is beter. Vergelijk links met rechts en volg je eigen verloop.', 'Higher is better. Compare left with right and follow your own trend.'],
     source: 'Rikli & Jones, Senior Fitness Test (1999, 2001)',
+    programHints: ['hamstring', 'onderrug', 'heup'],
     caution: ['Niet doen kort na een heupoperatie of als voorover buigen je is afgeraden.', 'Do not do it shortly after hip surgery or if bending forward has been advised against.'],
   },
 ] as const;
@@ -194,4 +200,14 @@ export function mobilityDue(days: string[], today: string) {
   const { lastCounted } = mobilityMoments(days);
   const xpAvailable = !lastCounted || dayNo(today) - dayNo(lastCounted) >= MOBILITY_REMEASURE_DAYS;
   return { last, daysSince: since, due: since >= MOBILITY_REMEASURE_DAYS, xpAvailable };
+}
+
+/** A mobility programme whose title fits this test (first match), for "this works on it". */
+export function suggestedProgram<T extends { title: string; module: string }>(test: MobilityTest, templates: T[]): T | null {
+  const list = templates.filter((x) => x.module === 'mobiliteit');
+  for (const h of test.programHints) {
+    const hit = list.find((x) => x.title.toLowerCase().includes(h));
+    if (hit) return hit;
+  }
+  return null;
 }

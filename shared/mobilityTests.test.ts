@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MOBILITY_MEASURE_XP, MOBILITY_TESTS, mobilityDue, mobilityMoments, mobilityTest, mobilityTrends, sideDifference, validMobilityValue, roundCm, type MobilityResult } from './mobilityTests';
+import { MOBILITY_MEASURE_XP, MOBILITY_TESTS, mobilityDue, mobilityMoments, mobilityTest, suggestedProgram, mobilityTrends, sideDifference, validMobilityValue, roundCm, type MobilityResult } from './mobilityTests';
 
 const r = (test: MobilityResult['test'], side: MobilityResult['side'], day: string, cm: number): MobilityResult => ({ test, side, day, cm });
 
@@ -63,5 +63,17 @@ describe('measuring regularly', () => {
     expect(mobilityDue(['2026-10-15', '2026-10-21'], '2026-11-04')).toMatchObject({ due: true, daysSince: 14, xpAvailable: true });
     // A re-measure 6 days after a counted moment: not due yet, and no XP until 14 days after the counted one.
     expect(mobilityDue(['2026-10-25', '2026-10-31'], '2026-11-04')).toMatchObject({ due: false, xpAvailable: false });
+  });
+});
+
+
+
+describe('programme suggestion', () => {
+  it('points to an existing mobility programme that fits the test, or nothing', () => {
+    const list = [{ title: 'Heupen en onderrug los', module: 'mobiliteit' }, { title: 'Dieper zitten in je squat', module: 'mobiliteit' }, { title: 'Schouder sterk', module: 'kracht' }];
+    expect(suggestedProgram(mobilityTest('knee_to_wall')!, list)?.title).toBe('Dieper zitten in je squat');
+    expect(suggestedProgram(mobilityTest('fingertip_floor')!, list)?.title).toBe('Heupen en onderrug los');
+    // A strength programme is never suggested for a mobility test.
+    expect(suggestedProgram(mobilityTest('back_scratch')!, list)).toBeNull();
   });
 });

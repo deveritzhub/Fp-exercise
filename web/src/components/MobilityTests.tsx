@@ -5,7 +5,9 @@ import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { Button, Dialog, ErrorState, Input, Notice, Segmented, Spinner, useToast } from '@/components/ui';
 import { cn } from '@/lib/cn';
-import { MOBILITY_MEASURE_XP, MOBILITY_TESTS, mobilityDue, mobilityTrends, sideDifference, validMobilityValue, type MobilityResult, type MobilitySide, type MobilityTest, type MobilityTrend } from '@shared/mobilityTests';
+import { Link } from 'react-router-dom';
+import { useModes } from '@/components/patient/Modules';
+import { MOBILITY_MEASURE_XP, MOBILITY_TESTS, mobilityDue, mobilityTrends, suggestedProgram, sideDifference, validMobilityValue, type MobilityResult, type MobilitySide, type MobilityTest, type MobilityTrend } from '@shared/mobilityTests';
 
 type Row = MobilityResult & { id: string };
 type Data = { results: Row[]; sharedByPatient?: boolean };
@@ -87,10 +89,37 @@ function TestCard({ test, results, base, staff }: { test: MobilityTest; results:
       ) : (
         <p className="mt-3 text-[14px] text-ink-600">{t('Nog niet gemeten.', 'Not measured yet.')}</p>
       )}
+      {!staff && any && <Suggestion test={test} trends={trends} />}
       {!staff && <Button variant={any ? 'secondary' : 'primary'} className="mt-3 w-full" onClick={() => setOpen(true)}>{any ? t('Opnieuw meten', 'Measure again') : t('Meten', 'Measure')}</Button>}
       {any && <History test={test} results={results} base={base} staff={staff} />}
       {!staff && open && <MeasureDialog test={test} base={base} onClose={() => setOpen(false)} />}
     </section>
+  );
+}
+
+/**
+ * A gentle pointer to an existing mobility programme that works on this movement. Stronger wording
+ * only when the person got stiffer or one side clearly lags (beyond the published error).
+ */
+function Suggestion({ test, trends }: { test: MobilityTest; trends: MobilityTrend[] }) {
+  const { t } = useI18n();
+  const modes = useModes();
+  const prog = modes.data ? suggestedProgram(test, modes.data.templates) : null;
+  if (!prog) return null;
+  const stiffer = trends.some((x) => x.verdict === 'worse');
+  const diff = sideDifference(trends);
+  const lagging = diff !== null && !!test.realChange && diff >= test.realChange;
+  const lead = stiffer
+    ? t('Je bent stijver dan bij je eerste meting.', 'You are stiffer than at your first measurement.')
+    : lagging
+      ? t('De ene kant blijft achter bij de andere.', 'One side lags behind the other.')
+      : t('Wil je hier soepeler in worden?', 'Want to become more supple here?');
+  return (
+    <p className="mt-3 rounded-xl bg-accent-soft px-3 py-2 text-[14px] text-ink-800">
+      {lead} {t('Het programma', 'The programme')} <strong>{prog.title}</strong> {t('werkt aan deze beweging.', 'works on this movement.')}{' '}
+      <Link to="/p/mobiliteit#mod-start" className="font-semibold text-accent underline-offset-2 hover:underline">{t('Bekijken', 'View')}</Link>
+      {(stiffer || lagging) && <span className="mt-1 block text-[13px] text-ink-600">{t('Heb je er pijn of klachten bij? Bespreek het met je fysiotherapeut.', 'Pain or symptoms with it? Discuss it with your physiotherapist.')}</span>}
+    </p>
   );
 }
 

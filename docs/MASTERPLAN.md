@@ -22,7 +22,7 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 5. [x] **Vandaag rustiger.** Eén hoofdactie bovenaan; de rest compact eronder. Kaarten die
    vandaag niets te doen hebben, klappen in. (Dagkist alleen als hij open kan; logboek op Held
    ingeklapt; dagcheck zonder vooringevuld cijfer.)
-6. [ ] **Meting → advies.** Na een mobiliteitsmeting: "Je enkel is stijver dan je andere
+6. [x] **Meting → advies.** Na een mobiliteitsmeting: "Je enkel is stijver dan je andere
    kant, dit programma helpt" (bestaande programma's, geen nieuwe medische claims).
 7. [ ] **Voortgang op één plek.** De pagina Voortgang toont ook mobiliteitsmetingen,
    krachtrecords en de quiz, niet alleen trainingen.

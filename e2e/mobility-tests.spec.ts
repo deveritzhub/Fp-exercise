@@ -15,6 +15,13 @@ test('patient measures mobility with a published test and sees the trend; staff 
      SELECT $1, practice_id, 'knee_to_wall', s, now()::date - 14, v FROM patients, (VALUES ('left', 7.0), ('right', 9.0)) x(s, v) WHERE id = $1`,
     [pid],
   );
+  // A practice mobility programme that fits the ankle test, for the suggestion (removed at the end).
+  await db.query(`DELETE FROM programs WHERE title = 'Dieper zitten in je squat (E2E)'`);
+  await db.query(
+    `INSERT INTO programs(practice_id, is_template, title, description, status, module, created_by)
+     SELECT practice_id, true, 'Dieper zitten in je squat (E2E)', 'intern', 'active', 'mobiliteit', user_id FROM patients WHERE id = $1`,
+    [pid],
+  );
   // Remember the mobility sharing state, then switch it off.
   const consents = (await db.query(`SELECT id FROM patient_module_consents WHERE patient_id = $1 AND module = 'mobiliteit' AND revoked_at IS NULL`, [pid])).rows.map((r) => r.id as string);
   await db.query(`UPDATE patient_module_consents SET revoked_at = now(), revoked_by = granted_by WHERE id = ANY($1::uuid[])`, [consents]);
@@ -50,6 +57,10 @@ test('patient measures mobility with a published test and sees the trend; staff 
     await expect(card.getByText('gelijk aan je eerste meting')).toBeVisible();
     await expect(card.getByText('Verschil links-rechts: 1,5 cm')).toBeVisible();
     await expect(card.getByRole('img', { name: /Verloop van je metingen/ })).toBeVisible();
+    // A gentle pointer to a fitting programme of the practice (one side ahead by 1.5 cm: "lags").
+    await expect(card.getByText(/Dieper zitten in je squat \(E2E\).*werkt aan deze beweging|werkt aan deze beweging/)).toBeVisible();
+    await expect(card.getByText(/De ene kant blijft achter/)).toBeVisible();
+    await expect(card.getByText(/Bespreek het met je fysiotherapeut/)).toBeVisible();
 
     // A test that can come short: gap or overlap, entered as a choice.
     const scratch = page.locator('section', { has: page.getByRole('heading', { name: /Rugkrabtest/ }) });
@@ -87,6 +98,7 @@ test('patient measures mobility with a published test and sees the trend; staff 
     const db3 = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
     await db3.connect();
     await db3.query('DELETE FROM mobility_tests WHERE patient_id = $1', [pid]);
+    await db3.query(`DELETE FROM programs WHERE title = 'Dieper zitten in je squat (E2E)'`);
     await db3.query(`DELETE FROM patient_module_consents WHERE patient_id = $1 AND module = 'mobiliteit' AND NOT (id = ANY($2::uuid[]))`, [pid, consents]);
     await db3.query(`UPDATE patient_module_consents SET revoked_at = NULL, revoked_by = NULL WHERE id = ANY($1::uuid[])`, [consents]);
     await db3.end();

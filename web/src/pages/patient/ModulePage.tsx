@@ -155,7 +155,7 @@ export function ModulePage({ module }: { module: PatientModule }) {
           <StartTemplates modes={modes.data} module={module} />
         </section>
       ) : (
-        <details className="group rounded-2xl border border-line bg-white shadow-card">
+        <details id="mod-start" className="group scroll-mt-20 rounded-2xl border border-line bg-white shadow-card">
           <summary className="tap flex min-h-[48px] cursor-pointer list-none items-center gap-2 px-4 py-3 font-semibold text-ink-900">
             <Play className="h-4 w-4 text-accent" aria-hidden />
             <span className="flex-1">{t(`Nog een programma starten (${templates.length})`, `Start another programme (${templates.length})`)}</span>
