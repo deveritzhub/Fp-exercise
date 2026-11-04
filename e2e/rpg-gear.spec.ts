@@ -6,8 +6,7 @@ test('RPG equipment preview switches without changing medical programmes', async
   await login(page, 'patient@praktijk-a.test');
   await page.goto('/p/held/inventaris');
   await expect(page.getByRole('heading', { name: /Inventaris/ }).first()).toBeVisible();
-  const toggle = page.getByRole('button', { name: 'RPG-weergave' });
-  await toggle.click();
+  await page.getByRole('button', { name: 'RPG-weergave' }).click();
   await expect(page.getByRole('img', { name: 'Je geïllustreerde held met je gedragen uitrusting' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Fotoweergave' })).toHaveAttribute('aria-pressed','true');
   await page.getByRole('button', { name: 'Fotoweergave' }).click();
