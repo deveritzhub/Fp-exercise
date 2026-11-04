@@ -30,7 +30,7 @@ export const NERVES = [
   { key: 'thoracodorsalis', nl: 'n. thoracodorsalis', en: 'thoracodorsal nerve', areaNl: 'brede rugspier', areaEn: 'broad back muscle', match: [] },
   { key: 'dorsalis_scapulae', nl: 'n. dorsalis scapulae', en: 'dorsal scapular nerve', areaNl: 'tussen de schouderbladen', areaEn: 'between the shoulder blades', match: [] },
   { key: 'pectorales', nl: 'nn. pectorales', en: 'pectoral nerves', areaNl: 'borst', areaEn: 'chest', match: [] },
-  { key: 'musculocutaneus', nl: 'n. musculocutaneus', en: 'musculocutaneous nerve', areaNl: 'voorkant bovenarm', areaEn: 'front of the upper arm', match: [] },
+  { key: 'musculocutaneus', nl: 'n. musculocutaneus', en: 'musculocutaneous nerve', areaNl: 'voorkant bovenarm', areaEn: 'front of the upper arm', noteNl: 'De naam zegt het: musculo = spier, cutaneus = huid. Hij stuurt eerst de armbuigers aan en loopt daarna door als gevoelszenuw van de huid aan de buitenkant van de onderarm.', noteEn: 'The name says it: musculo = muscle, cutaneous = skin. It first drives the arm flexors, then carries on as the sensory nerve of the skin on the outer forearm.', match: [] },
   { key: 'radialis', nl: 'n. radialis', en: 'radial nerve', areaNl: 'achterkant arm, polsstrekkers', areaEn: 'back of the arm, wrist extensors', match: ['radialis', 'radial'] },
   { key: 'medianus', nl: 'n. medianus', en: 'median nerve', areaNl: 'voorkant onderarm, duim', areaEn: 'front of the forearm, thumb', match: ['medianus', 'median'] },
   { key: 'ulnaris', nl: 'n. ulnaris', en: 'ulnar nerve', areaNl: 'pinkzijde onderarm, hand', areaEn: 'little-finger side of forearm, hand', match: ['ulnaris', 'ulnar'] },
@@ -95,7 +95,7 @@ export const MUSCLES: Muscle[] = [
   { key: 'polsstrekkers', plural: true, nl: 'Polsstrekkers', en: 'Wrist extensors', latin: 'm. extensor carpi radialis longus, m. extensor carpi radialis brevis, m. extensor carpi ulnaris', region: 'onderarm', nerve: 'radialis', functions: [['Pols strekken (hand omhoog)', 'Extending the wrist (hand up)'], ['Pols stabiel houden bij grijpen', 'Keeping the wrist steady when gripping']], match: ['extensor carpi', 'polsextensor', 'polsstrekker', 'wrist extensor'] },
   { key: 'supinator', nl: 'Supinator', en: 'Supinator', latin: 'm. supinator', region: 'onderarm', nerve: 'radialis', functions: [['Onderarm naar buiten draaien (supinatie)', 'Turning the forearm palm-up (supination)']], match: ['supinator'] },
   { key: 'pronator', nl: 'Ronde binnenwaartse draaier', en: 'Pronator teres', latin: 'm. pronator teres', region: 'onderarm', nerve: 'medianus', functions: [['Onderarm naar binnen draaien (pronatie)', 'Turning the forearm palm-down (pronation)'], ['Helpt bij elleboog buigen', 'Helps bend the elbow']], match: ['pronator'] },
-  { key: 'polsbuigers', plural: true, nl: 'Pols- en vingerbuigers', en: 'Wrist and finger flexors', latin: 'm. flexor carpi radialis, m. flexor digitorum superficialis', region: 'onderarm', nerve: 'medianus', also: ['ulnaris'], functions: [['Pols buigen (hand omlaag)', 'Flexing the wrist (hand down)'], ['Vingers buigen, grijpkracht', 'Bending the fingers, grip strength']], match: ['flexor carpi radialis', 'flexor digitorum', 'vingerflexor', 'polsflexor', 'grijpkracht', 'grip'] },
+  { key: 'polsbuigers', plural: true, nl: 'Pols- en vingerbuigers', en: 'Wrist and finger flexors', latin: 'm. flexor carpi radialis, m. flexor digitorum superficialis', region: 'onderarm', nerve: 'medianus', functions: [['Pols buigen (hand omlaag)', 'Flexing the wrist (hand down)'], ['Vingers buigen, grijpkracht', 'Bending the fingers, grip strength']], match: ['flexor carpi radialis', 'flexor digitorum', 'vingerflexor', 'polsflexor', 'grijpkracht', 'grip'] },
   { key: 'fcu', nl: 'Ellepijpszijdige polsbuiger', en: 'Flexor carpi ulnaris', latin: 'm. flexor carpi ulnaris', region: 'onderarm', nerve: 'ulnaris', functions: [['Pols buigen naar de pinkkant', 'Bending the wrist towards the little finger'], ['Helpt bij pols buigen en grijpen', 'Helps flex the wrist and grip']], match: ['flexor carpi ulnaris'] },
   // Back
   { key: 'latissimus', nl: 'Brede rugspier', en: 'Latissimus dorsi', latin: 'm. latissimus dorsi', region: 'rug', nerve: 'thoracodorsalis', functions: [['Arm van boven naar beneden trekken', 'Pulling the arm down from overhead'], ['Arm naar achteren en naar binnen draaien', 'Moving the arm back and turning it inward']], match: ['latissimus', 'brede rugspier', 'lats'] },
@@ -134,7 +134,7 @@ export const MUSCLES: Muscle[] = [
   { key: 'extensor_digitorum', level: 2, nl: 'Vingerstrekker', en: 'Extensor digitorum', latin: 'm. extensor digitorum', region: 'onderarm', nerve: 'radialis', functions: [['Vingers strekken', 'Straightening the fingers']], match: ['extensor digitorum communis', 'vingerstrekker', 'vingerextensor', 'finger extensor'] },
   { key: 'fdp', level: 2, nl: 'Diepe vingerbuiger', en: 'Flexor digitorum profundus', latin: 'm. flexor digitorum profundus', region: 'onderarm', nerve: 'medianus', also: ['ulnaris'], functions: [['Vingertoppen buigen', 'Bending the fingertips']], match: ['flexor digitorum profundus'] },
   { key: 'thenar', level: 2, plural: true, nl: 'Duimmuisspieren', en: 'Thenar muscles', latin: 'thenarspieren: m. opponens pollicis, m. abductor pollicis brevis, m. flexor pollicis brevis', region: 'onderarm', nerve: 'medianus', functions: [['Duim tegenover de vingers zetten (opponeren)', 'Bringing the thumb opposite the fingers (opposition)']], match: ['thenar', 'opponens pollicis', 'duimmuis'] },
-  { key: 'ulnaire_handspieren', level: 2, plural: true, nl: 'Kleine handspieren (pinkzijde en tussen de botjes)', en: 'Small hand muscles (little-finger side and interossei)', latin: 'mm. interossei, hypothenarspieren, m. adductor pollicis', region: 'onderarm', nerve: 'ulnaris', also: ['medianus'], functions: [['Vingers spreiden en sluiten', 'Spreading and closing the fingers'], ['Knijpgreep tussen duim en wijsvinger', 'Pinch grip between thumb and index finger']], match: ['interossei', 'hypothenar', 'adductor pollicis', 'handspier'] },
+  { key: 'ulnaire_handspieren', level: 2, plural: true, nl: 'Kleine handspieren (pinkzijde en tussen de botjes)', en: 'Small hand muscles (little-finger side and interossei)', latin: 'mm. interossei, hypothenarspieren, m. adductor pollicis', region: 'onderarm', nerve: 'ulnaris', functions: [['Vingers spreiden en sluiten', 'Spreading and closing the fingers'], ['Knijpgreep tussen duim en wijsvinger', 'Pinch grip between thumb and index finger']], match: ['interossei', 'hypothenar', 'adductor pollicis', 'handspier'] },
   { key: 'diafragma', level: 2, nl: 'Middenrif', en: 'Diaphragm', latin: 'diaphragma', region: 'buik', nerve: 'phrenicus', functions: [['Inademen', 'Breathing in'], ['Romp onder druk zetten bij tillen', 'Pressurising the trunk when lifting']], match: ['diafragma', 'diaphragm', 'middenrif', 'ademhaling'] },
   { key: 'bekkenbodem', level: 2, nl: 'Bekkenbodem', en: 'Pelvic floor', latin: 'm. levator ani, m. coccygeus', region: 'buik', nerve: 'pudendus', also: ['plexus_sacralis'], functions: [['Bekkenorganen ondersteunen', 'Supporting the pelvic organs'], ['Plas en ontlasting ophouden', 'Holding urine and stool']], match: ['bekkenbodem', 'pelvic floor', 'levator ani'] },
   { key: 'intercostales', level: 2, plural: true, nl: 'Tussenribspieren', en: 'Intercostal muscles', latin: 'mm. intercostales', region: 'buik', nerve: 'intercostales', functions: [['Ribben bewegen bij het ademen', 'Moving the ribs when breathing']], match: ['intercostal', 'tussenrib'] },
@@ -270,6 +270,13 @@ export function quizQuestions(): QuizQuestion[] {
   return builtQuestions;
 }
 
+/** "Also helped by …" for muscles with a second nerve, so the quiz answer is never the whole story. */
+function alsoText(m: Muscle, lang: 'nl' | 'en') {
+  const extra = (m.also ?? []).map((k) => nerveByKey(k)).filter(Boolean).map((x) => (lang === 'nl' ? x!.nl : x!.en));
+  if (!extra.length) return '';
+  return lang === 'nl' ? `Een deel krijgt ook signalen van de ${extra.join(' en ')}.` : `Part of it is also supplied by the ${extra.join(' and ')}.`;
+}
+
 function buildQuestions(): QuizQuestion[] {
   const out: QuizQuestion[] = [];
   for (const m of MUSCLES) {
@@ -292,10 +299,13 @@ function buildQuestions(): QuizQuestion[] {
     const wrong = pickOthers(NERVES.filter((x) => !nervesOf(m).includes(x.key)), 3, m.key + 'n');
     out.push({
       id: `${m.key}:zenuw`, level: m.level ?? 1, muscle: m.key, nerve: m.nerve,
-      q: [`Welke zenuw stuurt de ${m.nl.toLowerCase()} aan?`, `Which nerve drives the ${m.en.toLowerCase()}?`],
+      q: [`Welke zenuw stuurt de ${m.nl.toLowerCase()} (${m.latin}) aan?`, `Which nerve drives the ${m.en.toLowerCase()} (${m.latin})?`],
       options: shuffle([{ id: m.nerve, label: [n.nl, n.en] as Fn }, ...wrong.map((x) => ({ id: x.key, label: [x.nl, x.en] as Fn }))], m.key + 'no'),
       answer: m.nerve,
-      explain: [`De ${m.nl.toLowerCase()} wordt aangestuurd door de ${n.nl} (${n.areaNl}).`, `The ${m.en.toLowerCase()} is driven by the ${n.en} (${n.areaEn}).`],
+      explain: [
+        [`De ${m.nl.toLowerCase()} wordt aangestuurd door de ${n.nl} (${n.areaNl}).`, alsoText(m, 'nl'), 'noteNl' in n ? n.noteNl : ''].filter(Boolean).join(' '),
+        [`The ${m.en.toLowerCase()} is driven by the ${n.en} (${n.areaEn}).`, alsoText(m, 'en'), 'noteEn' in n ? n.noteEn : ''].filter(Boolean).join(' '),
+      ],
     });
   }
   // 3. Per nerve with two or more muscles: which of these does it drive?
