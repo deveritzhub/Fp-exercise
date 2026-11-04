@@ -12,19 +12,21 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
    alleen fouten op de server.
 2. [x] **Nette foutpagina's.** Een kapot scherm toont "Er ging iets mis" met "Opnieuw laden"
    in plaats van een wit scherm.
-3. [ ] **Stabiele testset.** De trage testen (alle cosmetica, a11y-sweep) zo maken dat ze ook
-   naast elkaar slagen, zodat een rode test echt iets betekent.
+3. [x] **Stabiele testset.** De volledige set (123 testen) slaagt met de standaardinstelling
+   (één worker, gedeelde testdatabase). Niet met `--workers=4` draaien en geen code wijzigen
+   tijdens een run: dan falen testen die niets mis hebben.
 4. [x] **Beveiligingstest voor de nieuwe tabellen.** Automatische controle dat een andere
    patiënt of een andere praktijk de mobiliteitsmetingen en quizantwoorden niet kan zien.
 
 ## Fase 2 – Patiënt: rustiger en slimmer
-5. [ ] **Vandaag rustiger.** Eén hoofdactie bovenaan; de rest compact eronder. Kaarten die
-   vandaag niets te doen hebben, klappen in.
+5. [x] **Vandaag rustiger.** Eén hoofdactie bovenaan; de rest compact eronder. Kaarten die
+   vandaag niets te doen hebben, klappen in. (Dagkist alleen als hij open kan; logboek op Held
+   ingeklapt; dagcheck zonder vooringevuld cijfer.)
 6. [ ] **Meting → advies.** Na een mobiliteitsmeting: "Je enkel is stijver dan je andere
    kant, dit programma helpt" (bestaande programma's, geen nieuwe medische claims).
 7. [ ] **Voortgang op één plek.** De pagina Voortgang toont ook mobiliteitsmetingen,
    krachtrecords en de quiz, niet alleen trainingen.
-8. [ ] **Quiz over sliders en tests.** Nieuwe level 2-vragen: welke slider hoort bij welke
+8. [x] **Quiz over sliders en tests.** Nieuwe level 2-vragen: welke slider hoort bij welke
    zenuw, wat meet de knie-tot-muur-test.
 
 ## Fase 3 – Fysiotherapeut
