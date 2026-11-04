@@ -3,7 +3,17 @@ import AxeBuilder from '@axe-core/playwright';
 
 export const PASSWORD = 'Demo-wachtwoord-1';
 
-export async function login(page: Page, email: string, password = PASSWORD) {
+export async function login(page: Page, email: string, password = PASSWORD, opts: { welcomeTour?: boolean } = {}) {
+  // The first-use welcome tour (patient app) is marked as seen, unless a test is about it.
+  if (!opts.welcomeTour) {
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('fp.tour.v1', 'done');
+      } catch {
+        /* ignore */
+      }
+    });
+  }
   await page.goto('/login');
   await page.getByLabel('E-mailadres').fill(email);
   await page.getByLabel('Wachtwoord', { exact: true }).fill(password);

@@ -17,6 +17,8 @@ test('therapist: warning after 29 idle minutes, stay logged in, then logout afte
   await expect(page).toHaveURL(/\/app/);
 
   await page.clock.fastForward('31:00');
+  // Logging out gives device clean-up at most 2 s (a timer): let the frozen test clock run past it.
+  await page.clock.runFor(3000);
   await expect(page).toHaveURL(/\/login\?reden=inactief/);
   await expect(page.getByText('Je bent automatisch uitgelogd')).toBeVisible();
   expect((await page.request.get('/api/auth/me')).ok() && (await (await page.request.get('/api/auth/me')).json()).user).toBeFalsy();
