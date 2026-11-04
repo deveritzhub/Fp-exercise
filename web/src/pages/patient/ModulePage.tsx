@@ -1,6 +1,6 @@
 import { Link, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, ChevronDown, ChevronRight, Dumbbell, Lock, Play, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, Dumbbell, Lock, Play, ShieldCheck, Ruler } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtRelative } from '@/lib/format';
@@ -99,6 +99,17 @@ export function ModulePage({ module }: { module: PatientModule }) {
           <span className="min-w-0 flex-1">
             <span className="block font-semibold">{t('Krachtlog, eigen schema’s en 1RM', 'Strength log, own routines and 1RM')}</span>
             <span className="block text-[14px] text-white/80">{t('Bewaar je eigen trainingen en log ze set voor set', 'Save your own workouts and log them set by set')}</span>
+          </span>
+          <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
+        </Link>
+      )}
+
+      {module === 'mobiliteit' && (
+        <Link to="/p/mobiliteit/meten" className="tap flex items-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-4 text-white shadow-card">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15"><Ruler className="h-6 w-6" aria-hidden /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{t('Mobiliteit meten', 'Measure mobility')}</span>
+            <span className="block text-[14px] text-white/80">{t('Vier tests met een meetlint: enkel, rug, schouders en achterkant been', 'Four tests with a tape measure: ankle, back, shoulders and back of the leg')}</span>
           </span>
           <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
         </Link>

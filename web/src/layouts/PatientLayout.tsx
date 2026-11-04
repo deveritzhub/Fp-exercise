@@ -45,6 +45,7 @@ export function PatientLayout() {
       () => import('@/pages/patient/ModulePage'),
       () => import('@/pages/patient/HeroPages'),
       () => import('@/pages/patient/GymLogPage'),
+      () => import('@/pages/patient/MobilityTestsPage'),
       () => import('@/pages/patient/AtlasPage'),
       () => import('@/pages/patient/SettingsPage'),
       () => import('@/pages/AccountPage'),

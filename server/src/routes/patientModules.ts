@@ -253,6 +253,7 @@ patientModules.get('/export', async (c) => {
       gymSets: await q('SELECT day, exercise_name, set_no, weight_kg, reps, rpe, rir, place, created_at FROM gym_sets WHERE patient_id = $1 ORDER BY day, created_at'),
       quizAnswers: await q('SELECT question_id, day, created_at FROM hero_quiz_answers WHERE patient_id = $1 ORDER BY created_at'),
       gymRoutines: await q('SELECT name, items, created_at, updated_at FROM gym_routines WHERE patient_id = $1 ORDER BY created_at'),
+      mobilityTests: await q('SELECT test, side, day, cm, created_at FROM mobility_tests WHERE patient_id = $1 ORDER BY day, test, side'),
       consents: await q('SELECT module, granted_at, revoked_at FROM patient_module_consents WHERE patient_id = $1'),
       redFlagReports: await q('SELECT flags, note, created_at, handled_at FROM red_flag_reports WHERE patient_id = $1'),
       deletionRequests: await q('SELECT created_at, handled_at, outcome FROM deletion_requests WHERE patient_id = $1'),
