@@ -1,5 +1,5 @@
-import { PhotoEquipment } from './PhotoEquipment';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
+const PhotoEquipment=lazy(()=>import('./PhotoEquipment').then(m=>({default:m.PhotoEquipment})));
 import { cn } from '@/lib/cn';
 import { useI18n } from '@/lib/i18n';
 import { heroPhotoKey, wornOutfit } from '@shared/hero';
@@ -47,9 +47,9 @@ function HeroPhotoContent({ look, className, gearChips = false, fittedGear = fal
         <HumanFigure look={look} className="h-full w-full" />
       ) : (
         // A 3:4 layer that matches the photo exactly, so the gear lands on the body at any box size.
-        <span className="absolute left-1/2 top-0 block aspect-[3/4] h-full -translate-x-1/2">
+        <span className="absolute left-1/2 top-0 block aspect-[3/4] h-full -translate-x-1/2" style={fittedGear ? {transform:"translateX(-50%) scale(.92)",transformOrigin:"50% 50%"} : undefined}>
           <img key={keys[attempt]} src={`/api/hero-assets/${keys[attempt]}`} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setAttempt((a) => a + 1)} />
-          {fittedGear && <PhotoEquipment look={look} source={`/api/hero-assets/${keys[attempt]}`}/>}
+          {fittedGear && <Suspense fallback={null}><PhotoEquipment look={look} source={`/api/hero-assets/${keys[attempt]}`}/></Suspense>}
           {worn.map((p, i) => <WearItem key={`${p.key}-${i}`} p={p} />)}
         </span>
       )}

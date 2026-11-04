@@ -29,6 +29,8 @@ test('photographic inventory equips and keeps photographic preview on mobile', a
     if(url.pathname==='/api/patient/hero')return route.fulfill({json:state});
     return route.fulfill({json:{}});
   });
+  // This inventory fixture represents a returning user; the welcome tour has its own tests.
+  await page.addInitScript(() => localStorage.setItem('fp.tour.v1', 'done'));
   await page.goto('/p/held/inventaris');
   const photo=page.getByRole('img',{name:'Je fotorealistische held met je gedragen uitrusting'});
   await expect(photo).toBeVisible();
@@ -59,4 +61,23 @@ test('photographic inventory equips and keeps photographic preview on mobile', a
   await page.locator('.rpg-stage').screenshot({path:`${assets}/inventory-mobile.png`,style:'header, nav { visibility:hidden !important }'});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   expect(errors).toEqual([]);
+});
+
+test('leg garments fit fuller avatars on mobile', async ({page}) => {
+  test.skip(!fs.existsSync(path.join(assets,'f_s5_full_h2.png')), 'Download the complete fixed catalog with --all.');
+  test.setTimeout(60000);
+  await page.setViewportSize({width:390,height:700});
+  await page.route('**/api/hero-assets/**', route => {
+    const key=new URL(route.request().url()).pathname.split('/').at(-1)!;
+    return route.fulfill({path:path.join(assets,key+'.png'),contentType:'image/png'});
+  });
+  for(const key of ['f_s5_full_h2','f_s7_full_h2','f_s5_soft_h2','m_s5_full','m_s9_full','f_s1_lean']){
+    await page.goto('/photo-fit-review.html?fitcase='+key);
+    await expect(page.locator('[data-photo-gear=sleeve]')).toHaveCount(1);
+    await expect(page.locator('[data-photo-gear=crew_socks]')).toHaveCount(2);
+    await page.waitForFunction(()=>Array.from(document.images).every(i=>i.complete&&i.naturalWidth));
+    await page.waitForTimeout(400);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    await page.screenshot({path:`docs/photo-fitting/catalog/fit-${key}.png`,animations:'disabled'});
+  }
 });
