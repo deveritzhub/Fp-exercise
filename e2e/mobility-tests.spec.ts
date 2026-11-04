@@ -100,6 +100,11 @@ test('patient measures mobility with a published test and sees the trend; staff 
     await expect(staff.getByRole('heading', { name: /Knie-tot-muur-test/ })).toBeVisible();
     await expect(staff.locator('dl').getByText('10,5 cm')).toBeVisible();
     await expect(staff.getByRole('button', { name: /Meten/ })).toHaveCount(0);
+    // And in the overview tab, marked as measured by the patient.
+    await staff.goto(`/app/patienten/${pid}`);
+    const sum = staff.getByRole('region', { name: /Mobiliteit/ });
+    await expect(sum.getByText(/zelf gemeten door de patiënt/)).toBeVisible();
+    await expect(sum.getByText(/Knie-tot-muur-test/)).toBeVisible();
     await sctx.close();
   } finally {
     const db3 = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });

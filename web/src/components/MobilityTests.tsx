@@ -300,18 +300,21 @@ function MeasureDialog({ test, base, onClose }: { test: MobilityTest; base: stri
 }
 
 /** Compact overview for the progress page: per measured test the latest value and the change. */
-export function MobilitySummary() {
+export function MobilitySummary({ base = '/patient', link = '/p/mobiliteit/meten' }: { base?: string; link?: string }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
-  const q = useQuery({ queryKey: ['mobility-tests', '/patient'], queryFn: () => api.get<Data>('/patient/mobility-tests') });
+  const staff = base !== '/patient';
+  const q = useQuery({ queryKey: ['mobility-tests', base], queryFn: () => api.get<Data>(`${base}/mobility-tests`) });
   if (!q.data) return null;
   const results = q.data.results;
   const measured = MOBILITY_TESTS.filter((x) => results.some((r) => r.test === x.key));
+  // Staff: only when the patient shares mobility and has measured something.
+  if (staff && measured.length === 0) return null;
   return (
     <section aria-labelledby="mob-summary" className="rounded-2xl border border-line bg-white p-5 shadow-card">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 id="mob-summary" className="font-bold">{t('Mobiliteit', 'Mobility')}</h2>
-        <Link to="/p/mobiliteit/meten" className="inline-flex min-h-[44px] items-center text-[15px] font-medium text-accent">{measured.length ? t('Alle metingen', 'All measurements') : t('Meten', 'Measure')}</Link>
+        <h2 id="mob-summary" className="font-bold">{t('Mobiliteit', 'Mobility')}{staff && <span className="ml-2 text-[13px] font-normal text-ink-600">{t('zelf gemeten door de patiënt', 'measured by the patient')}</span>}</h2>
+        <Link to={link} className="inline-flex min-h-[44px] items-center text-[15px] font-medium text-accent">{measured.length ? t('Alle metingen', 'All measurements') : t('Meten', 'Measure')}</Link>
       </div>
       {measured.length === 0 ? (
         <p className="text-[14px] text-ink-600">{t('Nog niet gemeten. Met vier tests en een meetlint zie je of je soepeler wordt.', 'Not measured yet. Four tests and a tape measure show whether you are getting more supple.')}</p>
@@ -333,6 +336,7 @@ export function MobilitySummary() {
                           {' '}({tr.gain > 0 ? t('soepeler', 'more supple') : t('stijver', 'stiffer')} {cm(Math.abs(tr.gain))})
                         </span>
                       )}
+                      {staff && tr.points.length > 0 && <span className="text-ink-500"> · {new Date(tr.points.at(-1)!.day + 'T12:00:00').toLocaleDateString(nl ? 'nl-NL' : 'en-GB', { day: 'numeric', month: 'short' })}</span>}
                     </span>
                   ))}
                 </p>

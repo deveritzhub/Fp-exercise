@@ -30,7 +30,7 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
    zenuw, wat meet de knie-tot-muur-test.
 
 ## Fase 3 – Fysiotherapeut
-9. [ ] **Overzicht per patiënt.** In het tabblad Overzicht: laatste mobiliteitsmeting en
+9. [x] **Overzicht per patiënt.** In het tabblad Overzicht: laatste mobiliteitsmeting en
    krachtrecords (alleen als de patiënt dat deelt).
 10. [ ] **Rapport.** Het voortgangsrapport (print/PDF) krijgt de mobiliteitsmetingen erbij.
 11. [ ] **Dashboard.** "Vraagt aandacht" ook bij een patiënt die al 3 weken niets deed.

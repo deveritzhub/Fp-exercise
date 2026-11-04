@@ -12,7 +12,7 @@ import { ProgramStatusBadge } from '@/components/app/StatusBadge';
 import { PatientFormDialog } from './PatientsPage';
 import { OpenRedFlagsBanner, PatientModulesTab } from './PatientModulesTab';
 import { GymLog } from '@/components/GymLog';
-import { MobilityTests } from '@/components/MobilityTests';
+import { MobilitySummary, MobilityTests } from '@/components/MobilityTests';
 import type { Member, PatientDetail, Progress } from '@/lib/types';
 import { PainMapCard } from '@/components/hero/PainMapCard';
 import { ClinicalTimeline } from '@/components/therapist/ClinicalTimeline';
@@ -159,6 +159,8 @@ function Overview({ patientId, progress, programs }: { patientId: string; progre
         <Stat label={t('Actieve programma’s', 'Active programmes')} value={active.length} hint={active[0]?.title} />
       </div>
       <PainMapCard patientId={patientId} />
+      {/* Self-measured mobility, only when the patient shares the mobility part. */}
+      <MobilitySummary base={`/patients/${patientId}`} link="?tab=mobiliteit" />
       <ClinicalTimeline patientId={patientId} sessions={progress.sessions} outcomes={progress.outcomes ?? []} />
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-3">
