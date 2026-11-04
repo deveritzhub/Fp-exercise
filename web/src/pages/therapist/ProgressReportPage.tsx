@@ -9,6 +9,40 @@ import { useSession } from '@/lib/session';
 import { fmtDate, pct } from '@/lib/format';
 import { Button, ErrorState, Spinner } from '@/components/ui';
 import type { PatientDetail, Progress } from '@/lib/types';
+import { MOBILITY_TESTS, mobilityTrends, type MobilityResult } from '@shared/mobilityTests';
+
+/** Self-measured mobility (only when the patient shares mobility): first and latest per test and side. */
+function ReportMobility({ patientId }: { patientId: string }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const q = useQuery({ queryKey: ['mobility-tests', `/patients/${patientId}`], queryFn: () => api.get<{ results: MobilityResult[]; sharedByPatient: boolean }>(`/patients/${patientId}/mobility-tests`) });
+  const rows = MOBILITY_TESTS.flatMap((test) => mobilityTrends(test, q.data?.results ?? []).filter((x) => x.points.length > 0).map((tr) => ({ test, tr })));
+  if (!rows.length) return null;
+  const d = (day: string) => fmtDate(day, locale, { day: 'numeric', month: 'short', year: 'numeric' });
+  const c = (v: number) => `${String(v).replace('.', nl ? ',' : '.')} cm`;
+  const side = (s: string) => (s === 'left' ? t('links', 'left') : s === 'right' ? t('rechts', 'right') : '');
+  return (
+    <section className="mt-6 [break-inside:avoid]" aria-labelledby="r-mob">
+      <h2 id="r-mob" className="t-section">{t('Mobiliteit (zelf gemeten)', 'Mobility (self-measured)')}</h2>
+      <table className="mt-2 w-full text-[13.5px]">
+        <thead className="border-b border-line text-left text-[12px] text-ink-500">
+          <tr><th className="py-1.5 font-medium">{t('Test', 'Test')}</th><th className="py-1.5 font-medium">{t('Eerste', 'First')}</th><th className="py-1.5 font-medium">{t('Laatste', 'Latest')}</th><th className="py-1.5 font-medium">{t('Verschil', 'Change')}</th></tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {rows.map(({ test, tr }) => (
+            <tr key={test.key + tr.side}>
+              <td className="py-1.5">{nl ? test.name[0] : test.name[1]}{tr.side !== 'none' ? ` · ${side(tr.side)}` : ''}</td>
+              <td className="py-1.5 tabular-nums">{c(tr.points[0].cm)} <span className="text-ink-500">({d(tr.points[0].day)})</span></td>
+              <td className="py-1.5 tabular-nums">{c(tr.points.at(-1)!.cm)} <span className="text-ink-500">({d(tr.points.at(-1)!.day)})</span></td>
+              <td className="py-1.5 tabular-nums">{tr.gain === null ? '—' : tr.gain === 0 ? '0' : `${tr.gain > 0 ? t('soepeler', 'more supple') : t('stijver', 'stiffer')} ${c(Math.abs(tr.gain))}${tr.verdict === 'same' ? t(' (binnen meetfout)', ' (within error)') : ''}`}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-1 text-[12px] text-ink-500">{t('Thuis gemeten door de patiënt met een meetlint; vergelijk alleen met eerdere eigen metingen.', 'Measured at home by the patient with a tape measure; compare only with their own earlier results.')}</p>
+    </section>
+  );
+}
 
 const PERIODS = [4, 8, 12, 26];
 
@@ -154,6 +188,8 @@ export function ProgressReportPage() {
             </table>
           </section>
         )}
+
+        <ReportMobility patientId={id} />
 
         <section className="mt-6 [break-inside:avoid]" aria-labelledby="r-prog">
           <h2 id="r-prog" className="t-section">{t('Actieve programma’s', 'Active programmes')}</h2>

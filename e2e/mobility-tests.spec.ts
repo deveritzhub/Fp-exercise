@@ -105,6 +105,11 @@ test('patient measures mobility with a published test and sees the trend; staff 
     const sum = staff.getByRole('region', { name: /Mobiliteit/ });
     await expect(sum.getByText(/zelf gemeten door de patiënt/)).toBeVisible();
     await expect(sum.getByText(/Knie-tot-muur-test/)).toBeVisible();
+    // The printable progress report lists first and latest per side.
+    await staff.goto(`/app/patienten/${pid}/rapport`);
+    const rep = staff.getByRole('region', { name: 'Mobiliteit (zelf gemeten)' });
+    await expect(rep.getByText(/Knie-tot-muur-test \(enkel\) · links/)).toBeVisible();
+    await expect(rep.getByText(/soepeler 3,5 cm/)).toBeVisible();
     await sctx.close();
   } finally {
     const db3 = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
