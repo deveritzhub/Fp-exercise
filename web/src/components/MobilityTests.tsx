@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, ChevronDown, Ruler, Trash2, TrendingDown, TrendingUp } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronRight, Ruler, Trash2, TrendingDown, TrendingUp } from 'lucide-react';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { Button, Dialog, ErrorState, Input, Notice, Segmented, Spinner, useToast } from '@/components/ui';
@@ -346,5 +346,24 @@ export function MobilitySummary({ base = '/patient', link = '/p/mobiliteit/meten
         </ul>
       )}
     </section>
+  );
+}
+
+/** On Vandaag: a short nudge when it is time to measure again (only for people who measured before). */
+export function MobilityDueCard() {
+  const { t } = useI18n();
+  const q = useQuery({ queryKey: ['mobility-tests', '/patient'], queryFn: () => api.get<Data>('/patient/mobility-tests'), staleTime: 5 * 60_000 });
+  if (!q.data || q.data.results.length === 0) return null;
+  const d = mobilityDue(q.data.results.map((r) => r.day), localToday());
+  if (!d.due) return null;
+  return (
+    <Link to="/p/mobiliteit/meten" className="tap flex items-center gap-3 rounded-2xl border border-line bg-white p-4 shadow-card">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent" aria-hidden><Ruler className="h-5 w-5" /></span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold text-ink-900">{t('Tijd om je mobiliteit te meten', 'Time to measure your mobility')}</span>
+        <span className="block text-[13.5px] text-ink-600">{t(`Laatste meting ${d.daysSince} dagen geleden · +${MOBILITY_MEASURE_XP} XP`, `Last measured ${d.daysSince} days ago · +${MOBILITY_MEASURE_XP} XP`)}</span>
+      </span>
+      <ChevronRight className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />
+    </Link>
   );
 }

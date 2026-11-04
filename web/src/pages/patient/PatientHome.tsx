@@ -18,6 +18,7 @@ import { isActionableToday, summarizePatientDay } from '@shared/todayView';
 import { cn } from '@/lib/cn';
 import { BossHomeCard, DayChestHomeCard, HeroHomeCard } from '@/pages/patient/HeroPages';
 import { LogbookHomeCard } from '@/pages/patient/LogbookPage';
+import { MobilityDueCard } from '@/components/MobilityTests';
 import { Check, Flame } from 'lucide-react';
 
 export type PatientHomeData = {
@@ -167,6 +168,7 @@ export function PatientHome() {
       <DayChestHomeCard />
       <BossHomeCard />
       <DailyQuizCard />
+      <MobilityDueCard />
       <LogbookHomeCard />
 
       <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="week-title">

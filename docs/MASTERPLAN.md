@@ -46,6 +46,8 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 15. [x] **Uitlogtest soms rood.** Oorzaak gevonden: als de inactiviteitstimer opnieuw startte
     (bijv. na het verversen van de sessie), telde dat als activiteit en begon de 30 minuten
     opnieuw. Een therapeut kon zo langer ingelogd blijven. Opgelost; test 3× in de reeks groen.
+16. [x] **Meetherinnering op Vandaag.** Wie eerder mat en 14+ dagen niet meer, ziet op Vandaag
+    "Tijd om je mobiliteit te meten · +20 XP".
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

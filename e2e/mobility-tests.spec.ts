@@ -30,6 +30,9 @@ test('patient measures mobility with a published test and sees the trend; staff 
     const ctx = await browser.newContext({ viewport: { width: 360, height: 800 }, hasTouch: true, locale: 'nl-NL' });
     const page = await ctx.newPage();
     await login(page, 'patient@praktijk-a.test');
+    // Vandaag reminds you once the last measurement is two weeks old.
+    await page.goto('/p');
+    await expect(page.getByRole('link', { name: /Tijd om je mobiliteit te meten/ })).toBeVisible();
     await page.goto('/p/mobiliteit');
     // The last measurement is two weeks old: time to measure again.
     await expect(page.getByRole('link', { name: /Mobiliteit meten.*Tijd om opnieuw te meten/ })).toBeVisible();
@@ -77,6 +80,11 @@ test('patient measures mobility with a published test and sees the trend; staff 
     await d2.getByLabel('Rechts (cm)').fill('2');
     await d2.getByRole('button', { name: 'Opslaan' }).click();
     await expect(page.getByText('Meting opgeslagen', { exact: true })).toBeVisible();
+    // Measured today: no reminder on Vandaag.
+    await page.goto('/p');
+    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /Tijd om je mobiliteit te meten/ })).toHaveCount(0);
+    await page.goto('/p/mobiliteit/meten');
     await expect(scratch.locator('dl').getByText('-6 cm')).toBeVisible();
     await expect(scratch.locator('dl').getByText('2 cm', { exact: true })).toBeVisible();
     await expectAccessible(page, 'mobility tests page');
