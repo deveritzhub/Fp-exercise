@@ -24,7 +24,11 @@ const fromKey=(key:string):FigureLook=>{
  return {frame,skin,build:kind==='lean'?'slim':kind,...preset,outfit:'forest',body:{kind} as FigureLook['body']};
 };
 const full=['crown','medal','pin','yoga_mat','captain','watch','gloves','belt','shin_guards','gold_shoes','sport_item'];
-if(params.has('headwear')){
+if(params.has('fitcase')){
+ const key=params.get('fitcase') || 'f_s5_full_h2';
+ const gear=['cap','headphones','pin','wristbands','belt','sleeve','crew_socks'];
+ createRoot(document.getElementById('root')!).render(<I18nProvider><div style={{padding:12}}><HeroPhoto fittedGear look={{...fromKey(key),gear}} className="h-[640px] w-[360px]"/></div></I18nProvider>);
+}else if(params.has('headwear')){
  const base=['f_s1_lean','f_s9_full','m_s1_lean','m_s9_full'][Number(params.get('headwear'))];
  const examples=['','_h2','_h3','_h4'].flatMap(h=>['cap','visor','headband','crown','headphones'].map(item=>({key:base+h,item,look:{...fromKey(base+h),gear:[item]}})));
  createRoot(document.getElementById('root')!).render(<I18nProvider><div style={{display:'grid',gridTemplateColumns:'repeat(5,190px)',gap:12,padding:12}}>{examples.map(({key,item,look})=><div key={key+item}><h2 style={{color:'#29483c',fontSize:11,textAlign:'center'}}>{key} · {item}</h2><HeroPhoto fittedGear look={look} className="h-[254px] w-[190px]"/></div>)}</div></I18nProvider>);

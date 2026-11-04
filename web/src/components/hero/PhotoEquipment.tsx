@@ -44,7 +44,7 @@ export function PhotoEquipment({look, source}: {look:FigureLook;source:string}) 
     <clipPath id={`body${uid}`}><path d={photoFit(source)?.silhouette ?? `M400,20 H600 V235 L${500+180*spread},280  ${500+170*spread},760 620,1290 H350 L${500-170*spread},760 ${500-180*spread},280 400,235Z`}/></clipPath></defs>
     {gear.includes('yoga_mat') && <>{piece('yoga_mat')}<image href={source} width="1000" height="1333.33" preserveAspectRatio="none" clipPath={`url(#body${uid})`}/></>}
     <PhotoIdentity key={source+'|'+heroPhotoKey(look,look.body ?? null)} look={look} source={source}/>
-    {Object.keys(FIT).filter(key=>key!=='yoga_mat' && gear.includes(key)).map(key=><g key={key}>{piece(key)}{PAIRED.has(key)&&piece(key,true)}</g>)}
+    {Object.keys(FIT).filter(key=>key!=='yoga_mat' && gear.includes(key)).map(key=><g key={key} clipPath={['sleeve','crew_socks'].includes(key)?`url(#body${uid})`:undefined}>{piece(key)}{PAIRED.has(key)&&piece(key,true)}</g>)}
   </svg>;
 }
 

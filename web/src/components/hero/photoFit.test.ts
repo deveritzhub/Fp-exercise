@@ -25,6 +25,16 @@ describe('generated photographic fittings',()=>{
  it('measures the actual outfit pose rather than reusing the base body',()=>{
   expect(measuredPlacement('outfit/f_s5_average__champion','gloves',false)).not.toEqual(measuredPlacement('avatar/f_s5_average','gloves',false));
  });
+ it('sizes knee sleeves from the leg contour and centres them on the knee',()=>{
+  for(const key of ['f_s5_full_h2','m_s5_full','f_s1_lean']){
+   const fit=measuredPlacement(key,'sleeve',false)!;
+   const knee=photoFitProfiles[key].points[26];
+   expect(fit.x).toBe(knee[0]);
+   expect(fit.y).toBeLessThan(knee[1]);
+   expect(fit.y+fit.height).toBeGreaterThan(knee[1]);
+  }
+  expect(measuredPlacement('f_s5_full_h2','sleeve',false)!.width).toBeGreaterThan(measuredPlacement('f_s1_lean','sleeve',false)!.width);
+ });
  it('does not invent geometry for personal or unknown photographs',()=>{
   expect(measuredPlacement('avatar/custom_1','cap',false)).toBeNull();
  });

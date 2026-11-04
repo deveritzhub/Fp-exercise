@@ -23,7 +23,7 @@ Fine hair edges are polygonal; existing photographs can have slightly different 
 
 ## Validation on the current app branch
 
-Production build/typecheck, 47 focused unit tests, the full catalog browser check and both synthetic photographic inventory checks pass. The geometry is a separate equipment chunk (about 445 kB gzip); this increases the first photographic equipment load. No geometry inference runs in the browser.
+Production build/typecheck, 48 focused unit tests, the full catalog browser check and all three synthetic photographic checks pass. The geometry is a separate equipment chunk (about 445 kB gzip); this increases the first photographic equipment load. No geometry inference runs in the browser.
 
 ## Reproduce
 
@@ -90,3 +90,17 @@ Pass local paths with `--pose-model` and `--hair-model`. Committed geometry mean
 ![Mobile inventory](mobile.png)
 
 ![Shop tiers](shop-tiers.png)
+
+## Fuller-body leg garment correction
+
+The live release still used generic garment placement. This follow-up now also sizes knee sleeves and socks from the measured leg outline, rather than torso height alone. Knee sleeves centre on the actual knee. Garment layers are clipped to the body silhouette, keeping their edges off the background. The contour scan separates touching legs at their knee midpoint.
+
+Mobile screenshots cover the reported female/full/long-hair combination, two other female bodies, two fuller male avatars and a lean regression case. These are synthetic catalog fixtures with the same equipped item combination, not patient records.
+
+![Reported fuller-body combination](fit-f_s5_full_h2.png)
+
+![Fuller male variant](fit-m_s5_full.png)
+
+![Lean regression case](fit-f_s1_lean.png)
+
+Validation for this correction: build/typecheck, 48 focused tests and all three photographic Playwright checks pass. All six new mobile screenshots were opened and inspected.
