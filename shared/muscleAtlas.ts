@@ -348,6 +348,49 @@ const opt = (id: string, nl: string, en: string) => ({ id, label: [nl, en] as Fn
  * answer each (a wrong option is never also true).
  */
 const LEVEL2_SPECIALS: QuizQuestion[] = [
+  // Nerve sliders and the mobility self-tests (the app's own exercises and tests).
+  {
+    id: 'l2:slider_principe', level: 2, muscle: null, nerve: null,
+    q: ['Wat is het idee van een zenuwslider?', 'What is the idea of a nerve slider?'],
+    options: [opt('glijden', 'Aan de ene kant spanning, aan de andere kant los, zodat de zenuw glijdt', 'Tension at one end, slack at the other, so the nerve glides'), opt('rekken', 'De zenuw zo ver mogelijk rekken en vasthouden', 'Stretch the nerve as far as possible and hold'), opt('kracht', 'De spieren rond de zenuw sterker maken', 'Strengthen the muscles around the nerve'), opt('tintelen', 'Doorgaan tot het flink tintelt', 'Keep going until it tingles a lot')],
+    answer: 'glijden',
+    explain: ['Bij een slider beweeg je twee gewrichten tegelijk: het ene geeft de zenuw spanning, het andere geeft hem ruimte. Zo glijdt de zenuw met weinig rek. Vasthouden op spanning heet een tensioner. Tintelingen horen niet toe te nemen.', 'In a slider you move two joints at once: one tensions the nerve, the other gives it slack, so it glides with little stretch. Holding on tension is called a tensioner. Tingling should not increase.'],
+  },
+  {
+    id: 'l2:slider_tibialis', level: 2, muscle: null, nerve: 'tibialis',
+    q: ['Je trekt de voet naar je toe met de voetzool licht naar buiten. Welke zenuw krijgt dan vooral spanning?', 'You pull the foot up with the sole turned slightly out. Which nerve gets most of the tension?'],
+    options: [opt('tibialis', 'n. tibialis', 'tibial nerve'), opt('fibularis', 'n. fibularis (peroneus)', 'fibular (peroneal) nerve'), opt('femoralis', 'n. femoralis', 'femoral nerve'), opt('obturatorius', 'n. obturatorius', 'obturator nerve')],
+    answer: 'tibialis',
+    explain: ['De n. tibialis loopt achter de binnenenkel naar de voetzool. Voet optrekken met de zool naar buiten geeft hem spanning; daarom zit dat in de tibialis slider. De n. fibularis krijgt juist spanning als je de voet strekt met de zool naar binnen.', 'The tibial nerve runs behind the inner ankle to the sole. Pulling the foot up with the sole turned out tensions it, which is why the tibial slider uses it. The fibular nerve is tensioned by pointing the foot with the sole turned in.'],
+  },
+  {
+    id: 'l2:slider_fibularis', level: 2, muscle: null, nerve: 'fibularis',
+    q: ['Bij welke voetstand krijgt de n. fibularis (peroneus) de meeste spanning?', 'Which foot position puts the most tension on the fibular (peroneal) nerve?'],
+    options: [opt('punt_binnen', 'Voet strekken (punt) met de zool naar binnen', 'Foot pointed with the sole turned in'), opt('op_buiten', 'Voet optrekken met de zool naar buiten', 'Foot pulled up with the sole turned out'), opt('plat', 'Voet plat op de grond', 'Foot flat on the floor'), opt('tenen_op', 'Alleen de tenen optrekken', 'Only the toes pulled up')],
+    answer: 'punt_binnen',
+    explain: ['De n. fibularis loopt om het kuitbeenkopje naar de voorkant van het onderbeen en de voetrug. Strekken met de zool naar binnen rekt die route; voet optrekken met de zool naar buiten hoort bij de n. tibialis.', 'The fibular nerve winds around the head of the fibula to the front of the shin and the top of the foot. Pointing the foot with the sole turned in lengthens that path; pulling it up with the sole out belongs to the tibial nerve.'],
+  },
+  {
+    id: 'l2:slider_femoralis', level: 2, muscle: 'quadriceps', nerve: 'femoralis',
+    q: ['In zijlig breng je de hiel naar je bil en de knie naar achteren. Welke zenuw krijgt spanning?', 'Lying on your side you bring the heel to your buttock and the knee backwards. Which nerve is tensioned?'],
+    options: [opt('femoralis', 'n. femoralis', 'femoral nerve'), opt('ischiadicus', 'n. ischiadicus', 'sciatic nerve'), opt('obturatorius', 'n. obturatorius', 'obturator nerve'), opt('tibialis', 'n. tibialis', 'tibial nerve')],
+    answer: 'femoralis',
+    explain: ['De n. femoralis loopt aan de voorkant van heup en bovenbeen. Knie buigen met de heup gestrekt geeft hem spanning. De n. ischiadicus loopt aan de achterkant en krijgt juist spanning bij een gestrekt been omhoog.', 'The femoral nerve runs at the front of the hip and thigh. Bending the knee with the hip straight tensions it. The sciatic nerve runs at the back and is tensioned by a straight leg raise.'],
+  },
+  {
+    id: 'l2:test_knie_muur', level: 2, muscle: 'soleus', nerve: null,
+    q: ['Wat meet de knie-tot-muur-test?', 'What does the knee-to-wall test measure?'],
+    options: [opt('enkel', 'Hoe ver je enkel buigt met je gewicht erop', 'How far your ankle bends with weight on it'), opt('knie_strek', 'Hoe ver je knie strekt', 'How far your knee straightens'), opt('kuitkracht', 'Hoeveel kracht je kuit heeft', 'How strong your calf is'), opt('balans', 'Hoe lang je op één been staat', 'How long you stand on one leg')],
+    answer: 'enkel',
+    explain: ['Je meet de grootste afstand van grote teen tot muur waarbij de knie de muur raakt met de hiel op de grond. Dat is de enkelbuiging (dorsaalflexie) onder belasting, belangrijk voor squatten, traplopen en hardlopen.', 'You measure the largest distance from big toe to wall at which the knee touches the wall with the heel down. That is ankle bending (dorsiflexion) under load, important for squatting, stairs and running.'],
+  },
+  {
+    id: 'l2:test_zelfde_manier', level: 2, muscle: null, nerve: null,
+    q: ['Waarom meet je je mobiliteit steeds op dezelfde manier en rond hetzelfde moment van de dag?', 'Why measure your mobility the same way and around the same time of day each time?'],
+    options: [opt('meetfout', 'Zodat een verschil echt verandering is en geen meetfout', 'So a difference is real change, not measurement error'), opt('xp', 'Omdat je anders geen XP krijgt', 'Because otherwise you get no XP'), opt('norm', 'Om je te vergelijken met de norm voor je leeftijd', 'To compare yourself with the norm for your age'), opt('sneller', 'Omdat je dan sneller soepeler wordt', 'Because then you get supple faster')],
+    answer: 'meetfout',
+    explain: ['Je bent in de ochtend vaak stijver dan na een wandeling, en een andere voetstand geeft al snel een paar centimeter verschil. Meet je steeds hetzelfde, dan zegt een verschil iets over jou.', 'You are often stiffer in the morning than after a walk, and a different foot position soon makes a few centimetres of difference. Measure the same way each time and a difference tells you something about yourself.'],
+  },
   {
     id: 'l2:pes_anserinus', level: 2, muscle: 'gracilis', nerve: null,
     q: ['Welke spier hoort níet bij de pes anserinus (binnenkant knie)?', 'Which muscle is not part of the pes anserinus (inner knee)?'],

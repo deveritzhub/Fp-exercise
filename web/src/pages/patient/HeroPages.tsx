@@ -1,7 +1,7 @@
 import { PhotoGearThumbnail } from '../../components/hero/PhotoEquipment';
 import { GearArtwork } from '../../components/hero/RpgGear';
 import '../../components/hero/rpg.css';
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Award, BookOpen, Brain, CalendarCheck, Check, ChevronRight, CircleCheck, Coins, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Utensils, Droplets, Zap, Swords, type LucideIcon } from 'lucide-react';
@@ -860,7 +860,12 @@ export function DayChestCard({ d }: { d: HeroState }) {
 /** Day chest on Vandaag, once the patient has a hero. */
 export function DayChestHomeCard() {
   const q = useHero();
-  if (!q.data?.hero) return null;
+  // Vandaag only shows the chest when it can be opened (and keeps it while you open it). Locked
+  // ("do your check-in first") or already opened, it lives on the hero page.
+  const ready = useRef(false);
+  const c = q.data?.chest;
+  if (c?.available && !c.opened) ready.current = true;
+  if (!q.data?.hero || !ready.current) return null;
   return <DayChestCard d={q.data} />;
 }
 

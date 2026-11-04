@@ -58,7 +58,8 @@ describe('quiz', () => {
         for (const o of q.options) if (o.id !== q.answer) expect(nervesOf(m), q.id).not.toContain(o.id);
       } else if (q.id.startsWith('zenuw:')) {
         for (const o of q.options) if (o.id !== q.answer) expect(nervesOf(MUSCLES.find((x) => x.key === o.id)!), q.id).not.toContain(q.nerve);
-      } else {
+      } else if (q.muscle) {
+        // Hand-written questions without a muscle (sliders, measuring) are checked by hand.
         const m = MUSCLES.find((x) => x.key === q.muscle)!;
         for (const o of q.options) if (o.id !== q.answer) expect(m.functions.map((f) => f[0]), q.id).not.toContain(o.label[0]);
       }
