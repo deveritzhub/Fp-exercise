@@ -70,7 +70,7 @@ test('all cosmetics, persistence, previews, character variants and keyboard', as
   await expect(character.locator('.rpg-item').first()).toHaveCSS('animation-name','none');
   await page.getByRole('button',{name:'Fotoweergave',exact:true}).click();await expect(character).toHaveCount(0);
   await page.getByRole('button',{name:'RPG-weergave',exact:true}).click();await expect(character).toBeVisible();
-  const results=await new AxeBuilder({page:page as unknown as ConstructorParameters<typeof AxeBuilder>[0]['page']}).include('[aria-labelledby="gear-title"]').withTags(['wcag2a','wcag2aa']).analyze();
+  const results=await new AxeBuilder({page:page as unknown as ConstructorParameters<typeof AxeBuilder>[0]['page']}).include('[aria-labelledby="gear-title"]').withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']).analyze();
   expect(errors).toEqual([]);
   expect(results.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))).toEqual([]);
 });
