@@ -11,8 +11,8 @@ Kopieer deze teksten in Play Console → *Groeien → Winkelvermelding*. Maximal
 | Categorie | Gezondheid en fitness |
 | Tags | Fysiotherapie, Training, Revalidatie |
 | Contact-e-mail | (jouw zakelijke e-mailadres) |
-| Website | https://fp-exercise.onrender.com (of je eigen domein) |
-| Privacybeleid | https://fp-exercise.onrender.com/privacy |
+| Website | https://app.fpflow.nl |
+| Privacybeleid | https://app.fpflow.nl/privacy |
 
 ## Nederlands (standaardtaal)
 

@@ -54,7 +54,7 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - `DEMO_PASSWORD` instellen in Render (zelf doen, niet naar Claude sturen).
-- app.fpflow.nl: CNAME bij TransIP en het domein in Render.
+- [x] app.fpflow.nl werkt; `APP_ORIGIN=https://app.fpflow.nl` staat in Render (5 nov 2026).
 - Echte e-mail (Zoho) in plaats van links op het scherm.
 - Kling-video's voor bankdrukken, leg curl en voorwaartse uitvalspas (credits).
 - Klinische controle van de nieuwe sliderteksten en de mobiliteitstests.
