@@ -77,7 +77,11 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   // Daily check-in (5 seconds) and weekly quests.
   const checkin = pp.getByRole('region', { name: 'Dagcheck' }).or(pp.locator('section[aria-labelledby="checkin-title"]'));
   await expect(pp.getByRole('heading', { name: /Hoe voelt je linkerknie vandaag\?/ })).toBeVisible();
-  await pp.getByLabel('0 = geen pijn, 10 = ergst denkbaar').fill('6');
+  await expectAccessible(pp, 'daily check-in');
+  // Saving waits for a chosen number; the scale is reachable by keyboard.
+  await expect(checkin.getByRole('button', { name: 'Opslaan' })).toBeDisabled();
+  await checkin.getByRole('button', { name: /: 6$/ }).focus();
+  await pp.keyboard.press('Enter');
   await checkin.getByRole('button', { name: 'Opslaan' }).click();
   await expect(pp.getByText(/Dagcheck gedaan: 6\/10/)).toBeVisible();
   await expect(pp.getByRole('heading', { name: 'Weekquests' })).toBeVisible();

@@ -217,6 +217,7 @@ function NervesView({ data, focus, onMuscle }: { data: AtlasData; focus: string 
             <li key={n.key} id={`zenuw-${n.key}`} className={cn('scroll-mt-20 rounded-2xl border bg-white p-4 shadow-card', focus === n.key ? 'border-2 border-accent' : 'border-line')}>
               <h3 className="flex items-center gap-1.5 font-semibold text-ink-900"><Zap className="h-4 w-4 text-accent" aria-hidden />{nl ? n.nl : n.en}</h3>
               <p className="text-[13px] text-ink-600">{nl ? n.areaNl : n.areaEn}</p>
+              {'noteNl' in n && <p className="mt-1 text-[13px] text-ink-700">{nl ? n.noteNl : n.noteEn}</p>}
               {muscles.length > 0 && (
                 <div className="mt-2">
                   <p className="text-[13px] font-medium text-ink-800">{t(`Stuurt aan (${muscles.length})`, `Drives (${muscles.length})`)}</p>
@@ -234,7 +235,7 @@ function NervesView({ data, focus, onMuscle }: { data: AtlasData; focus: string 
               {exs.length > 0 ? (
                 <ul className="mt-2 space-y-1">{exs.map((e) => <ExerciseRow key={e.id} e={e} />)}</ul>
               ) : (
-                <p className="mt-1.5 text-[13px] text-ink-500">{t('Geen aparte zenuwoefening.', 'No separate nerve exercise.')}</p>
+                <p className="mt-1.5 text-[13px] text-ink-500">{t('Voor deze zenuw bestaat geen gangbare slider. Gewoon bewegen en de spieren die hij aanstuurt trainen houdt hem soepel.', 'There is no common slider for this nerve. Moving and training the muscles it drives keeps it supple.')}</p>
               )}
             </li>
           );

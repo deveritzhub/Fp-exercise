@@ -35,28 +35,23 @@ export function PatientLayout() {
     qc.invalidateQueries({ queryKey: ['patient-home'] });
     qc.invalidateQueries({ queryKey: ['patient-history'] });
   });
-  // Load every patient screen up front, so all of them also open without internet later on
-  // (the service worker keeps the files).
-  // Load the main patient screens ahead, so they still open when the connection drops
-  // during a workout (in a basement gym, on the train).
+  // Load the patient screens ahead, so they still open when the connection drops during a
+  // workout (in a basement gym, on the train); the service worker keeps the files.
   useEffect(() => {
-    const warm = () => {
-      void import('@/pages/patient/PatientHome').catch(() => {});
-      void import('@/pages/patient/SessionPlayer').catch(() => {});
-      void import('@/pages/patient/ModulePage').catch(() => {});
-    };
-    warm();
-  }, []);
-  useEffect(() => {
-    void import('@/pages/patient/PatientHome');
-    void import('@/pages/patient/SessionPlayer');
-    void import('@/pages/patient/PatientProgress');
-    void import('@/pages/patient/ModulePage');
-    void import('@/pages/patient/GymLogPage');
-    void import('@/pages/patient/SettingsPage');
-    void import('@/pages/AccountPage');
-    void import('@/pages/patient/HeroPages');
-    void import('@/pages/patient/LogbookPage');
+    const pages = [
+      () => import('@/pages/patient/PatientHome'),
+      () => import('@/pages/patient/SessionPlayer'),
+      () => import('@/pages/patient/PatientProgress'),
+      () => import('@/pages/patient/ModulePage'),
+      () => import('@/pages/patient/HeroPages'),
+      () => import('@/pages/patient/GymLogPage'),
+      () => import('@/pages/patient/MobilityTestsPage'),
+      () => import('@/pages/patient/AtlasPage'),
+      () => import('@/pages/patient/SettingsPage'),
+      () => import('@/pages/AccountPage'),
+      () => import('@/pages/patient/LogbookPage'),
+    ];
+    for (const load of pages) void load().catch(() => {});
   }, []);
   const inPlayer = loc.pathname.includes('/sessie');
   // Links with a #section (e.g. /p/held#boss) scroll to it once the page has rendered its data.

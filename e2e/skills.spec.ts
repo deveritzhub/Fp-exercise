@@ -89,10 +89,13 @@ test('lock reasons are visible, training buys gear in the shop, and the sheet fi
   await page.getByRole('button', { name: 'Sluiten' }).last().click();
   // Trophy cabinet: Strength level 10 won bronze. The wall stays away until something is placed.
   await expect(page.getByRole('img', { name: /^Muur achter je held/ })).toHaveCount(0);
-  await expect(page.getByText(/Je muur is leeg en staat uit/)).toBeVisible();
+  await expect(page.getByText(/Tik op een gewonnen beker om hem op de muur/)).toBeVisible();
   const bronze = page.getByRole('button', { name: /^Kracht Brons/ });
   await bronze.scrollIntoViewIfNeeded();
-  await bronze.click();
+  await expectAccessible(page, 'trophy cabinet');
+  // Keyboard: the cup is a real button (Enter hangs it on the wall).
+  await bronze.focus();
+  await page.keyboard.press('Enter');
   await expect(page.getByRole('button', { name: /^Kracht Brons/, pressed: true })).toBeVisible();
   await expect(page.getByRole('img', { name: /^Muur achter je held: Kracht Brons/ }).first()).toBeVisible();
   await page.getByRole('img', { name: /^Muur achter je held/ }).first().scrollIntoViewIfNeeded();

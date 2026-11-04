@@ -25,6 +25,8 @@ export const FP_BUNDLES = [
   { name: 'fp-kracht-v4', file: 'fp-kracht-v4.json' },
   // Radial and femoral nerve sliders, so every nerve in the muscle atlas has an exercise.
   { name: 'fp-neuro-v1', file: 'fp-neuro-v1.json' },
+  // Tibial, fibular, musculocutaneous and obturator sliders: every nerve with a common slider has one.
+  { name: 'fp-neuro-v2', file: 'fp-neuro-v2.json' },
 ] as const;
 
 const DIR = path.join(import.meta.dirname, '../../db/seed-data');

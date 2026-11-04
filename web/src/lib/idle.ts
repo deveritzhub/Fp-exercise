@@ -51,7 +51,13 @@ export function useIdleLogout(minutes: number | null, onTimeout: () => void) {
 
   useEffect(() => {
     if (!minutes) return;
-    touch();
+    // Starting (or restarting) the timer is not activity: a refreshed session or a re-render must
+    // never reset the countdown. The page opening itself counts (`last` starts at mount time).
+    try {
+      if (shared() < last.current) localStorage.setItem(KEY, String(last.current));
+    } catch {
+      /* storage unavailable: this tab only */
+    }
     const events = ['pointerdown', 'keydown', 'wheel', 'touchstart', 'scroll'] as const;
     // While the warning is open only an explicit choice counts, so a stray scroll does not hide it.
     const on = () => secondsLeftRef.current === null && touch();

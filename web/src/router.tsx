@@ -1,5 +1,6 @@
-import { lazy, Suspense, type ReactNode } from 'react';
-import { createBrowserRouter, Link, Outlet, ScrollRestoration, useRouteError } from 'react-router-dom';
+import { lazy, Suspense, useEffect, type ReactNode } from 'react';
+import { createBrowserRouter, isRouteErrorResponse, Link, Outlet, ScrollRestoration, useRouteError } from 'react-router-dom';
+import { reportError } from '@/lib/reportError';
 import { Spinner } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { MarketingLayout } from '@/layouts/MarketingLayout';
@@ -49,6 +50,7 @@ const PainCheckinPage = named(() => import('@/pages/patient/HeroPages'), 'PainCh
 const FriendsPage = named(() => import('@/pages/patient/FriendsPage'), 'FriendsPage');
 const LogbookPage = named(() => import('@/pages/patient/LogbookPage'), 'LogbookPage');
 const GymLogPage = named(() => import('@/pages/patient/GymLogPage'), 'GymLogPage');
+const MobilityTestsPage = named(() => import('@/pages/patient/MobilityTestsPage'), 'MobilityTestsPage');
 const ModulePage = named(() => import('@/pages/patient/ModulePage'), 'ModulePage');
 const AtlasPage = named(() => import('@/pages/patient/AtlasPage'), 'AtlasPage');
 const SettingsPage = named(() => import('@/pages/patient/SettingsPage'), 'SettingsPage');
@@ -72,7 +74,25 @@ const isChunkError = (e: unknown) => e instanceof Error && /dynamically imported
 function RouteError() {
   const { t } = useI18n();
   const error = useRouteError();
-  if (!isChunkError(error)) return <NotFound />;
+  const notFound = isRouteErrorResponse(error) && error.status === 404;
+  const chunk = isChunkError(error);
+  useEffect(() => {
+    if (!notFound && !chunk) reportError(error, 'render');
+  }, [error, notFound, chunk]);
+  if (notFound) return <NotFound />;
+  // A screen crashed: say so (not "page not found") and offer a reload.
+  if (!chunk) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
+        <h1 className="text-2xl font-bold">{t('Er ging iets mis', 'Something went wrong')}</h1>
+        <p className="mt-2 max-w-sm text-[15px] text-ink-600">{t('Dit scherm liep vast. Je gegevens zijn veilig en we hebben een melding gekregen. Laad de pagina opnieuw of ga terug naar het begin.', 'This screen got stuck. Your data is safe and we have been notified. Reload the page or go back to the start.')}</p>
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          <button type="button" onClick={() => window.location.reload()} className="inline-flex min-h-[48px] items-center rounded-xl bg-accent px-5 font-semibold text-accent-ink">{t('Opnieuw laden', 'Reload')}</button>
+          <a href="/" className="inline-flex min-h-[48px] items-center rounded-xl border border-line px-5 font-semibold text-ink-900">{t('Naar het begin', 'To the start')}</a>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
       <h1 className="text-2xl font-bold">{t('Geen verbinding', 'No connection')}</h1>
@@ -162,6 +182,7 @@ export const router = createBrowserRouter([
           { path: 'kracht', element: <S><ModulePage key="kracht" module="kracht" /></S> },
           { path: 'mobiliteit', element: <S><ModulePage key="mobiliteit" module="mobiliteit" /></S> },
           { path: 'krachtlog', element: <S><GymLogPage /></S> },
+          { path: 'mobiliteit/meten', element: <S><MobilityTestsPage /></S> },
           { path: 'spieren', element: <S><AtlasPage /></S> },
           { path: 'instellingen', element: <S><SettingsPage /></S> },
           { path: 'account', element: <S><AccountPage patient /></S> },

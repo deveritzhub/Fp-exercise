@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, getActivePractice, setActivePractice } from './api';
+import { api, ApiError, getActivePractice, setActivePractice } from './api';
 import type { SessionUser } from './types';
 import { clearOutbox } from './outbox';
 
@@ -25,13 +25,17 @@ export function useSession() {
     queryKey: ['me'],
     queryFn: async () => (await api.get<{ user: SessionUser | null }>('/auth/me')).user,
     staleTime: 60_000,
+    // Offline: one quick retry, then the offline screen (it reconnects by itself when online again).
+    retry: (n, e) => (e instanceof ApiError && e.status === 0 ? n < 1 : n < 3),
   });
   const user = q.data ?? null;
   let practice = user?.memberships[0];
   const stored = getActivePractice();
   if (user && stored) practice = user.memberships.find((m) => m.practiceId === stored) ?? practice;
   if (practice && stored !== practice.practiceId) setActivePractice(practice.practiceId);
-  return { user, loading: q.isLoading, practice, isStaff: !!user?.memberships.length, isPatient: !!user?.patient };
+  // No connection while checking the login: not the same as being logged out.
+  const offline = !q.data && q.error instanceof ApiError && q.error.status === 0;
+  return { user, loading: q.isLoading, offline, retry: () => void q.refetch(), practice, isStaff: !!user?.memberships.length, isPatient: !!user?.patient };
 }
 
 export function useLogout() {

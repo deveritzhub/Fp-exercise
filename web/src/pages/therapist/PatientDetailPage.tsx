@@ -12,11 +12,12 @@ import { ProgramStatusBadge } from '@/components/app/StatusBadge';
 import { PatientFormDialog } from './PatientsPage';
 import { OpenRedFlagsBanner, PatientModulesTab } from './PatientModulesTab';
 import { GymLog } from '@/components/GymLog';
+import { MobilitySummary, MobilityTests } from '@/components/MobilityTests';
 import type { Member, PatientDetail, Progress } from '@/lib/types';
 import { PainMapCard } from '@/components/hero/PainMapCard';
 import { ClinicalTimeline } from '@/components/therapist/ClinicalTimeline';
 
-type Tab = 'overzicht' | 'programmas' | 'sessies' | 'kracht' | 'modules' | 'gegevens';
+type Tab = 'overzicht' | 'programmas' | 'sessies' | 'kracht' | 'mobiliteit' | 'modules' | 'gegevens';
 
 export function PatientDetailPage() {
   const { id = '' } = useParams();
@@ -125,6 +126,7 @@ export function PatientDetailPage() {
           { value: 'programmas', label: t('Programma’s', 'Programmes'), count: pt.programs.length },
           { value: 'sessies', label: unreviewed ? <>{t('Sessies & feedback', 'Sessions & feedback')} <span className="ml-1 rounded-full bg-warn-soft px-2 py-0.5 text-[12px] font-semibold text-warn">{t(`${unreviewed} te beoordelen`, `${unreviewed} to review`)}</span></> : t('Sessies & feedback', 'Sessions & feedback') },
           { value: 'kracht', label: t('Krachtlog', 'Strength log') },
+          { value: 'mobiliteit', label: t('Mobiliteit', 'Mobility') },
           { value: 'modules', label: t('Veiligheid & modules', 'Safety & modules') },
           { value: 'gegevens', label: t('Gegevens', 'Details') },
         ]}
@@ -132,6 +134,7 @@ export function PatientDetailPage() {
 
       {tab === 'modules' && <PatientModulesTab patientId={pt.id} />}
       {tab === 'kracht' && <GymLog base={`/patients/${pt.id}`} staff />}
+      {tab === 'mobiliteit' && <MobilityTests base={`/patients/${pt.id}`} staff />}
       {tab === 'overzicht' && <Overview patientId={id} progress={prog.data} programs={pt.programs} />}
       {tab === 'programmas' && <Programs pt={pt} />}
       {tab === 'sessies' && <Sessions progress={prog.data} onReviewed={() => qc.invalidateQueries({ queryKey: ['patient', id, 'progress'] })} />}
@@ -156,6 +159,8 @@ function Overview({ patientId, progress, programs }: { patientId: string; progre
         <Stat label={t('Actieve programma’s', 'Active programmes')} value={active.length} hint={active[0]?.title} />
       </div>
       <PainMapCard patientId={patientId} />
+      {/* Self-measured mobility, only when the patient shares the mobility part. */}
+      <MobilitySummary base={`/patients/${patientId}`} link="?tab=mobiliteit" />
       <ClinicalTimeline patientId={patientId} sessions={progress.sessions} outcomes={progress.outcomes ?? []} />
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-3">

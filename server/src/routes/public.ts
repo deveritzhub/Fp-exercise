@@ -37,6 +37,31 @@ publicRoutes.get('/plans', async (c) => {
  * Contact form. Spam protection: honeypot field, minimum fill time, rate limiting.
  * Only the minimum fields are stored and explicit consent is required.
  */
+/**
+ * A screen crashed in someone's browser: log one short line so the developer sees it. Only the
+ * error text and the path (ids, numbers and e-mail addresses removed); no user, no health data.
+ */
+const scrub = (v: string) =>
+  v
+    .replace(/[^\s@]+@[^\s@]+/g, '[e-mail]')
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, ':id')
+    .replace(/\d{3,}/g, '#')
+    .replace(/\s+/g, ' ')
+    .trim();
+publicRoutes.post('/client-error', rateLimit('client-error', 20, 10 * 60_000), async (c) => {
+  const b = parse(
+    z.object({
+      kind: z.enum(['render', 'window', 'promise']),
+      message: z.string().max(400),
+      path: z.string().max(200),
+      release: z.string().max(80).optional(),
+    }),
+    await c.req.json().catch(() => ({})),
+  );
+  console.warn(`[client-error] ${b.kind} · ${scrub(b.path.split('?')[0].split('#')[0])} · ${scrub(b.message).slice(0, 300)}${b.release ? ` · ${scrub(b.release).slice(0, 40)}` : ''}`);
+  return c.json({ ok: true }, 202);
+});
+
 publicRoutes.post('/contact', rateLimit('contact', 5, 60 * 60_000), async (c) => {
   const b = parse(
     z.object({

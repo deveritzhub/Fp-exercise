@@ -30,7 +30,7 @@ export const NERVES = [
   { key: 'thoracodorsalis', nl: 'n. thoracodorsalis', en: 'thoracodorsal nerve', areaNl: 'brede rugspier', areaEn: 'broad back muscle', match: [] },
   { key: 'dorsalis_scapulae', nl: 'n. dorsalis scapulae', en: 'dorsal scapular nerve', areaNl: 'tussen de schouderbladen', areaEn: 'between the shoulder blades', match: [] },
   { key: 'pectorales', nl: 'nn. pectorales', en: 'pectoral nerves', areaNl: 'borst', areaEn: 'chest', match: [] },
-  { key: 'musculocutaneus', nl: 'n. musculocutaneus', en: 'musculocutaneous nerve', areaNl: 'voorkant bovenarm', areaEn: 'front of the upper arm', match: [] },
+  { key: 'musculocutaneus', nl: 'n. musculocutaneus', en: 'musculocutaneous nerve', areaNl: 'voorkant bovenarm', areaEn: 'front of the upper arm', noteNl: 'De naam zegt het: musculo = spier, cutaneus = huid. Hij stuurt eerst de armbuigers aan en loopt daarna door als gevoelszenuw van de huid aan de buitenkant van de onderarm.', noteEn: 'The name says it: musculo = muscle, cutaneous = skin. It first drives the arm flexors, then carries on as the sensory nerve of the skin on the outer forearm.', match: ['musculocutaneus', 'musculocutaneous'] },
   { key: 'radialis', nl: 'n. radialis', en: 'radial nerve', areaNl: 'achterkant arm, polsstrekkers', areaEn: 'back of the arm, wrist extensors', match: ['radialis', 'radial'] },
   { key: 'medianus', nl: 'n. medianus', en: 'median nerve', areaNl: 'voorkant onderarm, duim', areaEn: 'front of the forearm, thumb', match: ['medianus', 'median'] },
   { key: 'ulnaris', nl: 'n. ulnaris', en: 'ulnar nerve', areaNl: 'pinkzijde onderarm, hand', areaEn: 'little-finger side of forearm, hand', match: ['ulnaris', 'ulnar'] },
@@ -44,7 +44,7 @@ export const NERVES = [
   { key: 'plantares', nl: 'nn. plantares', en: 'plantar nerves', areaNl: 'voetzool', areaEn: 'sole of the foot', match: [] },
   { key: 'plexus_sacralis', nl: 'plexus sacralis', en: 'sacral plexus', areaNl: 'diepe heupspieren', areaEn: 'deep hip muscles', match: [] },
   { key: 'femoralis', nl: 'n. femoralis', en: 'femoral nerve', areaNl: 'voorkant bovenbeen', areaEn: 'front of the thigh', match: ['femoralis', 'femoral'] },
-  { key: 'obturatorius', nl: 'n. obturatorius', en: 'obturator nerve', areaNl: 'binnenkant bovenbeen', areaEn: 'inner thigh', match: [] },
+  { key: 'obturatorius', nl: 'n. obturatorius', en: 'obturator nerve', areaNl: 'binnenkant bovenbeen', areaEn: 'inner thigh', match: ['obturatorius', 'obturator'] },
   { key: 'gluteus_superior', nl: 'n. gluteus superior', en: 'superior gluteal nerve', areaNl: 'zijkant heup', areaEn: 'side of the hip', match: [] },
   { key: 'gluteus_inferior', nl: 'n. gluteus inferior', en: 'inferior gluteal nerve', areaNl: 'grote bilspier', areaEn: 'large buttock muscle', match: [] },
   { key: 'ischiadicus', nl: 'n. ischiadicus', en: 'sciatic nerve', areaNl: 'achterkant been', areaEn: 'back of the leg', match: ['ischiadicus', 'sciatic', 'slump', 'slr'] },
@@ -95,7 +95,7 @@ export const MUSCLES: Muscle[] = [
   { key: 'polsstrekkers', plural: true, nl: 'Polsstrekkers', en: 'Wrist extensors', latin: 'm. extensor carpi radialis longus, m. extensor carpi radialis brevis, m. extensor carpi ulnaris', region: 'onderarm', nerve: 'radialis', functions: [['Pols strekken (hand omhoog)', 'Extending the wrist (hand up)'], ['Pols stabiel houden bij grijpen', 'Keeping the wrist steady when gripping']], match: ['extensor carpi', 'polsextensor', 'polsstrekker', 'wrist extensor'] },
   { key: 'supinator', nl: 'Supinator', en: 'Supinator', latin: 'm. supinator', region: 'onderarm', nerve: 'radialis', functions: [['Onderarm naar buiten draaien (supinatie)', 'Turning the forearm palm-up (supination)']], match: ['supinator'] },
   { key: 'pronator', nl: 'Ronde binnenwaartse draaier', en: 'Pronator teres', latin: 'm. pronator teres', region: 'onderarm', nerve: 'medianus', functions: [['Onderarm naar binnen draaien (pronatie)', 'Turning the forearm palm-down (pronation)'], ['Helpt bij elleboog buigen', 'Helps bend the elbow']], match: ['pronator'] },
-  { key: 'polsbuigers', plural: true, nl: 'Pols- en vingerbuigers', en: 'Wrist and finger flexors', latin: 'm. flexor carpi radialis, m. flexor digitorum superficialis', region: 'onderarm', nerve: 'medianus', also: ['ulnaris'], functions: [['Pols buigen (hand omlaag)', 'Flexing the wrist (hand down)'], ['Vingers buigen, grijpkracht', 'Bending the fingers, grip strength']], match: ['flexor carpi radialis', 'flexor digitorum', 'vingerflexor', 'polsflexor', 'grijpkracht', 'grip'] },
+  { key: 'polsbuigers', plural: true, nl: 'Pols- en vingerbuigers', en: 'Wrist and finger flexors', latin: 'm. flexor carpi radialis, m. flexor digitorum superficialis', region: 'onderarm', nerve: 'medianus', functions: [['Pols buigen (hand omlaag)', 'Flexing the wrist (hand down)'], ['Vingers buigen, grijpkracht', 'Bending the fingers, grip strength']], match: ['flexor carpi radialis', 'flexor digitorum', 'vingerflexor', 'polsflexor', 'grijpkracht', 'grip'] },
   { key: 'fcu', nl: 'Ellepijpszijdige polsbuiger', en: 'Flexor carpi ulnaris', latin: 'm. flexor carpi ulnaris', region: 'onderarm', nerve: 'ulnaris', functions: [['Pols buigen naar de pinkkant', 'Bending the wrist towards the little finger'], ['Helpt bij pols buigen en grijpen', 'Helps flex the wrist and grip']], match: ['flexor carpi ulnaris'] },
   // Back
   { key: 'latissimus', nl: 'Brede rugspier', en: 'Latissimus dorsi', latin: 'm. latissimus dorsi', region: 'rug', nerve: 'thoracodorsalis', functions: [['Arm van boven naar beneden trekken', 'Pulling the arm down from overhead'], ['Arm naar achteren en naar binnen draaien', 'Moving the arm back and turning it inward']], match: ['latissimus', 'brede rugspier', 'lats'] },
@@ -134,7 +134,7 @@ export const MUSCLES: Muscle[] = [
   { key: 'extensor_digitorum', level: 2, nl: 'Vingerstrekker', en: 'Extensor digitorum', latin: 'm. extensor digitorum', region: 'onderarm', nerve: 'radialis', functions: [['Vingers strekken', 'Straightening the fingers']], match: ['extensor digitorum communis', 'vingerstrekker', 'vingerextensor', 'finger extensor'] },
   { key: 'fdp', level: 2, nl: 'Diepe vingerbuiger', en: 'Flexor digitorum profundus', latin: 'm. flexor digitorum profundus', region: 'onderarm', nerve: 'medianus', also: ['ulnaris'], functions: [['Vingertoppen buigen', 'Bending the fingertips']], match: ['flexor digitorum profundus'] },
   { key: 'thenar', level: 2, plural: true, nl: 'Duimmuisspieren', en: 'Thenar muscles', latin: 'thenarspieren: m. opponens pollicis, m. abductor pollicis brevis, m. flexor pollicis brevis', region: 'onderarm', nerve: 'medianus', functions: [['Duim tegenover de vingers zetten (opponeren)', 'Bringing the thumb opposite the fingers (opposition)']], match: ['thenar', 'opponens pollicis', 'duimmuis'] },
-  { key: 'ulnaire_handspieren', level: 2, plural: true, nl: 'Kleine handspieren (pinkzijde en tussen de botjes)', en: 'Small hand muscles (little-finger side and interossei)', latin: 'mm. interossei, hypothenarspieren, m. adductor pollicis', region: 'onderarm', nerve: 'ulnaris', also: ['medianus'], functions: [['Vingers spreiden en sluiten', 'Spreading and closing the fingers'], ['Knijpgreep tussen duim en wijsvinger', 'Pinch grip between thumb and index finger']], match: ['interossei', 'hypothenar', 'adductor pollicis', 'handspier'] },
+  { key: 'ulnaire_handspieren', level: 2, plural: true, nl: 'Kleine handspieren (pinkzijde en tussen de botjes)', en: 'Small hand muscles (little-finger side and interossei)', latin: 'mm. interossei, hypothenarspieren, m. adductor pollicis', region: 'onderarm', nerve: 'ulnaris', functions: [['Vingers spreiden en sluiten', 'Spreading and closing the fingers'], ['Knijpgreep tussen duim en wijsvinger', 'Pinch grip between thumb and index finger']], match: ['interossei', 'hypothenar', 'adductor pollicis', 'handspier'] },
   { key: 'diafragma', level: 2, nl: 'Middenrif', en: 'Diaphragm', latin: 'diaphragma', region: 'buik', nerve: 'phrenicus', functions: [['Inademen', 'Breathing in'], ['Romp onder druk zetten bij tillen', 'Pressurising the trunk when lifting']], match: ['diafragma', 'diaphragm', 'middenrif', 'ademhaling'] },
   { key: 'bekkenbodem', level: 2, nl: 'Bekkenbodem', en: 'Pelvic floor', latin: 'm. levator ani, m. coccygeus', region: 'buik', nerve: 'pudendus', also: ['plexus_sacralis'], functions: [['Bekkenorganen ondersteunen', 'Supporting the pelvic organs'], ['Plas en ontlasting ophouden', 'Holding urine and stool']], match: ['bekkenbodem', 'pelvic floor', 'levator ani'] },
   { key: 'intercostales', level: 2, plural: true, nl: 'Tussenribspieren', en: 'Intercostal muscles', latin: 'mm. intercostales', region: 'buik', nerve: 'intercostales', functions: [['Ribben bewegen bij het ademen', 'Moving the ribs when breathing']], match: ['intercostal', 'tussenrib'] },
@@ -270,6 +270,13 @@ export function quizQuestions(): QuizQuestion[] {
   return builtQuestions;
 }
 
+/** "Also helped by …" for muscles with a second nerve, so the quiz answer is never the whole story. */
+function alsoText(m: Muscle, lang: 'nl' | 'en') {
+  const extra = (m.also ?? []).map((k) => nerveByKey(k)).filter(Boolean).map((x) => (lang === 'nl' ? x!.nl : x!.en));
+  if (!extra.length) return '';
+  return lang === 'nl' ? `Een deel krijgt ook signalen van de ${extra.join(' en ')}.` : `Part of it is also supplied by the ${extra.join(' and ')}.`;
+}
+
 function buildQuestions(): QuizQuestion[] {
   const out: QuizQuestion[] = [];
   for (const m of MUSCLES) {
@@ -292,10 +299,13 @@ function buildQuestions(): QuizQuestion[] {
     const wrong = pickOthers(NERVES.filter((x) => !nervesOf(m).includes(x.key)), 3, m.key + 'n');
     out.push({
       id: `${m.key}:zenuw`, level: m.level ?? 1, muscle: m.key, nerve: m.nerve,
-      q: [`Welke zenuw stuurt de ${m.nl.toLowerCase()} aan?`, `Which nerve drives the ${m.en.toLowerCase()}?`],
+      q: [`Welke zenuw stuurt de ${m.nl.toLowerCase()} (${m.latin}) aan?`, `Which nerve drives the ${m.en.toLowerCase()} (${m.latin})?`],
       options: shuffle([{ id: m.nerve, label: [n.nl, n.en] as Fn }, ...wrong.map((x) => ({ id: x.key, label: [x.nl, x.en] as Fn }))], m.key + 'no'),
       answer: m.nerve,
-      explain: [`De ${m.nl.toLowerCase()} wordt aangestuurd door de ${n.nl} (${n.areaNl}).`, `The ${m.en.toLowerCase()} is driven by the ${n.en} (${n.areaEn}).`],
+      explain: [
+        [`De ${m.nl.toLowerCase()} wordt aangestuurd door de ${n.nl} (${n.areaNl}).`, alsoText(m, 'nl'), 'noteNl' in n ? n.noteNl : ''].filter(Boolean).join(' '),
+        [`The ${m.en.toLowerCase()} is driven by the ${n.en} (${n.areaEn}).`, alsoText(m, 'en'), 'noteEn' in n ? n.noteEn : ''].filter(Boolean).join(' '),
+      ],
     });
   }
   // 3. Per nerve with two or more muscles: which of these does it drive?
@@ -338,6 +348,49 @@ const opt = (id: string, nl: string, en: string) => ({ id, label: [nl, en] as Fn
  * answer each (a wrong option is never also true).
  */
 const LEVEL2_SPECIALS: QuizQuestion[] = [
+  // Nerve sliders and the mobility self-tests (the app's own exercises and tests).
+  {
+    id: 'l2:slider_principe', level: 2, muscle: null, nerve: null,
+    q: ['Wat is het idee van een zenuwslider?', 'What is the idea of a nerve slider?'],
+    options: [opt('glijden', 'Aan de ene kant spanning, aan de andere kant los, zodat de zenuw glijdt', 'Tension at one end, slack at the other, so the nerve glides'), opt('rekken', 'De zenuw zo ver mogelijk rekken en vasthouden', 'Stretch the nerve as far as possible and hold'), opt('kracht', 'De spieren rond de zenuw sterker maken', 'Strengthen the muscles around the nerve'), opt('tintelen', 'Doorgaan tot het flink tintelt', 'Keep going until it tingles a lot')],
+    answer: 'glijden',
+    explain: ['Bij een slider beweeg je twee gewrichten tegelijk: het ene geeft de zenuw spanning, het andere geeft hem ruimte. Zo glijdt de zenuw met weinig rek. Vasthouden op spanning heet een tensioner. Tintelingen horen niet toe te nemen.', 'In a slider you move two joints at once: one tensions the nerve, the other gives it slack, so it glides with little stretch. Holding on tension is called a tensioner. Tingling should not increase.'],
+  },
+  {
+    id: 'l2:slider_tibialis', level: 2, muscle: null, nerve: 'tibialis',
+    q: ['Je trekt de voet naar je toe met de voetzool licht naar buiten. Welke zenuw krijgt dan vooral spanning?', 'You pull the foot up with the sole turned slightly out. Which nerve gets most of the tension?'],
+    options: [opt('tibialis', 'n. tibialis', 'tibial nerve'), opt('fibularis', 'n. fibularis (peroneus)', 'fibular (peroneal) nerve'), opt('femoralis', 'n. femoralis', 'femoral nerve'), opt('obturatorius', 'n. obturatorius', 'obturator nerve')],
+    answer: 'tibialis',
+    explain: ['De n. tibialis loopt achter de binnenenkel naar de voetzool. Voet optrekken met de zool naar buiten geeft hem spanning; daarom zit dat in de tibialis slider. De n. fibularis krijgt juist spanning als je de voet strekt met de zool naar binnen.', 'The tibial nerve runs behind the inner ankle to the sole. Pulling the foot up with the sole turned out tensions it, which is why the tibial slider uses it. The fibular nerve is tensioned by pointing the foot with the sole turned in.'],
+  },
+  {
+    id: 'l2:slider_fibularis', level: 2, muscle: null, nerve: 'fibularis',
+    q: ['Bij welke voetstand krijgt de n. fibularis (peroneus) de meeste spanning?', 'Which foot position puts the most tension on the fibular (peroneal) nerve?'],
+    options: [opt('punt_binnen', 'Voet strekken (punt) met de zool naar binnen', 'Foot pointed with the sole turned in'), opt('op_buiten', 'Voet optrekken met de zool naar buiten', 'Foot pulled up with the sole turned out'), opt('plat', 'Voet plat op de grond', 'Foot flat on the floor'), opt('tenen_op', 'Alleen de tenen optrekken', 'Only the toes pulled up')],
+    answer: 'punt_binnen',
+    explain: ['De n. fibularis loopt om het kuitbeenkopje naar de voorkant van het onderbeen en de voetrug. Strekken met de zool naar binnen rekt die route; voet optrekken met de zool naar buiten hoort bij de n. tibialis.', 'The fibular nerve winds around the head of the fibula to the front of the shin and the top of the foot. Pointing the foot with the sole turned in lengthens that path; pulling it up with the sole out belongs to the tibial nerve.'],
+  },
+  {
+    id: 'l2:slider_femoralis', level: 2, muscle: 'quadriceps', nerve: 'femoralis',
+    q: ['In zijlig breng je de hiel naar je bil en de knie naar achteren. Welke zenuw krijgt spanning?', 'Lying on your side you bring the heel to your buttock and the knee backwards. Which nerve is tensioned?'],
+    options: [opt('femoralis', 'n. femoralis', 'femoral nerve'), opt('ischiadicus', 'n. ischiadicus', 'sciatic nerve'), opt('obturatorius', 'n. obturatorius', 'obturator nerve'), opt('tibialis', 'n. tibialis', 'tibial nerve')],
+    answer: 'femoralis',
+    explain: ['De n. femoralis loopt aan de voorkant van heup en bovenbeen. Knie buigen met de heup gestrekt geeft hem spanning. De n. ischiadicus loopt aan de achterkant en krijgt juist spanning bij een gestrekt been omhoog.', 'The femoral nerve runs at the front of the hip and thigh. Bending the knee with the hip straight tensions it. The sciatic nerve runs at the back and is tensioned by a straight leg raise.'],
+  },
+  {
+    id: 'l2:test_knie_muur', level: 2, muscle: 'soleus', nerve: null,
+    q: ['Wat meet de knie-tot-muur-test?', 'What does the knee-to-wall test measure?'],
+    options: [opt('enkel', 'Hoe ver je enkel buigt met je gewicht erop', 'How far your ankle bends with weight on it'), opt('knie_strek', 'Hoe ver je knie strekt', 'How far your knee straightens'), opt('kuitkracht', 'Hoeveel kracht je kuit heeft', 'How strong your calf is'), opt('balans', 'Hoe lang je op één been staat', 'How long you stand on one leg')],
+    answer: 'enkel',
+    explain: ['Je meet de grootste afstand van grote teen tot muur waarbij de knie de muur raakt met de hiel op de grond. Dat is de enkelbuiging (dorsaalflexie) onder belasting, belangrijk voor squatten, traplopen en hardlopen.', 'You measure the largest distance from big toe to wall at which the knee touches the wall with the heel down. That is ankle bending (dorsiflexion) under load, important for squatting, stairs and running.'],
+  },
+  {
+    id: 'l2:test_zelfde_manier', level: 2, muscle: null, nerve: null,
+    q: ['Waarom meet je je mobiliteit steeds op dezelfde manier en rond hetzelfde moment van de dag?', 'Why measure your mobility the same way and around the same time of day each time?'],
+    options: [opt('meetfout', 'Zodat een verschil echt verandering is en geen meetfout', 'So a difference is real change, not measurement error'), opt('xp', 'Omdat je anders geen XP krijgt', 'Because otherwise you get no XP'), opt('norm', 'Om je te vergelijken met de norm voor je leeftijd', 'To compare yourself with the norm for your age'), opt('sneller', 'Omdat je dan sneller soepeler wordt', 'Because then you get supple faster')],
+    answer: 'meetfout',
+    explain: ['Je bent in de ochtend vaak stijver dan na een wandeling, en een andere voetstand geeft al snel een paar centimeter verschil. Meet je steeds hetzelfde, dan zegt een verschil iets over jou.', 'You are often stiffer in the morning than after a walk, and a different foot position soon makes a few centimetres of difference. Measure the same way each time and a difference tells you something about yourself.'],
+  },
   {
     id: 'l2:pes_anserinus', level: 2, muscle: 'gracilis', nerve: null,
     q: ['Welke spier hoort níet bij de pes anserinus (binnenkant knie)?', 'Which muscle is not part of the pes anserinus (inner knee)?'],

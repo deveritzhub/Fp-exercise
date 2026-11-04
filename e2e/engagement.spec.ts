@@ -62,3 +62,21 @@ test('patient sees the reminder option (needs the installed app on iPhone)', asy
   await expect(page.getByRole('heading', { name: 'Herinnering' })).toBeVisible();
   await expectAccessible(page, 'patient account');
 });
+
+test('opening the app without a connection shows "no connection", not the login page', async ({ page }) => {
+  await login(page, 'patient@praktijk-a.test');
+  await page.goto('/p');
+  await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+  // The login check cannot reach the server (as when the phone has no signal).
+  await page.route('**/api/auth/me', (r) => r.abort('internetdisconnected'));
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Geen verbinding' })).toBeVisible();
+  await expect(page).not.toHaveURL(/\/login/);
+  await expect(page.getByText('Je bent niet uitgelogd')).toBeVisible();
+  await expectAccessible(page, 'offline start');
+  // Back online: one tap (or the reconnect) continues where you were.
+  await page.unroute('**/api/auth/me');
+  await page.getByRole('button', { name: 'Opnieuw proberen' }).click();
+  await expect(page.getByRole('heading', { name: 'Geen verbinding' })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/p$/);
+});

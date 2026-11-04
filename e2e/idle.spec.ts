@@ -17,12 +17,10 @@ test('therapist: warning after 29 idle minutes, stay logged in, then logout afte
   await expect(page).toHaveURL(/\/app/);
 
   await page.clock.fastForward('31:00');
-  // Logging out gives device clean-up at most 2 s (a timer). The test clock is frozen, so keep it
-  // ticking until the logout lands, also when the machine is busy with other tests.
-  await expect(async () => {
-    if (!/\/login\?reden=inactief/.test(page.url())) await page.clock.runFor(1000).catch(() => undefined);
-    expect(page.url()).toMatch(/\/login\?reden=inactief/);
-  }).toPass({ timeout: 20_000, intervals: [250, 500, 1000] });
+  // Logging out gives device clean-up at most 2 s (a timer). Let the clock run normally again from
+  // here, so that timer fires on its own, also when the machine is busy with other tests.
+  await page.clock.resume();
+  await expect(page).toHaveURL(/\/login\?reden=inactief/, { timeout: 20_000 });
   await expect(page.getByText('Je bent automatisch uitgelogd')).toBeVisible();
   expect((await page.request.get('/api/auth/me')).ok() && (await (await page.request.get('/api/auth/me')).json()).user).toBeFalsy();
 });

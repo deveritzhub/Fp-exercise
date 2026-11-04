@@ -24,6 +24,7 @@ import { publicRoutes } from './routes/public';
 import { feedback } from './routes/feedback';
 import { reminders } from './routes/reminders';
 import { patientModules } from './routes/patientModules';
+import { mobilityPatient, mobilityStaff } from './routes/mobilityTests';
 import { heroPatient, heroStaff } from './routes/hero';
 import { patientLogs } from './routes/patientLogs';
 import { gymPatient, gymStaff } from './routes/gymLog';
@@ -96,6 +97,8 @@ export function createApp() {
   api.route('/patient', stepRoutes);
   api.route('/patients', heroStaff);
   api.route('/patients', gymStaff);
+  api.route('/patient', mobilityPatient);
+  api.route('/patients', mobilityStaff);
   api.route('/dashboard', dashboard);
   api.route('/practice', practice);
   api.route('/admin', admin);

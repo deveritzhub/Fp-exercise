@@ -8,6 +8,27 @@ import { useDocumentMeta } from '@/lib/meta';
 import { Bars, ErrorState, Skeleton } from '@/components/ui';
 import type { Adherence } from '@/lib/types';
 import { StrengthProgress } from '@/components/patient/Strength';
+import { MobilitySummary } from '@/components/MobilityTests';
+import { Link } from 'react-router-dom';
+import { quizQuestions } from '@shared/muscleAtlas';
+
+/** The anatomy quiz in numbers, with a link to go on. */
+function QuizSummary() {
+  const { t } = useI18n();
+  const q = useQuery({ queryKey: ['patient-atlas-quiz'], queryFn: () => api.get<{ correct: string[] }>('/patient/atlas/quiz'), staleTime: 60_000 });
+  if (!q.data) return null;
+  const total = quizQuestions().length;
+  const right = q.data.correct.length;
+  return (
+    <section aria-labelledby="quiz-summary" className="rounded-2xl border border-line bg-white p-5 shadow-card">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="quiz-summary" className="font-bold">{t('Kennis', 'Knowledge')}</h2>
+        <Link to="/p/spieren?tab=quiz" className="inline-flex min-h-[44px] items-center text-[15px] font-medium text-accent">{t('Naar de quiz', 'To the quiz')}</Link>
+      </div>
+      <p className="text-[14px] text-ink-700">{t(`${right} van ${total} quizvragen goed over spieren, zenuwen en oefeningen.`, `${right} of ${total} quiz questions right on muscles, nerves and exercises.`)}</p>
+    </section>
+  );
+}
 
 type History = {
   weekly: (Adherence & { weekStart: string })[];
@@ -41,6 +62,8 @@ export function PatientProgress() {
         <Bars height={140} format={pct} data={d.weekly.map((w) => ({ label: fmtDate(w.weekStart, locale, { day: 'numeric', month: 'short' }), value: w.planned ? w.rate : null }))} />
       </section>
       <StrengthProgress />
+      <MobilitySummary />
+      <QuizSummary />
       <section>
         <h2 className="mb-3 text-lg font-bold">{t('Geschiedenis', 'History')}</h2>
         {d.sessions.length === 0 ? (

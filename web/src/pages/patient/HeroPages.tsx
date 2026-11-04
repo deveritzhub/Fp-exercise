@@ -1,7 +1,7 @@
 import { PhotoGearThumbnail } from '../../components/hero/PhotoEquipment';
 import { GearArtwork } from '../../components/hero/RpgGear';
 import '../../components/hero/rpg.css';
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Award, BookOpen, Brain, CalendarCheck, Check, ChevronRight, CircleCheck, Coins, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Utensils, Droplets, Zap, Swords, type LucideIcon } from 'lucide-react';
@@ -10,12 +10,13 @@ import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
 import { useSession } from '@/lib/session';
 import { cn } from '@/lib/cn';
-import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, Segmented, Spinner, useToast } from '@/components/ui';
+import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, ScaleInput, Segmented, Spinner, useToast } from '@/components/ui';
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
 import { HumanFigure, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
+import { MOBILITY_MEASURE_XP } from '@shared/mobilityTests';
 import { BADGES, BOSSES, SEASONS, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, WALL_BADGES_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
 import { quizQuestions } from '@shared/muscleAtlas';
@@ -566,7 +567,7 @@ function Skills({ d }: { d: HeroState }) {
 /** Where to earn XP for a skill: one or two buttons straight to the right place. */
 const SKILL_ACTIONS: Partial<Record<SkillKey, { to: string; nl: string; en: string }[]>> = {
   strength: [{ to: '/p/krachtlog', nl: 'Log een set in de Krachtlog', en: 'Log a set in the strength log' }, { to: '/p/kracht', nl: 'Start een krachtprogramma', en: 'Start a strength programme' }],
-  mobility: [{ to: '/p/mobiliteit', nl: 'Start een mobiliteitsprogramma', en: 'Start a mobility programme' }],
+  mobility: [{ to: '/p/mobiliteit', nl: 'Start een mobiliteitsprogramma', en: 'Start a mobility programme' }, { to: '/p/mobiliteit/meten', nl: 'Meet je mobiliteit (1× per 2 weken XP)', en: 'Measure your mobility (XP once per 2 weeks)' }],
   balance: [{ to: '/p/logboek', nl: 'Log een eigen training', en: 'Log your own workout' }],
   stability: [{ to: '/p/krachtlog', nl: 'Log bijv. een plank in de Krachtlog', en: 'Log e.g. a plank in the strength log' }, { to: '/p/logboek', nl: 'Log een eigen training', en: 'Log your own workout' }],
   endurance: [{ to: '/p/logboek', nl: 'Log een eigen training', en: 'Log your own workout' }],
@@ -646,12 +647,17 @@ function DailyCheckin({ d }: { d: HeroState }) {
   const qc = useQueryClient();
   const toast = useToast();
   const [editing, setEditing] = useState(false);
-  const [score, setScore] = useState<number>(d.checkin.today?.score ?? 3);
+  // No preset score: a pre-filled number nudges people towards it.
+  const [score, setScore] = useState<number | null>(d.checkin.today?.score ?? null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const area = BODY_AREAS.find((a) => a.key === d.checkin.area);
   const question = area ? t(`Hoe voelt je ${area.nl.toLowerCase()} vandaag?`, `How does your ${area.en.toLowerCase()} feel today?`) : t('Hoeveel pijn of ongemak heb je vandaag?', 'How much pain or discomfort do you have today?');
   const save = async () => {
+    if (score === null) {
+      setError(t('Kies eerst een getal van 0 tot 10.', 'Choose a number from 0 to 10 first.'));
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -681,12 +687,10 @@ function DailyCheckin({ d }: { d: HeroState }) {
       <p className="t-label">{t('Dagcheck', 'Daily check-in')} · +{CHECKIN_XP} XP</p>
       <h2 id="checkin-title" className="t-section mt-1">{question}</h2>
       {error && <Notice tone="bad" className="mt-2">{error}</Notice>}
-      <div className="mt-3 flex items-baseline justify-between text-[15px]">
-        <label htmlFor="checkin-score" className="text-ink-700">{t('0 = geen pijn, 10 = ergst denkbaar', '0 = no pain, 10 = worst imaginable')}</label>
-        <span className="tabular-nums"><strong className="font-display text-[22px]">{score}</strong>/10 · {painWord(score, nl)}</span>
+      <div className="mt-3">
+        <ScaleInput tone="pain" label={score === null ? t('Tik je score', 'Tap your score') : t(`Score vandaag: ${score}/10 · ${painWord(score, nl)}`, `Score today: ${score}/10 · ${painWord(score, nl)}`)} lowLabel={t('0 = geen pijn', '0 = no pain')} highLabel={t('10 = ergst denkbaar', '10 = worst imaginable')} value={score} onChange={(v) => { setScore(v); setError(null); }} />
       </div>
-      <input id="checkin-score" type="range" min={0} max={10} step={1} value={score} onChange={(e) => setScore(Number(e.target.value))} className="mt-2 h-11 w-full accent-[rgb(var(--accent))]" aria-valuetext={`${score}/10, ${painWord(score, nl)}`} />
-      <Button size="lg" className="mt-2 w-full" loading={busy} onClick={save}>{t('Opslaan', 'Save')}</Button>
+      <Button size="lg" className="mt-3 w-full" loading={busy} disabled={score === null} onClick={save}>{t('Opslaan', 'Save')}</Button>
     </section>
   );
 }
@@ -856,7 +860,12 @@ export function DayChestCard({ d }: { d: HeroState }) {
 /** Day chest on Vandaag, once the patient has a hero. */
 export function DayChestHomeCard() {
   const q = useHero();
-  if (!q.data?.hero) return null;
+  // Vandaag only shows the chest when it can be opened (and keeps it while you open it). Locked
+  // ("do your check-in first") or already opened, it lives on the hero page.
+  const ready = useRef(false);
+  const c = q.data?.chest;
+  if (c?.available && !c.opened) ready.current = true;
+  if (!q.data?.hero || !ready.current) return null;
   return <DayChestCard d={q.data} />;
 }
 
@@ -1293,15 +1302,21 @@ function TrophyCabinet({ d }: { d: HeroState }) {
   const qc = useQueryClient();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const [all, setAll] = useState(false);
   const earnedCount = d.trophies.filter((x) => x.earned).length;
-  // By default: what you won plus the next trophy per skill, so the cabinet stays short.
-  const visible = (skill: string) => {
-    const list = d.trophies.filter((x) => x.skill === skill);
-    if (all) return list;
-    const next = list.find((x) => !x.earned);
-    return list.filter((x) => x.earned || x === next);
-  };
+  // One shelf per skill: its five trophies, the level now and how far the next one is.
+  const rows = SKILLS.filter((s) => d.trophies.some((x) => x.skill === s.key)).map((s) => {
+    const list = d.trophies.filter((x) => x.skill === s.key);
+    const sk = d.skills.find((x) => x.key === s.key);
+    const level = sk?.level ?? 1;
+    const next = list.find((x) => !x.earned) ?? null;
+    const prev = [...list].reverse().find((x) => x.earned)?.level ?? 1;
+    const won = list.filter((x) => x.earned).length;
+    const progress = next ? Math.min(1, Math.max(0, (level - prev) / Math.max(1, next.level - prev))) : 1;
+    return { s, list, level, next, won, progress, locked: !!sk?.locked };
+  });
+  // Skills with prizes first, then the ones closest to their next trophy.
+  rows.sort((a, b) => b.won - a.won || Number(a.locked) - Number(b.locked) || b.progress - a.progress);
+  const closest = rows.filter((r) => r.next && !r.locked).sort((a, b) => (a.next!.level - a.level) - (b.next!.level - b.level))[0];
   const toggle = async (key: string) => {
     const on = d.showcase.includes(key);
     if (!on && d.showcase.length >= SHOWCASE_MAX) {
@@ -1320,43 +1335,68 @@ function TrophyCabinet({ d }: { d: HeroState }) {
   };
   return (
     <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="trophies-title">
-      <h2 id="trophies-title" className="t-section scroll-mt-20">{t(`Prijzenkast (${earnedCount} van ${d.trophies.length})`, `Trophy cabinet (${earnedCount} of ${d.trophies.length})`)}</h2>
-      <p className="mt-1 text-[13.5px] text-ink-600">{t(`Per skill een prijs bij level ${TROPHY_TIERS.map((x) => x.level).join(', ')}. Tik op een gewonnen prijs om hem op de muur achter je held te zetten (max. ${SHOWCASE_MAX}).`, `A trophy per skill at level ${TROPHY_TIERS.map((x) => x.level).join(', ')}. Tap a won trophy to put it on the wall behind your hero (max ${SHOWCASE_MAX}).`)}</p>
-      {wallPlaced(d) ? <div className={cn('mt-3 rounded-xl p-3', WALL_BG)}><TrophyWall d={d} /></div> : (
-        <p className="mt-3 rounded-xl border border-dashed border-line bg-canvas p-3 text-[13.5px] text-ink-600">{t('Je muur is leeg en staat uit. Hang een prijs of badge op, dan verschijnt hij achter je held.', 'Your wall is empty and hidden. Hang up a trophy or badge and it appears behind your hero.')}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 id="trophies-title" className="t-section scroll-mt-20">{t('Prijzenkast', 'Trophy cabinet')}</h2>
+          <p className="mt-1 text-[13.5px] text-ink-600">{t(`Een beker per skill bij level ${TROPHY_TIERS.map((x) => x.level).join(', ')}.`, `A trophy per skill at level ${TROPHY_TIERS.map((x) => x.level).join(', ')}.`)}</p>
+        </div>
+        <span className="shrink-0 rounded-full bg-[#fdf3e3] px-3 py-1 text-[13px] font-bold text-[#8a5a12]">{earnedCount}/{d.trophies.length}</span>
+      </div>
+      {closest && (
+        <p className="mt-3 flex items-center gap-2 rounded-xl bg-accent-soft px-3 py-2 text-[14px] text-ink-800">
+          <Trophy className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+          <span>{t(`Eerstvolgende: ${closest.s.nl} ${tierOf(closest.next!.tier).nl}, nog ${closest.next!.level - closest.level} ${closest.next!.level - closest.level === 1 ? 'level' : 'levels'}.`, `Next up: ${closest.s.en} ${tierOf(closest.next!.tier).en}, ${closest.next!.level - closest.level} ${closest.next!.level - closest.level === 1 ? 'level' : 'levels'} to go.`)}</span>
+        </p>
       )}
-      <ul className="mt-4 space-y-3">
-        {SKILLS.filter((s) => d.trophies.some((x) => x.skill === s.key)).map((s) => (
-          <li key={s.key}>
-            <p className="text-[14px] font-semibold text-ink-900">{nl ? s.nl : s.en}</p>
-            <div className="mt-1 grid grid-cols-5 gap-1.5">
-              {visible(s.key).map((x) => {
-                const tier = tierOf(x.tier);
-                const on = d.showcase.includes(x.key);
-                const label = `${nl ? s.nl : s.en} ${nl ? tier.nl : tier.en}`;
-                return x.earned ? (
-                  <button key={x.key} type="button" aria-pressed={on} disabled={busy} onClick={() => toggle(x.key)}
-                    className={cn('tap flex flex-col items-center gap-0.5 rounded-xl border p-1.5 text-center', on ? 'border-accent bg-accent-soft' : 'border-line bg-white')}>
-                    <TrophyIcon tier={x.tier} size="sm" art={`${x.skill}_${x.level}`} />
-                    <span className="text-[11px] font-semibold leading-tight text-ink-800"><span className="sr-only">{label}, </span>{nl ? tier.nl : tier.en}</span>
-                    <span className="text-[10px] text-ink-600">{on ? t('Op plank', 'On shelf') : `lv ${x.level}`}</span>
-                  </button>
-                ) : (
-                  <div key={x.key} className="flex flex-col items-center gap-0.5 rounded-xl border border-dashed border-line bg-canvas p-1.5 text-center">
-                    <TrophyIcon tier={x.tier} earned={false} size="sm" art={`${x.skill}_${x.level}`} />
-                    <span className="text-[11px] font-semibold leading-tight text-ink-600"><span className="sr-only">{label}, {t('nog niet gewonnen', 'not won yet')}, </span>{nl ? tier.nl : tier.en}</span>
-                    <span className="text-[10px] text-ink-500">lv {x.level}</span>
-                  </div>
-                );
-              })}
+      {wallPlaced(d) ? <div className={cn('mt-3 rounded-xl p-3', WALL_BG)}><TrophyWall d={d} /></div> : earnedCount > 0 ? (
+        <p className="mt-3 text-[13.5px] text-ink-600">{t(`Tik op een gewonnen beker om hem op de muur achter je held te hangen (max. ${SHOWCASE_MAX}).`, `Tap a won trophy to hang it on the wall behind your hero (max ${SHOWCASE_MAX}).`)}</p>
+      ) : null}
+      <ul className="mt-4 divide-y divide-line">
+        {rows.filter((r) => !r.locked || r.won > 0).map(({ s, list, level, next, progress, locked }) => (
+          <li key={s.key} className="py-3 first:pt-0 last:pb-0">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-[15px] font-semibold text-ink-900">{nl ? s.nl : s.en}</p>
+              <p className="text-[12.5px] text-ink-600">
+                {locked ? t('Nog op slot', 'Still locked') : next ? t(`lv ${level} · ${tierOf(next.tier).nl} bij ${next.level}`, `lv ${level} · ${tierOf(next.tier).en} at ${next.level}`) : t('Alles gewonnen', 'All won')}
+              </p>
+            </div>
+            {!locked && next && <ProgressBar value={progress} className="mt-1.5 h-1.5" label={t(`${s.nl}: op weg naar ${tierOf(next.tier).nl}`, `${s.en}: towards ${tierOf(next.tier).en}`)} />}
+            {/* The shelf: five cups on a wooden plank; won ones can be hung on the wall. */}
+            <div className="mt-2">
+              <div className="grid grid-cols-5 items-end gap-1 px-1">
+                {list.map((x) => {
+                  const tier = tierOf(x.tier);
+                  const on = d.showcase.includes(x.key);
+                  const label = `${nl ? s.nl : s.en} ${nl ? tier.nl : tier.en}`;
+                  return x.earned ? (
+                    <button key={x.key} type="button" aria-pressed={on} disabled={busy} onClick={() => toggle(x.key)} title={on ? t('Hangt op je muur', 'On your wall') : t('Op de muur hangen', 'Hang on the wall')}
+                      className={cn('tap relative flex min-h-[44px] flex-col items-center rounded-xl pt-1', on && 'bg-accent-soft ring-2 ring-accent')}>
+                      <TrophyIcon tier={x.tier} size="sm" art={`${x.skill}_${x.level}`} />
+                      <span className="sr-only">{label}{on ? `, ${t('hangt op je muur', 'on your wall')}` : ''}</span>
+                      {on && <Check className="absolute right-0.5 top-0.5 h-3.5 w-3.5 text-accent" aria-hidden />}
+                    </button>
+                  ) : (
+                    <div key={x.key} className={cn('flex flex-col items-center pt-1', x === next ? '' : 'opacity-70')}>
+                      <TrophyIcon tier={x.tier} earned={false} size="sm" art={`${x.skill}_${x.level}`} />
+                      <span className="sr-only">{label}, {t(`nog niet gewonnen, level ${x.level}`, `not won yet, level ${x.level}`)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="h-1.5 rounded-full bg-[linear-gradient(180deg,#d8bb92_0%,#9c7a52_100%)] shadow-[0_2px_0_rgba(0,0,0,0.12)]" aria-hidden />
+              <div className="mt-0.5 grid grid-cols-5 gap-1 px-1 text-center text-[10.5px] text-ink-500" aria-hidden>
+                {list.map((x) => <span key={x.key} className={x.earned ? 'font-semibold text-ink-800' : ''}>{x.level}</span>)}
+              </div>
             </div>
           </li>
         ))}
       </ul>
-      <button type="button" onClick={() => setAll((v) => !v)} aria-expanded={all} className="mt-3 inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-accent">
-        {all ? t('Alleen gewonnen en volgende tonen', 'Show only won and next') : t(`Alle ${d.trophies.length} prijzen tonen`, `Show all ${d.trophies.length} trophies`)}
-        <ChevronRight className={cn('h-4 w-4 transition-transform', all ? '-rotate-90' : 'rotate-90')} aria-hidden />
-      </button>
+      {rows.some((r) => r.locked && r.won === 0) && (
+        <p className="mt-3 flex items-start gap-2 border-t border-line pt-3 text-[13.5px] text-ink-600">
+          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-ink-500" aria-hidden />
+          <span>{t('Nog op slot', 'Still locked')}: {rows.filter((r) => r.locked && r.won === 0).map((r) => (nl ? r.s.nl : r.s.en)).join(', ')}. {t('Hun bekers verschijnen zodra de skill opengaat.', 'Their trophies appear once the skill opens.')}</span>
+        </p>
+      )}
     </section>
   );
 }
@@ -1500,6 +1540,7 @@ export function HeroPage() {
             <li>+{LOG_XP.selfSession} XP · {t('een eigen training gelogd (maximaal 2 per dag)', 'a workout you log yourself (at most 2 a day)')}</li>
             <li>+{LOG_XP.proteinGoal} XP · {t('eiwitdoel van de dag gehaald (niet per hap)', 'protein goal for the day hit (not per bite)')}</li>
             <li>+{LOG_XP.stepGoal} XP · {t('stapdoel van de dag gehaald (niet per extra stap)', 'step goal for the day hit (not per extra step)')}</li>
+            <li>+{MOBILITY_MEASURE_XP} XP · {t('je mobiliteit gemeten (1× per 2 weken, voor het meten, niet voor de uitslag)', 'your mobility measured (once per 2 weeks, for measuring, not for the result)')}</li>
           </ul>
           <p className="text-ink-600">{t('Elke oefening traint ook skills, zoals Kracht of Balans. Doorgaan met pijn levert nooit extra punten op, en een rustdag kost je niets.', 'Every exercise also trains skills, such as Strength or Balance. Training through pain never earns extra points, and a rest day costs you nothing.')}</p>
         </details>
@@ -1510,7 +1551,7 @@ export function HeroPage() {
         <SurvivalPanel d={d} />
       </Fold>
       <DailyCheckin d={d} />
-      <Fold id="hero-log" defaultOpen icon={<Utensils className="h-5 w-5" />} title={t('Logboek', 'Logbook')}
+      <Fold id="hero-log" icon={<Utensils className="h-5 w-5" />} title={t('Logboek', 'Logbook')}
         summary={d.logs.protein.goal !== null ? t(`Eiwit ${d.logs.protein.grams} van ${d.logs.protein.goal} g`, `Protein ${d.logs.protein.grams} of ${d.logs.protein.goal} g`) : t('Eiwit en eigen trainingen bijhouden', 'Track protein and your own workouts')}>
         <LogTeaser d={d} />
       </Fold>

@@ -1,6 +1,8 @@
 import { Link, Navigate } from 'react-router-dom';
+import { MOBILITY_MEASURE_XP, mobilityDue } from '@shared/mobilityTests';
+import { localToday } from '@/components/MobilityTests';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, ChevronDown, ChevronRight, Dumbbell, Lock, Play, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, Dumbbell, Lock, Play, ShieldCheck, Ruler } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtRelative } from '@/lib/format';
@@ -35,6 +37,14 @@ export function ModulePage({ module }: { module: PatientModule }) {
   const modes = useModes();
   // The phase route of the rehabilitation programme (same data as the hero's main quest).
   const hero = useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero'), enabled: module === 'revalidatie' });
+  // Mobility self-tests: when to measure again (same query as the measuring page).
+  const mob = useQuery({ queryKey: ['mobility-tests', '/patient'], queryFn: () => api.get<{ results: { day: string }[] }>('/patient/mobility-tests'), enabled: module === 'mobiliteit' });
+  const due = mob.data ? mobilityDue(mob.data.results.map((r) => r.day), localToday()) : null;
+  const mobilityLine = !due || due.last === null
+    ? t('Vier tests met een meetlint: enkel, rug, schouders en achterkant been', 'Four tests with a tape measure: ankle, back, shoulders and back of the leg')
+    : due.due
+      ? t(`Tijd om opnieuw te meten · +${MOBILITY_MEASURE_XP} XP`, `Time to measure again · +${MOBILITY_MEASURE_XP} XP`)
+      : t(`Laatst gemeten ${due.daysSince === 0 ? 'vandaag' : `${due.daysSince} ${due.daysSince === 1 ? 'dag' : 'dagen'} geleden`}`, `Last measured ${due.daysSince === 0 ? 'today' : `${due.daysSince} ${due.daysSince === 1 ? 'day' : 'days'} ago`}`);
   if (home.isError) return <ErrorState error={home.error} onRetry={() => home.refetch()} />;
   if (!home.data || !modes.data) return <div className="space-y-4"><Skeleton className="h-8 w-1/2" /><Skeleton className="h-40 rounded-2xl" /></div>;
   // Coach and personal accounts have no rehabilitation.
@@ -104,6 +114,17 @@ export function ModulePage({ module }: { module: PatientModule }) {
         </Link>
       )}
 
+      {module === 'mobiliteit' && (
+        <Link to="/p/mobiliteit/meten" className="tap flex items-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-4 text-white shadow-card">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15"><Ruler className="h-6 w-6" aria-hidden /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{t('Mobiliteit meten', 'Measure mobility')}</span>
+            <span className="block text-[14px] text-white/80">{mobilityLine}</span>
+          </span>
+          <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
+        </Link>
+      )}
+
       {/* Programmes in this part */}
       <section aria-labelledby="mod-programs">
         <h2 id="mod-programs" className="mb-3 text-lg font-bold">{t('Mijn programma’s', 'My programmes')}</h2>
@@ -134,7 +155,7 @@ export function ModulePage({ module }: { module: PatientModule }) {
           <StartTemplates modes={modes.data} module={module} />
         </section>
       ) : (
-        <details className="group rounded-2xl border border-line bg-white shadow-card">
+        <details id="mod-start" className="group scroll-mt-20 rounded-2xl border border-line bg-white shadow-card">
           <summary className="tap flex min-h-[48px] cursor-pointer list-none items-center gap-2 px-4 py-3 font-semibold text-ink-900">
             <Play className="h-4 w-4 text-accent" aria-hidden />
             <span className="flex-1">{t(`Nog een programma starten (${templates.length})`, `Start another programme (${templates.length})`)}</span>
