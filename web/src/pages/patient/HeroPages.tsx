@@ -646,12 +646,17 @@ function DailyCheckin({ d }: { d: HeroState }) {
   const qc = useQueryClient();
   const toast = useToast();
   const [editing, setEditing] = useState(false);
-  const [score, setScore] = useState<number>(d.checkin.today?.score ?? 3);
+  // No preset score: a pre-filled number nudges people towards it.
+  const [score, setScore] = useState<number | null>(d.checkin.today?.score ?? null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const area = BODY_AREAS.find((a) => a.key === d.checkin.area);
   const question = area ? t(`Hoe voelt je ${area.nl.toLowerCase()} vandaag?`, `How does your ${area.en.toLowerCase()} feel today?`) : t('Hoeveel pijn of ongemak heb je vandaag?', 'How much pain or discomfort do you have today?');
   const save = async () => {
+    if (score === null) {
+      setError(t('Kies eerst een getal van 0 tot 10.', 'Choose a number from 0 to 10 first.'));
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -681,12 +686,19 @@ function DailyCheckin({ d }: { d: HeroState }) {
       <p className="t-label">{t('Dagcheck', 'Daily check-in')} · +{CHECKIN_XP} XP</p>
       <h2 id="checkin-title" className="t-section mt-1">{question}</h2>
       {error && <Notice tone="bad" className="mt-2">{error}</Notice>}
-      <div className="mt-3 flex items-baseline justify-between text-[15px]">
-        <label htmlFor="checkin-score" className="text-ink-700">{t('0 = geen pijn, 10 = ergst denkbaar', '0 = no pain, 10 = worst imaginable')}</label>
-        <span className="tabular-nums"><strong className="font-display text-[22px]">{score}</strong>/10 · {painWord(score, nl)}</span>
+      <div className="mt-3 flex items-baseline justify-between gap-2 text-[15px]">
+        <p id="checkin-scale" className="text-ink-700">{t('0 = geen pijn, 10 = ergst denkbaar', '0 = no pain, 10 = worst imaginable')}</p>
+        <span className="shrink-0 tabular-nums" aria-live="polite">{score === null ? <span className="text-ink-600">{t('Tik een getal', 'Tap a number')}</span> : <><strong className="font-display text-[22px]">{score}</strong>/10 · {painWord(score, nl)}</>}</span>
       </div>
-      <input id="checkin-score" type="range" min={0} max={10} step={1} value={score} onChange={(e) => setScore(Number(e.target.value))} className="mt-2 h-11 w-full accent-[rgb(var(--accent))]" aria-valuetext={`${score}/10, ${painWord(score, nl)}`} />
-      <Button size="lg" className="mt-2 w-full" loading={busy} onClick={save}>{t('Opslaan', 'Save')}</Button>
+      <div role="radiogroup" aria-labelledby="checkin-title checkin-scale" className="mt-2 grid grid-cols-6 gap-1.5 min-[400px]:grid-cols-11">
+        {Array.from({ length: 11 }, (_, n) => (
+          <button key={n} type="button" role="radio" aria-checked={score === n} aria-label={`${n}, ${painWord(n, nl)}`} onClick={() => { setScore(n); setError(null); }}
+            className={cn('tap flex h-11 items-center justify-center rounded-xl border text-[16px] font-semibold tabular-nums', score === n ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-white text-ink-800')}>
+            {n}
+          </button>
+        ))}
+      </div>
+      <Button size="lg" className="mt-3 w-full" loading={busy} disabled={score === null} onClick={save}>{t('Opslaan', 'Save')}</Button>
     </section>
   );
 }
@@ -1541,7 +1553,7 @@ export function HeroPage() {
         <SurvivalPanel d={d} />
       </Fold>
       <DailyCheckin d={d} />
-      <Fold id="hero-log" defaultOpen icon={<Utensils className="h-5 w-5" />} title={t('Logboek', 'Logbook')}
+      <Fold id="hero-log" icon={<Utensils className="h-5 w-5" />} title={t('Logboek', 'Logbook')}
         summary={d.logs.protein.goal !== null ? t(`Eiwit ${d.logs.protein.grams} van ${d.logs.protein.goal} g`, `Protein ${d.logs.protein.grams} of ${d.logs.protein.goal} g`) : t('Eiwit en eigen trainingen bijhouden', 'Track protein and your own workouts')}>
         <LogTeaser d={d} />
       </Fold>
