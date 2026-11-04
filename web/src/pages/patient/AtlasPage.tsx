@@ -235,7 +235,7 @@ function NervesView({ data, focus, onMuscle }: { data: AtlasData; focus: string 
               {exs.length > 0 ? (
                 <ul className="mt-2 space-y-1">{exs.map((e) => <ExerciseRow key={e.id} e={e} />)}</ul>
               ) : (
-                <p className="mt-1.5 text-[13px] text-ink-500">{t('Geen aparte zenuwoefening.', 'No separate nerve exercise.')}</p>
+                <p className="mt-1.5 text-[13px] text-ink-500">{t('Voor deze zenuw bestaat geen gangbare slider. Gewoon bewegen en de spieren die hij aanstuurt trainen houdt hem soepel.', 'There is no common slider for this nerve. Moving and training the muscles it drives keeps it supple.')}</p>
               )}
             </li>
           );
