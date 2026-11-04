@@ -77,7 +77,7 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   // Daily check-in (5 seconds) and weekly quests.
   const checkin = pp.getByRole('region', { name: 'Dagcheck' }).or(pp.locator('section[aria-labelledby="checkin-title"]'));
   await expect(pp.getByRole('heading', { name: /Hoe voelt je linkerknie vandaag\?/ })).toBeVisible();
-  await pp.getByRole('radio', { name: /^6,/ }).click();
+  await checkin.getByRole('button', { name: /: 6$/ }).click();
   await checkin.getByRole('button', { name: 'Opslaan' }).click();
   await expect(pp.getByText(/Dagcheck gedaan: 6\/10/)).toBeVisible();
   await expect(pp.getByRole('heading', { name: 'Weekquests' })).toBeVisible();

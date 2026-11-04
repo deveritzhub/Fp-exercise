@@ -10,7 +10,7 @@ import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
 import { useSession } from '@/lib/session';
 import { cn } from '@/lib/cn';
-import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, Segmented, Spinner, useToast } from '@/components/ui';
+import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, ScaleInput, Segmented, Spinner, useToast } from '@/components/ui';
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
@@ -686,17 +686,8 @@ function DailyCheckin({ d }: { d: HeroState }) {
       <p className="t-label">{t('Dagcheck', 'Daily check-in')} · +{CHECKIN_XP} XP</p>
       <h2 id="checkin-title" className="t-section mt-1">{question}</h2>
       {error && <Notice tone="bad" className="mt-2">{error}</Notice>}
-      <div className="mt-3 flex items-baseline justify-between gap-2 text-[15px]">
-        <p id="checkin-scale" className="text-ink-700">{t('0 = geen pijn, 10 = ergst denkbaar', '0 = no pain, 10 = worst imaginable')}</p>
-        <span className="shrink-0 tabular-nums" aria-live="polite">{score === null ? <span className="text-ink-600">{t('Tik een getal', 'Tap a number')}</span> : <><strong className="font-display text-[22px]">{score}</strong>/10 · {painWord(score, nl)}</>}</span>
-      </div>
-      <div role="radiogroup" aria-labelledby="checkin-title checkin-scale" className="mt-2 grid grid-cols-6 gap-1.5 min-[400px]:grid-cols-11">
-        {Array.from({ length: 11 }, (_, n) => (
-          <button key={n} type="button" role="radio" aria-checked={score === n} aria-label={`${n}, ${painWord(n, nl)}`} onClick={() => { setScore(n); setError(null); }}
-            className={cn('tap flex h-11 items-center justify-center rounded-xl border text-[16px] font-semibold tabular-nums', score === n ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-white text-ink-800')}>
-            {n}
-          </button>
-        ))}
+      <div className="mt-3">
+        <ScaleInput tone="pain" label={score === null ? t('Tik je score', 'Tap your score') : t(`Score vandaag: ${score}/10 · ${painWord(score, nl)}`, `Score today: ${score}/10 · ${painWord(score, nl)}`)} lowLabel={t('0 = geen pijn', '0 = no pain')} highLabel={t('10 = ergst denkbaar', '10 = worst imaginable')} value={score} onChange={(v) => { setScore(v); setError(null); }} />
       </div>
       <Button size="lg" className="mt-3 w-full" loading={busy} disabled={score === null} onClick={save}>{t('Opslaan', 'Save')}</Button>
     </section>
