@@ -24,7 +24,7 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
    ingeklapt; dagcheck zonder vooringevuld cijfer.)
 6. [x] **Meting → advies.** Na een mobiliteitsmeting: "Je enkel is stijver dan je andere
    kant, dit programma helpt" (bestaande programma's, geen nieuwe medische claims).
-7. [ ] **Voortgang op één plek.** De pagina Voortgang toont ook mobiliteitsmetingen,
+7. [x] **Voortgang op één plek.** De pagina Voortgang toont ook mobiliteitsmetingen,
    krachtrecords en de quiz, niet alleen trainingen.
 8. [x] **Quiz over sliders en tests.** Nieuwe level 2-vragen: welke slider hoort bij welke
    zenuw, wat meet de knie-tot-muur-test.

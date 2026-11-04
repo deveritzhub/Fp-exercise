@@ -74,6 +74,13 @@ test('patient measures mobility with a published test and sees the trend; staff 
     await expect(scratch.locator('dl').getByText('-6 cm')).toBeVisible();
     await expect(scratch.locator('dl').getByText('2 cm', { exact: true })).toBeVisible();
     await expectAccessible(page, 'mobility tests page');
+    // Progress page: mobility and the quiz next to the workouts.
+    await page.goto('/p/voortgang');
+    const mob = page.getByRole('region', { name: 'Mobiliteit' });
+    await expect(mob.getByText(/Knie-tot-muur-test/)).toBeVisible();
+    await expect(mob.getByText(/soepeler 3,5 cm/)).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Kennis' }).getByText(/quizvragen goed/)).toBeVisible();
+    await expectAccessible(page, 'progress page');
     await ctx.close();
 
     // Staff: private until the patient shares mobility.
