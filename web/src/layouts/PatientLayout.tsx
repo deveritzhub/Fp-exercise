@@ -44,6 +44,10 @@ export function PatientLayout() {
       void import('@/pages/patient/PatientHome').catch(() => {});
       void import('@/pages/patient/SessionPlayer').catch(() => {});
       void import('@/pages/patient/ModulePage').catch(() => {});
+      void import('@/pages/patient/HeroPages').catch(() => {});
+      void import('@/pages/patient/GymLogPage').catch(() => {});
+      void import('@/pages/patient/AtlasPage').catch(() => {});
+      void import('@/pages/patient/SettingsPage').catch(() => {});
     };
     warm();
   }, []);
