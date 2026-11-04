@@ -48,6 +48,8 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     opnieuw. Een therapeut kon zo langer ingelogd blijven. Opgelost; test 3× in de reeks groen.
 16. [x] **Meetherinnering op Vandaag.** Wie eerder mat en 14+ dagen niet meer, ziet op Vandaag
     "Tijd om je mobiliteit te meten · +20 XP".
+17. [x] **Fysio vraagt om te meten.** Knop "Vraag om te meten" in het tabblad Mobiliteit; de
+    patiënt krijgt een melding met een link naar de tests (ook als Mobiliteit niet gedeeld wordt).
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

@@ -103,6 +103,8 @@ test('patient measures mobility with a published test and sees the trend; staff 
     await login(staff, 'therapeut@praktijk-a.test');
     await staff.goto(`/app/patienten/${pid}?tab=mobiliteit`);
     await expect(staff.getByText(/deelt het onderdeel Mobiliteit niet/)).toBeVisible();
+    await staff.getByRole('button', { name: 'Vraag om te meten' }).click();
+    await expect(staff.getByText(/Verzoek verstuurd/)).toBeVisible();
     const db2 = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
     await db2.connect();
     await db2.query(

@@ -66,6 +66,20 @@ describe('mobility self-tests: privacy and validation', () => {
   });
 });
 
+describe('asking a patient to measure', () => {
+  it('own practice can ask (a notification with a link), another practice cannot', async () => {
+    expect((await B.post(`/patients/${s.patients.emma}/mobility-tests/request`, {})).status).toBe(404);
+    const r = await A.post(`/patients/${s.patients.emma}/mobility-tests/request`, { note: 'Graag voor onze afspraak.' });
+    expect(r.body).toEqual({ ok: true, delivered: true });
+    const home = await patientA.get('/patient/home');
+    const n = home.body.notifications.find((x: any) => x.title === 'Meet je mobiliteit');
+    expect(n.link).toBe('/p/mobiliteit/meten');
+    expect(n.body).toBe('Graag voor onze afspraak.');
+    // Patients cannot send it to themselves or others.
+    expect((await patientA.post(`/patients/${s.patients.emma}/mobility-tests/request`, {})).status).toBeGreaterThanOrEqual(400);
+  });
+});
+
 describe('client error reports', () => {
   it('logs one scrubbed line without user data', async () => {
     const spy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);

@@ -45,6 +45,25 @@ export async function notifyPatientMuscle(tx: Tx, patientId: string, practiceId:
   return true;
 }
 
+/** The therapist asks the patient to measure their mobility (link to the measuring page). */
+export async function notifyPatientMeasure(tx: Tx, patientId: string, practiceId: string, note: string) {
+  const { rows } = await tx.query('SELECT user_id, locale FROM patients WHERE id = $1', [patientId]);
+  if (!rows[0]?.user_id) return false;
+  const nl = rows[0].locale !== 'en';
+  await tx.query(
+    'INSERT INTO notifications(user_id, practice_id, kind, title, body, link) VALUES ($1,$2,$3,$4,$5,$6)',
+    [
+      rows[0].user_id,
+      practiceId,
+      'mobility_measure',
+      nl ? 'Meet je mobiliteit' : 'Measure your mobility',
+      note || (nl ? 'Je fysiotherapeut vraagt je om de mobiliteitstests te doen. Het duurt een paar minuten, met een meetlint.' : 'Your physiotherapist asks you to do the mobility tests. It takes a few minutes, with a tape measure.'),
+      '/p/mobiliteit/meten',
+    ],
+  );
+  return true;
+}
+
 /** Notify assigned therapists that a patient left feedback / completed a session. */
 export async function notifyTherapists(tx: Tx, patientId: string, practiceId: string, patientName: string, highPain: boolean) {
   const { rows } = await tx.query('SELECT therapist_id FROM patient_therapists WHERE patient_id = $1', [patientId]);

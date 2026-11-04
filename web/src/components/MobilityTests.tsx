@@ -26,7 +26,12 @@ export function MobilityTests({ base, staff = false }: { base: string; staff?: b
   if (q.isLoading) return <Spinner className="min-h-[30vh]" />;
   if (q.isError || !q.data) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
   if (staff && !q.data.sharedByPatient) {
-    return <Notice tone="info">{t('Deze patiënt deelt het onderdeel Mobiliteit niet. Mobiliteitsmetingen blijven dan privé.', 'This patient does not share the mobility part. Mobility measurements then stay private.')}</Notice>;
+    return (
+      <div className="space-y-3">
+        <Notice tone="info">{t('Deze patiënt deelt het onderdeel Mobiliteit niet. Mobiliteitsmetingen blijven dan privé.', 'This patient does not share the mobility part. Mobility measurements then stay private.')}</Notice>
+        <RequestMeasure base={base} shared={false} />
+      </div>
+    );
   }
   const results = q.data.results;
   return (
@@ -37,6 +42,7 @@ export function MobilityTests({ base, staff = false }: { base: string; staff?: b
           {t('Meet elke 2 tot 4 weken, steeds op dezelfde manier en rond hetzelfde moment van de dag. Je vergelijkt met jezelf, niet met anderen. Je fysiotherapeut ziet dit alleen als je Mobiliteit deelt.', 'Measure every 2 to 4 weeks, always the same way and around the same time of day. You compare with yourself, not with others. Your physiotherapist only sees this if you share Mobility.')}
         </p>
       )}
+      {staff && <RequestMeasure base={base} shared />}
       {staff && results.length === 0 && <p className="text-[15px] text-ink-600">{t('Nog geen mobiliteitsmetingen.', 'No mobility measurements yet.')}</p>}
       {MOBILITY_TESTS.map((test) => (staff && !results.some((r) => r.test === test.key) ? null : <TestCard key={test.key} test={test} results={results} base={base} staff={staff} />))}
     </div>
@@ -58,6 +64,30 @@ function DueBanner({ days }: { days: string[] }) {
             ? t('Vandaag gemeten. Over 2 weken weer.', 'Measured today. Again in 2 weeks.')
             : t(`Laatst gemeten ${d.daysSince} ${d.daysSince === 1 ? 'dag' : 'dagen'} geleden. Over ${left} ${left === 1 ? 'dag' : 'dagen'} weer${d.xpAvailable ? '' : ', dan ook weer XP'}.`, `Last measured ${d.daysSince} ${d.daysSince === 1 ? 'day' : 'days'} ago. Again in ${left} ${left === 1 ? 'day' : 'days'}${d.xpAvailable ? '' : ', with XP again'}.`)}
     </p>
+  );
+}
+
+/** Staff: ask the patient to measure (a notification with a link to the tests). */
+function RequestMeasure({ base, shared }: { base: string; shared: boolean }) {
+  const { t, locale } = useI18n();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const ask = async () => {
+    setBusy(true);
+    try {
+      const r = await api.post<{ delivered: boolean }>(`${base}/mobility-tests/request`, {});
+      toast(r.delivered ? t('Verzoek verstuurd: de patiënt ziet het in de app.', 'Request sent: the patient sees it in the app.') : t('De patiënt heeft nog geen account geactiveerd.', 'The patient has not activated an account yet.'), r.delivered ? undefined : 'bad');
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <Button variant="secondary" loading={busy} onClick={ask} icon={<Ruler className="h-4 w-4" />}>{t('Vraag om te meten', 'Ask to measure')}</Button>
+      {!shared && <span className="text-[13px] text-ink-600">{t('De uitslag zie je alleen als de patiënt Mobiliteit deelt.', 'You only see the result if the patient shares Mobility.')}</span>}
+    </div>
   );
 }
 
