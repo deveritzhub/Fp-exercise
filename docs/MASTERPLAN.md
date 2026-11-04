@@ -42,6 +42,11 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     Mobiliteit meten, Prijzenkast en Dagcheck.
 14. [x] **Opruimen.** Dubbele code en oude teksten weg, documentatie bij (`docs/MOBILITEIT_METEN.md`).
 
+## Nog open (Claude)
+15. [ ] **Uitlogtest soms rood.** De test "therapeut na 30 minuten uitgelogd" faalt af en toe als
+    eerste test na het starten (scherm blijft op /app). Los slaagt hij steeds. Oorzaak nog niet
+    gevonden; het uitloggen zelf werkt.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - `DEMO_PASSWORD` instellen in Render (zelf doen, niet naar Claude sturen).
