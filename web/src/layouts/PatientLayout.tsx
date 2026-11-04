@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { TestBanner } from '@/components/app/TestBanner';
+import { WelcomeTour } from '@/components/patient/WelcomeTour';
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { CalendarCheck2, CloudOff, Dumbbell, HeartPulse, Move, RefreshCw, Settings, Trophy } from 'lucide-react';
 import type { PatientHomeData } from '@/pages/patient/PatientHome';
@@ -145,6 +146,8 @@ export function PatientLayout() {
         </div>
       )}
       <TestBanner />
+      {/* First use: a short welcome on Vandaag (after the hero is made or postponed). */}
+      {loc.pathname === '/p' && <WelcomeTour />}
       <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : 'px-4 pb-28 pt-5')}>
         <Outlet />
       </main>

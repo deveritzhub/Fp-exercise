@@ -1,9 +1,30 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type BrowserContext, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 export const PASSWORD = 'Demo-wachtwoord-1';
 
-export async function login(page: Page, email: string, password = PASSWORD) {
+/** For flows that sign up or activate an account themselves: mark the welcome tour as seen. */
+export async function skipWelcomeTour(ctx: BrowserContext | Page) {
+  await ctx.addInitScript(() => {
+    try {
+      localStorage.setItem('fp.tour.v1', 'done');
+    } catch {
+      /* ignore */
+    }
+  });
+}
+
+export async function login(page: Page, email: string, password = PASSWORD, opts: { welcomeTour?: boolean } = {}) {
+  // The first-use welcome tour (patient app) is marked as seen, unless a test is about it.
+  if (!opts.welcomeTour) {
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('fp.tour.v1', 'done');
+      } catch {
+        /* ignore */
+      }
+    });
+  }
   await page.goto('/login');
   await page.getByLabel('E-mailadres').fill(email);
   await page.getByLabel('Wachtwoord', { exact: true }).fill(password);

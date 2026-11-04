@@ -1,5 +1,5 @@
 import { test, expect, devices } from '@playwright/test';
-import { login, expectAccessible } from './helpers';
+import { login, expectAccessible, skipWelcomeTour } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -54,6 +54,7 @@ test('patient activates account on a phone and completes a session', async ({ br
   const outbox = await request.get(`http://localhost:8788/api/dev/outbox?to=${encodeURIComponent(patientEmail)}`);
   const inviteUrl = /http\S+\/uitnodiging\/\S+/.exec((await outbox.json()).items[0].body)![0];
   const ctx = await browser.newContext({ ...devices['Pixel 7'], locale: 'nl-NL' });
+  await skipWelcomeTour(ctx);
   const page = await ctx.newPage();
   await page.goto(inviteUrl.replace('http://localhost:5174', ''));
   await expect(page.getByRole('heading', { name: 'Welkom, Eva' })).toBeVisible();
