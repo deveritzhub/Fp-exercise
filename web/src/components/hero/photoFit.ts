@@ -47,13 +47,14 @@ export function measuredPlacement(source:string,key:string,mirror:boolean,origin
   const size=clamp((hips[1]-shoulders[1])/.253,.85,1.2);
   const eye=mix(p[2],p[5],.5), ears=mix(p[7],p[8],.5);
   const headScale=clamp(Math.abs(p[7][0]-p[8][0])/.087,.8,1.25);
-  const heads:Record<string,number[]>={cap:[.028,.145,.067],visor:[.052,.155,.035],headband:[.068,.13,.018],crown:[.005,.17,.063],headphones:[.027,.18,.11]};
+  const heads:Record<string,number[]>={cap:[.028,.145,.067],visor:[.062,.155,.035],headband:[.068,.13,.018],crown:[.005,.17,.063],headphones:[.027,.18,.11]};
   if(heads[key]){
     const [y,w,h]=heads[key];
     const alignment=originalKey && source.includes('__') ? identityAlignment(source,originalKey) : null;
     const headTop=alignment ? photoFit(originalKey!)!.headTop*alignment.scale+alignment.dy : fit.headTop;
     if(key==='crown')return {x:ears[0],y:headTop-.042*headScale,width:w*headScale,height:h*headScale};
-    return {x:ears[0],y:eye[1]+(y-.104)*headScale,width:w*headScale,height:h*headScale};
+    const selectedEye=alignment ? mix(photoFit(originalKey!)!.points[2],photoFit(originalKey!)!.points[5],.5)[1]*alignment.scale+alignment.dy : eye[1];
+    return {x:ears[0],y:selectedEye+(y-.104)*headScale,width:w*headScale,height:h*headScale};
   }
   const wrist=p[mirror?15:16], fingers=mix(p[mirror?17:18],p[mirror?19:20],.5);
   const ankle=p[mirror?27:28];
@@ -76,7 +77,7 @@ export function measuredPlacement(source:string,key:string,mirror:boolean,origin
       return {x:knee[0],y,width:clamp(Math.max(span?.width ?? .095,Math.min(top?.width ?? .095,(span?.width ?? .095)*1.15))*1.02,.07,.18),height};
     }
     case 'belt': return {x:hips[0],y:hips[1]-.04*size,width:Math.abs(p[23][0]-p[24][0])*1.85,height:.033*size};
-    case 'hr_band': return {x:shoulders[0],y:shoulders[1]+.065*size,width:shoulderWidth*1.12,height:.027*size};
+    case 'hr_band': return {x:shoulders[0],y:shoulders[1]+.065*size,width:shoulderWidth*.93,height:.027*size};
     case 'captain': {const mid=mix(p[11],p[13],.42);return {x:mid[0],y:mid[1]-.01,width:.061*size,height:.034*size};}
     case 'pin': return {x:shoulders[0]+shoulderWidth*.25,y:shoulders[1]+.01,width:.035*size,height:.025*size};
     case 'scarf': case 'towel': case 'medal': return {x:shoulders[0],y:shoulders[1]-.044*size,width:({scarf:.15,towel:.18,medal:.12}[key]!)*size,height:({scarf:.14,towel:.19,medal:.12}[key]!)*size};

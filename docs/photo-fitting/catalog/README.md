@@ -23,7 +23,7 @@ Fine hair edges are polygonal; existing photographs can have slightly different 
 
 ## Validation on the current app branch
 
-Production build/typecheck, 48 focused unit tests, the full catalog browser check and all three synthetic photographic checks pass. The geometry is a separate equipment chunk (about 445 kB gzip); this increases the first photographic equipment load. No geometry inference runs in the browser.
+Production build/typecheck, 49 focused unit tests, the full catalog browser check and all three synthetic photographic checks pass. The geometry is a separate equipment chunk (about 445 kB gzip); this increases the first photographic equipment load. No geometry inference runs in the browser.
 
 ## Reproduce
 
@@ -104,3 +104,18 @@ Mobile screenshots cover the reported female/full/long-hair combination, two oth
 ![Lean regression case](fit-f_s1_lean.png)
 
 Validation for this correction: build/typecheck, 48 focused tests and all three photographic Playwright checks pass. All six new mobile screenshots were opened and inspected.
+
+## Complete item review across six avatars
+
+All 26 items individually plus three equipped combinations were rendered for each of six fixed avatars: 174 views. All six sheets were opened and inspected. This exposed a chest band extending over the arms and covering the scarf, and headwear using the outfit photo's eye position instead of the retained face. The band is now narrower; neck accessories render in front of it; headwear follows the retained eyes. Visors sit lower on the forehead while remaining above the eyes.
+
+The new browser check also verifies the scarf/chest-band paint order and retained identity. A geometry regression checks caps/visors against the retained eyes for all 720 outfit/hair combinations. Existing limitations about fine hair edges and footwear silhouettes still apply; this does not certify every possible item combination.
+
+Reproduce: `npx playwright test -c playwright.wardrobe.config.ts` after downloading the full fixed catalog with `--all`.
+
+- [All items and three combinations: f_s5_full_h2](wardrobe-f_s5_full_h2.png)
+- [All items and three combinations: f_s7_full_h4](wardrobe-f_s7_full_h4.png)
+- [All items and three combinations: f_s1_lean](wardrobe-f_s1_lean.png)
+- [All items and three combinations: m_s5_full](wardrobe-m_s5_full.png)
+- [All items and three combinations: m_s9_muscular_h3](wardrobe-m_s9_muscular_h3.png)
+- [All items and three combinations: m_s1_lean_h4](wardrobe-m_s1_lean_h4.png)

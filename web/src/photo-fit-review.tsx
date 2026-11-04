@@ -24,7 +24,12 @@ const fromKey=(key:string):FigureLook=>{
  return {frame,skin,build:kind==='lean'?'slim':kind,...preset,outfit:'forest',body:{kind} as FigureLook['body']};
 };
 const full=['crown','medal','pin','yoga_mat','captain','watch','gloves','belt','shin_guards','gold_shoes','sport_item'];
-if(params.has('fitcase')){
+if(params.has('wardrobe')){
+ const key=params.get('wardrobe') || 'f_s5_full_h2';
+ const combos=[['cap','headphones','pin','wristbands','belt','sleeve','crew_socks'],['crown','medal','champion','gloves','gold_shoes','yoga_mat','captain'],['visor','scarf','tracksuit','watch','balance_shoes','hr_band']];
+ const examples=[...GEAR.map(g=>({label:g.nl,gear:[g.key]})),...combos.map((gear,i)=>({label:'Combinatie '+(i+1),gear}))];
+ createRoot(document.getElementById('root')!).render(<I18nProvider><div style={{display:'grid',gridTemplateColumns:'repeat(6,190px)',gap:10,padding:12}}>{examples.map(({label,gear})=><div key={label} data-wardrobe-item><h2 style={{fontSize:12,color:'#29483c',textAlign:'center'}}>{label}</h2><HeroPhoto fittedGear look={{...fromKey(key),gear}} className="h-[254px] w-[190px]"/></div>)}</div></I18nProvider>);
+}else if(params.has('fitcase')){
  const key=params.get('fitcase') || 'f_s5_full_h2';
  const gear=['cap','headphones','pin','wristbands','belt','sleeve','crew_socks'];
  createRoot(document.getElementById('root')!).render(<I18nProvider><div style={{padding:12}}><HeroPhoto fittedGear look={{...fromKey(key),gear}} className="h-[640px] w-[360px]"/></div></I18nProvider>);

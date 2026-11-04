@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {GEAR} from '@shared/hero';
-import {photoFitProfiles,measuredPlacement} from './photoFit';
+import {photoFitProfiles,measuredPlacement,identityAlignment} from './photoFit';
 describe('generated photographic fittings',()=>{
  it('covers every standard catalog body/skin/hair and outfit with valid geometry',()=>{
   expect(Object.keys(photoFitProfiles)).toHaveLength(420);
@@ -34,6 +34,21 @@ describe('generated photographic fittings',()=>{
    expect(fit.y+fit.height).toBeGreaterThan(knee[1]);
   }
   expect(measuredPlacement('f_s5_full_h2','sleeve',false)!.width).toBeGreaterThan(measuredPlacement('f_s1_lean','sleeve',false)!.width);
+ });
+ it('keeps caps and visors above the selected eyes when an outfit changes the source head',()=>{
+  for(const key of Object.keys(photoFitProfiles).filter(k=>!k.includes('__'))){
+   const base=key.replace(/_h[234]$/,'');
+   for(const outfit of ['tracksuit','team_kit','champion']){
+    const source=base+'__'+outfit, alignment=identityAlignment(source,key)!;
+    const points=photoFitProfiles[key].points;
+    const eyes=(points[2][1]+points[5][1])/2*alignment.scale+alignment.dy;
+    for(const item of ['cap','visor']){
+     const placement=measuredPlacement(source,item,false,key)!;
+     expect(placement.y+placement.height,key+' '+outfit+' '+item).toBeLessThan(eyes);
+     expect(eyes-placement.y-placement.height).toBeLessThan(.03);
+    }
+   }
+  }
  });
  it('does not invent geometry for personal or unknown photographs',()=>{
   expect(measuredPlacement('avatar/custom_1','cap',false)).toBeNull();
