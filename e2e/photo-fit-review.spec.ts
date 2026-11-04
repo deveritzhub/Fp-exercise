@@ -29,6 +29,8 @@ test('photographic inventory equips and keeps photographic preview on mobile', a
     if(url.pathname==='/api/patient/hero')return route.fulfill({json:state});
     return route.fulfill({json:{}});
   });
+  // This inventory fixture represents a returning user; the welcome tour has its own tests.
+  await page.addInitScript(() => localStorage.setItem('fp.tour.v1', 'done'));
   await page.goto('/p/held/inventaris');
   const photo=page.getByRole('img',{name:'Je fotorealistische held met je gedragen uitrusting'});
   await expect(photo).toBeVisible();
