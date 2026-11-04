@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import type { FigureLook } from './HumanFigure';
 import { figureGeometry } from './figureGeometry';
-import { GEAR_SLOT } from '@shared/hero';
+import { GEAR_SLOT, gearTier } from '@shared/hero';
 
 // Original vector artwork. The inventory and character use exactly these same shapes.
 export function RpgGear({ item, look, shapes }: { item: string; look: FigureLook; shapes?: { torso: string; arm: (s: -1 | 1) => string; leg: (s: -1 | 1) => string } }) {
@@ -12,7 +12,7 @@ export function RpgGear({ item, look, shapes }: { item: string; look: FigureLook
   const jewel = (x: number, y: number, r = 4) => <path d={`M${x},${y-r} l${r},${r} -${r},${r} -${r},-${r}Z`} fill="#8affdc" stroke="#e9ffe7" strokeWidth=".7" />;
   const shoe = ['gold_shoes', 'balance_shoes', 'spikes'].includes(item);
   const outfit = ['tracksuit', 'team_kit', 'champion'].includes(item);
-  return <g data-rpg-item={item} className="rpg-item" strokeLinejoin="round" strokeLinecap="round">
+  return <g data-rpg-item={item} className="rpg-item" style={{filter:`drop-shadow(0 0 ${gearTier(item).tier * .25}px ${gearTier(item).glow})`}} strokeLinejoin="round" strokeLinecap="round">
     <defs>
       <linearGradient id={`gold${id}`} x2="90%" y2="100%"><stop stopColor="#fff1b8"/><stop offset=".35" stopColor="#dbaa4e"/><stop offset=".6" stopColor="#8e591d"/><stop offset=".8" stopColor="#f6d887"/><stop offset="1" stopColor="#a47332"/></linearGradient>
       <linearGradient id={`teal${id}`}><stop stopColor="#102b35"/><stop offset=".45" stopColor="#347e79"/><stop offset=".7" stopColor="#245655"/><stop offset="1" stopColor="#0a222c"/></linearGradient>
@@ -26,7 +26,7 @@ export function RpgGear({ item, look, shapes }: { item: string; look: FigureLook
       <path d="M100,88 V192" stroke={item === 'champion' ? '#f8d88a' : '#adc8bc'} strokeWidth="2"/>
       {pair((x,s) => <g fill="none" stroke={item === 'champion' ? '#d9b86f' : '#80aaa1'} strokeWidth="2"><path d={`M${x+s*8},222 L${x+s*5},374`}/><path d={`M${g.armX(s,116)},116 L${g.armX(s,193)},193`}/></g>)}
       {item === 'champion' && <>{pair((_,s) => <path d={`M${g.armX(s,86)-12},86 l12,-8 12,8 -3,20 -9,5 -9,-5Z`} fill={gold} stroke="#775225"/>)}{jewel(100,120,7)}<path d={`M${100-g.hip},185 Q100,200 ${100+g.hip},185 L${100+g.hip},218 L100,235 ${100-g.hip},218Z`} fill={teal} stroke="#d9b86f" strokeWidth="2"/></>}
-      {item === 'team_kit' && <text x="100" y="169" textAnchor="middle" fill="#164e49" fontSize="24" fontWeight="800">FP</text>}
+      {item === 'team_kit' && <path d="M87,168 V151 H98 M87,159 H96 M104,168 V151 H111 Q120,151 120,158 Q120,163 111,163 H104" fill="none" stroke="#164e49" strokeWidth="3.5"/>}
     </g>}
     {item === 'master_cape' && <g><path d={`M${100-g.shoulder},77 Q100,63 ${100+g.shoulder},77 L${100+g.hip+35},365 Q100,402 ${100-g.hip-35},365Z`} fill={teal} stroke="#dec486" strokeWidth="3"/><path d={`M${100-g.shoulder+8},88 L${100-g.hip-20},357 M${100+g.shoulder-8},88 L${100+g.hip+20},357`} stroke="#86ae9b" fill="none" strokeWidth="2"/><path d="M80,315 L100,290 120,315 100,351Z" fill={gold}/>{jewel(100,318,10)}</g>}
     {item === 'yoga_mat' && <g transform={`translate(${100+g.shoulder-2} 83) rotate(-12)`}><rect width="23" height="112" rx="9" fill={teal} stroke="#96cdb6" strokeWidth="2"/><ellipse cx="11.5" cy="3" rx="11.5" ry="6" fill="#72a494"/><ellipse cx="11.5" cy="3" rx="6" ry="3" fill="none" stroke="#183e3d"/><path d="M0,25 h23 M0,89 h23" stroke="#ceae68" strokeWidth="6"/></g>}
@@ -34,7 +34,7 @@ export function RpgGear({ item, look, shapes }: { item: string; look: FigureLook
     {['crew_socks','shin_guards'].includes(item) && pair(x => <g><path d={`M${x-8},${item === 'crew_socks'?345:317} h16 l-2,64 h-12Z`} fill={item === 'crew_socks'?'#d8e7df':teal} stroke="#5a8e83"/><path d={`M${x-7},352 h14 M${x-7},358 h14`} stroke="#b79954" strokeWidth="3"/>{item === 'shin_guards' && jewel(x,332)}</g>)}
     {['wristbands','gloves','watch','captain'].includes(item) && ([-1,1] as const).filter(s => !['watch','captain'].includes(item) || s === (item==='watch'?-1:1)).map(s => {
       const y = item==='captain'?116:item==='gloves'?214:196; const x=g.armX(s,y); const w=(item==='captain'?9:6)*g.armW;
-      return <g key={s} transform={`translate(${x} ${y}) rotate(${-s*8})`}><path d={`M${-w},-7 Q0,-10 ${w},-7 L${w*.8},9 Q0,13 ${-w*.8},9Z`} fill={item==='captain'?gold:teal} stroke="#c7dcc1"/>{item==='watch'?<><rect x="-5" y="-5" width="10" height="11" rx="3" fill="#111e2a" stroke="#dec382"/><path d="M-3,2 l2,-4 2,3 2,-1" fill="none" stroke="#80ffdb"/></>:item==='captain'?<text y="4" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#193f3d">C</text>:<path d={`M${-w+1},-3 h${w*2-2} M${-w+1},3 h${w*2-2}`} stroke="#c7ad73"/>}</g>;
+      return <g key={s} transform={`translate(${x} ${y}) rotate(${-s*8})`}><path d={`M${-w},-7 Q0,-10 ${w},-7 L${w*.8},9 Q0,13 ${-w*.8},9Z`} fill={item==='captain'?gold:teal} stroke="#c7dcc1"/>{item==='watch'?<><rect x="-5" y="-5" width="10" height="11" rx="3" fill="#111e2a" stroke="#dec382"/><path d="M-3,2 l2,-4 2,3 2,-1" fill="none" stroke="#80ffdb"/></>:item==='captain'?<path d="M3,-4 C-5,-7 -5,7 3,4" fill="none" stroke="#193f3d" strokeWidth="2"/>:<path d={`M${-w+1},-3 h${w*2-2} M${-w+1},3 h${w*2-2}`} stroke="#c7ad73"/>}</g>;
     })}
     {item==='sleeve' && <g transform={`translate(${100-g.legX} 290)`}><path d={`M${-10*g.legW},-25 Q0,-30 ${10*g.legW},-25 L${8*g.legW},29 Q0,34 ${-8*g.legW},29Z`} fill={teal} stroke="#96b9ab"/><path d={`M${-9*g.legW},-19 h${18*g.legW} M${-8*g.legW},23 h${16*g.legW}`} stroke="#d8bf83" strokeWidth="2"/>{jewel(0,0,4)}</g>}
     {item==='belt' && <g><path d={`M${100-g.hip},186 Q100,194 ${100+g.hip},186 v12 Q100,207 ${100-g.hip},198Z`} fill="#483a2f" stroke="#bba475"/><rect x="94" y="190" width="12" height="12" rx="2" fill={gold}/>{jewel(100,196,3)}</g>}

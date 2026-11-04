@@ -1,6 +1,7 @@
+import { PhotoGearThumbnail } from '../../components/hero/PhotoEquipment';
 import { GearArtwork } from '../../components/hero/RpgGear';
 import '../../components/hero/rpg.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Award, BookOpen, Brain, CalendarCheck, Check, ChevronRight, CircleCheck, Coins, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Utensils, Droplets, Zap, Swords, type LucideIcon } from 'lucide-react';
@@ -13,7 +14,7 @@ import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, Segmented
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
-import { SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
+import { HumanFigure, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
 import { BADGES, BOSSES, SEASONS, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, WALL_BADGES_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
@@ -953,6 +954,7 @@ function GearCard({ d }: { d: HeroState }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loot, setLoot] = useState<string | null>(null);
+  const [cape, setCape] = useState(false);
   const [filter, setFilter] = useState<'all' | 'open' | 'shop'>('all');
   const save = async (next: string[], key: string) => {
     setBusy(key);
@@ -990,13 +992,19 @@ function GearCard({ d }: { d: HeroState }) {
     <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="gear-title">
       <h2 id="gear-title" className="t-section">{t(`Uitrusting (${d.gear.owned.length} van ${GEAR.length})`, `Gear (${d.gear.owned.length} of ${GEAR.length})`)}</h2>
       <GearStats d={d} />
-      <p className="mt-2 text-[13.5px] text-ink-600">{t('Verdien muntjes met trainen (1 muntje per 10 XP) en koop kleding in de winkel. Hoe hoger de tier, hoe hoger je gearscore. Je muntjes ziet alleen jij.', 'Earn coins by training (1 coin per 10 XP) and buy gear in the shop. The higher the tier, the higher your gear score. Only you can see your coins.')}</p>
+      <p className="mt-2 text-[13.5px] text-ink-600">{t('Verzamel je eigen uitrusting. Tier toont de zeldzaamheid; itemlevel is de cosmetische waarde die meetelt voor je gearscore. Je hoeft geen hoger heldlevel te halen om een item te dragen.', 'Collect your own equipment. Tier shows rarity; item level is the cosmetic value contributing to your gear score. No hero-level requirement applies to wearing items.')}</p>
 
+      <ul className="my-3 flex flex-wrap gap-2" aria-label={t('Uitrustingstiers', 'Equipment tiers')}>
+        {GEAR_TIERS.map(tier => <li key={tier.key} className="rounded-lg border bg-white px-2 py-1 text-xs" style={{borderColor:tier.glow,color:tier.color}}>
+          <span className="font-semibold">{tier.tier} · {nl ? tier.nl : tier.en}</span>
+          <span className="ml-1">{(tier.tier-1)*20+1}–{tier.tier*20}</span>
+        </li>)}
+      </ul>
       <CharacterScreen d={d} onPreview={setPreview} preview={preview} busy={busy} onSave={save} onBuy={buy} />
 
       {preview && <div className="my-3 flex flex-wrap items-center gap-3" role="status"><span>{t('Paskamer — nog niet gekocht:', 'Preview — not purchased:')} {nl ? GEAR.find(g=>g.key===preview)?.nl : GEAR.find(g=>g.key===preview)?.en}</span><Button variant="secondary" onClick={()=>setPreview(null)}>{t('Preview sluiten','Close preview')}</Button></div>}
       <Dialog open={!!loot} onClose={()=>setLoot(null)} title={t('Nieuw in je collectie','New in your collection')} footer={<Button onClick={()=>setLoot(null)}>{t('Verder','Continue')}</Button>}>
-        {loot && <div className="rpg-loot text-center"><div className="mx-auto h-40 w-40"><GearImg gearKey={loot}/></div><p className="font-bold">{nl ? GEAR.find(g=>g.key===loot)?.nl : GEAR.find(g=>g.key===loot)?.en}</p><p>{t('Je nieuwe item is aangetrokken.','Your new item is equipped.')}</p></div>}
+        {loot && <div className="rpg-loot text-center" style={{'--gear-color':GEAR_TIERS[(GEAR.find(g=>g.key===loot)?.tier ?? 1)-1].glow} as CSSProperties}><div className="mx-auto h-40 w-40"><GearImg gearKey={loot}/></div><p className="font-bold">{nl ? GEAR.find(g=>g.key===loot)?.nl : GEAR.find(g=>g.key===loot)?.en}</p><p>{t('Je nieuwe item is aangetrokken.','Your new item is equipped.')}</p></div>}
       </Dialog>
       <div className="mt-4">
         <Segmented label={t('Toon', 'Show')} value={filter} onChange={setFilter} size="sm"
@@ -1006,20 +1014,24 @@ function GearCard({ d }: { d: HeroState }) {
             { value: 'shop', label: t(`Winkel (${GEAR.length - d.gear.owned.length})`, `Shop (${GEAR.length - d.gear.owned.length})`) },
           ]} />
       </div>
-      <ul className="mt-3 grid grid-cols-2 gap-2 min-[340px]:grid-cols-3 min-[620px]:grid-cols-4">
+      <ul className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-2">
         {shown.map((g) => (
           <li key={g.key}>
-            <GearTile g={g} d={d} busy={busy} onPreview={GEAR_SLOT[g.key] === 'outfit' ? () => setPreview(g.key) : undefined} onToggle={() => toggle(g.key)} onBuy={() => buy(g.key)} />
+            <GearTile g={g} d={d} busy={busy} onPreview={() => setPreview(g.key)} onToggle={() => toggle(g.key)} onBuy={() => buy(g.key)} />
           </li>
         ))}
       </ul>
 
+      <Dialog open={cape} onClose={()=>setCape(false)} title={t('Meestercape — ontwerpvoorproefje','Master cape — design preview')} footer={<Button onClick={()=>setCape(false)}>{t('Sluiten','Close')}</Button>}>
+        <p>{t('Toekomstige cosmetische beloning. Nog niet te verdienen of uit te rusten.','Future cosmetic reward. Not yet available to earn or equip.')}</p>
+        <div className="rpg-stage rounded-xl mt-3"><HumanFigure rpg look={{...d.hero!,gear:['master_cape']}} viewBox="0 -10 200 440" className="mx-auto h-[400px]"/></div>
+      </Dialog>
       <h3 className="mt-5 text-[14.5px] font-semibold text-ink-900">{t('Komt eraan', 'Coming up')}</h3>
       <ul className="mt-2 grid grid-cols-2 gap-2 min-[520px]:grid-cols-4">
         {FUTURE_REWARDS.map((r) => (
           <li key={r.key} className="flex items-center gap-2 rounded-xl border border-dashed border-line bg-canvas p-2.5 text-[12.5px] text-ink-600">
             <Lock className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
-            <span className="min-w-0"><span className="block font-semibold text-ink-700">{nl ? r.nl : r.en}</span>{t(`Skill level ${r.level}`, `Skill level ${r.level}`)}</span>
+            <span className="min-w-0"><span className="block font-semibold text-ink-700">{nl ? r.nl : r.en}</span>{t(`Skill level ${r.level}`, `Skill level ${r.level}`)}{r.key === 'master_cape' && <button type="button" onClick={()=>setCape(true)} className="block min-h-[44px] underline text-accent">{t('Ontwerp bekijken','View design')}</button>}</span>
           </li>
         ))}
       </ul>
@@ -1050,9 +1062,9 @@ function TierTag({ g }: { g: GearItem }) {
   const { locale } = useI18n();
   const tier = GEAR_TIERS[g.tier - 1];
   return (
-    <span className="inline-flex items-center gap-1 text-[11.5px] font-semibold leading-tight" style={{ color: tier.color }}>
-      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: tier.color }} aria-hidden />
-      {locale === 'nl' ? tier.nl : tier.en} · {g.score}
+    <span className="gear-labels">
+      <span className="gear-rarity" style={{color:tier.color}}>Tier {g.tier} · {locale === 'nl' ? tier.nl : tier.en}</span>
+      <span className="gear-level">{locale === 'nl' ? 'Itemlevel' : 'Item level'} {g.itemLevel}</span>
     </span>
   );
 }
@@ -1067,19 +1079,20 @@ function GearTile({ g, d, busy, onToggle, onBuy, onPreview }: { onPreview?: () =
     const on = d.gear.equipped.includes(g.key);
     return (
       <button type="button" aria-pressed={on} disabled={busy !== null} onClick={onToggle}
-        className={cn('tap relative flex h-full w-full flex-col items-center gap-1 rounded-xl border-2 p-2 text-center transition-colors', on ? 'border-accent bg-accent-soft' : 'bg-white hover:border-ink-300')}
-        style={on ? undefined : { borderColor: `${tier.color}55` }}>
-        <span className="block h-14 w-14 overflow-hidden rounded-lg bg-sand-soft" aria-hidden><GearImg gearKey={g.key} /></span>
+        data-tier={g.tier} data-item={g.key}
+        className={cn('gear-tile tap relative flex h-full w-full flex-col items-center gap-1 rounded-xl border-2 p-2 text-center transition-colors', on ? 'border-accent bg-accent-soft' : 'bg-white hover:border-ink-300')}
+        style={{'--gear-color':tier.glow,borderColor:tier.color} as CSSProperties}>
+        <span className="gear-art block h-20 w-20 overflow-hidden rounded-lg" aria-hidden><GearImg gearKey={g.key} /></span>
         <span className="max-w-full text-[12.5px] font-semibold leading-tight text-ink-900 [hyphens:auto] [overflow-wrap:anywhere]" lang={locale}>{name}</span>
         <TierTag g={g} />
-        <span className={cn('text-[11.5px] font-medium', on ? 'text-accent' : 'text-ink-600')}>{on ? t('Aan ✓', 'On ✓') : t('Aandoen', 'Wear')}</span>
+        <span className={cn('text-[11.5px] font-medium', on ? 'text-accent' : 'text-ink-600')}>{on ? t('Uittrekken ✓', 'Unequip ✓') : t('Aandoen', 'Wear')}</span>
       </button>
     );
   }
   const short = g.price - d.gear.coins;
   return (
-    <div className="flex h-full flex-col items-center gap-1 rounded-xl border border-dashed bg-canvas p-2 text-center" style={{ borderColor: `${tier.color}88` }}>
-      <span className="block h-14 w-14 overflow-hidden rounded-lg bg-white" aria-hidden><GearImg gearKey={g.key} className={short > 0 ? 'opacity-60' : ''} /></span>
+    <div data-tier={g.tier} data-item={g.key} className="gear-tile flex h-full flex-col items-center gap-1 rounded-xl border-2 bg-canvas p-2 text-center" style={{'--gear-color':tier.glow,borderColor:tier.color} as CSSProperties}>
+      <span className="gear-art block h-20 w-20 overflow-hidden rounded-lg" aria-hidden><GearImg gearKey={g.key} className={short > 0 ? 'opacity-60' : ''} /></span>
       <span className="max-w-full text-[12.5px] font-semibold leading-tight text-ink-800 [hyphens:auto] [overflow-wrap:anywhere]" lang={locale}>{name}</span>
       <TierTag g={g} />
       {onPreview && <Button variant="secondary" size="sm" onClick={onPreview} aria-label={t(`Passen: ${name}`, `Try on: ${name}`)}>{t('Passen', 'Try on')}</Button>}
@@ -1105,6 +1118,8 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const [open, setOpen] = useState<GearSlot | null>(null);
+  const [illustrated, setIllustrated] = useState(() => { try { return sessionStorage.getItem('fp.inventory.illustrated') === 'true'; } catch { return false; } });
+  useEffect(() => { try { sessionStorage.setItem('fp.inventory.illustrated', String(illustrated)); } catch { /* storage optional */ } }, [illustrated]);
   const look = { ...d.hero!, gear: [...(preview ? onePerSlot([...d.gear.equipped, preview]) : d.gear.equipped), ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero!.frame) : null, photo: d.customPhoto ?? null };
   const inSlot = (k: GearSlot) => d.gear.equipped.find((g) => GEAR_SLOT[g] === k) ?? null;
   const slotBtn = (k: GearSlot) => {
@@ -1112,10 +1127,10 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
     const g = item ? GEAR.find((x) => x.key === item) : null;
     const free = GEAR.filter((x) => GEAR_SLOT[x.key] === k && d.gear.owned.includes(x.key)).length;
     return (
-      <button key={k} type="button" onClick={() => setOpen(k)}
-        aria-label={g ? t(`${slotLabel(k, true)}: ${g.nl}. Wijzigen`, `${slotLabel(k, false)}: ${g.en}. Change`) : t(`${slotLabel(k, true)}${free ? ` +${free}` : ''}: leeg${free ? `, ${free} beschikbaar` : ''}`, `${slotLabel(k, false)}${free ? ` +${free}` : ''}: empty${free ? `, ${free} available` : ''}`)}
+      <button key={k} type="button" onClick={() => setOpen(k)} data-tier={g?.tier} title={g ? `${nl ? g.nl : g.en} · Tier ${g.tier} · Itemlevel ${g.itemLevel}` : undefined} style={g ? {borderColor:GEAR_TIERS[g.tier-1].color} : undefined}
+        aria-label={g ? t(`${slotLabel(k, true)}: ${g.nl}. Tier ${g.tier}, IL ${g.itemLevel}. Wijzigen`, `${slotLabel(k, false)}: ${g.en}. Tier ${g.tier}, IL ${g.itemLevel}. Change`) : t(`${slotLabel(k, true)}${free ? ` +${free}` : ''}: leeg${free ? `, ${free} beschikbaar` : ''}`, `${slotLabel(k, false)}${free ? ` +${free}` : ''}: empty${free ? `, ${free} available` : ''}`)}
         className={cn('tap relative flex aspect-square w-full flex-col items-center justify-center overflow-hidden rounded-xl border-2 text-center', g ? 'border-accent bg-white' : 'border-dashed border-line bg-canvas')}>
-        {g ? <span className="absolute inset-1 overflow-hidden rounded-lg" aria-hidden><GearImg gearKey={g.key} /></span> : (
+        {g ? <><span className="absolute inset-1 bottom-4 overflow-hidden rounded-lg" aria-hidden><GearImg gearKey={g.key} /></span><span className="absolute bottom-0.5 rounded bg-white/95 px-1 text-[10px] font-bold text-ink-800" aria-hidden>IL {g.itemLevel}</span></> : (
           <span className="px-0.5 text-[10.5px] font-semibold uppercase leading-tight tracking-wide text-ink-500" aria-hidden>{slotLabel(k, nl)}{free > 0 && <span className="mt-0.5 block text-[10px] font-bold text-accent">+{free}</span>}</span>
         )}
       </button>
@@ -1128,11 +1143,14 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
     <div className="rpg-stage mt-3 rounded-2xl p-3 sm:p-6">
       <TrophyWall d={d} compact className="mb-2" />
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[12.5px] text-[#d3e4dc]">{t('Verander je outfit zonder je behandelschema te veranderen.', 'Change your outfit without changing your treatment.')}</p>
+        <p className="text-[12.5px] text-ink-700">{t('Verander je outfit zonder je behandelschema te veranderen.', 'Change your outfit without changing your treatment.')}</p>
+        <button type="button" onClick={() => setIllustrated(x => !x)} aria-pressed={illustrated} className="tap inline-flex min-h-[44px] items-center rounded-full border border-accent bg-white px-3 text-[13px] font-semibold text-accent hover:bg-accent-soft">
+          {illustrated ? t('Fotoweergave', 'Photo view') : t('RPG-weergave', 'RPG view')}
+        </button>
       </div>
       <div className="grid grid-cols-[44px_1fr_44px] sm:grid-cols-[64px_1fr_64px] items-start gap-2">
         <div className="grid gap-2">{side('left')}</div>
-        <HeroPhoto look={look} className="h-full min-h-[300px] w-full" />
+        {illustrated ? <span className="flex h-full min-h-[300px] min-w-0 items-center justify-center overflow-hidden rounded-2xl rpg-podium" role="img" aria-label={t('Je geïllustreerde held met je gedragen uitrusting', 'Your illustrated hero wearing equipped items')}><HumanFigure rpg look={look} viewBox="0 -10 200 440" className="h-[420px] sm:h-[520px] w-full max-w-[260px]" /></span> : <span role="img" aria-label={t('Je fotorealistische held met je gedragen uitrusting', 'Your photographic hero wearing equipped items')} className="min-w-0"><HeroPhoto fittedGear look={look} className="h-[420px] sm:h-[520px] w-full" /></span>}
         <div className="grid gap-2">{side('right')}</div>
       </div>
       <div className="mx-auto mt-2 grid w-[136px] grid-cols-2 gap-2">{GEAR_SLOTS.filter((x) => x.side === 'bottom').map((x) => slotBtn(x.key))}</div>
@@ -1350,7 +1368,7 @@ function BadgeArt({ k, earned }: { k: string; earned: boolean }) {
 }
 
 function GearImg({ gearKey, className }: { gearKey: string; className?: string }) {
-  return <GearArtwork item={gearKey} className={cn('h-full w-full p-1', className)} />;
+  return <PhotoGearThumbnail key={gearKey} item={gearKey} className={cn('h-full w-full object-contain p-1', className)} fallback={<GearArtwork item={gearKey} className={cn('h-full w-full p-1', className)} />} />;
 }
 
 function LogTeaser({ d }: { d: HeroState }) {

@@ -1,3 +1,4 @@
+import { PhotoEquipment } from './PhotoEquipment';
 import { useState } from 'react';
 import { cn } from '@/lib/cn';
 import { useI18n } from '@/lib/i18n';
@@ -24,7 +25,11 @@ export function heroPhotoSources(look: FigureLook): string[] {
   return [...new Set([...outfitKeys, ...plain])];
 }
 
-export function HeroPhoto({ look, className, gearChips = false }: { look: FigureLook; className?: string; gearChips?: boolean }) {
+type HeroPhotoProps = { look: FigureLook; className?: string; gearChips?: boolean; fittedGear?: boolean };
+export function HeroPhoto(props: HeroPhotoProps) {
+  return <HeroPhotoContent key={heroPhotoSources(props.look).join('|')} {...props}/>;
+}
+function HeroPhotoContent({ look, className, gearChips = false, fittedGear = false }: HeroPhotoProps) {
   // Try the personal/guest photo, then this hairstyle, then the base photo, then the drawing.
   const keys = heroPhotoSources(look);
   const { t } = useI18n();
@@ -44,6 +49,7 @@ export function HeroPhoto({ look, className, gearChips = false }: { look: Figure
         // A 3:4 layer that matches the photo exactly, so the gear lands on the body at any box size.
         <span className="absolute left-1/2 top-0 block aspect-[3/4] h-full -translate-x-1/2">
           <img key={keys[attempt]} src={`/api/hero-assets/${keys[attempt]}`} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setAttempt((a) => a + 1)} />
+          {fittedGear && <PhotoEquipment look={look} source={`/api/hero-assets/${keys[attempt]}`}/>}
           {worn.map((p, i) => <WearItem key={`${p.key}-${i}`} p={p} />)}
         </span>
       )}
