@@ -847,11 +847,11 @@ export const SKILL_TITLE_LEVEL = 20;
 
 /** Shop tiers: price in coins. Every item also has its own tier score (like an item level). Colours pass 4.5:1 as text on light backgrounds. */
 export const GEAR_TIERS = [
-  { tier: 1, key: 'common', nl: 'Gewoon', en: 'Common', price: 15, color: '#5c6159' },
-  { tier: 2, key: 'uncommon', nl: 'Goed', en: 'Uncommon', price: 40, color: '#2b6b41' },
-  { tier: 3, key: 'rare', nl: 'Zeldzaam', en: 'Rare', price: 90, color: '#2759a0' },
-  { tier: 4, key: 'epic', nl: 'Episch', en: 'Epic', price: 180, color: '#6f35ab' },
-  { tier: 5, key: 'legendary', nl: 'Legendarisch', en: 'Legendary', price: 350, color: '#855806' },
+  { tier: 1, key: 'common', nl: 'Alledaags', en: 'Everyday', price: 15, color: '#5c6159', glow: '#A3AAA5' },
+  { tier: 2, key: 'uncommon', nl: 'Premium', en: 'Premium', price: 40, color: '#2b6b41', glow: '#53A878' },
+  { tier: 3, key: 'rare', nl: 'Designer', en: 'Designer', price: 90, color: '#2759a0', glow: '#5595DF' },
+  { tier: 4, key: 'epic', nl: 'Legendarisch', en: 'Legendary', price: 180, color: '#6f35ab', glow: '#AD79DE' },
+  { tier: 5, key: 'legendary', nl: 'Goddelijk', en: 'Divine', price: 350, color: '#855806', glow: '#E4BC63' },
 ] as const;
 export type GearTier = (typeof GEAR_TIERS)[number];
 
@@ -886,7 +886,8 @@ const starter = (key: string, score: number): GearDef => {
   return { key, nl: it.nl, en: it.en, tier: 1, score };
 };
 
-export const GEAR: (GearDef & { price: number })[] = ([
+/** Cosmetic item level reuses the established score; it is not a patient-level requirement. */
+export const GEAR: (GearDef & { price: number; itemLevel: number })[] = ([
   // Tier 1: one per skill, plus the chest pin.
   starter('wristbands', 10), starter('headband', 10), starter('crew_socks', 10), starter('sleeve', 12), starter('cap', 10),
   starter('watch', 12), starter('shin_guards', 12), starter('headphones', 10), starter('scarf', 10),
@@ -912,7 +913,7 @@ export const GEAR: (GearDef & { price: number })[] = ([
   { key: 'tracksuit', nl: 'Trainingspak', en: 'Tracksuit', tier: 2, score: 25 },
   { key: 'team_kit', nl: 'Teamtenue', en: 'Team kit', tier: 3, score: 47 },
   { key: 'champion', nl: 'Kampioenspak', en: 'Champion suit', tier: 5, score: 100 },
-] as GearDef[]).map((g) => ({ ...g, price: GEAR_TIERS[g.tier - 1].price }));
+] as GearDef[]).map((g) => ({ ...g, itemLevel: g.score, price: GEAR_TIERS[g.tier - 1].price }));
 export const OUTFITS = ['tracksuit', 'team_kit', 'champion'] as const;
 /** The outfit the hero wears, if any (one per slot, so at most one). */
 export const wornOutfit = (gear: readonly string[]) => (OUTFITS as readonly string[]).find((o) => gear.includes(o)) ?? null;
