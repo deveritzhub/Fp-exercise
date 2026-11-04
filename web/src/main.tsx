@@ -7,6 +7,9 @@ import { I18nProvider } from '@/lib/i18n';
 import { ToastProvider } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { router } from './router';
+import { installErrorReporting } from '@/lib/reportError';
+
+installErrorReporting();
 
 const queryClient = new QueryClient({
   defaultOptions: {
