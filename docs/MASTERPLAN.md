@@ -55,7 +55,7 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 18. [x] **Eerste stappen op Vandaag.** Na het maken van de held: dagcheck, eerste training,
     quizvraag goed en mobiliteit meten, met vinkjes. Verdwijnt als alles af is, na een maand of
     met het kruisje.
-19. [ ] **Feedback vragen.** Na de derde training één keer: "Wat vind je ervan?" met de
+19. [x] **Feedback vragen.** Na de derde training één keer: "Wat vind je ervan?" met de
     feedbackknop, zodat testers makkelijk iets laten weten.
 20. [ ] **Uitnodigen zonder e-mail.** De uitnodigingslink (app.fpflow.nl) makkelijk delen via
     WhatsApp of QR-code, zolang er nog geen echte e-mail is.

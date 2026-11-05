@@ -19,3 +19,22 @@ test('new people see five first steps on Vandaag; done ones are ticked and the l
   await expect(page.getByRole('region', { name: 'Eerste stappen' })).toHaveCount(0);
   await ctx.close();
 });
+
+test('after three workouts the app asks once for feedback', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'nl-NL' });
+  const page = await ctx.newPage();
+  await login(page, 'patient@praktijk-a.test', undefined, { feedbackNudge: true });
+  await page.goto('/p');
+  const card = page.getByRole('region', { name: /Wat vind je van de app\?/ });
+  await expect(card).toBeVisible();
+  await card.getByRole('button', { name: 'Laat het weten' }).click();
+  const dlg = page.getByRole('dialog', { name: 'Wat vind je ervan?' });
+  await expect(dlg.getByRole('radio', { name: 'Idee' })).toHaveAttribute('aria-checked', 'true');
+  await dlg.getByRole('button', { name: 'Annuleren' }).click();
+  await card.getByRole('button', { name: 'Nu niet' }).click();
+  await expect(page.getByRole('region', { name: /Wat vind je van de app\?/ })).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+  await expect(page.getByRole('region', { name: /Wat vind je van de app\?/ })).toHaveCount(0);
+  await ctx.close();
+});

@@ -21,17 +21,8 @@ function useKinds() {
 
 /** Header button + dialog for quick feedback during the test phase (therapist and patient app). */
 export function FeedbackButton({ big }: { big?: boolean }) {
-  const { t, locale } = useI18n();
-  const loc = useLocation();
-  const toast = useToast();
-  const kinds = useKinds();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const [kind, setKind] = useState<Kind>('problem');
-  const [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const close = () => { setOpen(false); setError(null); };
-
   return (
     <>
       <button
@@ -43,6 +34,24 @@ export function FeedbackButton({ big }: { big?: boolean }) {
         <MessageSquarePlus className={big ? 'h-6 w-6' : 'h-4 w-4'} strokeWidth={big ? 1.8 : 2} />
         {!big && <span className="hidden md:inline">{t('Feedback', 'Feedback')}</span>}
       </button>
+      <FeedbackDialog open={open} onClose={() => setOpen(false)} />
+    </>
+  );
+}
+
+/** The feedback form in a dialog; also opened from the one-time question on Vandaag. */
+export function FeedbackDialog({ open, onClose, initialKind = 'problem', onSent }: { open: boolean; onClose: () => void; initialKind?: Kind; onSent?: () => void }) {
+  const { t, locale } = useI18n();
+  const loc = useLocation();
+  const toast = useToast();
+  const kinds = useKinds();
+  const [kind, setKind] = useState<Kind>(initialKind);
+  const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const close = () => { onClose(); setError(null); };
+
+  return (
       <Dialog
         open={open}
         onClose={close}
@@ -67,6 +76,7 @@ export function FeedbackButton({ big }: { big?: boolean }) {
               await api.post('/feedback', { kind, message: message.trim(), page: loc.pathname, device: `${window.innerWidth}×${window.innerHeight} · ${navigator.userAgent}`.slice(0, 200) });
               setMessage('');
               close();
+              onSent?.();
               toast(t('Bedankt! Je feedback is verstuurd.', 'Thanks! Your feedback was sent.'));
             } catch (err) {
               setError(describeError(err, locale));
@@ -106,7 +116,6 @@ export function FeedbackButton({ big }: { big?: boolean }) {
           />
         </form>
       </Dialog>
-    </>
   );
 }
 

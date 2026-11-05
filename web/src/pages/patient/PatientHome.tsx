@@ -20,6 +20,7 @@ import { BossHomeCard, DayChestHomeCard, HeroHomeCard } from '@/pages/patient/He
 import { LogbookHomeCard } from '@/pages/patient/LogbookPage';
 import { MobilityDueCard } from '@/components/MobilityTests';
 import { FirstSteps } from '@/components/patient/FirstSteps';
+import { FeedbackNudge } from '@/components/patient/FeedbackNudge';
 import { Check, Flame } from 'lucide-react';
 
 export type PatientHomeData = {
@@ -197,6 +198,7 @@ export function PatientHome() {
         </div>
       </section>
 
+      <FeedbackNudge sessions={d.stats.completedSessions} />
       <ReminderNudge />
     </div>
   );

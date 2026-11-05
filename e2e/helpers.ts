@@ -14,17 +14,17 @@ export async function skipWelcomeTour(ctx: BrowserContext | Page) {
   });
 }
 
-export async function login(page: Page, email: string, password = PASSWORD, opts: { welcomeTour?: boolean } = {}) {
-  // The first-use welcome tour (patient app) is marked as seen, unless a test is about it.
-  if (!opts.welcomeTour) {
-    await page.addInitScript(() => {
-      try {
-        localStorage.setItem('fp.tour.v1', 'done');
-      } catch {
-        /* ignore */
-      }
-    });
-  }
+export async function login(page: Page, email: string, password = PASSWORD, opts: { welcomeTour?: boolean; feedbackNudge?: boolean } = {}) {
+  // The first-use welcome tour and the one-time feedback question (patient app) are marked as seen,
+  // unless a test is about them.
+  await page.addInitScript(([tour, nudge]) => {
+    try {
+      if (!tour) localStorage.setItem('fp.tour.v1', 'done');
+      if (!nudge) localStorage.setItem('fp.feedbackAsked.v1', '1');
+    } catch {
+      /* ignore */
+    }
+  }, [!!opts.welcomeTour, !!opts.feedbackNudge] as const);
   await page.goto('/login');
   await page.getByLabel('E-mailadres').fill(email);
   await page.getByLabel('Wachtwoord', { exact: true }).fill(password);
