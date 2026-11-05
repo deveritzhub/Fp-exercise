@@ -10,7 +10,7 @@ import { Button, ErrorState, PageHeader, Spinner } from '@/components/ui';
 import { CompensationCard, MuscleChips } from '@/components/app/Compensation';
 import { MUSCLES } from '@shared/muscleAtlas';
 import { mobilityTest } from '@shared/mobilityTests';
-import { CHAINS, REGIONS, chainOf, complaintMuscles, complaintOf, complaintsIn, compensationOf, proposeExercises, searchComplaints, type Compensation, type Complaint, type ProposalExercise, type RegionKey } from '@shared/complaints';
+import { CHAINS, REGIONS, chainOf, complaintMuscles, complaintOf, complaintsIn, compensationOf, proposeExercises, searchComplaints, whyFor, type Compensation, type Complaint, type ProposalExercise, type RegionKey } from '@shared/complaints';
 
 type AtlasData = { exercises: (ProposalExercise & { own: boolean })[] };
 type Fn = readonly [string, string];
@@ -124,6 +124,14 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
   };
   const ordered = proposal ? [...proposal.calm, ...proposal.activate, ...proposal.function].filter((e) => chosen.has(e.id)) : [];
   const makeProgram = () => {
+    // Plain-language "why" per exercise, handed to the builder as the exercise note (editable there).
+    // Only generic texts, no patient data.
+    const blockOf = (id: string): 'calm' | 'activate' | 'function' => (proposal!.calm.some((e) => e.id === id) ? 'calm' : proposal!.activate.some((e) => e.id === id) ? 'activate' : 'function');
+    try {
+      sessionStorage.setItem('fp.guide.notes', JSON.stringify(Object.fromEntries(ordered.map((e) => [e.id, whyFor(complaint, e, blockOf(e.id), nl)]))));
+    } catch {
+      /* storage unavailable: no notes */
+    }
     const p = new URLSearchParams({ oefeningen: ordered.map((e) => e.id).join(','), titel: L(complaint.name) });
     if (patient) p.set('patient', patient);
     nav(`/app/programmas/nieuw?${p}`);

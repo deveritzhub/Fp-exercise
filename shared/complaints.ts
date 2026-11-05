@@ -7,6 +7,7 @@
  * only cause. The therapist decides; nothing here is a diagnosis. Own texts, to be reviewed.
  */
 import type { MobilityTestKey } from './mobilityTests';
+import { MUSCLES } from './muscleAtlas';
 
 type Fn = readonly [nl: string, en: string];
 
@@ -385,4 +386,45 @@ export function proposeExercises(c: Complaint, exercises: ProposalExercise[], pe
   const calmList = take([...sliders, ...rank(exercises.filter((e) => e.kind === 'rek' && hits(e, [...calm, ...train]) > 0), calm, c.calm ?? [])]);
   const func = take(rank(exercises.filter((e) => (e.kind === 'kracht' || e.kind === 'revalidatie') && isFunctional(e) && hits(e, train) > 0), train));
   return { calm: calmList, activate, function: func, train, calmMuscles: calm };
+}
+
+const muscleName = (k: string, nl: boolean) => {
+  const m = MUSCLES.find((x) => x.key === k);
+  return m ? (nl ? m.nl : m.en).toLowerCase() : k;
+};
+const list = (xs: string[], nl: boolean) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} ${nl ? 'en' : 'and'} ${xs[xs.length - 1]}`);
+
+/**
+ * "Why this exercise?" in plain words for the patient, pre-filled as the exercise note when a
+ * programme is made from the complaint guide (the therapist can change it).
+ */
+export function whyFor(c: Complaint, e: ProposalExercise, block: ProposalBlock, nl: boolean): string {
+  const comps = c.compensations.map(compensationOf).filter((x): x is Compensation => !!x);
+  if (e.kind === 'zenuw') {
+    return nl
+      ? 'Deze oefening laat de zenuw rustig heen en weer glijden, zodat tintelingen en uitstraling kunnen afnemen. Het mag licht trekken, niet meer gaan tintelen.'
+      : 'This exercise lets the nerve glide gently back and forth, so tingling and radiating pain can settle. A light pull is fine, more tingling is not.';
+  }
+  if (block === 'calm') {
+    const comp = comps.find((x) => x.over.some((m) => e.muscles.includes(m))) ?? comps[0];
+    const freed = e.muscles.filter((m) => comp?.over.includes(m) || (c.calm ?? []).includes(m)).map((m) => muscleName(m, nl));
+    const weak = (comp?.weak ?? []).slice(0, 2).map((m) => muscleName(m, nl));
+    if (freed.length && weak.length) {
+      return nl
+        ? `Deze oefening geeft je ${list(freed, true)} meer ruimte, zodat je ${list(weak, true)} het werk weer ${weak.length > 1 ? 'kunnen' : 'kan'} doen.`
+        : `This exercise gives your ${list(freed, false)} more room, so your ${list(weak, false)} can do the work again.`;
+    }
+    return nl ? 'Deze oefening maakt je soepeler, zodat de volgende oefeningen beter gaan.' : 'This exercise makes you more supple, so the next exercises go better.';
+  }
+  const comp = comps.find((x) => x.weak.some((m) => e.muscles.includes(m)));
+  if (block === 'function') {
+    return nl
+      ? 'Hier oefen je de beweging zelf, met wat je net hebt getraind. Let op je houding: dat is belangrijker dan zwaar of snel.'
+      : 'Here you practise the movement itself, with what you just trained. Mind your form: that matters more than heavy or fast.';
+  }
+  if (comp) return nl ? comp.patientWhy[0] : comp.patientWhy[1];
+  const own = e.muscles.filter((m) => (c.train ?? []).includes(m)).map((m) => muscleName(m, nl));
+  return own.length
+    ? nl ? `Deze oefening maakt je ${list(own, true)} sterker, zodat die de belasting weer aankan.` : `This exercise strengthens your ${list(own, false)}, so it can handle the load again.`
+    : nl ? 'Deze oefening maakt de spieren rond je klacht sterker.' : 'This exercise strengthens the muscles around your complaint.';
 }

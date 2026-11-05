@@ -129,7 +129,15 @@ export function ProgramBuilderPage() {
     if (!multiReady || multiAdded.current) return;
     multiAdded.current = true;
     const list = multiQ.map((q) => q.data).filter((e): e is Exercise => !!e);
-    update((x) => [...x, ...list.map((e) => fromExercise(e))]);
+    // From the complaint guide: a plain "why this exercise" as the note for the patient.
+    let notes: Record<string, string> = {};
+    try {
+      notes = JSON.parse(sessionStorage.getItem('fp.guide.notes') ?? '{}');
+      sessionStorage.removeItem('fp.guide.notes');
+    } catch {
+      /* none */
+    }
+    update((x) => [...x, ...list.map((e) => ({ ...fromExercise(e), notes: typeof notes[e.id] === 'string' ? notes[e.id].slice(0, 2000) : '' }))]);
     const title = params.get('titel');
     if (title) setMeta((m) => ({ ...m, title: m.title || title.slice(0, 120) }));
   }, [multiReady]); // eslint-disable-line react-hooks/exhaustive-deps

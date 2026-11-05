@@ -67,7 +67,7 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 23. [x] **Compensatiekaarten en ketenschema**, ook te openen vanuit de atlas.
 24. [x] **Eén klik naar een programma** met de aangevinkte oefeningen.
 25. [x] **Vanuit het dossier**: Programma maken → op klacht.
-26. [ ] **Patiënt: "Waarom deze oefening?"** in gewone taal.
+26. [x] **Patiënt: "Waarom deze oefening?"** in gewone taal.
 27. [x] **Atlas: ketens en "neemt vaak over van"** bij spieren.
 28. [ ] **Klinische controle**: alle wijzerteksten op één pagina om af te tekenen.
 

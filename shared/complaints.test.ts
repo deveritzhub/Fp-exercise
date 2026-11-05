@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CHAINS, COMPENSATIONS, COMPLAINTS, REGIONS, complaintMuscles, complaintsIn, proposeExercises, searchComplaints, type ProposalExercise } from './complaints';
+import { CHAINS, COMPENSATIONS, COMPLAINTS, REGIONS, complaintMuscles, complaintsIn, muscleInChains, proposeExercises, searchComplaints, whyFor, type ProposalExercise } from './complaints';
 import { MUSCLES, NERVES } from './muscleAtlas';
 import { MOBILITY_TESTS } from './mobilityTests';
 
@@ -75,5 +75,22 @@ describe('complaint guide data', () => {
     expect([...itbs.activate, ...itbs.function, ...itbs.calm].map((e) => e.id)).not.toContain('5');
     const back = proposeExercises(COMPLAINTS.find((c) => c.key === 'rug_uitstraling')!, lib);
     expect(back.calm.map((e) => e.id)).toContain('6');
+  });
+});
+
+describe('plain words for the patient', () => {
+  const ex = (nameNl: string, kind: string, muscles: string[]): ProposalExercise => ({ id: nameNl, nameNl, nameEn: nameNl, kind, muscles });
+  const itbs = COMPLAINTS.find((c) => c.key === 'itbs')!;
+  it('explains why, per block, without jargon', () => {
+    expect(whyFor(itbs, ex('Clamshell', 'kracht', ['gluteus_medius']), 'activate', true)).toMatch(/middelste bilspier sterker/);
+    expect(whyFor(itbs, ex('TFL rekken', 'rek', ['tfl']), 'calm', true)).toBe('Deze oefening geeft je spanner van de brede peesplaat meer ruimte, zodat je middelste bilspier en kleine bilspier het werk weer kunnen doen.');
+    expect(whyFor(itbs, ex('Step-down', 'kracht', ['quadriceps']), 'function', false)).toMatch(/practise the movement/);
+    expect(whyFor(COMPLAINTS.find((c) => c.key === 'rug_uitstraling')!, { ...ex('Slider', 'zenuw', []), nerve: 'ischiadicus' }, 'calm', true)).toMatch(/zenuw rustig/);
+  });
+  it('knows where a muscle plays a part', () => {
+    const g = muscleInChains('gluteus_medius');
+    expect(g.asWeak.map((c) => c.key)).toContain('tfl_gmed');
+    expect(g.complaints.map((c) => c.key)).toEqual(expect.arrayContaining(['itbs', 'pfps']));
+    expect(muscleInChains('tfl').asOver.map((c) => c.key)).toEqual(['tfl_gmed']);
   });
 });

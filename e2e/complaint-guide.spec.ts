@@ -32,6 +32,8 @@ test('complaint guide: search, chain, compensation with test, red flags, proposa
   await page.waitForURL(/\/app\/programmas\/nieuw\?/);
   await expect(page.getByLabel('Titel')).toHaveValue('Loperknie (ITBS)');
   await expect(page.getByText(`Oefeningen (${n})`)).toBeVisible();
+  // Each exercise comes with a plain "why" for the patient, as an editable note.
+  await expect(page.getByText(/Notitie: “Deze oefening/).first()).toBeVisible();
 });
 
 test('from a patient record: "Op klacht" keeps the patient for the programme', async ({ page }) => {
