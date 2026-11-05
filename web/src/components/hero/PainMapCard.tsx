@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Compass } from 'lucide-react';
+import { regionForArea, regionOf } from '@shared/complaints';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
@@ -65,6 +68,17 @@ export function PainMapCard({ patientId }: { patientId: string }) {
               </table>
             )}
             <p className="text-[13px] text-ink-600">{t(`${painMap.checkins} ${painMap.checkins === 1 ? 'meting' : 'metingen'}`, `${painMap.checkins} check-in(s)`)}</p>
+            {/* Straight to the complaint guide for the painful regions, with this patient. */}
+            {(() => {
+              const regions = [...new Set(areas.filter((a) => now[a.key] !== undefined).map((a) => regionForArea(a.key)).filter((r): r is NonNullable<typeof r> => !!r))];
+              if (!regions.length) return null;
+              return (
+                <p className="flex flex-wrap items-center gap-2 text-[13.5px] text-ink-700">
+                  <Compass className="h-4 w-4 text-accent" aria-hidden />{t('Klachtwijzer', 'Complaint guide')}:
+                  {regions.map((r) => <Link key={r} to={`/app/klachtwijzer?regio=${r}&patient=${patientId}`} className="inline-flex min-h-[40px] items-center rounded-full bg-accent-soft px-3 font-medium text-accent hover:underline">{nl ? regionOf(r)!.name[0] : regionOf(r)!.name[1]}</Link>)}
+                </p>
+              );
+            })()}
             {q.data.trends.some((tr) => tr.points.length > 1) && (
               <div className="border-t border-line pt-3">
                 <h3 className="t-card mb-2">{t('Pijnverloop per plek', 'Pain trend per area')}</h3>

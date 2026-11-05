@@ -6,11 +6,11 @@ import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
-import { Button, ErrorState, PageHeader, Spinner } from '@/components/ui';
+import { Button, ErrorState, PageHeader, Segmented, Spinner } from '@/components/ui';
 import { CompensationCard, MuscleChips } from '@/components/app/Compensation';
 import { MUSCLES } from '@shared/muscleAtlas';
 import { mobilityTest } from '@shared/mobilityTests';
-import { CHAINS, REGIONS, chainOf, complaintMuscles, complaintOf, complaintsIn, compensationOf, proposeExercises, searchComplaints, whyFor, type Compensation, type Complaint, type ProposalExercise, type RegionKey } from '@shared/complaints';
+import { CHAINS, REGIONS, chainOf, complaintMuscles, complaintOf, complaintsIn, compensationOf, proposeExercises, searchComplaints, whyFor, GUIDE_PHASES, type GuidePhase, type Compensation, type Complaint, type ProposalExercise, type RegionKey } from '@shared/complaints';
 
 type AtlasData = { exercises: (ProposalExercise & { own: boolean })[] };
 type Fn = readonly [string, string];
@@ -115,10 +115,16 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
   const atlas = useQuery({ queryKey: ['atlas-staff'], queryFn: () => api.get<AtlasData>('/atlas'), staleTime: 5 * 60_000 });
   const comps = complaint.compensations.map(compensationOf).filter((x): x is Compensation => !!x);
   const muscles = complaintMuscles(complaint);
-  const proposal = useMemo(() => (atlas.data ? proposeExercises(complaint, atlas.data.exercises) : null), [atlas.data, complaint]);
+  const [phase, setPhase] = useState<GuidePhase>('opbouw');
+  const proposal = useMemo(() => (atlas.data ? proposeExercises(complaint, atlas.data.exercises, 5, phase) : null), [atlas.data, complaint, phase]);
   // Ticked by default: the first three of each block.
   const [ticked, setTicked] = useState<Set<string> | null>(null);
-  const defaults = useMemo(() => new Set(proposal ? [...proposal.calm.slice(0, 2), ...proposal.activate.slice(0, 3), ...proposal.function.slice(0, 2)].map((e) => e.id) : []), [proposal]);
+  // Ticked by default, per phase: irritable = offload + isometric, sport = mostly functional.
+  const defaults = useMemo(() => {
+    if (!proposal) return new Set<string>();
+    const [c, a, f] = phase === 'prikkelbaar' ? [2, 3, 0] : phase === 'sport' ? [1, 2, 4] : [2, 3, 2];
+    return new Set([...proposal.calm.slice(0, c), ...proposal.activate.slice(0, a), ...proposal.function.slice(0, f)].map((e) => e.id));
+  }, [proposal, phase]);
   const chosen = ticked ?? defaults;
   const toggle = (id: string) => {
     const next = new Set(chosen);
@@ -136,7 +142,7 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
     } catch {
       /* storage unavailable: no notes */
     }
-    const p = new URLSearchParams({ oefeningen: ordered.map((e) => e.id).join(','), titel: L(complaint.name) });
+    const p = new URLSearchParams({ oefeningen: ordered.map((e) => e.id).join(','), titel: phase === 'opbouw' ? L(complaint.name) : `${L(complaint.name)} · ${L(GUIDE_PHASES.find((x) => x.key === phase)!.name).toLowerCase()}` });
     if (patient) p.set('patient', patient);
     nav(`/app/programmas/nieuw?${p}`);
   };
@@ -204,6 +210,11 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
 
       <section aria-labelledby="prop-title" className="rounded-2xl border border-line bg-white p-5 shadow-card">
         <h3 id="prop-title" className="flex items-center gap-2 font-semibold text-ink-900"><Sparkles className="h-4 w-4 text-accent" aria-hidden />{t('Oefenvoorstel uit je bibliotheek', 'Exercise proposal from your library')}</h3>
+        <div className="mt-3 space-y-2">
+          <Segmented<GuidePhase> size="lg" label={t('Fase', 'Phase')} value={phase} onChange={(v) => { setPhase(v); setTicked(null); }}
+            options={GUIDE_PHASES.map((x) => ({ value: x.key, label: L(x.name) }))} />
+          {(() => { const ph = GUIDE_PHASES.find((x) => x.key === phase)!; return <p className="text-[13.5px] text-ink-700"><span className="font-medium">{L(ph.when)}</span> {L(ph.dose)}</p>; })()}
+        </div>
         {atlas.isLoading && <Spinner className="py-8" />}
         {atlas.isError && <ErrorState error={atlas.error} onRetry={() => void atlas.refetch()} />}
         {proposal && (

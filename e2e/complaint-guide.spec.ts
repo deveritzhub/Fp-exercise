@@ -26,6 +26,10 @@ test('complaint guide: search, chain, compensation with test, red flags, proposa
   await expect(proposal.getByRole('checkbox').first()).toBeVisible();
   await expect(proposal.getByText(/machine/i)).toHaveCount(0);
   await expectAccessible(page, 'complaint card');
+  // Phases: irritable leaves functional unticked and says how to dose; back to "building up".
+  await proposal.getByRole('radio', { name: 'Prikkelbaar' }).click();
+  await expect(proposal.getByText(/isometrie \(bijv\. 5× 30–45 s\)/)).toBeVisible();
+  await proposal.getByRole('radio', { name: 'Opbouwen' }).click();
   const n = await proposal.getByRole('checkbox', { checked: true }).count();
   expect(n).toBeGreaterThan(0);
   await proposal.getByRole('button', { name: /Programma maken/ }).click();

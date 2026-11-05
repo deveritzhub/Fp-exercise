@@ -311,6 +311,16 @@ export const COMPLAINTS: readonly Complaint[] = [
   { key: 'mtss', region: 'enkel_voet', name: ['Scheenbeenvliesklachten', 'Shin splints'], synonyms: ['mtss', 'shin splints', 'scheenbeenvliesontsteking'], what: ['Pijn langs de binnenrand van het scheenbeen bij hardlopen; belasting tijdelijk aanpassen en kuit en voet sterker maken.', 'Pain along the inner edge of the shin when running; adjust the load for a while and strengthen calf and foot.'], chains: ['achter', 'lateraal_heup'], compensations: ['voetboog', 'enkel_beperkt', 'tfl_gmed'] },
 ];
 
+/** The guide region for a pain-map area (patient body map). */
+const AREA_REGION: Record<string, RegionKey> = {
+  head: 'nek', neck: 'nek', shoulder_l: 'schouder', shoulder_r: 'schouder', chest: 'bovenrug', upper_back: 'bovenrug',
+  elbow_l: 'elleboog_pols', elbow_r: 'elleboog_pols', wrist_l: 'elleboog_pols', wrist_r: 'elleboog_pols',
+  abdomen: 'lage_rug', lower_back: 'lage_rug', buttock_l: 'heup', buttock_r: 'heup', hip_l: 'heup', hip_r: 'heup',
+  thigh_l: 'knie', thigh_r: 'knie', hamstring_l: 'heup', hamstring_r: 'heup', knee_l: 'knie', knee_r: 'knie',
+  calf_l: 'enkel_voet', calf_r: 'enkel_voet', ankle_l: 'enkel_voet', ankle_r: 'enkel_voet',
+};
+export const regionForArea = (area: string): RegionKey | null => AREA_REGION[area] ?? null;
+
 export const regionOf = (key: string) => REGIONS.find((r) => r.key === key) ?? null;
 export const chainOf = (key: string) => CHAINS.find((c) => c.key === key) ?? null;
 export const compensationOf = (key: string) => COMPENSATIONS.find((c) => c.key === key) ?? null;
@@ -355,7 +365,22 @@ export type ProposalBlock = 'calm' | 'activate' | 'function';
  * atlas muscles): calm/mobilise what takes over, activate and strengthen the weak link, and
  * functional work. Exercises whose name fits a compensation's approach come first.
  */
-export function proposeExercises(c: Complaint, exercises: ProposalExercise[], perBlock = 5) {
+export type GuidePhase = 'prikkelbaar' | 'opbouw' | 'sport';
+
+/** Phases of loading, with general dosing guidance (the therapist sets the actual dose). */
+export const GUIDE_PHASES: readonly { key: GuidePhase; name: Fn; when: Fn; dose: Fn }[] = [
+  { key: 'prikkelbaar', name: ['Prikkelbaar', 'Irritable'], when: ['Veel pijn, net begonnen of snel opvlammend.', 'A lot of pain, just started or flaring easily.'],
+    dose: ['Rustig: isometrie (bijv. 5× 30–45 s) en ontlasten, dagelijks. Pijn tijdens max 3 van 10 en niet meer pijn de volgende ochtend. Nog geen springen of snelheid.', 'Gentle: isometrics (e.g. 5× 30–45 s) and offloading, daily. Pain during at most 3 out of 10 and no more pain the next morning. No jumping or speed yet.'] },
+  { key: 'opbouw', name: ['Opbouwen', 'Building up'], when: ['Pijn is rustiger; tijd om sterker te worden.', 'Pain has settled; time to get stronger.'],
+    dose: ['Kracht: 3× 8–15 herhalingen, 2–3 keer per week. Zwaarder als de laatste set makkelijk gaat. Pijn max 3–4 van 10, de volgende ochtend weer rustig.', 'Strength: 3× 8–15 reps, 2–3 times a week. Heavier when the last set is easy. Pain at most 3–4 out of 10, settled by the next morning.'] },
+  { key: 'sport', name: ['Terug naar sport of werk', 'Back to sport or work'], when: ['Kracht is goed; nu snelheid, springen en de echte beweging.', 'Strength is good; now speed, jumping and the real movement.'],
+    dose: ['Functioneel en explosief: springen, landen, richting wisselen. Kwaliteit voor hoeveelheid, tussen sessies 48 uur. Geen toename van pijn of zwelling de volgende dag.', 'Functional and explosive: jumping, landing, changing direction. Quality over quantity, 48 hours between sessions. No increase in pain or swelling the next day.'] },
+];
+
+const ISO = ['isometr', 'statisch', 'muurzit', 'wall sit', 'plank', 'hold', 'vasthouden', 'tegen muur', 'tegen deurpost', 'kin intrekken'];
+const PLYO = ['sprong', 'spring', 'hop', 'bound', 'pogo', 'landing', 'jump', 'copenhagen', 'lateral', 'zijwaarts'];
+
+export function proposeExercises(c: Complaint, exercises: ProposalExercise[], perBlock = 5, phase: GuidePhase = 'opbouw') {
   const { train, calm } = complaintMuscles(c);
   const comps = c.compensations.map(compensationOf).filter((x): x is Compensation => !!x);
   // The first compensation of a complaint is the main one: its words and muscles weigh most.
@@ -364,8 +389,11 @@ export function proposeExercises(c: Complaint, exercises: ProposalExercise[], pe
   const hits = (e: ProposalExercise, list: string[]) => e.muscles.reduce((sum, m) => (list.includes(m) ? sum + (list.length - list.indexOf(m)) : sum), 0);
   // A complaint's own muscles (e.g. the wrist extensors for tennis elbow) come before the chain.
   const ownHits = (e: ProposalExercise, own: readonly string[]) => e.muscles.filter((m) => own.includes(m)).length;
+  // The phase moves exercises up: isometrics when irritable, jumping and landing for sport.
+  const has = (e: ProposalExercise, words: string[]) => words.some((w) => norm(e.nameNl).includes(w) || norm(e.nameEn).includes(w));
+  const phaseBonus = (e: ProposalExercise) => (phase === 'prikkelbaar' ? (has(e, ISO) ? 1 : 0) : phase === 'sport' ? (has(e, PLYO) ? 1 : 0) : 0);
   const rank = (list: ProposalExercise[], target: string[], own: readonly string[] = c.train ?? []) =>
-    [...list].sort((a, b) => ownHits(b, own) - ownHits(a, own) || fits(b) - fits(a) || hits(b, target) - hits(a, target) || a.nameNl.localeCompare(b.nameNl));
+    [...list].sort((a, b) => phaseBonus(b) - phaseBonus(a) || ownHits(b, own) - ownHits(a, own) || fits(b) - fits(a) || hits(b, target) - hits(a, target) || a.nameNl.localeCompare(b.nameNl));
   const avoid = [...comps.flatMap((x) => x.avoid ?? []), ...(c.avoid?.words ?? [])].map(norm);
   const used = new Set<string>(exercises.filter((e) => avoid.some((w) => norm(e.nameNl).includes(w) || norm(e.nameEn).includes(w))).map((e) => e.id));
   const take = (list: ProposalExercise[]) => {
@@ -384,7 +412,9 @@ export function proposeExercises(c: Complaint, exercises: ProposalExercise[], pe
   // Calm and mobilise: stretches for what takes over, plus nerve sliders for radiating complaints.
   const sliders = exercises.filter((e) => e.kind === 'zenuw' && !!e.nerve && (c.nerves ?? []).includes(e.nerve));
   const calmList = take([...sliders, ...rank(exercises.filter((e) => e.kind === 'rek' && hits(e, [...calm, ...train]) > 0), calm, c.calm ?? [])]);
-  const func = take(rank(exercises.filter((e) => (e.kind === 'kracht' || e.kind === 'revalidatie') && isFunctional(e) && hits(e, train) > 0), train));
+  // Irritable: no jumping; functional work is limited to calm balance and control.
+  const funcPool = exercises.filter((e) => (e.kind === 'kracht' || e.kind === 'revalidatie') && (isFunctional(e) || (phase === 'sport' && has(e, PLYO))) && hits(e, train) > 0 && !(phase === 'prikkelbaar' && has(e, PLYO)));
+  const func = take(rank(funcPool, train)).slice(0, phase === 'prikkelbaar' ? 2 : perBlock);
   return { calm: calmList, activate, function: func, train, calmMuscles: calm };
 }
 

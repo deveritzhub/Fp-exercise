@@ -194,6 +194,8 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   // Pain trend per area next to adherence.
   await expect(page.getByRole('heading', { name: 'Pijnverloop per plek' })).toBeVisible();
   await expect(page.getByRole('list', { name: 'Therapietrouw per week' })).toBeVisible();
+  // From the painful area straight to the complaint guide, with this patient.
+  await expect(page.getByRole('link', { name: 'Knie' }).first()).toHaveAttribute('href', new RegExp(`/app/klachtwijzer\\?regio=knie&patient=${emma.id}`));
   await expectAccessible(page, 'therapist pain map');
   await page.screenshot({ path: 'screenshots/hero/therapist.png', fullPage: true });
 });

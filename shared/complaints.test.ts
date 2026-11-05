@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { CHAINS, COMPENSATIONS, COMPLAINTS, REGIONS, complaintMuscles, complaintsIn, muscleInChains, proposeExercises, searchComplaints, whyFor, type ProposalExercise } from './complaints';
+import { BODY_AREAS } from './hero';
+import { CHAINS, COMPENSATIONS, COMPLAINTS, REGIONS, regionForArea, complaintMuscles, complaintsIn, muscleInChains, proposeExercises, searchComplaints, whyFor, type ProposalExercise } from './complaints';
 import { MUSCLES, NERVES } from './muscleAtlas';
 import { MOBILITY_TESTS } from './mobilityTests';
 
@@ -92,5 +93,24 @@ describe('plain words for the patient', () => {
     expect(g.asWeak.map((c) => c.key)).toContain('tfl_gmed');
     expect(g.complaints.map((c) => c.key)).toEqual(expect.arrayContaining(['itbs', 'pfps']));
     expect(muscleInChains('tfl').asOver.map((c) => c.key)).toEqual(['tfl_gmed']);
+  });
+});
+
+
+
+
+describe('phases and the pain map', () => {
+  const ex = (id: string, nameNl: string, muscles: string[]): ProposalExercise => ({ id, nameNl, nameEn: nameNl, kind: 'kracht', muscles });
+  const lib = [ex('iso', 'Isometrische heupabductie tegen muur', ['gluteus_medius']), ex('side', 'Zijlig heupabductie', ['gluteus_medius']), ex('jump', 'Laterale sprong met landing', ['gluteus_medius']), ex('step', 'Step-down', ['gluteus_medius'])];
+  const itbs = COMPLAINTS.find((c) => c.key === 'itbs')!;
+  it('irritable: isometrics first and no jumping; sport: jumping first', () => {
+    const calm = proposeExercises(itbs, lib, 5, 'prikkelbaar');
+    expect(calm.activate[0].id).toBe('iso');
+    expect([...calm.activate, ...calm.function].map((e) => e.id)).not.toContain('jump');
+    const sport = proposeExercises(itbs, lib, 5, 'sport');
+    expect(sport.function[0].id).toBe('jump');
+  });
+  it('every pain-map area leads to a guide region', () => {
+    for (const a of BODY_AREAS) expect(regionForArea(a.key), a.key).toBeTruthy();
   });
 });

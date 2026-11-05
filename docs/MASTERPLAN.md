@@ -71,6 +71,12 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 27. [x] **Atlas: ketens en "neemt vaak over van"** bij spieren.
 28. [x] **Klinische controle**: alle wijzerteksten op één pagina om af te tekenen.
 
+## Fase 7 – Klachtwijzer slimmer
+29. [x] **Van pijnkaart naar wijzer.** Bij de pijnkaart van de patiënt: per pijnlijke regio een
+    knop naar de klachtwijzer, met de patiënt al gekoppeld.
+30. [x] **Fase kiezen.** Prikkelbaar, opbouwen of terug naar sport: het voorstel verschuift
+    (isometrie en ontlasten / kracht / springen en functioneel), met een doseringsrichtlijn.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - `DEMO_PASSWORD` instellen in Render (zelf doen, niet naar Claude sturen).
