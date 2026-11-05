@@ -13,6 +13,7 @@ import { PatientFormDialog } from './PatientsPage';
 import { OpenRedFlagsBanner, PatientModulesTab } from './PatientModulesTab';
 import { GymLog } from '@/components/GymLog';
 import { MobilitySummary, MobilityTests } from '@/components/MobilityTests';
+import { InviteShare } from '@/components/app/InviteShare';
 import type { Member, PatientDetail, Progress } from '@/lib/types';
 import { PainMapCard } from '@/components/hero/PainMapCard';
 import { ClinicalTimeline } from '@/components/therapist/ClinicalTimeline';
@@ -110,9 +111,9 @@ export function PatientDetailPage() {
       </PageHeader>
 
       {inviteUrl && (
-        <Notice tone="info" className="mb-5" title={t('Demo: uitnodigingslink voor de patiënt', 'Demo: patient invitation link')}>
-          {t('In de echte versie ontvangt de patiënt deze link per e-mail. Open hem bijvoorbeeld op je telefoon om de patiëntapp te proberen.', 'In the real version the patient receives this link by email. Open it, e.g. on your phone, to try the patient app.')}{' '}
-          <a href={inviteUrl} className="link break-all">{inviteUrl}</a>
+        <Notice tone="info" className="mb-5" title={t('Uitnodigingslink voor de patiënt', 'Patient invitation link')}>
+          {t('Er gaat nog geen e-mail uit. Stuur de link zelf naar de patiënt, of laat de QR-code scannen.', 'No e-mail is sent yet. Send the link to the patient yourself, or let them scan the QR code.')}
+          <InviteShare url={inviteUrl} firstName={pt.firstName} />
         </Notice>
       )}
 

@@ -22,6 +22,12 @@ test('therapist creates a patient and an exercise programme', async ({ page, req
   patientUrl = page.url();
   await expect(page.getByRole('heading', { name: 'Eva Test' })).toBeVisible();
   await expect(page.getByText(/Uitgenodigd/)).toBeVisible();
+  // No real e-mail yet: hand the link over via WhatsApp, copy or a QR code.
+  const wa = page.getByRole('link', { name: 'Via WhatsApp' });
+  await expect(wa).toHaveAttribute('href', /^https:\/\/wa\.me\/\?text=Hoi%20Eva!.*uitnodiging/);
+  await page.getByRole('button', { name: 'QR-code' }).click();
+  await expect(page.getByRole('img', { name: 'QR-code met de uitnodigingslink' })).toBeVisible();
+  await expectAccessible(page, 'invite share');
 
   await page.getByRole('link', { name: 'Nieuw programma' }).last().click();
   await page.waitForURL(/programmas\/nieuw\?patient=/);
