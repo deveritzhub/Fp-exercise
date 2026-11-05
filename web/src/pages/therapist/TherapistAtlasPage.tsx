@@ -8,6 +8,8 @@ import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
 import { Button, Dialog, ErrorState, PageHeader, Select, Spinner, Textarea, useToast } from '@/components/ui';
 import { QuickAddSheet } from '@/components/app/QuickAdd';
+import { CompensationCard } from '@/components/app/Compensation';
+import { muscleInChains } from '@shared/complaints';
 import type { Exercise, PatientListItem } from '@/lib/types';
 import { ATLAS_REGIONS, MUSCLES, NERVES, antagonistsOf, nervesOf, type AtlasExerciseKind, type AtlasRegion, type Muscle } from '@shared/muscleAtlas';
 
@@ -148,6 +150,7 @@ function Muscles({ exercises, focus, onAdd, nl }: { exercises: AtlasExercise[]; 
                       </p>
                     </div>
                   </div>
+                  <ChainBlock muscle={m.key} nl={nl} />
                   {antagonistsOf(m.key).length > 0 && (
                     <div className="rounded-xl border border-line p-3 text-[14px]">
                       <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-600">{t('Tegenspeler (antagonist)', 'Antagonist')}</p>
@@ -186,6 +189,26 @@ function Muscles({ exercises, focus, onAdd, nl }: { exercises: AtlasExercise[]; 
 }
 
 /** Send a muscle card to a patient: it arrives as a message on their Vandaag, opening the card. */
+/** Chains, compensation patterns and complaints this muscle plays a part in (complaint guide). */
+function ChainBlock({ muscle, nl }: { muscle: string; nl: boolean }) {
+  const { t } = useI18n();
+  const x = muscleInChains(muscle);
+  if (!x.chains.length && !x.asWeak.length && !x.asOver.length) return null;
+  return (
+    <div className="space-y-2 rounded-xl border border-line p-3 text-[14px]">
+      <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-600">{t('Ketens en compensaties', 'Chains and compensations')}</p>
+      {x.chains.length > 0 && <p className="text-ink-800">{t('In de', 'In the')} {x.chains.map((c) => (nl ? c.name[0] : c.name[1]).toLowerCase()).join(', ')}.</p>}
+      {[...x.asWeak, ...x.asOver.filter((c) => !x.asWeak.includes(c))].map((c) => <CompensationCard key={c.key} c={c} />)}
+      {x.complaints.length > 0 && (
+        <p className="flex flex-wrap items-center gap-x-2 text-[13.5px] text-ink-700">
+          {t('Speelt mee bij', 'Plays a part in')}:
+          {x.complaints.map((c) => <Link key={c.key} to={`/app/klachtwijzer?regio=${c.region}&klacht=${c.key}`} className="inline-flex min-h-[40px] items-center font-medium text-accent hover:underline">{nl ? c.name[0] : c.name[1]}</Link>)}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function SendMuscleDialog({ muscle, onClose }: { muscle: Muscle | null; onClose: () => void }) {
   const { t, locale } = useI18n();
   const toast = useToast();

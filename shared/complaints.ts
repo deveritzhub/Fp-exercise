@@ -316,6 +316,19 @@ export const compensationOf = (key: string) => COMPENSATIONS.find((c) => c.key =
 export const complaintOf = (key: string) => COMPLAINTS.find((c) => c.key === key) ?? null;
 export const complaintsIn = (region: RegionKey) => COMPLAINTS.filter((c) => c.region === region);
 
+/** Where a muscle shows up: its chains, the patterns where it is the weak link or takes over, and the complaints. */
+export function muscleInChains(muscle: string) {
+  const asWeak = COMPENSATIONS.filter((c) => c.weak.includes(muscle));
+  const asOver = COMPENSATIONS.filter((c) => c.over.includes(muscle));
+  const keys = new Set([...asWeak, ...asOver].map((c) => c.key));
+  return {
+    chains: CHAINS.filter((c) => c.links.includes(muscle)),
+    asWeak,
+    asOver,
+    complaints: COMPLAINTS.filter((c) => c.compensations.some((k) => keys.has(k)) || (c.train ?? []).includes(muscle) || (c.calm ?? []).includes(muscle)),
+  };
+}
+
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 
 /** Search complaints by name or synonym (Dutch or English), e.g. "loperknie", "tennis", "ischias". */

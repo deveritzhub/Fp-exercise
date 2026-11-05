@@ -46,3 +46,25 @@ test('from a patient record: "Op klacht" keeps the patient for the programme', a
   await expect(page).toHaveURL(/patient=/);
   await expect(page.getByLabel('Titel')).toHaveValue('Patellofemorale pijn');
 });
+
+test('atlas: chains and compensations per muscle, for therapist and (in plain words) patient', async ({ browser }) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto('/app/spieren?spier=gluteus_medius');
+  const block = page.getByText('Ketens en compensaties').first();
+  await expect(block).toBeVisible();
+  await expect(page.locator('details', { hasText: 'TFL-overuse bij zwakke gluteus medius' }).first()).toBeVisible();
+  await page.getByRole('link', { name: 'Loperknie (ITBS)' }).first().click();
+  await expect(page.getByRole('heading', { name: 'Loperknie (ITBS)', level: 2 })).toBeVisible();
+  await ctx.close();
+
+  const pctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const pp = await pctx.newPage();
+  await login(pp, 'patient@praktijk-a.test');
+  await pp.goto('/p/spieren?tab=spieren&open=gluteus_medius');
+  await expect(pp.getByText('Is deze spier zwak, dan neemt vaak dit het over:')).toBeVisible();
+  await expect(pp.getByRole('button', { name: 'spanner van de brede peesplaat' }).first()).toBeVisible();
+  await expectAccessible(pp, 'patient atlas chain');
+  await pctx.close();
+});

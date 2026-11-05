@@ -1,3 +1,4 @@
+import { muscleInChains } from '@shared/complaints';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -104,6 +105,26 @@ function MusclesView({ data, from, focus, onQuiz, onNerve, onMuscle }: { data: A
   );
 }
 
+/** In plain words: which chain, and what tends to take over when this muscle is weak (or the other way round). */
+function PatientChain({ muscle, onMuscle }: { muscle: string; onMuscle: (muscle: string) => void }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const x = muscleInChains(muscle);
+  const name = (k: string) => { const mm = MUSCLES.find((y) => y.key === k); return mm ? (nl ? mm.nl : mm.en).toLowerCase() : k; };
+  const takers = [...new Set(x.asWeak.flatMap((c) => c.over))];
+  const covers = [...new Set(x.asOver.flatMap((c) => c.weak))];
+  if (!x.chains.length && !takers.length && !covers.length) return null;
+  const btn = (k: string) => <button key={k} type="button" onClick={() => onMuscle(k)} className="inline-flex min-h-[44px] items-center font-medium text-accent hover:underline">{name(k)}</button>;
+  return (
+    <div className="space-y-1 rounded-xl border border-line p-2.5 text-[14px]">
+      <p className="text-[12px] font-semibold text-ink-600">{t('Samenwerking in je lichaam', 'Teamwork in your body')}</p>
+      {x.chains.length > 0 && <p className="text-ink-800">{t('Werkt samen in de', 'Works together in the')} {x.chains.map((c) => (nl ? c.name[0] : c.name[1]).toLowerCase()).join(t(' en de ', ' and the '))}.</p>}
+      {takers.length > 0 && <p className="flex flex-wrap items-center gap-x-1.5 text-ink-800">{t('Is deze spier zwak, dan neemt vaak dit het over:', 'If this muscle is weak, this often takes over:')} {takers.map(btn)}</p>}
+      {covers.length > 0 && <p className="flex flex-wrap items-center gap-x-1.5 text-ink-800">{t('Neemt vaak het werk over als deze zwak is:', 'Often takes over the work when this one is weak:')} {covers.map(btn)}</p>}
+    </div>
+  );
+}
+
 function MuscleCard({ m, data, from, open, onToggle, onQuiz, onNerve, onMuscle }: { m: Muscle; data: AtlasData; from: From; open: boolean; onToggle: () => void; onQuiz: () => void; onNerve: (nerve: string) => void; onMuscle: (muscle: string) => void }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
@@ -142,6 +163,7 @@ function MuscleCard({ m, data, from, open, onToggle, onQuiz, onNerve, onMuscle }
             </div>
             <div className="rounded-xl bg-canvas p-2.5"><dt className="text-[12px] font-semibold text-ink-600">{t('Waar', 'Where')}</dt><dd className="font-medium text-ink-900">{nl ? region.nl : region.en}</dd></div>
           </dl>
+          <PatientChain muscle={m.key} onMuscle={onMuscle} />
           {antagonistsOf(m.key).length > 0 && (
             <div className="rounded-xl border border-line p-2.5 text-[14px]">
               <p className="text-[12px] font-semibold text-ink-600">{t('Tegenspeler (antagonist)', 'Antagonist')}</p>
