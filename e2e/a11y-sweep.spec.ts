@@ -35,6 +35,8 @@ for (const size of SIZES) {
   });
 
   test(`therapist screens (${size.name})`, async ({ page }) => {
+    // Many screens in one test: allow for a busy machine.
+    test.setTimeout(120_000);
     await page.setViewportSize(size);
     const id = await emmaId();
     await login(page, 'eigenaar@praktijk-a.test');
@@ -46,6 +48,8 @@ for (const size of SIZES) {
       `/app/patienten/${id}?tab=sessies`,
       `/app/patienten/${id}?tab=modules`,
       `/app/patienten/${id}?tab=gegevens`,
+      `/app/patienten/${id}?tab=mobiliteit`,
+      '/app/klachtwijzer?regio=heup&klacht=gluteale_tendinopathie',
       '/app/oefeningen/nieuw',
       '/app/programmas',
       '/app/programmas/nieuw',

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -119,6 +119,20 @@ export function ProgramBuilderPage() {
     const base = fromExercise(e);
     update((x) => [...x, { ...base, sets: num('sets') ?? base.sets, reps: num('reps') ?? base.reps, holdS: num('holdS') ?? base.holdS, restS: num('restS') ?? base.restS, days: days.length ? days : base.days }]);
   }, [startEx.data]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Arriving from the complaint guide: several exercises (in the chosen order) and a title.
+  const multi = (params.get('oefeningen') ?? '').split(',').filter((x) => /^[0-9a-f-]{36}$/i.test(x)).slice(0, 20);
+  const multiQ = useQueries({ queries: multi.map((exId) => ({ queryKey: ['exercise', exId], queryFn: () => api.get<Exercise>(`/exercises/${exId}`), enabled: isNew })) });
+  const multiAdded = useRef(false);
+  const multiReady = multi.length > 0 && multiQ.every((q) => q.data || q.isError);
+  useEffect(() => {
+    if (!multiReady || multiAdded.current) return;
+    multiAdded.current = true;
+    const list = multiQ.map((q) => q.data).filter((e): e is Exercise => !!e);
+    update((x) => [...x, ...list.map((e) => fromExercise(e))]);
+    const title = params.get('titel');
+    if (title) setMeta((m) => ({ ...m, title: m.title || title.slice(0, 120) }));
+  }, [multiReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!dirty) return;

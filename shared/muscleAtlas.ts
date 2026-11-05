@@ -227,6 +227,8 @@ const SOURCE_MUSCLES: Record<string, string[]> = {
   kt_peesglijden_hand: ['polsbuigers', 'fdp'],
   kt_heup_hinge: ['gluteus_maximus', 'hamstrings'],
   kt_muurzit: ['quadriceps'],
+  kt_tfl_rek: ['tfl'],
+  kt_bovenste_trapezius_rek: ['trapezius', 'levator_scapulae'],
 };
 
 export function musclesOf(e: AtlasExerciseInput): string[] {

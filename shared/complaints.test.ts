@@ -52,6 +52,12 @@ describe('complaint guide data', () => {
     expect(m.train).not.toContain('tfl');
   });
 
+  it('lateral hip pain: no compressive stretch with the leg crossed', () => {
+    const ex = (id: string, nameNl: string, kind: string, muscles: string[]): ProposalExercise => ({ id, nameNl, nameEn: nameNl, kind, muscles });
+    const p = proposeExercises(COMPLAINTS.find((c) => c.key === 'gluteale_tendinopathie')!, [ex('a', 'TFL en buitenkant heup rekken in stand', 'rek', ['tfl']), ex('b', 'Zijlig heupabductie met de hiel voorop', 'kracht', ['gluteus_medius'])]);
+    expect([...p.calm, ...p.activate, ...p.function].map((e) => e.id)).toEqual(['b']);
+  });
+
   it('builds a proposal: fitting names first, each exercise once, sliders for radiating pain', () => {
     const ex = (id: string, nameNl: string, kind: string, muscles: string[], nerve: string | null = null): ProposalExercise => ({ id, nameNl, nameEn: nameNl, kind, muscles, nerve });
     const lib = [

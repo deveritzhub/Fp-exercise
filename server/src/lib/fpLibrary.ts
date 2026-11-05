@@ -29,6 +29,8 @@ export const FP_BUNDLES = [
   { name: 'fp-neuro-v2', file: 'fp-neuro-v2.json' },
   // Exercises the complaint guide needs for chains and compensations (glute medius without TFL, etc.).
   { name: 'fp-ketens-v1', file: 'fp-ketens-v1.json' },
+  // Stretches for what takes over (TFL, upper trapezius), so the guide's offload block is filled.
+  { name: 'fp-ketens-v2', file: 'fp-ketens-v2.json' },
 ] as const;
 
 const DIR = path.join(import.meta.dirname, '../../db/seed-data');

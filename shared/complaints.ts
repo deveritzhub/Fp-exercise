@@ -266,6 +266,8 @@ export type Complaint = {
   calm?: readonly string[];
   /** Nerves with a slider that fits (radiating complaints). */
   nerves?: readonly string[];
+  /** Words in exercise names to leave out for this complaint, and why (shown on the card). */
+  avoid?: { words: readonly string[]; why: Fn };
 };
 
 export const COMPLAINTS: readonly Complaint[] = [
@@ -291,7 +293,8 @@ export const COMPLAINTS: readonly Complaint[] = [
   { key: 'bekkenpijn', region: 'lage_rug', name: ['Bekkenpijn', 'Pelvic girdle pain'], synonyms: ['si-gewricht', 'bekkeninstabiliteit', 'zwangerschap bekken', 'symfyse'], what: ['Pijn rond het SI-gewricht of het schaambeen, bijvoorbeeld tijdens of na de zwangerschap.', 'Pain around the SI joint or pubic bone, for example during or after pregnancy.'], chains: ['lateraal_heup', 'voor_romp'], compensations: ['tfl_gmed', 'core_rug', 'adductor_lies'] },
   // Hip and groin
   { key: 'heupartrose', region: 'heup', name: ['Heupartrose', 'Hip osteoarthritis'], synonyms: ['artrose heup', 'slijtage heup', 'coxartrose'], what: ['Pijn en stijfheid in de lies of heup bij lopen en opstaan; oefentherapie en geleidelijk belasten helpen goed.', 'Pain and stiffness in the groin or hip on walking and standing up; exercise therapy and gradual loading help well.'], chains: ['lateraal_heup', 'achter'], compensations: ['tfl_gmed', 'heup_rug', 'gmax_hamstring'], mobilityTests: ['chair_sit_reach'] },
-  { key: 'gluteale_tendinopathie', region: 'heup', name: ['Pijn aan de buitenkant van de heup', 'Lateral hip pain'], synonyms: ['gluteale tendinopathie', 'trochanter', 'bursitis', 'slijmbeursontsteking heup'], what: ['Pijn op de buitenkant van de heup bij liggen op die kant, traplopen en op één been staan; meestal de pees van de gluteus medius.', 'Pain on the outside of the hip when lying on that side, climbing stairs and standing on one leg; usually the gluteus medius tendon.'], chains: ['lateraal_heup'], compensations: ['tfl_gmed'], calm: ['tfl'] },
+  { key: 'gluteale_tendinopathie', region: 'heup', name: ['Pijn aan de buitenkant van de heup', 'Lateral hip pain'], synonyms: ['gluteale tendinopathie', 'trochanter', 'bursitis', 'slijmbeursontsteking heup'], what: ['Pijn op de buitenkant van de heup bij liggen op die kant, traplopen en op één been staan; meestal de pees van de gluteus medius.', 'Pain on the outside of the hip when lying on that side, climbing stairs and standing on one leg; usually the gluteus medius tendon.'], chains: ['lateraal_heup'], compensations: ['tfl_gmed'],
+    avoid: { words: ['tfl en buitenkant heup rekken', 'gekruist', 'piriformis'], why: ['Geen rek met het been over de middellijn (gekruist): dat drukt de pezen tegen het bot. Ook niet op die kant liggen of met gekruiste benen zitten.', 'No stretching with the leg across the midline (crossed): that compresses the tendons against the bone. Also avoid lying on that side or sitting with crossed legs.'] } },
   { key: 'lies', region: 'heup', name: ['Liesklachten bij sporters', 'Groin pain in athletes'], synonyms: ['adductor', 'liesblessure', 'pubalgie'], what: ['Pijn in de lies bij sprinten, schieten en zijwaarts bewegen, vaak bij voetbal en hockey.', 'Groin pain when sprinting, kicking and moving sideways, often in football and hockey.'], chains: ['lateraal_heup', 'voor_romp'], compensations: ['adductor_lies', 'core_rug'] },
   // Knee
   { key: 'pfps', region: 'knie', name: ['Patellofemorale pijn', 'Patellofemoral pain'], synonyms: ['pfps', 'pijn achter de knieschijf', 'chondropathie', 'runners knee'], what: ['Pijn rond of achter de knieschijf bij traplopen, squatten en lang zitten.', 'Pain around or behind the kneecap on stairs, squatting and long sitting.'], chains: ['lateraal_heup', 'voor_romp'], compensations: ['tfl_gmed', 'quad_heup', 'enkel_beperkt', 'voetboog'], mobilityTests: ['knee_to_wall'] },
@@ -349,7 +352,7 @@ export function proposeExercises(c: Complaint, exercises: ProposalExercise[], pe
   const ownHits = (e: ProposalExercise, own: readonly string[]) => e.muscles.filter((m) => own.includes(m)).length;
   const rank = (list: ProposalExercise[], target: string[], own: readonly string[] = c.train ?? []) =>
     [...list].sort((a, b) => ownHits(b, own) - ownHits(a, own) || fits(b) - fits(a) || hits(b, target) - hits(a, target) || a.nameNl.localeCompare(b.nameNl));
-  const avoid = comps.flatMap((x) => (x.avoid ?? []).map(norm));
+  const avoid = [...comps.flatMap((x) => x.avoid ?? []), ...(c.avoid?.words ?? [])].map(norm);
   const used = new Set<string>(exercises.filter((e) => avoid.some((w) => norm(e.nameNl).includes(w) || norm(e.nameEn).includes(w))).map((e) => e.id));
   const take = (list: ProposalExercise[]) => {
     const out: ProposalExercise[] = [];

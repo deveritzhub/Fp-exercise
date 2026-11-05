@@ -1,0 +1,48 @@
+import { test, expect } from '@playwright/test';
+import { login, expectAccessible } from './helpers';
+
+test.setTimeout(120_000);
+
+test('complaint guide: search, chain, compensation with test, red flags, proposal, one tap to a programme', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.getByRole('link', { name: 'Klachtwijzer' }).first().click();
+  await expect(page.getByRole('heading', { name: 'Klachtwijzer', level: 1 })).toBeVisible();
+  await expectAccessible(page, 'complaint guide start');
+
+  // Everyday word finds the complaint.
+  await page.getByLabel('Klacht zoeken').fill('loperknie');
+  await page.getByRole('button', { name: /Loperknie \(ITBS\)/ }).click();
+  await expect(page.getByRole('heading', { name: 'Loperknie (ITBS)', level: 2 })).toBeVisible();
+  await expect(page.getByText('Laterale heupketen').first()).toBeVisible();
+
+  // The main compensation is open, with a quick test; the TFL is to offload, the glute medius to train.
+  const comp = page.locator('details', { hasText: 'TFL-overuse bij zwakke gluteus medius' });
+  await expect(comp.getByText(/Trendelenburg/)).toBeVisible();
+  await expect(comp.getByRole('link', { name: 'Middelste bilspier' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Rode vlaggen/ })).toBeVisible();
+
+  // Proposal from the library, never the seated machine abduction; ticked items go to the builder.
+  const proposal = page.getByRole('region', { name: /Oefenvoorstel/ });
+  await expect(proposal.getByRole('checkbox').first()).toBeVisible();
+  await expect(proposal.getByText(/machine/i)).toHaveCount(0);
+  await expectAccessible(page, 'complaint card');
+  const n = await proposal.getByRole('checkbox', { checked: true }).count();
+  expect(n).toBeGreaterThan(0);
+  await proposal.getByRole('button', { name: /Programma maken/ }).click();
+  await page.waitForURL(/\/app\/programmas\/nieuw\?/);
+  await expect(page.getByLabel('Titel')).toHaveValue('Loperknie (ITBS)');
+  await expect(page.getByText(`Oefeningen (${n})`)).toBeVisible();
+});
+
+test('from a patient record: "Op klacht" keeps the patient for the programme', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.getByRole('link', { name: 'Patiënten' }).first().click();
+  await page.getByRole('link', { name: /Emma de Jong/ }).first().click();
+  await page.getByRole('link', { name: 'Op klacht' }).click();
+  await expect(page).toHaveURL(/klachtwijzer\?patient=/);
+  await page.getByRole('button', { name: /^Knie/ }).click();
+  await page.getByRole('button', { name: /Patellofemorale pijn/ }).click();
+  await page.getByRole('region', { name: /Oefenvoorstel/ }).getByRole('button', { name: /Programma maken/ }).click();
+  await expect(page).toHaveURL(/patient=/);
+  await expect(page.getByLabel('Titel')).toHaveValue('Patellofemorale pijn');
+});
