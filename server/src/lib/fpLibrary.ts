@@ -27,6 +27,8 @@ export const FP_BUNDLES = [
   { name: 'fp-neuro-v1', file: 'fp-neuro-v1.json' },
   // Tibial, fibular, musculocutaneous and obturator sliders: every nerve with a common slider has one.
   { name: 'fp-neuro-v2', file: 'fp-neuro-v2.json' },
+  // Exercises the complaint guide needs for chains and compensations (glute medius without TFL, etc.).
+  { name: 'fp-ketens-v1', file: 'fp-ketens-v1.json' },
 ] as const;
 
 const DIR = path.join(import.meta.dirname, '../../db/seed-data');

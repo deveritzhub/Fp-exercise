@@ -1,0 +1,73 @@
+import { describe, it, expect } from 'vitest';
+import { CHAINS, COMPENSATIONS, COMPLAINTS, REGIONS, complaintMuscles, complaintsIn, proposeExercises, searchComplaints, type ProposalExercise } from './complaints';
+import { MUSCLES, NERVES } from './muscleAtlas';
+import { MOBILITY_TESTS } from './mobilityTests';
+
+const muscle = (k: string) => MUSCLES.some((m) => m.key === k);
+
+describe('complaint guide data', () => {
+  it('every reference points to something that exists', () => {
+    for (const c of CHAINS) for (const m of c.links) expect(muscle(m), `${c.key}: ${m}`).toBe(true);
+    for (const x of COMPENSATIONS) {
+      for (const m of [...x.weak, ...x.over]) expect(muscle(m), `${x.key}: ${m}`).toBe(true);
+      expect(CHAINS.some((c) => c.key === x.chain), x.key).toBe(true);
+      if (x.mobilityTest) expect(MOBILITY_TESTS.some((t) => t.key === x.mobilityTest)).toBe(true);
+      // Never the same muscle as weak and as taking over.
+      expect(x.weak.filter((m) => x.over.includes(m)), x.key).toEqual([]);
+    }
+    for (const c of COMPLAINTS) {
+      expect(REGIONS.some((r) => r.key === c.region), c.key).toBe(true);
+      for (const k of c.chains) expect(CHAINS.some((x) => x.key === k), `${c.key}: ${k}`).toBe(true);
+      for (const k of c.compensations) expect(COMPENSATIONS.some((x) => x.key === k), `${c.key}: ${k}`).toBe(true);
+      for (const m of [...(c.train ?? []), ...(c.calm ?? [])]) expect(muscle(m), `${c.key}: ${m}`).toBe(true);
+      for (const n of c.nerves ?? []) expect(NERVES.some((x) => x.key === n), `${c.key}: ${n}`).toBe(true);
+      for (const t of c.mobilityTests ?? []) expect(MOBILITY_TESTS.some((x) => x.key === t)).toBe(true);
+    }
+  });
+
+  it('covers every region with at least one complaint and red flags, in both languages', () => {
+    for (const r of REGIONS) {
+      expect(complaintsIn(r.key).length, r.key).toBeGreaterThan(0);
+      expect(r.redFlags.length, r.key).toBeGreaterThanOrEqual(3);
+    }
+    const keys = COMPLAINTS.map((c) => c.key);
+    expect(new Set(keys).size).toBe(keys.length);
+    for (const c of COMPLAINTS) expect(c.name[0] && c.name[1] && c.what[0] && c.what[1], c.key).toBeTruthy();
+    for (const x of COMPENSATIONS) for (const f of [x.name, x.see, x.test, x.approach, x.cue, x.adjust, x.patientWhy]) expect(f[0] && f[1], x.key).toBeTruthy();
+  });
+
+  it('finds complaints by everyday words and synonyms', () => {
+    expect(searchComplaints('loperknie').map((c) => c.key)).toContain('itbs');
+    expect(searchComplaints('tennis').map((c) => c.key)).toContain('tennisarm');
+    expect(searchComplaints('ischias').map((c) => c.key)).toContain('rug_uitstraling');
+    expect(searchComplaints('Achilles').map((c) => c.key)).toContain('achilles');
+    expect(searchComplaints('a')).toEqual([]);
+  });
+
+  it('TFL overuse: train the gluteus medius, calm the TFL', () => {
+    const itbs = COMPLAINTS.find((c) => c.key === 'itbs')!;
+    const m = complaintMuscles(itbs);
+    expect(m.train).toContain('gluteus_medius');
+    expect(m.calm).toContain('tfl');
+    expect(m.train).not.toContain('tfl');
+  });
+
+  it('builds a proposal: fitting names first, each exercise once, sliders for radiating pain', () => {
+    const ex = (id: string, nameNl: string, kind: string, muscles: string[], nerve: string | null = null): ProposalExercise => ({ id, nameNl, nameEn: nameNl, kind, muscles, nerve });
+    const lib = [
+      ex('1', 'Heupabductie staand met band', 'kracht', ['gluteus_medius', 'tfl']),
+      ex('2', 'Clamshell', 'kracht', ['gluteus_medius']),
+      ex('3', 'Step-down', 'kracht', ['quadriceps', 'gluteus_medius']),
+      ex('4', 'TFL rekken', 'rek', ['tfl']),
+      ex('5', 'Biceps curl', 'kracht', ['biceps']),
+      ex('6', 'Ischiadicus slider', 'zenuw', [], 'ischiadicus'),
+    ];
+    const itbs = proposeExercises(COMPLAINTS.find((c) => c.key === 'itbs')!, lib);
+    expect(itbs.activate.map((e) => e.id)[0]).toBe('2');
+    expect(itbs.function.map((e) => e.id)).toEqual(['3']);
+    expect(itbs.calm.map((e) => e.id)).toEqual(['4']);
+    expect([...itbs.activate, ...itbs.function, ...itbs.calm].map((e) => e.id)).not.toContain('5');
+    const back = proposeExercises(COMPLAINTS.find((c) => c.key === 'rug_uitstraling')!, lib);
+    expect(back.calm.map((e) => e.id)).toContain('6');
+  });
+});

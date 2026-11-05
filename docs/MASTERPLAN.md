@@ -61,7 +61,7 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     WhatsApp of QR-code, zolang er nog geen echte e-mail is.
 
 ## Fase 6 – Klachtwijzer met ketens en compensaties (ontwerp: `docs/KLACHTWIJZER.md`)
-21. [ ] **Data.** Regio's, klachten, ketens en compensaties (o.a. TFL-overuse bij zwakke gluteus
+21. [x] **Data.** Regio's, klachten, ketens en compensaties (o.a. TFL-overuse bij zwakke gluteus
     medius), met tests die elke verwijzing naar spier, test en programma bewaken.
 22. [ ] **Klachtwijzer voor de therapeut.** Regio → klacht → klachtkaart, met zoeken op synoniem.
 23. [ ] **Compensatiekaarten en ketenschema**, ook te openen vanuit de atlas.
