@@ -29,6 +29,7 @@ const PatientDetailPage = named(() => import('@/pages/therapist/PatientDetailPag
 const ExercisesPage = named(() => import('@/pages/therapist/ExercisesPage'), 'ExercisesPage');
 const TherapistAtlasPage = named(() => import('@/pages/therapist/TherapistAtlasPage'), 'TherapistAtlasPage');
 const ComplaintGuidePage = named(() => import('@/pages/therapist/ComplaintGuidePage'), 'ComplaintGuidePage');
+const ComplaintReviewPage = named(() => import('@/pages/therapist/ComplaintReviewPage'), 'ComplaintReviewPage');
 const ExerciseDetailPage = named(() => import('@/pages/therapist/ExerciseDetailPage'), 'ExerciseDetailPage');
 const ExerciseFormPage = named(() => import('@/pages/therapist/ExerciseFormPage'), 'ExerciseFormPage');
 const ProgramsPage = named(() => import('@/pages/therapist/ProgramsPage'), 'ProgramsPage');
@@ -152,6 +153,7 @@ export const router = createBrowserRouter([
           { path: 'oefeningen', element: <S><ExercisesPage /></S> },
           { path: 'spieren', element: <S><TherapistAtlasPage /></S> },
           { path: 'klachtwijzer', element: <S><ComplaintGuidePage /></S> },
+          { path: 'klachtwijzer/controle', element: <S><ComplaintReviewPage /></S> },
           { path: 'oefeningen/nieuw', element: <S><ExerciseFormPage /></S> },
           { path: 'oefeningen/:id', element: <S><ExerciseDetailPage /></S> },
           { path: 'oefeningen/:id/bewerken', element: <S><ExerciseFormPage /></S> },

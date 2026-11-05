@@ -69,7 +69,7 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 25. [x] **Vanuit het dossier**: Programma maken → op klacht.
 26. [x] **Patiënt: "Waarom deze oefening?"** in gewone taal.
 27. [x] **Atlas: ketens en "neemt vaak over van"** bij spieren.
-28. [ ] **Klinische controle**: alle wijzerteksten op één pagina om af te tekenen.
+28. [x] **Klinische controle**: alle wijzerteksten op één pagina om af te tekenen.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
@@ -77,4 +77,5 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 - [x] app.fpflow.nl werkt; `APP_ORIGIN=https://app.fpflow.nl` staat in Render (5 nov 2026).
 - Echte e-mail (Zoho) in plaats van links op het scherm.
 - Kling-video's voor bankdrukken, leg curl en voorwaartse uitvalspas (credits).
-- Klinische controle van de nieuwe sliderteksten en de mobiliteitstests.
+- Klinische controle van de klachtwijzer, sliders en mobiliteitstests: alles staat op één pagina
+  (Klachtwijzer → "Alle teksten nalopen", ook als PDF).

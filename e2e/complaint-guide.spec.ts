@@ -70,3 +70,13 @@ test('atlas: chains and compensations per muscle, for therapist and (in plain wo
   await expectAccessible(pp, 'patient atlas chain');
   await pctx.close();
 });
+
+test('clinical review: every guide text on one printable page', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto('/app/klachtwijzer');
+  await page.getByRole('link', { name: /Alle teksten nalopen/ }).click();
+  await expect(page.getByRole('heading', { name: 'Klachtwijzer: klinische controle', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'TFL-overuse bij zwakke gluteus medius' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Knie-tot-muur-test (enkel)' })).toBeVisible();
+  await expectAccessible(page, 'clinical review');
+});

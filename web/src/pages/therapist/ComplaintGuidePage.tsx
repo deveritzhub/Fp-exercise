@@ -96,6 +96,10 @@ export function ComplaintGuidePage() {
 
       {complaint && region && <ComplaintCard complaint={complaint} redFlags={region.redFlags} patient={patient} onBack={() => go({ klacht: null })} />}
 
+      <p className="text-[13px] text-ink-600">
+        <Link to="/app/klachtwijzer/controle" className="font-medium text-accent hover:underline">{t('Alle teksten nalopen (klinische controle)', 'Review all texts (clinical review)')}</Link>
+      </p>
+
       {!region && (
         <p className="text-[14px] text-ink-600">{t(`${REGIONS.length} regio's, ${CHAINS.length} ketens en de meest voorkomende compensaties. Begin met een regio of zoek een klacht.`, `${REGIONS.length} regions, ${CHAINS.length} chains and the most common compensations. Start with a region or search a complaint.`)}</p>
       )}
