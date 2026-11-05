@@ -20,6 +20,8 @@ export type Defaults = { sets: number | null; reps: number | null; holdS: number
 export type Exercise = {
   id: string;
   practiceId: string | null;
+  /** Library id (FP library), when imported from a bundle. */
+  sourceKey?: string | null;
   scope: 'global' | 'practice';
   nameNl: string;
   nameEn: string;

@@ -19,6 +19,7 @@ export function mapExercise(r: Record<string, any>, opts: { includeNotes?: boole
     scope: r.practice_id ? 'practice' : 'global',
     nameNl: r.name_nl,
     nameEn: r.name_en,
+    sourceKey: r.source_key ?? null,
     altNames: r.alt_names,
     bodyRegion: r.body_region,
     targetMuscles: r.target_muscles,

@@ -76,6 +76,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     knop naar de klachtwijzer, met de patiënt al gekoppeld.
 30. [x] **Fase kiezen.** Prikkelbaar, opbouwen of terug naar sport: het voorstel verschuift
     (isometrie en ontlasten / kracht / springen en functioneel), met een doseringsrichtlijn.
+31. [x] **Oefening → klachten.** Op de oefenpagina: bij welke klachten de oefening past en als wat
+    (ontlasten, versterken, functioneel), meest relevante eerst. Atlasfout hersteld: "exorotator"
+    koppelde heupoefeningen aan de schouder.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

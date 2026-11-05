@@ -84,3 +84,12 @@ test('clinical review: every guide text on one printable page', async ({ page })
   await expect(page.getByRole('heading', { name: 'Knie-tot-muur-test (enkel)' })).toBeVisible();
   await expectAccessible(page, 'clinical review');
 });
+
+test('exercise page shows the complaints it fits, linking to the guide', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto('/app/oefeningen?q=schelp');
+  await page.getByRole('link', { name: /Schelp/ }).first().click();
+  const row = page.getByText('Past bij (klachtwijzer)');
+  await expect(row).toBeVisible();
+  await expect(page.getByRole('link', { name: /Loperknie \(ITBS\)\s*· versterken/ })).toBeVisible();
+});

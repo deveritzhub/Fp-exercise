@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { BODY_AREAS } from './hero';
-import { CHAINS, COMPENSATIONS, COMPLAINTS, REGIONS, regionForArea, complaintMuscles, complaintsIn, muscleInChains, proposeExercises, searchComplaints, whyFor, type ProposalExercise } from './complaints';
+import { CHAINS, COMPENSATIONS, COMPLAINTS, REGIONS, regionForArea, complaintsForExercise, complaintMuscles, complaintsIn, muscleInChains, proposeExercises, searchComplaints, whyFor, type ProposalExercise } from './complaints';
 import { MUSCLES, NERVES } from './muscleAtlas';
 import { MOBILITY_TESTS } from './mobilityTests';
 
@@ -112,5 +112,17 @@ describe('phases and the pain map', () => {
   });
   it('every pain-map area leads to a guide region', () => {
     for (const a of BODY_AREAS) expect(regionForArea(a.key), a.key).toBeTruthy();
+  });
+});
+
+
+describe('exercise → complaints', () => {
+  it('a glute medius exercise fits ITBS as strengthening; a TFL stretch as offloading', () => {
+    const fits = complaintsForExercise({ id: 'x', nameNl: 'Zijlig heupabductie', nameEn: 'Side-lying abduction', kind: 'kracht', muscles: ['gluteus_medius'] });
+    expect(fits.find((f) => f.complaint.key === 'itbs')?.block).toBe('activate');
+    const tfl = complaintsForExercise({ id: 'y', nameNl: 'TFL rekken', nameEn: 'TFL stretch', kind: 'rek', muscles: ['tfl'] });
+    expect(tfl.find((f) => f.complaint.key === 'itbs')?.block).toBe('calm');
+    // Never for lateral hip pain (compressive stretch).
+    expect(tfl.find((f) => f.complaint.key === 'gluteale_tendinopathie')).toBeUndefined();
   });
 });

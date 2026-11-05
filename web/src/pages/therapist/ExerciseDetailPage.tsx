@@ -2,7 +2,8 @@ import { Link, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Brain, CheckCircle2, ChevronLeft, ChevronRight, Copy, Film, Layers, Lock, Pencil, Plus, ShieldAlert, Shuffle, TrendingDown, TrendingUp, Undo2, VideoOff, Zap } from 'lucide-react';
-import { MUSCLES, NERVES, musclesOf, nerveOf } from '@shared/muscleAtlas';
+import { MUSCLES, NERVES, exerciseKind, musclesOf, nerveOf } from '@shared/muscleAtlas';
+import { complaintsForExercise } from '@shared/complaints';
 import { api, mediaUrl, qs } from '@/lib/api';
 import { useI18n, describeError } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
@@ -168,6 +169,7 @@ export function ExerciseDetailPage() {
             <dl className="space-y-3 text-sm">
               <Row k={t('Doelspieren', 'Target muscles')} v={e.targetMuscles.join(', ') || '—'} />
               <AtlasRow e={e} />
+              <GuideRow e={e} />
               <Row k={t('Bewegingspatroon', 'Movement')} v={L.movement(e.movementCategory) || '—'} />
               <Row k={t('Materiaal', 'Equipment')} v={L.equipmentList(e.equipment)} />
               <Row k={t('Niveau', 'Level')} v={<Difficulty value={e.difficulty} />} />
@@ -408,11 +410,38 @@ function Variants({ e }: { e: Exercise }) {
   );
 }
 
+/** The complaints in the complaint guide this exercise fits (and as what), each linking there. */
+function GuideRow({ e }: { e: Exercise }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const input = { name: `${e.nameNl} ${e.nameEn}`, muscles: e.targetMuscles, training: e.trainingCategories, movement: e.movementCategory, sourceKey: e.sourceKey ?? null, tags: e.tags };
+  const fits = complaintsForExercise({ id: e.id, nameNl: e.nameNl, nameEn: e.nameEn, kind: exerciseKind(input), muscles: musclesOf(input), nerve: nerveOf(input) });
+  if (!fits.length) return null;
+  const role = { calm: t('ontlasten', 'offload'), activate: t('versterken', 'strengthen'), function: t('functioneel', 'functional') };
+  return (
+    <Row
+      k={t('Past bij (klachtwijzer)', 'Fits (complaint guide)')}
+      v={
+        <ul className="space-y-0.5">
+          {fits.slice(0, 8).map(({ complaint: c, block }) => (
+            <li key={c.key}>
+              <Link to={`/app/klachtwijzer?regio=${c.region}&klacht=${c.key}`} className="inline-flex min-h-[32px] items-center gap-1 text-[14px] font-medium text-accent hover:underline">
+                {nl ? c.name[0] : c.name[1]}<span className="font-normal text-ink-500"> · {role[block]}</span>
+              </Link>
+            </li>
+          ))}
+          {fits.length > 8 && <li className="text-[13px] text-ink-500">{t(`en ${fits.length - 8} meer`, `and ${fits.length - 8} more`)}</li>}
+        </ul>
+      }
+    />
+  );
+}
+
 /** The atlas muscles (and nerve) this exercise works, each linking to its card in the muscle atlas. */
 function AtlasRow({ e }: { e: Exercise }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
-  const input = { name: `${e.nameNl} ${e.nameEn}`, muscles: e.targetMuscles, training: e.trainingCategories, movement: e.movementCategory, sourceKey: null, tags: e.tags };
+  const input = { name: `${e.nameNl} ${e.nameEn}`, muscles: e.targetMuscles, training: e.trainingCategories, movement: e.movementCategory, sourceKey: e.sourceKey ?? null, tags: e.tags };
   const muscles = musclesOf(input).map((k) => MUSCLES.find((m) => m.key === k)!).filter(Boolean);
   const nerveKey = nerveOf(input);
   const nerve = nerveKey ? NERVES.find((n) => n.key === nerveKey) : null;
