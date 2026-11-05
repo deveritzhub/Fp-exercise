@@ -51,6 +51,15 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 17. [x] **Fysio vraagt om te meten.** Knop "Vraag om te meten" in het tabblad Mobiliteit; de
     patiënt krijgt een melding met een link naar de tests (ook als Mobiliteit niet gedeeld wordt).
 
+## Fase 5 – Klaar voor testers
+18. [x] **Eerste stappen op Vandaag.** Na het maken van de held: dagcheck, eerste training,
+    quizvraag goed en mobiliteit meten, met vinkjes. Verdwijnt als alles af is, na een maand of
+    met het kruisje.
+19. [ ] **Feedback vragen.** Na de derde training één keer: "Wat vind je ervan?" met de
+    feedbackknop, zodat testers makkelijk iets laten weten.
+20. [ ] **Uitnodigen zonder e-mail.** De uitnodigingslink (app.fpflow.nl) makkelijk delen via
+    WhatsApp of QR-code, zolang er nog geen echte e-mail is.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - `DEMO_PASSWORD` instellen in Render (zelf doen, niet naar Claude sturen).

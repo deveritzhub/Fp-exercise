@@ -19,6 +19,7 @@ import { cn } from '@/lib/cn';
 import { BossHomeCard, DayChestHomeCard, HeroHomeCard } from '@/pages/patient/HeroPages';
 import { LogbookHomeCard } from '@/pages/patient/LogbookPage';
 import { MobilityDueCard } from '@/components/MobilityTests';
+import { FirstSteps } from '@/components/patient/FirstSteps';
 import { Check, Flame } from 'lucide-react';
 
 export type PatientHomeData = {
@@ -164,6 +165,7 @@ export function PatientHome() {
         </section>
       )}
 
+      <FirstSteps hasProgram={d.programs.length > 0} />
       <HeroHomeCard />
       <DayChestHomeCard />
       <BossHomeCard />
