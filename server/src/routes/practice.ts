@@ -1,0 +1,227 @@
+import { Hono } from 'hono';
+import { z } from 'zod';
+import { withUser } from '../db';
+import { requireStaff, type AppEnv } from '../middleware';
+import { parse, uuidParam } from '../lib/validate';
+import { audit } from '../lib/audit';
+import { badRequest, notFound, HttpError } from '../lib/errors';
+import { exposeInviteLinks } from '../config';
+import { assertNotPatient, inviteUser } from '../auth/service';
+import { resetForMember } from '../auth/mfa';
+import { importLibrary, libraryFileSchema } from '../lib/libraryImport';
+import { FP_BUNDLES, readFpBundle } from '../lib/fpLibrary';
+
+export const practice = new Hono<AppEnv>();
+
+practice.get('/', async (c) => {
+  const { user, practiceId } = requireStaff(c);
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const { rows } = await tx.query(
+        `SELECT p.*, pl.name AS plan_name, pl.limits,
+                (SELECT count(*) FROM practice_members m WHERE m.practice_id = p.id AND m.active) AS members,
+                (SELECT count(*) FROM patients x WHERE x.practice_id = p.id AND x.archived_at IS NULL) AS active_patients
+           FROM practices p JOIN plans pl ON pl.code = p.plan_code WHERE p.id = $1`,
+        [practiceId],
+      );
+      const p = rows[0];
+      if (!p) throw notFound();
+      return {
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        city: p.city,
+        country: p.country,
+        defaultLocale: p.default_locale,
+        branding: p.branding,
+        settings: p.settings,
+        plan: { code: p.plan_code, name: p.plan_name, limits: p.limits, status: p.subscription_status, trialEndsAt: p.trial_ends_at },
+        usage: { members: p.members, activePatients: p.active_patients },
+      };
+    }),
+  );
+});
+
+practice.patch('/', async (c) => {
+  const { user, practiceId } = requireStaff(c, ['owner', 'admin']);
+  const b = parse(
+    z.object({
+      name: z.string().trim().min(2).max(160),
+      city: z.string().trim().max(80).nullable().optional(),
+      defaultLocale: z.enum(['nl', 'en']),
+      branding: z.object({ accent: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional() }).default({}),
+      requireMfa: z.boolean().optional(),
+    }),
+    await c.req.json(),
+  );
+  // Switching the requirement on while not using MFA yourself would lock you out of the practice.
+  if (b.requireMfa && !user.mfaEnabled) throw new HttpError(409, 'mfa_enable_yourself_first');
+  await withUser(user.id, async (tx) => {
+    await tx.query(
+      `UPDATE practices SET name=$2, city=$3, default_locale=$4, branding=$5,
+              settings = CASE WHEN $6::boolean IS NULL THEN settings ELSE settings || jsonb_build_object('requireMfa', $6::boolean) END
+        WHERE id = $1`,
+      [practiceId, b.name, b.city ?? null, b.defaultLocale, b.branding, b.requireMfa ?? null],
+    );
+    await audit(tx, user.id, practiceId, 'update', 'practice', practiceId, b.requireMfa === undefined ? undefined : { requireMfa: b.requireMfa });
+  });
+  return c.json({ ok: true });
+});
+
+practice.get('/members', async (c) => {
+  const { user, practiceId } = requireStaff(c);
+  const rows = await withUser(user.id, async (tx) =>
+    (
+      await tx.query(
+        `SELECT m.user_id, m.role, m.title, m.active, m.created_at, u.full_name, u.email, u.mfa_enabled, app.user_activated(u.id) AS activated,
+                (SELECT count(*) FROM patient_therapists a JOIN patients p ON p.id = a.patient_id
+                  WHERE a.therapist_id = m.user_id AND p.practice_id = m.practice_id AND p.archived_at IS NULL) AS patients
+           FROM practice_members m JOIN users u ON u.id = m.user_id
+          WHERE m.practice_id = $1 ORDER BY m.active DESC, u.full_name`,
+        [practiceId],
+      )
+    ).rows,
+  );
+  return c.json({
+    items: rows.map((r) => ({
+      userId: r.user_id,
+      fullName: r.full_name,
+      email: r.email,
+      role: r.role,
+      title: r.title,
+      active: r.active,
+      patients: r.patients,
+      activated: r.activated,
+      mfaEnabled: r.mfa_enabled,
+      createdAt: r.created_at,
+    })),
+  });
+});
+
+practice.post('/members', async (c) => {
+  const { user, practiceId, practiceName, role: myRole } = requireStaff(c, ['owner', 'admin']);
+  const b = parse(
+    z.object({
+      email: z.string().trim().toLowerCase().email().max(254),
+      fullName: z.string().trim().min(2).max(160),
+      role: z.enum(['admin', 'therapist', 'owner']),
+      title: z.string().trim().max(80).nullable().optional(),
+      locale: z.enum(['nl', 'en']).default('nl'),
+    }),
+    await c.req.json(),
+  );
+  if (b.role === 'owner' && myRole !== 'owner') throw badRequest('only_owner_can_add_owner');
+  // Plan limits (billing architecture): enforce therapist seat limit.
+  await withUser(user.id, async (tx) => {
+    const { rows } = await tx.query(
+      `SELECT (pl.limits->>'therapists')::int AS max, (SELECT count(*) FROM practice_members m WHERE m.practice_id = p.id AND m.active) AS n
+         FROM practices p JOIN plans pl ON pl.code = p.plan_code WHERE p.id = $1`,
+      [practiceId],
+    );
+    if (rows[0]?.max && rows[0].n >= rows[0].max) throw badRequest('plan_limit_therapists');
+  });
+  const res = await inviteUser({
+    email: b.email,
+    fullName: b.fullName,
+    locale: b.locale,
+    practiceName,
+    kind: 'staff',
+    beforeSend: async (userId) => {
+      await assertNotPatient(userId);
+      await withUser(user.id, async (tx) => {
+        await tx.query(
+          `INSERT INTO practice_members(practice_id, user_id, role, title) VALUES ($1,$2,$3,$4)
+           ON CONFLICT (practice_id, user_id) DO UPDATE SET active = true, role = EXCLUDED.role, title = EXCLUDED.title`,
+          [practiceId, userId, b.role, b.title ?? null],
+        );
+        await audit(tx, user.id, practiceId, 'invite', 'member', userId, { role: b.role });
+      });
+    },
+  });
+  return c.json({ ok: true, userId: res.userId, ...(exposeInviteLinks ? { inviteUrl: res.inviteUrl } : {}) }, 201);
+});
+
+practice.patch('/members/:userId', async (c) => {
+  const { user, practiceId, role: myRole } = requireStaff(c, ['owner', 'admin']);
+  const target = parse(uuidParam, c.req.param('userId'));
+  const b = parse(z.object({ role: z.enum(['owner', 'admin', 'therapist']).optional(), active: z.boolean().optional() }), await c.req.json());
+  await withUser(user.id, async (tx) => {
+    const cur = await tx.query('SELECT role FROM practice_members WHERE practice_id = $1 AND user_id = $2', [practiceId, target]);
+    if (!cur.rows[0]) throw notFound();
+    if ((cur.rows[0].role === 'owner' || b.role === 'owner') && myRole !== 'owner') throw badRequest('only_owner_can_change_owner');
+    await tx.query(
+      'UPDATE practice_members SET role = coalesce($3, role), active = coalesce($4, active) WHERE practice_id = $1 AND user_id = $2',
+      [practiceId, target, b.role ?? null, b.active ?? null],
+    );
+    const owners = await tx.query(`SELECT count(*) AS n FROM practice_members WHERE practice_id = $1 AND role = 'owner' AND active`, [practiceId]);
+    if (owners.rows[0].n < 1) throw badRequest('last_owner');
+    await audit(tx, user.id, practiceId, 'update', 'member', target, b);
+  });
+  return c.json({ ok: true });
+});
+
+practice.post('/members/:userId/mfa-reset', async (c) => {
+  const { user, practiceId, role: myRole } = requireStaff(c, ['owner', 'admin']);
+  const target = parse(uuidParam, c.req.param('userId'));
+  const role = await withUser(user.id, async (tx) => {
+    const { rows } = await tx.query('SELECT role FROM practice_members WHERE practice_id = $1 AND user_id = $2', [practiceId, target]);
+    return rows[0]?.role as string | undefined;
+  });
+  if (!role) throw notFound();
+  if (role === 'owner' && myRole !== 'owner') throw badRequest('only_owner_can_change_owner');
+  await resetForMember(user.id, practiceId, target);
+  return c.json({ ok: true });
+});
+
+/** Import (or update) the practice's own exercise library and phased templates from a JSON file. */
+practice.post('/library-import', async (c) => {
+  const { user, practiceId } = requireStaff(c, ['owner', 'admin']);
+  const len = Number(c.req.header('content-length') ?? 0);
+  if (len > 5 * 1024 * 1024) throw new HttpError(413, 'file_too_large');
+  const file = parse(libraryFileSchema, await c.req.json().catch(() => null));
+  const result = await withUser(user.id, async (tx) => {
+    const r = await importLibrary(tx, practiceId, user.id, file);
+    await audit(tx, user.id, practiceId, 'import', 'exercise_library', null, { exercises: r.exercises, templates: r.templates });
+    return r;
+  });
+  return c.json(result);
+});
+
+/**
+ * Add (or update) the Functional Performance library shipped with the app: exercises and phased
+ * templates for revalidatie, krachttraining and mobiliteit. Safe to repeat: matched on the ids in
+ * the bundles, so nothing is duplicated.
+ */
+practice.post('/library-import/fp', async (c) => {
+  const { user, practiceId } = requireStaff(c, ['owner', 'admin']);
+  const result = await withUser(user.id, async (tx) => {
+    const total = { exercises: 0, created: 0, updated: 0, templates: 0 };
+    for (const b of FP_BUNDLES) {
+      const r = await importLibrary(tx, practiceId, user.id, readFpBundle(b.file));
+      total.exercises += r.exercises;
+      total.created += r.created;
+      total.updated += r.updated;
+      total.templates += r.templates;
+    }
+    await audit(tx, user.id, practiceId, 'import', 'exercise_library', null, { source: 'fp', exercises: total.exercises, templates: total.templates });
+    return total;
+  });
+  return c.json(result);
+});
+
+practice.get('/audit', async (c) => {
+  const { user, practiceId } = requireStaff(c, ['owner', 'admin']);
+  const rows = await withUser(user.id, async (tx) =>
+    (
+      await tx.query(
+        `SELECT a.id, a.at, a.action, a.entity, a.entity_id, a.meta, u.full_name AS actor
+           FROM audit_log a LEFT JOIN users u ON u.id = a.actor_id
+          WHERE a.practice_id = $1 ORDER BY a.at DESC LIMIT 200`,
+        [practiceId],
+      )
+    ).rows,
+  );
+  return c.json({
+    items: rows.map((r) => ({ id: r.id, at: r.at, action: r.action, entity: r.entity, entityId: r.entity_id, meta: r.meta, actor: r.actor })),
+  });
+});

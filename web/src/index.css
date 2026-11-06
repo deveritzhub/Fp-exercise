@@ -1,0 +1,96 @@
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource-variable/manrope/wght.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Long words (and large system text on phones) wrap instead of running off the screen. */
+  h1, h2, h3, h4, p, li, dd, dt, label, legend { overflow-wrap: break-word; }
+  :root {
+    /* Primary interaction colour: Deep Forest Green, hover Dark Forest, soft Clinical Sage.
+       Overridable per practice (branding.accent, see lib/accent.ts). RGB triplets for alpha support. */
+    --accent: 41 72 60;
+    --accent-strong: 29 54 45;
+    --accent-soft: 230 238 232;
+    --accent-ink: 255 255 255;
+    color-scheme: light;
+  }
+  html { -webkit-text-size-adjust: 100%; text-rendering: optimizeLegibility; font-feature-settings: 'cv11', 'ss01'; }
+  body { @apply bg-canvas text-ink-900 antialiased; }
+  h1, h2, h3 { @apply font-display font-bold tracking-[-0.015em] text-ink-950; }
+  /* Numbers line up in tables, stats and timers. */
+  table, .tabular { font-variant-numeric: tabular-nums; }
+  h4 { @apply text-ink-950; }
+  :focus-visible { @apply outline-none ring-2 ring-accent/60 ring-offset-2 ring-offset-white; }
+  ::selection { @apply bg-accent/15; }
+  @media print {
+    body { background: #fff; }
+    @page { margin: 14mm; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+}
+
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate3d(30px, 105vh, 0) rotate(720deg); opacity: 0.9; }
+}
+
+@layer components {
+  .card { @apply rounded-xl border border-line bg-white shadow-card; }
+  /* Clickable card: calm lift on hover, no movement. */
+  .card-hover { @apply transition-[box-shadow,border-color] duration-150 hover:border-ink-200 hover:shadow-lift; }
+  /* Type scale: page title, section heading, card title, body, small label, help text. */
+  .t-page { @apply font-display text-[24px] font-bold leading-tight tracking-[-0.02em] text-ink-950 sm:text-[28px]; }
+  .t-section { @apply font-display text-[18px] font-bold leading-snug text-ink-950; }
+  .t-card { @apply font-display text-[15.5px] font-bold leading-snug text-ink-950; }
+  .t-body { @apply text-[14.5px] leading-relaxed text-ink-800; }
+  .t-label { @apply text-[12.5px] font-semibold uppercase tracking-[0.06em] text-ink-500; }
+  .t-help { @apply text-[13px] leading-snug text-ink-500; }
+  .label { @apply block text-[13.5px] font-medium text-ink-800; }
+  .input {
+    @apply block w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink-900 shadow-xs
+      placeholder:text-ink-400 transition-colors
+      hover:border-ink-300 focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-accent/15
+      disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-400;
+  }
+  .input[aria-invalid='true'] { @apply border-bad focus:ring-bad/20; }
+  /* Patient app: every field is a comfortable touch target (44 px). */
+  .patient-app .input { min-height: 44px; font-size: 16px; }
+  /* Patient text size (lib/textSize.ts): zoom scales text and touch targets together and reflows. */
+  html[data-text-size='large'] .patient-app main { zoom: 1.12; }
+  html[data-text-size='xlarge'] .patient-app main { zoom: 1.25; }
+  .muted { @apply text-ink-500; }
+  .link { @apply font-medium text-accent underline-offset-4 hover:underline; }
+  .skeleton { @apply relative overflow-hidden rounded-md bg-ink-100; }
+  .skeleton::after {
+    content: ''; @apply absolute inset-0 -translate-x-full;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent);
+    animation: shimmer 1.4s infinite;
+  }
+  .prose-app p + p { @apply mt-3; }
+  /* Horizontal scrollers (tabs, chips): swipeable, no visible scrollbar. */
+  .no-scrollbar { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  /* Long lists: let the browser skip rendering off-screen cards (smooth scrolling with many items). */
+  .cv-auto { content-visibility: auto; contain-intrinsic-size: auto 112px; }
+  .tap { -webkit-tap-highlight-color: transparent; }
+}
+
+/*
+ * iPhone/iPad: Safari zooms into any text field under 16 px when you tap it, and stays zoomed
+ * after logging in. On touch screens the standard field is therefore 16 px; other small fields
+ * use text-[16px] on phones. (Pinch-zoom stays allowed: the viewport does not block it.)
+ */
+@media (pointer: coarse), (max-width: 1023px) {
+  /*
+   * Every field, also those with their own (smaller) size class; the :not(#\#) raises the weight
+   * above utility classes. Fields that are deliberately larger (17 px and up, text-lg and up) keep
+   * their size.
+   */
+  :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), select, textarea):not(#\#):not([class*='text-[17']):not([class*='text-[18']):not([class*='text-[19']):not([class*='text-[2']):not([class*='text-[3']):not([class*='text-lg']):not([class*='text-xl']):not([class*='text-2xl']):not([class*='text-3xl']) {
+    font-size: 16px;
+  }
+}

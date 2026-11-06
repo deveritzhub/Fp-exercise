@@ -1,0 +1,34 @@
+# Render Blueprint for FP Exercise (currently: demo with synthetic data only).
+# Web service in Frankfurt (EU). Currently on the FREE plan (sleeps after 15 min idle, uploads are not kept).
+# Upgrade later: set plan: starter and uncomment the disk + STORAGE_DIR lines below (~$7.25/month).
+# Database: Neon Postgres project in Frankfurt (see DEPLOY.md).
+services:
+  - type: web
+    name: fp-exercise
+    runtime: node
+    region: frankfurt
+    plan: free             # upgrade: starter (~$7/month, always on)
+    buildCommand: npm ci --include=dev && npx vite build   # typecheck runs in CI; keeps the free 512 MB build light
+    startCommand: npm run start:hosted
+    healthCheckPath: /api/health
+    # disk:                # with plan: starter — uploads survive restarts (~$0.25/GB/month)
+    #   name: media
+    #   mountPath: /var/data
+    #   sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_ADMIN_URL
+        sync: false          # paste the Neon connection string when Render asks
+      - key: ROLE_PASSWORD_SECRET
+        generateValue: true
+      - key: DEMO_MODE
+        value: "1"
+      - key: VITE_SHOW_DEMO_ACCOUNTS
+        value: "1"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: MAIL_TRANSPORT
+        value: outbox
+      # - key: STORAGE_DIR    # with the disk above
+      #   value: /var/data/storage

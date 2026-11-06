@@ -1,0 +1,41 @@
+{
+  "_meta": {
+    "naam": "Basisoefeningen bij de Seedance-demovideo's",
+    "versie": "1.0",
+    "taal": "Nederlands",
+    "toelichting": "Twee basisoefeningen die nog niet in de bibliotheek stonden, zodat de demovideo's van 2026-11-01 aan de juiste oefening hangen. De conventional deadlift stond er al (kr_conventional_deadlift)."
+  },
+  "seed_data": {
+    "krachttraining": {
+      "oefeningen": [
+        {
+          "id": "kr_bodyweight_squat",
+          "naam": "Squat met lichaamsgewicht",
+          "categorie": "legs",
+          "hoofdspier": "quadriceps, bilspieren",
+          "materiaal": "Geen",
+          "niveau": "basis",
+          "1rm_relevant": false,
+          "herhalingen_range": "8-15",
+          "rust_min": "1-2",
+          "cues": "Voeten plat, knieën in lijn met de tenen, rug neutraal. Zak tot ongeveer bovenbenen horizontaal: 3 tellen omlaag, 1 tel pauze, 2 tellen omhoog.",
+          "tags": ["kracht", "basis"]
+        },
+        {
+          "id": "kr_forward_lunge",
+          "naam": "Voorwaartse uitvalspas",
+          "categorie": "legs",
+          "hoofdspier": "quadriceps, bilspieren",
+          "materiaal": "Geen",
+          "niveau": "basis",
+          "1rm_relevant": false,
+          "herhalingen_range": "6-12 per been",
+          "rust_min": "1-2",
+          "cues": "Romp rechtop, handen in de zij. Stap naar voren en zak tot de voorste knie ongeveer 90 graden boven de enkel staat en de achterste knie net boven de grond. Duw terug naar de start.",
+          "tags": ["kracht", "basis"]
+        }
+      ],
+      "programmas": []
+    }
+  }
+}

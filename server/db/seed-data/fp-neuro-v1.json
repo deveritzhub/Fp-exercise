@@ -1,0 +1,44 @@
+{
+ "_meta": {
+  "naam": "Zenuwmobiliteit: radialis en femoralis",
+  "versie": "fp-neuro-v1",
+  "toelichting": "Twee neurodynamische sliders zodat elke zenuw in de spierenatlas een oefening heeft. Eigen tekst, dosering als bij de bestaande sliders. Nog niet individueel klinisch getoetst."
+ },
+ "seed_data": {
+  "revalidatie": {
+   "oefeningen": [
+    {
+     "id": "nd_radial_slider",
+     "naam": "Radialis slider",
+     "categorie": "neurodynamiek",
+     "type_belasting": "neurodynamisch",
+     "regio": "schouder",
+     "niveau": "basis",
+     "instructie": "Sta of zit rechtop met de arm langs het lichaam, schouder iets omlaag, elleboog gestrekt en de handpalm naar achteren gedraaid. Buig de pols en vingers rustig en kantel tegelijk het hoofd naar dezelfde kant. Laat daarna de pols ontspannen terwijl het hoofd naar de andere kant gaat. Rustig heen en weer.",
+     "dosering": { "sets": 2, "reps": 10, "hold_sec": 0, "tempo": "rustig, continu", "rust_sec": 30, "intensiteit": "symptoomgeleid, lichte rek toegestaan" },
+     "symptoomregel": "Geen scherpe of uitstralende klachten, geen toename 24 uur na oefenen",
+     "video_url": null,
+     "physitrack_id": null,
+     "tags": ["neurodynamiek", "arm", "pols", "tintelingen"],
+     "dosis_status": "conventie: dosering als de bestaande sliders, nog niet individueel getoetst"
+    },
+    {
+     "id": "nd_femoral_slider",
+     "naam": "Femoralis slider in zijlig",
+     "categorie": "neurodynamiek",
+     "type_belasting": "neurodynamisch",
+     "regio": "heup",
+     "niveau": "basis",
+     "instructie": "Lig op je zij met de onderste knie naar je borst getrokken. Pak de enkel van het bovenste been en breng de knie rustig naar achteren terwijl je de kin naar de borst buigt. Ga terug terwijl je het hoofd optilt. Rustig heen en weer, zonder door te drukken.",
+     "dosering": { "sets": 2, "reps": 10, "hold_sec": 0, "tempo": "rustig, continu", "rust_sec": 30, "intensiteit": "symptoomgeleid, lichte rek toegestaan" },
+     "symptoomregel": "Geen scherpe of uitstralende klachten, geen toename 24 uur na oefenen",
+     "video_url": null,
+     "physitrack_id": null,
+     "tags": ["neurodynamiek", "heup", "bovenbeen", "tintelingen"],
+     "dosis_status": "conventie: dosering als de bestaande sliders, nog niet individueel getoetst"
+    }
+   ],
+   "programmas": []
+  }
+ }
+}
