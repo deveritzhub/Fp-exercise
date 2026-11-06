@@ -107,6 +107,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 41. [x] **Reactie bewaard.** De reactie op een training wordt opgeslagen (migratie 034, alleen een
     kolom erbij): de fysio ziet "Jouw reactie" in het dossier, de patiënt ziet hem bij de training
     op Voortgang.
+42. [x] **Berichten voor de patiënt.** Belletje in de kop (met stip bij iets nieuws) naar een
+    overzicht van alles wat de praktijk stuurde: reacties, spierkaarten, meetverzoeken, nieuwe
+    programma's. Ook: "zojuist" in plaats van "binnen een minuut" bij net verstuurde berichten.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

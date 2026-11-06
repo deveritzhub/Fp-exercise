@@ -45,3 +45,15 @@ test('progress page: own effort and pain after workouts, with a plain summary', 
   await expectAccessible(page, 'scores card');
   await ctx.close();
 });
+
+test('messages: the patient finds replies from the practice behind the bell', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 360, height: 800 } });
+  const page = await ctx.newPage();
+  await login(page, 'patient@praktijk-a.test');
+  await page.goto('/p');
+  await page.getByRole('link', { name: /^Berichten/ }).click();
+  await expect(page.getByRole('heading', { name: 'Berichten', level: 1 })).toBeVisible();
+  await expectAccessible(page, 'messages');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+  await ctx.close();
+});

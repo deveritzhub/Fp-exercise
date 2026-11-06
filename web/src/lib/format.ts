@@ -13,7 +13,7 @@ export function fmtRelative(d: string | Date | null | undefined, l: Locale) {
   if (!d) return l === 'nl' ? 'nog niet' : 'never';
   const diff = (Date.now() - new Date(d).getTime()) / 1000;
   const rtf = new Intl.RelativeTimeFormat(loc(l), { numeric: 'auto' });
-  if (diff < 60) return rtf.format(0, 'minute');
+  if (diff < 60) return l === 'nl' ? 'zojuist' : 'just now'; // also a few seconds "in the future" from clock drift
   if (diff < 3600) return rtf.format(-Math.round(diff / 60), 'minute');
   if (diff < 86400) return rtf.format(-Math.round(diff / 3600), 'hour');
   if (diff < 86400 * 30) return rtf.format(-Math.round(diff / 86400), 'day');

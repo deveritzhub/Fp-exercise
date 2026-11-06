@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { TestBanner } from '@/components/app/TestBanner';
 import { WelcomeTour } from '@/components/patient/WelcomeTour';
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { CalendarCheck2, CloudOff, Dumbbell, HeartPulse, Move, RefreshCw, Settings, Trophy } from 'lucide-react';
+import { Bell, CalendarCheck2, CloudOff, Dumbbell, HeartPulse, Move, RefreshCw, Settings, Trophy } from 'lucide-react';
 import type { PatientHomeData } from '@/pages/patient/PatientHome';
 import { isClinical } from '@shared/accountKind';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -19,6 +19,21 @@ import { QuickLogButton } from '@/components/patient/QuickLog';
 import { cn } from '@/lib/cn';
 
 const HERO_LATER_KEY = 'fp.heroLater';
+
+/** Messages from the practice, with a dot while something is unread. */
+function MessagesButton() {
+  const { t } = useI18n();
+  const loc = useLocation();
+  const q = useQuery({ queryKey: ['notifications'], queryFn: () => api.get<{ unread: number }>('/me/notifications'), refetchInterval: 120_000 });
+  const unread = q.data?.unread ?? 0;
+  return (
+    <Link to="/p/berichten" aria-label={unread ? t(`Berichten (${unread} nieuw)`, `Messages (${unread} new)`) : t('Berichten', 'Messages')} title={t('Berichten', 'Messages')}
+      className={cn('relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100', loc.pathname.startsWith('/p/berichten') && 'bg-accent-soft text-accent')}>
+      <Bell className="h-[22px] w-[22px]" aria-hidden />
+      {unread > 0 && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#c2410c] ring-2 ring-white" aria-hidden />}
+    </Link>
+  );
+}
 
 /** Mobile-first shell for patients: large type, bottom tab bar, minimal chrome. */
 export function PatientLayout() {
@@ -50,6 +65,7 @@ export function PatientLayout() {
       () => import('@/pages/patient/SettingsPage'),
       () => import('@/pages/AccountPage'),
       () => import('@/pages/patient/LogbookPage'),
+      () => import('@/pages/patient/MessagesPage'),
     ];
     for (const load of pages) void load().catch(() => {});
   }, []);
@@ -122,6 +138,7 @@ export function PatientLayout() {
             <Logo to="/p" className="hidden min-h-[44px] min-[430px]:inline-flex" />
             <div className="flex min-w-0 items-center gap-1">
               <span className="min-w-0 text-right text-[13.5px] font-medium leading-tight text-ink-600">{user.patient.kind === 'personal' ? t('Persoonlijk account', 'Personal account') : user.patient.practiceName}</span>
+              <MessagesButton />
               <FeedbackButton big />
               <Link to="/p/instellingen" aria-label={t('Instellingen', 'Settings')} title={t('Instellingen', 'Settings')} className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100', (loc.pathname.startsWith('/p/instellingen') || loc.pathname.startsWith('/p/account')) && 'bg-accent-soft text-accent')}>
                 <Settings className="h-[22px] w-[22px]" aria-hidden />
