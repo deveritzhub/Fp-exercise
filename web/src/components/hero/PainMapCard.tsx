@@ -7,14 +7,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/format';
-import { BODY_AREAS, averagePain } from '@shared/hero';
-import { Card, CardHeader, Notice, useToast } from '@/components/ui';
+import { BODY_AREAS, SKILLS, averagePain, type SkillKey } from '@shared/hero';
+import { Card, CardHeader, Notice, Select, useToast } from '@/components/ui';
 import { BodyMap, painWord } from './BodyMap';
 import { HeroAvatar } from './HeroAvatar';
 import { PainTrendList } from './PainTrend';
 import type { HeroState } from '@/lib/types';
 
-type StaffHero = Pick<HeroState, 'hero' | 'painMap' | 'trends'> & { aids?: string[]; suggestCrutches?: boolean } & { weekly: { weekStart: string; planned: number; completed: number; rate: number | null }[] };
+type StaffHero = Pick<HeroState, 'hero' | 'painMap' | 'trends'> & { aids?: string[]; suggestCrutches?: boolean; questFocus?: { skill: SkillKey; byTherapist: boolean; programmeSkills: SkillKey[] } } & { weekly: { weekStart: string; planned: number; completed: number; rate: number | null }[] };
 
 /** Therapist: the patient's self-reported body map, first check-in versus latest. */
 export function PainMapCard({ patientId }: { patientId: string }) {
@@ -37,6 +37,7 @@ export function PainMapCard({ patientId }: { patientId: string }) {
         action={hero ? <HeroAvatar look={hero} size={40} /> : undefined}
       />
       {hero && <AidsToggle patientId={patientId} on={(q.data.aids ?? []).includes('crutches')} suggest={!!q.data.suggestCrutches} />}
+      {hero && q.data.questFocus && <QuestFocus patientId={patientId} focus={q.data.questFocus} />}
       {!painMap.current ? (
         <p className="px-5 py-4 text-[14px] text-ink-600">{t('De patiënt heeft de pijnkaart nog niet ingevuld.', 'The patient has not filled in the body map yet.')}</p>
       ) : (
@@ -100,6 +101,42 @@ export function PainMapCard({ patientId }: { patientId: string }) {
         </div>
       )}
     </Card>
+  );
+}
+
+/** The therapist chooses the skill of the weekly skill quest (from this week on), or leaves it automatic. */
+function QuestFocus({ patientId, focus }: { patientId: string; focus: NonNullable<StaffHero['questFocus']> }) {
+  const { t, locale } = useI18n();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const nl = locale === 'nl';
+  const name = (k: SkillKey) => { const s = SKILLS.find((x) => x.key === k)!; return nl ? s.nl : s.en; };
+  const change = async (v: string) => {
+    setBusy(true);
+    try {
+      await api.put(`/patients/${patientId}/hero/focus`, { skill: v || null });
+      await qc.invalidateQueries({ queryKey: ['patient', patientId, 'hero'] });
+      toast(v ? t(`Weekquest deze week: ${name(v as SkillKey)}`, `Weekly quest this week: ${name(v as SkillKey)}`) : t('Weekquest weer automatisch', 'Weekly quest automatic again'), 'ok');
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(false);
+    }
+  };
+  // Skills the programme trains first: only those can be completed with its exercises.
+  const ordered = [...focus.programmeSkills, ...SKILLS.map((s) => s.key).filter((k) => !focus.programmeSkills.includes(k))];
+  return (
+    <div className="mx-5 mb-1 mt-2 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-canvas px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-[14.5px] font-semibold text-ink-900">{t('Skill van de weekquest', 'Skill of the weekly quest')}</p>
+        <p className="text-[13px] text-ink-600">{focus.byTherapist ? t(`Door jou gekozen: ${name(focus.skill)}.`, `Chosen by you: ${name(focus.skill)}.`) : t(`Automatisch deze week: ${name(focus.skill)}.`, `Automatic this week: ${name(focus.skill)}.`)} {t('Kies een skill die het programma traint.', 'Pick a skill the programme trains.')}</p>
+      </div>
+      <Select aria-label={t('Skill van de weekquest kiezen', 'Choose the skill of the weekly quest')} value={focus.byTherapist ? focus.skill : ''} disabled={busy} onChange={(e) => void change(e.target.value)} className="w-auto">
+        <option value="">{t('Automatisch (wisselt per week)', 'Automatic (rotates weekly)')}</option>
+        {ordered.map((k) => <option key={k} value={k}>{name(k)}{focus.programmeSkills.includes(k) ? '' : t(' (niet in programma)', ' (not in programme)')}</option>)}
+      </Select>
+    </div>
   );
 }
 

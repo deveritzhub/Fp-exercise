@@ -13,7 +13,7 @@ Ideeën die zijn goedgekeurd voor later. Volgorde = voorstel; niets hiervan is a
 
 Eerder genoemd en ook nog open:
 - iPhone-app (App Store): eerst via "Zet op beginscherm"; native app vraagt Apple Developer-account en een Mac/buildservice.
-- Weekquests die de therapeut zelf instelt (nu automatisch).
+- ✅ Weekquests die de therapeut zelf instelt: de skill van de weekquest kiezen (gebouwd, nov 2026).
 
 ## Ecosysteem — volgende stappen na vriendenlijsten
 

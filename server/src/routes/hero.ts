@@ -14,9 +14,12 @@ import { loadPatientLogs } from '../lib/patientLogs';
 import { weeklyAdherence } from '../../../shared/adherence';
 import {
   AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, coinsEarned, gearScore, dayChestCoins, chestStreak, longestDayRun, skillTrophies, SHOWCASE_MAX, WALL_BADGES_MAX, seasons, seasonMonth, seasonOf, SEASON_GOAL, SEASON_XP, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
-  questXp, skillOfWeek, skillsForExercise, weeklyQuests, weeklyBoss, BOSS_XP, xpFor, type SkillKey, type WeekData,
+  questXp, SKILLS, skillsForExercise, weeklyQuests, weeklyBoss, BOSS_XP, xpFor, type SkillKey, type WeekData,
   CHEERS,
   type CheerKey,
+  questSkillFor,
+  withFocus,
+  type FocusEntry,
 } from '../../../shared/hero';
 import { loadSkillSnapshot } from '../lib/skillState';
 
@@ -160,6 +163,12 @@ async function heroState(tx: Tx, patientId: string) {
     )
   ).rows.flatMap((r) => skillsForExercise(r.training_categories ?? [], r.movement_category));
   const rotation = [...new Set(progSkills)] as SkillKey[];
+  // The therapist may choose the skill of the skill quest from a given week on.
+  const focus = ((await tx.query('SELECT hero_focus FROM patients WHERE id = $1', [patientId])).rows[0]?.hero_focus ?? []) as FocusEntry[];
+  const questsFor = (weekStart: string, wd: WeekData) => {
+    const pick = questSkillFor(weekStart, focus, rotation);
+    return weeklyQuests(wd, pick.skill).map((x) => (x.key === 'skill' && pick.byTherapist ? { ...x, byTherapist: true } : x));
+  };
   const weekData = (weekStart: string): WeekData => {
     const w = weekly.find((x) => x.weekStart === weekStart);
     const skillLogs: Partial<Record<SkillKey, number>> = {};
@@ -175,7 +184,7 @@ async function heroState(tx: Tx, patientId: string) {
   for (const w of weekly.slice(0, -1)) {
     if (!activeWeeks.has(w.weekStart)) continue;
     const wd = weekData(w.weekStart);
-    const q = weeklyQuests(wd, skillOfWeek(w.weekStart, rotation));
+    const q = questsFor(w.weekStart, wd);
     xp += questXp(q);
     if (q.every((x) => x.done)) chestWeeks++;
     const fell = weeklyBoss(w.weekStart, wd).defeated;
@@ -190,7 +199,7 @@ async function heroState(tx: Tx, patientId: string) {
   const sunday = new Date(thisWeek + 'T12:00:00');
   sunday.setDate(sunday.getDate() + 6);
   const fullWeek = weeklyAdherence(inputs.schedules.get(patientId) ?? [], inputs.done.get(patientId) ?? new Map(), sunday, 1)[0];
-  const quests = weeklyQuests({ ...weekData(thisWeek), planned: fullWeek.planned }, skillOfWeek(thisWeek, rotation));
+  const quests = questsFor(thisWeek, { ...weekData(thisWeek), planned: fullWeek.planned });
   xp += questXp(quests);
   if (quests.every((x) => x.done)) chestWeeks++;
   // This week's boss, on the same numbers as the quests.
@@ -721,7 +730,18 @@ heroStaff.get('/:id/hero', async (c) => {
       const hero = mapHero((await tx.query('SELECT * FROM patient_heroes WHERE patient_id = $1', [id])).rows[0]);
       const inputs = await loadAdherenceInputs(tx, [id]);
       const skills = await loadSkillSnapshot(tx, id, weeklyForPatient(inputs, id, 52));
-      const pt = (await tx.query('SELECT hero_aids FROM patients WHERE id = $1', [id])).rows[0];
+      const pt = (await tx.query('SELECT hero_aids, hero_focus FROM patients WHERE id = $1', [id])).rows[0];
+      // The skill quest this week (chosen or automatic) and the skills the programme trains.
+      const progSkills = (
+        await tx.query(
+          `SELECT DISTINCT e.training_categories, e.movement_category FROM program_items i
+             JOIN programs p ON p.id = i.program_id JOIN exercises e ON e.id = i.exercise_id
+            WHERE p.patient_id = $1 AND p.status = 'active'`,
+          [id],
+        )
+      ).rows.flatMap((r) => skillsForExercise(r.training_categories ?? [], r.movement_category));
+      const rotation = [...new Set(progSkills)] as SkillKey[];
+      const thisWeek = weeklyForPatient(inputs, id, 1)[0].weekStart;
       // Suggest crutches in the first phases of an ACL / knee post-op programme.
       const acl = (
         await tx.query(
@@ -734,6 +754,7 @@ heroStaff.get('/:id/hero', async (c) => {
       return {
         hero,
         aids: (pt?.hero_aids ?? []) as string[],
+        questFocus: { ...questSkillFor(thisWeek, (pt?.hero_focus ?? []) as FocusEntry[], rotation), programmeSkills: rotation },
         suggestCrutches: !!acl,
         painMap: await painMap(tx, id),
         trends: await painTrends(tx, id),
@@ -746,6 +767,22 @@ heroStaff.get('/:id/hero', async (c) => {
 });
 
 /** The professional switches walking aids on the patient's hero (e.g. crutches after ACL surgery). */
+/** The therapist chooses the skill of the weekly skill quest from this week on (null = automatic). */
+heroStaff.put('/:id/hero/focus', async (c) => {
+  const { user } = requireStaff(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  const b = parse(z.object({ skill: z.enum(SKILLS.map((x) => x.key) as [SkillKey, ...SkillKey[]]).nullable() }), await c.req.json());
+  await withUser(user.id, async (tx) => {
+    const row = (await tx.query('SELECT hero_focus FROM patients WHERE id = $1 AND app.can_manage_patient($1)', [id])).rows[0];
+    if (!row) throw notFound();
+    const inputs = await loadAdherenceInputs(tx, [id]);
+    const week = weeklyForPatient(inputs, id, 1)[0].weekStart;
+    const next = withFocus(row.hero_focus ?? [], week, b.skill);
+    await tx.query('UPDATE patients SET hero_focus = $2 WHERE id = $1 AND app.can_manage_patient($1)', [id, JSON.stringify(next)]);
+  });
+  return c.json({ ok: true });
+});
+
 heroStaff.put('/:id/hero/aids', async (c) => {
   const { user } = requireStaff(c);
   const id = parse(uuidParam, c.req.param('id'));

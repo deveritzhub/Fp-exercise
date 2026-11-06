@@ -711,7 +711,7 @@ export const QUEST_XP = 40; // per quest completed
 export const CHEST_XP = 100; // all three quests of a week: the week chest
 
 export type WeekData = { planned: number; trainedDays: number; checkins: number; skillLogs: Partial<Record<SkillKey, number>> };
-export type Quest = { key: 'train' | 'checkin' | 'skill'; skill?: SkillKey; target: number; progress: number; done: boolean };
+export type Quest = { key: 'train' | 'checkin' | 'skill'; skill?: SkillKey; target: number; progress: number; done: boolean; byTherapist?: boolean };
 
 /** The skill of the week rotates through the skills the patient's own exercises train. */
 export function skillOfWeek(weekStart: string, skills: SkillKey[]): SkillKey {
@@ -1194,3 +1194,18 @@ export const CHEERS = [
   { key: 'keep', nl: 'Volhouden!', en: 'Keep it up!', emoji: '⭐' },
 ] as const;
 export type CheerKey = (typeof CHEERS)[number]['key'];
+
+/** A therapist's choice for the weekly skill quest, from a given week on (null = automatic again). */
+export type FocusEntry = { skill: SkillKey | null; from: string };
+
+/** The skill of a week's skill quest: the therapist's choice in force that week, else the rotation. */
+export function questSkillFor(weekStart: string, focus: readonly FocusEntry[], rotation: SkillKey[]): { skill: SkillKey; byTherapist: boolean } {
+  const entry = [...focus].filter((f) => f.from <= weekStart).sort((a, b) => a.from.localeCompare(b.from)).pop();
+  if (entry?.skill) return { skill: entry.skill, byTherapist: true };
+  return { skill: skillOfWeek(weekStart, rotation), byTherapist: false };
+}
+
+/** Add a choice from `weekStart` on; a second change in the same week replaces the first. */
+export function withFocus(focus: readonly FocusEntry[], weekStart: string, skill: SkillKey | null): FocusEntry[] {
+  return [...focus.filter((f) => f.from !== weekStart), { skill, from: weekStart }].sort((a, b) => a.from.localeCompare(b.from)).slice(-52);
+}

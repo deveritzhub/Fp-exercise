@@ -187,6 +187,10 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 66. [x] **Regressietest na stap 59–65:** 138 geslaagd, 1 echte fout gevonden en opgelost: het
     feestscherm (stap 64) liet de held-pagina crashen als de berichtenlijst leeg of onvolledig
     terugkwam. Nu robuust; die test is weer groen.
+67. [x] **Therapeut kiest de skill van de weekquest** (roadmap "weekquests die de therapeut zelf
+    instelt"). In het dossier (bij de held): een skill kiezen, bijvoorbeeld Balans, vanaf deze week;
+    of weer automatisch. De patiënt ziet "Gekozen door je fysio". Eerdere weken houden hun skill, dus
+    XP verandert nooit achteraf. Migratie 036 (alleen een kolom erbij), getest.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
