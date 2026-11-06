@@ -110,6 +110,8 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 42. [x] **Berichten voor de patiënt.** Belletje in de kop (met stip bij iets nieuws) naar een
     overzicht van alles wat de praktijk stuurde: reacties, spierkaarten, meetverzoeken, nieuwe
     programma's. Ook: "zojuist" in plaats van "binnen een minuut" bij net verstuurde berichten.
+43. [x] **Quiz over compensaties** (level 2): per patroon "Als je middelste bilspier zwak is,
+    welke spier neemt dan vaak het werk over?", met uitleg. Rondleiding noemt het belletje.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

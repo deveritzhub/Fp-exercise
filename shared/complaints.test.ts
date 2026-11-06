@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { BODY_AREAS } from './hero';
 import { CHAINS, COMPENSATIONS, COMPLAINTS, REGIONS, regionForArea, complaintsForExercise, templatesFor, complaintMuscles, complaintsIn, muscleInChains, proposeExercises, searchComplaints, whyFor, type ProposalExercise } from './complaints';
-import { MUSCLES, NERVES } from './muscleAtlas';
+import { MUSCLES, NERVES, quizQuestions } from './muscleAtlas';
 import { MOBILITY_TESTS } from './mobilityTests';
 
 const muscle = (k: string) => MUSCLES.some((m) => m.key === k);
@@ -134,5 +134,21 @@ describe('existing practice programmes', () => {
     expect(templatesFor(COMPLAINTS.find((c) => c.key === 'achilles')!, list).map((x) => x.title)).toEqual(['Achillespees — belastingsopbouw']);
     expect(templatesFor(COMPLAINTS.find((c) => c.key === 'patellapees')!, list).map((x) => x.title)).toEqual(['Patellapees — belastingsopbouw']);
     expect(templatesFor(COMPLAINTS.find((c) => c.key === 'pfps')!, list)).toEqual([]);
+  });
+});
+
+
+describe('compensation quiz', () => {
+  it('one level 2 question per pattern; the answer is what takes over, no other option is', () => {
+    const qs = quizQuestions().filter((q) => q.id.startsWith('comp:'));
+    expect(qs.length).toBe(COMPENSATIONS.length);
+    for (const q of qs) {
+      const c = COMPENSATIONS.find((x) => `comp:${x.key}` === q.id)!;
+      expect(q.level).toBe(2);
+      expect(q.answer).toBe(c.over[0]);
+      const related = new Set(COMPENSATIONS.filter((x) => x.weak.includes(c.weak[0])).flatMap((x) => [...x.over, ...x.weak]));
+      for (const o of q.options) if (o.id !== q.answer) expect(related.has(o.id), q.id + ' ' + o.id).toBe(false);
+    }
+    expect(qs.find((q) => q.id === 'comp:tfl_gmed')!.q[0]).toBe('Als je middelste bilspier zwak is, welke spier neemt dan vaak het werk over?');
   });
 });

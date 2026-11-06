@@ -1,3 +1,5 @@
+import { COMPENSATIONS } from './complaints';
+
 /**
  * Spierenatlas: the main muscles, what they do, which nerve drives them, and words to find the
  * exercises that train or stretch them (matched against an exercise's target muscles and name).
@@ -383,6 +385,22 @@ function buildQuestions(): QuizQuestion[] {
       options: shuffle([{ id: b, label: [right.nl, right.en] as Fn }, ...wrong.map((x) => ({ id: x.key, label: [x.nl, x.en] as Fn }))], a + 'anto'),
       answer: b,
       explain: [`De ${right.nl.toLowerCase()} doet de tegengestelde beweging: ${right.functions[0][0].toLowerCase()} tegenover ${m.functions[0][0].toLowerCase()}.`, `The ${right.en.toLowerCase()} does the opposite movement: ${right.functions[0][1].toLowerCase()} versus ${m.functions[0][1].toLowerCase()}.`],
+    });
+  }
+  // 5. Compensations (level 2): when this muscle is weak, which one tends to take over?
+  for (const c of COMPENSATIONS) {
+    const weak = MUSCLES.find((m) => m.key === c.weak[0]);
+    const over = MUSCLES.find((m) => m.key === c.over[0]);
+    if (!weak || !over) continue;
+    // Never offer a muscle that also takes over (or is weak) in another pattern of this muscle.
+    const related = new Set(COMPENSATIONS.filter((x) => x.weak.includes(weak.key)).flatMap((x) => [...x.over, ...x.weak]));
+    const wrong = pickOthers(MUSCLES.filter((m) => !related.has(m.key) && !m.level && m.region !== over.region), 3, c.key + 'comp');
+    out.push({
+      id: `comp:${c.key}`, level: 2, muscle: weak.key, nerve: null,
+      q: [`Als je ${weak.nl.toLowerCase()} zwak ${weak.plural ? 'zijn' : 'is'}, welke spier neemt dan vaak het werk over?`, `If your ${weak.en.toLowerCase()} ${weak.plural ? 'are' : 'is'} weak, which muscle often takes over?`],
+      options: shuffle([{ id: over.key, label: [over.nl, over.en] as Fn }, ...wrong.map((m) => ({ id: m.key, label: [m.nl, m.en] as Fn }))], c.key + 'compo'),
+      answer: over.key,
+      explain: [`${c.name[0]}. ${c.see[0]}`, `${c.name[1]}. ${c.see[1]}`],
     });
   }
   return [...out, ...LEVEL2_SPECIALS];
