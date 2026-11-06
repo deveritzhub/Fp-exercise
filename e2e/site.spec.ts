@@ -134,3 +134,13 @@ test('quick search (Ctrl+K) finds a patient and opens it', async ({ page }) => {
   await expect(page).toHaveURL(/\/app\/patienten\//);
   await expect(page.getByRole('heading', { name: 'Emma de Jong' })).toBeVisible();
 });
+
+test('quick search finds a complaint and opens the complaint guide', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await expect(page.getByRole('heading', { name: /Joris/ })).toBeVisible();
+  await page.keyboard.press('Control+k');
+  await page.keyboard.type('loperknie');
+  await page.getByRole('option', { name: /Loperknie \(ITBS\)/ }).click();
+  await expect(page).toHaveURL(/klachtwijzer\?regio=knie&klacht=itbs/);
+  await expect(page.getByRole('heading', { name: 'Loperknie (ITBS)', level: 2 })).toBeVisible();
+});

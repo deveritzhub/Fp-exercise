@@ -230,6 +230,8 @@ const SOURCE_MUSCLES: Record<string, string[]> = {
   kt_heup_hinge: ['gluteus_maximus', 'hamstrings'],
   kt_muurzit: ['quadriceps'],
   kt_tfl_rek: ['tfl'],
+  kt_duimoppositie: ['thenar'],
+  kt_knijpbal: ['polsbuigers', 'fdp', 'thenar'],
   kt_bovenste_trapezius_rek: ['trapezius', 'levator_scapulae'],
 };
 

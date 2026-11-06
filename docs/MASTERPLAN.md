@@ -113,6 +113,11 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 43. [x] **Quiz over compensaties** (level 2): per patroon "Als je middelste bilspier zwak is,
     welke spier neemt dan vaak het werk over?", met uitleg. Rondleiding noemt het belletje.
 
+## Fase 10 – Sneller vinden, geen gaten
+44. [x] **Klacht zoeken met Ctrl+K.** "loperknie" of "muisarm" in de snelzoekbalk opent direct de
+    klachtwijzer op die klacht. Bibliotheekgat gedicht: carpaletunnelklachten hadden geen
+    versterkende oefening; nu duimoppositie met elastiekje en knijpen in een zacht balletje.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - `DEMO_PASSWORD` instellen in Render (zelf doen, niet naar Claude sturen).

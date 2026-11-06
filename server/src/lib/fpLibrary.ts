@@ -31,6 +31,8 @@ export const FP_BUNDLES = [
   { name: 'fp-ketens-v1', file: 'fp-ketens-v1.json' },
   // Stretches for what takes over (TFL, upper trapezius), so the guide's offload block is filled.
   { name: 'fp-ketens-v2', file: 'fp-ketens-v2.json' },
+  // Hand: thumb opposition and grip, so carpal tunnel complaints have a strengthening exercise.
+  { name: 'fp-ketens-v3', file: 'fp-ketens-v3.json' },
 ] as const;
 
 const DIR = path.join(import.meta.dirname, '../../db/seed-data');
