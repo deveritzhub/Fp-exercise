@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Loader2, Search, SlidersHorizontal, X } from 'lucide-react';
@@ -93,13 +93,22 @@ export function useUrlFilters(): [ExerciseFilters, (f: ExerciseFilters) => void]
       /* ignore */
     }
   }, [params]);
+  // Two quick changes (e.g. a region, then equipment) must both stick, even when the URL of the first
+  // has not been applied yet: each change is merged into the latest filters set here.
+  const latest = useRef(f);
+  useEffect(() => {
+    latest.current = f;
+  }, [f]);
   const set = useCallback(
     (next: ExerciseFilters) => {
+      const merged = { ...latest.current };
+      for (const k of KEYS) if (next[k] !== f[k]) merged[k] = next[k];
+      latest.current = merged;
       const p = new URLSearchParams();
-      for (const k of KEYS) if (next[k] && next[k] !== emptyFilters[k]) p.set(k, next[k]);
+      for (const k of KEYS) if (merged[k] && merged[k] !== emptyFilters[k]) p.set(k, merged[k]);
       setParams(p, { replace: true });
     },
-    [setParams],
+    [setParams, f],
   );
   return [f, set];
 }
