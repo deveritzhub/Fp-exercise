@@ -4,7 +4,7 @@ import { reportError } from '@/lib/reportError';
 import { Spinner } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { MarketingLayout } from '@/layouts/MarketingLayout';
-import { RequireAuth } from '@/layouts/Guards';
+import { RequireAuth, RequireClinical } from '@/layouts/Guards';
 import { HomePage } from '@/pages/marketing/HomePage';
 import { ForgotPasswordPage, InvitePage, LoginPage, MfaRequiredPage, ResetPasswordPage, VerifyEmailPage } from '@/pages/auth/AuthPages';
 import { SignupPage } from '@/pages/auth/SignupPage';
@@ -155,9 +155,9 @@ export const router = createBrowserRouter([
           { path: 'patienten/:id/rapport', element: <S><ProgressReportPage /></S> },
           { path: 'oefeningen', element: <S><ExercisesPage /></S> },
           { path: 'spieren', element: <S><TherapistAtlasPage /></S> },
-          { path: 'klachtwijzer', element: <S><ComplaintGuidePage /></S> },
-          { path: 'klachtwijzer/controle', element: <S><ComplaintReviewPage /></S> },
-          { path: 'klachtwijzer/uitleg', element: <S><ComplaintHandoutPage /></S> },
+          { path: 'klachtwijzer', element: <S><RequireClinical><ComplaintGuidePage /></RequireClinical></S> },
+          { path: 'klachtwijzer/controle', element: <S><RequireClinical><ComplaintReviewPage /></RequireClinical></S> },
+          { path: 'klachtwijzer/uitleg', element: <S><RequireClinical><ComplaintHandoutPage /></RequireClinical></S> },
           { path: 'oefeningen/nieuw', element: <S><ExerciseFormPage /></S> },
           { path: 'oefeningen/:id', element: <S><ExerciseDetailPage /></S> },
           { path: 'oefeningen/:id/bewerken', element: <S><ExerciseFormPage /></S> },

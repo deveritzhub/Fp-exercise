@@ -140,6 +140,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 52. [x] **Controlepagina ook voor oefeningen.** Op "Alle teksten nalopen" staan nu ook de 50
     oefeningen waarvan de dosering een gangbare conventie is (instructie, dosering, symptoomregel),
     met akkoord/wijziging per oefening.
+53. [x] **Klachtwijzer alleen voor fysiotherapie.** Coach- en persoonlijke accounts zijn bewust
+    niet-medisch: daar is de klachtwijzer (menu, snelzoeken, links bij pijnkaart, oefening, atlas en
+    dossier) verborgen, en de server weigert het versturen van een uitleg.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

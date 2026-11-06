@@ -1,3 +1,4 @@
+import { useClinicalPractice } from '@/lib/session';
 import { Link, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -412,11 +413,12 @@ function Variants({ e }: { e: Exercise }) {
 
 /** The complaints in the complaint guide this exercise fits (and as what), each linking there. */
 function GuideRow({ e }: { e: Exercise }) {
+  const clinical = useClinicalPractice();
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const input = { name: `${e.nameNl} ${e.nameEn}`, muscles: e.targetMuscles, training: e.trainingCategories, movement: e.movementCategory, sourceKey: e.sourceKey ?? null, tags: e.tags };
   const fits = complaintsForExercise({ id: e.id, nameNl: e.nameNl, nameEn: e.nameEn, kind: exerciseKind(input), muscles: musclesOf(input), nerve: nerveOf(input) });
-  if (!fits.length) return null;
+  if (!fits.length || !clinical) return null;
   const role = { calm: t('ontlasten', 'offload'), activate: t('versterken', 'strengthen'), function: t('functioneel', 'functional') };
   return (
     <Row

@@ -121,6 +121,21 @@ describe('sending a complaint explanation to a patient', () => {
   });
 });
 
+describe('the complaint guide is clinical', () => {
+  it('a coach practice cannot send a complaint explanation', async () => {
+    resetRateLimits();
+    const pid = (await ownerQuery(`SELECT p.id, p.practice_id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`)).rows[0];
+    await ownerQuery(`ALTER TABLE practices DISABLE TRIGGER USER`);
+    await ownerQuery(`UPDATE practices SET kind = 'coach' WHERE id = $1`, [pid.practice_id]);
+    try {
+      expect((await (await login('therapistA')).post('/atlas/send-complaint', { patientId: pid.id, complaint: 'itbs' })).body.error).toBe('not_clinical');
+    } finally {
+      await ownerQuery(`UPDATE practices SET kind = 'physio' WHERE id = $1`, [pid.practice_id]);
+      await ownerQuery(`ALTER TABLE practices ENABLE TRIGGER USER`);
+    }
+  });
+});
+
 describe('clinical review of library exercises', () => {
   it('lists exercises with a conventional dose for staff only', async () => {
     resetRateLimits();

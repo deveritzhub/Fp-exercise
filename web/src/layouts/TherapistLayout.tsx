@@ -1,3 +1,4 @@
+import { isClinical } from '@shared/accountKind';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { TestBanner } from '@/components/app/TestBanner';
 import { useEffect, useState } from 'react';
@@ -41,7 +42,8 @@ export function TherapistLayout() {
     { to: '/app', end: true, icon: LayoutDashboard, label: t('Dashboard', 'Dashboard') },
     { to: '/app/patienten', icon: Users, label: t('Patiënten', 'Patients') },
     { to: '/app/oefeningen', icon: BookOpen, label: t('Oefeningen', 'Exercises') },
-    { to: '/app/klachtwijzer', icon: Compass, label: t('Klachtwijzer', 'Complaint guide') },
+    // The complaint guide is clinical: only for physiotherapy practices.
+    ...(isClinical(practice.kind) ? [{ to: '/app/klachtwijzer', icon: Compass, label: t('Klachtwijzer', 'Complaint guide') }] : []),
     { to: '/app/spieren', icon: Brain, label: t('Spierenatlas', 'Muscle atlas') },
     { to: '/app/programmas', icon: Layers, label: t("Programma's & sjablonen", 'Programmes & templates') },
     { to: '/app/praktijk', icon: Building2, label: t('Praktijk', 'Practice') },

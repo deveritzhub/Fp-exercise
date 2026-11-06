@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { searchComplaints } from '@shared/complaints';
+import { isClinical } from '@shared/accountKind';
+import { useSession } from '@/lib/session';
 import { ArrowRight, BookOpen, CornerDownLeft, LayoutDashboard, Layers, Loader2, Plus, Search, UserPlus, Users, Compass } from 'lucide-react';
 import { api, qs } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -18,6 +20,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const { t, locale } = useI18n();
   const L = useLabels();
   const nav = useNavigate();
+  const clinical = isClinical(useSession().practice?.kind);
   const [q, setQ] = useState('');
   const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
@@ -48,7 +51,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       { id: 'a-exercise', group: t('Acties', 'Actions'), label: t('Eigen oefening maken', 'Create exercise'), icon: <BookOpen className="h-4 w-4" />, to: '/app/oefeningen/nieuw' },
       { id: 'n-dash', group: t('Ga naar', 'Go to'), label: t('Dashboard', 'Dashboard'), icon: <LayoutDashboard className="h-4 w-4" />, to: '/app' },
       { id: 'n-patients', group: t('Ga naar', 'Go to'), label: t('Patiënten', 'Patients'), icon: <Users className="h-4 w-4" />, to: '/app/patienten' },
-      { id: 'n-guide', group: t('Ga naar', 'Go to'), label: t('Klachtwijzer', 'Complaint guide'), icon: <Compass className="h-4 w-4" />, to: '/app/klachtwijzer' },
+      ...(clinical ? [{ id: 'n-guide', group: t('Ga naar', 'Go to'), label: t('Klachtwijzer', 'Complaint guide'), icon: <Compass className="h-4 w-4" />, to: '/app/klachtwijzer' }] : []),
       { id: 'n-templates', group: t('Ga naar', 'Go to'), label: t('Sjablonen', 'Templates'), icon: <Layers className="h-4 w-4" />, to: '/app/programmas' },
     ];
     const ql = dq.toLowerCase();
@@ -68,11 +71,11 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       });
     }
     // Complaints from the complaint guide ("loperknie", "tennisarm"), straight to their card.
-    for (const c of searchComplaints(dq).slice(0, 4)) {
+    for (const c of clinical ? searchComplaints(dq).slice(0, 4) : []) {
       out.push({ id: `k-${c.key}`, group: t('Klachtwijzer', 'Complaint guide'), label: locale === 'nl' ? c.name[0] : c.name[1], icon: <Compass className="h-4 w-4" />, to: `/app/klachtwijzer?regio=${c.region}&klacht=${c.key}` });
     }
     return [...out, ...actions.filter((a) => !ql || a.label.toLowerCase().includes(ql))];
-  }, [patients.data, exercises.data, dq, locale, t, L]);
+  }, [patients.data, exercises.data, dq, locale, t, L, clinical]);
 
   // Still typing or waiting for an answer: show that, never a premature "nothing found".
   const searching = q.trim() !== dq || patients.isFetching || exercises.isFetching;

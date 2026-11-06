@@ -97,8 +97,10 @@ atlasStaff.post('/send-complaint', async (c) => {
   if (!complaint) throw badRequest('unknown_complaint');
   return c.json(
     await withUser(user.id, async (tx) => {
-      const p = (await tx.query('SELECT id, practice_id FROM patients WHERE id = $1 AND archived_at IS NULL AND app.can_manage_patient(id)', [b.patientId])).rows[0];
+      const p = (await tx.query('SELECT p.id, p.practice_id, pr.kind FROM patients p JOIN practices pr ON pr.id = p.practice_id WHERE p.id = $1 AND p.archived_at IS NULL AND app.can_manage_patient(p.id)', [b.patientId])).rows[0];
       if (!p) throw notFound();
+      // The complaint guide is clinical: coaches and personal accounts do not send it.
+      if (p.kind !== 'physio') throw badRequest('not_clinical');
       const delivered = await notifyPatientComplaint(tx, p.id, p.practice_id, complaint, b.note);
       await audit(tx, user.id, p.practice_id, 'create', 'complaint_explanation_sent', p.id, { complaint: complaint.key });
       return { ok: true, delivered };

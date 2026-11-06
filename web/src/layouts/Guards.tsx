@@ -4,6 +4,7 @@ import { useSession, homePathFor } from '@/lib/session';
 import { Spinner } from '@/components/ui';
 import { CloudOff } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
+import { isClinical } from '@shared/accountKind';
 
 export function RequireAuth({ kind, children }: { kind: 'staff' | 'patient' | 'admin'; children: ReactNode }) {
   const { user, loading, offline, retry } = useSession();
@@ -31,4 +32,11 @@ function OfflineScreen({ onRetry }: { onRetry: () => void }) {
       <button type="button" onClick={onRetry} className="mt-5 inline-flex min-h-[48px] items-center rounded-xl bg-accent px-5 font-semibold text-accent-ink">{t('Opnieuw proberen', 'Try again')}</button>
     </div>
   );
+}
+
+/** Clinical staff screens (complaint guide) only for physiotherapy practices; coaches go to the dashboard. */
+export function RequireClinical({ children }: { children: ReactNode }) {
+  const { practice } = useSession();
+  if (practice && !isClinical(practice.kind)) return <Navigate to="/app" replace />;
+  return <>{children}</>;
 }

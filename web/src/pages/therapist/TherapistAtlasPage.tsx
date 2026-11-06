@@ -1,3 +1,4 @@
+import { useClinicalPractice } from '@/lib/session';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -191,6 +192,7 @@ function Muscles({ exercises, focus, onAdd, nl }: { exercises: AtlasExercise[]; 
 /** Send a muscle card to a patient: it arrives as a message on their Vandaag, opening the card. */
 /** Chains, compensation patterns and complaints this muscle plays a part in (complaint guide). */
 function ChainBlock({ muscle, nl }: { muscle: string; nl: boolean }) {
+  const clinical = useClinicalPractice();
   const { t } = useI18n();
   const x = muscleInChains(muscle);
   if (!x.chains.length && !x.asWeak.length && !x.asOver.length) return null;
@@ -199,7 +201,7 @@ function ChainBlock({ muscle, nl }: { muscle: string; nl: boolean }) {
       <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-600">{t('Ketens en compensaties', 'Chains and compensations')}</p>
       {x.chains.length > 0 && <p className="text-ink-800">{t('In de', 'In the')} {x.chains.map((c) => (nl ? c.name[0] : c.name[1]).toLowerCase()).join(', ')}.</p>}
       {[...x.asWeak, ...x.asOver.filter((c) => !x.asWeak.includes(c))].map((c) => <CompensationCard key={c.key} c={c} />)}
-      {x.complaints.length > 0 && (
+      {clinical && x.complaints.length > 0 && (
         <p className="flex flex-wrap items-center gap-x-2 text-[13.5px] text-ink-700">
           {t('Speelt mee bij', 'Plays a part in')}:
           {x.complaints.map((c) => <Link key={c.key} to={`/app/klachtwijzer?regio=${c.region}&klacht=${c.key}`} className="inline-flex min-h-[40px] items-center font-medium text-accent hover:underline">{nl ? c.name[0] : c.name[1]}</Link>)}

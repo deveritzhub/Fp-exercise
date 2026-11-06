@@ -1,3 +1,4 @@
+import { useClinicalPractice } from '@/lib/session';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Compass } from 'lucide-react';
@@ -17,6 +18,7 @@ type StaffHero = Pick<HeroState, 'hero' | 'painMap' | 'trends'> & { aids?: strin
 
 /** Therapist: the patient's self-reported body map, first check-in versus latest. */
 export function PainMapCard({ patientId }: { patientId: string }) {
+  const clinical = useClinicalPractice();
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const q = useQuery({ queryKey: ['patient', patientId, 'hero'], queryFn: () => api.get<StaffHero>(`/patients/${patientId}/hero`) });
@@ -69,7 +71,7 @@ export function PainMapCard({ patientId }: { patientId: string }) {
             )}
             <p className="text-[13px] text-ink-600">{t(`${painMap.checkins} ${painMap.checkins === 1 ? 'meting' : 'metingen'}`, `${painMap.checkins} check-in(s)`)}</p>
             {/* Straight to the complaint guide for the painful regions, with this patient. */}
-            {(() => {
+            {clinical && (() => {
               const regions = [...new Set(areas.filter((a) => now[a.key] !== undefined).map((a) => regionForArea(a.key)).filter((r): r is NonNullable<typeof r> => !!r))];
               if (!regions.length) return null;
               return (

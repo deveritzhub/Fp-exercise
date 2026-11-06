@@ -1,3 +1,4 @@
+import { useClinicalPractice } from '@/lib/session';
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -22,6 +23,7 @@ import { ClinicalTimeline } from '@/components/therapist/ClinicalTimeline';
 type Tab = 'overzicht' | 'programmas' | 'sessies' | 'kracht' | 'mobiliteit' | 'modules' | 'gegevens';
 
 export function PatientDetailPage() {
+  const clinical = useClinicalPractice();
   const { id = '' } = useParams();
   const nav = useNavigate();
   const { t, locale } = useI18n();
@@ -100,7 +102,7 @@ export function PatientDetailPage() {
                 </>
               )}
             </Popover>
-            {!pt.archived && <ButtonLink variant="secondary" to={`/app/klachtwijzer?patient=${id}`} icon={<Compass className="h-4 w-4" />}>{t('Op klacht', 'By complaint')}</ButtonLink>}
+            {!pt.archived && clinical && <ButtonLink variant="secondary" to={`/app/klachtwijzer?patient=${id}`} icon={<Compass className="h-4 w-4" />}>{t('Op klacht', 'By complaint')}</ButtonLink>}
             {!pt.archived && <ButtonLink to={`/app/programmas/nieuw?patient=${id}`} icon={<Plus className="h-4 w-4" />}>{t('Nieuw programma', 'New programme')}</ButtonLink>}
           </>
         }

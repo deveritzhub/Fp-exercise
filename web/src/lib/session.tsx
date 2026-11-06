@@ -1,3 +1,4 @@
+import { isClinical } from '@shared/accountKind';
 import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError, getActivePractice, setActivePractice } from './api';
@@ -65,4 +66,10 @@ export function homePathFor(u: SessionUser | null) {
   if (u.patient) return '/p';
   if (u.isPlatformAdmin) return '/admin';
   return '/login';
+}
+
+/** Whether the active practice is a physiotherapy practice (clinical tools such as the complaint guide). */
+export function useClinicalPractice() {
+  const { practice } = useSession();
+  return isClinical(practice?.kind);
 }
