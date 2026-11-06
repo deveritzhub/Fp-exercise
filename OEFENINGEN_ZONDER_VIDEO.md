@@ -194,3 +194,24 @@ Voor deze praktijkoefeningen is al een goedgekeurde video van (bijna) dezelfde b
 2. Maak dan AI-foto's (start en eind) voor de oefeningen met "AI-foto geschikt", te beginnen met de oefeningen die het vaakst in programma's worden voorgeschreven.
 3. Voor de oefeningen met "Liever echte foto/still": maak een telefoonfoto in de praktijk of wacht op de video.
 4. Vervang de foto door de video zodra die is goedgekeurd. Laat de foto staan als thumbnail.
+
+## 5. Werkwijze met Gemini Pro (betaald abonnement)
+
+Met Gemini Pro heb je het betere beeldmodel (Nano Banana Pro) en hogere dagelijkse limieten, dus de hele lijst is in een paar sessies te doen. Je hebt ook beperkt toegang tot Veo voor korte video's. Het onzichtbare SynthID-watermerk blijft altijd aanwezig. Of er ook een zichtbaar logo op komt, hangt af van je abonnement: controleer dat bij je eerste beeld.
+
+**Werkwijze per oefening**
+1. Upload een referentiebeeld: een frame uit een goedgekeurde video, zodat steeds hetzelfde model in dezelfde kleding wordt gebruikt.
+2. Vraag om één afbeelding met de start- en eindpositie naast elkaar, gebruik de prompt hieronder.
+3. Laat de afbeelding klinisch keuren. Bij een fout: benoem precies wat er mis is ("linkerknie moet 90 graden zijn") en laat Gemini alleen dat aanpassen.
+4. Upload de afbeelding als foto bij de oefening ("Media beheren") met de tekst "Illustratie, video volgt".
+
+**Prompt-sjabloon**
+
+> Gebruik de persoon, kleding en mat uit de referentiefoto. Maak één fotorealistische afbeelding, zijaanzicht, rustige lichte achtergrond, hele lichaam in beeld. Links de startpositie, rechts de eindpositie van de oefening **[naam]**.
+> Startpositie: **[startpositie uit de oefentekst]**.
+> Eindpositie: **[beweging uit de oefentekst]**.
+> Let op: **[2 à 3 belangrijkste aandachtspunten, bv. rug neutraal, knie boven de voet]**. Geen tekst, geen pijlen, geen extra personen.
+
+De start-, bewegings- en cuetekst staan per oefening al in de app. Kopieer die, dan klopt het beeld met de instructie die de patiënt leest.
+
+**Video met Veo?** Tekst-naar-video werd eerder afgekeurd. Beeld-naar-video vanaf een *goedgekeurde* startfoto heeft meer kans, omdat de houding dan al vastligt. Probeer het eerst met één eenvoudige oefening en laat die net zo streng keuren als de eerdere video's.
