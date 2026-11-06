@@ -182,7 +182,8 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     vaste aanmoediging sturen ("Zet 'm op!", "Sterk bezig!", "Trots op je!", "Volhouden!"); geen
     vrije tekst, dus niets te modereren en geen gezondheidsgegevens. Migratie 035 (alleen een nieuwe
     tabel); net als de vriendschappen alleen via beveiligde databasefuncties, getest. Weg zodra de
-    vriendschap of het delen stopt; staat in de gegevensexport.
+    vriendschap of het delen stopt; staat in de gegevensexport. Migratie 035 live toegepast.
+    Een nieuwe aanmoediging (laatste 2 dagen) staat ook op de vriendenkaart op de heldpagina.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

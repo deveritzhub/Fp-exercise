@@ -432,13 +432,16 @@ export function FriendsCard() {
   const d = q.data;
   const friends = d?.friends.filter((f) => f.kind === 'friend').length ?? 0;
   const incoming = d?.friends.filter((f) => f.kind === 'incoming').length ?? 0;
+  // Cheers from the last two days, newest first.
+  const fresh = (d?.cheers ?? []).filter((c) => Date.now() - new Date(c.at).getTime() < 2 * 86400_000);
+  const cheer = fresh[0] && CHEERS.find((x) => x.key === fresh[0].cheer);
   return (
     <Link to="/p/held/vrienden" className="tap flex items-center gap-3 rounded-2xl border border-line bg-white p-5 shadow-card hover:border-ink-300">
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-soft"><Users className="h-5 w-5 text-accent" aria-hidden /></span>
       <span className="min-w-0 flex-1">
         <span className="t-card block">{t('Vrienden', 'Friends')}</span>
         <span className="block text-[13.5px] text-ink-600">
-          {!d ? '…' : !d.sharing.enabled ? t('Uit · vergelijk levels met vrienden als je wilt', 'Off · compare levels with friends if you like') : incoming ? t(`${incoming} nieuw verzoek${incoming > 1 ? 'en' : ''}`, `${incoming} new request${incoming > 1 ? 's' : ''}`) : t(`${friends} ${friends === 1 ? 'vriend' : 'vrienden'}`, `${friends} ${friends === 1 ? 'friend' : 'friends'}`)}
+          {cheer && fresh[0] ? <>{cheer.emoji} {t(`${fresh[0].heroName}: ${cheer.nl}`, `${fresh[0].heroName}: ${cheer.en}`)}{fresh.length > 1 ? t(` (+${fresh.length - 1})`, ` (+${fresh.length - 1})`) : ''}</> : !d ? '…' : !d.sharing.enabled ? t('Uit · vergelijk levels met vrienden als je wilt', 'Off · compare levels with friends if you like') : incoming ? t(`${incoming} nieuw verzoek${incoming > 1 ? 'en' : ''}`, `${incoming} new request${incoming > 1 ? 's' : ''}`) : t(`${friends} ${friends === 1 ? 'vriend' : 'vrienden'}`, `${friends} ${friends === 1 ? 'friend' : 'friends'}`)}
         </span>
       </span>
       {incoming > 0 && <span className="rounded-full bg-info px-2 py-0.5 text-[12px] font-bold text-white">{incoming}</span>}

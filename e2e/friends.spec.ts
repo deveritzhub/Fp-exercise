@@ -90,6 +90,10 @@ test('two patients from different practices become friends and join without a re
   const got = noah.getByRole('region', { name: 'Aanmoedigingen voor jou' });
   await expect(got.getByText(/Sprinter Emma/)).toBeVisible();
   await expect(got.getByText(/Zet 'm op!/)).toBeVisible();
+  // Also on the hero page, on the friends card.
+  await noah.goto('/p/held');
+  await expect(noah.getByRole('link', { name: /Vrienden.*Sprinter Emma: Zet 'm op!/ })).toBeVisible();
+  await noah.goto('/p/held/vrienden');
   await emma.screenshot({ path: 'screenshots/hero/friends.png', fullPage: true });
 
   // The character sheet links to the friends page with the count.
