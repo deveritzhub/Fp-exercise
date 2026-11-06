@@ -117,6 +117,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 44. [x] **Klacht zoeken met Ctrl+K.** "loperknie" of "muisarm" in de snelzoekbalk opent direct de
     klachtwijzer op die klacht. Bibliotheekgat gedicht: carpaletunnelklachten hadden geen
     versterkende oefening; nu duimoppositie met elastiekje en knijpen in een zacht balletje.
+45. [x] **Geen vals "gat" bij heuppijn buitenkant.** Daar stond bij Ontlasten "nog geen passende
+    oefening", terwijl rekken hier bewust vermeden wordt. Nu: "Bewust geen rek" met ontlastadvies
+    voor het dagelijks leven.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

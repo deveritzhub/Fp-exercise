@@ -238,7 +238,8 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
         {proposal && (
           <>
             <div className="mt-3 grid gap-4 lg:grid-cols-3">
-              <Block title={t('1. Ontlasten en mobiliseren', '1. Offload and mobilise')} hint={t('wat overneemt of stijf is', 'what takes over or is stiff')} list={proposal.calm} chosen={chosen} onToggle={toggle} />
+              <Block title={t('1. Ontlasten en mobiliseren', '1. Offload and mobilise')} hint={t('wat overneemt of stijf is', 'what takes over or is stiff')} list={proposal.calm} chosen={chosen} onToggle={toggle}
+                empty={complaint.avoid?.stretchMuscles?.length ? t('Bewust geen rek bij deze klacht (zie "Let op" hierboven). Ontlast vooral in het dagelijks leven: niet op die kant liggen, niet met gekruiste benen zitten en een kussen tussen de knieën.', 'Deliberately no stretching for this complaint (see "Mind this" above). Offload mainly in daily life: do not lie on that side, do not sit with crossed legs and put a pillow between the knees.') : undefined} />
               <Block title={t('2. Activeren en versterken', '2. Activate and strengthen')} hint={t('de zwakke schakel', 'the weak link')} list={proposal.activate} chosen={chosen} onToggle={toggle} />
               <Block title={t('3. Functioneel', '3. Functional')} hint={t('de beweging waarin het misgaat', 'the movement where it goes wrong')} list={proposal.function} chosen={chosen} onToggle={toggle} />
             </div>
@@ -254,14 +255,14 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
   );
 }
 
-function Block({ title, hint, list, chosen, onToggle }: { title: string; hint: string; list: ProposalExercise[]; chosen: Set<string>; onToggle: (id: string) => void }) {
+function Block({ title, hint, list, chosen, onToggle, empty }: { title: string; hint: string; list: ProposalExercise[]; chosen: Set<string>; onToggle: (id: string) => void; empty?: string }) {
   const { t, locale } = useI18n();
   return (
     <fieldset>
       <legend className="font-medium text-ink-900">{title}</legend>
       <p className="text-[12.5px] text-ink-500">{hint}</p>
       {list.length === 0 ? (
-        <p className="mt-2 rounded-lg bg-canvas px-3 py-2 text-[13px] text-ink-600">{t('Nog geen passende oefening in je bibliotheek. Kijk in de spierenatlas bij "Gaten in je bibliotheek".', 'No matching exercise in your library yet. See "Gaps in your library" in the muscle atlas.')}</p>
+        <p className="mt-2 rounded-lg bg-canvas px-3 py-2 text-[13px] text-ink-600">{empty ?? t('Nog geen passende oefening in je bibliotheek. Kijk in de spierenatlas bij "Gaten in je bibliotheek".', 'No matching exercise in your library yet. See "Gaps in your library" in the muscle atlas.')}</p>
       ) : (
         <ul className="mt-2 space-y-1">
           {list.map((e) => {

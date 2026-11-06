@@ -123,3 +123,11 @@ test('a printable explanation for the patient, in plain words', async ({ page })
   await expect(page.getByRole('heading', { name: /Neem direct contact op/ })).toBeVisible();
   await expectAccessible(page, 'patient handout');
 });
+
+test('lateral hip pain: no stretch is a deliberate choice, not a library gap', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto('/app/klachtwijzer?regio=heup&klacht=gluteale_tendinopathie');
+  const proposal = page.getByRole('region', { name: /Oefenvoorstel/ });
+  await expect(proposal.getByText(/Bewust geen rek bij deze klacht/)).toBeVisible();
+  await expect(proposal.getByText(/Nog geen passende oefening/)).toHaveCount(0);
+});
