@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { BODY_AREAS } from './hero';
-import { CHAINS, COMPENSATIONS, COMPLAINTS, REGIONS, regionForArea, complaintsForExercise, complaintMuscles, complaintsIn, muscleInChains, proposeExercises, searchComplaints, whyFor, type ProposalExercise } from './complaints';
+import { CHAINS, COMPENSATIONS, COMPLAINTS, REGIONS, regionForArea, complaintsForExercise, templatesFor, complaintMuscles, complaintsIn, muscleInChains, proposeExercises, searchComplaints, whyFor, type ProposalExercise } from './complaints';
 import { MUSCLES, NERVES } from './muscleAtlas';
 import { MOBILITY_TESTS } from './mobilityTests';
 
@@ -124,5 +124,15 @@ describe('exercise → complaints', () => {
     expect(tfl.find((f) => f.complaint.key === 'itbs')?.block).toBe('calm');
     // Never for lateral hip pain (compressive stretch).
     expect(tfl.find((f) => f.complaint.key === 'gluteale_tendinopathie')).toBeUndefined();
+  });
+});
+
+
+describe('existing practice programmes', () => {
+  it('finds templates whose title fits, best hint first', () => {
+    const list = [{ title: 'Patellapees — belastingsopbouw' }, { title: 'Achillespees — belastingsopbouw' }, { title: 'Nek — mobiliteit en kracht' }];
+    expect(templatesFor(COMPLAINTS.find((c) => c.key === 'achilles')!, list).map((x) => x.title)).toEqual(['Achillespees — belastingsopbouw']);
+    expect(templatesFor(COMPLAINTS.find((c) => c.key === 'patellapees')!, list).map((x) => x.title)).toEqual(['Patellapees — belastingsopbouw']);
+    expect(templatesFor(COMPLAINTS.find((c) => c.key === 'pfps')!, list)).toEqual([]);
   });
 });

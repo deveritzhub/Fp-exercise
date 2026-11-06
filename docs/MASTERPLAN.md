@@ -97,6 +97,8 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     geschiedenis gaf het onderdeel niet mee).
 37. [x] **Eigen verloop van zwaarte en pijn** op Voortgang (laatste 12 trainingen) met een zin in
     gewone taal: "Je pijn na het trainen daalt: van gemiddeld 4 naar 2".
+38. [x] **Bestaand programma in de klachtwijzer.** Past een programma (sjabloon) van de praktijk
+    bij de klacht, dan staat het bovenaan het voorstel met "Hiermee starten".
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

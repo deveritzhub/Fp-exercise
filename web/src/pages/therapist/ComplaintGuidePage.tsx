@@ -10,7 +10,7 @@ import { Button, ErrorState, PageHeader, Segmented, Spinner } from '@/components
 import { CompensationCard, MuscleChips } from '@/components/app/Compensation';
 import { MUSCLES } from '@shared/muscleAtlas';
 import { mobilityTest } from '@shared/mobilityTests';
-import { CHAINS, REGIONS, chainOf, complaintMuscles, complaintOf, complaintsIn, compensationOf, proposeExercises, searchComplaints, whyFor, GUIDE_PHASES, type GuidePhase, type Compensation, type Complaint, type ProposalExercise, type RegionKey } from '@shared/complaints';
+import { CHAINS, REGIONS, chainOf, complaintMuscles, complaintOf, complaintsIn, compensationOf, proposeExercises, searchComplaints, templatesFor, whyFor, GUIDE_PHASES, type GuidePhase, type Compensation, type Complaint, type ProposalExercise, type RegionKey } from '@shared/complaints';
 
 type AtlasData = { exercises: (ProposalExercise & { own: boolean })[] };
 type Fn = readonly [string, string];
@@ -113,6 +113,8 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
   const L = (f: Fn) => (nl ? f[0] : f[1]);
   const nav = useNavigate();
   const atlas = useQuery({ queryKey: ['atlas-staff'], queryFn: () => api.get<AtlasData>('/atlas'), staleTime: 5 * 60_000 });
+  const templates = useQuery({ queryKey: ['templates', ''], queryFn: () => api.get<{ items: { id: string; title: string; itemCount?: number }[] }>('/programs/templates'), staleTime: 5 * 60_000 });
+  const fitting = templates.data ? templatesFor(complaint, templates.data.items).slice(0, 3) : [];
   const comps = complaint.compensations.map(compensationOf).filter((x): x is Compensation => !!x);
   const muscles = complaintMuscles(complaint);
   const [phase, setPhase] = useState<GuidePhase>('opbouw');
@@ -207,6 +209,20 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
           {tests.map((k) => <span key={k} className="rounded-full bg-accent-soft px-2 py-0.5 text-[13px] font-medium text-accent">{L(mobilityTest(k)!.name)}</span>)}
           <span className="text-ink-500">{t('(de patiënt meet thuis; jij ziet het als Mobiliteit gedeeld is)', '(the patient measures at home; you see it when Mobility is shared)')}</span>
         </p>
+      )}
+
+      {fitting.length > 0 && (
+        <section aria-labelledby="tpl-title" className="rounded-2xl border border-line bg-white p-4 shadow-card">
+          <h3 id="tpl-title" className="font-semibold text-ink-900">{t('Bestaand programma in je praktijk', 'Existing programme in your practice')}</h3>
+          <ul className="mt-2 space-y-1">
+            {fitting.map((x) => (
+              <li key={x.id} className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-[14.5px] text-ink-900">{x.title}</span>
+                <Link to={`/app/programmas/nieuw?sjabloon=${x.id}${patient ? `&patient=${patient}` : ''}`} className="inline-flex min-h-[44px] items-center text-[14px] font-semibold text-accent hover:underline">{t('Hiermee starten', 'Start from this')}</Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <section aria-labelledby="prop-title" className="rounded-2xl border border-line bg-white p-5 shadow-card">

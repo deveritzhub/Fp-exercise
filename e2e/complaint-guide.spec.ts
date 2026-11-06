@@ -102,3 +102,13 @@ test('the proposal can also become a practice template', async ({ page }) => {
   await expect(page.getByLabel('Titel')).toHaveValue('Patellofemorale pijn');
   await expect(page.getByText(/Oefeningen \(\d+\)/)).toBeVisible();
 });
+
+test('an existing practice programme that fits the complaint is one tap away', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto('/app/klachtwijzer?regio=enkel_voet&klacht=achilles');
+  const box = page.getByRole('region', { name: 'Bestaand programma in je praktijk' });
+  await expect(box.getByText('Achillespees — belastingsopbouw')).toBeVisible();
+  await box.getByRole('link', { name: 'Hiermee starten' }).first().click();
+  await expect(page).toHaveURL(/programmas\/nieuw\?sjabloon=/);
+  await expect(page.getByLabel('Titel')).toHaveValue(/Achillespees/);
+});
