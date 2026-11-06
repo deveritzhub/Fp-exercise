@@ -120,6 +120,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 45. [x] **Geen vals "gat" bij heuppijn buitenkant.** Daar stond bij Ontlasten "nog geen passende
     oefening", terwijl rekken hier bewust vermeden wordt. Nu: "Bewust geen rek" met ontlastadvies
     voor het dagelijks leven.
+46. [x] **Functioneel blok ook voor nek, schouder en bovenrug.** Dat bleef leeg (alleen been-
+    bewegingen telden). Nu: opdrukken, roeien, drukken en dragen, nadat activatie gekozen heeft;
+    in de prikkelbare fase niets boven het hoofd.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

@@ -385,6 +385,9 @@ export const GUIDE_PHASES: readonly { key: GuidePhase; name: Fn; when: Fn; dose:
 ];
 
 const ISO = ['isometr', 'statisch', 'muurzit', 'wall sit', 'plank', 'hold', 'vasthouden', 'tegen muur', 'tegen deurpost', 'kin intrekken'];
+const UPPER_REGIONS: readonly string[] = ['nek', 'schouder', 'elleboog_pols', 'bovenrug'];
+const UPPER_FUNCTIONAL = ['opdruk', 'push-up', 'overhead', 'schouderdrukken', 'row', 'roei', 'pull-up', 'pulldown', 'farmer', 'carry', 'dragen'];
+const OVERHEAD = ['overhead', 'schouderdrukken', 'boven het hoofd', 'pull-up'];
 const PLYO = ['sprong', 'spring', 'hop', 'bound', 'pogo', 'landing', 'jump', 'copenhagen', 'lateral', 'zijwaarts'];
 
 export function proposeExercises(c: Complaint, exercises: ProposalExercise[], perBlock = 5, phase: GuidePhase = 'opbouw') {
@@ -425,7 +428,11 @@ export function proposeExercises(c: Complaint, exercises: ProposalExercise[], pe
   const sliders = exercises.filter((e) => e.kind === 'zenuw' && !!e.nerve && (c.nerves ?? []).includes(e.nerve));
   const calmList = take([...sliders, ...rank(exercises.filter((e) => e.kind === 'rek' && hits(e, [...calm, ...train]) > 0), calm, c.calm ?? [])]);
   // Irritable: no jumping; functional work is limited to calm balance and control.
-  const funcPool = exercises.filter((e) => (e.kind === 'kracht' || e.kind === 'revalidatie') && (isFunctional(e) || (phase === 'sport' && has(e, PLYO))) && hits(e, train) > 0 && !(phase === 'prikkelbaar' && has(e, PLYO)));
+  // Upper body: whole pushing, pulling and carrying movements are the functional step. Activation
+  // picks first, so a row that already trains the weak link stays there. Not overhead while irritable.
+  const upper = UPPER_REGIONS.includes(c.region);
+  const isUpperFunctional = (e: ProposalExercise) => upper && has(e, UPPER_FUNCTIONAL);
+  const funcPool = exercises.filter((e) => (e.kind === 'kracht' || e.kind === 'revalidatie') && (isFunctional(e) || isUpperFunctional(e) || (phase === 'sport' && has(e, PLYO))) && hits(e, train) > 0 && !(phase === 'prikkelbaar' && (has(e, PLYO) || has(e, OVERHEAD))));
   const func = take(rank(funcPool, train)).slice(0, phase === 'prikkelbaar' ? 2 : perBlock);
   return { calm: calmList, activate, function: func, train, calmMuscles: calm };
 }

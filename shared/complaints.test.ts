@@ -110,6 +110,15 @@ describe('phases and the pain map', () => {
     const sport = proposeExercises(itbs, lib, 5, 'sport');
     expect(sport.function[0].id).toBe('jump');
   });
+  it('shoulder: pushing and pulling are the functional step, but not overhead while irritable', () => {
+    const saps = COMPLAINTS.find((c) => c.key === 'saps')!;
+    const { train } = proposeExercises(saps, []);
+    const m = [train[0]];
+    const sh = [ex('er', 'Externe rotatie met band', m), ex('ohp', 'Overhead press', m)];
+    // Activation takes the rotator exercise first; the press is left for the functional block.
+    expect(proposeExercises(saps, sh, 1).function.map((e) => e.id)).toEqual(['ohp']);
+    expect(proposeExercises(saps, sh, 1, 'prikkelbaar').function).toEqual([]);
+  });
   it('every pain-map area leads to a guide region', () => {
     for (const a of BODY_AREAS) expect(regionForArea(a.key), a.key).toBeTruthy();
   });
