@@ -59,3 +59,25 @@ describe('dashboard: pain rising after workouts', () => {
     expect(emma?.signals.find((x: any) => x.reason === 'pain_rising')).toMatchObject({ value: 5, planned: 2 });
   });
 });
+
+describe('dashboard: coaches draw no conclusions from how someone feels', () => {
+  it('no high pain or pain rising signals for a coach practice', async () => {
+    const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
+    await db.connect();
+    const practice = (await db.query('SELECT practice_id FROM patients WHERE id = $1', [s.patients.emma])).rows[0].practice_id;
+    try {
+      const ids = (await db.query(`SELECT id FROM workout_sessions WHERE patient_id = $1 AND completed_at IS NOT NULL ORDER BY completed_at DESC LIMIT 3`, [s.patients.emma])).rows.map((r) => r.id);
+      for (const [i, pain] of [7, 4, 2].entries()) await db.query(`UPDATE workout_sessions SET difficulty = 5, pain = $2 WHERE id = $1`, [ids[i], pain]);
+      await db.query(`ALTER TABLE practices DISABLE TRIGGER USER`);
+      await db.query(`UPDATE practices SET kind = 'coach' WHERE id = $1`, [practice]);
+      const d = await (await login('therapistA')).get('/dashboard');
+      const emma = d.body.attention.find((x: any) => x.patientId === s.patients.emma);
+      expect(emma?.reasons ?? []).not.toContain('high_pain');
+      expect(emma?.reasons ?? []).not.toContain('pain_rising');
+    } finally {
+      await db.query(`UPDATE practices SET kind = 'physio' WHERE id = $1`, [practice]);
+      await db.query(`ALTER TABLE practices ENABLE TRIGGER USER`);
+      await db.end();
+    }
+  });
+});

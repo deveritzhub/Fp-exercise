@@ -53,6 +53,8 @@ dashboard.get('/', async (c) => {
       );
       const scoresBy = new Map<string, { difficulty: number | null; pain: number | null; at: string }[]>();
       for (const r of recentScores.rows) scoresBy.set(r.patient_id, [...(scoresBy.get(r.patient_id) ?? []), { difficulty: r.difficulty, pain: r.pain, at: r.completed_at }]);
+      // Coaches and personal accounts are not medical: the app draws no conclusions from how someone feels.
+      const clinical = (await tx.query('SELECT kind FROM practices WHERE id = $1', [practiceId])).rows[0]?.kind === 'physio';
       const soon = new Date();
       soon.setDate(soon.getDate() + 7);
       const attention: Attention[] = [];
@@ -64,7 +66,7 @@ dashboard.get('/', async (c) => {
         planned += a.planned;
         completed += a.completed;
         const pain = painBy.get(p.id);
-        if (pain && pain.max_pain >= 6) signals.push({ reason: 'high_pain', date: pain.pain_at, value: pain.max_pain });
+        if (clinical && pain && pain.max_pain >= 6) signals.push({ reason: 'high_pain', date: pain.pain_at, value: pain.max_pain });
         if (pain && pain.unreviewed > 0) signals.push({ reason: 'new_feedback', date: pain.feedback_at, value: pain.unreviewed });
         if (!p.activated) {
           // Without an activated account a patient cannot register anything: say that, not "low adherence".
@@ -80,7 +82,7 @@ dashboard.get('/', async (c) => {
         const prog = p.active_programs > 0 ? progressionSignal(scoresBy.get(p.id) ?? []) : null;
         if (prog) signals.push({ reason: prog.kind, date: scoresBy.get(p.id)?.[0]?.at ?? null, value: prog.avgDifficulty, completed: prog.sessions });
         // Pain going up workout after workout, before it reaches "high pain".
-        const rising = p.active_programs > 0 && !signals.some((x) => x.reason === 'high_pain') ? painRising(scoresBy.get(p.id) ?? []) : null;
+        const rising = clinical && p.active_programs > 0 && !signals.some((x) => x.reason === 'high_pain') ? painRising(scoresBy.get(p.id) ?? []) : null;
         if (rising) signals.push({ reason: 'pain_rising', date: scoresBy.get(p.id)?.[0]?.at ?? null, value: rising.to, planned: rising.from });
         if (p.next_end && p.next_end <= toISODate(soon)) signals.push({ reason: 'program_ending', date: p.next_end });
         if (p.active_programs === 0) signals.push({ reason: 'no_active_program', date: null });

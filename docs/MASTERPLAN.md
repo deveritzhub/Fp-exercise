@@ -164,6 +164,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     en controleert dat de klachtwijzer nergens zichtbaar of bereikbaar is (menu, snelzoeken,
     "Aan de slag", "Wat is er nieuw?", directe link), en dat een klant van een coach een
     niet-medische tip krijgt als het na het trainen steeds minder goed voelt.
+61. [x] **Geen pijnconclusies bij coaches.** Het dashboard van een coachpraktijk toont geen "Hoge
+    pijnscore" of "Pijn loopt op" meer: bij niet-medische accounts trekt de app geen conclusies uit
+    hoe iemand zich voelt (zoals in `docs/ACCOUNT_TYPES.md`).
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
