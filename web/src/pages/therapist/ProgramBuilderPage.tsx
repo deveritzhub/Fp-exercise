@@ -952,6 +952,7 @@ function TemplatePicker({ open, onClose, onPick }: { open: boolean; onClose: () 
                 <span className="flex items-start justify-between gap-2">
                   <span className="text-[14px] font-semibold">{p.title}</span>
                   {p.favorite && <Badge tone="warn">★</Badge>}
+                  {!p.favorite && (p as Program & { lastUsedAt?: string | null }).lastUsedAt && <Badge tone="accent">{t('Onlangs gebruikt', 'Recently used')}</Badge>}
                 </span>
                 <span className="mt-1 line-clamp-2 text-[12.5px] text-ink-500">{p.description}</span>
                 <span className="mt-2 flex flex-wrap gap-1">

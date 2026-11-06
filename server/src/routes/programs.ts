@@ -243,6 +243,8 @@ programs.get('/templates', async (c) => {
     await withUser(user.id, async (tx) => {
       const { rows } = await tx.query(
         `SELECT p.*, (tf.user_id IS NOT NULL) AS favorite,
+                -- When this professional last made a programme from it (recently used first).
+                (SELECT max(u.created_at) FROM programs u WHERE u.source_template_id = p.id AND u.created_by = app.uid()) AS last_used,
                 (SELECT count(*) FROM program_items i WHERE i.program_id = p.id) AS item_count,
                 (SELECT array_agg(DISTINCT e.body_region) FROM program_items i JOIN exercises e ON e.id = i.exercise_id
                   WHERE i.program_id = p.id) AS regions
@@ -252,11 +254,11 @@ programs.get('/templates', async (c) => {
             AND ($1 = '' OR p.title ILIKE '%' || $1 || '%' OR p.description ILIKE '%' || $1 || '%')
             -- Rehab templates are for physiotherapy practices only.
             AND (app.practice_kind($2) = 'physio' OR coalesce(p.module, 'revalidatie') <> 'revalidatie')
-          ORDER BY (tf.user_id IS NOT NULL) DESC, (p.practice_id IS NOT NULL) DESC, p.title`,
+          ORDER BY (tf.user_id IS NOT NULL) DESC, last_used DESC NULLS LAST, (p.practice_id IS NOT NULL) DESC, p.title`,
         [q, practiceId],
       );
       return {
-        items: rows.map((r) => ({ ...mapProgram(r), favorite: r.favorite, itemCount: r.item_count, regions: r.regions ?? [] })),
+        items: rows.map((r) => ({ ...mapProgram(r), favorite: r.favorite, itemCount: r.item_count, regions: r.regions ?? [], lastUsedAt: r.last_used ?? null })),
       };
     }),
   );

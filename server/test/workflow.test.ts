@@ -246,3 +246,19 @@ describe('therapist → patient → therapist workflow', () => {
     expect(prog.body.perExercise.length).toBeGreaterThan(0);
   });
 });
+
+describe('recently used templates', () => {
+  it('a template you just used comes first (after favourites), marked with lastUsedAt', async () => {
+    const ther = await login('therapistA');
+    const before = (await ther.get('/programs/templates')).body.items as { id: string; favorite: boolean; lastUsedAt: string | null }[];
+    const pick = before.filter((x) => !x.favorite).at(-1)!;
+    const pat = (await ther.get('/patients?status=active&scope=practice')).body.items[0].id;
+    const full = (await ther.get(`/programs/${pick.id}`)).body;
+    const items = full.items.map((i: any) => ({ exerciseId: i.exerciseId, sets: i.sets, reps: i.reps, holdS: i.holdS, days: i.days }));
+    expect((await ther.post('/programs', { title: 'Vanuit sjabloon (test)', patientId: pat, status: 'draft', sourceTemplateId: pick.id, items })).status).toBe(201);
+    const after = (await ther.get('/programs/templates')).body.items as typeof before;
+    const firstNonFav = after.find((x) => !x.favorite)!;
+    expect(firstNonFav.id).toBe(pick.id);
+    expect(firstNonFav.lastUsedAt).toBeTruthy();
+  });
+});

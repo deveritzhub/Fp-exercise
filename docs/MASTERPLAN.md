@@ -232,7 +232,8 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
 80. [x] **Lege schermen met één duidelijke actie.** Niets gevonden bij sjablonen of programma's →
     "Wis zoeken en filters" (of "Nieuw programma" als er niets gefilterd is); dashboard zonder
     activiteit → "Uitnodigingen bekijken"; geen favorieten → "Naar de oefenbibliotheek".
-81. [ ] **Laatst gebruikte sjablonen bovenaan** bij een nieuw programma.
+81. [x] **Laatst gebruikte sjablonen bovenaan.** In "Kies een sjabloon" staan na je favorieten de
+    sjablonen die jij het laatst gebruikte, met het label "Onlangs gebruikt".
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
