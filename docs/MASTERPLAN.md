@@ -212,7 +212,9 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
       API, pagina's, bestanden en path-traversal-pogingen gedragen zich goed.
     - Nog open, grote versiesprongen voor later met de volledige testset: zod 4, react-router 7.
       React Router 7 geprobeerd: 3 e2e-tests vielen om (training starten, pauze na alarmsignaal,
-      heldoverzicht). Teruggedraaid; het doorstuurlek is al afgevangen in `safeNext`. Later uitzoeken.
+      heldoverzicht). Teruggedraaid; het doorstuurlek is al afgevangen in `safeNext`. Later uitzoeken:
+      de 3 tests slagen los wel met versie 7, maar falen twee keer op rij in de volledige reeks (dus
+      afhankelijk van eerdere tests, geen toeval).
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
