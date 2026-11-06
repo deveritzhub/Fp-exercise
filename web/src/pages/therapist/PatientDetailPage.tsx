@@ -321,6 +321,9 @@ function Sessions({ progress, onReviewed }: { progress?: Progress; onReviewed: (
                   {s.feedback && (
                     <blockquote className="mb-4 rounded-lg border-l-2 border-info bg-white px-4 py-3 text-sm text-ink-800 shadow-xs">“{s.feedback}”</blockquote>
                   )}
+                  {s.reviewNote && (
+                    <p className="mb-4 rounded-lg border-l-2 border-accent bg-accent-soft px-4 py-3 text-sm text-ink-800"><span className="font-semibold">{t('Jouw reactie', 'Your reply')}: </span>{s.reviewNote}</p>
+                  )}
                   <table className="w-full text-[13px]">
                     <caption className="pb-2 text-left text-[12.5px] text-ink-600">{t('Oefenscores: ingevuld na elke oefening (0–10).', 'Exercise scores: filled in after each exercise (0–10).')}</caption>
                     <thead className="text-left text-[12px] text-ink-600"><tr><th className="py-1 font-medium">{t('Oefening', 'Exercise')}</th><th className="py-1 font-medium">{t('Uitgevoerd', 'Done')}</th><th className="py-1 font-medium">{t('Gedaan', 'Done')}</th><th className="py-1 font-medium">{t('Zwaarte', 'Difficulty')}</th><th className="py-1 font-medium">{t('Pijn', 'Pain')}</th></tr></thead>

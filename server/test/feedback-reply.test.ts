@@ -21,7 +21,12 @@ describe('reply to a workout', () => {
     const home = await (await login('patientA')).get('/patient/home');
     const n = home.body.notifications.find((x: any) => x.title === 'Reactie van je fysiotherapeut');
     expect(n?.body).toBe('Goed gedaan, volgende week iets zwaarder.');
-    // Without a reply: only marked as seen.
+    // Stored: the therapist sees it in the record, the patient with the workout in their history.
+    const prog = await (await login('therapistA')).get(`/patients/${s.patients.emma}/progress`);
+    expect(prog.body.sessions.find((x: any) => x.id === sid).reviewNote).toBe('Goed gedaan, volgende week iets zwaarder.');
+    const hist = await (await login('patientA')).get('/patient/history');
+    expect(hist.body.sessions.find((x: any) => x.id === sid).reply).toBe('Goed gedaan, volgende week iets zwaarder.');
+    // Without a reply: only marked as seen (an earlier reply stays).
     expect((await (await login('therapistA')).post(`/patients/sessions/${sid}/review`)).body).toEqual({ ok: true, delivered: false });
   });
 });

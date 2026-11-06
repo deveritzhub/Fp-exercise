@@ -285,7 +285,7 @@ patients.get('/:id/progress', async (c) => {
       const inputs = await loadAdherenceInputs(tx, [id]);
       const sessions = await tx.query(
         `SELECT s.id, s.program_id, pr.title AS program_title, s.started_at, s.completed_at, s.difficulty, s.pain,
-                s.feedback, s.reviewed_at,
+                s.feedback, s.reviewed_at, s.review_note,
                 (SELECT coalesce(json_agg(json_build_object(
                     'exerciseId', l.exercise_id, 'nameNl', e.name_nl, 'nameEn', e.name_en, 'completed', l.completed,
                     'setsDone', l.sets_done, 'repsDone', l.reps_done, 'difficulty', l.difficulty, 'pain', l.pain,
@@ -326,6 +326,7 @@ patients.get('/:id/progress', async (c) => {
           pain: s.pain,
           feedback: s.feedback,
           reviewedAt: s.reviewed_at,
+          reviewNote: s.review_note ?? null,
           logs: s.logs,
         })),
         outcomes: outcomes.rows.map(mapOutcome),
@@ -375,9 +376,9 @@ patients.post('/sessions/:sessionId/review', async (c) => {
   const b = parse(z.object({ reply: z.string().trim().max(500).default('') }), await c.req.json().catch(() => ({})));
   const delivered = await withUser(user.id, async (tx) => {
     const r = await tx.query(
-      `UPDATE workout_sessions SET reviewed_at = now(), reviewed_by = app.uid()
+      `UPDATE workout_sessions SET reviewed_at = now(), reviewed_by = app.uid(), review_note = coalesce(nullif($2, ''), review_note)
         WHERE id = $1 AND app.can_manage_patient(patient_id) RETURNING practice_id, patient_id`,
-      [sid],
+      [sid, b.reply],
     );
     if (!r.rowCount) throw notFound();
     await audit(tx, user.id, r.rows[0].practice_id, 'review', 'workout_session', sid);

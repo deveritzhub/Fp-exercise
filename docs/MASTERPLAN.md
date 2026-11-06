@@ -104,6 +104,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 40. [x] **Uitleg voor de patiënt per klacht.** Eén printbare pagina in gewone taal: wat het is,
     hoe het lichaam samenwerkt, waarom deze oefeningen, waar je op let, pijn tijdens oefenen en
     wanneer je direct contact opneemt.
+41. [x] **Reactie bewaard.** De reactie op een training wordt opgeslagen (migratie 034, alleen een
+    kolom erbij): de fysio ziet "Jouw reactie" in het dossier, de patiënt ziet hem bij de training
+    op Voortgang.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

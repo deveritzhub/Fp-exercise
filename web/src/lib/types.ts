@@ -166,7 +166,7 @@ export type Progress = {
   adherence28d: Adherence;
   completedSessions: number;
   outcomes: PatientOutcome[];
-  sessions: { id: string; programId: string; programTitle: string; startedAt: string; completedAt: string | null; difficulty: number | null; pain: number | null; feedback: string | null; reviewedAt: string | null; logs: SessionLog[] }[];
+  sessions: { id: string; programId: string; programTitle: string; startedAt: string; completedAt: string | null; difficulty: number | null; pain: number | null; feedback: string | null; reviewedAt: string | null; reviewNote?: string | null; logs: SessionLog[] }[];
   perExercise: { exerciseId: string; nameNl: string; nameEn: string; completed: number; logged: number; avgDifficulty: number | null; avgPain: number | null; maxPain: number | null }[];
 };
 

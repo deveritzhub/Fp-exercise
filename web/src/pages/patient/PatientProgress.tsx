@@ -65,7 +65,7 @@ function QuizSummary() {
 
 type History = {
   weekly: (Adherence & { weekStart: string })[];
-  sessions: { id: string; completedAt: string; programTitle: string; difficulty: number | null; pain: number | null; feedback: string | null; exercisesDone: number; exercisesTotal: number }[];
+  sessions: { id: string; completedAt: string; programTitle: string; difficulty: number | null; pain: number | null; feedback: string | null; reply?: string | null; exercisesDone: number; exercisesTotal: number }[];
 };
 
 export function PatientProgress() {
@@ -111,6 +111,7 @@ export function PatientProgress() {
                   <div className="font-medium">{fmtDateTime(s.completedAt, locale)}</div>
                   <div className="text-[14px] text-ink-500">{s.programTitle} · {s.exercisesDone}/{s.exercisesTotal} {t('oefeningen', 'exercises')}</div>
                   {s.feedback && <div className="mt-1 flex items-start gap-1.5 text-[14px] italic text-ink-600"><MessageCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />{s.feedback}</div>}
+                  {s.reply && <div className="mt-1.5 rounded-lg bg-accent-soft px-3 py-2 text-[14px] text-ink-800"><span className="font-semibold">{t('Je fysiotherapeut', 'Your physiotherapist')}: </span>{s.reply}</div>}
                 </div>
               </li>
             ))}

@@ -114,6 +114,7 @@ test('therapist reviews progress and modifies the programme', async ({ page }) =
   await page.getByRole('button', { name: 'Gezien en versturen' }).click();
   await expect(page.getByText(/je reactie staat in de app van de patiënt/)).toBeVisible();
   await expect(page.getByText('Gezien').first()).toBeVisible();
+  await expect(page.getByText(/Jouw reactie:.*Kom bij de brug minder hoog/)).toBeVisible();
 
   await page.goto(programUrl);
   await expect(page.getByText('Actief — de patiënt ziet versie 1.')).toBeVisible();
