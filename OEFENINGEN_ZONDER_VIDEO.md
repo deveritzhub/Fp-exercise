@@ -1,30 +1,22 @@
 # Oefeningen zonder video
 
-_Stand: 6 november 2026, branch `claude/fp-exercise-platform-bcak8k`. Bronnen: `server/db/seed-data/exercises.ts` (centrale bibliotheek), de FP-bundels in `server/src/lib/fpLibrary.ts` (praktijkbibliotheek) en `server/db/seed-data/videos.ts` (gekoppelde video's)._
+_Stand: 6 november 2026, branch `claude/fp-exercise-platform-bcak8k`. Bronnen: `server/db/seed-data/exercises.ts` (centrale bibliotheek), de FP-bundels in `server/src/lib/fpLibrary.ts` (praktijkbibliotheek), `server/db/seed-data/videos.ts` en `SAME_AS_LIBRARY` / `MOBILITY_SAME_AS` in `server/src/lib/libraryImport.ts` (gekoppelde en samengevoegde oefeningen)._
 
-**Totaal 168 oefeningen: 22 met video, 146 zonder.**
+**Totaal 164 oefeningen: 29 met video, 135 zonder.**
 
 - Centrale bibliotheek: 36 van 50 zonder video
-- Praktijkbibliotheek (FP-bundels): 110 van 118 zonder video
+- Praktijkbibliotheek (FP-bundels): 99 van 114 zonder video
 
-Video's op centrale oefeningen worden op naam gekoppeld, video's op praktijkoefeningen alleen op `source_key`. Daardoor hebben praktijkoefeningen met dezelfde beweging als een centrale oefening met video toch geen video.
+Al gekoppeld via `SAME_AS_LIBRARY` (de praktijkversie gebruikt de video van de centrale oefening): Bilbrug, Clamshell, Kuitheffen op twee benen, Eenbenige balans, Step-up, Dead bug, Kin intrekken, Kat-koe. Vier mobiliteitsoefeningen (`mb_kniebuiging_muur`, `mb_hip_flexor_stretch`, `mb_thoracic_rotatie`, `mb_cat_camel`) worden niet apart aangemaakt maar samengevoegd met de basisversie; die tellen hier niet mee.
 
-## 1. Snelle winst: de video bestaat al
+## 1. Snelle winst: de video bestaat al, maar is nog niet gekoppeld
 
-Voor deze praktijkoefeningen is al een goedgekeurde video van (bijna) dezelfde beweging. Na een korte klinische check kan de `source_key` aan de bestaande clip worden toegevoegd in `videos.ts`. Er hoeft dan geen foto of nieuwe video gemaakt te worden.
+Deze praktijkoefeningen staan **niet** in `SAME_AS_LIBRARY`, terwijl er wel een goedgekeurde video van (bijna) dezelfde beweging is. Na een klinische check: toevoegen aan `SAME_AS_LIBRARY`, dan krijgen ze bij de volgende start automatisch die video.
 
 | Oefening | Key | Bestaande video |
 |---|---|---|
 | Isometrische bilbrug | `ex_iso_bilbrug` | Bekkenbrug (als vasthouden) |
-| Clamshell | `ex_clamshell` | Schelp met weerstandsband |
-| Kuitheffen op twee benen | `ex_heel_raise_bilateraal` | Hielheffen staand |
-| Eenbenige balans | `ex_single_leg_balance` | Eenbeensstand |
-| Step-up | `ex_step_up` | Opstappen |
-| Dead bug | `ex_dead_bug` | Dead bug |
-| Kin intrekken | `ex_chin_tuck` | Kinintrekking |
-| Kat-koe | `ex_cat_camel` | Kat-koe |
 | Staande kuitheffen | `kr_standing_calf_raise` | Hielheffen staand |
-| Kat-koe | `mb_cat_camel` | Kat-koe |
 | Zijlig heupabductie met de hiel voorop | `kt_zijlig_abductie` | Heupabductie in zijlig (cue hiel voorop checken) |
 | Eenbenige bilbrug | `kt_eenbenige_bilbrug` | Eenbenige bekkenbrug |
 | Bird dog | `kt_bird_dog` | Viervoetsstand diagonaal (bird dog) |
@@ -120,57 +112,54 @@ Voor deze praktijkoefeningen is al een goedgekeurde video van (bijna) dezelfde b
 | 43 | Face pull | `kr_face_pull` | Kracht & mobiliteit | AI-foto geschikt |
 | 44 | Dumbbell curl | `kr_db_curl` | Kracht & mobiliteit | AI-foto geschikt |
 | 45 | Plank | `kr_core_plank` | Kracht & mobiliteit | AI-foto geschikt |
-| 46 | Kniebuiging tegen muur | `mb_kniebuiging_muur` | Kracht & mobiliteit | AI-foto geschikt |
-| 47 | Heupflexor-rek kniestand | `mb_hip_flexor_stretch` | Kracht & mobiliteit | AI-foto geschikt |
-| 48 | Hamstring rek op rug met band | `mb_hamstring_stretch` | Kracht & mobiliteit | AI-foto geschikt |
-| 49 | 90/90 heupmobiliteit | `mb_90_90` | Kracht & mobiliteit | AI-foto geschikt |
-| 50 | Thoracale rotatie | `mb_thoracic_rotatie` | Kracht & mobiliteit | AI-foto geschikt |
-| 51 | Kinderhouding | `mb_child_pose` | Kracht & mobiliteit | AI-foto geschikt |
-| 52 | Borstspier rek in deuropening | `mb_doorway_pec` | Kracht & mobiliteit | AI-foto geschikt |
-| 53 | Slaapstretch schouder | `mb_sleeper_stretch` | Kracht & mobiliteit | AI-foto geschikt |
-| 54 | Wall slide | `mb_wall_slide` | Kracht & mobiliteit | AI-foto geschikt |
-| 55 | Diepe squat hold | `mb_deep_squat_hold` | Kracht & mobiliteit | AI-foto geschikt |
-| 56 | World's greatest stretch | `mb_world_greatest` | Kracht & mobiliteit | AI-foto geschikt |
-| 57 | Nek en zenuwglijding, sliders | `mb_nerve_glide_neck` | Kracht & mobiliteit | Liever echte foto/still |
-| 58 | Voorwaartse uitvalspas | `kr_forward_lunge` | Video-uitbreiding | AI-foto geschikt |
-| 59 | Goblet squat | `kr_goblet_squat` | Kracht v3 | AI-foto geschikt |
-| 60 | Step-up met dumbbells | `kr_step_up` | Kracht v3 | AI-foto geschikt |
-| 61 | Walking lunge | `kr_walking_lunge` | Kracht v3 | AI-foto geschikt |
-| 62 | Hack squat | `kr_hack_squat` | Kracht v3 | AI-foto geschikt |
-| 63 | Heupabductie machine | `kr_hip_abduction` | Kracht v3 | AI-foto geschikt |
-| 64 | Rugstrekken op bank | `kr_back_extension` | Kracht v3 | AI-foto geschikt |
-| 65 | Dumbbell bench press | `kr_db_bench_press` | Kracht v3 | AI-foto geschikt |
-| 66 | Dumbbell schouderdrukken | `kr_db_shoulder_press` | Kracht v3 | AI-foto geschikt |
-| 67 | Dips | `kr_dips` | Kracht v3 | AI-foto geschikt |
-| 68 | Cable fly | `kr_cable_fly` | Kracht v3 | AI-foto geschikt |
-| 69 | Triceps extension boven het hoofd | `kr_overhead_triceps` | Kracht v3 | AI-foto geschikt |
-| 70 | Eenarmige dumbbell row | `kr_db_row` | Kracht v3 | AI-foto geschikt |
-| 71 | Seated cable row | `kr_seated_cable_row` | Kracht v3 | AI-foto geschikt |
-| 72 | Chin-up | `kr_chin_up` | Kracht v3 | AI-foto geschikt |
-| 73 | Inverted row | `kr_inverted_row` | Kracht v3 | AI-foto geschikt |
-| 74 | Reverse fly | `kr_reverse_fly` | Kracht v3 | AI-foto geschikt |
-| 75 | Hammer curl | `kr_hammer_curl` | Kracht v3 | AI-foto geschikt |
-| 76 | Pallof press | `kr_pallof_press` | Kracht v3 | AI-foto geschikt |
-| 77 | Farmer carry | `kr_farmer_carry` | Kracht v3 | AI-foto geschikt |
-| 78 | Kettlebell swing | `kr_kettlebell_swing` | Kracht v3 | Liever echte foto/still |
-| 79 | Radialis slider | `nd_radial_slider` | Neurodynamica | Liever echte foto/still |
-| 80 | Femoralis slider in zijlig | `nd_femoral_slider` | Neurodynamica | Liever echte foto/still |
-| 81 | Tibialis slider | `nd_tibial_slider` | Neurodynamica | Liever echte foto/still |
-| 82 | Fibularis slider | `nd_fibular_slider` | Neurodynamica | Liever echte foto/still |
-| 83 | Musculocutaneus slider | `nd_musculocutaneous_slider` | Neurodynamica | Liever echte foto/still |
-| 84 | Obturatorius slider | `nd_obturator_slider` | Neurodynamica | Liever echte foto/still |
-| 85 | Step-down van een traptree | `kt_step_down` | Ketens | AI-foto geschikt |
-| 86 | Copenhagen adductie, korte hefboom | `kt_copenhagen_kort` | Ketens | AI-foto geschikt |
-| 87 | Short foot (voetboog actief) | `kt_short_foot` | Ketens | Liever echte foto/still |
-| 88 | Buiklig Y en T (onderste en middelste trapezius) | `kt_buiklig_y_t` | Ketens | AI-foto geschikt |
-| 89 | Push-up plus tegen de muur (serratus) | `kt_push_up_plus` | Ketens | AI-foto geschikt |
-| 90 | Open book (bovenrug draaien) | `kt_open_book` | Ketens | AI-foto geschikt |
-| 91 | Excentrisch polsstrekken (tennisarm) | `kt_pols_excentrisch_strek` | Ketens | Liever echte foto/still |
-| 92 | Excentrisch polsbuigen (golfersarm) | `kt_pols_excentrisch_buig` | Ketens | Liever echte foto/still |
-| 93 | Peesglijden van de vingers | `kt_peesglijden_hand` | Ketens | Liever echte foto/still |
-| 94 | Heup-hinge met stok langs de rug | `kt_heup_hinge` | Ketens | AI-foto geschikt |
-| 95 | TFL en buitenkant heup rekken in stand | `kt_tfl_rek` | Ketens | AI-foto geschikt |
-| 96 | Bovenste trapezius rekken | `kt_bovenste_trapezius_rek` | Ketens | AI-foto geschikt |
+| 46 | Hamstring rek op rug met band | `mb_hamstring_stretch` | Kracht & mobiliteit | AI-foto geschikt |
+| 47 | 90/90 heupmobiliteit | `mb_90_90` | Kracht & mobiliteit | AI-foto geschikt |
+| 48 | Kinderhouding | `mb_child_pose` | Kracht & mobiliteit | AI-foto geschikt |
+| 49 | Borstspier rek in deuropening | `mb_doorway_pec` | Kracht & mobiliteit | AI-foto geschikt |
+| 50 | Slaapstretch schouder | `mb_sleeper_stretch` | Kracht & mobiliteit | AI-foto geschikt |
+| 51 | Wall slide | `mb_wall_slide` | Kracht & mobiliteit | AI-foto geschikt |
+| 52 | Diepe squat hold | `mb_deep_squat_hold` | Kracht & mobiliteit | AI-foto geschikt |
+| 53 | World's greatest stretch | `mb_world_greatest` | Kracht & mobiliteit | AI-foto geschikt |
+| 54 | Nek en zenuwglijding, sliders | `mb_nerve_glide_neck` | Kracht & mobiliteit | Liever echte foto/still |
+| 55 | Voorwaartse uitvalspas | `kr_forward_lunge` | Video-uitbreiding | AI-foto geschikt |
+| 56 | Goblet squat | `kr_goblet_squat` | Kracht v3 | AI-foto geschikt |
+| 57 | Step-up met dumbbells | `kr_step_up` | Kracht v3 | AI-foto geschikt |
+| 58 | Walking lunge | `kr_walking_lunge` | Kracht v3 | AI-foto geschikt |
+| 59 | Hack squat | `kr_hack_squat` | Kracht v3 | AI-foto geschikt |
+| 60 | Heupabductie machine | `kr_hip_abduction` | Kracht v3 | AI-foto geschikt |
+| 61 | Rugstrekken op bank | `kr_back_extension` | Kracht v3 | AI-foto geschikt |
+| 62 | Dumbbell bench press | `kr_db_bench_press` | Kracht v3 | AI-foto geschikt |
+| 63 | Dumbbell schouderdrukken | `kr_db_shoulder_press` | Kracht v3 | AI-foto geschikt |
+| 64 | Dips | `kr_dips` | Kracht v3 | AI-foto geschikt |
+| 65 | Cable fly | `kr_cable_fly` | Kracht v3 | AI-foto geschikt |
+| 66 | Triceps extension boven het hoofd | `kr_overhead_triceps` | Kracht v3 | AI-foto geschikt |
+| 67 | Eenarmige dumbbell row | `kr_db_row` | Kracht v3 | AI-foto geschikt |
+| 68 | Seated cable row | `kr_seated_cable_row` | Kracht v3 | AI-foto geschikt |
+| 69 | Chin-up | `kr_chin_up` | Kracht v3 | AI-foto geschikt |
+| 70 | Inverted row | `kr_inverted_row` | Kracht v3 | AI-foto geschikt |
+| 71 | Reverse fly | `kr_reverse_fly` | Kracht v3 | AI-foto geschikt |
+| 72 | Hammer curl | `kr_hammer_curl` | Kracht v3 | AI-foto geschikt |
+| 73 | Pallof press | `kr_pallof_press` | Kracht v3 | AI-foto geschikt |
+| 74 | Farmer carry | `kr_farmer_carry` | Kracht v3 | AI-foto geschikt |
+| 75 | Kettlebell swing | `kr_kettlebell_swing` | Kracht v3 | Liever echte foto/still |
+| 76 | Radialis slider | `nd_radial_slider` | Neurodynamica | Liever echte foto/still |
+| 77 | Femoralis slider in zijlig | `nd_femoral_slider` | Neurodynamica | Liever echte foto/still |
+| 78 | Tibialis slider | `nd_tibial_slider` | Neurodynamica | Liever echte foto/still |
+| 79 | Fibularis slider | `nd_fibular_slider` | Neurodynamica | Liever echte foto/still |
+| 80 | Musculocutaneus slider | `nd_musculocutaneous_slider` | Neurodynamica | Liever echte foto/still |
+| 81 | Obturatorius slider | `nd_obturator_slider` | Neurodynamica | Liever echte foto/still |
+| 82 | Step-down van een traptree | `kt_step_down` | Ketens | AI-foto geschikt |
+| 83 | Copenhagen adductie, korte hefboom | `kt_copenhagen_kort` | Ketens | AI-foto geschikt |
+| 84 | Short foot (voetboog actief) | `kt_short_foot` | Ketens | Liever echte foto/still |
+| 85 | Buiklig Y en T (onderste en middelste trapezius) | `kt_buiklig_y_t` | Ketens | AI-foto geschikt |
+| 86 | Push-up plus tegen de muur (serratus) | `kt_push_up_plus` | Ketens | AI-foto geschikt |
+| 87 | Open book (bovenrug draaien) | `kt_open_book` | Ketens | AI-foto geschikt |
+| 88 | Excentrisch polsstrekken (tennisarm) | `kt_pols_excentrisch_strek` | Ketens | Liever echte foto/still |
+| 89 | Excentrisch polsbuigen (golfersarm) | `kt_pols_excentrisch_buig` | Ketens | Liever echte foto/still |
+| 90 | Peesglijden van de vingers | `kt_peesglijden_hand` | Ketens | Liever echte foto/still |
+| 91 | Heup-hinge met stok langs de rug | `kt_heup_hinge` | Ketens | AI-foto geschikt |
+| 92 | TFL en buitenkant heup rekken in stand | `kt_tfl_rek` | Ketens | AI-foto geschikt |
+| 93 | Bovenste trapezius rekken | `kt_bovenste_trapezius_rek` | Ketens | AI-foto geschikt |
 
 ## 4. Tijdelijk een AI-foto (Gemini) tot de video er is?
 
@@ -190,7 +179,7 @@ Voor deze praktijkoefeningen is al een goedgekeurde video van (bijna) dezelfde b
 - **Voorwaarden en watermerk.** De gratis versie van Gemini zet een (onzichtbaar) SynthID-watermerk en soms een zichtbaar logo. Controleer de gebruiksvoorwaarden voor gebruik in een betaalde zorgapp. Zet er geen echte patiënten of herkenbare personen in.
 
 **Advies voor de volgorde**
-1. Doe eerst blok 1: video's koppelen die al bestaan. Dat kost geen nieuw beeld.
+1. Doe eerst blok 1: de 6 bestaande video's koppelen. Dat kost geen nieuw beeld.
 2. Maak dan AI-foto's (start en eind) voor de oefeningen met "AI-foto geschikt", te beginnen met de oefeningen die het vaakst in programma's worden voorgeschreven.
 3. Voor de oefeningen met "Liever echte foto/still": maak een telefoonfoto in de praktijk of wacht op de video.
 4. Vervang de foto door de video zodra die is goedgekeurd. Laat de foto staan als thumbnail.
