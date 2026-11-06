@@ -208,9 +208,9 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     - Zod ("hoog", geheugen opblazen met enorme verzoeken): opgelost met een limiet van 5 MB per
       API-verzoek (uploads hebben hun eigen limiet). Getest.
     - React Router open redirect: de inlogpagina weigert al adressen met een backslash (`safeNext`).
-    - @hono/node-server statische bestanden: raakt alleen openbare bestanden, niet de API.
-    - De echte updates (zod 4, react-router 7, node-server 2) zijn grote versiesprongen: later apart
-      doen met de volledige testset.
+    - @hono/node-server: bijgewerkt naar 2.1.6 (melding opgelost). Productieserver lokaal getest:
+      API, pagina's, bestanden en path-traversal-pogingen gedragen zich goed.
+    - Nog open, grote versiesprongen voor later met de volledige testset: zod 4, react-router 7.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
