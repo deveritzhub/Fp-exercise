@@ -11,6 +11,9 @@ import { cn } from '@/lib/cn';
  */
 type Item = { nl: string; en: string; to?: string; clinical?: true };
 const STAFF: Item[] = [
+  { nl: 'Snelfilters in de patiëntenlijst: vraagt aandacht, nog niet uitgenodigd, uitnodiging open, geen programma.', en: 'Quick filters in the patient list: needs attention, not invited, invitation open, no programme.', to: '/app/patienten' },
+  { nl: 'Bij "Kies een sjabloon" staan je laatst gebruikte sjablonen bovenaan.', en: '"Choose a template" shows your recently used templates first.' },
+  { nl: 'Patiënten kunnen tijdens een oefening op "Dit doet pijn" tikken; je ziet de reden en pijnscore bij de sessie.', en: 'Patients can tap "This hurts" during an exercise; you see the reason and pain score with the session.' },
   { clinical: true, nl: 'Programma maken vanuit de klachtwijzer: de uitleg over de klacht gaat in één keer mee naar de patiënt.', en: 'Make a programme from the complaint guide: the explanation of the complaint goes along to the patient in one go.', to: '/app/klachtwijzer' },
   { clinical: true, nl: 'In de klachtwijzer: "Vraag om te meten" met de mobiliteitstest die bij de klacht hoort.', en: 'In the complaint guide: "Ask to measure" with the mobility test that fits the complaint.' },
   { clinical: true, nl: 'Het voortgangsrapport (PDF) toont nu ook de pijnkaart: start en laatste meting per plek.', en: 'The progress report (PDF) now also shows the pain map: start and latest per area.' },
@@ -25,6 +28,9 @@ const STAFF: Item[] = [
   { nl: 'Reageren op een training bij "Markeer als gezien"; de patiënt krijgt je reactie.', en: 'Reply to a workout with "Mark as seen"; the patient gets your reply.' },
 ];
 const PATIENT: Item[] = [
+  { nl: 'Laat een oefening voorlezen met de knop "Lees voor" in de training.', en: 'Have an exercise read aloud with the "Read aloud" button in the workout.' },
+  { nl: 'Doet een oefening pijn? Tik op "Dit doet pijn": kies een lichtere variant of sla over.', en: 'Does an exercise hurt? Tap "This hurts": choose a lighter variation or skip it.' },
+  { nl: 'Alles gedaan voor vandaag? Je ziet je reeks en wanneer je volgende training is.', en: 'Done for today? You see your streak and when your next workout is.' },
   { nl: 'Moedig je vrienden aan met een vaste tekst, zoals "Zet \'m op!", één keer per dag.', en: 'Cheer on your friends with a fixed text, like "Go for it!", once a day.', to: '/p/held/vrienden' },
   { clinical: true, nl: 'Geeft je fysiotherapeut een volgende fase vrij, dan zie je "Hoofdstuk voltooid!" met je nieuwe doel.', en: 'When your physiotherapist releases a next phase, you see "Chapter completed!" with your new goal.' },
   { clinical: true, nl: 'In de uitleg over je klacht staat nu ook bij elke oefening van je programma waarom die helpt.', en: 'The explanation of your complaint now also says why each exercise in your programme helps.' },
@@ -35,7 +41,7 @@ const PATIENT: Item[] = [
   { nl: 'Op Voortgang zie je hoe zwaar en pijnlijk je trainingen waren, in gewone taal.', en: 'Progress shows how hard and painful your workouts were, in plain words.', to: '/p/voortgang' },
   { nl: 'Nieuwe quizvragen over welke spier het werk overneemt als een andere zwak is.', en: 'New quiz questions on which muscle takes over when another is weak.' },
 ];
-const VERSION = '2026-11-06i';
+const VERSION = '2026-11-06j';
 const KEY = 'fp.whatsnew.v1';
 
 function seen() {

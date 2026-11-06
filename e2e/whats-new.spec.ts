@@ -7,10 +7,10 @@ test('therapist: "What\'s new" shows the latest improvements; the "New" badge go
   await expect(btn).toContainText('Nieuw');
   await btn.click();
   const dlg = page.getByRole('dialog', { name: 'Wat is er nieuw?' });
-  await expect(dlg.getByText(/Vraag om te meten/)).toBeVisible();
+  await expect(dlg.getByText(/Snelfilters in de patiëntenlijst/)).toBeVisible();
   await expectAccessible(page, 'whats new (staff)');
-  await dlg.getByRole('listitem').filter({ hasText: 'Uitleg over een klacht naar de patiënt sturen' }).getByRole('link', { name: 'Bekijken' }).click();
-  await expect(page).toHaveURL(/klachtwijzer/);
+  await dlg.getByRole('listitem').filter({ hasText: 'Snelfilters in de patiëntenlijst' }).getByRole('link', { name: 'Bekijken' }).click();
+  await expect(page).toHaveURL(/patienten/);
   await expect(page.getByRole('button', { name: /Wat is er nieuw\?/ })).not.toContainText('Nieuw');
 });
 
@@ -21,7 +21,7 @@ test('patient: "What\'s new" in Settings', async ({ browser }) => {
   await page.goto('/p/instellingen');
   await page.getByRole('button', { name: /Wat is er nieuw\?/ }).click();
   const dlg = page.getByRole('dialog', { name: 'Wat is er nieuw?' });
-  await expect(dlg.getByText(/Berichten van je praktijk/)).toBeVisible();
+  await expect(dlg.getByText(/Lees voor/)).toBeVisible();
   await expectAccessible(page, 'whats new (patient)');
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
   await ctx.close();
