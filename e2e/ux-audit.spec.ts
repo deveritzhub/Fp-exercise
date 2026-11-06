@@ -1,3 +1,4 @@
+import pg from 'pg';
 import fs from 'node:fs';
 import { test, expect, type Page } from '@playwright/test';
 import { login, expectAccessible } from './helpers';
@@ -298,4 +299,40 @@ test('every body region filter is reachable at desktop width', async ({ page }) 
   for (let i = 0; i < 11; i++) await expect(chips.nth(i)).toBeInViewport({ ratio: 1 });
   await group.getByRole('button', { name: 'Totale lichaam' }).click();
   await expect(page).toHaveURL(/region=full_body/);
+});
+
+test('"This hurts" during an exercise: skip with the pain score, and the physio sees why', async ({ browser }) => {
+  const staff = await browser.newContext();
+  const tp = await staff.newPage();
+  await login(tp, 'therapeut@praktijk-a.test');
+  const ep = await emmaProgram(tp);
+  // Every exercise on every day, so today has a workout.
+  const cur = await (await tp.request.get(`/api/programs/${ep.id}`)).json();
+  const items = cur.items.map((i: Record<string, unknown>) => ({ id: i.id, exerciseId: i.exerciseId, alternativeExerciseId: i.alternativeExerciseId, sets: i.sets, reps: i.reps, holdS: i.holdS, restS: i.restS, tempo: i.tempo, load: i.load, frequency: i.frequency, days: [1, 2, 3, 4, 5, 6, 7], notes: i.notes }));
+  await tp.request.put(`/api/programs/${ep.id}`, { data: { title: cur.title, description: cur.description, patientInstructions: cur.patientInstructions, items, startDate: cur.startDate, endDate: cur.endDate, changeNote: 'E2E: dagelijks' }, headers: { 'x-requested-with': 'fp' } });
+
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'nl-NL', timezoneId: 'Europe/Amsterdam', hasTouch: true });
+  const page = await ctx.newPage();
+  await login(page, 'patient@praktijk-a.test');
+  await page.goto(`/p/sessie/${ep.id}`);
+  await page.getByRole('button', { name: /Beginnen|Verder met training/ }).click();
+  const first = await page.getByRole('heading', { level: 1 }).innerText();
+  await page.getByRole('button', { name: 'Dit doet pijn' }).click();
+  const dlg = page.getByRole('dialog', { name: 'Dit doet pijn' });
+  await expect(dlg.getByText(/Stop bij scherpe of toenemende pijn/)).toBeVisible();
+  await expectAccessible(page, 'this hurts');
+  await dlg.getByRole('button', { name: /: 6$/ }).click();
+  await dlg.getByRole('button', { name: 'Sla over en laat het je fysiotherapeut weten' }).click();
+  await expect(dlg).toBeHidden();
+  // On to the next exercise (or the end of the workout).
+  await expect(page.getByRole('heading', { level: 1 }).first()).not.toHaveText(first);
+  await ctx.close();
+
+  // Stored for the therapist: the skipped exercise with the reason and the pain score.
+  const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
+  await db.connect();
+  const logs = (await db.query(`SELECT l.feedback, l.pain FROM exercise_logs l JOIN workout_sessions s ON s.id = l.session_id WHERE s.program_id = $1 AND NOT l.completed ORDER BY l.created_at DESC LIMIT 1`, [ep.id])).rows;
+  await db.end();
+  expect(logs[0]).toMatchObject({ feedback: 'Overgeslagen vanwege pijn tijdens de oefening.', pain: 6 });
+  await staff.close();
 });
