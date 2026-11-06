@@ -253,6 +253,13 @@ const SAME_AS_LIBRARY: Record<string, string> = {
   ex_dead_bug: 'Dead bug',
   ex_chin_tuck: 'Kinintrekking',
   ex_cat_camel: 'Kat-koe',
+  // Added 2026-11-06: same movement as an approved central clip. Pending clinical check of each pair.
+  kt_bird_dog: 'Viervoetsstand diagonaal (bird dog)',
+  kt_eenbenige_bilbrug: 'Eenbenige bekkenbrug',
+  kt_muurzit: 'Muurzit',
+  kr_standing_calf_raise: 'Hielheffen staand',
+  ex_iso_bilbrug: 'Bekkenbrug', // the clip moves; this exercise holds the top position
+  kt_zijlig_abductie: 'Heupabductie in zijlig', // check the clip shows the heel leading
 };
 /** Mobility exercises that are the same as an exercise of the practice's rehab library: reuse that one. */
 const MOBILITY_SAME_AS: Record<string, string> = {

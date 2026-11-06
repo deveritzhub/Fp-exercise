@@ -9,9 +9,9 @@ _Stand: 6 november 2026, branch `claude/fp-exercise-platform-bcak8k`. Bronnen: `
 
 Al gekoppeld via `SAME_AS_LIBRARY` (de praktijkversie gebruikt de video van de centrale oefening): Bilbrug, Clamshell, Kuitheffen op twee benen, Eenbenige balans, Step-up, Dead bug, Kin intrekken, Kat-koe. Vier mobiliteitsoefeningen (`mb_kniebuiging_muur`, `mb_hip_flexor_stretch`, `mb_thoracic_rotatie`, `mb_cat_camel`) worden niet apart aangemaakt maar samengevoegd met de basisversie; die tellen hier niet mee.
 
-## 1. Snelle winst: de video bestaat al, maar is nog niet gekoppeld
+## 1. Gekoppeld op 6 november, wacht op klinische check
 
-Deze praktijkoefeningen staan **niet** in `SAME_AS_LIBRARY`, terwijl er wel een goedgekeurde video van (bijna) dezelfde beweging is. Na een klinische check: toevoegen aan `SAME_AS_LIBRARY`, dan krijgen ze bij de volgende start automatisch die video.
+Deze praktijkoefeningen zijn op 6 november aan `SAME_AS_LIBRARY` toegevoegd en krijgen bij de volgende start de video van de centrale oefening. Keur elk paar klinisch; past een video niet, haal dan die regel weg.
 
 | Oefening | Key | Bestaande video |
 |---|---|---|
