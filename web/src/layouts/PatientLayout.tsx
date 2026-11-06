@@ -16,6 +16,7 @@ import { usePracticeAccent } from '@/lib/accent';
 import { useTextSize } from '@/lib/textSize';
 import { useSession } from '@/lib/session';
 import { QuickLogButton } from '@/components/patient/QuickLog';
+import { PhaseCelebration } from '@/components/patient/PhaseCelebration';
 import { cn } from '@/lib/cn';
 
 const HERO_LATER_KEY = 'fp.heroLater';
@@ -161,6 +162,8 @@ export function PatientLayout() {
       <TestBanner />
       {/* First use: a short welcome on Vandaag (after the hero is made or postponed). */}
       {loc.pathname === '/p' && <WelcomeTour />}
+      {/* A released rehabilitation phase: celebrate once (not during a workout or hero setup). */}
+      {!inPlayer && !inSetup && <PhaseCelebration />}
       <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : 'px-4 pb-28 pt-5')}>
         <Outlet />
       </main>

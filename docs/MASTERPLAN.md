@@ -173,6 +173,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 63. [x] **Vroege waarschuwing per pijnplek** (roadmap #6). "Pijnplek erger" in Vraagt aandacht als
     dezelfde plek op de pijnkaart in twee weken 2+ punten slechter wordt (metingen minstens een week
     uit elkaar), met de plek en "van 2 naar 5/10". Alleen bij fysiotherapie.
+64. [x] **Fase voltooid = feestscherm** (roadmap #3). Zet de therapeut een volgende fase (2 of hoger)
+    actief, dan krijgt de patiënt één keer "Hoofdstuk 1 voltooid!" met de nieuwe fase en het doel,
+    en een knop naar die fase. Het bericht blijft onder Berichten. Alleen de therapeut geeft vrij.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

@@ -67,6 +67,32 @@ export async function notifyPatientComplaint(tx: Tx, patientId: string, practice
   return true;
 }
 
+/**
+ * A new rehabilitation phase was released by the therapist (a phased programme with phase 2 or later
+ * became active): "Chapter 1 completed", with the new phase and goal. Only the therapist releases a phase.
+ */
+export async function notifyPhaseUnlocked(tx: Tx, programId: string) {
+  const p = (await tx.query(
+    `SELECT pr.patient_id, pr.practice_id, pr.phase_no, pr.phase_name, pr.phase_goal, pr.series_title, pt.user_id, pt.locale
+       FROM programs pr JOIN patients pt ON pt.id = pr.patient_id
+      WHERE pr.id = $1 AND pr.status = 'active' AND pr.series_key IS NOT NULL AND pr.phase_no > 1`,
+    [programId],
+  )).rows[0];
+  if (!p?.user_id) return false;
+  const nl = p.locale !== 'en';
+  const done = p.phase_no - 1;
+  const title = nl ? `Hoofdstuk ${done} voltooid!` : `Chapter ${done} completed!`;
+  const name = p.phase_name ? `: ${p.phase_name}` : '';
+  const body = nl
+    ? `Je fysiotherapeut heeft fase ${p.phase_no}${name} vrijgegeven.${p.phase_goal ? ` Nieuw doel: ${p.phase_goal}` : ''}`
+    : `Your physiotherapist has released phase ${p.phase_no}${name}.${p.phase_goal ? ` New goal: ${p.phase_goal}` : ''}`;
+  await tx.query(
+    'INSERT INTO notifications(user_id, practice_id, kind, title, body, link) VALUES ($1,$2,$3,$4,$5,$6)',
+    [p.user_id, p.practice_id, 'phase_unlocked', title, body.slice(0, 600), '/p/revalidatie'],
+  );
+  return true;
+}
+
 /** The therapist asks the patient to measure their mobility (link to the measuring page). */
 export async function notifyPatientMeasure(tx: Tx, patientId: string, practiceId: string, note: string) {
   const { rows } = await tx.query('SELECT user_id, locale FROM patients WHERE id = $1', [patientId]);

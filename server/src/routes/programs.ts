@@ -6,7 +6,7 @@ import { parse, uuidParam, nullableInt } from '../lib/validate';
 import { audit } from '../lib/audit';
 import { badRequest, notFound } from '../lib/errors';
 import { uuid } from '../lib/crypto';
-import { notifyPatientUser } from '../lib/notify';
+import { notifyPatientUser, notifyPhaseUnlocked } from '../lib/notify';
 
 export const programs = new Hono<AppEnv>();
 
@@ -400,7 +400,10 @@ programs.post('/', async (c) => {
       );
     }
     await snapshot(tx, id, 'created');
-    if (b.patientId && b.status === 'active') await notifyPatientUser(tx, b.patientId, progPractice, 'program_assigned', b.title);
+    if (b.patientId && b.status === 'active') {
+      await notifyPatientUser(tx, b.patientId, progPractice, 'program_assigned', b.title);
+      await notifyPhaseUnlocked(tx, id);
+    }
     await audit(tx, user.id, progPractice, 'create', b.isTemplate ? 'template' : 'program', id, { items: b.items.length, status: b.status });
   });
   return c.json({ id }, 201);
@@ -539,6 +542,7 @@ programs.post('/:id/status', async (c) => {
     if (!r.rowCount) throw notFound();
     if (status === 'active' && p.status !== 'active' && p.patient_id) {
       await notifyPatientUser(tx, p.patient_id, p.practice_id, 'program_assigned', p.title);
+      await notifyPhaseUnlocked(tx, id);
     }
     await audit(tx, user.id, p.practice_id, 'status', 'program', id, { from: p.status, to: status });
   });
