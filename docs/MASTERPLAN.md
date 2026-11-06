@@ -162,7 +162,8 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     met vinkjes. Verdwijnt als alles af is of met het kruisje.
 60. [x] **Test voor coach-accounts.** Automatische test die een demopraktijk tijdelijk coach maakt
     en controleert dat de klachtwijzer nergens zichtbaar of bereikbaar is (menu, snelzoeken,
-    "Aan de slag", "Wat is er nieuw?", directe link).
+    "Aan de slag", "Wat is er nieuw?", directe link), en dat een klant van een coach een
+    niet-medische tip krijgt als het na het trainen steeds minder goed voelt.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
