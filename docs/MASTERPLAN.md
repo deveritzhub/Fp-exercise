@@ -235,6 +235,14 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
 81. [x] **Laatst gebruikte sjablonen bovenaan.** In "Kies een sjabloon" staan na je favorieten de
     sjablonen die jij het laatst gebruikte, met het label "Onlangs gebruikt".
 
+## Fase 12 – Sneller werken en prettiger kijken
+82. [x] **Sneltoetsen voor therapeuten.** D dashboard · P patiënten · O oefeningen · N nieuw
+    programma · K klachtwijzer · S spierenatlas · / of Ctrl K zoeken · ? overzicht (ook in het menu).
+    Nooit tijdens het typen of met een venster open.
+83. [ ] **Donkere weergave** voor de patiënt-app (volgt de telefoon), prettig bij avondtraining.
+84. [ ] **Programma kopiëren naar een andere patiënt** in één stap vanuit het programma.
+85. [ ] **Weekoverzicht voor de patiënt**: welke dagen welke training, vooruit kijken.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.
