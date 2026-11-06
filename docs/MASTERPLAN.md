@@ -193,6 +193,9 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     instelt"). In het dossier (bij de held): een skill kiezen, bijvoorbeeld Balans, vanaf deze week;
     of weer automatisch. De patiënt ziet "Gekozen door je fysio". Eerdere weken houden hun skill, dus
     XP verandert nooit achteraf. Migratie 036 (alleen een kolom erbij), getest.
+68. [x] **Uitleg printen door de patiënt.** Op de uitleg over je klacht in de app een knop
+    "Printen of PDF" (handig voor op de koelkast of om te bewaren). (Een openbare gratis
+    mobiliteitstest is op verzoek van de eigenaar weer verwijderd.)
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

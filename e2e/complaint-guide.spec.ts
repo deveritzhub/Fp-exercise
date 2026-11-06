@@ -157,6 +157,7 @@ test('the therapist sends the explanation; the patient reads it under Messages',
   // Her own rehab exercises that fit, each with why.
   const mine = page.getByRole('region', { name: 'Jouw oefeningen en waarom ze helpen' });
   await expect(mine.getByText('Muurzit', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Printen of PDF' })).toBeVisible();
   await expect(page.getByRole('heading', { name: /Neem direct contact op/ })).toBeVisible();
   await expectAccessible(page, 'complaint explanation (patient)');
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
