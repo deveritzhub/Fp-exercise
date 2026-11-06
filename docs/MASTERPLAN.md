@@ -204,6 +204,13 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     aan): de patiënt krijgt programma én uitleg.
 72. [x] **Meten vanuit de klachtwijzer.** Noemt de klacht een mobiliteitstest en is er een patiënt
     gekoppeld, dan staat er "Vraag om te meten" bij (met de naam van de test in het bericht).
+73. [x] **Beveiliging: afhankelijkheden nagelopen** (`npm audit`, 4 meldingen).
+    - Zod ("hoog", geheugen opblazen met enorme verzoeken): opgelost met een limiet van 5 MB per
+      API-verzoek (uploads hebben hun eigen limiet). Getest.
+    - React Router open redirect: de inlogpagina weigert al adressen met een backslash (`safeNext`).
+    - @hono/node-server statische bestanden: raakt alleen openbare bestanden, niet de API.
+    - De echte updates (zod 4, react-router 7, node-server 2) zijn grote versiesprongen: later apart
+      doen met de volledige testset.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
