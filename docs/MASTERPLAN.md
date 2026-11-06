@@ -213,7 +213,9 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     - React Router: bijgewerkt naar 7.18.5 (open-redirectmelding opgelost). De eerdere 3 rode tests
       kwamen niet door React Router maar door een eigen test die Emma een extra programma gaf; die
       ruimt nu op. Volledige testset met versie 7: 142 geslaagd, 0 gefaald.
-    - Nog open: zod 4 (grote versiesprong). Het risico is afgedekt met de limiet van 5 MB per verzoek.
+    - Zod: bijgewerkt naar 4.6.7. De server zet de foutdetails om naar de vorm die de app kent, zodat
+      de nette veldmeldingen blijven werken. Volledige testset: 141 geslaagd; alleen de bekende,
+      wisselvallige uitlogtest (los 9× groen). `npm audit`: geen meldingen meer.
 
 ## Fase 11 – Uitbreiden en gebruiksvriendelijker (verzoek eigenaar, 6 nov avond)
 76. [ ] **Voorlezen in de training.** Knop "Lees voor" bij elke oefening (spraak van de telefoon,
