@@ -17,7 +17,7 @@ export function PhaseCelebration() {
   const nav = useNavigate();
   const [closed, setClosed] = useState<string | null>(null);
   const q = useQuery({ queryKey: ['notifications'], queryFn: () => api.get<{ items: Notification[]; unread: number }>('/me/notifications'), staleTime: 60_000 });
-  const n = q.data?.items.find((x) => x.kind === 'phase_unlocked' && !x.readAt);
+  const n = (q.data?.items ?? []).find((x) => x.kind === 'phase_unlocked' && !x.readAt);
   if (!n || closed === n.id) return null;
   const done = async (go: boolean) => {
     setClosed(n.id);

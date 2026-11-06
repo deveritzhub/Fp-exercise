@@ -184,6 +184,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     tabel); net als de vriendschappen alleen via beveiligde databasefuncties, getest. Weg zodra de
     vriendschap of het delen stopt; staat in de gegevensexport. Migratie 035 live toegepast.
     Een nieuwe aanmoediging (laatste 2 dagen) staat ook op de vriendenkaart op de heldpagina.
+66. [x] **Regressietest na stap 59–65:** 138 geslaagd, 1 echte fout gevonden en opgelost: het
+    feestscherm (stap 64) liet de held-pagina crashen als de berichtenlijst leeg of onvolledig
+    terugkwam. Nu robuust; die test is weer groen.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
