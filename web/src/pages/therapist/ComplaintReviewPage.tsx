@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
-import { Button } from '@/components/ui';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import { Button, ErrorState, Spinner } from '@/components/ui';
 import { MUSCLES } from '@shared/muscleAtlas';
 import { CHAINS, COMPENSATIONS, COMPLAINTS, REGIONS, complaintsIn } from '@shared/complaints';
 import { MOBILITY_TESTS } from '@shared/mobilityTests';
@@ -18,6 +20,7 @@ export function ComplaintReviewPage() {
   useDocumentMeta(t('Klachtwijzer: klinische controle', 'Complaint guide: clinical review'));
   const nl = (f: Fn) => f[0];
   const m = (k: string) => MUSCLES.find((x) => x.key === k)?.nl ?? k;
+  const ex = useQuery({ queryKey: ['review-exercises'], queryFn: () => api.get<{ items: { id: string; name: string; instruction: string; dose: string; rule: string; status: string }[] }>('/atlas/review-exercises'), staleTime: Infinity });
   return (
     <div className="mx-auto max-w-3xl space-y-8 print:max-w-none">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
@@ -26,7 +29,7 @@ export function ComplaintReviewPage() {
       </div>
       <header>
         <h1 className="t-page">Klachtwijzer: klinische controle</h1>
-        <p className="mt-1 text-[15px] text-ink-700">Alle teksten van de klachtwijzer, de compensatiepatronen en de mobiliteitstests op één pagina. Loop ze na en noteer per onderdeel akkoord of wijziging. {COMPLAINTS.length} klachten, {COMPENSATIONS.length} compensatiepatronen, {CHAINS.length} ketens, {MOBILITY_TESTS.length} mobiliteitstests.</p>
+        <p className="mt-1 text-[15px] text-ink-700">Alle teksten van de klachtwijzer, de compensatiepatronen en de mobiliteitstests op één pagina. Loop ze na en noteer per onderdeel akkoord of wijziging. {COMPLAINTS.length} klachten, {COMPENSATIONS.length} compensatiepatronen, {CHAINS.length} ketens, {MOBILITY_TESTS.length} mobiliteitstests{ex.data ? `, ${ex.data.items.length} oefeningen met een nog niet getoetste dosering` : ''}.</p>
       </header>
 
       <section aria-labelledby="rv-comp" className="space-y-4">
@@ -76,6 +79,23 @@ export function ComplaintReviewPage() {
             <ol className="mt-1 list-decimal pl-5 text-ink-900">{x.steps.map((s, i) => <li key={i}>{nl(s)}</li>)}</ol>
             <p className="mt-1 text-ink-800">Let op: {nl(x.caution)}</p>
             <p className="text-[13px] text-ink-600">Bron: {x.source}{x.realChange ? ` · meetfout ±${x.realChange} cm` : ''}</p>
+            <p className="mt-2 text-[13px] text-ink-500">Akkoord ☐ · Wijziging: ______________________________</p>
+          </article>
+        ))}
+      </section>
+
+      <section aria-labelledby="rv-ex" className="space-y-4">
+        <h2 id="rv-ex" className="t-section">Oefeningen met een nog niet getoetste dosering</h2>
+        <p className="text-[14px] text-ink-700">Eigen oefeningen uit de bibliotheek waarvan de dosering een gangbare conventie is. Klopt de instructie, de dosering en de symptoomregel?</p>
+        {ex.isLoading && <Spinner className="py-6" />}
+        {ex.isError && <ErrorState error={ex.error} onRetry={() => void ex.refetch()} />}
+        {ex.data?.items.map((x) => (
+          <article key={x.id} className="break-inside-avoid rounded-xl border border-line bg-white p-4 text-[14px]">
+            <h3 className="font-semibold text-ink-900">{x.name}</h3>
+            <p className="mt-1 text-ink-900">{x.instruction}</p>
+            {x.dose && <p className="mt-1 text-ink-800">Dosering: {x.dose}</p>}
+            {x.rule && <p className="text-ink-800">Symptoomregel: {x.rule}</p>}
+            <p className="text-[13px] text-ink-600">Status: {x.status}</p>
             <p className="mt-2 text-[13px] text-ink-500">Akkoord ☐ · Wijziging: ______________________________</p>
           </article>
         ))}

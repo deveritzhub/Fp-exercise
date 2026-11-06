@@ -121,6 +121,18 @@ describe('sending a complaint explanation to a patient', () => {
   });
 });
 
+describe('clinical review of library exercises', () => {
+  it('lists exercises with a conventional dose for staff only', async () => {
+    resetRateLimits();
+    const r = await (await login('therapistA')).get('/atlas/review-exercises');
+    expect(r.status).toBe(200);
+    expect(r.body.items.length).toBeGreaterThan(20);
+    expect(r.body.items.every((x: { status: string }) => /niet individueel getoetst/.test(x.status))).toBe(true);
+    expect(r.body.items.find((x: { id: string }) => x.id === 'kt_duimoppositie')).toMatchObject({ name: 'Duimoppositie met elastiekje' });
+    expect((await (await login('patientA')).get('/atlas/review-exercises')).status).toBe(403);
+  });
+});
+
 describe('skills from the quiz and the strength log', () => {
   it('a right quiz answer opens Kennis; a logged set gives Strength XP', async () => {
     resetRateLimits();

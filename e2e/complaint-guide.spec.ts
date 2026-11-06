@@ -82,6 +82,8 @@ test('clinical review: every guide text on one printable page', async ({ page })
   await expect(page.getByRole('heading', { name: 'Klachtwijzer: klinische controle', level: 1 })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'TFL-overuse bij zwakke gluteus medius' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Knie-tot-muur-test (enkel)' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Oefeningen met een nog niet getoetste dosering' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Duimoppositie met elastiekje' })).toBeVisible();
   await expectAccessible(page, 'clinical review');
 });
 

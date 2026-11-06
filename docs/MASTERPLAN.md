@@ -137,6 +137,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     patiënt" opent een venster om de patiënt te kiezen, met een optionele korte toelichting.
 51. [x] **Uitleg blijft vindbaar.** Een verstuurde uitleg staat ook op het tabblad Revalidatie
     ("Uitleg over je klacht"), ook nadat het bericht gelezen is.
+52. [x] **Controlepagina ook voor oefeningen.** Op "Alle teksten nalopen" staan nu ook de 50
+    oefeningen waarvan de dosering een gangbare conventie is (instructie, dosering, symptoomregel),
+    met akkoord/wijziging per oefening.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
@@ -144,5 +147,5 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 - [x] app.fpflow.nl werkt; `APP_ORIGIN=https://app.fpflow.nl` staat in Render (5 nov 2026).
 - Echte e-mail (Zoho) in plaats van links op het scherm.
 - Kling-video's voor bankdrukken, leg curl en voorwaartse uitvalspas (credits).
-- Klinische controle van de klachtwijzer, sliders en mobiliteitstests: alles staat op één pagina
-  (Klachtwijzer → "Alle teksten nalopen", ook als PDF).
+- Klinische controle van de klachtwijzer, sliders, mobiliteitstests en 50 oefeningen met een
+  conventionele dosering: alles staat op één pagina (Klachtwijzer → "Alle teksten nalopen", ook als PDF).

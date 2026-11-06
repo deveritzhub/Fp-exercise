@@ -7,6 +7,7 @@ import { badRequest, notFound } from '../lib/errors';
 import { audit } from '../lib/audit';
 import { notifyPatientComplaint, notifyPatientMuscle } from '../lib/notify';
 import { complaintOf } from '../../../shared/complaints';
+import { exercisesToReview } from '../lib/fpLibrary';
 import { QUIZ_DAILY_CAP, QUIZ_LEVEL_XP, exerciseKind, level2Open, muscleByKey, musclesOf, nerveOf, questionById, quizXp, type AtlasExerciseKind } from '../../../shared/muscleAtlas';
 
 /**
@@ -103,6 +104,11 @@ atlasStaff.post('/send-complaint', async (c) => {
       return { ok: true, delivered };
     }),
   );
+});
+/** Library exercises with a conventional, not yet checked dose: for the clinical review page. */
+atlasStaff.get('/review-exercises', (c) => {
+  requireStaff(c);
+  return c.json({ items: exercisesToReview() });
 });
 atlasStaff.get('/', async (c) => {
   const { user } = requireStaff(c);
