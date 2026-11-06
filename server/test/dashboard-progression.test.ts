@@ -81,3 +81,25 @@ describe('dashboard: coaches draw no conclusions from how someone feels', () => 
     }
   });
 });
+
+describe('dashboard: same spot on the pain map worse within two weeks', () => {
+  it('signals the area with from and to', async () => {
+    const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
+    await db.connect();
+    try {
+      const practice = (await db.query('SELECT practice_id FROM patients WHERE id = $1', [s.patients.emma])).rows[0].practice_id;
+      await db.query(`DELETE FROM pain_map_entries WHERE patient_id = $1`, [s.patients.emma]);
+      await db.query(
+        `INSERT INTO pain_map_entries(patient_id, practice_id, batch, area, score, recorded_at) VALUES
+           ($1, $2, gen_random_uuid(), 'knee_r', 2, now() - interval '12 days'),
+           ($1, $2, gen_random_uuid(), 'knee_r', 5, now() - interval '1 day')`,
+        [s.patients.emma, practice],
+      );
+    } finally {
+      await db.end();
+    }
+    const d = await (await login('therapistA')).get('/dashboard');
+    const emma = d.body.attention.find((x: any) => x.patientId === s.patients.emma);
+    expect(emma?.signals.find((x: any) => x.reason === 'area_pain_rising')).toMatchObject({ area: 'knee_r', planned: 2, value: 5 });
+  });
+});

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { painRising, progressionSignal } from './progression';
+import { areaPainRising, painRising, progressionSignal } from './progression';
 
 const s = (difficulty: number | null, pain: number | null = 0) => ({ difficulty, pain });
 
@@ -35,5 +35,19 @@ describe('pain rising', () => {
     expect(painRising(sc(3, 2, 1))).toBeNull();
     expect(painRising(sc(5, 3))).toBeNull();
     expect(painRising(sc(5, null, 3, 1))).toEqual({ from: 1, to: 5 });
+  });
+});
+
+describe('pain map: same spot worse within two weeks', () => {
+  const now = new Date('2026-11-06T12:00:00Z');
+  const ago = (d: number) => new Date(now.getTime() - d * 86400_000).toISOString();
+  it('2+ points worse on the same spot, a week or more apart', () => {
+    expect(areaPainRising([{ area: 'knee_r', score: 3, at: ago(12) }, { area: 'knee_r', score: 4, at: ago(6) }, { area: 'knee_r', score: 5, at: ago(1) }], now)).toEqual([{ area: 'knee_r', from: 3, to: 5 }]);
+  });
+  it('not for a smaller rise, too short a span, older entries or getting better', () => {
+    expect(areaPainRising([{ area: 'knee_r', score: 3, at: ago(10) }, { area: 'knee_r', score: 4, at: ago(1) }], now)).toEqual([]);
+    expect(areaPainRising([{ area: 'knee_r', score: 2, at: ago(4) }, { area: 'knee_r', score: 6, at: ago(1) }], now)).toEqual([]);
+    expect(areaPainRising([{ area: 'knee_r', score: 1, at: ago(30) }, { area: 'knee_r', score: 6, at: ago(1) }], now)).toEqual([]);
+    expect(areaPainRising([{ area: 'knee_r', score: 6, at: ago(10) }, { area: 'knee_r', score: 2, at: ago(1) }], now)).toEqual([]);
   });
 });

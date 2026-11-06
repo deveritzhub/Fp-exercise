@@ -41,3 +41,28 @@ export function painRising(recent: SessionScore[]): { from: number; to: number }
   if (last < RISING.minLast) return null;
   return { from: older[older.length - 1], to: last };
 }
+
+/** Pain map: the same spot at least 2 points worse within two weeks (check-ins at least a week apart). */
+export const AREA_RISING = { days: 14, minGapDays: 7, minRise: 2 } as const;
+
+export type AreaScore = { area: string; score: number; at: string | Date };
+
+/** Every area whose score rose by 2+ points between the first and the last check-in of the last two weeks. */
+export function areaPainRising(entries: AreaScore[], now = new Date()): { area: string; from: number; to: number }[] {
+  const since = now.getTime() - AREA_RISING.days * 86400_000;
+  const byArea = new Map<string, { score: number; t: number }[]>();
+  for (const e of entries) {
+    const t = new Date(e.at).getTime();
+    if (t < since || e.area === 'none') continue;
+    byArea.set(e.area, [...(byArea.get(e.area) ?? []), { score: e.score, t }]);
+  }
+  const out: { area: string; from: number; to: number }[] = [];
+  for (const [area, list] of byArea) {
+    list.sort((a, b) => a.t - b.t);
+    const first = list[0];
+    const last = list[list.length - 1];
+    if (last.t - first.t < AREA_RISING.minGapDays * 86400_000) continue;
+    if (last.score - first.score >= AREA_RISING.minRise) out.push({ area, from: first.score, to: last.score });
+  }
+  return out.sort((a, b) => b.to - b.from - (a.to - a.from));
+}

@@ -1,3 +1,4 @@
+import { BODY_AREAS } from '@shared/hero';
 import { StaffStart, type StaffStartData } from '@/components/app/StaffStart';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -13,7 +14,7 @@ import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import { ProgramStatusBadge, useReasonLabel } from '@/components/app/StatusBadge';
 import type { Exercise, Program } from '@/lib/types';
 
-type Signal = { reason: string; date: string | null; value?: number; planned?: number; completed?: number };
+type Signal = { reason: string; date: string | null; value?: number; planned?: number; completed?: number; area?: string };
 type Dashboard = {
   start?: StaffStartData;
   daily: { day: string; sessions: number; list: { id: string; patientId: string; name: string; at: string; pain: number | null; program: string }[] }[];
@@ -175,6 +176,11 @@ function WorkList({ d }: { d?: Dashboard }) {
     switch (s.reason) {
       case 'high_pain':
         return { text: t(`Pijnscore ${s.value}/10 gemeld${s.date ? ` op ${date(s.date)}` : ''}.`, `Pain score ${s.value}/10 reported${s.date ? ` on ${date(s.date)}` : ''}.`), action: { label: t('Bekijk sessie', 'View session'), to: `${p}?tab=sessies` } };
+      case 'area_pain_rising': {
+        const a = BODY_AREAS.find((x) => x.key === s.area);
+        const name = a ? (locale === 'nl' ? a.nl : a.en) : s.area;
+        return { text: t(`${name}: van ${s.planned} naar ${s.value}/10 op de pijnkaart in twee weken.`, `${name}: from ${s.planned} to ${s.value}/10 on the pain map in two weeks.`), action: { label: t('Pijnkaart bekijken', 'View pain map'), to: `${p}?tab=overzicht` } };
+      }
       case 'pain_rising':
         return { text: t(`Pijn na de training stijgt drie keer op rij: van ${s.planned} naar ${s.value}/10${s.date ? ` (laatste ${date(s.date)})` : ''}. Belasting aanpassen?`, `Pain after workouts rose three times in a row: from ${s.planned} to ${s.value}/10${s.date ? ` (latest ${date(s.date)})` : ''}. Adjust the load?`), action: { label: t('Bekijk sessies', 'View sessions'), to: `${p}?tab=sessies` } };
       case 'new_feedback':

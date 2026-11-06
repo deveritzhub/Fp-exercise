@@ -170,6 +170,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 62. [x] **Bericht bij een programmawijziging** (roadmap #7). Bij "Wijzigingen publiceren" kan de
     therapeut een kort bericht aan de patiënt meesturen ("Goed bezig, we gaan zwaarder!"); dat komt
     bij de melding in de app. De wijzigingsnotitie blijft intern.
+63. [x] **Vroege waarschuwing per pijnplek** (roadmap #6). "Pijnplek erger" in Vraagt aandacht als
+    dezelfde plek op de pijnkaart in twee weken 2+ punten slechter wordt (metingen minstens een week
+    uit elkaar), met de plek en "van 2 naar 5/10". Alleen bij fysiotherapie.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

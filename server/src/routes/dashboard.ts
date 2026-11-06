@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { progressionSignal, painRising } from '../../../shared/progression';
+import { areaPainRising, progressionSignal, painRising } from '../../../shared/progression';
 import { withUser } from '../db';
 import { requireStaff, type AppEnv } from '../middleware';
 import { mapExercise, OV_COLS, OV_JOIN } from './exercises';
@@ -9,7 +9,7 @@ import { toISODate } from '../../../shared/adherence';
 export const dashboard = new Hono<AppEnv>();
 
 /** One reason to look at a patient, with its date and numbers so the next step is clear. */
-type Signal = { reason: string; date: string | null; value?: number; planned?: number; completed?: number };
+type Signal = { reason: string; date: string | null; value?: number; planned?: number; completed?: number; area?: string };
 type Attention = { patientId: string; name: string; reasons: string[]; signals: Signal[] };
 
 dashboard.get('/', async (c) => {
@@ -55,6 +55,12 @@ dashboard.get('/', async (c) => {
       for (const r of recentScores.rows) scoresBy.set(r.patient_id, [...(scoresBy.get(r.patient_id) ?? []), { difficulty: r.difficulty, pain: r.pain, at: r.completed_at }]);
       // Coaches and personal accounts are not medical: the app draws no conclusions from how someone feels.
       const clinical = (await tx.query('SELECT kind FROM practices WHERE id = $1', [practiceId])).rows[0]?.kind === 'physio';
+      // Pain map check-ins of the last two weeks, for "same spot getting worse" (physio only).
+      const areaRows = clinical
+        ? (await tx.query(`SELECT patient_id, area, score, recorded_at FROM pain_map_entries WHERE patient_id = ANY($1) AND recorded_at > now() - interval '14 days'`, [ids])).rows
+        : [];
+      const areasBy = new Map<string, { area: string; score: number; at: string }[]>();
+      for (const r of areaRows) areasBy.set(r.patient_id, [...(areasBy.get(r.patient_id) ?? []), { area: r.area, score: r.score, at: r.recorded_at }]);
       const soon = new Date();
       soon.setDate(soon.getDate() + 7);
       const attention: Attention[] = [];
@@ -84,11 +90,13 @@ dashboard.get('/', async (c) => {
         // Pain going up workout after workout, before it reaches "high pain".
         const rising = clinical && p.active_programs > 0 && !signals.some((x) => x.reason === 'high_pain') ? painRising(scoresBy.get(p.id) ?? []) : null;
         if (rising) signals.push({ reason: 'pain_rising', date: scoresBy.get(p.id)?.[0]?.at ?? null, value: rising.to, planned: rising.from });
+        const worse = areaPainRising(areasBy.get(p.id) ?? [])[0];
+        if (worse) signals.push({ reason: 'area_pain_rising', date: null, value: worse.to, planned: worse.from, area: worse.area });
         if (p.next_end && p.next_end <= toISODate(soon)) signals.push({ reason: 'program_ending', date: p.next_end });
         if (p.active_programs === 0) signals.push({ reason: 'no_active_program', date: null });
         if (signals.length) attention.push({ patientId: p.id, name: `${p.first_name} ${p.last_name}`, reasons: signals.map((x) => x.reason), signals });
       }
-      const order = ['high_pain', 'pain_rising', 'new_feedback', 'too_heavy', 'inactive_long', 'no_registration', 'low_adherence', 'ready_heavier', 'program_ending', 'not_activated', 'no_active_program'];
+      const order = ['high_pain', 'pain_rising', 'area_pain_rising', 'new_feedback', 'too_heavy', 'inactive_long', 'no_registration', 'low_adherence', 'ready_heavier', 'program_ending', 'not_activated', 'no_active_program'];
       attention.sort((x, y) => order.indexOf(x.reasons[0]) - order.indexOf(y.reasons[0]));
 
       const activity = await tx.query(
