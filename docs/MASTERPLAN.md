@@ -123,6 +123,10 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 46. [x] **Functioneel blok ook voor nek, schouder en bovenrug.** Dat bleef leeg (alleen been-
     bewegingen telden). Nu: opdrukken, roeien, drukken en dragen, nadat activatie gekozen heeft;
     in de prikkelbare fase niets boven het hoofd.
+47. [x] **Hand en elleboog in het dagelijks leven.** Tennisarm en carpaletunnelklachten kregen geen
+    functionele oefening; nu "Tas dragen met de handrug naar boven" en "Kleine voorwerpen oppakken
+    met duim en vingertoppen". Elke klacht heeft nu in elk blok iets, behalve bewust geen rek bij
+    heuppijn aan de buitenkant.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

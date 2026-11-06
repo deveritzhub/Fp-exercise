@@ -421,7 +421,7 @@ export function proposeExercises(c: Complaint, exercises: ProposalExercise[], pe
     }
     return out;
   };
-  const functional = ['step', 'squat', 'uitval', 'lunge', 'hinge', 'deadlift', 'eenbenig', 'eenbeens', 'balans', 'balance', 'opstaan', 'traplop', 'landing', 'hop', 'reik', 'farmer', 'carry'];
+  const functional = ['step', 'squat', 'uitval', 'lunge', 'hinge', 'deadlift', 'eenbenig', 'eenbeens', 'balans', 'balance', 'opstaan', 'traplop', 'landing', 'hop', 'reik', 'farmer', 'carry', 'dragen', 'oppakken'];
   const isFunctional = (e: ProposalExercise) => functional.some((w) => norm(e.nameNl).includes(w) || norm(e.nameEn).includes(w));
   const activate = take(rank(exercises.filter((e) => (e.kind === 'kracht' || e.kind === 'revalidatie') && hits(e, train) > 0 && !isFunctional(e)), train));
   // Calm and mobilise: stretches for what takes over, plus nerve sliders for radiating complaints.

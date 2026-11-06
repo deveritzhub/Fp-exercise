@@ -33,6 +33,8 @@ export const FP_BUNDLES = [
   { name: 'fp-ketens-v2', file: 'fp-ketens-v2.json' },
   // Hand: thumb opposition and grip, so carpal tunnel complaints have a strengthening exercise.
   { name: 'fp-ketens-v3', file: 'fp-ketens-v3.json' },
+  // Hand and elbow in daily life: functional work for tennis elbow and carpal tunnel complaints.
+  { name: 'fp-ketens-v4', file: 'fp-ketens-v4.json' },
 ] as const;
 
 const DIR = path.join(import.meta.dirname, '../../db/seed-data');

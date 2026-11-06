@@ -232,6 +232,8 @@ const SOURCE_MUSCLES: Record<string, string[]> = {
   kt_tfl_rek: ['tfl'],
   kt_duimoppositie: ['thenar'],
   kt_knijpbal: ['polsbuigers', 'fdp', 'thenar'],
+  kt_dragen_handrug: ['polsstrekkers', 'supinator'],
+  kt_oppakken_knijpgreep: ['thenar', 'fdp'],
   kt_bovenste_trapezius_rek: ['trapezius', 'levator_scapulae'],
 };
 
