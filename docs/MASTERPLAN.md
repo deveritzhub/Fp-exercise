@@ -224,7 +224,8 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
 77. [x] **"Dit doet pijn" tijdens een oefening.** Naast "Overslaan": kies de lichtere variant (als
     de fysio die heeft ingesteld) of sla over met optioneel een pijnscore; de fysio ziet
     "Overgeslagen vanwege pijn" met de score bij de sessie (en in Vraagt aandacht als feedback).
-78. [ ] **Snelfilters in de patiëntenlijst.** Vraagt aandacht · Nog niet uitgenodigd · Geen programma.
+78. [x] **Snelfilters in de patiëntenlijst.** Alle · Vraagt aandacht · Nog niet uitgenodigd ·
+    Uitnodiging open · Geen programma, met aantallen; ook te openen via `?filter=…`.
 79. [ ] **"Klaar voor vandaag".** Na de laatste training van de dag een afsluiter met wat er morgen
     komt en je reeks.
 80. [ ] **Lege schermen met één duidelijke actie** overal nalopen (nieuwe praktijk, nieuwe patiënt).
