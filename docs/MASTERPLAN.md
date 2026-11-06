@@ -240,7 +240,10 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     programma · K klachtwijzer · S spierenatlas · / of Ctrl K zoeken · ? overzicht (ook in het menu).
     Nooit tijdens het typen of met een venster open.
 83. [ ] **Donkere weergave** voor de patiënt-app (volgt de telefoon), prettig bij avondtraining.
-84. [ ] **Programma kopiëren naar een andere patiënt** in één stap vanuit het programma.
+    Uitgesteld: honderden vaste kleuren (witte kaarten, tekst) moeten eerst naar thema-kleuren;
+    dat doe ik als aparte, grondige stap met schermafbeeldingen van elk scherm.
+84. [x] **Programma kopiëren naar een andere patiënt.** Meer → "Kopiëren naar andere patiënt…":
+    kies de patiënt, en je krijgt een concept met dezelfde oefeningen en dosering.
 85. [ ] **Weekoverzicht voor de patiënt**: welke dagen welke training, vooruit kijken.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)

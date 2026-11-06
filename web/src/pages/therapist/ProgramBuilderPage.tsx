@@ -253,6 +253,7 @@ export function ProgramBuilderPage() {
     }
   };
 
+  const [copyTo, setCopyTo] = useState(false);
   const duplicate = async (asTpl: boolean) => {
     try {
       const r = await api.post<{ id: string }>(`/programs/${id}/duplicate`, asTpl ? { asTemplate: true, title: meta.title } : { patientId });
@@ -295,6 +296,7 @@ export function ProgramBuilderPage() {
                   {!readOnlyGlobal && <MenuItem icon={<History className="h-4 w-4" />} onClick={() => { close(); setHistory(true); }}>{t('Versiegeschiedenis', 'Version history')}</MenuItem>}
                   <MenuItem icon={<BookCopy className="h-4 w-4" />} onClick={() => { close(); duplicate(true); }}>{program.isTemplate ? t('Kopiëren naar praktijksjabloon', 'Copy to practice template') : t('Opslaan als sjabloon', 'Save as template')}</MenuItem>
                   {program.isTemplate && <MenuItem icon={<Copy className="h-4 w-4" />} onClick={() => { close(); nav(`/app/programmas/nieuw?sjabloon=${program.id}`); }}>{t('Gebruiken voor patiënt', 'Use for patient')}</MenuItem>}
+                  {!program.isTemplate && <MenuItem icon={<Copy className="h-4 w-4" />} onClick={() => { close(); setCopyTo(true); }}>{t('Kopiëren naar andere patiënt…', 'Copy to another patient…')}</MenuItem>}
                   {!program.isTemplate && program.status === 'active' && <MenuItem icon={<CheckCircle2 className="h-4 w-4" />} onClick={() => { close(); setStatus('completed'); }}>{t('Markeer als afgerond', 'Mark as completed')}</MenuItem>}
                   {!program.isTemplate && (program.status === 'completed' || program.status === 'archived') && <MenuItem icon={<CheckCircle2 className="h-4 w-4" />} onClick={() => { close(); setStatus('active'); }}>{t('Opnieuw activeren', 'Reactivate')}</MenuItem>}
                   {!program.isTemplate && program.status !== 'archived' && <MenuItem danger icon={<Archive className="h-4 w-4" />} onClick={() => { close(); setStatus('archived'); }}>{t('Archiveren', 'Archive')}</MenuItem>}
@@ -421,6 +423,7 @@ export function ProgramBuilderPage() {
       <Dialog open={libOpen} onClose={() => setLibOpen(false)} title={t('Oefening toevoegen', 'Add exercise')} side>
         <LibraryPanel onAdd={addExercise} addedIds={items.map((i) => i.exerciseId)} bare />
       </Dialog>
+      {program && copyTo && <CopyToPatientDialog programId={program.id} title={meta.title} currentPatient={program.patient?.id ?? null} onClose={() => setCopyTo(false)} />}
       <TemplatePicker open={pickTemplate} onClose={() => setPickTemplate(false)} onPick={(p) => { loadTemplate(p); setPickTemplate(false); }} />
       <PreviewDialog open={preview} onClose={() => setPreview(false)} meta={meta} items={items} unsaved={dirty} />
       {id && <VersionsDialog open={history} onClose={() => setHistory(false)} programId={id} />}
@@ -921,6 +924,38 @@ function SubstitutePicker({ item, relations, onChange }: { item: BItem; relation
         </div>
       )}
     </div>
+  );
+}
+
+/** Copy this programme (as a draft) to another patient: the same exercises and doses, then adjust. */
+function CopyToPatientDialog({ programId, title, currentPatient, onClose }: { programId: string; title: string; currentPatient: string | null; onClose: () => void }) {
+  const { t, locale } = useI18n();
+  const toast = useToast();
+  const nav = useNavigate();
+  const [patientId, setPatientId] = useState('');
+  const [busy, setBusy] = useState(false);
+  const list = useQuery({ queryKey: ['patients', 'copy-to'], queryFn: () => api.get<{ items: PatientListItem[] }>('/patients?status=active&scope=practice') });
+  const patients = (list.data?.items ?? []).filter((p) => p.id !== currentPatient);
+  const copy = async () => {
+    setBusy(true);
+    try {
+      const r = await api.post<{ id: string }>(`/programs/${programId}/duplicate`, { patientId, title });
+      const who = patients.find((p) => p.id === patientId);
+      toast(t(`Kopie gemaakt voor ${who?.firstName ?? 'de patiënt'} (concept)`, `Copy made for ${who?.firstName ?? 'the patient'} (draft)`), 'ok');
+      nav(`/app/programmas/${r.id}`);
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+      setBusy(false);
+    }
+  };
+  return (
+    <Dialog open onClose={onClose} size="sm" title={t('Kopiëren naar andere patiënt', 'Copy to another patient')} description={t('Dezelfde oefeningen en dosering, als concept. Daarna pas je het aan en wijs je het toe.', 'The same exercises and doses, as a draft. Then adjust and assign it.')}
+      footer={<><Button variant="secondary" onClick={onClose}>{t('Annuleren', 'Cancel')}</Button><Button onClick={copy} loading={busy} disabled={!patientId} icon={<Copy className="h-4 w-4" />}>{t('Kopiëren', 'Copy')}</Button></>}>
+      <Select label={t('Patiënt', 'Patient')} value={patientId} onChange={(e) => setPatientId(e.target.value)}>
+        <option value="">{list.isLoading ? t('Laden…', 'Loading…') : t('Kies een patiënt', 'Choose a patient')}</option>
+        {patients.map((p) => <option key={p.id} value={p.id}>{p.lastName}, {p.firstName}</option>)}
+      </Select>
+    </Dialog>
   );
 }
 
