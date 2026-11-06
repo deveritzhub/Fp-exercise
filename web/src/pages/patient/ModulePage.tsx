@@ -1,5 +1,7 @@
 import { Link, Navigate } from 'react-router-dom';
 import { MOBILITY_MEASURE_XP, mobilityDue } from '@shared/mobilityTests';
+import { progressionSignal } from '@shared/progression';
+import { cn } from '@/lib/cn';
 import { localToday } from '@/components/MobilityTests';
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2, ChevronDown, ChevronRight, Dumbbell, Lock, Play, ShieldCheck, Ruler } from 'lucide-react';
@@ -16,7 +18,7 @@ import { RehabRoute } from '@/components/hero/RehabRoute';
 import type { HeroState } from '@/lib/types';
 import { MODULE_ICON, moduleLabel, moduleOf, StartOrResume, type PatientHomeData, type PatientModule } from '@/pages/patient/PatientHome';
 
-type History = { sessions: { id: string; completedAt: string; programTitle: string; module?: string | null; exercisesDone: number; exercisesTotal: number }[] };
+type History = { sessions: { id: string; completedAt: string; programTitle: string; module?: string | null; exercisesDone: number; exercisesTotal: number; difficulty?: number | null; pain?: number | null }[] };
 
 const INTRO: Record<PatientModule, [string, string]> = {
   revalidatie: ['Het programma dat je fysiotherapeut voor je klaarzet, met je fases en doelen.', 'The programme your physiotherapist sets up for you, with your phases and goals.'],
@@ -124,6 +126,21 @@ export function ModulePage({ module }: { module: PatientModule }) {
           <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
         </Link>
       )}
+
+      {/* Own programmes (strength, mobility): a tip from the patient's own scores. Rehab stays with the therapist. */}
+      {module !== 'revalidatie' && programs.filter((p) => p.selfStarted).map((p) => {
+        const mine = sessions.filter((x) => x.programTitle === p.title).sort((a, b) => b.completedAt.localeCompare(a.completedAt));
+        const sig = progressionSignal(mine.map((x) => ({ difficulty: x.difficulty ?? null, pain: x.pain ?? null })));
+        if (!sig) return null;
+        return (
+          <p key={p.id} role="status" className={cn('rounded-2xl border p-4 text-[15px] shadow-card', sig.kind === 'ready_heavier' ? 'border-accent/30 bg-accent-soft text-ink-900' : 'border-warn/30 bg-warn-soft/60 text-ink-900')}>
+            <span className="block font-semibold">{sig.kind === 'ready_heavier' ? t('Dit gaat je makkelijk af', 'This is going easily') : t('Dit is nu erg zwaar', 'This is very heavy right now')}</span>
+            {sig.kind === 'ready_heavier'
+              ? t(`Je laatste ${sig.sessions} trainingen van "${p.title}" voelden licht. Tijd voor een stapje meer: één set extra, wat meer herhalingen of een zwaarder programma hieronder.`, `Your last ${sig.sessions} workouts of "${p.title}" felt light. Time for a step up: one extra set, a few more reps or a harder programme below.`)
+              : t(`Je laatste ${sig.sessions} trainingen van "${p.title}" voelden erg zwaar. Doe minder herhalingen of een lichtere variant. Bouw rustig op; pijn hoort niet op te lopen.`, `Your last ${sig.sessions} workouts of "${p.title}" felt very heavy. Do fewer reps or a lighter variation. Build up gradually; pain should not increase.`)}
+          </p>
+        );
+      })}
 
       {/* Programmes in this part */}
       <section aria-labelledby="mod-programs">

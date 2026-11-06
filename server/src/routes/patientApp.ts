@@ -280,6 +280,8 @@ patientApp.get('/history', async (c) => {
           id: r.id,
           completedAt: r.completed_at,
           programTitle: r.title,
+          // Which part it belongs to, so Kracht and Mobiliteit can show their own workouts.
+          module: r.module as string,
           difficulty: r.difficulty,
           pain: r.pain,
           feedback: r.feedback,

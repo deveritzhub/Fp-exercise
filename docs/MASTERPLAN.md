@@ -87,7 +87,14 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     "Klaar voor zwaarder"; 2× erg zwaar → "Te zwaar?". Op het dashboard en in het dossier;
     een suggestie, nooit een automatische wijziging.
 34. [x] **Sjabloon uit de klachtwijzer.** Het voorstel ook als praktijksjabloon kunnen opslaan.
-35. [ ] **Volledige regressietest** van alle schermen na fase 6–8.
+35. [x] **Volledige regressietest** van alle schermen na fase 6–8: 122 geslaagd, 0 gefaald (6 nov).
+
+## Fase 9 – De patiënt zelf laten bijsturen
+36. [x] **Progressietip voor eigen programma's.** Bij een zelf gestart kracht- of
+    mobiliteitsprogramma: 3× licht → "Dit gaat je makkelijk af, tijd voor een stapje meer";
+    2× erg zwaar → "Doe minder of een lichtere variant". Revalidatie blijft bij de fysio.
+    Bug opgelost: Kracht en Mobiliteit toonden nooit hun eigen afgeronde trainingen (de
+    geschiedenis gaf het onderdeel niet mee).
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
