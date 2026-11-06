@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, ChevronRight, Dumbbell, HeartPulse, Move, Play, X } from 'lucide-react';
+import { Bell, ChevronRight, Dumbbell, HeartPulse, Move, PartyPopper, Play, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { greeting, pct } from '@/lib/format';
+import { fmtDate, greeting, pct } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
 import { ButtonLink, ErrorState, ProgressRing, Skeleton } from '@/components/ui';
 import { RestDayCard, TodayProgramCard } from '@/components/patient/TodayCard';
@@ -113,6 +113,24 @@ export function PatientHome() {
           ))}
         </div>
       )}
+
+      {/* Everything planned today is done: a short, calm wrap-up with what comes next. */}
+      {todo.length > 0 && left === 0 && pausedToday === 0 && resumeOther.length === 0 && (() => {
+        const next = d.programs.map((p) => p.nextSession).filter((x): x is string => !!x).sort()[0];
+        return (
+          <section aria-labelledby="done-today" className="rounded-2xl bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-5 text-white shadow-card">
+            <h2 id="done-today" className="flex items-center gap-2 text-[20px] font-bold"><PartyPopper className="h-6 w-6" aria-hidden />{t('Klaar voor vandaag', 'Done for today')}</h2>
+            <p className="mt-1 text-[15px] text-white/85">
+              {d.stats.streak > 1 ? t(`Al ${d.stats.streak} trainingen op rij. `, `${d.stats.streak} workouts in a row. `) : ''}
+              {next ? t(`Volgende training: ${fmtDate(next, locale, { weekday: 'long', day: 'numeric', month: 'long' })}.`, `Next workout: ${fmtDate(next, locale, { weekday: 'long', day: 'numeric', month: 'long' })}.`) : t('Rust lekker uit.', 'Enjoy your rest.')}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link to="/p/held" className="inline-flex min-h-[44px] items-center rounded-xl bg-white/15 px-4 text-[14.5px] font-semibold">{t('Naar je held', 'To your hero')}</Link>
+              <Link to="/p/voortgang" className="inline-flex min-h-[44px] items-center rounded-xl bg-white/15 px-4 text-[14.5px] font-semibold">{t('Je voortgang', 'Your progress')}</Link>
+            </div>
+          </section>
+        );
+      })()}
 
       {/* With one workout today the mission only repeats its card; it earns its place when it picks between several. */}
       {todo.length > 1 && <DailyMissionCard programs={d.programs} />}

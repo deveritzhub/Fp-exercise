@@ -99,6 +99,10 @@ test('patient activates account on a phone and completes a session', async ({ br
   await expect(page.getByRole('heading', { name: 'Training afgerond!' })).toBeVisible();
   await page.getByRole('button', { name: 'Terug naar overzicht' }).click();
   await expect(page.getByText('Klaar voor vandaag — goed gedaan!')).toBeVisible();
+  // The wrap-up card says what comes next.
+  const done = page.getByRole('region', { name: 'Klaar voor vandaag' });
+  await expect(done).toBeVisible();
+  await expect(done.getByText(/Volgende training:|Rust lekker uit/)).toBeVisible();
   await ctx.close();
 });
 

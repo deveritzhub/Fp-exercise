@@ -226,8 +226,9 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     "Overgeslagen vanwege pijn" met de score bij de sessie (en in Vraagt aandacht als feedback).
 78. [x] **Snelfilters in de patiëntenlijst.** Alle · Vraagt aandacht · Nog niet uitgenodigd ·
     Uitnodiging open · Geen programma, met aantallen; ook te openen via `?filter=…`.
-79. [ ] **"Klaar voor vandaag".** Na de laatste training van de dag een afsluiter met wat er morgen
-    komt en je reeks.
+79. [x] **"Klaar voor vandaag".** Zodra alles van vandaag gedaan is: een afsluitkaart met je reeks
+    ("Al 5 trainingen op rij"), de volgende training (dag en datum) en knoppen naar je held en
+    voortgang.
 80. [ ] **Lege schermen met één duidelijke actie** overal nalopen (nieuwe praktijk, nieuwe patiënt).
 81. [ ] **Laatst gebruikte sjablonen bovenaan** bij een nieuw programma.
 
