@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight } from 'lucide-react';
+import { BookOpen, Brain, ChevronRight, ClipboardList, MessageCircle, Ruler, Trophy, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -8,6 +8,12 @@ import { fmtRelative } from '@/lib/format';
 import { Button, ErrorState, Spinner } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import type { Notification } from '@/lib/types';
+
+/** One icon per kind of message, so the list is easy to scan. */
+const KIND_ICON: Record<string, LucideIcon> = {
+  program_assigned: ClipboardList, program_updated: ClipboardList, complaint_explanation: BookOpen, mobility_measure: Ruler,
+  phase_unlocked: Trophy, feedback_reply: MessageCircle, atlas_muscle: Brain,
+};
 
 /** Everything the practice sent: replies to workouts, muscle cards, requests to measure, new programmes. */
 export function MessagesPage() {
@@ -40,7 +46,8 @@ export function MessagesPage() {
           {items.map((n) => (
             <li key={n.id} className={cn('rounded-2xl border bg-white p-4 shadow-card', n.readAt ? 'border-line' : 'border-accent/40')}>
               <div className="flex items-start justify-between gap-3">
-                <p className="font-semibold text-ink-900">{!n.readAt && <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-accent align-middle" aria-hidden />}{!n.readAt && <span className="sr-only">{t('Nieuw: ', 'New: ')}</span>}{n.title}</p>
+                {(() => { const I = KIND_ICON[n.kind] ?? MessageCircle; return <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent"><I className="h-[18px] w-[18px]" aria-hidden /></span>; })()}
+                <p className="min-w-0 flex-1 font-semibold text-ink-900">{!n.readAt && <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-accent align-middle" aria-hidden />}{!n.readAt && <span className="sr-only">{t('Nieuw: ', 'New: ')}</span>}{n.title}</p>
                 <span className="shrink-0 text-[12.5px] text-ink-500">{fmtRelative(n.createdAt, locale)}</span>
               </div>
               {n.body && <p className="mt-1 whitespace-pre-line text-[15px] text-ink-800">{n.body}</p>}
