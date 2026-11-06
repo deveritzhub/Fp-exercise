@@ -1,3 +1,4 @@
+import { complaintOf } from '@shared/complaints';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -69,6 +70,9 @@ export function ProgramBuilderPage() {
 
   const [patientId, setPatientId] = useState<string | null>(params.get('patient'));
   const [asTemplate, setAsTemplate] = useState(params.get('type') === 'sjabloon');
+  // From the complaint guide for a patient: also send the explanation of the complaint (ticked by default).
+  const guideComplaint = complaintOf(params.get('klacht') ?? '');
+  const [sendExplanation, setSendExplanation] = useState(true);
   const [meta, setMeta] = useState<Meta>({ title: '', description: '', patientInstructions: '', startDate: todayISO(), endDate: plusWeeks(todayISO(), 6) });
   const [items, setItems] = useState<BItem[]>([]);
   const [sourceTemplateId, setSourceTemplateId] = useState<string | null>(null);
@@ -215,7 +219,11 @@ export function ProgramBuilderPage() {
           sourceTemplateId,
         });
         setDirty(false);
-        toast(asTemplate ? t('Sjabloon opgeslagen', 'Template saved') : mode === 'active' ? t('Programma toegewezen aan patiënt', 'Programme assigned to patient') : t('Concept opgeslagen', 'Draft saved'));
+        let explained = false;
+        if (mode === 'active' && !asTemplate && patientId && guideComplaint && sendExplanation) {
+          explained = await api.post<{ delivered: boolean }>('/atlas/send-complaint', { patientId, complaint: guideComplaint.key }).then((x) => x.delivered, () => false);
+        }
+        toast(asTemplate ? t('Sjabloon opgeslagen', 'Template saved') : mode === 'active' ? (explained ? t('Programma toegewezen en uitleg verstuurd', 'Programme assigned and explanation sent') : t('Programma toegewezen aan patiënt', 'Programme assigned to patient')) : t('Concept opgeslagen', 'Draft saved'));
         qc.invalidateQueries({ queryKey: ['patient'] });
         nav(`/app/programmas/${r.id}`, { replace: true });
       } else {
@@ -388,6 +396,12 @@ export function ProgramBuilderPage() {
             <span className={cn('text-[13px]', dirty ? 'font-medium text-warn' : 'text-ink-600')} role="status">
               {dirty ? t('Niet-opgeslagen wijzigingen', 'Unsaved changes') : program ? t(`Opgeslagen · ${fmtDateTime(program.updatedAt, locale)}`, `Saved · ${fmtDateTime(program.updatedAt, locale)}`) : t('Nog niet opgeslagen', 'Not saved yet')}
             </span>
+            {isNew && !asTemplate && patientId && guideComplaint && (
+              <label className="flex min-h-[44px] items-center gap-2 text-[13.5px] text-ink-800">
+                <input type="checkbox" checked={sendExplanation} onChange={(e) => setSendExplanation(e.target.checked)} className="h-4 w-4 accent-[rgb(var(--accent))]" />
+                {t(`Stuur ook de uitleg "${locale === 'nl' ? guideComplaint.name[0] : guideComplaint.name[1]}" mee`, `Also send the explanation "${locale === 'nl' ? guideComplaint.name[0] : guideComplaint.name[1]}"`)}
+              </label>
+            )}
             <div className="ml-auto flex gap-2">
               {asTemplate || program?.isTemplate ? (
                 <Button loading={busy === 'save'} onClick={() => save('save')}>{t('Sjabloon opslaan', 'Save template')}</Button>

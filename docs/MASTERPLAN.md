@@ -199,6 +199,9 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
 69. [x] **Pijnkaart in het voortgangsrapport.** Het rapport (print/PDF) toont per plek de
     startmeting en de laatste meting van de pijnkaart, met datums (alleen fysiotherapie).
 70. [x] **Regressietest na stap 66–69:** 140 geslaagd, 0 gefaald (6 nov, ochtend).
+71. [x] **Programma + uitleg in één keer.** Maak je vanuit de klachtwijzer een programma voor een
+    patiënt, dan staat bij "Opslaan & toewijzen" het vinkje "Stuur ook de uitleg … mee" (standaard
+    aan): de patiënt krijgt programma én uitleg.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

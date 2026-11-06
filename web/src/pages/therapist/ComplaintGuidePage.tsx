@@ -149,7 +149,11 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
     }
     const p = new URLSearchParams({ oefeningen: ordered.map((e) => e.id).join(','), titel: phase === 'opbouw' ? L(complaint.name) : `${L(complaint.name)} · ${L(GUIDE_PHASES.find((x) => x.key === phase)!.name).toLowerCase()}` });
     if (asTemplate) p.set('type', 'sjabloon');
-    else if (patient) p.set('patient', patient);
+    else if (patient) {
+      p.set('patient', patient);
+      // Lets the builder offer to send the explanation of this complaint along.
+      p.set('klacht', complaint.key);
+    }
     nav(`/app/programmas/nieuw?${p}`);
   };
   const tests = [...new Set([...(complaint.mobilityTests ?? []), ...comps.map((c) => c.mobilityTest).filter(Boolean)])] as string[];

@@ -51,6 +51,11 @@ test('from a patient record: "Op klacht" keeps the patient for the programme', a
   await page.getByRole('region', { name: /Oefenvoorstel/ }).getByRole('button', { name: /Programma maken/ }).click();
   await expect(page).toHaveURL(/patient=/);
   await expect(page.getByLabel('Titel')).toHaveValue('Patellofemorale pijn');
+  // Assigning it can send the explanation of the complaint along (ticked by default).
+  const send = page.getByLabel('Stuur ook de uitleg "Patellofemorale pijn" mee');
+  await expect(send).toBeChecked();
+  await page.getByRole('button', { name: 'Opslaan & toewijzen' }).click();
+  await expect(page.getByText('Programma toegewezen en uitleg verstuurd')).toBeVisible();
 });
 
 test('atlas: chains and compensations per muscle, for therapist and (in plain words) patient', async ({ browser }) => {
