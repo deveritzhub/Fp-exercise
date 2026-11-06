@@ -155,6 +155,8 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 57. [x] **Uitleg met je eigen oefeningen.** Onder de uitleg over je klacht: "Jouw oefeningen en
     waarom ze helpen", met de oefeningen uit je revalidatieprogramma die bij de klacht passen en per
     oefening de reden in gewone taal.
+58. [x] **Regressietest na stap 44–57:** 133 geslaagd, 1 fout in de nieuwe test zelf ("Bekijken"
+    wees naar een ander item na het toevoegen van "Pijn loopt op"); test aangepast. Uitlogtest groen.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

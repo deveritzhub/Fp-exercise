@@ -9,7 +9,7 @@ test('therapist: "What\'s new" shows the latest improvements; the "New" badge go
   const dlg = page.getByRole('dialog', { name: 'Wat is er nieuw?' });
   await expect(dlg.getByText(/Klachten zoeken met Ctrl\+K/)).toBeVisible();
   await expectAccessible(page, 'whats new (staff)');
-  await dlg.getByRole('link', { name: 'Bekijken' }).first().click();
+  await dlg.getByRole('listitem').filter({ hasText: 'Uitleg over een klacht naar de patiënt sturen' }).getByRole('link', { name: 'Bekijken' }).click();
   await expect(page).toHaveURL(/klachtwijzer/);
   await expect(page.getByRole('button', { name: /Wat is er nieuw\?/ })).not.toContainText('Nieuw');
 });
