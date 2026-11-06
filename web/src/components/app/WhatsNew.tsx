@@ -21,6 +21,7 @@ const STAFF: Item[] = [
   { nl: 'Reageren op een training bij "Markeer als gezien"; de patiënt krijgt je reactie.', en: 'Reply to a workout with "Mark as seen"; the patient gets your reply.' },
 ];
 const PATIENT: Item[] = [
+  { nl: 'Moedig je vrienden aan met een vaste tekst, zoals "Zet \'m op!", één keer per dag.', en: 'Cheer on your friends with a fixed text, like "Go for it!", once a day.', to: '/p/held/vrienden' },
   { clinical: true, nl: 'Geeft je fysiotherapeut een volgende fase vrij, dan zie je "Hoofdstuk voltooid!" met je nieuwe doel.', en: 'When your physiotherapist releases a next phase, you see "Chapter completed!" with your new goal.' },
   { clinical: true, nl: 'In de uitleg over je klacht staat nu ook bij elke oefening van je programma waarom die helpt.', en: 'The explanation of your complaint now also says why each exercise in your programme helps.' },
   { nl: 'Loopt je pijn na het trainen drie keer op rij op, dan zie je dat met een tip om het rustiger aan te doen.', en: 'If your pain after training goes up three times in a row, you see it with a tip to take it easier.' },
@@ -30,7 +31,7 @@ const PATIENT: Item[] = [
   { nl: 'Op Voortgang zie je hoe zwaar en pijnlijk je trainingen waren, in gewone taal.', en: 'Progress shows how hard and painful your workouts were, in plain words.', to: '/p/voortgang' },
   { nl: 'Nieuwe quizvragen over welke spier het werk overneemt als een andere zwak is.', en: 'New quiz questions on which muscle takes over when another is weak.' },
 ];
-const VERSION = '2026-11-06f';
+const VERSION = '2026-11-06g';
 const KEY = 'fp.whatsnew.v1';
 
 function seen() {

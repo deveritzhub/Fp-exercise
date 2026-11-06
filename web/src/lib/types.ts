@@ -268,4 +268,4 @@ export type HeroFriend = {
   statsUpdatedAt: string | null;
   since: string;
 };
-export type FriendsState = { hasHero: boolean; sharing: { enabled: boolean; code: string | null }; friends: HeroFriend[] };
+export type FriendsState = { hasHero: boolean; sharing: { enabled: boolean; code: string | null }; friends: HeroFriend[]; cheers?: { heroName: string; cheer: string; at: string }[]; cheeredToday?: string[] };

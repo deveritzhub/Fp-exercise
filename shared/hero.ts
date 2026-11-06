@@ -1185,3 +1185,12 @@ export function heroNickname(firstName: string | null | undefined, frame: string
   const list = NICK_ADJ[pick[0].toLowerCase()];
   return `${list[Math.floor(i / names.length) % list.length]} ${pick}`;
 }
+
+/** Pre-chosen cheers between hero friends (no free text: nothing to moderate, no health data). */
+export const CHEERS = [
+  { key: 'go', nl: "Zet 'm op!", en: 'Go for it!', emoji: '💪' },
+  { key: 'strong', nl: 'Sterk bezig!', en: 'Looking strong!', emoji: '🔥' },
+  { key: 'proud', nl: 'Trots op je!', en: 'Proud of you!', emoji: '🏅' },
+  { key: 'keep', nl: 'Volhouden!', en: 'Keep it up!', emoji: '⭐' },
+] as const;
+export type CheerKey = (typeof CHEERS)[number]['key'];

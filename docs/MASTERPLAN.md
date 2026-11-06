@@ -178,6 +178,11 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     en een knop naar die fase. Het bericht blijft onder Berichten. Alleen de therapeut geeft vrij.
     De medaille "Fase voltooid" telt nu ook als de therapeut de volgende fase vrijgeeft zonder de
     vorige eerst op "afgerond" te zetten (eerder kwam die medaille dan nooit).
+65. [x] **Vrienden aanmoedigen** (roadmap, ecosysteem). Vrienden kunnen elkaar één keer per dag een
+    vaste aanmoediging sturen ("Zet 'm op!", "Sterk bezig!", "Trots op je!", "Volhouden!"); geen
+    vrije tekst, dus niets te modereren en geen gezondheidsgegevens. Migratie 035 (alleen een nieuwe
+    tabel); net als de vriendschappen alleen via beveiligde databasefuncties, getest. Weg zodra de
+    vriendschap of het delen stopt; staat in de gegevensexport.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

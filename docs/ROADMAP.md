@@ -19,7 +19,7 @@ Eerder genoemd en ook nog open:
 
 Vriendenlijsten zijn gebouwd (opt-in, vriendcode + accepteren, ranglijst op totaal level, skills per vriend; geen pijn- of programmagegevens). Ideeën om hierop voort te bouwen:
 - **Duo-quest**: twee vrienden doen samen een weekquest (bijv. allebei 3 trainingen) voor een gedeelde kist.
-- **Aanmoedigen**: een vooraf gekozen duim/bericht ("Zet 'm op!") sturen; geen vrije tekst, dus geen moderatie nodig.
+- ✅ **Aanmoedigen** (gebouwd, nov 2026): een vooraf gekozen duim/bericht ("Zet 'm op!") sturen; geen vrije tekst, dus geen moderatie nodig.
 - **Seizoenen**: maandelijkse uitdaging met eigen uitrusting die je alleen die maand kunt verdienen.
 - **Praktijk-teams**: praktijken die meedoen vormen een team; ranglijst op volle weken, anoniem en opt-in.
 - **Wearables / Apple Health / Google Fit**: stappen en hartslag als extra XP voor Conditie (vraagt aparte toestemming en verwerkersafspraak).

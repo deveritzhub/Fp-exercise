@@ -137,4 +137,45 @@ describe('hero friends (opt-in)', () => {
       c.release();
     }
   });
+
+  it('cheers: pre-chosen only, between friends, once per friend per day; gone when the friendship ends', async () => {
+    const emma = await login('patientA');
+    const noah = await login('patientB');
+    const noahCode = (await noah.put('/patient/hero/sharing', { enabled: true })).body.sharing.code as string;
+    await emma.put('/patient/hero/sharing', { enabled: true });
+    await emma.post('/patient/hero/friends', { code: noahCode });
+    const pending = (await emma.get('/patient/hero/friends')).body.friends[0];
+    // Not friends yet (pending): no cheers.
+    expect((await emma.post(`/patient/hero/friends/${pending.id}/cheer`, { cheer: 'go' })).status).toBe(404);
+    await noah.post(`/patient/hero/friends/${pending.id}/accept`, {});
+    const f = (await emma.get('/patient/hero/friends')).body.friends[0];
+    expect(f.kind).toBe('friend');
+    // Only the fixed cheers.
+    expect((await emma.post(`/patient/hero/friends/${f.id}/cheer`, { cheer: 'je bent stom' })).status).toBe(400);
+    const sent = await emma.post(`/patient/hero/friends/${f.id}/cheer`, { cheer: 'go' });
+    expect(sent.body.result).toBe('sent');
+    expect(sent.body.cheeredToday).toContain(f.id);
+    expect((await emma.post(`/patient/hero/friends/${f.id}/cheer`, { cheer: 'proud' })).body.result).toBe('limit');
+    const got = (await noah.get('/patient/hero/friends')).body;
+    expect(got.cheers).toEqual([expect.objectContaining({ heroName: 'Emma', cheer: 'go' })]);
+    // Ending the friendship removes the cheers.
+    await emma.del(`/patient/hero/friends/${f.id}`);
+    expect((await noah.get('/patient/hero/friends')).body.cheers).toEqual([]);
+  });
+
+  it('the application role cannot read or write cheers directly, nor cheer for someone else', async () => {
+    const c = await appPool.connect();
+    try {
+      await c.query('BEGIN');
+      await expect(c.query('SELECT * FROM hero_cheers')).rejects.toThrow(/permission denied/);
+      await c.query('ROLLBACK');
+      await c.query('BEGIN');
+      await c.query("SELECT set_config('app.user_id', $1, true)", [s.users.patientA]);
+      expect((await c.query('SELECT * FROM app.hero_cheers($1)', [s.patients.noah])).rowCount).toBe(0);
+      await expect(c.query('SELECT app.hero_cheer_send($1, gen_random_uuid(), $2)', [s.patients.noah, 'go'])).rejects.toThrow(/forbidden/);
+    } finally {
+      await c.query('ROLLBACK');
+      c.release();
+    }
+  });
 });

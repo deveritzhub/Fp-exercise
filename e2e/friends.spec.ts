@@ -14,7 +14,7 @@ async function sql(q: string, p: unknown[] = []) {
 }
 
 const reset = () =>
-  sql(`DELETE FROM hero_friendships; UPDATE patient_heroes SET share_with_friends = false, friend_code = NULL, shared_stats = NULL, stats_updated_at = NULL, team_opt_in = false, team_week = NULL, team_done = NULL`);
+  sql(`DELETE FROM hero_cheers; DELETE FROM hero_friendships; UPDATE patient_heroes SET share_with_friends = false, friend_code = NULL, shared_stats = NULL, stats_updated_at = NULL, team_opt_in = false, team_week = NULL, team_done = NULL`);
 test.beforeAll(reset);
 test.afterAll(reset);
 
@@ -80,6 +80,16 @@ test('two patients from different practices become friends and join without a re
   await expectAccessible(emma, 'team quest joined');
   await team.getByRole('button', { name: 'Niet meer meedoen' }).click();
   await expect(team.getByRole('button', { name: 'Meedoen aan de teamquest' })).toBeVisible();
+  // Cheer Noah on with a fixed text; once per day.
+  const cheer = emma.getByRole('group', { name: 'Keeper Noah aanmoedigen' });
+  await cheer.getByRole('button', { name: /Zet 'm op!/ }).click();
+  await expect(emma.getByText('aangemoedigd vandaag')).toBeVisible();
+  await expect(emma.getByRole('group', { name: 'Keeper Noah aanmoedigen' })).toHaveCount(0);
+  await expectAccessible(emma, 'friends cheer');
+  await noah.reload();
+  const got = noah.getByRole('region', { name: 'Aanmoedigingen voor jou' });
+  await expect(got.getByText(/Sprinter Emma/)).toBeVisible();
+  await expect(got.getByText(/Zet 'm op!/)).toBeVisible();
   await emma.screenshot({ path: 'screenshots/hero/friends.png', fullPage: true });
 
   // The character sheet links to the friends page with the count.

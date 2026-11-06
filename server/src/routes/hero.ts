@@ -15,6 +15,8 @@ import { weeklyAdherence } from '../../../shared/adherence';
 import {
   AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, coinsEarned, gearScore, dayChestCoins, chestStreak, longestDayRun, skillTrophies, SHOWCASE_MAX, WALL_BADGES_MAX, seasons, seasonMonth, seasonOf, SEASON_GOAL, SEASON_XP, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
   questXp, skillOfWeek, skillsForExercise, weeklyQuests, weeklyBoss, BOSS_XP, xpFor, type SkillKey, type WeekData,
+  CHEERS,
+  type CheerKey,
 } from '../../../shared/hero';
 import { loadSkillSnapshot } from '../lib/skillState';
 
@@ -441,8 +443,26 @@ async function friendsView(tx: Tx, patientId: string) {
         since: r.since,
       }))
     : [];
-  return { hasHero: !!me, sharing: { enabled: !!me?.share_with_friends, code: me?.share_with_friends ? (me.friend_code as string) : null }, friends };
+  const cheers = me?.share_with_friends ? (await tx.query('SELECT * FROM app.hero_cheers($1)', [patientId])).rows : [];
+  return {
+    hasHero: !!me,
+    sharing: { enabled: !!me?.share_with_friends, code: me?.share_with_friends ? (me.friend_code as string) : null },
+    friends,
+    // Cheers from friends (last 14 days) and the friends already cheered today.
+    cheers: cheers.filter((r) => r.direction === 'in').map((r) => ({ heroName: r.hero_name as string, cheer: r.cheer as string, at: r.created_at })),
+    cheeredToday: cheers.filter((r) => r.direction === 'out').map((r) => r.friendship_id as string),
+  };
 }
+
+/** Send a pre-chosen cheer to a friend: at most one per friend per day. */
+heroPatient.post('/hero/friends/:id/cheer', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  const b = parse(z.object({ cheer: z.enum(CHEERS.map((x) => x.key) as [CheerKey, ...CheerKey[]]) }), await c.req.json());
+  const r = await withUser(user.id, async (tx) => (await tx.query('SELECT app.hero_cheer_send($1, $2, $3) AS r', [patient.id, id, b.cheer])).rows[0].r as string);
+  if (r === 'not_friends') throw notFound();
+  return c.json({ result: r, ...(await withUser(user.id, (tx) => friendsView(tx, patient.id))) });
+});
 
 heroPatient.get('/hero/friends', async (c) => {
   const { user, patient } = requirePatient(c);
