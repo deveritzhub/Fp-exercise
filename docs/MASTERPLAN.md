@@ -157,6 +157,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     oefening de reden in gewone taal.
 58. [x] **Regressietest na stap 44–57:** 133 geslaagd, 1 fout in de nieuwe test zelf ("Bekijken"
     wees naar een ander item na het toevoegen van "Pijn loopt op"); test aangepast. Uitlogtest groen.
+59. [x] **"Aan de slag" voor nieuwe therapeuten.** Op het dashboard (eerste maand): patiënt
+    aanmaken, programma maken (via de klachtwijzer), patiënt uitnodigen en de klachtwijzer bekijken,
+    met vinkjes. Verdwijnt als alles af is of met het kruisje.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

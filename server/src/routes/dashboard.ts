@@ -132,7 +132,17 @@ dashboard.get('/', async (c) => {
            FROM deletion_requests d JOIN patients p ON p.id = d.patient_id WHERE d.handled_at IS NULL
          ORDER BY created_at DESC LIMIT 20`,
       );
+      // "Get started" for a new professional: what they did themselves so far (first month only).
+      const start = (
+        await tx.query(
+          `SELECT (SELECT created_at FROM users WHERE id = app.uid()) AS since,
+                  (SELECT count(*)::int FROM patients WHERE created_by = app.uid()) AS patients,
+                  (SELECT count(*)::int FROM programs WHERE created_by = app.uid() AND patient_id IS NOT NULL) AS programs,
+                  (SELECT count(*)::int FROM patients WHERE created_by = app.uid() AND invited_at IS NOT NULL) AS invited`,
+        )
+      ).rows[0];
       return {
+        start: { since: start.since, patients: start.patients, programs: start.programs, invited: start.invited },
         alerts: alerts.rows.map((r) => ({ kind: r.kind, createdAt: r.created_at, patientId: r.patient_id, name: `${r.first_name} ${r.last_name}` })),
         daily: daily.rows.map((r) => ({ day: r.day, sessions: r.n, list: r.list })),
         stats: {

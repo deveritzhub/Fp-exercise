@@ -1,3 +1,4 @@
+import { StaffStart, type StaffStartData } from '@/components/app/StaffStart';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -14,6 +15,7 @@ import type { Exercise, Program } from '@/lib/types';
 
 type Signal = { reason: string; date: string | null; value?: number; planned?: number; completed?: number };
 type Dashboard = {
+  start?: StaffStartData;
   daily: { day: string; sessions: number; list: { id: string; patientId: string; name: string; at: string; pain: number | null; program: string }[] }[];
   stats: { patients: number; activePrograms: number; adherence7d: number | null; adherence: { completed: number; planned: number; days: number }; sessions7d: number; attention: number };
   attention: { patientId: string; name: string; reasons: string[]; signals: Signal[] }[];
@@ -63,6 +65,8 @@ export function DashboardPage() {
           )}
         </div>
       )}
+
+      {d?.start && <StaffStart data={d.start} />}
 
       <WorkList d={d} />
 

@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { markGuideSeen } from '@/components/app/StaffStart';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, ArrowRight, Check, ClipboardList, Link2, Ruler, Search, Send, Sparkles } from 'lucide-react';
@@ -26,6 +27,7 @@ export function ComplaintGuidePage() {
   const nl = locale === 'nl';
   const L = (f: Fn) => (nl ? f[0] : f[1]);
   useDocumentMeta(t('Klachtwijzer', 'Complaint guide'));
+  useEffect(() => markGuideSeen(), []);
   const [params, setParams] = useSearchParams();
   const regionKey = params.get('regio') as RegionKey | null;
   const complaint = complaintOf(params.get('klacht') ?? '');
