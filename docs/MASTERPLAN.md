@@ -127,6 +127,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     functionele oefening; nu "Tas dragen met de handrug naar boven" en "Kleine voorwerpen oppakken
     met duim en vingertoppen". Elke klacht heeft nu in elk blok iets, behalve bewust geen rek bij
     heuppijn aan de buitenkant.
+48. [x] **Regressietest na fase 10:** 128 geslaagd, 1 keer de uitlogtest rood (los 15× groen).
+    Uitloggen robuuster gemaakt: elke stap maximaal 2 s, en na uiterlijk 5 s sta je altijd op het
+    inlogscherm, ook als iets blijft hangen.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
