@@ -8,8 +8,13 @@ export function parse<T extends ZodTypeAny>(schema: T, data: unknown): z.infer<T
       'validation_failed',
       // Code and limits let the app say exactly what is wrong with which field.
       r.error.issues.map((i) => {
-        const x = i as typeof i & { minimum?: unknown; maximum?: unknown; validation?: unknown; type?: unknown; received?: unknown };
-        return { path: i.path.join('.'), message: i.message, code: i.code, minimum: x.minimum, maximum: x.maximum, validation: x.validation, type: x.type, received: x.received };
+        // Zod 4 issues, in the shape the app reads (the v3 field names): origin → type, invalid_format →
+        // invalid_string with its validation, and what was received for a missing value.
+        const x = i as typeof i & { minimum?: unknown; maximum?: unknown; origin?: unknown; format?: unknown };
+        const code = i.code === ('invalid_format' as typeof i.code) ? 'invalid_string' : i.code;
+        const at = i.path.reduce<unknown>((v, k) => (v && typeof v === 'object' ? (v as Record<PropertyKey, unknown>)[k as PropertyKey] : undefined), data);
+        const received = i.code === 'invalid_type' ? (at === undefined ? 'undefined' : at === null ? 'null' : typeof at) : undefined;
+        return { path: i.path.join('.'), message: i.message, code, minimum: x.minimum, maximum: x.maximum, validation: x.format, type: x.origin, received };
       }),
     );
   }
