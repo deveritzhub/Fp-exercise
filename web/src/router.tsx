@@ -53,7 +53,6 @@ const PainCheckinPage = named(() => import('@/pages/patient/HeroPages'), 'PainCh
 const FriendsPage = named(() => import('@/pages/patient/FriendsPage'), 'FriendsPage');
 const LogbookPage = named(() => import('@/pages/patient/LogbookPage'), 'LogbookPage');
 const GymLogPage = named(() => import('@/pages/patient/GymLogPage'), 'GymLogPage');
-const MobilityCheckPage = named(() => import('@/pages/marketing/MobilityCheckPage'), 'MobilityCheckPage');
 const MessagesPage = named(() => import('@/pages/patient/MessagesPage'), 'MessagesPage');
 const ComplaintExplanationPage = named(() => import('@/pages/patient/ComplaintExplanationPage'), 'ComplaintExplanationPage');
 const MobilityTestsPage = named(() => import('@/pages/patient/MobilityTestsPage'), 'MobilityTestsPage');
@@ -133,7 +132,6 @@ export const router = createBrowserRouter([
           { path: '/prijzen', element: <S><PricingPage /></S> },
           { path: '/demo', element: <S><DemoPage /></S> },
           { path: '/contact', element: <S><ContactPage /></S> },
-          { path: '/mobiliteitstest', element: <S><MobilityCheckPage /></S> },
           { path: '/privacy', element: <S><PrivacyPage /></S> },
           { path: '/voorwaarden', element: <S><TermsPage /></S> },
           { path: '/cookies', element: <S><CookiesPage /></S> },

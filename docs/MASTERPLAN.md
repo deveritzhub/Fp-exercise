@@ -191,9 +191,6 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     instelt"). In het dossier (bij de held): een skill kiezen, bijvoorbeeld Balans, vanaf deze week;
     of weer automatisch. De patiënt ziet "Gekozen door je fysio". Eerdere weken houden hun skill, dus
     XP verandert nooit achteraf. Migratie 036 (alleen een kolom erbij), getest.
-68. [x] **Openbare mobiliteitstest** voor je eigen website: app.fpflow.nl/mobiliteitstest. De vier
-    meetlinttests met direct een uitslag (verschil links/rechts, binnen of buiten de meetfout) en
-    daarna "Neem contact op". Er wordt niets verstuurd of bewaard (getest). Link hem vanaf je site.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
