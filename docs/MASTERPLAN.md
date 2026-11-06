@@ -211,6 +211,8 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     - @hono/node-server: bijgewerkt naar 2.1.6 (melding opgelost). Productieserver lokaal getest:
       API, pagina's, bestanden en path-traversal-pogingen gedragen zich goed.
     - Nog open, grote versiesprongen voor later met de volledige testset: zod 4, react-router 7.
+      React Router 7 geprobeerd: 3 e2e-tests vielen om (training starten, pauze na alarmsignaal,
+      heldoverzicht). Teruggedraaid; het doorstuurlek is al afgevangen in `safeNext`. Later uitzoeken.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
