@@ -131,3 +131,29 @@ test('lateral hip pain: no stretch is a deliberate choice, not a library gap', a
   await expect(proposal.getByText(/Bewust geen rek bij deze klacht/)).toBeVisible();
   await expect(proposal.getByText(/Nog geen passende oefening/)).toHaveCount(0);
 });
+
+test('the therapist sends the explanation; the patient reads it under Messages', async ({ browser }) => {
+  const staff = await browser.newPage();
+  await login(staff, 'therapeut@praktijk-a.test');
+  await staff.getByRole('link', { name: 'Patiënten' }).first().click();
+  await staff.getByRole('link', { name: /Emma de Jong/ }).first().click();
+  await staff.getByRole('link', { name: 'Op klacht' }).click();
+  await staff.getByRole('button', { name: /^Knie/ }).click();
+  await staff.getByRole('button', { name: /Loperknie \(ITBS\)/ }).click();
+  await staff.getByRole('button', { name: 'Stuur naar de patiënt' }).click();
+  await expect(staff.getByText('Uitleg verstuurd')).toBeVisible();
+  await staff.close();
+
+  const ctx = await browser.newContext({ viewport: { width: 360, height: 800 } });
+  const page = await ctx.newPage();
+  await login(page, 'patient@praktijk-a.test');
+  await page.goto('/p/berichten');
+  const msg = page.getByRole('listitem').filter({ hasText: 'Uitleg: Loperknie (ITBS)' }).first();
+  await msg.getByRole('link', { name: 'Bekijken' }).click();
+  await expect(page).toHaveURL(/\/p\/uitleg\?klacht=itbs/);
+  await expect(page.getByRole('heading', { name: 'Loperknie (ITBS)', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Neem direct contact op/ })).toBeVisible();
+  await expectAccessible(page, 'complaint explanation (patient)');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+  await ctx.close();
+});

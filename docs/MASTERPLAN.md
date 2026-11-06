@@ -130,6 +130,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 48. [x] **Regressietest na fase 10:** 128 geslaagd, 1 keer de uitlogtest rood (los 15× groen).
     Uitloggen robuuster gemaakt: elke stap maximaal 2 s, en na uiterlijk 5 s sta je altijd op het
     inlogscherm, ook als iets blijft hangen.
+49. [x] **Uitleg naar de patiënt sturen.** In de klachtwijzer (vanuit een dossier) de knop "Stuur
+    naar de patiënt": de patiënt krijgt een bericht en leest de uitleg in gewone taal in de app,
+    met rode vlaggen. Alleen voor eigen patiënten (getest).
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

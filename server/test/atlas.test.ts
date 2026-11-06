@@ -106,6 +106,21 @@ describe('sending a muscle card to a patient', () => {
   });
 });
 
+describe('sending a complaint explanation to a patient', () => {
+  it('arrives as a notification that opens the explanation; only for own patients and known complaints', async () => {
+    resetRateLimits();
+    const pro = await login('therapistA');
+    const pid = (await ownerQuery(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`)).rows[0].id;
+    expect((await pro.post('/atlas/send-complaint', { patientId: pid, complaint: 'itbs' })).body).toEqual({ ok: true, delivered: true });
+    const home = (await (await login('patientA')).get('/patient/home')).body;
+    expect(home.notifications.find((x: { link: string }) => x.link === '/p/uitleg?klacht=itbs')).toMatchObject({ title: 'Uitleg: Loperknie (ITBS)' });
+    expect((await pro.post('/atlas/send-complaint', { patientId: pid, complaint: 'nope' })).body.error).toBe('unknown_complaint');
+    const other = (await ownerQuery(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-b.test'`)).rows[0].id;
+    expect((await pro.post('/atlas/send-complaint', { patientId: other, complaint: 'itbs' })).status).toBe(404);
+    expect((await (await login('patientA')).post('/atlas/send-complaint', { patientId: pid, complaint: 'itbs' })).status).toBe(403);
+  });
+});
+
 describe('skills from the quiz and the strength log', () => {
   it('a right quiz answer opens Kennis; a logged set gives Strength XP', async () => {
     resetRateLimits();

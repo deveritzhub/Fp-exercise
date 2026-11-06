@@ -5,7 +5,8 @@ import { requirePatient, requireStaff, type AppEnv } from '../middleware';
 import { parse } from '../lib/validate';
 import { badRequest, notFound } from '../lib/errors';
 import { audit } from '../lib/audit';
-import { notifyPatientMuscle } from '../lib/notify';
+import { notifyPatientComplaint, notifyPatientMuscle } from '../lib/notify';
+import { complaintOf } from '../../../shared/complaints';
 import { QUIZ_DAILY_CAP, QUIZ_LEVEL_XP, exerciseKind, level2Open, muscleByKey, musclesOf, nerveOf, questionById, quizXp, type AtlasExerciseKind } from '../../../shared/muscleAtlas';
 
 /**
@@ -83,6 +84,22 @@ atlasStaff.post('/send', async (c) => {
       if (!p) throw notFound();
       const delivered = await notifyPatientMuscle(tx, p.id, p.practice_id, m, b.note);
       await audit(tx, user.id, p.practice_id, 'create', 'atlas_muscle_sent', p.id, { muscle: m.key });
+      return { ok: true, delivered };
+    }),
+  );
+});
+/** Send the plain-language explanation of a complaint (from the complaint guide) to a patient. */
+atlasStaff.post('/send-complaint', async (c) => {
+  const { user } = requireStaff(c);
+  const b = parse(z.object({ patientId: z.string().uuid(), complaint: z.string().min(2).max(40), note: z.string().trim().max(200).default('') }), await c.req.json());
+  const complaint = complaintOf(b.complaint);
+  if (!complaint) throw badRequest('unknown_complaint');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const p = (await tx.query('SELECT id, practice_id FROM patients WHERE id = $1 AND archived_at IS NULL AND app.can_manage_patient(id)', [b.patientId])).rows[0];
+      if (!p) throw notFound();
+      const delivered = await notifyPatientComplaint(tx, p.id, p.practice_id, complaint, b.note);
+      await audit(tx, user.id, p.practice_id, 'create', 'complaint_explanation_sent', p.id, { complaint: complaint.key });
       return { ok: true, delivered };
     }),
   );

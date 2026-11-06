@@ -54,6 +54,7 @@ const FriendsPage = named(() => import('@/pages/patient/FriendsPage'), 'FriendsP
 const LogbookPage = named(() => import('@/pages/patient/LogbookPage'), 'LogbookPage');
 const GymLogPage = named(() => import('@/pages/patient/GymLogPage'), 'GymLogPage');
 const MessagesPage = named(() => import('@/pages/patient/MessagesPage'), 'MessagesPage');
+const ComplaintExplanationPage = named(() => import('@/pages/patient/ComplaintExplanationPage'), 'ComplaintExplanationPage');
 const MobilityTestsPage = named(() => import('@/pages/patient/MobilityTestsPage'), 'MobilityTestsPage');
 const ModulePage = named(() => import('@/pages/patient/ModulePage'), 'ModulePage');
 const AtlasPage = named(() => import('@/pages/patient/AtlasPage'), 'AtlasPage');
@@ -191,6 +192,7 @@ export const router = createBrowserRouter([
           { path: 'krachtlog', element: <S><GymLogPage /></S> },
           { path: 'mobiliteit/meten', element: <S><MobilityTestsPage /></S> },
           { path: 'berichten', element: <S><MessagesPage /></S> },
+          { path: 'uitleg', element: <S><ComplaintExplanationPage /></S> },
           { path: 'spieren', element: <S><AtlasPage /></S> },
           { path: 'instellingen', element: <S><SettingsPage /></S> },
           { path: 'account', element: <S><AccountPage patient /></S> },

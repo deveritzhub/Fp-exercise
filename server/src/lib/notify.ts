@@ -45,6 +45,25 @@ export async function notifyPatientMuscle(tx: Tx, patientId: string, practiceId:
   return true;
 }
 
+/** The therapist sends the plain-language explanation of a complaint (opens it in the patient app). */
+export async function notifyPatientComplaint(tx: Tx, patientId: string, practiceId: string, complaint: { key: string; name: readonly [string, string] }, note: string) {
+  const { rows } = await tx.query('SELECT user_id, locale FROM patients WHERE id = $1', [patientId]);
+  if (!rows[0]?.user_id) return false;
+  const nl = rows[0].locale !== 'en';
+  await tx.query(
+    'INSERT INTO notifications(user_id, practice_id, kind, title, body, link) VALUES ($1,$2,$3,$4,$5,$6)',
+    [
+      rows[0].user_id,
+      practiceId,
+      'complaint_explanation',
+      nl ? `Uitleg: ${complaint.name[0]}` : `Explanation: ${complaint.name[1]}`,
+      note || (nl ? 'Je fysiotherapeut stuurt je uitleg over je klacht en waarom je deze oefeningen doet.' : 'Your physiotherapist sends you an explanation of your complaint and why you do these exercises.'),
+      `/p/uitleg?klacht=${complaint.key}`,
+    ],
+  );
+  return true;
+}
+
 /** The therapist asks the patient to measure their mobility (link to the measuring page). */
 export async function notifyPatientMeasure(tx: Tx, patientId: string, practiceId: string, note: string) {
   const { rows } = await tx.query('SELECT user_id, locale FROM patients WHERE id = $1', [patientId]);

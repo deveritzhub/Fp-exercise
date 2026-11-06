@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, ArrowRight, Check, ClipboardList, Link2, Ruler, Search, Sparkles } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Check, ClipboardList, Link2, Ruler, Search, Send, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
-import { useI18n } from '@/lib/i18n';
+import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
-import { Button, ErrorState, PageHeader, Segmented, Spinner } from '@/components/ui';
+import { Button, ErrorState, PageHeader, Segmented, Spinner, useToast } from '@/components/ui';
 import { CompensationCard, MuscleChips } from '@/components/app/Compensation';
 import { MUSCLES } from '@shared/muscleAtlas';
 import { mobilityTest } from '@shared/mobilityTests';
@@ -157,7 +157,10 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
       <header>
         <h2 id="complaint-title" className="t-page">{L(complaint.name)}</h2>
         <p className="mt-1 max-w-2xl text-[15px] text-ink-700">{L(complaint.what)}</p>
-        <Link to={`/app/klachtwijzer/uitleg?klacht=${complaint.key}`} className="mt-1 inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent hover:underline">{t('Uitleg voor de patiënt (printen of PDF)', 'Explanation for the patient (print or PDF)')}</Link>
+        <div className="mt-1 flex flex-wrap items-center gap-x-4">
+          <Link to={`/app/klachtwijzer/uitleg?klacht=${complaint.key}`} className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent hover:underline">{t('Uitleg voor de patiënt (printen of PDF)', 'Explanation for the patient (print or PDF)')}</Link>
+          {patient && <SendExplanation complaint={complaint.key} patient={patient} />}
+        </div>
       </header>
 
       <section aria-labelledby="chain-title" className="rounded-2xl border border-line bg-white p-5 shadow-card">
@@ -252,6 +255,30 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
         )}
       </section>
     </article>
+  );
+}
+
+/** Send the plain-language explanation to the linked patient: it arrives under Messages in their app. */
+function SendExplanation({ complaint, patient }: { complaint: string; patient: string }) {
+  const { t, locale } = useI18n();
+  const toast = useToast();
+  const [state, setState] = useState<'idle' | 'busy' | 'sent'>('idle');
+  const send = async () => {
+    setState('busy');
+    try {
+      const r = await api.post<{ delivered: boolean }>('/atlas/send-complaint', { patientId: patient, complaint });
+      toast(r.delivered ? t('Verstuurd: de patiënt vindt de uitleg onder Berichten', 'Sent: the patient finds the explanation under Messages') : t('De patiënt heeft nog geen account; het bericht komt niet aan', 'The patient has no account yet; the message does not arrive'), r.delivered ? 'ok' : 'bad');
+      setState(r.delivered ? 'sent' : 'idle');
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+      setState('idle');
+    }
+  };
+  if (state === 'sent') return <span className="inline-flex min-h-[44px] items-center gap-1 text-[14px] font-medium text-ok"><Check className="h-4 w-4" aria-hidden />{t('Uitleg verstuurd', 'Explanation sent')}</span>;
+  return (
+    <button type="button" onClick={send} disabled={state === 'busy'} className="inline-flex min-h-[44px] items-center gap-1 text-[14px] font-medium text-accent hover:underline disabled:opacity-60">
+      <Send className="h-4 w-4" aria-hidden />{t('Stuur naar de patiënt', 'Send to the patient')}
+    </button>
   );
 }
 

@@ -66,6 +66,7 @@ export function PatientLayout() {
       () => import('@/pages/AccountPage'),
       () => import('@/pages/patient/LogbookPage'),
       () => import('@/pages/patient/MessagesPage'),
+      () => import('@/pages/patient/ComplaintExplanationPage'),
     ];
     for (const load of pages) void load().catch(() => {});
   }, []);
