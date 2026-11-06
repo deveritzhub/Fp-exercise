@@ -12,7 +12,7 @@ test('patient measures mobility with a published test and sees the trend; staff 
   // A first measurement two weeks ago, so there is a trend.
   await db.query(
     `INSERT INTO mobility_tests(patient_id, practice_id, test, side, day, cm)
-     SELECT $1, practice_id, 'knee_to_wall', s, now()::date - 14, v FROM patients, (VALUES ('left', 7.0), ('right', 9.0)) x(s, v) WHERE id = $1`,
+     SELECT $1, practice_id, 'knee_to_wall', s, (now() AT TIME ZONE 'Europe/Amsterdam')::date - 14, v FROM patients, (VALUES ('left', 7.0), ('right', 9.0)) x(s, v) WHERE id = $1`,
     [pid],
   );
   // A practice mobility programme that fits the ankle test, for the suggestion (removed at the end).

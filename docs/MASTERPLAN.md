@@ -247,6 +247,10 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
 85. [x] **Weekoverzicht voor de patiënt.** Op Vandaag een ingeklapte kaart "Komende week": per dag
     (Vandaag, Morgen, …) welke training met hoeveel oefeningen, of "Rustdag".
 
+86. [x] **Regressietest na fase 11–12** (6 nov, 23:30): 145 geslaagd. De mobiliteitstest faalde
+    alleen tussen 23:00 en 00:00 UTC (de test gebruikte de UTC-datum, de app terecht de Nederlandse);
+    test aangepast. Twee wisselvallige tests (uitloggen, bibliotheekfilters) slagen los wel.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.
