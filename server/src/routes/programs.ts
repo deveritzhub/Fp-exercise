@@ -409,7 +409,7 @@ programs.post('/', async (c) => {
 programs.put('/:id', async (c) => {
   const { user } = requireStaff(c);
   const id = parse(uuidParam, c.req.param('id'));
-  const b = parse(programFields.extend({ changeNote: z.string().max(300).default('') }).refine(refineDates, 'end_before_start'), await c.req.json());
+  const b = parse(programFields.extend({ changeNote: z.string().max(300).default(''), patientMessage: z.string().trim().max(200).default('') }).refine(refineDates, 'end_before_start'), await c.req.json());
   await withUser(user.id, async (tx) => {
     const cur = await tx.query('SELECT * FROM programs WHERE id = $1', [id]);
     const p = cur.rows[0];
@@ -424,7 +424,7 @@ programs.put('/:id', async (c) => {
     if (!r.rowCount) throw notFound(); // RLS: not editable by this user
     await writeItems(tx, id, p.practice_id, b.items);
     await snapshot(tx, id, b.changeNote);
-    if (p.patient_id && p.status === 'active') await notifyPatientUser(tx, p.patient_id, p.practice_id, 'program_updated', b.title);
+    if (p.patient_id && p.status === 'active') await notifyPatientUser(tx, p.patient_id, p.practice_id, 'program_updated', b.title, b.patientMessage);
     await audit(tx, user.id, p.practice_id, 'update', p.is_template ? 'template' : 'program', id, { version: p.version + 1, items: b.items.length });
   });
   return c.json({ ok: true });

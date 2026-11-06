@@ -18,13 +18,16 @@ export async function notifyPatientUser(
   practiceId: string,
   kind: keyof typeof TEXT,
   programTitle: string,
+  /** A short personal message from the therapist ("Goed bezig, we gaan zwaarder!"), shown under the text. */
+  message = '',
 ) {
   const { rows } = await tx.query('SELECT user_id, locale FROM patients WHERE id = $1', [patientId]);
   if (!rows[0]?.user_id) return;
   const msg = TEXT[kind][rows[0].locale as 'nl' | 'en'](programTitle);
+  const body = message ? `${msg.body}\n\n“${message}”` : msg.body;
   await tx.query(
     'INSERT INTO notifications(user_id, practice_id, kind, title, body, link) VALUES ($1,$2,$3,$4,$5,$6)',
-    [rows[0].user_id, practiceId, kind, msg.title, msg.body, '/p'],
+    [rows[0].user_id, practiceId, kind, msg.title, body, '/p'],
   );
 }
 

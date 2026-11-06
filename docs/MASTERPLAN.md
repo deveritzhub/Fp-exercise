@@ -167,6 +167,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 61. [x] **Geen pijnconclusies bij coaches.** Het dashboard van een coachpraktijk toont geen "Hoge
     pijnscore" of "Pijn loopt op" meer: bij niet-medische accounts trekt de app geen conclusies uit
     hoe iemand zich voelt (zoals in `docs/ACCOUNT_TYPES.md`).
+62. [x] **Bericht bij een programmawijziging** (roadmap #7). Bij "Wijzigingen publiceren" kan de
+    therapeut een kort bericht aan de patiënt meesturen ("Goed bezig, we gaan zwaarder!"); dat komt
+    bij de melding in de app. De wijzigingsnotitie blijft intern.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

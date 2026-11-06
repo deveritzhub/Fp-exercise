@@ -11,7 +11,7 @@ test('therapist creates a patient and an exercise programme', async ({ page, req
   await login(page, 'therapeut@praktijk-a.test');
   await expect(page.getByRole('heading', { name: /Joris/ })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Patiënten' }).click();
+  await page.getByRole('link', { name: 'Patiënten', exact: true }).click();
   await page.getByRole('button', { name: 'Nieuwe patiënt' }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Voornaam').fill('Eva');
@@ -128,6 +128,7 @@ test('therapist reviews progress and modifies the programme', async ({ page }) =
   await expect(publish.getByText(/Wie krijgt een melding/)).toBeVisible();
   await expectAccessible(page, 'publish dialog');
   await publish.getByLabel(/Wijzigingsnotitie/).fill('Herhalingen opgehoogd');
+  await publish.getByLabel(/Bericht aan Eva Test/).fill('Goed bezig, we gaan iets zwaarder!');
   await publish.getByRole('button', { name: 'Publiceren' }).click();
   await expect(page.getByText('Wijzigingen opgeslagen')).toBeVisible();
   await expect(page.getByText('v2', { exact: true })).toBeVisible();

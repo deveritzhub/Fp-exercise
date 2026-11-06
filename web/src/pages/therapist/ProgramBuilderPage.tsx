@@ -76,6 +76,7 @@ export function ProgramBuilderPage() {
   const [busy, setBusy] = useState<false | 'draft' | 'active' | 'save'>(false);
   const [error, setError] = useState<string | null>(null);
   const [changeNote, setChangeNote] = useState('');
+  const [patientMessage, setPatientMessage] = useState('');
   const [preview, setPreview] = useState(false);
   const [history, setHistory] = useState(false);
   const [pickTemplate, setPickTemplate] = useState(false);
@@ -218,10 +219,11 @@ export function ProgramBuilderPage() {
         qc.invalidateQueries({ queryKey: ['patient'] });
         nav(`/app/programmas/${r.id}`, { replace: true });
       } else {
-        await api.put(`/programs/${id}`, { ...payload(), changeNote });
+        await api.put(`/programs/${id}`, { ...payload(), changeNote, patientMessage });
         if (mode === 'active' && program?.status !== 'active') await api.post(`/programs/${id}/status`, { status: 'active' });
         setDirty(false);
         setChangeNote('');
+        setPatientMessage('');
         toast(mode === 'active' && program?.status === 'draft' ? t('Programma toegewezen aan patiënt', 'Programme assigned to patient') : t('Wijzigingen opgeslagen', 'Changes saved'));
         qc.invalidateQueries({ queryKey: ['program', id] });
         qc.invalidateQueries({ queryKey: ['program-versions', id] });
@@ -417,6 +419,8 @@ export function ProgramBuilderPage() {
           items={items}
           changeNote={changeNote}
           setChangeNote={setChangeNote}
+          patientMessage={patientMessage}
+          setPatientMessage={setPatientMessage}
           busy={busy === 'save'}
           onConfirm={() => save('save', true)}
         />
@@ -726,7 +730,7 @@ function diffProgram(saved: Program, meta: Meta, items: BItem[], locale: 'nl' | 
   return out;
 }
 
-function PublishDialog({ open, onClose, program, meta, items, changeNote, setChangeNote, busy, onConfirm }: { open: boolean; onClose: () => void; program: Program; meta: Meta; items: BItem[]; changeNote: string; setChangeNote: (s: string) => void; busy: boolean; onConfirm: () => void }) {
+function PublishDialog({ open, onClose, program, meta, items, changeNote, setChangeNote, patientMessage, setPatientMessage, busy, onConfirm }: { open: boolean; onClose: () => void; program: Program; meta: Meta; items: BItem[]; changeNote: string; setChangeNote: (s: string) => void; patientMessage: string; setPatientMessage: (s: string) => void; busy: boolean; onConfirm: () => void }) {
   const { t, locale } = useI18n();
   const changes = open ? diffProgram(program, meta, items, locale, t) : [];
   const who = program.patient ? `${program.patient.firstName} ${program.patient.lastName}` : t('de patiënt', 'the patient');
@@ -761,7 +765,10 @@ function PublishDialog({ open, onClose, program, meta, items, changeNote, setCha
         <div className="rounded-lg bg-ink-50 px-3 py-2 text-[13px] text-ink-700">
           <strong className="font-semibold">{t('Wie krijgt een melding', 'Who is notified')}:</strong> {t(`${who}: een melding in de app, als het account geactiveerd is (geen e-mail). Afgeronde trainingen en resultaten blijven gekoppeld aan de versie waarmee ze zijn gedaan; versie ${program.version} blijft in de versiegeschiedenis.`, `${who}: an in-app notification, if the account is activated (no email). Completed workouts and results stay linked to the version they were done with; version ${program.version} stays in the version history.`)}
         </div>
-        <Input label={t('Wijzigingsnotitie', 'Change note')} optional={t('optioneel', 'optional')} placeholder={t('bijv. volume squat verlaagd na pijnmelding', 'e.g. squat volume lowered after pain report')} value={changeNote} onChange={(e) => setChangeNote(e.target.value)} maxLength={300} />
+        <Input label={t('Wijzigingsnotitie (intern)', 'Change note (internal)')} optional={t('optioneel', 'optional')} placeholder={t('bijv. volume squat verlaagd na pijnmelding', 'e.g. squat volume lowered after pain report')} value={changeNote} onChange={(e) => setChangeNote(e.target.value)} maxLength={300} />
+        {program.patient && (
+          <Input label={t(`Bericht aan ${who}`, `Message to ${who}`)} optional={t('optioneel', 'optional')} hint={t('Komt bij de melding in de app. Geen diagnose of medische details.', 'Comes with the notification in the app. No diagnosis or medical details.')} placeholder={t('bijv. Goed bezig, we gaan zwaarder!', 'e.g. Well done, we are stepping it up!')} value={patientMessage} onChange={(e) => setPatientMessage(e.target.value)} maxLength={200} />
+        )}
       </div>
     </Dialog>
   );
