@@ -79,7 +79,7 @@ export function DashboardPage() {
           {!d ? (
             <div className="space-y-3 p-5">{Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-10" />)}</div>
           ) : d.activity.length === 0 ? (
-            <EmptyState title={t('Nog geen activiteit', 'No activity yet')} description={t('Afgeronde sessies van je patiënten verschijnen hier.', 'Completed sessions from your patients appear here.')} />
+            <EmptyState title={t('Nog geen activiteit', 'No activity yet')} description={t('Afgeronde sessies van je patiënten verschijnen hier.', 'Completed sessions from your patients appear here.')} action={<ButtonLink to="/app/patienten?filter=invite_open" variant="secondary">{t('Uitnodigingen bekijken', 'View invitations')}</ButtonLink>} />
           ) : (
             <ul className="divide-y divide-line">
               {(showAll ? d.activity : d.activity.slice(0, 6)).map((a) => (
@@ -141,7 +141,7 @@ export function DashboardPage() {
           {!d ? (
             <div className="space-y-3 p-5">{Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-9" />)}</div>
           ) : d.favorites.length === 0 ? (
-            <EmptyState icon={<Star className="h-5 w-5" />} title={t('Nog geen favorieten', 'No favourites yet')} description={t('Markeer oefeningen met een ster om ze hier snel terug te vinden.', 'Star exercises to find them here quickly.')} />
+            <EmptyState icon={<Star className="h-5 w-5" />} title={t('Nog geen favorieten', 'No favourites yet')} description={t('Markeer oefeningen met een ster om ze hier snel terug te vinden.', 'Star exercises to find them here quickly.')} action={<ButtonLink to="/app/oefeningen" variant="secondary">{t('Naar de oefenbibliotheek', 'To the exercise library')}</ButtonLink>} />
           ) : (
             <ul className="grid grid-cols-1 gap-px bg-line sm:grid-cols-2 sm:[&>li:last-child:nth-child(odd)]:col-span-2">
               {d.favorites.map((e) => (

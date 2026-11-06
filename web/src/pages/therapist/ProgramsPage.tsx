@@ -8,7 +8,7 @@ import { useSession } from '@/lib/session';
 import { dose, fmtDate } from '@/lib/format';
 import { useDocumentMeta, useLabels } from '@/lib/meta';
 import { cn } from '@/lib/cn';
-import { Badge, ButtonLink, Card, EmptyState, ErrorState, Input, PageHeader, Select, Skeleton, Tabs, useDebounced } from '@/components/ui';
+import { Badge, Button, ButtonLink, Card, EmptyState, ErrorState, Input, PageHeader, Select, Skeleton, Tabs, useDebounced } from '@/components/ui';
 import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import { CriteriaList, Evidence, RedFlags, Warnings, useModules } from '@/components/app/PhaseInfo';
 import { ProgramStatusBadge } from '@/components/app/StatusBadge';
@@ -86,7 +86,10 @@ function ProgramOverview() {
       ) : !list.data || (pending && !list.data.items.length) ? (
         <div className="space-y-3 p-5">{Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-10" />)}</div>
       ) : list.data.items.length === 0 ? (
-        <EmptyState title={t('Geen programma’s gevonden', 'No programmes found')} description={t('Pas de zoekterm of filters aan.', 'Adjust the search or filters.')} />
+        <EmptyState title={t('Geen programma’s gevonden', 'No programmes found')} description={t('Pas de zoekterm of filters aan.', 'Adjust the search or filters.')}
+          action={q || status !== 'active' || therapist !== 'me'
+            ? <Button variant="secondary" onClick={() => { setQ(''); setStatus('active'); setTherapist('me'); }}>{t('Wis zoeken en filters', 'Clear search and filters')}</Button>
+            : <ButtonLink to="/app/programmas/nieuw" icon={<Plus className="h-4 w-4" />}>{t('Nieuw programma', 'New programme')}</ButtonLink>} />
       ) : (
         <ul className={cn('divide-y divide-line', pending && 'opacity-60')}>
           {list.data.items.map((p) => (
@@ -205,7 +208,8 @@ function TemplateBrowser() {
       ) : !templates.data ? (
         <div className="space-y-3">{Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>
       ) : groups.length === 0 ? (
-        <Card><EmptyState icon={<LayoutTemplate className="h-5 w-5" />} title={t('Geen sjablonen gevonden', 'No templates found')} description={t('Pas je zoekterm of filters aan.', 'Adjust your search or filters.')} /></Card>
+        <Card><EmptyState icon={<LayoutTemplate className="h-5 w-5" />} title={t('Geen sjablonen gevonden', 'No templates found')} description={t('Pas je zoekterm of filters aan.', 'Adjust your search or filters.')}
+          action={<Button variant="secondary" onClick={() => { setQ(''); setMod(''); setRegion(''); setScope('all'); }}>{t('Wis zoeken en filters', 'Clear search and filters')}</Button>} /></Card>
       ) : (
         MODULE_ORDER.filter((m) => groups.some((g) => g.module === m)).map((m) => (
           <section key={m} aria-labelledby={`mod-${m}`} className="space-y-3">

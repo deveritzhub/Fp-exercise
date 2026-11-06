@@ -229,7 +229,9 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
 79. [x] **"Klaar voor vandaag".** Zodra alles van vandaag gedaan is: een afsluitkaart met je reeks
     ("Al 5 trainingen op rij"), de volgende training (dag en datum) en knoppen naar je held en
     voortgang.
-80. [ ] **Lege schermen met één duidelijke actie** overal nalopen (nieuwe praktijk, nieuwe patiënt).
+80. [x] **Lege schermen met één duidelijke actie.** Niets gevonden bij sjablonen of programma's →
+    "Wis zoeken en filters" (of "Nieuw programma" als er niets gefilterd is); dashboard zonder
+    activiteit → "Uitnodigingen bekijken"; geen favorieten → "Naar de oefenbibliotheek".
 81. [ ] **Laatst gebruikte sjablonen bovenaan** bij een nieuw programma.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
