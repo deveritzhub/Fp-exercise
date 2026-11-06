@@ -38,6 +38,8 @@ export type PatientHomeData = {
   stats: { completedSessions: number; adherence7d: Adherence; weekly: (Adherence & { weekStart: string })[]; week: { date: string; weekday: number; state: DayState }[]; streak: number };
   recent: { id: string; completedAt: string; programTitle: string; difficulty: number | null; pain: number | null; exercisesDone: number }[];
   notifications: Notification[];
+  /** Complaints the practice sent an explanation of (newest first). */
+  explanations?: string[];
 };
 
 export type PatientProgramRow = PatientHomeData['programs'][number];

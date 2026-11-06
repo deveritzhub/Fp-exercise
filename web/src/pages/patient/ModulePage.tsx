@@ -4,7 +4,8 @@ import { progressionSignal } from '@shared/progression';
 import { cn } from '@/lib/cn';
 import { localToday } from '@/components/MobilityTests';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, ChevronDown, ChevronRight, Dumbbell, Lock, Play, ShieldCheck, Ruler } from 'lucide-react';
+import { BookOpen, CheckCircle2, ChevronDown, ChevronRight, Dumbbell, Lock, Play, ShieldCheck, Ruler } from 'lucide-react';
+import { complaintOf } from '@shared/complaints';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtRelative } from '@/lib/format';
@@ -100,6 +101,22 @@ export function ModulePage({ module }: { module: PatientModule }) {
           })()}
         </p>
       )}
+
+      {/* Explanations the physiotherapist sent: always one tap away here, also after the message was read. */}
+      {module === 'revalidatie' && (home.data.explanations ?? []).map((key) => {
+        const c = complaintOf(key);
+        if (!c) return null;
+        return (
+          <Link key={key} to={`/p/uitleg?klacht=${key}`} className="tap flex items-center gap-3 rounded-2xl border border-line bg-white p-4 shadow-card">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><BookOpen className="h-6 w-6" aria-hidden /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-ink-900">{t('Uitleg over je klacht', 'About your complaint')}</span>
+              <span className="block text-[14px] text-ink-600">{nl ? c.name[0] : c.name[1]} · {t('van je fysiotherapeut', 'from your physiotherapist')}</span>
+            </span>
+            <ChevronRight className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />
+          </Link>
+        );
+      })}
 
       {module === 'revalidatie' && hero.data?.quest && hero.data.quest.phases.length > 0 && (
         <RehabRoute phases={hero.data.quest.phases} currentNo={hero.data.quest.phaseNo} />

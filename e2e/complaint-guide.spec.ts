@@ -155,6 +155,10 @@ test('the therapist sends the explanation; the patient reads it under Messages',
   await expect(page.getByRole('heading', { name: /Neem direct contact op/ })).toBeVisible();
   await expectAccessible(page, 'complaint explanation (patient)');
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+  // Read or not, it stays one tap away on Revalidatie.
+  await page.goto('/p/revalidatie');
+  await page.getByRole('link', { name: /Uitleg over je klacht.*Loperknie/ }).click();
+  await expect(page).toHaveURL(/\/p\/uitleg\?klacht=itbs/);
   await ctx.close();
 });
 

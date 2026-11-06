@@ -82,6 +82,11 @@ patientApp.get('/home', async (c) => {
         'SELECT id, kind, title, body, link, read_at, created_at FROM notifications WHERE user_id = app.uid() AND read_at IS NULL ORDER BY created_at DESC LIMIT 5',
       );
       const total = await tx.query('SELECT count(*) AS n FROM workout_sessions WHERE patient_id = $1 AND completed_at IS NOT NULL', [patient.id]);
+      // Explanations of complaints the practice sent stay reachable from Revalidatie (also once read).
+      const explained = await tx.query(
+        `SELECT link FROM (SELECT DISTINCT ON (link) link, created_at FROM notifications
+            WHERE user_id = app.uid() AND kind = 'complaint_explanation' ORDER BY link, created_at DESC) x ORDER BY created_at DESC LIMIT 3`,
+      );
       return {
         patient: { firstName: user.fullName.split(' ')[0], practiceName: patient.practiceName },
         mode,
@@ -103,6 +108,7 @@ patientApp.get('/home', async (c) => {
           exercisesDone: r.exercises_done,
         })),
         notifications: notifications.rows.map((n) => ({ id: n.id, kind: n.kind, title: n.title, body: n.body, link: n.link, createdAt: n.created_at })),
+        explanations: explained.rows.map((r) => new URLSearchParams(String(r.link).split('?')[1] ?? '').get('klacht')).filter(Boolean),
       };
     }),
   );

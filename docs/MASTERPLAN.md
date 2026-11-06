@@ -135,6 +135,8 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     met rode vlaggen. Alleen voor eigen patiënten (getest).
 50. [x] **Uitleg sturen zonder dossier.** Ook als je de klachtwijzer los opent: "Stuur naar een
     patiënt" opent een venster om de patiënt te kiezen, met een optionele korte toelichting.
+51. [x] **Uitleg blijft vindbaar.** Een verstuurde uitleg staat ook op het tabblad Revalidatie
+    ("Uitleg over je klacht"), ook nadat het bericht gelezen is.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
