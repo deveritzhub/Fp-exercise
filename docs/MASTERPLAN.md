@@ -215,6 +215,9 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
       heldoverzicht). Teruggedraaid; het doorstuurlek is al afgevangen in `safeNext`. Later uitzoeken:
       de 3 tests slagen los wel met versie 7, maar falen twee keer op rij in de volledige reeks (dus
       afhankelijk van eerdere tests, geen toeval).
+74. [x] **Nieuwe schermen op een smalle telefoon** (360 px) automatisch getest: dashboard met
+    "Aan de slag", dossier met weekquest-keuze, klachtwijzer, controlepagina, rapport, en bij de
+    patiënt Revalidatie, Berichten, Uitleg, Vrienden, Instellingen en Held. Alles past.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
