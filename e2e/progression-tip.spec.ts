@@ -33,3 +33,15 @@ test('own mobility programme: three light workouts give a "step up" tip; rehab n
     await db.end();
   }
 });
+
+test('progress page: own effort and pain after workouts, with a plain summary', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await ctx.newPage();
+  await login(page, 'patient@praktijk-a.test');
+  await page.goto('/p/voortgang');
+  const card = page.getByRole('region', { name: 'Zwaarte en pijn na je trainingen' });
+  await expect(card).toBeVisible();
+  await expect(card.getByRole('status')).toContainText(/Je pijn na het trainen/);
+  await expectAccessible(page, 'scores card');
+  await ctx.close();
+});

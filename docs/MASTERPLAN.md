@@ -95,6 +95,8 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     2× erg zwaar → "Doe minder of een lichtere variant". Revalidatie blijft bij de fysio.
     Bug opgelost: Kracht en Mobiliteit toonden nooit hun eigen afgeronde trainingen (de
     geschiedenis gaf het onderdeel niet mee).
+37. [x] **Eigen verloop van zwaarte en pijn** op Voortgang (laatste 12 trainingen) met een zin in
+    gewone taal: "Je pijn na het trainen daalt: van gemiddeld 4 naar 2".
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

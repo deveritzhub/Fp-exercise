@@ -5,12 +5,45 @@ import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtDateTime, pct } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
-import { Bars, ErrorState, Skeleton } from '@/components/ui';
+import { Bars, ErrorState, Skeleton, Sparkline } from '@/components/ui';
 import type { Adherence } from '@/lib/types';
 import { StrengthProgress } from '@/components/patient/Strength';
 import { MobilitySummary } from '@/components/MobilityTests';
 import { Link } from 'react-router-dom';
 import { quizQuestions } from '@shared/muscleAtlas';
+
+/** The patient's own effort and pain after workouts, oldest → newest, with a plain summary. */
+function ScoresCard({ sessions }: { sessions: History['sessions'] }) {
+  const { t } = useI18n();
+  const scored = sessions.filter((x) => x.difficulty !== null || x.pain !== null).slice(0, 12).reverse();
+  if (scored.length < 3) return null;
+  const avg = (xs: (number | null)[]) => {
+    const v = xs.filter((x): x is number => x !== null);
+    return v.length ? Math.round((v.reduce((a, b) => a + b, 0) / v.length) * 10) / 10 : null;
+  };
+  const first = scored.slice(0, 3);
+  const last = scored.slice(-3);
+  const p0 = avg(first.map((x) => x.pain));
+  const p1 = avg(last.map((x) => x.pain));
+  const line = p0 !== null && p1 !== null
+    ? p1 < p0
+      ? t(`Je pijn na het trainen daalt: van gemiddeld ${p0} naar ${p1}.`, `Your pain after training is going down: from an average of ${p0} to ${p1}.`)
+      : p1 > p0
+        ? t(`Je pijn na het trainen is wat hoger dan eerst (${p0} → ${p1}). Blijft dat zo, bespreek het met je fysiotherapeut.`, `Your pain after training is a bit higher than before (${p0} → ${p1}). If it stays that way, discuss it with your physiotherapist.`)
+        : t(`Je pijn na het trainen is gelijk gebleven (gemiddeld ${p1}).`, `Your pain after training has stayed the same (average ${p1}).`)
+    : null;
+  return (
+    <section aria-labelledby="scores-title" className="rounded-2xl border border-line bg-white p-5 shadow-card">
+      <h2 id="scores-title" className="font-bold">{t('Zwaarte en pijn na je trainingen', 'Effort and pain after your workouts')}</h2>
+      <p className="mb-2 text-[14px] text-ink-500">{t(`Je laatste ${scored.length} trainingen, 0–10`, `Your last ${scored.length} workouts, 0–10`)}</p>
+      <p className="text-[13px] font-medium text-ink-700">{t('Zwaarte', 'Effort')}</p>
+      <Sparkline values={scored.map((x) => x.difficulty)} />
+      <p className="mt-2 text-[13px] font-medium text-ink-700">{t('Pijn', 'Pain')}</p>
+      <Sparkline values={scored.map((x) => x.pain)} tone="bad" />
+      {line && <p className="mt-2 text-[14px] text-ink-800" role="status">{line}</p>}
+    </section>
+  );
+}
 
 /** The anatomy quiz in numbers, with a link to go on. */
 function QuizSummary() {
@@ -61,6 +94,7 @@ export function PatientProgress() {
         <p className="mb-4 text-[14px] text-ink-500">{t('Gedaan ten opzichte van gepland', 'Done compared with planned')}</p>
         <Bars height={140} format={pct} data={d.weekly.map((w) => ({ label: fmtDate(w.weekStart, locale, { day: 'numeric', month: 'short' }), value: w.planned ? w.rate : null }))} />
       </section>
+      <ScoresCard sessions={d.sessions} />
       <StrengthProgress />
       <MobilitySummary />
       <QuizSummary />
