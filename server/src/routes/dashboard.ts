@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { progressionSignal } from '../../../shared/progression';
 import { withUser } from '../db';
 import { requireStaff, type AppEnv } from '../middleware';
 import { mapExercise, OV_COLS, OV_JOIN } from './exercises';
@@ -41,6 +42,17 @@ dashboard.get('/', async (c) => {
         [ids],
       );
       const painBy = new Map(recentPain.rows.map((r) => [r.patient_id, r]));
+      // The last few scored workouts per patient, for the progression signal.
+      const recentScores = await tx.query(
+        `SELECT patient_id, difficulty, pain, completed_at FROM (
+           SELECT s.patient_id, s.difficulty, s.pain, s.completed_at,
+                  row_number() OVER (PARTITION BY s.patient_id ORDER BY s.completed_at DESC) AS n
+             FROM workout_sessions s WHERE s.patient_id = ANY($1) AND s.completed_at > now() - interval '28 days') x
+          WHERE n <= 4 ORDER BY patient_id, completed_at DESC`,
+        [ids],
+      );
+      const scoresBy = new Map<string, { difficulty: number | null; pain: number | null; at: string }[]>();
+      for (const r of recentScores.rows) scoresBy.set(r.patient_id, [...(scoresBy.get(r.patient_id) ?? []), { difficulty: r.difficulty, pain: r.pain, at: r.completed_at }]);
       const soon = new Date();
       soon.setDate(soon.getDate() + 7);
       const attention: Attention[] = [];
@@ -65,11 +77,13 @@ dashboard.get('/', async (c) => {
         } else if (p.active_programs > 0 && a.planned >= 2 && (a.rate ?? 0) < 0.5) {
           signals.push({ reason: 'low_adherence', date: p.last_activity, planned: a.planned, completed: a.completed });
         }
+        const prog = p.active_programs > 0 ? progressionSignal(scoresBy.get(p.id) ?? []) : null;
+        if (prog) signals.push({ reason: prog.kind, date: scoresBy.get(p.id)?.[0]?.at ?? null, value: prog.avgDifficulty, completed: prog.sessions });
         if (p.next_end && p.next_end <= toISODate(soon)) signals.push({ reason: 'program_ending', date: p.next_end });
         if (p.active_programs === 0) signals.push({ reason: 'no_active_program', date: null });
         if (signals.length) attention.push({ patientId: p.id, name: `${p.first_name} ${p.last_name}`, reasons: signals.map((x) => x.reason), signals });
       }
-      const order = ['high_pain', 'new_feedback', 'inactive_long', 'no_registration', 'low_adherence', 'program_ending', 'not_activated', 'no_active_program'];
+      const order = ['high_pain', 'new_feedback', 'too_heavy', 'inactive_long', 'no_registration', 'low_adherence', 'ready_heavier', 'program_ending', 'not_activated', 'no_active_program'];
       attention.sort((x, y) => order.indexOf(x.reasons[0]) - order.indexOf(y.reasons[0]));
 
       const activity = await tx.query(

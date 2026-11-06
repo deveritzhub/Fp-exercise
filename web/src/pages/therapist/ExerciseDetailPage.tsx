@@ -422,10 +422,10 @@ function GuideRow({ e }: { e: Exercise }) {
     <Row
       k={t('Past bij (klachtwijzer)', 'Fits (complaint guide)')}
       v={
-        <ul className="space-y-0.5">
+        <ul className="min-w-0 space-y-0.5">
           {fits.slice(0, 8).map(({ complaint: c, block }) => (
             <li key={c.key}>
-              <Link to={`/app/klachtwijzer?regio=${c.region}&klacht=${c.key}`} className="inline-flex min-h-[32px] items-center gap-1 text-[14px] font-medium text-accent hover:underline">
+              <Link to={`/app/klachtwijzer?regio=${c.region}&klacht=${c.key}`} className="inline-block min-h-[32px] py-1 text-[14px] font-medium text-accent [overflow-wrap:anywhere] hover:underline">
                 {nl ? c.name[0] : c.name[1]}<span className="font-normal text-ink-500"> · {role[block]}</span>
               </Link>
             </li>

@@ -173,6 +173,10 @@ function WorkList({ d }: { d?: Dashboard }) {
         return { text: t(`Pijnscore ${s.value}/10 gemeld${s.date ? ` op ${date(s.date)}` : ''}.`, `Pain score ${s.value}/10 reported${s.date ? ` on ${date(s.date)}` : ''}.`), action: { label: t('Bekijk sessie', 'View session'), to: `${p}?tab=sessies` } };
       case 'new_feedback':
         return { text: t(`${s.value} ${s.value === 1 ? 'sessie' : 'sessies'} met feedback te beoordelen${s.date ? `, laatste ${date(s.date)}` : ''}.`, `${s.value} session(s) with feedback to review${s.date ? `, latest ${date(s.date)}` : ''}.`), action: { label: t('Feedback beoordelen', 'Review feedback'), to: `${p}?tab=sessies` } };
+      case 'ready_heavier':
+        return { text: t(`Laatste ${s.completed} trainingen licht (gem. zwaarte ${s.value}/10) en weinig pijn: tijd om op te bouwen.`, `Last ${s.completed} workouts light (avg effort ${s.value}/10) with little pain: time to build up.`), action: { label: t('Programma bekijken', 'View programme'), to: `${p}?tab=programmas` } };
+      case 'too_heavy':
+        return { text: t(`Laatste ${s.completed} trainingen erg zwaar (gem. zwaarte ${s.value}/10). Dosering verlagen of oefening aanpassen?`, `Last ${s.completed} workouts very heavy (avg effort ${s.value}/10). Lower the dose or adjust the exercise?`), action: { label: t('Programma bekijken', 'View programme'), to: `${p}?tab=programmas` } };
       case 'inactive_long':
         return { text: t(`${s.value} dagen geen training; laatst actief ${date(s.date)}.`, `${s.value} days without a workout; last active ${date(s.date)}.`), action: { label: t('Contact opnemen', 'Get in touch'), to: p } };
       case 'no_registration':

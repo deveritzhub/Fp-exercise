@@ -14,6 +14,7 @@ import { OpenRedFlagsBanner, PatientModulesTab } from './PatientModulesTab';
 import { GymLog } from '@/components/GymLog';
 import { MobilitySummary, MobilityTests } from '@/components/MobilityTests';
 import { InviteShare } from '@/components/app/InviteShare';
+import { progressionSignal } from '@shared/progression';
 import type { Member, PatientDetail, Progress } from '@/lib/types';
 import { PainMapCard } from '@/components/hero/PainMapCard';
 import { ClinicalTimeline } from '@/components/therapist/ClinicalTimeline';
@@ -147,6 +148,23 @@ export function PatientDetailPage() {
   );
 }
 
+/** "Ready for more load" / "too heavy?" from the patient's own scores after the latest workouts. */
+function ProgressionNotice({ sessions }: { sessions: Progress['sessions'] }) {
+  const { t } = useI18n();
+  const recent = sessions.filter((x) => x.completedAt).sort((a, b) => b.completedAt!.localeCompare(a.completedAt!));
+  const sig = progressionSignal(recent);
+  if (!sig) return null;
+  return sig.kind === 'ready_heavier' ? (
+    <Notice tone="info" title={t('Klaar voor zwaarder', 'Ready for more load')}>
+      {t(`De laatste ${sig.sessions} trainingen waren licht (gemiddelde zwaarte ${sig.avgDifficulty}/10, pijn hooguit ${sig.maxPain}/10). Tijd om op te bouwen: meer herhalingen, gewicht of een moeilijkere variant.`, `The last ${sig.sessions} workouts were light (average effort ${sig.avgDifficulty}/10, pain at most ${sig.maxPain}/10). Time to build up: more reps, load or a harder variation.`)}
+    </Notice>
+  ) : (
+    <Notice tone="warn" title={t('Te zwaar?', 'Too heavy?')}>
+      {t(`De laatste ${sig.sessions} trainingen waren erg zwaar (gemiddelde zwaarte ${sig.avgDifficulty}/10). Overweeg de dosering te verlagen of een lichtere variant.`, `The last ${sig.sessions} workouts were very heavy (average effort ${sig.avgDifficulty}/10). Consider lowering the dose or a lighter variation.`)}
+    </Notice>
+  );
+}
+
 function Overview({ patientId, progress, programs }: { patientId: string; progress?: Progress; programs: PatientDetail['programs'] }) {
   const { t, locale } = useI18n();
   if (!progress) return <div className="grid gap-4 sm:grid-cols-3">{Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>;
@@ -160,6 +178,7 @@ function Overview({ patientId, progress, programs }: { patientId: string; progre
         <Stat label={t('Afgeronde sessies', 'Completed sessions')} value={progress.completedSessions} hint={t('totaal', 'total')} />
         <Stat label={t('Actieve programma’s', 'Active programmes')} value={active.length} hint={active[0]?.title} />
       </div>
+      <ProgressionNotice sessions={progress.sessions} />
       <PainMapCard patientId={patientId} />
       {/* Self-measured mobility, only when the patient shares the mobility part. */}
       <MobilitySummary base={`/patients/${patientId}`} link="?tab=mobiliteit" />

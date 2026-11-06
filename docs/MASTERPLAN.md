@@ -80,6 +80,15 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     (ontlasten, versterken, functioneel), meest relevante eerst. Atlasfout hersteld: "exorotator"
     koppelde heupoefeningen aan de schouder.
 
+## Fase 8 – Bijsturen op wat patiënten melden
+32. [x] **Testerssignalen.** Serverlog nagelopen op `[client-error]` en `[feedback]` (4–6 nov):
+    nog geen meldingen. Opnieuw doen zodra testers actief zijn ("kijk naar de feedback").
+33. [x] **Progressiesignaal.** Uit de eigen scores na de trainingen: 3× licht met weinig pijn →
+    "Klaar voor zwaarder"; 2× erg zwaar → "Te zwaar?". Op het dashboard en in het dossier;
+    een suggestie, nooit een automatische wijziging.
+34. [ ] **Sjabloon uit de klachtwijzer.** Het voorstel ook als praktijksjabloon kunnen opslaan.
+35. [ ] **Volledige regressietest** van alle schermen na fase 6–8.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - `DEMO_PASSWORD` instellen in Render (zelf doen, niet naar Claude sturen).
