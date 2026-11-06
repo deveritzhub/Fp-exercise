@@ -6,7 +6,7 @@ import { parse } from '../lib/validate';
 import { badRequest, notFound } from '../lib/errors';
 import { audit } from '../lib/audit';
 import { notifyPatientComplaint, notifyPatientMuscle } from '../lib/notify';
-import { complaintOf } from '../../../shared/complaints';
+import { complaintOf, proposeExercises, whyFor, type ProposalBlock, type ProposalExercise } from '../../../shared/complaints';
 import { exercisesToReview } from '../lib/fpLibrary';
 import { QUIZ_DAILY_CAP, QUIZ_LEVEL_XP, exerciseKind, level2Open, muscleByKey, musclesOf, nerveOf, questionById, quizXp, type AtlasExerciseKind } from '../../../shared/muscleAtlas';
 
@@ -64,6 +64,38 @@ async function atlasExercises(tx: Tx) {
       }
       return exercises;
 }
+
+/**
+ * For the explanation of a complaint: the patient's own exercises (active rehabilitation programmes)
+ * that fit it, each with "why" in plain words. Nothing is stored; the same texts as the guide.
+ */
+atlasPatient.get('/complaint-exercises', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const complaint = complaintOf(c.req.query('klacht') ?? '');
+  if (!complaint) throw badRequest('unknown_complaint');
+  const nl = (c.req.query('lang') ?? 'nl') !== 'en';
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const rows = (
+        await tx.query(
+          `SELECT DISTINCT ON (e.id) e.id, e.name_nl, e.name_en, e.target_muscles, e.training_categories, e.movement_category, e.source_key, e.tags
+             FROM program_items i JOIN programs p ON p.id = i.program_id JOIN exercises e ON e.id = i.exercise_id
+            WHERE p.patient_id = $1 AND p.status = 'active' AND p.module = 'revalidatie'`,
+          [patient.id],
+        )
+      ).rows;
+      const mine: ProposalExercise[] = rows.map((r) => {
+        const input = { name: `${r.name_nl} ${r.name_en}`, muscles: r.target_muscles ?? [], training: r.training_categories ?? [], movement: r.movement_category, sourceKey: r.source_key, tags: r.tags ?? [] };
+        return { id: r.id, nameNl: r.name_nl, nameEn: r.name_en, kind: exerciseKind(input), muscles: musclesOf(input), nerve: nerveOf(input) };
+      });
+      const p = proposeExercises(complaint, mine, 50, 'opbouw');
+      const blocks: [ProposalBlock, ProposalExercise[]][] = [['calm', p.calm], ['activate', p.activate], ['function', p.function]];
+      return {
+        items: blocks.flatMap(([block, list]) => list.map((e) => ({ id: e.id, name: nl ? e.nameNl : e.nameEn, block, why: whyFor(complaint, e, block, nl) }))),
+      };
+    }),
+  );
+});
 
 atlasPatient.get('/atlas', async (c) => {
   const { user, patient } = requirePatient(c);

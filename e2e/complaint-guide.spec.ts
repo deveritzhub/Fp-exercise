@@ -141,7 +141,7 @@ test('the therapist sends the explanation; the patient reads it under Messages',
   await staff.getByRole('link', { name: /Emma de Jong/ }).first().click();
   await staff.getByRole('link', { name: 'Op klacht' }).click();
   await staff.getByRole('button', { name: /^Knie/ }).click();
-  await staff.getByRole('button', { name: /Loperknie \(ITBS\)/ }).click();
+  await staff.getByRole('button', { name: /Patellofemorale pijn/ }).click();
   await staff.getByRole('button', { name: 'Stuur naar de patiënt' }).click();
   await expect(staff.getByText('Uitleg verstuurd')).toBeVisible();
   await staff.close();
@@ -150,17 +150,20 @@ test('the therapist sends the explanation; the patient reads it under Messages',
   const page = await ctx.newPage();
   await login(page, 'patient@praktijk-a.test');
   await page.goto('/p/berichten');
-  const msg = page.getByRole('listitem').filter({ hasText: 'Uitleg: Loperknie (ITBS)' }).first();
+  const msg = page.getByRole('listitem').filter({ hasText: 'Uitleg: Patellofemorale pijn' }).first();
   await msg.getByRole('link', { name: 'Bekijken' }).click();
-  await expect(page).toHaveURL(/\/p\/uitleg\?klacht=itbs/);
-  await expect(page.getByRole('heading', { name: 'Loperknie (ITBS)', level: 1 })).toBeVisible();
+  await expect(page).toHaveURL(/\/p\/uitleg\?klacht=pfps/);
+  await expect(page.getByRole('heading', { name: 'Patellofemorale pijn', level: 1 })).toBeVisible();
+  // Her own rehab exercises that fit, each with why.
+  const mine = page.getByRole('region', { name: 'Jouw oefeningen en waarom ze helpen' });
+  await expect(mine.getByText('Muurzit', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: /Neem direct contact op/ })).toBeVisible();
   await expectAccessible(page, 'complaint explanation (patient)');
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
   // Read or not, it stays one tap away on Revalidatie.
   await page.goto('/p/revalidatie');
-  await page.getByRole('link', { name: /Uitleg over je klacht.*Loperknie/ }).click();
-  await expect(page).toHaveURL(/\/p\/uitleg\?klacht=itbs/);
+  await page.getByRole('link', { name: /Uitleg over je klacht.*Patellofemorale/ }).click();
+  await expect(page).toHaveURL(/\/p\/uitleg\?klacht=pfps/);
   await ctx.close();
 });
 

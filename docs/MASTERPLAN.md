@@ -152,6 +152,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 56. [x] **Patiënt ziet het ook.** Stijgt de pijn na de training drie keer op rij, dan staat op dat
     onderdeel: "Je pijn na het trainen loopt op (van 2 naar 5 op 10). Doe het rustiger aan en laat
     het je fysiotherapeut weten." Coach- en persoonlijke accounts krijgen een niet-medische tekst.
+57. [x] **Uitleg met je eigen oefeningen.** Onder de uitleg over je klacht: "Jouw oefeningen en
+    waarom ze helpen", met de oefeningen uit je revalidatieprogramma die bij de klacht passen en per
+    oefening de reden in gewone taal.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

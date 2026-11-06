@@ -121,6 +121,20 @@ describe('sending a complaint explanation to a patient', () => {
   });
 });
 
+describe('the patient\'s own exercises in an explanation', () => {
+  it('lists fitting exercises from active rehab programmes with why; unknown complaint refused; staff not', async () => {
+    resetRateLimits();
+    const emma = await login('patientA');
+    const r = await emma.get('/patient/complaint-exercises?klacht=pfps');
+    expect(r.status).toBe(200);
+    expect(Array.isArray(r.body.items)).toBe(true);
+    for (const x of r.body.items) expect(x.why.length).toBeGreaterThan(20);
+    expect(r.body.items.map((x: { name: string }) => x.name)).toContain('Muurzit');
+    expect((await emma.get('/patient/complaint-exercises?klacht=nope')).body.error).toBe('unknown_complaint');
+    expect((await (await login('therapistA')).get('/patient/complaint-exercises?klacht=pfps')).status).toBe(403);
+  });
+});
+
 describe('the complaint guide is clinical', () => {
   it('a coach practice cannot send a complaint explanation', async () => {
     resetRateLimits();
