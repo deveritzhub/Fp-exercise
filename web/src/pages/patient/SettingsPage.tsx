@@ -1,3 +1,4 @@
+import { isClinical } from '@shared/accountKind';
 import { Link } from 'react-router-dom';
 import { ChevronRight, LogOut, Shield, UserRound, Users } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
@@ -7,6 +8,7 @@ import { Button, Card } from '@/components/ui';
 import { ReminderCard } from '@/components/app/Reminders';
 import { ConsentToggle, MyDataCard, useModes } from '@/components/patient/Modules';
 import { TextSizeCard } from '@/pages/AccountPage';
+import { WhatsNew } from '@/components/app/WhatsNew';
 
 /**
  * Patient settings in one place: what is shared with the practice and with friends, reminders,
@@ -47,6 +49,7 @@ export function SettingsPage() {
         <h2 id="set-app" className="text-[13px] font-semibold uppercase tracking-wide text-ink-600">{t('App', 'App')}</h2>
         <ReminderCard />
         <TextSizeCard />
+        <div className="rounded-2xl border border-line bg-white p-1 shadow-card"><WhatsNew audience="patient" clinical={isClinical(user?.patient?.kind)} /></div>
       </section>
 
       <section aria-labelledby="set-data" className="space-y-3">

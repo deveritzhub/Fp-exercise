@@ -143,6 +143,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 53. [x] **Klachtwijzer alleen voor fysiotherapie.** Coach- en persoonlijke accounts zijn bewust
     niet-medisch: daar is de klachtwijzer (menu, snelzoeken, links bij pijnkaart, oefening, atlas en
     dossier) verborgen, en de server weigert het versturen van een uitleg.
+54. [x] **"Wat is er nieuw?" voor testers.** Onderin het menu (therapeut) en bij Instellingen
+    (patiënt): de laatste verbeteringen in gewone taal met een link ernaartoe, en een "Nieuw"-label
+    tot je het geopend hebt. Bij elke grote stap bijwerken (`web/src/components/app/WhatsNew.tsx`).
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

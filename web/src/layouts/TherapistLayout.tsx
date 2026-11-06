@@ -14,6 +14,7 @@ import { NotificationBell } from './Notifications';
 import { CommandPalette } from '@/components/app/CommandPalette';
 import { IdleGuard } from '@/components/app/IdleGuard';
 import { FeedbackButton } from '@/components/app/Feedback';
+import { WhatsNew } from '@/components/app/WhatsNew';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function TherapistLayout() {
@@ -120,6 +121,7 @@ export function TherapistLayout() {
           </NavLink>
         ))}
       </nav>
+      <div className="px-3"><WhatsNew audience="staff" clinical={isClinical(practice.kind)} /></div>
       <div className="m-3 rounded-lg border border-line bg-white/60 px-3 py-2.5 text-[12px] leading-relaxed text-ink-500">
         {t('Ontwikkelomgeving — alleen synthetische gegevens.', 'Development environment — synthetic data only.')}
       </div>
