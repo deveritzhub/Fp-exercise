@@ -81,7 +81,15 @@ test('therapist prints a progress report; patient comments only when chosen', as
   await db.connect();
   const { rows } = await db.query(`SELECT s.patient_id, s.feedback FROM workout_sessions s JOIN patients pt ON pt.id = s.patient_id
      WHERE pt.email = 'patient@praktijk-a.test' AND s.completed_at > now() - interval '8 weeks' AND coalesce(s.feedback, '') <> '' ORDER BY s.completed_at DESC LIMIT 1`);
-  const [pt] = (await db.query(`SELECT id FROM patients WHERE email = 'patient@praktijk-a.test'`)).rows;
+  const [pt] = (await db.query(`SELECT id, practice_id FROM patients WHERE email = 'patient@praktijk-a.test'`)).rows;
+  // Two pain-map check-ins: start and now.
+  await db.query(`DELETE FROM pain_map_entries WHERE patient_id = $1`, [pt.id]);
+  await db.query(
+    `INSERT INTO pain_map_entries(patient_id, practice_id, batch, area, score, recorded_at) VALUES
+       ($1, $2, '00000000-0000-4000-8000-000000000a01', 'knee_r', 6, now() - interval '20 days'),
+       ($1, $2, '00000000-0000-4000-8000-000000000a02', 'knee_r', 3, now() - interval '1 day')`,
+    [pt.id, pt.practice_id],
+  );
   await db.end();
   await login(page, 'therapeut@praktijk-a.test');
   await page.goto(`/app/patienten/${pt.id}`);
@@ -89,7 +97,9 @@ test('therapist prints a progress report; patient comments only when chosen', as
   await page.getByRole('button', { name: 'Voortgangsrapport (PDF)' }).click();
   await expect(page).toHaveURL(new RegExp(`/app/patienten/${pt.id}/rapport$`));
   await expect(page.getByRole('heading', { level: 1, name: 'Emma de Jong' })).toBeVisible();
-  for (const h of ['Samenvatting', 'Therapietrouw per week', 'Sessies', 'Actieve programma’s']) await expect(page.getByRole('heading', { name: h })).toBeVisible();
+  for (const h of ['Samenvatting', 'Therapietrouw per week', 'Sessies', 'Actieve programma’s', 'Pijnkaart']) await expect(page.getByRole('heading', { name: h })).toBeVisible();
+  const pain = page.getByRole('region', { name: 'Pijnkaart' });
+  await expect(pain.getByRole('row', { name: /Rechterknie 6\/10 3\/10/ })).toBeVisible();
   await expect(page.getByText(/geplande dagen/).first()).toBeVisible();
   const comment = rows[0]?.feedback as string | undefined;
   if (comment) {

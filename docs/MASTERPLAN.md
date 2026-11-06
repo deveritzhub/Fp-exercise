@@ -196,6 +196,8 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
 68. [x] **Uitleg printen door de patiënt.** Op de uitleg over je klacht in de app een knop
     "Printen of PDF" (handig voor op de koelkast of om te bewaren). (Een openbare gratis
     mobiliteitstest is op verzoek van de eigenaar weer verwijderd.)
+69. [x] **Pijnkaart in het voortgangsrapport.** Het rapport (print/PDF) toont per plek de
+    startmeting en de laatste meting van de pijnkaart, met datums (alleen fysiotherapie).
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
