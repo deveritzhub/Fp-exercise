@@ -112,3 +112,14 @@ test('an existing practice programme that fits the complaint is one tap away', a
   await expect(page).toHaveURL(/programmas\/nieuw\?sjabloon=/);
   await expect(page.getByLabel('Titel')).toHaveValue(/Achillespees/);
 });
+
+test('a printable explanation for the patient, in plain words', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto('/app/klachtwijzer?regio=heup&klacht=gluteale_tendinopathie');
+  await page.getByRole('link', { name: /Uitleg voor de patiënt/ }).click();
+  await expect(page.getByRole('heading', { name: 'Pijn aan de buitenkant van de heup', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Waarom deze oefeningen' })).toBeVisible();
+  await expect(page.getByText(/Geen rek met het been over de middellijn/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Neem direct contact op/ })).toBeVisible();
+  await expectAccessible(page, 'patient handout');
+});

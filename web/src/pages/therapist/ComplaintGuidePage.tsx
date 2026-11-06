@@ -157,6 +157,7 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
       <header>
         <h2 id="complaint-title" className="t-page">{L(complaint.name)}</h2>
         <p className="mt-1 max-w-2xl text-[15px] text-ink-700">{L(complaint.what)}</p>
+        <Link to={`/app/klachtwijzer/uitleg?klacht=${complaint.key}`} className="mt-1 inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent hover:underline">{t('Uitleg voor de patiënt (printen of PDF)', 'Explanation for the patient (print or PDF)')}</Link>
       </header>
 
       <section aria-labelledby="chain-title" className="rounded-2xl border border-line bg-white p-5 shadow-card">

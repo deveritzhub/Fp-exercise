@@ -101,6 +101,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     bij de klacht, dan staat het bovenaan het voorstel met "Hiermee starten".
 39. [x] **Reageren op een training.** Bij "Markeer als gezien" kan de fysio een korte reactie
     meesturen; de patiënt krijgt die als melding ("Reactie van je fysiotherapeut").
+40. [x] **Uitleg voor de patiënt per klacht.** Eén printbare pagina in gewone taal: wat het is,
+    hoe het lichaam samenwerkt, waarom deze oefeningen, waar je op let, pijn tijdens oefenen en
+    wanneer je direct contact opneemt.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
