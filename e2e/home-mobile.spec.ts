@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 /** The public pages must fit a phone screen: no sideways scrolling, no text cut off at the right. */
 // 300 px with normal text ≈ a 412 px phone with large system text (Android text scaling 135%).
 for (const width of [300, 360, 412]) {
-  for (const path of ['/', '/prijzen', '/login', '/aanmelden']) {
+  for (const path of ['/', '/prijzen', '/login', '/aanmelden', '/mobiliteitstest']) {
     test(`${path} fits a ${width}px phone`, async ({ browser }) => {
       const ctx = await browser.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'nl-NL' });
       const page = await ctx.newPage();

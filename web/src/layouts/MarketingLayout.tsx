@@ -75,7 +75,7 @@ export function MarketingLayout() {
               {t('Oefentherapie voorschrijven, volgen en bijsturen. Gebouwd met en voor fysiotherapeuten in Nederland.', 'Prescribe, monitor and adjust exercise therapy. Built with and for physiotherapists in the Netherlands.')}
             </p>
           </div>
-          <FooterCol title={t('Product', 'Product')} links={[['/functies', t('Functies', 'Features')], ['/hoe-het-werkt', t('Hoe het werkt', 'How it works')], ['/prijzen', t('Prijzen', 'Pricing')], ['/demo', 'Demo']]} />
+          <FooterCol title={t('Product', 'Product')} links={[['/functies', t('Functies', 'Features')], ['/hoe-het-werkt', t('Hoe het werkt', 'How it works')], ['/prijzen', t('Prijzen', 'Pricing')], ['/demo', 'Demo'], ['/mobiliteitstest', t('Gratis mobiliteitstest', 'Free mobility check')]]} />
           <FooterCol title={t('Bedrijf', 'Company')} links={[['/contact', 'Contact'], ['/login', t('Inloggen', 'Log in')]]} />
           <FooterCol title={t('Juridisch', 'Legal')} links={[['/privacy', t('Privacyverklaring', 'Privacy notice')], ['/voorwaarden', t('Voorwaarden', 'Terms')], ['/cookies', t('Cookies', 'Cookies')]]} />
         </div>
