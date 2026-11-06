@@ -371,14 +371,24 @@ patients.get('/:id/export', async (c) => {
 patients.post('/sessions/:sessionId/review', async (c) => {
   const { user } = requireStaff(c);
   const sid = parse(uuidParam, c.req.param('sessionId'));
-  await withUser(user.id, async (tx) => {
+  // Optional short reply to the patient, delivered as a notification in their app.
+  const b = parse(z.object({ reply: z.string().trim().max(500).default('') }), await c.req.json().catch(() => ({})));
+  const delivered = await withUser(user.id, async (tx) => {
     const r = await tx.query(
       `UPDATE workout_sessions SET reviewed_at = now(), reviewed_by = app.uid()
-        WHERE id = $1 AND app.can_manage_patient(patient_id) RETURNING practice_id`,
+        WHERE id = $1 AND app.can_manage_patient(patient_id) RETURNING practice_id, patient_id`,
       [sid],
     );
     if (!r.rowCount) throw notFound();
     await audit(tx, user.id, r.rows[0].practice_id, 'review', 'workout_session', sid);
+    if (!b.reply) return false;
+    const pt = (await tx.query('SELECT user_id, locale FROM patients WHERE id = $1', [r.rows[0].patient_id])).rows[0];
+    if (!pt?.user_id) return false;
+    await tx.query(
+      'INSERT INTO notifications(user_id, practice_id, kind, title, body, link) VALUES ($1,$2,$3,$4,$5,$6)',
+      [pt.user_id, r.rows[0].practice_id, 'feedback_reply', pt.locale === 'en' ? 'Reply from your physiotherapist' : 'Reactie van je fysiotherapeut', b.reply, '/p/voortgang'],
+    );
+    return true;
   });
-  return c.json({ ok: true });
+  return c.json({ ok: true, delivered });
 });

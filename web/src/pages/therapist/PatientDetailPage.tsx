@@ -257,9 +257,40 @@ function Programs({ pt }: { pt: PatientDetail }) {
   );
 }
 
-function Sessions({ progress, onReviewed }: { progress?: Progress; onReviewed: () => void }) {
+/** Mark a workout as seen, optionally with a short reply that the patient gets in the app. */
+function ReviewBox({ sessionId, onDone }: { sessionId: string; onDone: () => void }) {
   const { t, locale } = useI18n();
   const toast = useToast();
+  const [reply, setReply] = useState('');
+  const [busy, setBusy] = useState(false);
+  const send = async () => {
+    setBusy(true);
+    try {
+      const r = await api.post<{ delivered: boolean }>(`/patients/sessions/${sessionId}/review`, { reply: reply.trim() });
+      toast(r.delivered ? t('Gezien, en je reactie staat in de app van de patiënt', 'Seen, and your reply is in the patient\'s app') : t('Gemarkeerd als gezien', 'Marked as seen'));
+      setReply('');
+      onDone();
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-4 space-y-2">
+      <label className="block text-[13px] font-medium text-ink-700" htmlFor={`reply-${sessionId}`}>{t('Korte reactie aan de patiënt (optioneel)', 'Short reply to the patient (optional)')}</label>
+      <textarea id={`reply-${sessionId}`} value={reply} onChange={(e) => setReply(e.target.value)} maxLength={500} rows={2} className="input" placeholder={t('Bijv. "Goed gedaan! Neem bij de squat 1 kg meer."', 'E.g. "Well done! Add 1 kg to the squat."')} />
+      <div className="flex justify-end">
+        <Button size="sm" variant="secondary" loading={busy} icon={<Check className="h-3.5 w-3.5" />} onClick={send}>
+          {reply.trim() ? t('Gezien en versturen', 'Seen and send') : t('Markeer als gezien', 'Mark as seen')}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function Sessions({ progress, onReviewed }: { progress?: Progress; onReviewed: () => void }) {
+  const { t, locale } = useI18n();
   const [open, setOpen] = useState<string | null>(null);
   if (!progress) return <Spinner />;
   const done = progress.sessions.filter((s) => s.completedAt);
@@ -312,13 +343,7 @@ function Sessions({ progress, onReviewed }: { progress?: Progress; onReviewed: (
                       ))}
                     </tbody>
                   </table>
-                  {!s.reviewedAt && (
-                    <div className="mt-4 flex justify-end">
-                      <Button size="sm" variant="secondary" icon={<Check className="h-3.5 w-3.5" />} onClick={async () => { await api.post(`/patients/sessions/${s.id}/review`); toast(t('Gemarkeerd als gezien', 'Marked as seen')); onReviewed(); }}>
-                        {t('Markeer als gezien', 'Mark as seen')}
-                      </Button>
-                    </div>
-                  )}
+                  {!s.reviewedAt && <ReviewBox sessionId={s.id} onDone={onReviewed} />}
                 </div>
               )}
             </li>

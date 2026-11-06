@@ -109,7 +109,10 @@ test('therapist reviews progress and modifies the programme', async ({ page }) =
   await page.getByRole('button', { name: /E2E — knie basis/ }).click();
   await expect(page.getByText('“Ging redelijk”')).toBeVisible();
   await expect(page.getByText('“Pijn onderin de rug bij het omhoog komen”')).toBeVisible();
-  await page.getByRole('button', { name: 'Markeer als gezien' }).click();
+  // A short reply goes to the patient's app with "seen".
+  await page.getByLabel('Korte reactie aan de patiënt (optioneel)').fill('Goed gedaan! Kom bij de brug minder hoog als je rug opspeelt.');
+  await page.getByRole('button', { name: 'Gezien en versturen' }).click();
+  await expect(page.getByText(/je reactie staat in de app van de patiënt/)).toBeVisible();
   await expect(page.getByText('Gezien').first()).toBeVisible();
 
   await page.goto(programUrl);

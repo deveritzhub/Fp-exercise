@@ -99,6 +99,8 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
     gewone taal: "Je pijn na het trainen daalt: van gemiddeld 4 naar 2".
 38. [x] **Bestaand programma in de klachtwijzer.** Past een programma (sjabloon) van de praktijk
     bij de klacht, dan staat het bovenaan het voorstel met "Hiermee starten".
+39. [x] **Reageren op een training.** Bij "Markeer als gezien" kan de fysio een korte reactie
+    meesturen; de patiënt krijgt die als melding ("Reactie van je fysiotherapeut").
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
