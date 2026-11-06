@@ -142,10 +142,24 @@ test('hold timer pauses and resumes; it never ticks anything off by itself', asy
 
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'nl-NL', timezoneId: 'Europe/Amsterdam', hasTouch: true });
   const page = await ctx.newPage();
+  await page.addInitScript(() => {
+    const w = window as unknown as { __spoken: string[]; speechSynthesis: unknown; SpeechSynthesisUtterance: unknown };
+    w.__spoken = [];
+    Object.defineProperty(window, 'SpeechSynthesisUtterance', { configurable: true, writable: true, value: class { text: string; lang = ''; rate = 1; onend: (() => void) | null = null; onerror: (() => void) | null = null; constructor(t: string) { this.text = t; } } });
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speak: (u: { text: string }) => w.__spoken.push(u.text), cancel: () => {} } });
+  });
   await login(page, 'patient@praktijk-a.test');
   const prog = { id: ep.id };
   await page.goto(`/p/sessie/${prog.id}`);
   await page.getByRole('button', { name: /Beginnen|Verder met training/ }).click();
+  // Read aloud: the phone's speech is used (stubbed here), and the button can stop it again.
+  const read = page.getByRole('button', { name: 'Lees voor' });
+  await read.click();
+  const spoken = await page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken);
+  expect(spoken.at(-1)).toMatch(/Muurzit|herhalingen|vasthouden/);
+  await expect(page.getByRole('button', { name: 'Stop' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Stop' }).click();
+  await expect(read).toBeVisible();
   const hold = page.getByRole('button', { name: /Start \d+ seconden/ });
   const finish = page.getByRole('button', { name: 'Training afronden' });
   for (let i = 0; i < 12; i++) {

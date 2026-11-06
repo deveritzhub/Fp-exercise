@@ -218,8 +218,9 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
       wisselvallige uitlogtest (los 9× groen). `npm audit`: geen meldingen meer.
 
 ## Fase 11 – Uitbreiden en gebruiksvriendelijker (verzoek eigenaar, 6 nov avond)
-76. [ ] **Voorlezen in de training.** Knop "Lees voor" bij elke oefening (spraak van de telefoon,
-    geen opname): handig tijdens het oefenen en bij slecht zien.
+76. [x] **Voorlezen in de training.** Knop "Lees voor" bij elke oefening (spraak van de telefoon,
+    niets wordt opgenomen of verstuurd): naam, dosering, notitie van de fysio en de uitleg. Nog een
+    keer tikken stopt het. Verborgen als de telefoon geen spraak heeft.
 77. [ ] **"Dit doet pijn" tijdens een oefening.** Eén knop: kies de lichtere variant of sla over,
     met een korte notitie die de fysio ziet.
 78. [ ] **Snelfilters in de patiëntenlijst.** Vraagt aandacht · Nog niet uitgenodigd · Geen programma.

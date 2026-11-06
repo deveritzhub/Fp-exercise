@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Brain, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X, Printer, Trophy, Swords, Coins, Gift } from 'lucide-react';
+import { ArrowLeft, Brain, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X, Printer, Trophy, Swords, Coins, Gift, Volume2, VolumeX } from 'lucide-react';
 import { MUSCLES, musclesOf } from '@shared/muscleAtlas';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { useI18n, describeError } from '@/lib/i18n';
@@ -420,7 +420,15 @@ export function ExerciseInfo({ item }: { item: ProgramItem }) {
       )}
 
       <div>
-        <h1 className="text-[24px] font-bold leading-tight">{nl ? ex.nameNl : ex.nameEn}</h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-[24px] font-bold leading-tight">{nl ? ex.nameNl : ex.nameEn}</h1>
+          <ReadAloud text={[
+            nl ? ex.nameNl : ex.nameEn,
+            [item.sets && t(`${item.sets} sets`, `${item.sets} sets`), item.reps && t(`${item.reps} herhalingen`, `${item.reps} repetitions`), item.holdS && t(`${item.holdS} seconden vasthouden`, `hold ${item.holdS} seconds`)].filter(Boolean).join(', '),
+            item.notes ? t(`Notitie van je fysiotherapeut: ${item.notes}`, `Note from your physiotherapist: ${item.notes}`) : '',
+            ...sections.map(([, title, text]) => `${title}. ${text}`),
+          ].filter(Boolean).join('. ')} />
+        </div>
         <div className="mt-3 flex flex-wrap gap-2">
           {item.sets && <Pill label={t('Sets', 'Sets')} value={String(item.sets)} />}
           {item.reps && <Pill label={t('Herhalingen', 'Repetitions')} value={String(item.reps)} />}
@@ -455,6 +463,41 @@ export function ExerciseInfo({ item }: { item: ProgramItem }) {
         <p className="flex items-start gap-2 text-[14.5px] text-ink-700"><Repeat className="mt-0.5 h-4 w-4 shrink-0 text-ink-500" />{t('Lukt deze oefening niet? Doe dan:', 'Can’t do this exercise? Do this instead:')} <strong className="font-semibold">{nl ? item.alternative.nameNl : item.alternative.nameEn}</strong></p>
       )}
     </>
+  );
+}
+
+/**
+ * "Read aloud": the phone's own speech (Web Speech API, nothing is recorded or sent). Handy during the
+ * exercise and with poor eyesight. Hidden when the browser has no speech; stops when leaving the exercise.
+ */
+function ReadAloud({ text }: { text: string }) {
+  const { t, locale } = useI18n();
+  const [speaking, setSpeaking] = useState(false);
+  const supported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  useEffect(() => () => { if (supported) window.speechSynthesis.cancel(); }, [supported, text]);
+  if (!supported) return null;
+  const toggle = () => {
+    const synth = window.speechSynthesis;
+    if (speaking) {
+      synth.cancel();
+      setSpeaking(false);
+      return;
+    }
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = locale === 'nl' ? 'nl-NL' : 'en-GB';
+    u.rate = 0.95;
+    u.onend = () => setSpeaking(false);
+    u.onerror = () => setSpeaking(false);
+    synth.cancel();
+    synth.speak(u);
+    setSpeaking(true);
+  };
+  return (
+    <button type="button" onClick={toggle} aria-pressed={speaking}
+      className={cn('inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full border px-3 text-[14px] font-medium', speaking ? 'border-accent bg-accent-soft text-accent' : 'border-line text-ink-700 hover:bg-ink-50')}>
+      {speaking ? <VolumeX className="h-4 w-4" aria-hidden /> : <Volume2 className="h-4 w-4" aria-hidden />}
+      {speaking ? t('Stop', 'Stop') : t('Lees voor', 'Read aloud')}
+    </button>
   );
 }
 
