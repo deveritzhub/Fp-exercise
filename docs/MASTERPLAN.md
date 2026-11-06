@@ -86,7 +86,7 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 33. [x] **Progressiesignaal.** Uit de eigen scores na de trainingen: 3× licht met weinig pijn →
     "Klaar voor zwaarder"; 2× erg zwaar → "Te zwaar?". Op het dashboard en in het dossier;
     een suggestie, nooit een automatische wijziging.
-34. [ ] **Sjabloon uit de klachtwijzer.** Het voorstel ook als praktijksjabloon kunnen opslaan.
+34. [x] **Sjabloon uit de klachtwijzer.** Het voorstel ook als praktijksjabloon kunnen opslaan.
 35. [ ] **Volledige regressietest** van alle schermen na fase 6–8.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)

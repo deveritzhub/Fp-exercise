@@ -133,7 +133,7 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
     setTicked(next);
   };
   const ordered = proposal ? [...proposal.calm, ...proposal.activate, ...proposal.function].filter((e) => chosen.has(e.id)) : [];
-  const makeProgram = () => {
+  const makeProgram = (asTemplate = false) => {
     // Plain-language "why" per exercise, handed to the builder as the exercise note (editable there).
     // Only generic texts, no patient data.
     const blockOf = (id: string): 'calm' | 'activate' | 'function' => (proposal!.calm.some((e) => e.id === id) ? 'calm' : proposal!.activate.some((e) => e.id === id) ? 'activate' : 'function');
@@ -143,7 +143,8 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
       /* storage unavailable: no notes */
     }
     const p = new URLSearchParams({ oefeningen: ordered.map((e) => e.id).join(','), titel: phase === 'opbouw' ? L(complaint.name) : `${L(complaint.name)} · ${L(GUIDE_PHASES.find((x) => x.key === phase)!.name).toLowerCase()}` });
-    if (patient) p.set('patient', patient);
+    if (asTemplate) p.set('type', 'sjabloon');
+    else if (patient) p.set('patient', patient);
     nav(`/app/programmas/nieuw?${p}`);
   };
   const tests = [...new Set([...(complaint.mobilityTests ?? []), ...comps.map((c) => c.mobilityTest).filter(Boolean)])] as string[];
@@ -225,7 +226,8 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
               <Block title={t('3. Functioneel', '3. Functional')} hint={t('de beweging waarin het misgaat', 'the movement where it goes wrong')} list={proposal.function} chosen={chosen} onToggle={toggle} />
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-line pt-4">
-              <Button onClick={makeProgram} disabled={ordered.length === 0} icon={<ClipboardList className="h-4 w-4" />}>{t(`Programma maken (${ordered.length})`, `Create programme (${ordered.length})`)}</Button>
+              <Button onClick={() => makeProgram()} disabled={ordered.length === 0} icon={<ClipboardList className="h-4 w-4" />}>{t(`Programma maken (${ordered.length})`, `Create programme (${ordered.length})`)}</Button>
+              <Button variant="secondary" onClick={() => makeProgram(true)} disabled={ordered.length === 0}>{t('Als sjabloon voor de praktijk', 'As a practice template')}</Button>
               <span className="text-[13px] text-ink-600">{t('Dosering en planning stel je daarna zelf in.', 'You set dose and schedule afterwards.')}</span>
             </div>
           </>

@@ -93,3 +93,12 @@ test('exercise page shows the complaints it fits, linking to the guide', async (
   await expect(row).toBeVisible();
   await expect(page.getByRole('link', { name: /Loperknie \(ITBS\)\s*· versterken/ })).toBeVisible();
 });
+
+test('the proposal can also become a practice template', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto('/app/klachtwijzer?regio=knie&klacht=pfps');
+  await page.getByRole('button', { name: 'Als sjabloon voor de praktijk' }).click();
+  await expect(page).toHaveURL(/type=sjabloon/);
+  await expect(page.getByLabel('Titel')).toHaveValue('Patellofemorale pijn');
+  await expect(page.getByText(/Oefeningen \(\d+\)/)).toBeVisible();
+});
