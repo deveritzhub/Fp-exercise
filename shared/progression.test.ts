@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { progressionSignal } from './progression';
+import { painRising, progressionSignal } from './progression';
 
 const s = (difficulty: number | null, pain: number | null = 0) => ({ difficulty, pain });
 
@@ -20,5 +20,20 @@ describe('progression signal', () => {
   });
   it('skips workouts without scores', () => {
     expect(progressionSignal([s(null), s(2), s(1), s(3)])?.kind).toBe('ready_heavier');
+  });
+});
+
+describe('pain rising', () => {
+  const sc = (...pains: (number | null)[]) => pains.map((pain) => ({ difficulty: 5, pain }));
+  it('three workouts in a row with more pain each time, ending at 4 or more', () => {
+    expect(painRising(sc(5, 3, 1))).toEqual({ from: 1, to: 5 });
+    expect(painRising(sc(4, 3, 2, 8))).toEqual({ from: 2, to: 4 });
+  });
+  it('not when it levels off, goes down, stays low or there are too few scores', () => {
+    expect(painRising(sc(5, 5, 2))).toBeNull();
+    expect(painRising(sc(2, 4, 5))).toBeNull();
+    expect(painRising(sc(3, 2, 1))).toBeNull();
+    expect(painRising(sc(5, 3))).toBeNull();
+    expect(painRising(sc(5, null, 3, 1))).toEqual({ from: 1, to: 5 });
   });
 });

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { progressionSignal } from '../../../shared/progression';
+import { progressionSignal, painRising } from '../../../shared/progression';
 import { withUser } from '../db';
 import { requireStaff, type AppEnv } from '../middleware';
 import { mapExercise, OV_COLS, OV_JOIN } from './exercises';
@@ -79,11 +79,14 @@ dashboard.get('/', async (c) => {
         }
         const prog = p.active_programs > 0 ? progressionSignal(scoresBy.get(p.id) ?? []) : null;
         if (prog) signals.push({ reason: prog.kind, date: scoresBy.get(p.id)?.[0]?.at ?? null, value: prog.avgDifficulty, completed: prog.sessions });
+        // Pain going up workout after workout, before it reaches "high pain".
+        const rising = p.active_programs > 0 && !signals.some((x) => x.reason === 'high_pain') ? painRising(scoresBy.get(p.id) ?? []) : null;
+        if (rising) signals.push({ reason: 'pain_rising', date: scoresBy.get(p.id)?.[0]?.at ?? null, value: rising.to, planned: rising.from });
         if (p.next_end && p.next_end <= toISODate(soon)) signals.push({ reason: 'program_ending', date: p.next_end });
         if (p.active_programs === 0) signals.push({ reason: 'no_active_program', date: null });
         if (signals.length) attention.push({ patientId: p.id, name: `${p.first_name} ${p.last_name}`, reasons: signals.map((x) => x.reason), signals });
       }
-      const order = ['high_pain', 'new_feedback', 'too_heavy', 'inactive_long', 'no_registration', 'low_adherence', 'ready_heavier', 'program_ending', 'not_activated', 'no_active_program'];
+      const order = ['high_pain', 'pain_rising', 'new_feedback', 'too_heavy', 'inactive_long', 'no_registration', 'low_adherence', 'ready_heavier', 'program_ending', 'not_activated', 'no_active_program'];
       attention.sort((x, y) => order.indexOf(x.reasons[0]) - order.indexOf(y.reasons[0]));
 
       const activity = await tx.query(

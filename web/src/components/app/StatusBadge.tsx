@@ -18,6 +18,7 @@ export function useReasonLabel() {
   return (r: string): { text: string; tone: 'bad' | 'warn' | 'info' | 'neutral' } => {
     switch (r) {
       case 'high_pain': return { text: t('Hoge pijnscore', 'High pain score'), tone: 'bad' };
+      case 'pain_rising': return { text: t('Pijn loopt op', 'Pain rising'), tone: 'warn' };
       case 'new_feedback': return { text: t('Nieuwe feedback', 'New feedback'), tone: 'info' };
       case 'low_adherence': return { text: t('Lage therapietrouw', 'Low adherence'), tone: 'warn' };
       case 'ready_heavier': return { text: t('Klaar voor zwaarder', 'Ready for more load'), tone: 'info' };

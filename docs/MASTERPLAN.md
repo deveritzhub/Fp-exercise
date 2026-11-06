@@ -146,6 +146,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 54. [x] **"Wat is er nieuw?" voor testers.** Onderin het menu (therapeut) en bij Instellingen
     (patiënt): de laatste verbeteringen in gewone taal met een link ernaartoe, en een "Nieuw"-label
     tot je het geopend hebt. Bij elke grote stap bijwerken (`web/src/components/app/WhatsNew.tsx`).
+55. [x] **Signaal "Pijn loopt op".** In "Vraagt aandacht": pijn na de training drie keer op rij
+    hoger (en minstens 4/10), al voordat het een hoge pijnscore wordt. Met "van 2 naar 5/10" en een
+    link naar de sessies. Een suggestie om te kijken, geen diagnose.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

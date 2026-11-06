@@ -171,6 +171,8 @@ function WorkList({ d }: { d?: Dashboard }) {
     switch (s.reason) {
       case 'high_pain':
         return { text: t(`Pijnscore ${s.value}/10 gemeld${s.date ? ` op ${date(s.date)}` : ''}.`, `Pain score ${s.value}/10 reported${s.date ? ` on ${date(s.date)}` : ''}.`), action: { label: t('Bekijk sessie', 'View session'), to: `${p}?tab=sessies` } };
+      case 'pain_rising':
+        return { text: t(`Pijn na de training stijgt drie keer op rij: van ${s.planned} naar ${s.value}/10${s.date ? ` (laatste ${date(s.date)})` : ''}. Belasting aanpassen?`, `Pain after workouts rose three times in a row: from ${s.planned} to ${s.value}/10${s.date ? ` (latest ${date(s.date)})` : ''}. Adjust the load?`), action: { label: t('Bekijk sessies', 'View sessions'), to: `${p}?tab=sessies` } };
       case 'new_feedback':
         return { text: t(`${s.value} ${s.value === 1 ? 'sessie' : 'sessies'} met feedback te beoordelen${s.date ? `, laatste ${date(s.date)}` : ''}.`, `${s.value} session(s) with feedback to review${s.date ? `, latest ${date(s.date)}` : ''}.`), action: { label: t('Feedback beoordelen', 'Review feedback'), to: `${p}?tab=sessies` } };
       case 'ready_heavier':

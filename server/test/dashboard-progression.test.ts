@@ -40,3 +40,22 @@ describe('dashboard: progression from the patient\'s own scores', () => {
     expect(emma?.reasons).not.toContain('ready_heavier');
   });
 });
+
+describe('dashboard: pain rising after workouts', () => {
+  it('three workouts with more pain each time (below "high pain"): pain rising', async () => {
+    const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
+    await db.connect();
+    try {
+      const ids = (await db.query(`SELECT id FROM workout_sessions WHERE patient_id = $1 AND completed_at IS NOT NULL ORDER BY completed_at DESC LIMIT 4`, [s.patients.emma])).rows.map((r) => r.id);
+      expect(ids.length).toBeGreaterThanOrEqual(3);
+      // Newest first: 5, 3, 2 (and an older one, low).
+      for (const [i, pain] of [5, 3, 2, 1].entries()) if (ids[i]) await db.query(`UPDATE workout_sessions SET difficulty = 5, pain = $2 WHERE id = $1`, [ids[i], pain]);
+    } finally {
+      await db.end();
+    }
+    const d = await (await login('therapistA')).get('/dashboard');
+    const emma = d.body.attention.find((x: any) => x.patientId === s.patients.emma);
+    expect(emma?.reasons).toContain('pain_rising');
+    expect(emma?.signals.find((x: any) => x.reason === 'pain_rising')).toMatchObject({ value: 5, planned: 2 });
+  });
+});

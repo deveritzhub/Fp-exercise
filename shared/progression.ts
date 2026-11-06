@@ -27,3 +27,17 @@ export function progressionSignal(recent: SessionScore[]): ProgressionSignal {
   }
   return null;
 }
+
+/** Pain after workouts rising three times in a row to at least 4/10 (6+ is "high pain" already). */
+export const RISING = { sessions: 3, minLast: 4 } as const;
+
+/** `recent`: newest first. Only workouts with a pain score count. A suggestion to look, not a diagnosis. */
+export function painRising(recent: SessionScore[]): { from: number; to: number } | null {
+  const pains = recent.map((s) => s.pain).filter((p): p is number => p !== null).slice(0, RISING.sessions);
+  if (pains.length < RISING.sessions) return null;
+  const [last, ...older] = pains;
+  // Strictly rising over time: each workout hurt more than the one before.
+  for (let i = 0; i < pains.length - 1; i++) if (pains[i] <= pains[i + 1]) return null;
+  if (last < RISING.minLast) return null;
+  return { from: older[older.length - 1], to: last };
+}

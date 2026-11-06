@@ -11,6 +11,7 @@ import { cn } from '@/lib/cn';
  */
 type Item = { nl: string; en: string; to?: string; clinical?: true };
 const STAFF: Item[] = [
+  { nl: 'Nieuw signaal op het dashboard: "Pijn loopt op" als de pijn na de training drie keer op rij stijgt.', en: 'New dashboard signal: "Pain rising" when pain after workouts goes up three times in a row.', to: '/app' },
   { clinical: true, nl: 'Uitleg over een klacht naar de patiënt sturen, vanuit de klachtwijzer. De patiënt leest hem in de app.', en: 'Send the explanation of a complaint to the patient from the complaint guide. The patient reads it in the app.', to: '/app/klachtwijzer' },
   { clinical: true, nl: 'Klachten zoeken met Ctrl+K: typ bijvoorbeeld "loperknie".', en: 'Search complaints with Ctrl+K: type e.g. "runner\'s knee".' },
   { clinical: true, nl: 'Het oefenvoorstel heeft nu ook functionele oefeningen voor nek, schouder, elleboog en hand.', en: 'The exercise proposal now also has functional exercises for neck, shoulder, elbow and hand.', to: '/app/klachtwijzer' },
@@ -24,7 +25,7 @@ const PATIENT: Item[] = [
   { nl: 'Op Voortgang zie je hoe zwaar en pijnlijk je trainingen waren, in gewone taal.', en: 'Progress shows how hard and painful your workouts were, in plain words.', to: '/p/voortgang' },
   { nl: 'Nieuwe quizvragen over welke spier het werk overneemt als een andere zwak is.', en: 'New quiz questions on which muscle takes over when another is weak.' },
 ];
-const VERSION = '2026-11-06';
+const VERSION = '2026-11-06b';
 const KEY = 'fp.whatsnew.v1';
 
 function seen() {
