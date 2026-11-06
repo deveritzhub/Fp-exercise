@@ -157,3 +157,16 @@ test('the therapist sends the explanation; the patient reads it under Messages',
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
   await ctx.close();
 });
+
+test('without a linked patient: pick one in a dialog to send the explanation', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto('/app/klachtwijzer?regio=knie&klacht=pfps');
+  await page.getByRole('button', { name: 'Stuur naar een patiënt' }).click();
+  const dlg = page.getByRole('dialog', { name: 'Uitleg naar een patiënt sturen' });
+  await expect(dlg.getByRole('button', { name: 'Versturen' })).toBeDisabled();
+  await dlg.getByLabel('Patiënt').selectOption({ label: 'Emma de Jong' });
+  await expectAccessible(page, 'send explanation dialog');
+  await dlg.getByRole('button', { name: 'Versturen' }).click();
+  await expect(dlg).toBeHidden();
+  await expect(page.getByText('Verstuurd: de patiënt vindt de uitleg onder Berichten')).toBeVisible();
+});

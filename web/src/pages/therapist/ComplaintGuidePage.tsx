@@ -6,7 +6,8 @@ import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
-import { Button, ErrorState, PageHeader, Segmented, Spinner, useToast } from '@/components/ui';
+import { Button, Dialog, ErrorState, PageHeader, Segmented, Select, Spinner, Textarea, useToast } from '@/components/ui';
+import type { PatientListItem } from '@/lib/types';
 import { CompensationCard, MuscleChips } from '@/components/app/Compensation';
 import { MUSCLES } from '@shared/muscleAtlas';
 import { mobilityTest } from '@shared/mobilityTests';
@@ -159,7 +160,7 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
         <p className="mt-1 max-w-2xl text-[15px] text-ink-700">{L(complaint.what)}</p>
         <div className="mt-1 flex flex-wrap items-center gap-x-4">
           <Link to={`/app/klachtwijzer/uitleg?klacht=${complaint.key}`} className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent hover:underline">{t('Uitleg voor de patiënt (printen of PDF)', 'Explanation for the patient (print or PDF)')}</Link>
-          {patient && <SendExplanation complaint={complaint.key} patient={patient} />}
+          <SendExplanation complaint={complaint} patient={patient} />
         </div>
       </header>
 
@@ -258,27 +259,53 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
   );
 }
 
-/** Send the plain-language explanation to the linked patient: it arrives under Messages in their app. */
-function SendExplanation({ complaint, patient }: { complaint: string; patient: string }) {
+/**
+ * Send the plain-language explanation to a patient: it arrives under Messages in their app.
+ * From a patient record the patient is known; otherwise the therapist picks one, with an optional note.
+ */
+function SendExplanation({ complaint, patient }: { complaint: Complaint; patient: string | null }) {
   const { t, locale } = useI18n();
   const toast = useToast();
   const [state, setState] = useState<'idle' | 'busy' | 'sent'>('idle');
-  const send = async () => {
+  const [picking, setPicking] = useState(false);
+  const [patientId, setPatientId] = useState('');
+  const [note, setNote] = useState('');
+  const list = useQuery({ queryKey: ['patients', 'atlas-send'], queryFn: () => api.get<{ items: PatientListItem[] }>('/patients?status=active&scope=practice'), enabled: picking });
+  const send = async (to: string, text = '') => {
     setState('busy');
     try {
-      const r = await api.post<{ delivered: boolean }>('/atlas/send-complaint', { patientId: patient, complaint });
+      const r = await api.post<{ delivered: boolean }>('/atlas/send-complaint', { patientId: to, complaint: complaint.key, note: text });
       toast(r.delivered ? t('Verstuurd: de patiënt vindt de uitleg onder Berichten', 'Sent: the patient finds the explanation under Messages') : t('De patiënt heeft nog geen account; het bericht komt niet aan', 'The patient has no account yet; the message does not arrive'), r.delivered ? 'ok' : 'bad');
-      setState(r.delivered ? 'sent' : 'idle');
+      setState(r.delivered && patient ? 'sent' : 'idle');
+      if (r.delivered) setPicking(false);
     } catch (e) {
       toast(describeError(e, locale), 'bad');
       setState('idle');
     }
   };
   if (state === 'sent') return <span className="inline-flex min-h-[44px] items-center gap-1 text-[14px] font-medium text-ok"><Check className="h-4 w-4" aria-hidden />{t('Uitleg verstuurd', 'Explanation sent')}</span>;
+  const patients = list.data?.items ?? [];
+  const chosen = patients.find((p) => p.id === patientId);
   return (
-    <button type="button" onClick={send} disabled={state === 'busy'} className="inline-flex min-h-[44px] items-center gap-1 text-[14px] font-medium text-accent hover:underline disabled:opacity-60">
-      <Send className="h-4 w-4" aria-hidden />{t('Stuur naar de patiënt', 'Send to the patient')}
-    </button>
+    <>
+      <button type="button" onClick={() => (patient ? void send(patient) : (setPatientId(''), setNote(''), setPicking(true)))} disabled={state === 'busy'} className="inline-flex min-h-[44px] items-center gap-1 text-[14px] font-medium text-accent hover:underline disabled:opacity-60">
+        <Send className="h-4 w-4" aria-hidden />{patient ? t('Stuur naar de patiënt', 'Send to the patient') : t('Stuur naar een patiënt', 'Send to a patient')}
+      </button>
+      {picking && (
+        <Dialog open onClose={() => setPicking(false)} title={t('Uitleg naar een patiënt sturen', 'Send the explanation to a patient')} description={t('De patiënt krijgt een bericht dat deze uitleg opent.', 'The patient gets a message that opens this explanation.')}
+          footer={<><Button variant="secondary" onClick={() => setPicking(false)}>{t('Annuleren', 'Cancel')}</Button><Button onClick={() => void send(patientId, note)} loading={state === 'busy'} disabled={!patientId} icon={<Send className="h-4 w-4" aria-hidden />}>{t('Versturen', 'Send')}</Button></>}>
+          <div className="space-y-3">
+            <Select label={t('Patiënt', 'Patient')} value={patientId} onChange={(e) => setPatientId(e.target.value)}>
+              <option value="">{list.isLoading ? t('Laden…', 'Loading…') : t('Kies een patiënt', 'Choose a patient')}</option>
+              {patients.map((p) => <option key={p.id} value={p.id}>{p.firstName} {p.lastName}{p.hasAccount ? '' : t(' (nog geen account)', ' (no account yet)')}</option>)}
+            </Select>
+            {chosen && !chosen.hasAccount && <p className="text-[13px] text-warn">{t('Deze patiënt heeft de uitnodiging nog niet geaccepteerd.', 'This patient has not accepted the invitation yet.')}</p>}
+            <Textarea label={t('Korte toelichting (optioneel)', 'Short note (optional)')} maxLength={200} rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
+            <p className="text-[12.5px] text-ink-600">{t('Zet hier geen diagnose of medische details in; het bericht is een herinnering, geen dossier.', 'Do not put a diagnosis or medical details here; the message is a reminder, not a record.')}</p>
+          </div>
+        </Dialog>
+      )}
+    </>
   );
 }
 

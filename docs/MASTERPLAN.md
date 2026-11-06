@@ -133,6 +133,8 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 49. [x] **Uitleg naar de patiënt sturen.** In de klachtwijzer (vanuit een dossier) de knop "Stuur
     naar de patiënt": de patiënt krijgt een bericht en leest de uitleg in gewone taal in de app,
     met rode vlaggen. Alleen voor eigen patiënten (getest).
+50. [x] **Uitleg sturen zonder dossier.** Ook als je de klachtwijzer los opent: "Stuur naar een
+    patiënt" opent een venster om de patiënt te kiezen, met een optionele korte toelichting.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
