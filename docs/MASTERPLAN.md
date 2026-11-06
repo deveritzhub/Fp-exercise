@@ -215,6 +215,17 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
       ruimt nu op. Volledige testset met versie 7: 142 geslaagd, 0 gefaald.
     - Nog open: zod 4 (grote versiesprong). Het risico is afgedekt met de limiet van 5 MB per verzoek.
 
+## Fase 11 – Uitbreiden en gebruiksvriendelijker (verzoek eigenaar, 6 nov avond)
+76. [ ] **Voorlezen in de training.** Knop "Lees voor" bij elke oefening (spraak van de telefoon,
+    geen opname): handig tijdens het oefenen en bij slecht zien.
+77. [ ] **"Dit doet pijn" tijdens een oefening.** Eén knop: kies de lichtere variant of sla over,
+    met een korte notitie die de fysio ziet.
+78. [ ] **Snelfilters in de patiëntenlijst.** Vraagt aandacht · Nog niet uitgenodigd · Geen programma.
+79. [ ] **"Klaar voor vandaag".** Na de laatste training van de dag een afsluiter met wat er morgen
+    komt en je reeks.
+80. [ ] **Lege schermen met één duidelijke actie** overal nalopen (nieuwe praktijk, nieuwe patiënt).
+81. [ ] **Laatst gebruikte sjablonen bovenaan** bij een nieuw programma.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.
