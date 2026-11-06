@@ -1,3 +1,4 @@
+import pg from 'pg';
 import { test, expect } from '@playwright/test';
 import { login, expectAccessible } from './helpers';
 
@@ -59,6 +60,11 @@ test('from a patient record: "Op klacht" keeps the patient for the programme', a
   await expect(send).toBeChecked();
   await page.getByRole('button', { name: 'Opslaan & toewijzen' }).click();
   await expect(page.getByText('Programma toegewezen en uitleg verstuurd')).toBeVisible();
+  // Clean up: later tests rely on Emma's own programmes.
+  const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
+  await db.connect();
+  await db.query(`DELETE FROM programs p USING patients pt WHERE pt.id = p.patient_id AND pt.email = 'patient@praktijk-a.test' AND p.title = 'Patellofemorale pijn' AND NOT p.is_template`);
+  await db.end();
 });
 
 test('atlas: chains and compensations per muscle, for therapist and (in plain words) patient', async ({ browser }) => {
