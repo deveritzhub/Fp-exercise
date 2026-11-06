@@ -58,6 +58,13 @@ patientApp.get('/home', async (c) => {
         const items = await loadItems(tx, p.id);
         const win = { startDate: p.start_date, endDate: p.end_date };
         const todayItems = itemsForDate(win, items, today);
+        // The coming seven days (today included): how many exercises of this programme on each day.
+        const week = Array.from({ length: 7 }, (_, d) => {
+          const dt = new Date(today + 'T12:00:00Z');
+          dt.setUTCDate(dt.getUTCDate() + d);
+          const iso = dt.toISOString().slice(0, 10);
+          return { date: iso, exercises: itemsForDate(win, items, iso).length };
+        });
         programs.push({
           ...patientProgram(p),
           therapistName: p.therapist_name,
@@ -68,6 +75,7 @@ patientApp.get('/home', async (c) => {
           nextSession: nextSessionDate(win, items, today),
           openSession: open.get(p.id) ?? null,
           upcoming: p.start_date && p.start_date > today,
+          week,
         });
       }
       const inputs = await loadAdherenceInputs(tx, [patient.id]);

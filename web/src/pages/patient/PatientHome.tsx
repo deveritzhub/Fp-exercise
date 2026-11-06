@@ -30,6 +30,8 @@ export type PatientHomeData = {
     itemCount: number;
     today: { scheduled: number; done: boolean; items: { id: string; exercise: Program['items'][number]['exercise']; sets: number | null; reps: number | null; holdS: number | null }[] };
     nextSession: string | null;
+    /** The coming seven days (today first): exercises of this programme per day. */
+    week?: { date: string; exercises: number }[];
     upcoming: boolean;
     openSession: { id: string; startedAt: string; logged: number } | null;
     paused: boolean;
@@ -170,6 +172,8 @@ export function PatientHome() {
           </div>
         </div>
       ))}
+
+      {d.programs.some((p) => p.week?.length) && <WeekAhead programs={d.programs} />}
 
       {startable.length > 0 && (
         // Nothing running in mobility or strength yet: point to what the patient can start alone.
@@ -324,5 +328,38 @@ function WeekStrip({ days }: { days: { date: string; weekday: number; state: Day
         );
       })}
     </ol>
+  );
+}
+
+/** "The coming week": which days which workout, folded away so Today stays calm. */
+function WeekAhead({ programs }: { programs: PatientHomeData['programs'] }) {
+  const { t, locale } = useI18n();
+  const days = (programs.find((p) => p.week?.length)?.week ?? []).map((w, i) => ({
+    date: w.date,
+    list: programs.filter((p) => !p.paused && (p.week?.[i]?.exercises ?? 0) > 0).map((p) => ({ title: p.title, n: p.week![i].exercises })),
+  }));
+  const trainingDays = days.filter((x) => x.list.length).length;
+  return (
+    <details className="group rounded-2xl border border-line bg-white shadow-card">
+      <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+        <span>
+          <span className="block font-semibold text-ink-900">{t('Komende week', 'The coming week')}</span>
+          <span className="block text-[13.5px] text-ink-600">{t(`${trainingDays} van de 7 dagen trainen`, `Training on ${trainingDays} of the 7 days`)}</span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-ink-500 transition-transform group-open:rotate-90" aria-hidden />
+      </summary>
+      <ul className="divide-y divide-line border-t border-line">
+        {days.map((day, i) => (
+          <li key={day.date} className="flex items-start gap-3 px-4 py-2.5">
+            <span className="w-24 shrink-0 text-[14px] font-medium text-ink-800">{i === 0 ? t('Vandaag', 'Today') : i === 1 ? t('Morgen', 'Tomorrow') : fmtDate(day.date, locale, { weekday: 'long', day: 'numeric' })}</span>
+            <span className="min-w-0 flex-1 text-[14px] text-ink-700">
+              {day.list.length
+                ? day.list.map((x) => `${x.title} (${x.n} ${x.n === 1 ? t('oefening', 'exercise') : t('oefeningen', 'exercises')})`).join(' · ')
+                : <span className="text-ink-500">{t('Rustdag', 'Rest day')}</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }

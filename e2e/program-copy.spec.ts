@@ -27,3 +27,19 @@ test('copy a programme to another patient as a draft', async ({ page }) => {
   await db.query('DELETE FROM programs WHERE id = $1', [copyId]);
   await db.end();
 });
+
+test('patient: the coming week, folded on Today', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'nl-NL', timezoneId: 'Europe/Amsterdam' });
+  const page = await ctx.newPage();
+  await login(page, 'patient@praktijk-a.test');
+  await page.goto('/p');
+  const week = page.locator('details', { hasText: 'Komende week' });
+  await expect(week).toBeVisible();
+  await expect(week.getByText(/van de 7 dagen trainen/)).toBeVisible();
+  await week.locator('summary').click();
+  await expect(week.getByRole('listitem')).toHaveCount(7);
+  await expect(week.getByText('Morgen')).toBeVisible();
+  await expectAccessible(page, 'week ahead');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+  await ctx.close();
+});
