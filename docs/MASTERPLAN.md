@@ -218,9 +218,13 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
 74. [x] **Nieuwe schermen op een smalle telefoon** (360 px) automatisch getest: dashboard met
     "Aan de slag", dossier met weekquest-keuze, klachtwijzer, controlepagina, rapport, en bij de
     patiënt Revalidatie, Berichten, Uitleg, Vrienden, Instellingen en Held. Alles past.
+75. [x] **Testershandleiding** (`docs/TESTERS.md`): hoe je collega's en familie uitnodigt, wat ze in
+    15 minuten uitproberen en hoe ze feedback geven. Aanleiding: sinds 5 nov heeft nog niemand op de
+    live app ingelogd (serverlog), dus er komt nog geen feedback binnen.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
+- Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.
 - `DEMO_PASSWORD` instellen in Render (zelf doen, niet naar Claude sturen).
 - [x] app.fpflow.nl werkt; `APP_ORIGIN=https://app.fpflow.nl` staat in Render (5 nov 2026).
 - Echte e-mail (Zoho) in plaats van links op het scherm.
