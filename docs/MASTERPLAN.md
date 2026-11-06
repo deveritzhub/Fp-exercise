@@ -202,6 +202,8 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
 71. [x] **Programma + uitleg in één keer.** Maak je vanuit de klachtwijzer een programma voor een
     patiënt, dan staat bij "Opslaan & toewijzen" het vinkje "Stuur ook de uitleg … mee" (standaard
     aan): de patiënt krijgt programma én uitleg.
+72. [x] **Meten vanuit de klachtwijzer.** Noemt de klacht een mobiliteitstest en is er een patiënt
+    gekoppeld, dan staat er "Vraag om te meten" bij (met de naam van de test in het bericht).
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

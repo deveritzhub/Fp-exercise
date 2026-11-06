@@ -48,6 +48,9 @@ test('from a patient record: "Op klacht" keeps the patient for the programme', a
   await expect(page).toHaveURL(/klachtwijzer\?patient=/);
   await page.getByRole('button', { name: /^Knie/ }).click();
   await page.getByRole('button', { name: /Patellofemorale pijn/ }).click();
+  // The mobility test of this complaint can be requested straight away.
+  await page.getByRole('button', { name: 'Vraag om te meten' }).click();
+  await expect(page.getByText('Meetverzoek verstuurd')).toBeVisible();
   await page.getByRole('region', { name: /Oefenvoorstel/ }).getByRole('button', { name: /Programma maken/ }).click();
   await expect(page).toHaveURL(/patient=/);
   await expect(page.getByLabel('Titel')).toHaveValue('Patellofemorale pijn');

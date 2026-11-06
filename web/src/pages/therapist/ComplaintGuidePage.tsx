@@ -219,6 +219,7 @@ function ComplaintCard({ complaint, redFlags, patient, onBack }: { complaint: Co
           <Ruler className="h-4 w-4 text-accent" aria-hidden />{t('Meetbaar met de mobiliteitstest', 'Measurable with the mobility test')}:
           {tests.map((k) => <span key={k} className="rounded-full bg-accent-soft px-2 py-0.5 text-[13px] font-medium text-accent">{L(mobilityTest(k)!.name)}</span>)}
           <span className="text-ink-500">{t('(de patiënt meet thuis; jij ziet het als Mobiliteit gedeeld is)', '(the patient measures at home; you see it when Mobility is shared)')}</span>
+          {patient && <AskToMeasure patient={patient} test={L(mobilityTest(tests[0])!.name)} />}
         </p>
       )}
 
@@ -312,6 +313,28 @@ function SendExplanation({ complaint, patient }: { complaint: Complaint; patient
         </Dialog>
       )}
     </>
+  );
+}
+
+/** Ask the linked patient to measure (the same request as in the record), naming the test of this complaint. */
+function AskToMeasure({ patient, test }: { patient: string; test: string }) {
+  const { t, locale } = useI18n();
+  const toast = useToast();
+  const [state, setState] = useState<'idle' | 'busy' | 'sent'>('idle');
+  const ask = async () => {
+    setState('busy');
+    try {
+      const r = await api.post<{ delivered: boolean }>(`/patients/${patient}/mobility-tests/request`, { note: t(`Doe vooral de ${test}.`, `Please do the ${test} in particular.`) });
+      toast(r.delivered ? t('Verzoek verstuurd: de patiënt ziet het in de app.', 'Request sent: the patient sees it in the app.') : t('De patiënt heeft nog geen account geactiveerd.', 'The patient has not activated an account yet.'), r.delivered ? 'ok' : 'bad');
+      setState(r.delivered ? 'sent' : 'idle');
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+      setState('idle');
+    }
+  };
+  if (state === 'sent') return <span className="inline-flex min-h-[44px] items-center gap-1 font-medium text-ok"><Check className="h-4 w-4" aria-hidden />{t('Meetverzoek verstuurd', 'Measuring request sent')}</span>;
+  return (
+    <button type="button" onClick={ask} disabled={state === 'busy'} className="inline-flex min-h-[44px] items-center font-medium text-accent hover:underline disabled:opacity-60">{t('Vraag om te meten', 'Ask to measure')}</button>
   );
 }
 
