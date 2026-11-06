@@ -6,6 +6,8 @@ Alleen wat onder "Vraagt jouw beslissing" staat, wacht op de eigenaar.
 
 Status: `[x]` klaar en live · `[ ]` nog te doen.
 
+Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, proefsessies e.d.).
+
 ## Fase 1 – Betrouwbaar voor testers
 1. [x] **Foutmeldingen uit de app zien.** Crasht een scherm bij een tester, dan komt er een
    korte melding in de serverlog (`[client-error]`, zonder gezondheidsgegevens). Nu zien we
