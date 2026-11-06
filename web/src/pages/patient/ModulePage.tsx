@@ -1,6 +1,6 @@
 import { Link, Navigate } from 'react-router-dom';
 import { MOBILITY_MEASURE_XP, mobilityDue } from '@shared/mobilityTests';
-import { progressionSignal } from '@shared/progression';
+import { painRising, progressionSignal } from '@shared/progression';
 import { cn } from '@/lib/cn';
 import { localToday } from '@/components/MobilityTests';
 import { useQuery } from '@tanstack/react-query';
@@ -143,6 +143,21 @@ export function ModulePage({ module }: { module: PatientModule }) {
           <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
         </Link>
       )}
+
+      {/* Pain after workouts going up three times in a row in this part: slow down (and tell the physio). */}
+      {(() => {
+        const rising = painRising([...sessions].sort((a, b) => b.completedAt.localeCompare(a.completedAt)).map((x) => ({ difficulty: x.difficulty ?? null, pain: x.pain ?? null })));
+        if (!rising) return null;
+        const clinical = modes.data.kind === 'physio';
+        return (
+          <p role="status" className="rounded-2xl border border-warn/30 bg-warn-soft/60 p-4 text-[15px] text-ink-900 shadow-card">
+            <span className="block font-semibold">{clinical ? t('Je pijn na het trainen loopt op', 'Your pain after training is going up') : t('Je lichaam voelt na het trainen steeds minder goed', 'Your body feels worse after each workout')}</span>
+            {clinical
+              ? t(`Je laatste drie trainingen: van ${rising.from} naar ${rising.to} op 10. Doe het rustiger aan (minder herhalingen of minder zwaar) en laat het je fysiotherapeut weten, bijvoorbeeld in de opmerking na je training.`, `Your last three workouts: from ${rising.from} to ${rising.to} out of 10. Take it easier (fewer reps or less load) and let your physiotherapist know, for example in the comment after your workout.`)
+              : t(`Je laatste drie trainingen: van ${rising.from} naar ${rising.to} op 10. Doe het rustiger aan: minder herhalingen, minder zwaar of een extra rustdag.`, `Your last three workouts: from ${rising.from} to ${rising.to} out of 10. Take it easier: fewer reps, less load or an extra rest day.`)}
+          </p>
+        );
+      })()}
 
       {/* Own programmes (strength, mobility): a tip from the patient's own scores. Rehab stays with the therapist. */}
       {module !== 'revalidatie' && programs.filter((p) => p.selfStarted).map((p) => {

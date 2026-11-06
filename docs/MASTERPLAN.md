@@ -149,6 +149,9 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 55. [x] **Signaal "Pijn loopt op".** In "Vraagt aandacht": pijn na de training drie keer op rij
     hoger (en minstens 4/10), al voordat het een hoge pijnscore wordt. Met "van 2 naar 5/10" en een
     link naar de sessies. Een suggestie om te kijken, geen diagnose.
+56. [x] **Patiënt ziet het ook.** Stijgt de pijn na de training drie keer op rij, dan staat op dat
+    onderdeel: "Je pijn na het trainen loopt op (van 2 naar 5 op 10). Doe het rustiger aan en laat
+    het je fysiotherapeut weten." Coach- en persoonlijke accounts krijgen een niet-medische tekst.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
