@@ -10,7 +10,7 @@ Doorsturen of uitprinten. Alles gaat via **app.fpflow.nl**. Gebruik alleen verzo
    **Uitnodiging versturen**.
 2. Vul naam en e-mail in. Er is nog geen echte e-mail: kopieer de link die verschijnt en stuur
    die via WhatsApp.
-3. De collega maakt een wachtwoord en zet tweestapsverificatie aan (verplicht voor therapeuten).
+3. De collega maakt een wachtwoord. Heb je bij Praktijk tweestapsverificatie verplicht gezet, dan stelt de collega die meteen in.
 
 **Familie als patiënt**
 1. **Patiënten** → **Nieuwe patiënt** (verzonnen naam is prima).
