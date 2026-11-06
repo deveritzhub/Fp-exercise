@@ -176,6 +176,8 @@ Status: `[x]` klaar en live · `[ ]` nog te doen.
 64. [x] **Fase voltooid = feestscherm** (roadmap #3). Zet de therapeut een volgende fase (2 of hoger)
     actief, dan krijgt de patiënt één keer "Hoofdstuk 1 voltooid!" met de nieuwe fase en het doel,
     en een knop naar die fase. Het bericht blijft onder Berichten. Alleen de therapeut geeft vrij.
+    De medaille "Fase voltooid" telt nu ook als de therapeut de volgende fase vrijgeeft zonder de
+    vorige eerst op "afgerond" te zetten (eerder kwam die medaille dan nooit).
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).

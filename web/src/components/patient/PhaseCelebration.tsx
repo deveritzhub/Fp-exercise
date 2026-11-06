@@ -33,6 +33,7 @@ export function PhaseCelebration() {
           <Trophy className="h-10 w-10 text-white" />
         </span>
         <p className="text-[16px] text-ink-800">{n.body}</p>
+        <p className="rounded-full bg-accent-soft px-3 py-1 text-[13.5px] font-semibold text-accent">{t('Medaille: Fase voltooid', 'Medal: Phase complete')}</p>
         <p className="text-[14px] text-ink-600">{t('Knap werk. Je fysiotherapeut heeft gezien dat je klaar bent voor de volgende stap.', 'Well done. Your physiotherapist has seen that you are ready for the next step.')}</p>
       </div>
     </Dialog>

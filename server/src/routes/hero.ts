@@ -93,7 +93,10 @@ async function heroState(tx: Tx, patientId: string) {
          (SELECT count(*)::int FROM workout_sessions WHERE patient_id = $1 AND completed_at IS NOT NULL AND pain IS NOT NULL) AS with_pain,
          (SELECT count(*)::int FROM red_flag_reports WHERE patient_id = $1) AS red_flags,
          (SELECT count(DISTINCT date_trunc('week', recorded_at))::int FROM pain_map_entries WHERE patient_id = $1) AS checkin_weeks,
-         (SELECT count(*)::int FROM programs WHERE patient_id = $1 AND status = 'completed' AND phase_no IS NOT NULL) AS phases_done,
+         -- A phase counts as done when it was completed, or when the therapist released a later phase of the same series.
+         (SELECT count(*)::int FROM programs p WHERE p.patient_id = $1 AND p.phase_no IS NOT NULL AND p.is_template = false
+            AND (p.status = 'completed' OR EXISTS (SELECT 1 FROM programs q WHERE q.patient_id = $1 AND q.series_key = p.series_key
+                 AND q.phase_no > p.phase_no AND q.status IN ('active', 'completed')))) AS phases_done,
          (SELECT count(*)::int FROM strength_sets WHERE patient_id = $1) AS strength_sets,
          (SELECT count(*)::int FROM workout_sessions w JOIN programs p ON p.id = w.program_id
             WHERE w.patient_id = $1 AND w.completed_at IS NOT NULL AND p.module = 'mobiliteit') AS mobility_sessions`,

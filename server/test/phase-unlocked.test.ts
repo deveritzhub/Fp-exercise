@@ -41,5 +41,8 @@ describe('a released rehabilitation phase', () => {
     expect(n[0].title).toBe('Hoofdstuk 1 voltooid!');
     expect(n[0].body).toContain('fase 2: Kracht opbouwen');
     expect(n[0].body).toContain('Traplopen zonder pijn');
+    // Phase 1 counts as done now that phase 2 is released: the "phase complete" medal.
+    const hero = (await (await login('patientA')).get('/patient/hero')).body;
+    expect(hero.totals.phasesCompleted).toBeGreaterThanOrEqual(1);
   });
 });

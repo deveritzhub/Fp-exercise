@@ -4,7 +4,7 @@ Ideeën die zijn goedgekeurd voor later. Volgorde = voorstel; niets hiervan is a
 
 | # | Idee | Wat het doet | Afhankelijk van |
 |---|------|--------------|-----------------|
-| 3 | ✅ **Fase voltooid = boss-level** (gebouwd, nov 2026: feestscherm met nieuwe fase en doel; medaille nog niet) | Feestscherm als de therapeut de volgende fase vrijgeeft: "Hoofdstuk 1 voltooid", de nieuwe route en het nieuwe doel; medaille in de uitrusting. | — |
+| 3 | ✅ **Fase voltooid = boss-level** (gebouwd, nov 2026: feestscherm met nieuwe fase, doel en medaille) | Feestscherm als de therapeut de volgende fase vrijgeeft: "Hoofdstuk 1 voltooid", de nieuwe route en het nieuwe doel; medaille in de uitrusting. | — |
 | 6 | ✅ **Vroege waarschuwing** (gebouwd, nov 2026: pijnplek, en pijn na de training) | Automatisch signaal op het dashboard bij twee weken stijgende pijn (≥ 2 punten) op dezelfde plek, of dalende therapietrouw. Gebruikt de pijntrend per plek en de dagchecks. | — |
 | 7 | ✅ **Coachbericht bij programmawijziging** (gebouwd, nov 2026) | Korte boodschap van de therapeut bij een aanpassing ("Goed bezig, we gaan zwaarder!"), in de patiëntapp als bericht van je coach. | — |
 | 8 | **Eigen oefenvideo's** | Met de telefoon filmen en uploaden (zie `docs/FILMCHECKLIST.md`); alle oefeningen krijgen een echte video. | Render Starter + Disk |
