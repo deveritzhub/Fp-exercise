@@ -11,6 +11,9 @@ import { cn } from '@/lib/cn';
  */
 type Item = { nl: string; en: string; to?: string; clinical?: true };
 const STAFF: Item[] = [
+  { clinical: true, nl: 'Programma maken vanuit de klachtwijzer: de uitleg over de klacht gaat in één keer mee naar de patiënt.', en: 'Make a programme from the complaint guide: the explanation of the complaint goes along to the patient in one go.', to: '/app/klachtwijzer' },
+  { clinical: true, nl: 'In de klachtwijzer: "Vraag om te meten" met de mobiliteitstest die bij de klacht hoort.', en: 'In the complaint guide: "Ask to measure" with the mobility test that fits the complaint.' },
+  { clinical: true, nl: 'Het voortgangsrapport (PDF) toont nu ook de pijnkaart: start en laatste meting per plek.', en: 'The progress report (PDF) now also shows the pain map: start and latest per area.' },
   { nl: 'Kies in het dossier (bij de held) welke skill de patiënt deze week traint in de weekquest.', en: 'Choose in the record (hero section) which skill the patient trains in this week\'s quest.' },
   { clinical: true, nl: 'Vroege waarschuwing: "Pijnplek erger" als dezelfde plek op de pijnkaart in twee weken 2+ punten slechter wordt.', en: 'Early warning: "Sore spot worse" when the same spot on the pain map gets 2+ points worse within two weeks.', to: '/app' },
   { nl: 'Bij "Wijzigingen publiceren" kun je een kort bericht aan de patiënt meesturen.', en: 'With "Publish changes" you can send the patient a short message.' },
@@ -32,7 +35,7 @@ const PATIENT: Item[] = [
   { nl: 'Op Voortgang zie je hoe zwaar en pijnlijk je trainingen waren, in gewone taal.', en: 'Progress shows how hard and painful your workouts were, in plain words.', to: '/p/voortgang' },
   { nl: 'Nieuwe quizvragen over welke spier het werk overneemt als een andere zwak is.', en: 'New quiz questions on which muscle takes over when another is weak.' },
 ];
-const VERSION = '2026-11-06h';
+const VERSION = '2026-11-06i';
 const KEY = 'fp.whatsnew.v1';
 
 function seen() {
@@ -47,7 +50,7 @@ export function WhatsNew({ audience, clinical = true, className }: { audience: '
   const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
   const [isNew, setIsNew] = useState(() => !seen());
-  const items = (audience === 'staff' ? STAFF : PATIENT).filter((x) => clinical || !x.clinical);
+  const items = (audience === 'staff' ? STAFF : PATIENT).filter((x) => clinical || !x.clinical).slice(0, 8);
   const show = () => {
     setOpen(true);
     setIsNew(false);
