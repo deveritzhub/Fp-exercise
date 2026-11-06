@@ -82,7 +82,7 @@ test('the therapist chooses the skill of the weekly quest; the patient sees it i
     const pp = await ctx.newPage();
     await login(pp, 'patient@praktijk-a.test');
     await pp.goto('/p/held');
-    await expect(pp.getByText('Gekozen door je fysio: doe 2 oefeningen voor Balans')).toBeVisible();
+    await expect(pp.getByText('Gekozen door je fysiotherapeut: 2 oefeningen voor Balans')).toBeVisible();
     await ctx.close();
   } finally {
     await sql(`UPDATE patients SET hero_focus = '[]' WHERE id = $1`, [emma.id]);
