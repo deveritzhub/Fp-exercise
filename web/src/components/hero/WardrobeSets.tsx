@@ -96,7 +96,7 @@ export function WardrobeSets({
                   </span>
                 )}
               </div>
-              <div className="mt-3 flex min-h-[52px] items-center gap-1 overflow-hidden rounded-lg bg-[#f5f2ea] px-2" aria-label={preset ? t(`${count} bewaarde items`, `${count} saved items`) : t('Lege uitrustingsset', 'Empty equipment set')}>
+              <div role="group" className="mt-3 flex min-h-[52px] items-center gap-1 overflow-hidden rounded-lg bg-[#f5f2ea] px-2" aria-label={preset ? t(`${count} bewaarde items`, `${count} saved items`) : t('Lege uitrustingsset', 'Empty equipment set')}>
                 {preset && count > 0 ? (
                   <>
                     {equipped.slice(0, 4).map(key => (
