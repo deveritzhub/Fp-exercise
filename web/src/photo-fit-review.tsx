@@ -24,7 +24,12 @@ const fromKey=(key:string):FigureLook=>{
  return {frame,skin,build:kind==='lean'?'slim':kind,...preset,outfit:'forest',body:{kind} as FigureLook['body']};
 };
 const full=['crown','medal','pin','yoga_mat','captain','watch','gloves','belt','shin_guards','gold_shoes','sport_item'];
-if(params.has('wardrobe')){
+if(params.has('headphone')){
+ const keys=['f_s5_full_h2','f_s7_full_h4','f_s1_lean','m_s5_full','m_s9_muscular_h3','m_s1_lean_h4'];
+ const sets=params.get('headphone')==='1' ? [['headphones','headband'],['headphones','visor'],['headphones','crown']] : [['headphones'],['headphones','cap'],['headphones','champion']];
+ const examples=keys.flatMap(key=>sets.map(gear=>({key,gear})));
+ createRoot(document.getElementById('root')!).render(<I18nProvider><div style={{display:'grid',gridTemplateColumns:'repeat(3,300px)',gap:12,padding:12}}>{examples.map(({key,gear},i)=><div key={i}><h2 style={{fontSize:12,color:'#29483c'}}>{key} · {gear.join(', ')}</h2><div style={{height:260,overflow:'hidden'}}><HeroPhoto fittedGear look={{...fromKey(key),gear}} className="h-[800px] w-[600px] -ml-[150px]"/></div></div>)}</div></I18nProvider>);
+}else if(params.has('wardrobe')){
  const key=params.get('wardrobe') || 'f_s5_full_h2';
  const combos=[['cap','headphones','pin','wristbands','belt','sleeve','crew_socks'],['crown','medal','champion','gloves','gold_shoes','yoga_mat','captain'],['visor','scarf','tracksuit','watch','balance_shoes','hr_band']];
  const examples=[...GEAR.map(g=>({label:g.nl,gear:[g.key]})),...combos.map((gear,i)=>({label:'Combinatie '+(i+1),gear}))];
