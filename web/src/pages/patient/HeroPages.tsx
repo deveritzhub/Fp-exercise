@@ -1,5 +1,6 @@
 import { PhotoGearThumbnail } from '../../components/hero/PhotoEquipment';
 import { GearArtwork } from '../../components/hero/RpgGear';
+import { WardrobeSets } from '@/components/hero/WardrobeSets';
 import '../../components/hero/rpg.css';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -994,6 +995,20 @@ function GearCard({ d }: { d: HeroState }) {
       setBusy(null);
     }
   };
+  const applyPreset = async (equipped: string[]) => {
+    setBusy('wardrobe');
+    try {
+      // The existing server route verifies ownership and one-item-per-slot.
+      await api.put('/patient/hero/gear', { equipped });
+      setPreview(null);
+      await qc.invalidateQueries({ queryKey: ['patient-hero'] });
+      toast(t('Je bewaarde look is aangetrokken', 'Your saved look is equipped'), 'ok');
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(null);
+    }
+  };
   // One piece per slot: wearing a new cap takes the old one off.
   const toggle = (key: string) => save(d.gear.equipped.includes(key) ? d.gear.equipped.filter((g) => g !== key) : onePerSlot([...d.gear.equipped, key]), key);
   const owned = (k: string) => d.gear.owned.includes(k);
@@ -1017,6 +1032,7 @@ function GearCard({ d }: { d: HeroState }) {
       <Dialog open={!!loot} onClose={()=>setLoot(null)} title={t('Nieuw in je collectie','New in your collection')} footer={<Button onClick={()=>setLoot(null)}>{t('Verder','Continue')}</Button>}>
         {loot && <div className="rpg-loot text-center" style={{'--gear-color':GEAR_TIERS[(GEAR.find(g=>g.key===loot)?.tier ?? 1)-1].glow} as CSSProperties}><div className="mx-auto h-40 w-40"><GearImg gearKey={loot}/></div><p className="font-bold">{nl ? GEAR.find(g=>g.key===loot)?.nl : GEAR.find(g=>g.key===loot)?.en}</p><p>{t('Je nieuwe item is aangetrokken.','Your new item is equipped.')}</p></div>}
       </Dialog>
+      <WardrobeSets gear={d.gear} disabled={busy !== null} onApply={applyPreset} />
       <div className="mt-4">
         <Segmented label={t('Toon', 'Show')} value={filter} onChange={setFilter} size="sm"
           options={[
