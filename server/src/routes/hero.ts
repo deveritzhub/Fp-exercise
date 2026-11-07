@@ -22,6 +22,7 @@ import {
   type FocusEntry,
 } from '../../../shared/hero';
 import { loadSkillSnapshot } from '../lib/skillState';
+import { validatedWardrobeGear, WARDROBE_SLOTS } from '../../../shared/heroLoadouts';
 
 /**
  * Sports hero (gamified revalidatie): the patient's own character, a body map with self-reported
@@ -681,6 +682,42 @@ heroPatient.put('/hero/gear', async (c) => {
     await tx.query('UPDATE patient_heroes SET gear = $2, updated_at = now() WHERE patient_id = $1', [patient.id, onePerSlot(b.equipped)]);
   });
   return c.json({ ok: true });
+});
+
+/** Patient-only wardrobe presets: read from the same RLS context as existing gear. */
+heroPatient.get('/hero/loadouts', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const presets = await withUser(user.id, async (tx) => {
+    const { rows } = await tx.query(
+      'SELECT slot, gear, updated_at FROM hero_loadouts WHERE patient_id = $1 ORDER BY slot',
+      [patient.id],
+    );
+    return rows.map((r) => ({ slot: Number(r.slot), gear: r.gear as string[], updatedAt: r.updated_at as string }));
+  });
+  return c.json({ presets });
+});
+
+/** Save the currently owned cosmetic outfit. No free purchases, no clinical unlocks. */
+heroPatient.put('/hero/loadouts/:slot', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const slot = parse(z.coerce.number().int().refine((n) => WARDROBE_SLOTS.some((v) => v === n)), c.req.param('slot'));
+  const body = parse(z.object({ equipped: z.array(z.string().max(32)).max(12) }), await c.req.json());
+  if (body.equipped.some((key) => !GEAR_KEYS.has(key))) throw badRequest('unknown_gear');
+  const preset = await withUser(user.id, async (tx) => {
+    const state = await heroState(tx, patient.id);
+    if (!state.hero) throw badRequest('hero_required');
+    const gear = validatedWardrobeGear(body.equipped, state.gear.owned);
+    if (!gear) throw badRequest('gear_not_owned');
+    const { rows } = await tx.query(
+      `INSERT INTO hero_loadouts (patient_id, slot, gear)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (patient_id, slot) DO UPDATE SET gear = EXCLUDED.gear, updated_at = now()
+       RETURNING slot, gear, updated_at`,
+      [patient.id, slot, gear],
+    );
+    return { slot: Number(rows[0].slot), gear: rows[0].gear as string[], updatedAt: rows[0].updated_at as string };
+  });
+  return c.json({ preset });
 });
 
 /** Daily check-in: one quick score for today (can be changed the same day). */
