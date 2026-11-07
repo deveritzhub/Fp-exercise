@@ -1,0 +1,365 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Bell, ChevronRight, Dumbbell, HeartPulse, Move, PartyPopper, Play, X } from 'lucide-react';
+import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
+import { fmtDate, greeting, pct } from '@/lib/format';
+import { useDocumentMeta } from '@/lib/meta';
+import { ButtonLink, ErrorState, ProgressRing, Skeleton } from '@/components/ui';
+import { RestDayCard, TodayProgramCard } from '@/components/patient/TodayCard';
+import { DailyMissionCard } from '@/components/patient/DailyMission';
+import { DailyQuizCard } from '@/components/patient/DailyQuiz';
+import { PausedNotice } from '@/components/patient/Safety';
+import { useModes } from '@/components/patient/Modules';
+import type { Adherence, Notification, Program } from '@/lib/types';
+import type { DayState } from '@shared/adherence';
+import { isActionableToday, summarizePatientDay } from '@shared/todayView';
+import { cn } from '@/lib/cn';
+import { BossHomeCard, DayChestHomeCard, HeroHomeCard } from '@/pages/patient/HeroPages';
+import { LogbookHomeCard } from '@/pages/patient/LogbookPage';
+import { MobilityDueCard } from '@/components/MobilityTests';
+import { FirstSteps } from '@/components/patient/FirstSteps';
+import { FeedbackNudge } from '@/components/patient/FeedbackNudge';
+import { Check, Flame } from 'lucide-react';
+
+export type PatientHomeData = {
+  patient: { firstName: string; practiceName: string };
+  programs: (Program & {
+    therapistName: string;
+    itemCount: number;
+    today: { scheduled: number; done: boolean; items: { id: string; exercise: Program['items'][number]['exercise']; sets: number | null; reps: number | null; holdS: number | null }[] };
+    nextSession: string | null;
+    /** The coming seven days (today first): exercises of this programme per day. */
+    week?: { date: string; exercises: number }[];
+    upcoming: boolean;
+    openSession: { id: string; startedAt: string; logged: number } | null;
+    paused: boolean;
+    selfStarted: boolean;
+  })[];
+  stats: { completedSessions: number; adherence7d: Adherence; weekly: (Adherence & { weekStart: string })[]; week: { date: string; weekday: number; state: DayState }[]; streak: number };
+  recent: { id: string; completedAt: string; programTitle: string; difficulty: number | null; pain: number | null; exercisesDone: number }[];
+  notifications: Notification[];
+  /** Complaints the practice sent an explanation of (newest first). */
+  explanations?: string[];
+};
+
+export type PatientProgramRow = PatientHomeData['programs'][number];
+export type PatientModule = 'revalidatie' | 'kracht' | 'mobiliteit';
+/** Rehabilitation unless the programme says strength or mobility. */
+export const moduleOf = (p: { module?: string | null }): PatientModule => (p.module === 'kracht' || p.module === 'mobiliteit' ? p.module : 'revalidatie');
+export const MODULE_PATH: Record<PatientModule, string> = { revalidatie: '/p/revalidatie', kracht: '/p/kracht', mobiliteit: '/p/mobiliteit' };
+export const MODULE_ICON: Record<PatientModule, typeof HeartPulse> = { revalidatie: HeartPulse, kracht: Dumbbell, mobiliteit: Move };
+export const moduleLabel = (m: PatientModule, nl: boolean) => ({ revalidatie: ['Revalidatie', 'Rehab'], kracht: ['Kracht', 'Strength'], mobiliteit: ['Mobiliteit', 'Mobility'] })[m][nl ? 0 : 1];
+/** Something still to do today in this programme: planned and not finished, or a workout left open. */
+export const openToday = (p: PatientProgramRow) => isActionableToday(p);
+
+/**
+ * Vandaag: everything for today in one place, across rehabilitation, strength and mobility, with
+ * the hero, the logbook and the week. Each part also has its own tab with the full picture.
+ */
+export function PatientHome() {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  useDocumentMeta(t('Vandaag', 'Today'));
+  const q = useQuery({ queryKey: ['patient-home'], queryFn: () => api.get<PatientHomeData>('/patient/home'), refetchOnMount: 'always' });
+  const modes = useModes();
+  const qc = useQueryClient();
+  if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
+  if (!q.data) return <div className="space-y-4"><Skeleton className="h-8 w-2/3" /><Skeleton className="h-56 rounded-2xl" /><Skeleton className="h-28 rounded-2xl" /></div>;
+  const d = q.data;
+  const { scheduled: todo, resumeOther, remaining: left, pausedToday, showRestCard } = summarizePatientDay(d.programs);
+  const startable = (['mobiliteit', 'kracht'] as const).filter((m) => modes.data?.templates.some((x) => x.module === m) && !d.programs.some((p) => moduleOf(p) === m));
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-[15px] text-ink-500">{new Intl.DateTimeFormat(nl ? 'nl-NL' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</p>
+        <h1 className="mt-0.5 text-[28px] font-bold leading-tight">{greeting(locale)}, {d.patient.firstName}</h1>
+        {todo.length > 0 && (
+          <p className="mt-1 text-[15px] text-ink-600">
+            {left > 0
+              ? t(`Vandaag nog ${left} ${left === 1 ? 'training' : 'trainingen'} te doen.`, `${left} ${left === 1 ? 'workout' : 'workouts'} left today.`)
+              : pausedToday > 0
+                ? t('Je programma staat tijdelijk stil. Volg het advies van je fysiotherapeut.', 'Your programme is temporarily paused. Follow your physiotherapist’s advice.')
+                : t('Alles voor vandaag is gedaan. Lekker bezig!', 'Everything for today is done. Well done!')}
+          </p>
+        )}
+      </div>
+
+      {d.notifications.length > 0 && (
+        <div className="space-y-2">
+          {d.notifications.slice(0, 2).map((n) => (
+            <div key={n.id} className="flex items-start gap-3 rounded-2xl border border-accent/15 bg-accent-soft px-4 py-3">
+              <Bell className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-ink-900">{n.title}</div>
+                <div className="text-[14.5px] text-ink-600">{n.body}</div>
+                {n.link && n.link !== '/p' && n.link.startsWith('/p/') && (
+                  <Link to={n.link} onClick={() => { void api.post(`/me/notifications/${n.id}/read`).then(() => qc.invalidateQueries({ queryKey: ['patient-home'] })); }} className="mt-1 inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">
+                    {t('Bekijken', 'View')}<ChevronRight className="h-4 w-4" aria-hidden />
+                  </Link>
+                )}
+              </div>
+              <button
+                type="button"
+                aria-label={t('Melding sluiten', 'Dismiss notification')}
+                className="-mr-2 -mt-2 flex h-11 w-11 items-center justify-center rounded-lg text-ink-500 hover:bg-white/60"
+                onClick={async () => {
+                  await api.post(`/me/notifications/${n.id}/read`);
+                  qc.invalidateQueries({ queryKey: ['patient-home'] });
+                }}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Everything planned today is done: a short, calm wrap-up with what comes next. */}
+      {todo.length > 0 && left === 0 && pausedToday === 0 && resumeOther.length === 0 && (() => {
+        const next = d.programs.map((p) => p.nextSession).filter((x): x is string => !!x).sort()[0];
+        return (
+          <section aria-labelledby="done-today" className="rounded-2xl bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-5 text-white shadow-card">
+            <h2 id="done-today" className="flex items-center gap-2 text-[20px] font-bold"><PartyPopper className="h-6 w-6" aria-hidden />{t('Klaar voor vandaag', 'Done for today')}</h2>
+            <p className="mt-1 text-[15px] text-white/85">
+              {d.stats.streak > 1 ? t(`Al ${d.stats.streak} trainingen op rij. `, `${d.stats.streak} workouts in a row. `) : ''}
+              {next ? t(`Volgende training: ${fmtDate(next, locale, { weekday: 'long', day: 'numeric', month: 'long' })}.`, `Next workout: ${fmtDate(next, locale, { weekday: 'long', day: 'numeric', month: 'long' })}.`) : t('Rust lekker uit.', 'Enjoy your rest.')}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link to="/p/held" className="inline-flex min-h-[44px] items-center rounded-xl bg-white/15 px-4 text-[14.5px] font-semibold">{t('Naar je held', 'To your hero')}</Link>
+              <Link to="/p/voortgang" className="inline-flex min-h-[44px] items-center rounded-xl bg-white/15 px-4 text-[14.5px] font-semibold">{t('Je voortgang', 'Your progress')}</Link>
+            </div>
+          </section>
+        );
+      })()}
+
+      {/* With one workout today the mission only repeats its card; it earns its place when it picks between several. */}
+      {todo.length > 1 && <DailyMissionCard programs={d.programs} />}
+
+      {d.programs.length === 0 ? (
+        <div className="rounded-2xl border border-line bg-white p-6 text-center shadow-card">
+          <h2 className="text-lg font-bold">{t('Nog geen programma', 'No programme yet')}</h2>
+          <p className="mt-1 text-ink-500">{modes.data?.modules.includes('revalidatie') ? t('Je fysiotherapeut zet je oefenprogramma hier voor je klaar. Je kunt ook zelf iets starten.', 'Your physiotherapist will set up your exercise programme here. You can also start something yourself.') : t('Start hieronder zelf een programma.', 'Start a programme yourself below.')}</p>
+                  <p className="mt-3 rounded-xl bg-accent-soft px-3 py-2 text-[14px] text-ink-800">{t('Tip: start een programma, log een set in de ', 'Tip: start a programme, log a set in the ')}<Link to="/p/krachtlog" className="font-semibold text-accent underline-offset-2 hover:underline">{t('Krachtlog', 'strength log')}</Link>{t(' of doe de ', ' or take the ')}<Link to="/p/spieren?tab=quiz" className="font-semibold text-accent underline-offset-2 hover:underline">{t('quiz', 'quiz')}</Link>{t('. Zo gaan je eerste skills open.', '. That opens your first skills.')}</p>
+        </div>
+      ) : showRestCard ? (
+        <RestDayCard
+          status={d.programs.every((p) => p.upcoming) ? 'not_started' : 'rest'}
+          startDate={d.programs[0].startDate}
+          nextSession={d.programs.map((p) => p.nextSession).filter(Boolean).sort()[0] ?? null}
+        />
+      ) : (
+        todo.map((p) => (
+          <div key={p.id}>
+            <ModuleTag module={moduleOf(p)} />
+            <TodayProgramCard
+              id={p.id}
+              title={p.title}
+              items={p.today.items}
+              done={p.today.done && !p.openSession && !p.paused}
+              action={p.paused ? <PausedNotice /> : <StartOrResume programId={p.id} open={p.openSession} total={p.today.scheduled} />}
+            />
+          </div>
+        ))
+      )}
+      {resumeOther.map((p) => (
+        <div key={p.id}>
+          <ModuleTag module={moduleOf(p)} />
+          <div className="rounded-2xl border border-line bg-white p-4 shadow-card">
+            <p className="mb-3 font-semibold">{p.title}</p>
+            {p.paused ? <PausedNotice /> : <StartOrResume programId={p.id} open={p.openSession} total={p.itemCount} />}
+          </div>
+        </div>
+      ))}
+
+      {d.programs.some((p) => p.week?.length) && <WeekAhead programs={d.programs} />}
+
+      {startable.length > 0 && (
+        // Nothing running in mobility or strength yet: point to what the patient can start alone.
+        <section aria-labelledby="self-start-title" className="rounded-2xl border border-line bg-white p-4 shadow-card">
+          <h2 id="self-start-title" className="font-semibold text-ink-900">{t('Zelf iets starten', 'Start something yourself')}</h2>
+          <p className="mt-0.5 text-[14px] text-ink-600">{t('Kies een programma dat je zelf kunt doen, naast wat je fysiotherapeut klaarzet.', 'Pick a programme you can do on your own, next to what your physiotherapist sets up.')}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {startable.map((m) => (
+              <ButtonLink key={m} to={MODULE_PATH[m]} variant="secondary" size="lg" icon={(() => { const I = MODULE_ICON[m]; return <I className="h-4 w-4" />; })()}>
+                {`${moduleLabel(m, nl)} (${modes.data!.templates.filter((x) => x.module === m).length})`}
+              </ButtonLink>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <FirstSteps hasProgram={d.programs.length > 0} />
+      <HeroHomeCard />
+      <DayChestHomeCard />
+      <BossHomeCard />
+      <DailyQuizCard />
+      <MobilityDueCard />
+      <LogbookHomeCard />
+
+      <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="week-title">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="week-title" className="font-bold">{t('Deze week', 'This week')}</h2>
+          {d.stats.streak > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-sand-soft px-3 py-1 text-[14px] font-semibold text-sand-ink">
+              <Flame className="h-4 w-4" />
+              {t(`${d.stats.streak} ${d.stats.streak === 1 ? 'training' : 'trainingen'} op rij`, `${d.stats.streak} in a row`)}
+            </span>
+          )}
+        </div>
+        <WeekStrip days={d.stats.week} />
+        <div className="mt-4 flex items-center gap-4 border-t border-line pt-4">
+          <ProgressRing value={d.stats.adherence7d.rate} size={56} stroke={6} label={t('Voortgang afgelopen 7 dagen', 'Progress last 7 days')}>
+            <span className="text-[13px] font-semibold tabular-nums">{pct(d.stats.adherence7d.rate)}</span>
+          </ProgressRing>
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] text-ink-600">
+              {t(`${d.stats.adherence7d.completed} van ${d.stats.adherence7d.planned} geplande trainingen gedaan (7 dagen)`, `${d.stats.adherence7d.completed} of ${d.stats.adherence7d.planned} planned workouts done (7 days)`)}
+            </p>
+            <Link to="/p/voortgang" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-accent">{t('Bekijk voortgang', 'View progress')}<ChevronRight className="h-4 w-4" /></Link>
+          </div>
+        </div>
+      </section>
+
+      <FeedbackNudge sessions={d.stats.completedSessions} />
+      <ReminderNudge />
+    </div>
+  );
+}
+
+/** Small label above a card on Vandaag: which part of the app it belongs to, linking to that tab. */
+function ModuleTag({ module }: { module: PatientModule }) {
+  const { locale } = useI18n();
+  const I = MODULE_ICON[module];
+  return (
+    <Link to={MODULE_PATH[module]} className="mb-0.5 inline-flex min-h-[44px] items-center gap-1.5 text-[13px] font-semibold uppercase tracking-wide text-ink-600 hover:text-ink-900">
+      <I className="h-4 w-4" aria-hidden />{moduleLabel(module, locale === 'nl')}
+    </Link>
+  );
+}
+
+/** "Start training", or "Training hervatten" with how far the patient got. */
+export function StartOrResume({ programId, open, total }: { programId: string; open: { logged: number } | null; total: number }) {
+  const { t } = useI18n();
+  if (!open) {
+    return (
+      <ButtonLink to={`/p/sessie/${programId}`} size="xl" className="w-full" icon={<Play className="h-5 w-5 fill-current" />}>
+        {t('Start training', 'Start workout')}
+      </ButtonLink>
+    );
+  }
+  const done = Math.min(open.logged, total);
+  return (
+    <div className="space-y-3">
+      <div>
+        <div className="mb-1 flex justify-between text-[14px] text-ink-700">
+          <span>{t('Je was al begonnen', 'You already started')}</span>
+          <span className="tabular-nums">{t(`${done} van ${total} oefeningen`, `${done} of ${total} exercises`)}</span>
+        </div>
+        <div className="h-2 overflow-hidden rounded-full bg-ink-100" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label={t('Voortgang training', 'Workout progress')}>
+          <div className="h-full rounded-full bg-accent" style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
+        </div>
+      </div>
+      <ButtonLink to={`/p/sessie/${programId}`} size="xl" className="w-full" icon={<Play className="h-5 w-5 fill-current" />}>
+        {t('Training hervatten', 'Resume workout')}
+      </ButtonLink>
+    </div>
+  );
+}
+
+/** One-time hint to turn on reminders; hidden once on or dismissed. */
+function ReminderNudge() {
+  const { t } = useI18n();
+  const KEY = 'fp.reminder-nudge-dismissed';
+  const [hidden, setHidden] = useState(() => {
+    try { return localStorage.getItem(KEY) === '1'; } catch { return false; }
+  });
+  const q = useQuery({ queryKey: ['reminders'], queryFn: () => api.get<{ enabled: boolean }>('/reminders'), enabled: !hidden });
+  if (hidden || !q.data || q.data.enabled) return null;
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-line bg-white p-4 shadow-card">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent"><Bell className="h-5 w-5" /></span>
+      <Link to="/p/instellingen" className="min-w-0 flex-1">
+        <span className="block font-semibold">{t('Wil je een herinnering?', 'Want a reminder?')}</span>
+        <span className="block text-[14px] text-ink-500">{t('Een seintje op dagen met oefeningen.', 'A nudge on exercise days.')}</span>
+      </Link>
+      <button type="button" className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ink-500 hover:text-ink-700" aria-label={t('Niet meer tonen', 'Don’t show again')} onClick={() => {
+        try { localStorage.setItem(KEY, '1'); } catch { /* ignore */ }
+        setHidden(true);
+      }}><X className="h-5 w-5" /></button>
+    </div>
+  );
+}
+
+function WeekStrip({ days }: { days: { date: string; weekday: number; state: DayState }[] }) {
+  const { t, locale } = useI18n();
+  const names = locale === 'nl' ? ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'] : ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const label: Record<DayState, string> = {
+    done: t('gedaan', 'done'),
+    'today-done': t('vandaag gedaan', 'done today'),
+    today: t('vandaag gepland', 'planned today'),
+    planned: t('gepland', 'planned'),
+    missed: t('niet gedaan', 'missed'),
+    rest: t('rustdag', 'rest day'),
+  };
+  return (
+    <ol className="mt-4 grid grid-cols-7 gap-1.5">
+      {days.map((d) => {
+        const isToday = d.state === 'today' || d.state === 'today-done';
+        const done = d.state === 'done' || d.state === 'today-done';
+        return (
+          <li key={d.date} className="flex flex-col items-center gap-1.5" aria-label={`${names[d.weekday - 1]}: ${label[d.state]}`}>
+            <span className={cn('text-[12.5px] font-medium', isToday ? 'text-ink-950' : 'text-ink-500')}>{names[d.weekday - 1]}</span>
+            <span
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-full text-[13px] font-semibold transition-all',
+                done && 'bg-accent text-white',
+                d.state === 'today' && 'border-2 border-accent text-accent',
+                d.state === 'planned' && 'border-2 border-dashed border-ink-300 text-ink-500',
+                d.state === 'missed' && 'bg-ink-100 text-ink-400',
+                d.state === 'rest' && 'text-ink-300',
+                isToday && 'ring-4 ring-accent/10',
+              )}
+            >
+              {done ? <Check className="h-5 w-5" strokeWidth={3} /> : d.state === 'rest' ? '·' : new Date(d.date + 'T12:00:00').getDate()}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/** "The coming week": which days which workout, folded away so Today stays calm. */
+function WeekAhead({ programs }: { programs: PatientHomeData['programs'] }) {
+  const { t, locale } = useI18n();
+  const days = (programs.find((p) => p.week?.length)?.week ?? []).map((w, i) => ({
+    date: w.date,
+    list: programs.filter((p) => !p.paused && (p.week?.[i]?.exercises ?? 0) > 0).map((p) => ({ title: p.title, n: p.week![i].exercises })),
+  }));
+  const trainingDays = days.filter((x) => x.list.length).length;
+  return (
+    <details className="group rounded-2xl border border-line bg-white shadow-card">
+      <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+        <span>
+          <span className="block font-semibold text-ink-900">{t('Komende week', 'The coming week')}</span>
+          <span className="block text-[13.5px] text-ink-600">{t(`${trainingDays} van de 7 dagen trainen`, `Training on ${trainingDays} of the 7 days`)}</span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-ink-500 transition-transform group-open:rotate-90" aria-hidden />
+      </summary>
+      <ul className="divide-y divide-line border-t border-line">
+        {days.map((day, i) => (
+          <li key={day.date} className="flex items-start gap-3 px-4 py-2.5">
+            <span className="w-24 shrink-0 text-[14px] font-medium text-ink-800">{i === 0 ? t('Vandaag', 'Today') : i === 1 ? t('Morgen', 'Tomorrow') : fmtDate(day.date, locale, { weekday: 'long', day: 'numeric' })}</span>
+            <span className="min-w-0 flex-1 text-[14px] text-ink-700">
+              {day.list.length
+                ? day.list.map((x) => `${x.title} (${x.n} ${x.n === 1 ? t('oefening', 'exercise') : t('oefeningen', 'exercises')})`).join(' · ')
+                : <span className="text-ink-500">{t('Rustdag', 'Rest day')}</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}

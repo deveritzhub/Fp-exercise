@@ -1,0 +1,246 @@
+{
+ "_meta": {
+  "versie": "fp-mobiliteit-v2",
+  "toelichting": "Extra mobiliteitsprogramma's die patiënten zelf kunnen starten. Alleen bestaande oefeningen uit de bibliotheek; houdtijd 30 seconden (Behm 2023, Medeiros 2016), 5 of meer keer per week (associatie, geen bewezen optimum)."
+ },
+ "seed_data": {
+  "mobiliteit": {
+   "_toelichting": {
+    "dosering_richtlijn": "Statisch rekken: 30 seconden vasthouden geeft vergelijkbare winst als 60 seconden (Medeiros 2016); rekken vergroot het bewegingsbereik (Behm 2023). Vijf of meer keer per week hangt samen met meer winst; dat is een associatie, geen bewezen optimum."
+   },
+   "oefeningen": [],
+   "programmas": [
+    {
+     "id": "mb2_ochtend_5min",
+     "naam": "Ochtendroutine, 5 minuten",
+     "doel": "Soepel de dag beginnen: rug, heupen en bovenrug in beweging",
+     "frequentie_per_week": 7,
+     "oefeningen": [
+      {
+       "exercise_id": "mb_cat_camel",
+       "sets": 1,
+       "opmerking": "",
+       "reps": 8
+      },
+      {
+       "exercise_id": "mb_child_pose",
+       "sets": 1,
+       "opmerking": "",
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb_world_greatest",
+       "sets": 1,
+       "opmerking": "5 per kant",
+       "reps": 5
+      },
+      {
+       "exercise_id": "mb_thoracic_rotatie",
+       "sets": 1,
+       "opmerking": "8 per kant",
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "mb2_bureau",
+     "naam": "Bureaupauze: bovenrug, borst en schouders",
+     "doel": "Tegenwicht voor lang zitten, ook tussendoor te doen",
+     "frequentie_per_week": 5,
+     "oefeningen": [
+      {
+       "exercise_id": "mb_thoracic_rotatie",
+       "sets": 2,
+       "opmerking": "8 per kant",
+       "reps": 8
+      },
+      {
+       "exercise_id": "mb_doorway_pec",
+       "sets": 2,
+       "opmerking": "",
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb_wall_slide",
+       "sets": 2,
+       "opmerking": "",
+       "reps": 10
+      },
+      {
+       "exercise_id": "mb_cat_camel",
+       "sets": 1,
+       "opmerking": "",
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "mb2_heup_onderrug",
+     "naam": "Heupen en onderrug los",
+     "doel": "Bewegingsbereik van heupen en onderrug onderhouden",
+     "frequentie_per_week": 5,
+     "oefeningen": [
+      {
+       "exercise_id": "mb_90_90",
+       "sets": 2,
+       "opmerking": "8 per kant",
+       "reps": 8
+      },
+      {
+       "exercise_id": "mb_hip_flexor_stretch",
+       "sets": 2,
+       "opmerking": "per kant",
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb_hamstring_stretch",
+       "sets": 2,
+       "opmerking": "per kant",
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb_child_pose",
+       "sets": 2,
+       "opmerking": "",
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb_cat_camel",
+       "sets": 1,
+       "opmerking": "",
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "mb2_na_hardlopen",
+     "naam": "Na het hardlopen",
+     "doel": "Kuit, heupbuigers en hamstrings na een loopje, als cooling-down",
+     "frequentie_per_week": 5,
+     "oefeningen": [
+      {
+       "exercise_id": "mb_kniebuiging_muur",
+       "sets": 2,
+       "opmerking": "per kant",
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb_hip_flexor_stretch",
+       "sets": 2,
+       "opmerking": "per kant",
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb_hamstring_stretch",
+       "sets": 2,
+       "opmerking": "per kant",
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb_90_90",
+       "sets": 1,
+       "opmerking": "8 per kant",
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "mb2_schouder",
+     "naam": "Schouder en bovenrug",
+     "doel": "Meer ruimte boven je hoofd en een open borst",
+     "frequentie_per_week": 5,
+     "oefeningen": [
+      {
+       "exercise_id": "mb_wall_slide",
+       "sets": 2,
+       "opmerking": "",
+       "reps": 10
+      },
+      {
+       "exercise_id": "mb_doorway_pec",
+       "sets": 2,
+       "opmerking": "",
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb_sleeper_stretch",
+       "sets": 2,
+       "opmerking": "per kant, zonder pijn",
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb_thoracic_rotatie",
+       "sets": 2,
+       "opmerking": "8 per kant",
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "mb2_diepe_squat",
+     "naam": "Dieper zitten in je squat",
+     "doel": "Enkel en heup voorbereiden op een diepere squat",
+     "frequentie_per_week": 5,
+     "oefeningen": [
+      {
+       "exercise_id": "mb_kniebuiging_muur",
+       "sets": 2,
+       "opmerking": "per kant",
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb_90_90",
+       "sets": 2,
+       "opmerking": "8 per kant",
+       "reps": 8
+      },
+      {
+       "exercise_id": "mb_hip_flexor_stretch",
+       "sets": 2,
+       "opmerking": "per kant",
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb_deep_squat_hold",
+       "sets": 3,
+       "opmerking": "Houd je ergens aan vast als dat nodig is",
+       "hold_sec": 30
+      }
+     ]
+    },
+    {
+     "id": "mb2_avond",
+     "naam": "Avondroutine, ontspannen",
+     "doel": "Rustig rekken voor het slapengaan",
+     "frequentie_per_week": 5,
+     "oefeningen": [
+      {
+       "exercise_id": "mb_child_pose",
+       "sets": 2,
+       "opmerking": "",
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb_cat_camel",
+       "sets": 1,
+       "opmerking": "",
+       "reps": 8
+      },
+      {
+       "exercise_id": "mb_hamstring_stretch",
+       "sets": 2,
+       "opmerking": "per kant",
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb_hip_flexor_stretch",
+       "sets": 2,
+       "opmerking": "per kant",
+       "hold_sec": 30
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

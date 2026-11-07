@@ -1,128 +1,80 @@
-# WhatsApp- en bel-agent voor Functional Performance
+# FP Flow
 
-Eén AI-assistent (Claude) voor fysiotherapiepraktijk **Functional Performance** (Rotterdam) die
-klanten helpt via **WhatsApp** én **telefoon**. `business.yaml` is gevuld met de informatie van
-functionalperformance.nl (locaties, tarieven, vergoeding, team, FAQ, Flux-boekingslinks).
+Physiotherapy exercise-prescription platform: a therapist workspace to build and prescribe exercise
+programmes, a mobile-first patient app (PWA) to follow them, progress monitoring, and a public
+marketing website. Multi-practice (multi-tenant) from day one.
 
-> **Afspraken:** de praktijk plant in Flux, dus de agent boekt níet zelf (`booking.mode: link`).
-> Op WhatsApp stuurt hij de juiste Flux-link (intake per locatie, vervolgafspraak, massage, PT,
-> leefstijlcoaching). Aan de telefoon, of bij verzetten/annuleren, zet hij een **terugbelverzoek**
-> klaar dat als WhatsApp-melding bij `OWNER_WHATSAPP` binnenkomt.
-> Een bedrijf zonder eigen planner kan `booking.mode: internal` gebruiken; dan boekt de agent in een
-> eigen agenda (zie `examples/kapsalon-eigen-agenda.yaml`).
+- Initial customer: Functional Performance Physiotherapy, Rotterdam (NL)
+- Primary language Dutch, secondary English
+- **Status: development build. Synthetic data only. Not approved for real patient data** — see
+  [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 
-Wat de assistent doet:
+| Area | URL (dev) | Who |
+|---|---|---|
+| Marketing site | `/`, `/functies`, `/hoe-het-werkt`, `/prijzen`, `/demo`, `/contact` | public |
+| Therapist workspace | `/app` | practice owners, admins, therapists |
+| Patient app (PWA) | `/p` | patients |
+| Platform admin | `/admin` | platform administrators (no clinical access) |
 
-- vragen beantwoorden op basis van jouw bedrijfsinfo (`business.yaml`)
-- de juiste **boekingslink** sturen of een **terugbelverzoek** klaarzetten
-  (of, met `booking.mode: internal`, zelf afspraken boeken, tonen en annuleren)
-- geen diagnoses of oefenadvies; bij alarmsignalen verwijzen naar huisarts/huisartsenpost of 112
-- **doorverbinden met een medewerker** (WhatsApp-melding of de beller doorschakelen)
-- **zelf bellen**: uitgaande gesprekken, bijvoorbeeld om een afspraak te bevestigen
+## Stack
 
-```
-WhatsApp ──► Meta Cloud API ──► /whatsapp/webhook ─┐
-                                                    ├─► agent (Claude + tools) ─► SQLite (afspraken, gesprekken)
-Telefoon ──► Twilio (spraak↔tekst) ──► /voice/* ───┘
-```
+React 18 + TypeScript + Vite + Tailwind (web) · Hono on Node 22 (API) · PostgreSQL 16 with
+row-level security (data) · Vitest (API/integration) · Playwright + axe-core (end-to-end, a11y).
+See [ARCHITECTURE.md](ARCHITECTURE.md) for why.
 
-## 1. Installeren
+## Quick start
+
+Requirements: Node 22+, a local PostgreSQL 16 superuser (only for creating roles/databases).
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env        # vul daarna je sleutels in
+cp .env.example .env            # adjust DATABASE_ADMIN_URL if your local superuser differs
+npm install
+npm run db:reset                # creates roles + database, runs migrations, seeds synthetic data
+npm run dev                     # API on :8787, web on :5173 (proxy /api)
 ```
 
-Controleer **`business.yaml`**: locaties, tarieven, vergoeding, team, FAQ, beleid en boekingslinks.
-De agent gebruikt alleen deze informatie en verzint niets. Houd het gelijk met je website als
-tarieven of diensten veranderen.
+Open http://localhost:5173 and use one of the demo accounts (password `Demo-wachtwoord-1`, also
+listed as one-click buttons on the login page in development):
 
-Starten:
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
-
-Je server moet via **https** bereikbaar zijn. Lokaal testen kan met `ngrok http 8000`;
-zet de https-URL in `PUBLIC_BASE_URL`. Of draai het met Docker:
-`docker build -t business-agent . && docker run --env-file .env -p 8000:8000 business-agent`.
-
-## 2. WhatsApp-agent koppelen
-
-1. Maak op [developers.facebook.com](https://developers.facebook.com) een app van het type **Business** en voeg **WhatsApp** toe.
-2. Kopieer onder *WhatsApp → API Setup* de **Phone number ID** → `WHATSAPP_PHONE_NUMBER_ID`.
-3. Maak een **permanent access token** (Business Settings → System users) met de rechten
-   `whatsapp_business_messaging` → `WHATSAPP_TOKEN`.
-4. Kopieer het **App secret** (App settings → Basic) → `WHATSAPP_APP_SECRET`.
-5. Ga naar *WhatsApp → Configuration → Webhook*:
-   - Callback URL: `https://<jouw-domein>/whatsapp/webhook`
-   - Verify token: dezelfde waarde als `WHATSAPP_VERIFY_TOKEN`
-   - Abonneer op het veld **messages**.
-6. Stuur een WhatsApp naar je bedrijfsnummer. Klaar.
-
-**Overdracht:** als de agent doorverwijst, krijgt `OWNER_WHATSAPP` een melding en zwijgt de bot
-in dat gesprek. Je beantwoordt de klant dan zelf. Stuur `#bot 31612345678` vanaf het
-eigenaarsnummer om de assistent het gesprek weer te laten overnemen.
-(Let op: WhatsApp staat vrije tekstberichten alleen toe binnen 24 uur na het laatste bericht van
-die ontvanger. Stuur dus zelf eens een bericht naar je bedrijfsnummer vanaf `OWNER_WHATSAPP`.)
-
-## 3. Bel-agent koppelen (Twilio)
-
-1. Maak een account op [twilio.com](https://www.twilio.com) en koop een (Nederlands) telefoonnummer.
-   Vul `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` en `TWILIO_PHONE_NUMBER` in.
-2. Stel bij het nummer onder *Voice Configuration* in:
-   **A call comes in → Webhook → `https://<jouw-domein>/voice/incoming` (HTTP POST)**.
-3. Bel je nummer. De agent begroet de beller, luistert (Twilio-spraakherkenning in `nl-NL`),
-   denkt na met Claude en antwoordt met een Nederlandse stem.
-
-Bellers worden bij overdracht doorgeschakeld naar `OWNER_PHONE`.
-De stem wijzig je met `VOICE_NAME` (bijv. `Polly.Lotte` of `Google.nl-NL-Wavenet-B`).
-
-**Uitgaand bellen** (bijv. afspraakherinnering):
-
-```bash
-curl -X POST https://<jouw-domein>/voice/outbound \
-  -H "X-API-Key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
-  -d '{"to": "+31612345678", "purpose": "Herinnering aan de afspraak van morgen 10:00; vraag of die doorgaat"}'
-```
-
-> Houd je bij uitgaande gesprekken aan de regels voor telemarketing (o.a. het Bel-me-niet Register);
-> gebruik dit vooral voor bestaande klanten en service-gesprekken.
-
-## Instellingen
-
-| Variabele | Uitleg |
+| Account | Role |
 |---|---|
-| `ANTHROPIC_API_KEY` | Sleutel van [console.anthropic.com](https://console.anthropic.com) |
-| `CLAUDE_MODEL` | Standaard `claude-opus-5-5` |
-| `CLAUDE_EFFORT` | `low` (snelst, aanbevolen voor telefoon), `medium` of `high` |
-| `PUBLIC_BASE_URL` | Publieke https-URL; nodig voor Twilio-handtekeningen en uitgaand bellen |
+| `therapeut@praktijk-a.test` | Physiotherapist, practice A |
+| `eigenaar@praktijk-a.test` | Practice owner, practice A |
+| `patient@praktijk-a.test` | Patient, practice A |
+| `eigenaar@praktijk-b.test` / `therapeut@praktijk-b.test` | Owner / therapist, practice B |
+| `patient@praktijk-b.test` | Patient, practice B |
+| `admin@fp-exercise.test` | Platform administrator |
 
-Alle andere variabelen staan met uitleg in `.env.example`.
+In development, e-mails (invites, password reset) are written to the `mail_outbox` table and the
+API log; `GET /api/dev/outbox` returns them (disabled in production).
 
-## Hoe het werkt
+## Scripts
 
-- `app/agent.py` — het brein: systeemprompt, Claude-aanroep, tool-loop. Eén agent voor beide kanalen,
-  met per kanaal eigen schrijfregels (chatstijl vs. gesproken taal).
-- `app/tools.py` — link-modus: `request_callback`; interne agenda: `check_availability`,
-  `book_appointment`, `list_my_appointments`, `cancel_appointment`. Altijd: `handoff_to_human`
-  en (alleen telefoon) `end_call`.
-- `app/whatsapp.py` — webhook (handtekening-controle, dubbele berichten negeren), antwoorden versturen.
-- `app/voice.py` — Twilio TwiML: luisteren, antwoorden, doorverbinden, ophangen, uitgaand bellen.
-- `app/db.py` — SQLite met gesprekken, terugbelverzoeken en afspraken (`data/agent.db`).
+| Script | Purpose |
+|---|---|
+| `npm run dev` | API (tsx watch) + Vite dev server |
+| `npm run build` | Typecheck + production web build to `dist/web` |
+| `npm start` | Production mode: API also serves `dist/web` |
+| `npm run db:setup` / `db:migrate` / `db:seed` / `db:reset` | Database lifecycle (dev only) |
+| `npm test` | Vitest: unit + API integration + tenant-isolation tests (own DB `fp_exercise_test`) |
+| `npm run test:e2e` | Playwright browser tests incl. axe accessibility scans (own DB `fp_exercise_e2e`) |
+| `npm run typecheck` | TypeScript across web, server, shared, tests |
 
-De klant wordt herkend aan het telefoonnummer, dus een afspraak die via WhatsApp is gemaakt, kan
-telefonisch worden geannuleerd en andersom. Een WhatsApp-gesprek begint opnieuw na 24 uur stilte.
+## Repository layout
 
-Claude-verzoeken gebruiken prompt caching (de bedrijfsinfo staat in een vaste systeemprompt) en
-server-side fallbacks, zodat een geweigerd verzoek automatisch op een ander model wordt opgevangen.
-
-## Testen
-
-```bash
-pip install -r requirements-dev.txt
-pytest
+```
+server/
+  db/migrations/      SQL schema (001) and authorisation layer / RLS (002)
+  db/seed*.ts         synthetic demo data + original demo exercise library
+  src/                Hono API: auth/, routes/, lib/ (audit, rate limit, progress)
+  test/               Vitest integration tests
+shared/               code shared by API and web (taxonomy, adherence calculation)
+web/src/              React app: components/ui (design system), layouts, pages/{marketing,auth,therapist,patient,admin}
+e2e/                  Playwright specs
 ```
 
-De tests gebruiken een nep-Claude en hebben geen sleutels of internet nodig.
+## Documentation
+
+[ARCHITECTURE.md](ARCHITECTURE.md) · [DATABASE.md](DATABASE.md) · [SECURITY.md](SECURITY.md) ·
+[TESTING.md](TESTING.md) · [ROADMAP.md](ROADMAP.md) · [PROGRESS.md](PROGRESS.md) ·
+[RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)

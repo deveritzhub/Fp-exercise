@@ -1,0 +1,34 @@
+name: FP Flow synthetic visual review
+on:
+  pull_request:
+    paths:
+      - 'e2e/visual-review.spec.ts'
+      - 'web/src/components/hero/RehabRoute.tsx'
+      - 'web/src/components/patient/DailyMission.tsx'
+jobs:
+  synthetic-preview:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      CI: '1'
+      FP_VISUAL_CAPTURE: '1'
+      DATABASE_ADMIN_URL: postgres://postgres:postgres@localhost:5432/postgres
+      DATABASE_OWNER_URL: postgres://fp_owner:fp_owner_dev@localhost:5432/fp_exercise
+      DATABASE_URL: postgres://fp_app:fp_app_dev@localhost:5432/fp_exercise
+      DATABASE_AUTH_URL: postgres://fp_auth:fp_auth_dev@localhost:5432/fp_exercise
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test e2e/visual-review.spec.ts --project=desktop-chromium

@@ -1,0 +1,36 @@
+{
+ "_meta": {
+  "naam": "Ketens en compensaties: rekoefeningen om te ontlasten",
+  "versie": "fp-ketens-v2",
+  "toelichting": "Twee rekoefeningen voor wat bij een compensatie vaak overneemt (TFL, bovenste trapezius), zodat het blok 'ontlasten' in de klachtwijzer gevuld is. Eigen tekst, gangbare dosering. Nog niet individueel klinisch getoetst."
+ },
+ "seed_data": {
+  "revalidatie": {
+   "oefeningen": [
+    {
+     "id": "kt_tfl_rek",
+     "naam": "TFL en buitenkant heup rekken in stand",
+     "categorie": "stretch", "type_belasting": "mobiliteit", "regio": "heup", "niveau": "basis",
+     "instructie": "Sta naast een muur met de te rekken kant naar de muur. Zet dat been achter het andere langs, gekruist. Duw de heup rustig zijwaarts richting de muur tot je rek voelt aan de buitenkant van heup en bovenbeen. Romp blijft rechtop. Vasthouden en rustig doorademen.",
+     "dosering": { "sets": 2, "reps": 3, "hold_sec": 30, "tempo": "n.v.t.", "rust_sec": 15, "intensiteit": "lichte tot matige rek" },
+     "symptoomregel": "Rek mag, geen scherpe pijn aan de buitenkant van heup of knie",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["heup", "tfl", "laterale keten", "rek"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_bovenste_trapezius_rek",
+     "naam": "Bovenste trapezius rekken",
+     "categorie": "stretch", "type_belasting": "mobiliteit", "regio": "nek", "niveau": "basis",
+     "instructie": "Zit rechtop en houd met de hand van de te rekken kant de zitting van de stoel vast. Kantel het hoofd rustig naar de andere kant, oor richting schouder, tot je rek voelt aan de bovenkant van de schouder en de zijkant van de nek. Vasthouden en ontspannen uitademen.",
+     "dosering": { "sets": 2, "reps": 3, "hold_sec": 30, "tempo": "n.v.t.", "rust_sec": 15, "intensiteit": "lichte rek" },
+     "symptoomregel": "Geen tintelingen of uitstraling in de arm; dan stoppen",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["nek", "schouder", "trapezius", "rek"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    }
+   ],
+   "programmas": []
+  }
+ }
+}

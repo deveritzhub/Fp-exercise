@@ -1,0 +1,36 @@
+{
+ "_meta": {
+  "naam": "Ketens en compensaties: hand",
+  "versie": "fp-ketens-v3",
+  "toelichting": "Twee handoefeningen zodat de klachtwijzer bij carpaletunnelklachten ook een versterkende oefening heeft. Eigen tekst, gangbare dosering. Nog niet individueel klinisch getoetst."
+ },
+ "seed_data": {
+  "revalidatie": {
+   "oefeningen": [
+    {
+     "id": "kt_duimoppositie",
+     "naam": "Duimoppositie met elastiekje",
+     "categorie": "kracht", "type_belasting": "isotoon", "regio": "pols_hand", "niveau": "basis",
+     "instructie": "Doe een elastiekje om duim en wijsvinger. Breng de duim rustig naar de pink, tegen de weerstand in, en weer terug. Daarna om duim en middelvinger. Pols recht, rustig tempo.",
+     "dosering": { "sets": 2, "reps": 12, "hold_sec": 0, "tempo": "rustig", "rust_sec": 30, "intensiteit": "licht" },
+     "symptoomregel": "Geen toename van tintelingen of doof gevoel in de vingers",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["hand", "duim", "thenar"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_knijpbal",
+     "naam": "Knijpen in een zacht balletje",
+     "categorie": "kracht", "type_belasting": "isotoon", "regio": "pols_hand", "niveau": "basis",
+     "instructie": "Houd een zacht balletje of therapeutische klei in de hand. Knijp rustig tot ongeveer de helft van je kracht, houd 3 tellen vast en laat los. Pols in een rechte stand.",
+     "dosering": { "sets": 2, "reps": 10, "hold_sec": 3, "tempo": "rustig", "rust_sec": 30, "intensiteit": "licht tot matig" },
+     "symptoomregel": "Geen toename van tintelingen; minder hard knijpen als het gaat tintelen",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["hand", "grijpkracht", "vingerbuigers"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    }
+   ],
+   "programmas": []
+  }
+ }
+}

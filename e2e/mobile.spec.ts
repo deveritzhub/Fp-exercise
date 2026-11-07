@@ -1,0 +1,64 @@
+import { test, expect } from '@playwright/test';
+import { expectAccessible, login } from './helpers';
+
+test('marketing site navigation on mobile', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('link', { name: 'Prijzen' }).last().click();
+  await expect(page.getByRole('heading', { level: 1, name: /Eenvoudige prijzen/ })).toBeVisible();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
+test('patient app on a phone: home, programme, progress', async ({ page }) => {
+  await login(page, 'patient@praktijk-a.test');
+  await expect(page.getByRole('heading', { name: /Emma/ })).toBeVisible();
+  // Programmes are listed per part (tab); today's card links there as well.
+  await page.getByRole('navigation', { name: 'Navigatie' }).getByRole('link', { name: /^Revalidatie/ }).click();
+  await page.getByRole('link', { name: /Knie — patellapees/ }).last().click();
+  await expect(page.getByText('Van je fysiotherapeut')).toBeVisible();
+  await expectAccessible(page, 'patient-program');
+  await page.goto('/p/voortgang');
+  await expect(page.getByRole('heading', { name: 'Mijn voortgang' })).toBeVisible();
+  await expectAccessible(page, 'patient-progress');
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
+test('therapist workspace is usable on a phone', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.getByRole('button', { name: 'Menu openen' }).click();
+  await page.getByRole('link', { name: 'Oefeningen', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Oefenbibliotheek' })).toBeVisible();
+});
+
+test('exercise library on a phone: compact cards, filter sheet, preview', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto('/app/oefeningen');
+  await expect(page.getByRole('heading', { name: 'Bekkenbrug', exact: true })).toBeVisible();
+  // Compact rows: several exercises fit on one screen.
+  // Measured on one fixed card: which card comes first depends on the test data.
+  const box = await page.locator('article', { has: page.getByRole('heading', { name: 'Bekkenbrug', exact: true }) }).first().boundingBox();
+  expect(box!.height).toBeLessThan(140); // 140: the redesign raised the minimum text size (12–13 px)
+  await page.getByRole('button', { name: 'Filters' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Filters' });
+  await sheet.getByRole('combobox', { name: 'Niveau' }).selectOption('1');
+  await sheet.getByRole('button', { name: /Toon \d+ oefeningen/ }).click();
+  await expect(page.getByRole('button', { name: /Filters/ })).toContainText('1');
+  await expect(page.getByRole('button', { name: 'Filter Niveau 1 verwijderen' })).toBeVisible();
+  await expectAccessible(page, 'library phone');
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+  // Source, status and favourites are reachable on a phone.
+  await expect(page.getByRole('combobox', { name: 'Bron' })).toBeInViewport();
+  await expect(page.getByRole('button', { name: 'Favorieten', exact: true })).toBeInViewport();
+});
+
+test('programmes page on a phone: module chips and phase picker fit', async ({ page }) => {
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto('/app/programmas');
+  await expect(page.getByRole('button', { name: /^Revalidatie/ })).toBeVisible();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+  await expectAccessible(page, 'programmes phone');
+});

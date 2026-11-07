@@ -1,0 +1,58 @@
+import 'dotenv/config';
+import path from 'node:path';
+
+process.env.TZ ??= 'Europe/Amsterdam';
+
+const required = (name: string) => {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing environment variable ${name}`);
+  return v;
+};
+
+export const config = {
+  env: process.env.NODE_ENV ?? 'development',
+  isProd: process.env.NODE_ENV === 'production',
+  isTest: process.env.NODE_ENV === 'test' || !!process.env.VITEST,
+  port: Number(process.env.PORT ?? 8787),
+  appOrigin: process.env.APP_ORIGIN ?? process.env.RENDER_EXTERNAL_URL ?? 'http://localhost:5173',
+  databaseUrl: required('DATABASE_URL'),
+  authDatabaseUrl: required('DATABASE_AUTH_URL'),
+  storageDir: path.resolve(process.env.STORAGE_DIR ?? './storage'),
+  mailTransport: process.env.MAIL_TRANSPORT ?? 'outbox',
+  sessionTtlHours: Number(process.env.SESSION_TTL_HOURS ?? 12),
+  /** Staff (therapists, admins) are logged out after this many minutes without activity; 0 = off. */
+  staffIdleMinutes: Number(process.env.STAFF_IDLE_MINUTES ?? 30),
+  /** Public demo deployment with synthetic data: invite links are shown on screen because no real e-mail is sent. */
+  demoMode: process.env.DEMO_MODE === '1',
+  /**
+   * Personal hero photos: "email=assetKey;email2=assetKey2". Only for people who asked for their own
+   * likeness (e.g. the practice owner); shown on that account's own hero only. Keys must be custom_*.
+   */
+  /**
+   * Guest heroes every patient may pick: "custom_1=Name;custom_2=Name". Only photos of people who
+   * agreed to be offered as a hero.
+   */
+  heroGuests: new Map(
+    (process.env.HERO_GUESTS ?? '')
+      .split(';')
+      .map((x) => x.split('=').map((y) => y.trim()))
+      .filter(([k, n]) => /^custom_[a-z0-9_]{1,30}$/.test(k ?? '') && n && n.length <= 40)
+      .map(([k, n]) => [k, n] as [string, string]),
+  ),
+  personalHeroPhotos: new Map(
+    (process.env.PERSONAL_HERO_PHOTOS ?? '')
+      .split(';')
+      .map((x) => x.split('=').map((y) => y.trim()))
+      .filter(([e, k]) => e && /^custom_[a-z0-9_]{1,30}$/.test(k ?? ''))
+      .map(([e, k]) => [e.toLowerCase(), k] as [string, string]),
+  ),
+  maxUploadBytes: Number(process.env.MAX_UPLOAD_MB ?? 200) * 1024 * 1024,
+  /** Google Play app (Trusted Web Activity): package name and SHA-256 fingerprints of its signing certificates. */
+  android: {
+    packageName: process.env.ANDROID_PACKAGE_NAME ?? '',
+    fingerprints: (process.env.ANDROID_CERT_SHA256 ?? '').split(',').map((s) => s.trim().toUpperCase()).filter((s) => /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/.test(s)),
+  },
+};
+
+/** Invite links are returned in API responses only outside production, or on the synthetic-data demo. */
+export const exposeInviteLinks = !config.isProd || config.demoMode;

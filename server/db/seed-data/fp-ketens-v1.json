@@ -1,0 +1,168 @@
+{
+ "_meta": {
+  "naam": "Ketens en compensaties: aanvullende oefeningen",
+  "versie": "fp-ketens-v1",
+  "toelichting": "Oefeningen die de klachtwijzer nodig heeft voor de compensatiepatronen (o.a. gluteus medius zonder TFL, onderste trapezius en serratus, voetboog, adductoren, pols en elleboog). Eigen tekst, gangbare dosering. Nog niet individueel klinisch getoetst."
+ },
+ "seed_data": {
+  "revalidatie": {
+   "oefeningen": [
+    {
+     "id": "kt_zijlig_abductie",
+     "naam": "Zijlig heupabductie met de hiel voorop",
+     "categorie": "kracht", "type_belasting": "isotoon", "regio": "heup", "niveau": "basis",
+     "instructie": "Lig op je zij met het onderste been licht gebogen. Breng het bovenste been iets naar achteren, zodat de heup licht gestrekt is, en draai de tenen een beetje naar de vloer. Til het been rustig op met de hiel voorop en laat het langzaam zakken. Het bekken blijft stil en kantelt niet naar achteren.",
+     "dosering": { "sets": 3, "reps": 12, "hold_sec": 0, "tempo": "2-1-2", "rust_sec": 60, "intensiteit": "laatste herhalingen zwaar, vermoeidheid opzij van de bil" },
+     "symptoomregel": "Pijn max 3 van 10; voel je het vooral aan de voorkant van de heup, breng het been verder naar achteren",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["heup", "gluteus medius", "laterale keten"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_step_down",
+     "naam": "Step-down van een traptree",
+     "categorie": "kracht", "type_belasting": "excentrisch", "regio": "knie", "niveau": "basis",
+     "instructie": "Sta op één been op een traptree. Laat het andere been langzaam zakken tot de hiel de vloer net raakt en kom weer omhoog. De knie blijft boven de tweede teen, het bekken blijft recht. Gebruik zo nodig een hand aan de leuning.",
+     "dosering": { "sets": 3, "reps": 10, "hold_sec": 0, "tempo": "3 tellen omlaag", "rust_sec": 60, "intensiteit": "rustig en gecontroleerd" },
+     "symptoomregel": "Pijn max 3 van 10 tijdens en niet meer de volgende ochtend",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["knie", "functioneel", "laterale keten", "eenbenig"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_eenbenige_bilbrug",
+     "naam": "Eenbenige bilbrug",
+     "categorie": "kracht", "type_belasting": "isotoon", "regio": "heup", "niveau": "gevorderd",
+     "instructie": "Lig op je rug met één knie gebogen en de voet dicht bij je bil; het andere been gestrekt in de lucht. Span je bil aan en til het bekken op tot een rechte lijn van knie tot schouder. Het bekken blijft recht. Langzaam terug.",
+     "dosering": { "sets": 3, "reps": 10, "hold_sec": 2, "tempo": "1-2-2", "rust_sec": 60, "intensiteit": "vermoeidheid in de bil, niet in de hamstring" },
+     "symptoomregel": "Kramp in de hamstring: voet dichterbij en minder hoog",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["heup", "gluteus maximus", "achterste keten"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_bird_dog",
+     "naam": "Bird dog",
+     "categorie": "activatie", "type_belasting": "activatie", "regio": "rug", "niveau": "basis",
+     "instructie": "Op handen en knieën, rug neutraal. Strek tegelijk één arm naar voren en het andere been naar achteren, zonder dat de rug hol wordt of het bekken draait. Twee tellen vasthouden, rustig doorademen en wisselen.",
+     "dosering": { "sets": 2, "reps": 8, "hold_sec": 3, "tempo": "rustig", "rust_sec": 45, "intensiteit": "licht, controle staat voorop" },
+     "symptoomregel": "Geen toename van rugpijn",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["rug", "romp", "multifidus", "core"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_copenhagen_kort",
+     "naam": "Copenhagen adductie, korte hefboom",
+     "categorie": "kracht", "type_belasting": "isometrisch", "regio": "heup", "niveau": "basis",
+     "instructie": "Lig op je zij met de onderarm op de vloer. Leg de binnenkant van de bovenste knie op een bank of stoel. Til je heup op tot je lichaam een rechte lijn is en houd vast; het onderste been hangt los. Opbouwen naar een gestrekt been (lange hefboom) als dit goed gaat.",
+     "dosering": { "sets": 3, "reps": 3, "hold_sec": 15, "tempo": "n.v.t.", "rust_sec": 60, "intensiteit": "stevig, binnenkant bovenbeen" },
+     "symptoomregel": "Liespijn max 3 van 10 tijdens en de volgende dag niet meer",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["heup", "lies", "adductoren"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_short_foot",
+     "naam": "Short foot (voetboog actief)",
+     "categorie": "activatie", "type_belasting": "activatie", "regio": "enkel_voet", "niveau": "basis",
+     "instructie": "Zit of sta met de voet plat. Maak de voet korter door de bal van de voet richting de hiel te trekken, zonder je tenen te krullen. De voetboog komt iets omhoog. Vijf tellen vasthouden en ontspannen.",
+     "dosering": { "sets": 3, "reps": 10, "hold_sec": 5, "tempo": "n.v.t.", "rust_sec": 30, "intensiteit": "licht" },
+     "symptoomregel": "Geen pijn of kramp in de voet; kramp is een teken om korter vast te houden",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["voet", "voetboog", "voetspieren", "tibialis posterior"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_buiklig_y_t",
+     "naam": "Buiklig Y en T (onderste en middelste trapezius)",
+     "categorie": "kracht", "type_belasting": "isotoon", "regio": "schouder", "niveau": "basis",
+     "instructie": "Lig op je buik met het voorhoofd op een handdoek. Til de armen in een Y-vorm (schuin naar voren) met de duimen omhoog, schouders laag en weg van de oren. Daarna in een T-vorm (zijwaarts). Langzaam omhoog en omlaag.",
+     "dosering": { "sets": 3, "reps": 10, "hold_sec": 2, "tempo": "2-2-2", "rust_sec": 45, "intensiteit": "licht, eventueel met een klein gewicht" },
+     "symptoomregel": "Geen toename van schouder- of nekpijn",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["schouder", "schouderblad", "onderste trapezius", "trapezius"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_push_up_plus",
+     "naam": "Push-up plus tegen de muur (serratus)",
+     "categorie": "kracht", "type_belasting": "isotoon", "regio": "schouder", "niveau": "basis",
+     "instructie": "Sta met de handen tegen de muur op schouderhoogte, armen gestrekt. Duw de muur extra weg zodat de schouderbladen om de ribben naar voren schuiven, en laat ze daarna rustig terugkomen. De ellebogen blijven gestrekt. Later op de knieën of op de vloer.",
+     "dosering": { "sets": 3, "reps": 12, "hold_sec": 2, "tempo": "rustig", "rust_sec": 45, "intensiteit": "licht tot matig" },
+     "symptoomregel": "Geen toename van schouderpijn",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["schouder", "schouderblad", "serratus"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_open_book",
+     "naam": "Open book (bovenrug draaien)",
+     "categorie": "mobiliteit", "type_belasting": "mobiliteit", "regio": "rug", "niveau": "basis",
+     "instructie": "Lig op je zij met de knieën gebogen op heuphoogte en de armen gestrekt voor je. Open de bovenste arm als een boek naar de andere kant en kijk mee, terwijl de knieën blijven liggen. Even uitademen in de eindstand en terug.",
+     "dosering": { "sets": 2, "reps": 8, "hold_sec": 3, "tempo": "rustig", "rust_sec": 30, "intensiteit": "lichte rek tussen de schouderbladen" },
+     "symptoomregel": "Geen pijn of tintelingen in de arm",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["bovenrug", "thoracaal", "rotatie"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_pols_excentrisch_strek",
+     "naam": "Excentrisch polsstrekken (tennisarm)",
+     "categorie": "kracht", "type_belasting": "excentrisch", "regio": "elleboog", "niveau": "basis",
+     "instructie": "Zit met de onderarm op tafel, handpalm naar beneden en de pols over de rand. Til het gewicht met de andere hand omhoog en laat het met de aangedane hand in drie tellen zakken. Elleboog licht gebogen.",
+     "dosering": { "sets": 3, "reps": 15, "hold_sec": 0, "tempo": "3 tellen omlaag", "rust_sec": 60, "intensiteit": "licht gewicht, opbouwen" },
+     "symptoomregel": "Pijn max 4 van 10 tijdens; de volgende ochtend niet meer pijn dan voorheen",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["elleboog", "pols", "polsstrekker", "extensor carpi"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_pols_excentrisch_buig",
+     "naam": "Excentrisch polsbuigen (golfersarm)",
+     "categorie": "kracht", "type_belasting": "excentrisch", "regio": "elleboog", "niveau": "basis",
+     "instructie": "Zit met de onderarm op tafel, handpalm naar boven en de pols over de rand. Til het gewicht met de andere hand omhoog en laat het met de aangedane hand in drie tellen zakken.",
+     "dosering": { "sets": 3, "reps": 15, "hold_sec": 0, "tempo": "3 tellen omlaag", "rust_sec": 60, "intensiteit": "licht gewicht, opbouwen" },
+     "symptoomregel": "Pijn max 4 van 10 tijdens; de volgende ochtend niet meer pijn dan voorheen",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["elleboog", "pols", "polsbuiger", "flexor carpi"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_peesglijden_hand",
+     "naam": "Peesglijden van de vingers",
+     "categorie": "mobiliteit", "type_belasting": "mobiliteit", "regio": "pols_hand", "niveau": "basis",
+     "instructie": "Begin met gestrekte vingers. Maak achtereenvolgens een haak (vingertoppen buigen), een vuist, een platte vuist (vingers recht op de handpalm) en strek weer. Rustig door alle standen, pols recht.",
+     "dosering": { "sets": 2, "reps": 5, "hold_sec": 3, "tempo": "rustig", "rust_sec": 30, "intensiteit": "geen kracht nodig" },
+     "symptoomregel": "Geen toename van tintelingen",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["pols", "hand", "vingerbuigers", "flexor digitorum"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_heup_hinge",
+     "naam": "Heup-hinge met stok langs de rug",
+     "categorie": "activatie", "type_belasting": "activatie", "regio": "heup", "niveau": "basis",
+     "instructie": "Sta met een stok langs de rug die achterhoofd, bovenrug en stuit raakt. Buig voorover vanuit de heupen met licht gebogen knieën; de stok blijft alle drie de punten raken. Kom terug door de billen aan te spannen.",
+     "dosering": { "sets": 3, "reps": 10, "hold_sec": 0, "tempo": "rustig", "rust_sec": 45, "intensiteit": "licht, techniek eerst" },
+     "symptoomregel": "Geen toename van rugpijn",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["heup", "hinge", "achterste keten", "gluteus maximus"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_muurzit",
+     "naam": "Muurzit (isometrisch, knie)",
+     "categorie": "kracht", "type_belasting": "isometrisch", "regio": "knie", "niveau": "basis",
+     "instructie": "Leun met de rug tegen een muur en zak door de knieën tot een hoek die pijnvrij of licht pijnlijk is (bijvoorbeeld 60 graden). Gewicht over beide voeten, knieën boven de voeten. Vasthouden.",
+     "dosering": { "sets": 5, "reps": 1, "hold_sec": 40, "tempo": "n.v.t.", "rust_sec": 60, "intensiteit": "stevig, 70 procent inspanning" },
+     "symptoomregel": "Pijn max 3 van 10; bij peesklachten vaak juist minder pijn na afloop",
+     "video_url": null, "physitrack_id": null,
+     "tags": ["knie", "quadriceps", "isometrie"],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    }
+   ],
+   "programmas": []
+  }
+ }
+}

@@ -1,0 +1,23 @@
+.rpg-stage{background:linear-gradient(180deg,#efe6d4 0%,#f7f9f7 100%);border:1px solid #edece5}
+.rpg-podium{position:relative;background:radial-gradient(ellipse at 50% 94%,#c9b57440 0%,#e6eee830 18%,transparent 45%)}
+.rpg-podium svg{filter:drop-shadow(0 5px 4px #4c473526)}
+.rpg-item{animation:rpg-equip .28s ease-out}
+.rpg-loot{background:radial-gradient(ellipse,color-mix(in srgb,var(--gear-color,#E4BC63) 45%,transparent),transparent 65%);animation:rpg-reveal .6s ease-out}
+@keyframes rpg-equip{from{opacity:.2}to{opacity:1}}
+@keyframes rpg-reveal{from{opacity:0;transform:translateY(12px) scale(.92)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.rpg-item,.rpg-loot{animation:none}}
+.rpg-shelf .text-ink-600,.rpg-shelf .text-ink-700{color:#566359}
+.rpg-stage button:focus-visible{outline:3px solid #29483c;outline-offset:3px}
+.rpg-item[data-rpg-item="crown"],.rpg-item[data-rpg-item="gold_shoes"]{filter:drop-shadow(0 0 1.5px #e9c86b80)}
+.gear-tile{position:relative;background:linear-gradient(160deg,#fff,#f7f6f0);border-top-width:4px}
+.gear-tile .gear-art{background:radial-gradient(ellipse,color-mix(in srgb,var(--gear-color) 14%,white),#fff 72%);padding:5px}
+.gear-tile[data-tier="2"]{border-top-style:double}
+.gear-tile[data-tier="3"]{box-shadow:inset 0 0 0 2px #fff,0 2px 8px color-mix(in srgb,var(--gear-color) 18%,transparent)}
+.gear-tile[data-tier="4"]{box-shadow:inset 0 0 0 2px #fff,0 2px 10px color-mix(in srgb,var(--gear-color) 25%,transparent)}
+.gear-tile[data-tier="5"]{box-shadow:inset 0 0 0 2px #fff3cf,0 2px 12px color-mix(in srgb,var(--gear-color) 30%,transparent);background:linear-gradient(145deg,#fff7dd,#fff 50%,#f3e8cc)}
+.gear-labels{display:flex;flex-direction:column;gap:3px;align-items:center;font-size:11px;line-height:1.3;font-weight:600}
+.gear-level{color:#36483e;background:#edf1eb;border-radius:5px;padding:2px 6px;white-space:nowrap}
+.gear-tile[aria-pressed="true"]::after{content:'✓';position:absolute;top:3px;right:4px;background:#29483c;color:#fff;width:18px;height:18px;border-radius:50%;font-size:12px}
+
+.photo-worn{animation:rpg-equip .28s ease-out}
+@media(prefers-reduced-motion:reduce){.photo-worn{animation:none}}
