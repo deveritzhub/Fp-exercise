@@ -269,6 +269,7 @@ patientModules.get('/export', async (c) => {
       heroSharing: (await q('SELECT share_with_friends, friend_code, shared_stats, stats_updated_at, team_opt_in, team_week, team_done FROM patient_heroes WHERE patient_id = $1'))[0] ?? null,
       heroShop: {
         purchases: await q('SELECT item, price, bought_at FROM hero_purchases WHERE patient_id = $1 ORDER BY bought_at'),
+        wardrobePresets: await q('SELECT slot, gear, updated_at FROM hero_loadouts WHERE patient_id = $1 ORDER BY slot'),
         dayChests: await q('SELECT day, coins, opened_at FROM hero_daily_chests WHERE patient_id = $1 ORDER BY day'),
       },
       heroFriends: (await q('SELECT kind, hero_name, since FROM app.hero_friends($1)')).map((f) => ({ kind: f.kind, heroName: f.hero_name, since: f.since })),

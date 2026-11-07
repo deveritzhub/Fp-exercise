@@ -1,0 +1,48 @@
+name: FP Flow cosmetic wardrobe review
+on:
+  pull_request:
+    paths:
+      - 'shared/heroLoadouts.ts'
+      - 'shared/heroLoadouts.test.ts'
+      - 'server/src/routes/hero.ts'
+      - 'server/db/migrations/037_hero_loadouts.sql'
+      - 'server/src/routes/patientModules.ts'
+      - 'server/test/hero-loadouts.test.ts'
+      - 'web/src/components/hero/WardrobeSets.tsx'
+      - 'web/src/pages/patient/HeroPages.tsx'
+      - 'e2e/wardrobe.spec.ts'
+      - '.github/workflows/fp-wardrobe-review.yml'
+jobs:
+  test-wardrobe:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      CI: '1'
+      DATABASE_ADMIN_URL: postgres://postgres:postgres@localhost:5432/postgres
+      DATABASE_OWNER_URL: postgres://fp_owner:fp_owner_dev@localhost:5432/fp_exercise
+      DATABASE_URL: postgres://fp_app:fp_app_dev@localhost:5432/fp_exercise
+      DATABASE_AUTH_URL: postgres://fp_auth:fp_auth_dev@localhost:5432/fp_exercise
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx vite build
+      - run: npx vitest run shared/heroLoadouts.test.ts server/test/hero-loadouts.test.ts
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test e2e/wardrobe.spec.ts --project=desktop-chromium
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: wardrobe-review-failures
+          path: test-results/
