@@ -1,9 +1,22 @@
-# WhatsApp- en bel-agent voor je bedrijf
+# WhatsApp- en bel-agent voor Functional Performance
 
-Eén AI-assistent (Claude) die klanten helpt via **WhatsApp** én **telefoon**:
+Eén AI-assistent (Claude) voor fysiotherapiepraktijk **Functional Performance** (Rotterdam) die
+klanten helpt via **WhatsApp** én **telefoon**. `business.yaml` is gevuld met de informatie van
+functionalperformance.nl (locaties, tarieven, vergoeding, team, FAQ, Flux-boekingslinks).
+
+> **Afspraken:** de praktijk plant in Flux, dus de agent boekt níet zelf (`booking.mode: link`).
+> Op WhatsApp stuurt hij de juiste Flux-link (intake per locatie, vervolgafspraak, massage, PT,
+> leefstijlcoaching). Aan de telefoon, of bij verzetten/annuleren, zet hij een **terugbelverzoek**
+> klaar dat als WhatsApp-melding bij `OWNER_WHATSAPP` binnenkomt.
+> Een bedrijf zonder eigen planner kan `booking.mode: internal` gebruiken; dan boekt de agent in een
+> eigen agenda (zie `examples/kapsalon-eigen-agenda.yaml`).
+
+Wat de assistent doet:
 
 - vragen beantwoorden op basis van jouw bedrijfsinfo (`business.yaml`)
-- vrije tijden opzoeken en **afspraken boeken, tonen en annuleren**
+- de juiste **boekingslink** sturen of een **terugbelverzoek** klaarzetten
+  (of, met `booking.mode: internal`, zelf afspraken boeken, tonen en annuleren)
+- geen diagnoses of oefenadvies; bij alarmsignalen verwijzen naar huisarts/huisartsenpost of 112
 - **doorverbinden met een medewerker** (WhatsApp-melding of de beller doorschakelen)
 - **zelf bellen**: uitgaande gesprekken, bijvoorbeeld om een afspraak te bevestigen
 
@@ -21,8 +34,9 @@ pip install -r requirements.txt
 cp .env.example .env        # vul daarna je sleutels in
 ```
 
-Pas **`business.yaml`** aan: naam, openingstijden, diensten (met duur en prijs), FAQ en beleid.
-De agent gebruikt alleen deze informatie en verzint niets.
+Controleer **`business.yaml`**: locaties, tarieven, vergoeding, team, FAQ, beleid en boekingslinks.
+De agent gebruikt alleen deze informatie en verzint niets. Houd het gelijk met je website als
+tarieven of diensten veranderen.
 
 Starten:
 
@@ -91,11 +105,12 @@ Alle andere variabelen staan met uitleg in `.env.example`.
 
 - `app/agent.py` — het brein: systeemprompt, Claude-aanroep, tool-loop. Eén agent voor beide kanalen,
   met per kanaal eigen schrijfregels (chatstijl vs. gesproken taal).
-- `app/tools.py` — `check_availability`, `book_appointment`, `list_my_appointments`,
-  `cancel_appointment`, `handoff_to_human` en (alleen telefoon) `end_call`.
+- `app/tools.py` — link-modus: `request_callback`; interne agenda: `check_availability`,
+  `book_appointment`, `list_my_appointments`, `cancel_appointment`. Altijd: `handoff_to_human`
+  en (alleen telefoon) `end_call`.
 - `app/whatsapp.py` — webhook (handtekening-controle, dubbele berichten negeren), antwoorden versturen.
 - `app/voice.py` — Twilio TwiML: luisteren, antwoorden, doorverbinden, ophangen, uitgaand bellen.
-- `app/db.py` — SQLite met gesprekken en afspraken (`data/agent.db`).
+- `app/db.py` — SQLite met gesprekken, terugbelverzoeken en afspraken (`data/agent.db`).
 
 De klant wordt herkend aan het telefoonnummer, dus een afspraak die via WhatsApp is gemaakt, kan
 telefonisch worden geannuleerd en andersom. Een WhatsApp-gesprek begint opnieuw na 24 uur stilte.

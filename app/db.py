@@ -39,6 +39,17 @@ CREATE TABLE IF NOT EXISTS appointments (
     created_at REAL NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS callback_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_name TEXT NOT NULL,
+    customer_phone TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    preference TEXT NOT NULL DEFAULT '',
+    channel TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'open',     -- open | done
+    created_at REAL NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS processed_messages (
     message_id TEXT PRIMARY KEY,
     created_at REAL NOT NULL
@@ -170,6 +181,21 @@ def cancel_appointment(appointment_id: int, phone: str) -> bool:
             (appointment_id, phone),
         )
         return cur.rowcount > 0
+
+
+# --- terugbelverzoeken --------------------------------------------------------
+
+def create_callback_request(**fields) -> int:
+    with db() as c:
+        cur = c.execute(
+            "INSERT INTO callback_requests(customer_name, customer_phone, reason, preference, channel, "
+            "created_at) VALUES (?,?,?,?,?,?)",
+            (
+                fields["customer_name"], fields["customer_phone"], fields["reason"],
+                fields.get("preference", ""), fields["channel"], time.time(),
+            ),
+        )
+        return cur.lastrowid
 
 
 # --- deduplicatie van webhooks ------------------------------------------------

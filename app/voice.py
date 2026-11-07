@@ -15,7 +15,7 @@ from twilio.twiml.voice_response import Gather, VoiceResponse
 from .agent import handle_message
 from .business import get_business
 from .config import settings
-from .whatsapp import send_text
+from .whatsapp import notify_owner, send_text
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/voice", tags=["voice"])
@@ -74,6 +74,7 @@ async def _respond(form: dict, user_text: str) -> Response:
     call_sid = form.get("CallSid", "onbekend")
     phone = _customer_number(form)
     reply = await handle_message("voice", call_sid, phone, user_text)
+    await notify_owner(reply.notifications)
 
     vr = VoiceResponse()
     if reply.handoff_reason:

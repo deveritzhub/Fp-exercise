@@ -21,6 +21,8 @@ class ToolContext:
     handoff_reason: str | None = None
     end_call: bool = False
     events: list[str] = field(default_factory=list)
+    # Berichten voor de eigenaar/praktijk (worden via WhatsApp doorgestuurd).
+    notifications: list[str] = field(default_factory=list)
 
 
 def _schema(properties: dict, required: list[str]) -> dict:
@@ -31,6 +33,45 @@ def _schema(properties: dict, required: list[str]) -> dict:
         "additionalProperties": False,
     }
 
+
+HANDOFF_TOOL: dict = {
+    "name": "handoff_to_human",
+    "description": (
+        "Draagt het gesprek over aan een medewerker. Gebruik dit bij klachten, als de klant "
+        "om een mens vraagt, of als je de vraag niet met de beschikbare informatie kunt "
+        "beantwoorden."
+    ),
+    "input_schema": _schema(
+        {
+            "reason": {"type": "string"},
+            "summary": {"type": "string", "description": "Korte samenvatting voor de medewerker"},
+        },
+        ["reason", "summary"],
+    ),
+    "strict": True,
+}
+
+# Voor bedrijven met een eigen planner (booking.mode: link): niet zelf boeken, wel terugbellen regelen.
+CALLBACK_TOOL: dict = {
+    "name": "request_callback",
+    "description": (
+        "Zet een terugbelverzoek klaar voor de praktijk, bijvoorbeeld om een afspraak te plannen, "
+        "te verzetten of te annuleren, of voor een vraag die je niet kunt beantwoorden. Vraag eerst "
+        "de naam van de klant en waar het over gaat. Het telefoonnummer is al bekend."
+    ),
+    "input_schema": _schema(
+        {
+            "customer_name": {"type": "string"},
+            "reason": {"type": "string", "description": "Waar het over gaat, kort"},
+            "preference": {
+                "type": "string",
+                "description": "Voorkeur voor locatie, behandelaar of tijdstip; leeg als die er niet is",
+            },
+        },
+        ["customer_name", "reason", "preference"],
+    ),
+    "strict": True,
+}
 
 TOOLS: list[dict] = [
     {
@@ -77,22 +118,6 @@ TOOLS: list[dict] = [
         "input_schema": _schema({"appointment_id": {"type": "integer"}}, ["appointment_id"]),
         "strict": True,
     },
-    {
-        "name": "handoff_to_human",
-        "description": (
-            "Draagt het gesprek over aan een medewerker. Gebruik dit bij klachten, als de klant "
-            "om een mens vraagt, of als je de vraag niet met de beschikbare informatie kunt "
-            "beantwoorden."
-        ),
-        "input_schema": _schema(
-            {
-                "reason": {"type": "string"},
-                "summary": {"type": "string", "description": "Korte samenvatting voor de medewerker"},
-            },
-            ["reason", "summary"],
-        ),
-        "strict": True,
-    },
 ]
 
 VOICE_ONLY_TOOLS: list[dict] = [
@@ -108,8 +133,9 @@ VOICE_ONLY_TOOLS: list[dict] = [
 ]
 
 
-def tools_for(channel: str) -> list[dict]:
-    return TOOLS + (VOICE_ONLY_TOOLS if channel == "voice" else [])
+def tools_for(channel: str, booking_mode: str = "internal") -> list[dict]:
+    base = [CALLBACK_TOOL] if booking_mode == "link" else TOOLS
+    return base + [HANDOFF_TOOL] + (VOICE_ONLY_TOOLS if channel == "voice" else [])
 
 
 # --- implementaties -----------------------------------------------------------
@@ -217,6 +243,21 @@ def execute_tool(ctx: ToolContext, name: str, args: dict) -> str:
         return _list(ctx)
     if name == "cancel_appointment":
         return _cancel(ctx, int(args["appointment_id"]))
+    if name == "request_callback":
+        req_id = db.create_callback_request(
+            customer_name=args["customer_name"].strip(),
+            customer_phone=ctx.customer_phone,
+            reason=args["reason"].strip(),
+            preference=args.get("preference", "").strip(),
+            channel=ctx.channel,
+        )
+        pref = f"\nVoorkeur: {args['preference']}" if args.get("preference") else ""
+        ctx.notifications.append(
+            f"📞 Terugbelverzoek #{req_id} ({ctx.channel})\n{args['customer_name']} — +{ctx.customer_phone.lstrip('+')}\n"
+            f"{args['reason']}{pref}"
+        )
+        ctx.events.append(f"Terugbelverzoek #{req_id}")
+        return "Terugbelverzoek staat klaar; de praktijk belt de klant zo snel mogelijk terug (binnen een werkdag)."
     if name == "handoff_to_human":
         ctx.handoff_reason = f"{args['reason']} — {args['summary']}"
         if ctx.channel == "voice":

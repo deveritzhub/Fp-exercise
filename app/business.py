@@ -23,6 +23,19 @@ class Service:
 
 
 @dataclass
+class Location:
+    name: str
+    address: str
+    notes: str = ""
+
+
+@dataclass
+class BookingLink:
+    label: str
+    url: str
+
+
+@dataclass
 class Business:
     name: str
     description: str
@@ -39,6 +52,12 @@ class Business:
     faq: list[dict[str, str]] = field(default_factory=list)
     policies: list[str] = field(default_factory=list)
     extra_instructions: str = ""
+    locations: list[Location] = field(default_factory=list)
+    # 'internal' = de agent boekt zelf in de eigen agenda (SQLite)
+    # 'link'     = de praktijk heeft een eigen planner; de agent stuurt links / terugbelverzoeken
+    booking_mode: str = "internal"
+    booking_links: list[BookingLink] = field(default_factory=list)
+    opening_hours_text: str = ""
 
     def service(self, name: str) -> Service | None:
         wanted = name.strip().lower()
@@ -80,6 +99,10 @@ def load_business(path: str | None = None) -> Business:
         faq=raw.get("faq", []),
         policies=raw.get("policies", []),
         extra_instructions=raw.get("extra_instructions", ""),
+        locations=[Location(**loc) for loc in raw.get("locations", [])],
+        booking_mode=(raw.get("booking") or {}).get("mode", "internal"),
+        booking_links=[BookingLink(**l) for l in (raw.get("booking") or {}).get("links", [])],
+        opening_hours_text=raw.get("opening_hours_text", ""),
     )
 
 
@@ -95,15 +118,26 @@ def business_summary(b: Business) -> str:
         ("Adres", b.address), ("Telefoon", b.phone), ("E-mail", b.email), ("Website", b.website),
     ]
     lines += [f"- {k}: {v}" for k, v in contact if v]
+    if b.locations:
+        lines += ["", "## Locaties"]
+        for loc in b.locations:
+            lines.append(f"- {loc.name}: {loc.address}" + (f". {loc.notes}" if loc.notes else ""))
     lines += ["", "## Openingstijden"]
-    for i, day in enumerate(WEEKDAYS):
-        h = b.opening_hours[i]
-        lines.append(f"- {day}: {h[0]:%H:%M}-{h[1]:%H:%M}" if h else f"- {day}: gesloten")
-    lines += ["", "## Diensten"]
+    if b.opening_hours_text:
+        lines.append(b.opening_hours_text)
+    if any(b.opening_hours.values()):
+        for i, day in enumerate(WEEKDAYS):
+            h = b.opening_hours[i]
+            lines.append(f"- {day}: {h[0]:%H:%M}-{h[1]:%H:%M}" if h else f"- {day}: gesloten")
+    lines += ["", "## Diensten en tarieven"]
     for s in b.services:
-        extra = f", {s.price}" if s.price else ""
+        parts = [f"{s.duration_minutes} min" if s.duration_minutes else "", s.price]
+        meta = ", ".join(p for p in parts if p)
         desc = f" - {s.description}" if s.description else ""
-        lines.append(f"- {s.name} ({s.duration_minutes} min{extra}){desc}")
+        lines.append(f"- {s.name}" + (f" ({meta})" if meta else "") + desc)
+    if b.booking_links:
+        lines += ["", "## Online afspraak plannen (stuur de passende link letterlijk)"]
+        lines += [f"- {l.label}: {l.url}" for l in b.booking_links]
     if b.faq:
         lines += ["", "## Veelgestelde vragen"]
         for item in b.faq:

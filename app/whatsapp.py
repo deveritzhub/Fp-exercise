@@ -57,6 +57,14 @@ async def mark_read(message_id: str) -> None:
         )
 
 
+async def notify_owner(messages: list[str]) -> None:
+    for m in messages:
+        if settings.owner_whatsapp:
+            await send_text(settings.owner_whatsapp, m)
+        else:
+            log.info("Melding voor eigenaar (OWNER_WHATSAPP niet gezet): %s", m)
+
+
 def verify_signature(body: bytes, signature_header: str | None) -> bool:
     """Controleert X-Hub-Signature-256 zodat alleen Meta je webhook kan aanroepen."""
     if not settings.whatsapp_app_secret:
@@ -132,6 +140,7 @@ async def process_message(msg: dict, contact_name: str | None) -> None:
 
     reply = await handle_message("whatsapp", sender, sender, text)
     await send_text(sender, reply.text)
+    await notify_owner(reply.notifications)
 
     if reply.handoff_reason and settings.owner_whatsapp:
         await send_text(
