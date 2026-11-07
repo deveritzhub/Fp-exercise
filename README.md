@@ -67,6 +67,7 @@ server/
   db/migrations/      SQL schema (001) and authorisation layer / RLS (002)
   db/seed*.ts         synthetic demo data + original demo exercise library
   src/                Hono API: auth/, routes/, lib/ (audit, rate limit, progress)
+  src/agents/         WhatsApp + phone assistant for the practice (Claude), mounted at /agents
   test/               Vitest integration tests
 shared/               code shared by API and web (taxonomy, adherence calculation)
 web/src/              React app: components/ui (design system), layouts, pages/{marketing,auth,therapist,patient,admin}
@@ -77,4 +78,4 @@ e2e/                  Playwright specs
 
 [ARCHITECTURE.md](ARCHITECTURE.md) · [DATABASE.md](DATABASE.md) · [SECURITY.md](SECURITY.md) ·
 [TESTING.md](TESTING.md) · [ROADMAP.md](ROADMAP.md) · [PROGRESS.md](PROGRESS.md) ·
-[RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)
+[RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) · [docs/AGENTS.md](docs/AGENTS.md) (WhatsApp/phone assistant)

@@ -30,5 +30,28 @@ services:
         value: "1"
       - key: MAIL_TRANSPORT
         value: outbox
+      # --- WhatsApp/phone assistant (server/src/agents, docs/AGENTS.md). Leave empty to keep it off. ---
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        generateValue: true
+      - key: WHATSAPP_APP_SECRET
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+      - key: OWNER_WHATSAPP
+        sync: false
+      - key: OWNER_PHONE
+        sync: false
+      - key: AGENT_ADMIN_KEY
+        generateValue: true
       # - key: STORAGE_DIR    # with the disk above
       #   value: /var/data/storage

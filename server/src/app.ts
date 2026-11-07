@@ -32,6 +32,7 @@ import { gymPatient, gymStaff } from './routes/gymLog';
 import { atlasPatient, atlasStaff } from './routes/atlas';
 import { stepRoutes } from './routes/steps';
 import { patientCare, redFlags } from './routes/patientCare';
+import { agentRoutes } from './agents';
 
 export function createApp() {
   const app = new Hono<AppEnv>();
@@ -135,6 +136,8 @@ export function createApp() {
   });
 
   app.route('/api', api);
+  // WhatsApp/phone assistant: webhooks for Meta and Twilio (signature-checked, no session).
+  app.route('/agents', agentRoutes);
   // Unknown API paths must never fall through to the SPA fallback below.
   app.all('/api/*', (c) => c.json({ error: 'not_found' }, 404));
 

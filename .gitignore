@@ -20,8 +20,3 @@ android/local.properties
 
 .local-photo-review/
 .local-photo-review
-
-# agents (python, legacy)
-data/
-__pycache__/
-.pytest_cache/
