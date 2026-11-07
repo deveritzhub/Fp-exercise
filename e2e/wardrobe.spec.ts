@@ -46,7 +46,7 @@ test('three MMORPG wardrobe looks persist in the private account and equip only 
   await expect(wardrobe).toBeVisible();
   await expect(wardrobe.getByText('Nog niet bewaard')).toHaveCount(3);
   await wardrobe.getByRole('button', { name: 'Huidige look opslaan' }).first().click();
-  await expect(wardrobe.getByText('Aangetrokken')).toHaveCount(1);
+  await expect(wardrobe.getByRole('button', { name: 'Deze look draag je' })).toHaveCount(1);
   expect(presetWrites).toBe(1);
   expect(equipWrites).toBe(0);
 
@@ -54,11 +54,11 @@ test('three MMORPG wardrobe looks persist in the private account and equip only 
   await page.getByRole('button', { name: /Handschoenen.*Aandoen/ }).first().click();
   await expect(wardrobe.getByRole('button', { name: 'Trek deze look aan' })).toBeEnabled();
   await wardrobe.getByRole('button', { name: 'Trek deze look aan' }).click();
-  await expect(wardrobe.getByText('Aangetrokken')).toHaveCount(1);
+  await expect(wardrobe.getByRole('button', { name: 'Deze look draag je' })).toHaveCount(1);
   expect(gear.equipped).toEqual(['cap']);
 
   await page.reload();
-  await expect(wardrobe.getByText('Aangetrokken')).toHaveCount(1);
+  await expect(wardrobe.getByRole('button', { name: 'Deze look draag je' })).toHaveCount(1);
   expect(presetWrites).toBe(1);
 
   await page.setViewportSize({ width: 300, height: 820 });
