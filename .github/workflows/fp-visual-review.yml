@@ -7,7 +7,8 @@ on:
       - 'web/src/components/patient/DailyMission.tsx'
 jobs:
   synthetic-preview:
-    runs-on: ubuntu-latest
+    # Same pin as CI: Playwright cannot install Chromium on ubuntu 26.04 yet.
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16

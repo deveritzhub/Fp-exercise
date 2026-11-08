@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { GUILD_BOSS_HP, GUILD_MIN_COHORT, buildWorld, publicGuildRaid, restBuff, worldCopy, zoneTheme, type WorldProgram } from './worldMap';
+import { GUILD_BOSS_HP, GUILD_MIN_COHORT, buildWorld, prizesForZones, publicGuildRaid, restBuff, villageBuildings, worldCopy, zoneTheme, type WorldProgram } from './worldMap';
 
 const phase = (no: number, nodes: number): WorldProgram => ({
   id: `p${no}`,
@@ -58,7 +58,7 @@ describe('world zones', () => {
       ...base,
       programs: [phase(1, 4), phase(2, 40), { ...phase(3, 12), status: 'completed' }],
     });
-    expect(world.zones[2]).toMatchObject({ status: 'next', locked: true, nodes: 12, boss: 'locked' });
+    expect(world.zones[2]).toMatchObject({ status: 'next', locked: true, nodes: 12, boss: 'locked', goal: null, weeks: null, exercises: [], workoutDates: [], skills: [] });
   });
 
   it('uses one trail per programme when there is no phase series', () => {
@@ -149,7 +149,45 @@ describe('non-clinical copy', () => {
     }
     expect(worldCopy('physio').intro.nl).toMatch(/fysiotherapeut/);
     expect(worldCopy('physio').boss.nl).toBe('Hoofdstukbaas');
+    expect(worldCopy('physio').lockedNotice.nl).toBe('Je therapeut geeft deze zone vrij.');
     expect(worldCopy('personal').boss.nl).toBe('Eindpunt');
+    expect(worldCopy('coach').lockedNotice.nl).toMatch(/coach/);
+  });
+});
+
+describe('zone sheet and village', () => {
+  it('puts a count badge on the zone where the workouts cross the mark, and never on a locked zone', () => {
+    const placed = prizesForZones({
+      clinical: true,
+      zones: [
+        { no: 1, status: 'done', workouts: 4, skills: ['strength'] },
+        { no: 2, status: 'current', workouts: 8, skills: ['balance'] },
+        { no: 3, status: 'next', workouts: 0, skills: ['power'] },
+      ],
+      trophies: [{ key: 'strength:10', skill: 'strength', level: 10, tier: 'bronze' }, { key: 'knowledge:10', skill: 'knowledge', level: 10, tier: 'bronze' }],
+      badges: ['first_session', 'sessions_10', 'phase_done', 'pain_down'],
+    });
+    expect(placed.get(1)?.badges).toEqual(['first_session', 'phase_done']);
+    expect(placed.get(2)?.badges).toEqual(['sessions_10', 'pain_down']);
+    expect(placed.get(1)?.trophies.map((t) => t.key)).toEqual(['strength:10']);
+    expect(placed.get(2)?.trophies.map((t) => t.key)).toEqual(['knowledge:10']);
+    expect(placed.get(3)).toEqual({ trophies: [], badges: [] });
+  });
+
+  it('hides clinical badges for a coach account', () => {
+    const placed = prizesForZones({
+      clinical: false,
+      zones: [{ no: 1, status: 'current', workouts: 2, skills: [] }],
+      trophies: [],
+      badges: ['first_session', 'pain_down', 'phase_done'],
+    });
+    expect(placed.get(1)?.badges).toEqual(['first_session']);
+  });
+
+  it('drops a village building whose feature is off', () => {
+    const keys = villageBuildings({ hero: true, atlas: false, mission: true, guild: true }).map((b) => b.key);
+    expect(keys).toEqual(['smithy', 'hall', 'board', 'guild']);
+    expect(keys).not.toContain('library');
   });
 });
 
