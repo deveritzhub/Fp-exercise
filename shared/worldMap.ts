@@ -39,18 +39,33 @@ export type PhaseTemplate = {
   goal: string | null;
 };
 
+export type ZoneExercise = { itemId: string; programId: string; nameNl: string; nameEn: string };
+
 export type WorldZone = {
   no: number;
   name: string | null;
+  /** Indicative weeks. Never sent for a locked zone. */
   weeks: string | null;
-  /** Patient-facing goal. Omitted for non-clinical accounts. */
+  /** Patient-facing goal. Omitted for non-clinical accounts and for locked zones. */
   goal: string | null;
   status: ZoneStatus;
-  /** Completed prescribed workouts in this zone. Display only. */
+  /** Completed prescribed workouts in this zone. Display only; never opens the zone. */
   nodes: number;
   region: string | null;
   boss: BossDisplay;
   locked: boolean;
+  /** Patient programme for this zone. Null while the phase is still locked. */
+  programId: string | null;
+  /** When the therapist released this phase, YYYY-MM-DD. */
+  releasedOn: string | null;
+  startedOn: string | null;
+  endedOn: string | null;
+  /** Dates of completed prescribed workouts. Empty while locked. */
+  workoutDates: string[];
+  /** Exercises of this phase's programme. Empty while locked. */
+  exercises: ZoneExercise[];
+  /** Skills trained by those exercises, for the trophy cabinet. Empty while locked. */
+  skills: string[];
 };
 
 export type RestReason = 'rest' | 'pain';
@@ -135,17 +150,43 @@ function zoneFrom(part: {
   nodes: number;
   region: string | null;
   clinical: boolean;
+  programId: string | null;
 }): WorldZone {
+  const locked = part.status === 'next';
   return {
     no: part.no,
     name: part.name,
-    weeks: part.weeks,
-    goal: part.clinical ? part.goal : null,
+    weeks: locked ? null : part.weeks,
+    goal: locked || !part.clinical ? null : part.goal,
     status: part.status,
     nodes: Math.max(0, Math.floor(part.nodes)),
     region: zoneTheme(part.region).region ?? part.region,
     boss: chapterBossState(part.status),
-    locked: part.status === 'next',
+    locked,
+    programId: locked ? null : part.programId,
+    releasedOn: null,
+    startedOn: null,
+    endedOn: null,
+    workoutDates: [],
+    exercises: [],
+    skills: [],
+  };
+}
+
+/** A locked zone keeps its name only. Goals, dates, exercises and skills stay off the payload. */
+export function sealZone<T extends WorldZone>(zone: T): T {
+  if (!zone.locked) return zone;
+  return {
+    ...zone,
+    weeks: null,
+    goal: null,
+    programId: null,
+    releasedOn: null,
+    startedOn: null,
+    endedOn: null,
+    workoutDates: [],
+    exercises: [],
+    skills: [],
   };
 }
 
@@ -176,8 +217,10 @@ export function buildWorld(input: {
   if (primary?.seriesKey && primary.phaseNo != null && templates.length) {
     const inSeries = input.programs.filter((p) => p.seriesKey === primary.seriesKey);
     zones = templates.map((ph) => {
-      const nodes = inSeries.filter((p) => p.phaseNo === ph.no).reduce((sum, p) => sum + p.nodes, 0);
+      const matches = inSeries.filter((p) => p.phaseNo === ph.no);
+      const nodes = matches.reduce((sum, p) => sum + p.nodes, 0);
       const status = statusFor(ph.no, primary.phaseNo!);
+      const program = matches.find((p) => p.status === 'active') ?? matches[0] ?? null;
       return zoneFrom({
         no: ph.no,
         name: ph.name,
@@ -187,6 +230,7 @@ export function buildWorld(input: {
         nodes,
         region: input.seriesRegion ?? primary.region,
         clinical: input.clinical,
+        programId: program?.id ?? null,
       });
     });
   } else {
@@ -200,13 +244,14 @@ export function buildWorld(input: {
       nodes: p.nodes,
       region: p.region,
       clinical: input.clinical,
+      programId: p.id,
     }));
   }
 
   const runnable = input.programs.filter((p) => p.status === 'active').length;
   return {
     clinical: input.clinical,
-    zones,
+    zones: zones.map(sealZone),
     heroZoneNo: zones.find((z) => z.status === 'current')?.no ?? zones[0]?.no ?? null,
     rest: restBuff({ programmedRest: runnable > 0 && input.scheduledToday === 0, reportedPain: input.reportedPain }),
     guild: publicGuildRaid(input.guild, 'patient'),
@@ -215,6 +260,80 @@ export function buildWorld(input: {
 }
 
 type Line = { nl: string; en: string };
+
+const COUNT_BADGES = [
+  { key: 'first_session', at: 1 },
+  { key: 'sessions_10', at: 10 },
+  { key: 'sessions_25', at: 25 },
+] as const;
+
+/** Badges whose wording is clinical. Hidden on coach and personal accounts. */
+const CLINICAL_BADGES = new Set(['honest', 'pain_down', 'safety_first', 'phase_done']);
+/** Not tied to a workout count. Shown on the current zone only, from the cabinet. */
+const CURRENT_BADGES = ['full_week', 'season_champ', 'boss_hunter', 'chest_week'] as const;
+
+export type ZonePrizeInput = { no: number; status: ZoneStatus; workouts: number; skills: readonly string[] };
+export type EarnedTrophy = { key: string; skill: string; level: number; tier: string };
+
+/**
+ * Place cabinet trophies and badges onto unlocked zones.
+ * Count badges land on the zone where the running total of prescribed workouts crosses the mark.
+ * A skill trophy lands on the earliest open zone that trains that skill, otherwise the current zone.
+ * Locked zones stay empty. Nothing here grants a new reward.
+ */
+export function prizesForZones(input: {
+  clinical: boolean;
+  zones: readonly ZonePrizeInput[];
+  trophies: readonly EarnedTrophy[];
+  badges: readonly string[];
+}) {
+  const open = input.zones.filter((z) => z.status !== 'next').sort((a, b) => a.no - b.no);
+  const current = open.find((z) => z.status === 'current') ?? open[open.length - 1] ?? null;
+  const out = new Map<number, { trophies: EarnedTrophy[]; badges: string[] }>();
+  for (const z of input.zones) out.set(z.no, { trophies: [], badges: [] });
+  for (const trophy of input.trophies) {
+    const home = open.find((z) => z.skills.includes(trophy.skill)) ?? current;
+    if (home) out.get(home.no)!.trophies.push(trophy);
+  }
+  const earned = new Set(input.badges);
+  let cum = 0;
+  for (const z of open) {
+    const before = cum;
+    cum += Math.max(0, z.workouts);
+    for (const b of COUNT_BADGES) {
+      if (earned.has(b.key) && before < b.at && cum >= b.at) out.get(z.no)!.badges.push(b.key);
+    }
+  }
+  if (current) {
+    for (const key of CURRENT_BADGES) if (earned.has(key)) out.get(current.no)!.badges.push(key);
+    if (input.clinical && earned.has('phase_done')) {
+      const firstDone = open.find((z) => z.status === 'done');
+      if (firstDone) out.get(firstDone.no)!.badges.push('phase_done');
+    }
+    if (input.clinical) {
+      for (const key of CLINICAL_BADGES) {
+        if (key === 'phase_done') continue;
+        if (earned.has(key)) out.get(current.no)!.badges.push(key);
+      }
+    }
+  }
+  for (const z of input.zones) if (z.status === 'next') out.set(z.no, { trophies: [], badges: [] });
+  return out;
+}
+
+export type VillageNeed = 'hero' | 'atlas' | 'mission' | 'guild';
+export const VILLAGE = [
+  { key: 'smithy', to: '/p/held/inventaris#gear-title', needs: 'hero' },
+  { key: 'library', to: '/p/spieren', needs: 'atlas' },
+  { key: 'hall', to: '/p/held/inventaris#trophies-title', needs: 'hero' },
+  { key: 'board', to: '/p', needs: 'mission' },
+  { key: 'guild', to: '/p/wereld#gilde', needs: 'guild' },
+] as const;
+
+/** Buildings whose feature exists for this account. Order is the path around the square. */
+export function villageBuildings(flags: Record<VillageNeed, boolean>) {
+  return VILLAGE.filter((b) => flags[b.needs]);
+}
 
 /** Screen copy. Coach and personal accounts never use complaint, diagnosis or rehab wording. */
 export function worldCopy(kind: AccountKind | null | undefined): {
@@ -226,6 +345,7 @@ export function worldCopy(kind: AccountKind | null | undefined): {
   bossLocked: Line;
   rest: Line;
   pain: Line;
+  lockedNotice: Line;
 } {
   const clinical = isClinical(kind);
   if (clinical) {
@@ -244,6 +364,7 @@ export function worldCopy(kind: AccountKind | null | undefined): {
       bossLocked: { nl: 'Nog in de mist. De zone gaat niet vanzelf open.', en: 'Still in the fog. The zone does not open by itself.' },
       rest: { nl: 'Rustbuff: vandaag staat er geen training op het schema. Er gaat niets verloren en je hoeft niets in te halen.', en: 'Rest buff: nothing is scheduled today. Nothing is lost and there is nothing to catch up.' },
       pain: { nl: 'Rustbuff: je gaf pijn aan. Er gaat niets verloren en je hoeft niets in te halen.', en: 'Rest buff: you reported pain. Nothing is lost and there is nothing to catch up.' },
+      lockedNotice: { nl: 'Je therapeut geeft deze zone vrij.', en: 'Your therapist releases this zone.' },
     };
   }
   if (kind === 'coach') {
@@ -262,6 +383,7 @@ export function worldCopy(kind: AccountKind | null | undefined): {
       bossLocked: { nl: 'Nog in de mist. Het stuk gaat niet vanzelf open.', en: 'Still in the fog. The stretch does not open by itself.' },
       rest: { nl: 'Rustbuff: vandaag staat er geen training op het schema. Er gaat niets verloren en je hoeft niets in te halen.', en: 'Rest buff: nothing is scheduled today. Nothing is lost and there is nothing to catch up.' },
       pain: { nl: 'Rustbuff: je gaf aan dat het niet lekker voelde. Er gaat niets verloren en je hoeft niets in te halen.', en: 'Rest buff: you let us know it did not feel good. Nothing is lost and there is nothing to catch up.' },
+      lockedNotice: { nl: 'Je coach geeft dit stuk vrij.', en: 'Your coach releases this stretch.' },
     };
   }
   return {
@@ -279,5 +401,6 @@ export function worldCopy(kind: AccountKind | null | undefined): {
     bossLocked: { nl: 'Nog in de mist. Het stuk gaat niet vanzelf open.', en: 'Still in the fog. The stretch does not open by itself.' },
     rest: { nl: 'Rustbuff: vandaag staat er geen training op het schema. Er gaat niets verloren en je hoeft niets in te halen.', en: 'Rest buff: nothing is scheduled today. Nothing is lost and there is nothing to catch up.' },
     pain: { nl: 'Rustbuff: je gaf aan dat het niet lekker voelde. Er gaat niets verloren en je hoeft niets in te halen.', en: 'Rest buff: you let us know it did not feel good. Nothing is lost and there is nothing to catch up.' },
+    lockedNotice: { nl: 'Dit stuk gaat open als jij een volgend schema kiest.', en: 'This stretch opens when you choose a next plan.' },
   };
 }

@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { isClinical } from '../../../shared/accountKind';
 import { itemsForDate } from '../../../shared/schedule';
-import { buildWorld, publicGuildRaid, type GuildCounts, type PhaseTemplate, type WorldProgram } from '../../../shared/worldMap';
+import { buildWorld, publicGuildRaid, sealZone, type GuildCounts, type PhaseTemplate, type WorldProgram } from '../../../shared/worldMap';
+import { skillsForExercise } from '../../../shared/hero';
 import { withUser, type Tx } from '../db';
 import { requirePatient, requireStaff, type AppEnv } from '../middleware';
 import { loadItems } from './programs';
@@ -36,7 +37,9 @@ worldPatient.get('/world', async (c) => {
       const today = (await tx.query("SELECT to_char(now() AT TIME ZONE 'Europe/Amsterdam', 'YYYY-MM-DD') AS d")).rows[0].d as string;
       const { rows } = await tx.query(
         `SELECT p.id, p.title, p.status, p.module, p.series_key, p.phase_no, p.phase_name, p.phase_weeks, p.phase_goal,
-                p.start_date, p.end_date,
+                to_char(p.start_date, 'YYYY-MM-DD') AS start_on,
+                to_char((p.activated_at AT TIME ZONE 'Europe/Amsterdam')::date, 'YYYY-MM-DD') AS released_on,
+                to_char(p.end_date, 'YYYY-MM-DD') AS end_on,
                 (SELECT count(*)::int FROM workout_sessions s
                   WHERE s.program_id = p.id AND s.patient_id = p.patient_id AND s.completed_at IS NOT NULL) AS nodes,
                 (SELECT e.body_region FROM program_items i JOIN exercises e ON e.id = i.exercise_id
@@ -87,7 +90,7 @@ worldPatient.get('/world', async (c) => {
         if (row.status !== 'active' || paused.has(row.id)) continue;
         const items = await loadItems(tx, row.id);
         scheduledToday += itemsForDate(
-          { startDate: row.start_date as string | null, endDate: row.end_date as string | null },
+          { startDate: row.start_on as string | null, endDate: row.end_on as string | null },
           items,
           today,
         ).length;
@@ -103,7 +106,7 @@ worldPatient.get('/world', async (c) => {
         [patient.id, today],
       );
       const guild = await guildCounts(tx, patient.practiceId);
-      return buildWorld({
+      const world = buildWorld({
         clinical: isClinical(patient.kind),
         programs,
         phaseTemplates,
@@ -112,6 +115,37 @@ worldPatient.get('/world', async (c) => {
         reportedPain: !!reported.rows[0]?.reported,
         guild,
       });
+      const seriesKey = primary?.seriesKey && primary.phaseNo != null ? primary.seriesKey : null;
+      for (const zone of world.zones) {
+        if (zone.locked) continue;
+        const mine = rows.filter((r) => (seriesKey ? r.series_key === seriesKey && Number(r.phase_no) === zone.no : r.id === zone.programId));
+        const ids = mine.map((r) => r.id as string);
+        const first = (key: string) => mine.map((r) => r[key] as string | null).filter(Boolean).sort()[0] ?? null;
+        const last = (key: string) => mine.map((r) => r[key] as string | null).filter(Boolean).sort().at(-1) ?? null;
+        zone.releasedOn = first('released_on');
+        zone.startedOn = first('start_on') ?? zone.releasedOn;
+        zone.endedOn = zone.status === 'done' ? last('end_on') : null;
+        if (ids.length) {
+          const dates = await tx.query(
+            `SELECT to_char((completed_at AT TIME ZONE 'Europe/Amsterdam')::date, 'YYYY-MM-DD') AS d
+               FROM workout_sessions
+              WHERE patient_id = $1 AND program_id = ANY($2::uuid[]) AND completed_at IS NOT NULL
+              ORDER BY completed_at`,
+            [patient.id, ids],
+          );
+          zone.workoutDates = dates.rows.map((r) => r.d as string);
+          const itemProgram = zone.programId && ids.includes(zone.programId) ? zone.programId : ids[0];
+          const items = await loadItems(tx, itemProgram);
+          zone.exercises = items.map((item) => ({ itemId: item.id as string, programId: itemProgram, nameNl: item.exercise.nameNl as string, nameEn: item.exercise.nameEn as string }));
+          const skills = new Set<string>();
+          for (const item of items) {
+            for (const skill of skillsForExercise(item.exercise.trainingCategories ?? [], item.exercise.movementCategory ?? null)) skills.add(skill);
+          }
+          zone.skills = [...skills];
+        }
+      }
+      world.zones = world.zones.map(sealZone);
+      return world;
     }),
   );
 });

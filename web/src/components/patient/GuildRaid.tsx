@@ -7,7 +7,7 @@ export function GuildRaidCard({ guild, restActive = false }: { guild: GuildPubli
   const { t } = useI18n();
   const reward = !!guild.reward;
   return (
-    <section className="rounded-2xl border border-line bg-white shadow-card" aria-labelledby="guild-raid-title">
+    <section id="gilde" className="scroll-mt-24 rounded-2xl border border-line bg-white shadow-card" aria-labelledby="guild-raid-title">
       <div className="bg-[#343F2A] px-4 py-4 text-white">
         <h2 id="guild-raid-title" className="flex items-center gap-2 font-display text-[17px] font-bold text-white">
           <Swords className="h-5 w-5 text-[#E8DFCD]" aria-hidden />

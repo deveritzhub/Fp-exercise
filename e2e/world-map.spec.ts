@@ -20,11 +20,11 @@ test('world map and guild raid fit a 360 px phone and do not unlock phases', asy
     `UPDATE programs SET series_key = 'e2e-world', series_title = 'Knie', phase_no = 2, phase_count = 3, phase_name = 'Kracht', phase_weeks = '5-8', phase_goal = 'Controle' WHERE id = $1`,
     [emma.program_id],
   );
-  for (const [no, name] of [[1, 'Basis'], [2, 'Kracht'], [3, 'Sport']] as const) {
+  for (const [no, name, weeks, goal] of [[1, 'Basis', '1–4', 'Bewegen'], [2, 'Kracht', '5–8', 'Controle'], [3, 'Sport', '9–12', 'Toekomstfase-geheim']] as const) {
     await db.query(
       `INSERT INTO programs(practice_id, is_template, title, status, module, series_key, series_title, phase_no, phase_count, phase_name, phase_weeks, phase_goal)
-       VALUES ($1, true, $2, 'active', 'revalidatie', 'e2e-world', 'Knie', $3, 3, $2, '1-4', 'Doel')`,
-      [emma.practice_id, name, no],
+       VALUES ($1, true, $2, 'active', 'revalidatie', 'e2e-world', 'Knie', $3, 3, $2, $4, $5)`,
+      [emma.practice_id, name, no, weeks, goal],
     );
   }
   await db.query(
@@ -55,23 +55,50 @@ test('world map and guild raid fit a 360 px phone and do not unlock phases', asy
     await login(patient, 'patient@praktijk-a.test');
     await patient.goto('/p/wereld');
     await expect(patient.getByRole('heading', { name: 'Wereldkaart' })).toBeVisible();
+    await expect(patient.getByRole('button', { name: /Dorp/ })).toBeVisible();
     await expect(patient.getByText('Knievallei').first()).toBeVisible();
     await expect(patient.getByText('Rustbuff:')).toBeVisible();
     const current = patient.locator('button[data-zone-status="current"]');
     await expect(current).toHaveAttribute('aria-current', 'step');
     await expect(current).toContainText('Je held staat in deze zone');
+    const overflow = await patient.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+    await patient.screenshot({ path: `${SHOTS}/village-360.png`, fullPage: true, animations: 'disabled' });
+
+    await patient.getByRole('button', { name: /Dorp/ }).click();
+    const village = patient.getByRole('dialog', { name: 'Dorp' });
+    await expect(village.getByRole('link', { name: /Smederij/ })).toBeVisible();
+    await expect(village.getByRole('link', { name: /Bibliotheek/ })).toBeVisible();
+    await expect(village.getByRole('link', { name: /Trofeeënhal/ })).toBeVisible();
+    await expect(village.getByRole('link', { name: /Prikbord/ })).toBeVisible();
+    await expect(village.getByRole('link', { name: /Gildehal/ })).toBeVisible();
+    await village.screenshot({ path: `${SHOTS}/village-panel-360.png`, animations: 'disabled' });
+    await patient.keyboard.press('Escape');
+    await expect(village).toBeHidden();
+
+    await current.click();
+    const openSheet = patient.getByRole('dialog');
+    await expect(openSheet.getByRole('heading', { name: 'Oefeningen' })).toBeVisible();
+    await expect(openSheet.getByRole('heading', { name: 'Prijzenkast' })).toBeVisible();
+    await openSheet.screenshot({ path: `${SHOTS}/zone-360.png`, animations: 'disabled' });
+    await patient.keyboard.press('Escape');
+
     const locked = patient.locator('button[data-zone-status="next"]');
     await locked.focus();
     await patient.keyboard.press('Enter');
-    await expect(locked).toHaveAttribute('aria-pressed', 'true');
-    await expect(patient.getByRole('region', { name: 'Gekozen zone' })).toContainText('Nog in de mist');
+    const lockedSheet = patient.getByRole('dialog');
+    await expect(lockedSheet).toContainText('Je therapeut geeft deze zone vrij');
+    await expect(lockedSheet).not.toContainText('Toekomstfase-geheim');
+    await expect(lockedSheet.getByRole('link')).toHaveCount(0);
     await expect(current).toHaveAttribute('aria-current', 'step');
     await expect(patient.getByRole('button', { name: /vrijgeven|goedkeuren/i })).toHaveCount(0);
+    await lockedSheet.screenshot({ path: `${SHOTS}/locked-360.png`, animations: 'disabled' });
+    await expectAccessible(patient, 'locked zone');
+    await patient.keyboard.press('Escape');
+
     await expect(patient.getByRole('heading', { name: 'Gilderaid' })).toBeVisible();
     await expect(patient.getByText(/levenspunten|verslagen|verborgen/i)).toBeVisible();
     expect(posts.filter((u) => u.includes('/world') || u.includes('/guild'))).toEqual([]);
-    const overflow = await patient.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-    expect(overflow).toBeLessThanOrEqual(1);
     await expectAccessible(patient, 'world map');
     await patient.screenshot({ path: `${SHOTS}/patient-360.png`, fullPage: true, animations: 'disabled' });
 
