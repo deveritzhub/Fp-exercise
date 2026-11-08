@@ -1,11 +1,13 @@
 import { Hono } from 'hono';
 import { isClinical } from '../../../shared/accountKind';
 import { itemsForDate } from '../../../shared/schedule';
-import { buildWorld, publicGuildRaid, sealZone, type GuildCounts, type PhaseTemplate, type WorldProgram } from '../../../shared/worldMap';
+import { buildWorld, publicGuildRaid, sealZone, type GuildCounts, type PhaseTemplate, type WorldProgram, type WorldZone } from '../../../shared/worldMap';
 import { skillsForExercise } from '../../../shared/hero';
 import { withUser, type Tx } from '../db';
 import { requirePatient, requireStaff, type AppEnv } from '../middleware';
 import { loadItems } from './programs';
+import { publicBosses, heirloomView } from '../lib/boss';
+import { ACL_SERIES_KEY, aclPhase } from '../../../shared/aclRoute';
 
 /**
  * World map for the patient, and the practice guild raid for the patient and for staff.
@@ -42,8 +44,8 @@ worldPatient.get('/world', async (c) => {
                 to_char(p.end_date, 'YYYY-MM-DD') AS end_on,
                 (SELECT count(*)::int FROM workout_sessions s
                   WHERE s.program_id = p.id AND s.patient_id = p.patient_id AND s.completed_at IS NOT NULL) AS nodes,
-                (SELECT e.body_region FROM program_items i JOIN exercises e ON e.id = i.exercise_id
-                  WHERE i.program_id = p.id GROUP BY e.body_region ORDER BY count(*) DESC, e.body_region LIMIT 1) AS region
+                coalesce(p.map_region, (SELECT e.body_region FROM program_items i JOIN exercises e ON e.id = i.exercise_id
+                  WHERE i.program_id = p.id GROUP BY e.body_region ORDER BY count(*) DESC, e.body_region LIMIT 1)) AS region
            FROM programs p
           WHERE p.patient_id = $1 AND NOT p.is_template AND p.status IN ('active', 'completed')`,
         [patient.id],
@@ -73,11 +75,12 @@ worldPatient.get('/world', async (c) => {
           goal: (r.phase_goal as string | null) ?? null,
         }));
         const region = await tx.query(
-          `SELECT e.body_region FROM program_items i
-             JOIN programs p ON p.id = i.program_id
-             JOIN exercises e ON e.id = i.exercise_id
+          `SELECT coalesce(p.map_region, e.body_region) AS body_region
+             FROM programs p
+             LEFT JOIN program_items i ON i.program_id = p.id
+             LEFT JOIN exercises e ON e.id = i.exercise_id
             WHERE p.patient_id = $1 AND p.series_key = $2 AND NOT p.is_template
-            GROUP BY e.body_region ORDER BY count(*) DESC, e.body_region LIMIT 1`,
+            GROUP BY 1 ORDER BY count(*) DESC, 1 LIMIT 1`,
           [patient.id, primary.seriesKey],
         );
         seriesRegion = (region.rows[0]?.body_region as string | undefined) ?? null;
@@ -144,8 +147,32 @@ worldPatient.get('/world', async (c) => {
           zone.skills = [...skills];
         }
       }
+      if (seriesKey) {
+        const names = await tx.query(
+          `SELECT phase_no, phase_name FROM programs
+            WHERE patient_id = $1 AND series_key = $2 AND NOT is_template AND phase_name IS NOT NULL`,
+          [patient.id, seriesKey],
+        );
+        for (const zone of world.zones) {
+          const named = names.rows.find((r) => Number(r.phase_no) === zone.no);
+          if (named?.phase_name) zone.name = named.phase_name as string;
+        }
+      }
       world.zones = world.zones.map(sealZone);
-      return world;
+      const bosses = await publicBosses(tx, patient.id);
+      const acl = seriesKey === ACL_SERIES_KEY;
+      for (const zone of world.zones) {
+        const named = acl ? aclPhase(zone.no) : null;
+        const row = zone as WorldZone & { measure?: unknown; bossNameNl?: string | null; bossNameEn?: string | null };
+        row.bossNameNl = named?.bossNl ?? null;
+        row.bossNameEn = named?.bossEn ?? null;
+        const hit = bosses.find((b) => b.programId === zone.programId);
+        row.measure = zone.locked || !hit ? null : {
+          labelNl: hit.labelNl, labelEn: hit.labelEn, unit: hit.unit, remaining: hit.remaining, latest: hit.latest, ratio: hit.ratio, defeated: hit.defeated,
+          lines: hit.lines,
+        };
+      }
+      return { ...world, heirloom: await heirloomView(tx, patient.id) };
     }),
   );
 });

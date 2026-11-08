@@ -11,6 +11,7 @@ import { cn } from '@/lib/cn';
  */
 type Item = { nl: string; en: string; to?: string; clinical?: true };
 const STAFF: Item[] = [
+  { clinical: true, nl: 'VKB-route toewijzen in één keer: vijf fases, bazen en standaardcriteria. Testsessie met LSI, fasedoelen en een grafiek in het dossier.', en: 'Assign the ACL route in one go: five phases, bosses and default criteria. A test session with LSI, phase goals and a chart in the record.', to: '/app/patienten?filter=acl' },
   { nl: 'Snelfilters in de patiëntenlijst: vraagt aandacht, nog niet uitgenodigd, uitnodiging open, geen programma.', en: 'Quick filters in the patient list: needs attention, not invited, invitation open, no programme.', to: '/app/patienten' },
   { nl: 'Bij "Kies een sjabloon" staan je laatst gebruikte sjablonen bovenaan.', en: '"Choose a template" shows your recently used templates first.' },
   { nl: 'Patiënten kunnen tijdens een oefening op "Dit doet pijn" tikken; je ziet de reden en pijnscore bij de sessie.', en: 'Patients can tap "This hurts" during an exercise; you see the reason and pain score with the session.' },
@@ -41,7 +42,7 @@ const PATIENT: Item[] = [
   { nl: 'Op Voortgang zie je hoe zwaar en pijnlijk je trainingen waren, in gewone taal.', en: 'Progress shows how hard and painful your workouts were, in plain words.', to: '/p/voortgang' },
   { nl: 'Nieuwe quizvragen over welke spier het werk overneemt als een andere zwak is.', en: 'New quiz questions on which muscle takes over when another is weak.' },
 ];
-const VERSION = '2026-11-06j';
+const VERSION = '2026-11-08a';
 const KEY = 'fp.whatsnew.v1';
 
 function seen() {

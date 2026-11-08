@@ -17,6 +17,7 @@ export const DEMO_ACCOUNTS = [
   { email: 'therapeut@praktijk-a.test', nl: 'Fysiotherapeut — praktijk A', en: 'Physiotherapist — practice A' },
   { email: 'eigenaar@praktijk-a.test', nl: 'Praktijkeigenaar — praktijk A', en: 'Practice owner — practice A' },
   { email: 'patient@praktijk-a.test', nl: 'Patiënt — praktijk A', en: 'Patient — practice A' },
+  { email: 'vkb@praktijk-a.test', nl: 'Patiënt — VKB-route (synthetisch)', en: 'Patient — ACL route (synthetic)' },
   { email: 'therapeut@praktijk-b.test', nl: 'Fysiotherapeut — praktijk B', en: 'Physiotherapist — practice B' },
   { email: 'patient@praktijk-b.test', nl: 'Patiënt — praktijk B', en: 'Patient — practice B' },
   { email: 'admin@fp-exercise.test', nl: 'Platformbeheerder', en: 'Platform administrator' },

@@ -1,6 +1,6 @@
 /**
  * Applies DEMO_PASSWORD / DEMO_ACCOUNTS (see server/src/lib/demo.ts) to the demo accounts at
- * start-up. Only touches the seven synthetic demo users; real accounts are never changed.
+ * start-up. Only touches the synthetic demo users; real accounts are never changed.
  */
 import bcrypt from 'bcryptjs';
 import pg from 'pg';

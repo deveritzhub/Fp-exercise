@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Search, UserPlus, Users } from 'lucide-react';
 import { api, qs } from '@/lib/api';
 import { useI18n, describeError } from '@/lib/i18n';
-import { useSession } from '@/lib/session';
+import { useClinicalPractice, useSession } from '@/lib/session';
 import { fmtRelative, pct } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
 import { Avatar, Badge, Button, Card, Dialog, EmptyState, ErrorState, Input, Notice, PageHeader, ProgressBar, Segmented, Select, Skeleton, useDebounced, useToast, TableScroll } from '@/components/ui';
@@ -15,6 +15,7 @@ export function PatientsPage() {
   const { t, locale } = useI18n();
   useDocumentMeta(t('Patiënten', 'Patients'));
   const { practice } = useSession();
+  const clinical = useClinicalPractice();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const [q, setQ] = useState('');
@@ -30,12 +31,12 @@ export function PatientsPage() {
   const creating = params.get('nieuw') === '1';
   // Quick filters on the loaded list (?filter=… so a link can open one). "Needs attention" uses the
   // dashboard's work list, the same signals as there.
-  type QuickFilter = 'all' | 'attention' | 'not_invited' | 'invite_open' | 'no_program';
-  const [quick, setQuick] = useState<QuickFilter>(() => (['attention', 'not_invited', 'invite_open', 'no_program'].includes(params.get('filter') ?? '') ? (params.get('filter') as QuickFilter) : 'all'));
+  type QuickFilter = 'all' | 'attention' | 'not_invited' | 'invite_open' | 'no_program' | 'acl';
+  const [quick, setQuick] = useState<QuickFilter>(() => (['attention', 'not_invited', 'invite_open', 'no_program', 'acl'].includes(params.get('filter') ?? '') ? (params.get('filter') as QuickFilter) : 'all'));
   const dash = useQuery({ queryKey: ['dashboard', practice?.practiceId], queryFn: () => api.get<{ attention: { patientId: string }[] }>('/dashboard'), enabled: status === 'active', staleTime: 60_000 });
   const attentionIds = new Set((dash.data?.attention ?? []).map((a) => a.patientId));
   const matches = (p: PatientListItem, f: QuickFilter) =>
-    f === 'all' ? true : f === 'attention' ? attentionIds.has(p.id) : f === 'not_invited' ? !p.hasAccount && !p.invitedAt : f === 'invite_open' ? !p.hasAccount && !!p.invitedAt : p.activePrograms === 0;
+    f === 'all' ? true : f === 'acl' ? !!p.aclPhase : f === 'attention' ? attentionIds.has(p.id) : f === 'not_invited' ? !p.hasAccount && !p.invitedAt : f === 'invite_open' ? !p.hasAccount && !!p.invitedAt : p.activePrograms === 0;
   const all = list.data?.items ?? [];
   const shown = all.filter((p) => matches(p, quick));
   const quickOptions: { key: QuickFilter; label: string }[] = [
@@ -44,6 +45,7 @@ export function PatientsPage() {
     { key: 'not_invited', label: t('Nog niet uitgenodigd', 'Not invited yet') },
     { key: 'invite_open', label: t('Uitnodiging open', 'Invitation open') },
     { key: 'no_program', label: t('Geen programma', 'No programme') },
+    ...(clinical ? [{ key: 'acl' as const, label: t('VKB-route', 'ACL route') }] : []),
   ];
 
   return (
@@ -107,6 +109,7 @@ export function PatientsPage() {
                           <span className="text-[12.5px] text-ink-500">
                             {p.hasAccount ? p.email : p.invitedAt ? t('Uitgenodigd, nog niet actief', 'Invited, not yet active') : t('Geen app-account', 'No app account')}
                           </span>
+                          {p.aclPhase && <span className="mt-0.5 block text-[12.5px] font-semibold text-ink-800">{t('VKB', 'ACL')} · {p.aclPhase}{p.aclTotal ? ` · ${p.aclMet ?? 0}/${p.aclTotal}` : ''}</span>}
                         </span>
                       </Link>
                     </td>

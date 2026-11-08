@@ -146,6 +146,10 @@ export type PatientListItem = {
   lastActivity: string | null;
   therapists: { id: string; fullName: string }[];
   adherence7d: Adherence;
+  aclPhase?: string | null;
+  aclPhaseNo?: number | null;
+  aclMet?: number | null;
+  aclTotal?: number | null;
 };
 
 export type PatientDetail = Omit<PatientListItem, 'activePrograms' | 'lastActivity' | 'adherence7d' | 'therapists'> & {
@@ -157,7 +161,7 @@ export type PatientDetail = Omit<PatientListItem, 'activePrograms' | 'lastActivi
 export type SessionLog = { exerciseId: string; nameNl: string; nameEn: string; completed: boolean; setsDone: number | null; repsDone: number | null; difficulty: number | null; pain: number | null; feedback: string | null; plannedHoldS?: number | null; plannedSets?: number | null };
 export type PatientOutcome = {
   id:string; measuredOn:string; domain:'rom'|'strength'|'function'|'confidence';
-  metric:string; value:number; unit:'degrees'|'kg'|'N'|'score_0_10'|'percent';
+  metric:string; metricKey?:string|null; value:number; unit:'degrees'|'kg'|'N'|'score_0_10'|'percent'|'grade'|'seconds'|'cm';
   side:'left'|'right'|'bilateral'|'not_applicable'; note:string; createdAt:string;
 };
 export type Progress = {
@@ -187,6 +191,19 @@ export type HeroState = {
   wallBadges: string[];
   /** Team quest: only a coarse group status, shown from five participants. */
   team?: { enabled: boolean; canJoin: boolean; available: boolean; participantsBand?: '5+'; status: 'not_started' | 'in_progress' | 'complete' };
+  heirloom?: { kind: 'weapon' | 'shield' | 'amulet'; tier: 1 | 2 | 3 | 4 | 5 } | null;
+  aclJourney?: {
+    owned: string[];
+    wearable: string[];
+    memorabilia: string[];
+    pets: string[];
+    banner: boolean;
+    guildBanner: boolean;
+    runeTier: 1 | 2 | 3 | 4 | 5;
+    scar: boolean;
+    sport: string | null;
+    sportChoice: string[];
+  };
   /** Guest heroes a patient may play as (real people who agreed). */
   heroGuests?: { key: string; name: string }[];
   hero: (import('@shared/hero').HeroLook & { createdAt: string; gear?: string[] }) | null;

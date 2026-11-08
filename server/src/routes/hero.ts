@@ -1,3 +1,7 @@
+import { HEIRLOOM_KINDS } from '../../../shared/measurementBoss';
+import { wearableAclReward, ACL_SPORTS } from '../../../shared/aclRewards';
+import { heirloomView } from '../lib/boss';
+import { aclJourneyFor } from '../lib/aclJourney';
 import { teamWeekSummary } from '../../../shared/teamQuest';
 import { quizXpFor } from './atlas';
 import { mobilityMoments } from '../../../shared/mobilityTests';
@@ -245,7 +249,9 @@ async function heroState(tx: Tx, patientId: string) {
   // ---- Gear: bought in the shop with coins (1 per 10 hero XP); private to the patient. ----
   const reached = levelFor(xp);
   const bought = (await tx.query('SELECT item, price FROM hero_purchases WHERE patient_id = $1 ORDER BY bought_at', [patientId])).rows as { item: string; price: number }[];
-  const owned = bought.map((r) => r.item).filter((k) => GEAR_KEYS.has(k));
+  const boughtOwned = bought.map((r) => r.item).filter((k) => GEAR_KEYS.has(k));
+  const journey = await aclJourneyFor(tx, patientId);
+  const owned = [...boughtOwned, ...journey.wearable];
   const chests = (await tx.query("SELECT to_char(day, 'YYYY-MM-DD') AS day, coins FROM hero_daily_chests WHERE patient_id = $1 ORDER BY day", [patientId])).rows as { day: string; coins: number }[];
   const earned = coinsEarned(xp) + chests.reduce((sum, r) => sum + r.coins, 0);
   const spent = bought.reduce((sum, r) => sum + r.price, 0);
@@ -339,6 +345,7 @@ async function heroState(tx: Tx, patientId: string) {
       season: { ...season, xp: SEASON_XP, trophies: seasonList.filter((x) => x.won).map((x) => ({ month: x.month, key: x.key })).reverse() } },
     // Coins stay with the patient: never on the friend card or the professional's view.
     gear: { owned, equipped, coins: Math.max(0, earned - spent), earned, spent, score: gearScore(equipped) },
+    aclJourney: journey.public,
     // Trophy cabinet: per skill at level 10/25/50/75/99; up to three on the shelf behind the hero.
     trophies: skillTrophies(skills),
     showcase: ((heroRow?.showcase ?? []) as string[]).filter((k) => skillTrophies(skills).some((t) => t.key === k && t.earned)),
@@ -374,6 +381,44 @@ async function painTrends(tx: Tx, patientId: string) {
   return [...by.entries()].map(([area, points]) => ({ area, points }));
 }
 
+heroPatient.put('/hero/scar', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ on: z.boolean() }), await c.req.json());
+  await withUser(user.id, async (tx) => {
+    const row = (await tx.query('UPDATE patient_heroes SET knee_scar = $2, updated_at = now() WHERE patient_id = $1 RETURNING patient_id', [patient.id, b.on])).rows[0];
+    if (!row) throw badRequest('hero_required');
+  });
+  return c.json({ ok: true });
+});
+
+heroPatient.put('/hero/acl-sport', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ sport: z.enum(ACL_SPORTS) }), await c.req.json());
+  await withUser(user.id, async (tx) => {
+    const journey = await aclJourneyFor(tx, patient.id);
+    if (!journey.public.sportChoice.length) throw badRequest('acl_sport_locked');
+    await tx.query('UPDATE patient_heroes SET acl_sport = $2, updated_at = now() WHERE patient_id = $1', [patient.id, b.sport]);
+    const key = `sport_${b.sport}`;
+    const state = await heroState(tx, patient.id);
+    if (state.hero) {
+      await tx.query('UPDATE patient_heroes SET gear = $2 WHERE patient_id = $1', [patient.id, onePerSlot([...state.gear.equipped.filter((g) => !g.startsWith('sport_')), key])]);
+    }
+  });
+  return c.json({ ok: true });
+});
+
+heroPatient.put('/hero/heirloom', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ kind: z.enum(HEIRLOOM_KINDS) }), await c.req.json());
+  return c.json(await withUser(user.id, async (tx) => {
+    const row = (await tx.query('SELECT heirloom FROM patient_heroes WHERE patient_id = $1', [patient.id])).rows[0];
+    if (!row) throw badRequest('hero_required');
+    if (row.heirloom) throw badRequest('heirloom_locked');
+    await tx.query('UPDATE patient_heroes SET heirloom = $2 WHERE patient_id = $1', [patient.id, b.kind]);
+    return { heirloom: await heirloomView(tx, patient.id) };
+  }));
+});
+
 heroPatient.get('/hero', async (c) => {
   const { user, patient } = requirePatient(c);
   return c.json(
@@ -391,6 +436,7 @@ heroPatient.get('/hero', async (c) => {
         team,
         customPhoto: config.personalHeroPhotos.get(user.email.toLowerCase()) ?? guest,
         heroGuests: [...config.heroGuests].map(([key, name]) => ({ key, name })),
+        heirloom: await heirloomView(tx, patient.id),
       };
     }),
   );
@@ -672,7 +718,7 @@ heroPatient.post('/hero/shop', async (c) => {
 heroPatient.put('/hero/gear', async (c) => {
   const { user, patient } = requirePatient(c);
   const b = parse(z.object({ equipped: z.array(z.string()).max(24) }), await c.req.json());
-  if (b.equipped.some((g) => !GEAR_KEYS.has(g))) throw badRequest('unknown_gear');
+  if (b.equipped.some((g) => !GEAR_KEYS.has(g) && !wearableAclReward(g))) throw badRequest('unknown_gear');
   await withUser(user.id, async (tx) => {
     const state = await heroState(tx, patient.id);
     if (!state.hero) throw badRequest('hero_required');

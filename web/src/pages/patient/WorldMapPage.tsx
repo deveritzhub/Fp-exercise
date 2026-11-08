@@ -9,19 +9,34 @@ import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
 import { Dialog, ErrorState, Skeleton } from '@/components/ui';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
+import { HeirloomMark } from '@/components/hero/HeirloomMark';
 import { BADGES, SKILLS, TROPHY_TIERS, bodyShape } from '@shared/hero';
 import { prizesForZones, villageBuildings, worldCopy, zoneTheme, type WorldZone, type ZoneExercise } from '@shared/worldMap';
 import type { HeroState } from '@/lib/types';
 import { GuildRaidCard } from '@/components/patient/GuildRaid';
 import { useHero } from '@/pages/patient/HeroPages';
 
+type BossLine = {
+  labelNl: string;
+  labelEn: string;
+  unit: string;
+  remaining: number | null;
+  latest: number | null;
+  target?: number;
+  ratio: number;
+  defeated: boolean;
+};
+
+type BossMeasure = BossLine & { lines: BossLine[] };
+
 type WorldResponse = {
   clinical: boolean;
-  zones: WorldZone[];
+  zones: (WorldZone & { measure?: BossMeasure | null; bossNameNl?: string | null; bossNameEn?: string | null })[];
   heroZoneNo: number | null;
   rest: { active: boolean; reason: 'rest' | 'pain' | null };
   guild: import('@shared/worldMap').GuildPublic;
   empty: boolean;
+  heirloom: { kind: 'weapon' | 'shield' | 'amulet'; tier: 1 | 2 | 3 | 4 | 5 } | null;
 };
 
 const DOTS = 8;
@@ -144,8 +159,9 @@ export function WorldMapPage() {
                 >
                   <span className="flex items-start gap-3">
                     {here && heroQ.data?.hero ? (
-                      <span className="w-16 shrink-0" aria-hidden>
+                      <span className="relative w-16 shrink-0" aria-hidden>
                         <HeroPhoto look={heroLook(heroQ.data)} className="h-24 w-16" />
+                        {data.heirloom && <HeirloomMark kind={data.heirloom.kind} tier={data.heirloom.tier} className="absolute bottom-0 right-0 h-8 w-8" />}
                       </span>
                     ) : (
                       <span aria-hidden className={cn(
@@ -171,7 +187,10 @@ export function WorldMapPage() {
                     </span>
                   </span>
                   {zone.locked ? (
-                    <span className="text-[14px] leading-relaxed text-ink-800">{line(copy.lockedNotice)}</span>
+                    <>
+                      <span className="text-[14px] leading-relaxed text-ink-800">{line(copy.lockedNotice)}</span>
+                      {zone.bossNameNl && <span className="text-[13px] font-semibold text-ink-800">{nl ? zone.bossNameNl : zone.bossNameEn}</span>}
+                    </>
                   ) : (
                     <>
                       <span className="block">
@@ -193,8 +212,9 @@ export function WorldMapPage() {
                       </span>
                       <span className="flex items-center gap-1.5 text-[13px] font-semibold text-ink-800">
                         <Flag className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                        {line(copy.boss)}
+                        {zone.bossNameNl ? (nl ? zone.bossNameNl : zone.bossNameEn) : line(copy.boss)}
                       </span>
+                      {zone.measure && <BossMeter measure={zone.measure} />}
                     </>
                   )}
                 </button>
@@ -249,8 +269,50 @@ export function WorldMapPage() {
   );
 }
 
+function formatAmount(value: number, unit: string) {
+  const n = Math.round(value * 10) / 10;
+  const text = Number.isInteger(n) ? String(n) : n.toFixed(1);
+  if (unit === 'degrees') return `${text}°`;
+  if (unit === 'percent') return `${text}%`;
+  if (unit === 'score_0_10' || unit === 'grade') return text;
+  return `${text} ${unit}`;
+}
+
+function BossMeter({ measure }: { measure: NonNullable<WorldResponse['zones'][number]['measure']> }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const lineOf = (row: BossLine) => {
+    if (row.unit === 'percent' && row.latest != null && row.target != null) {
+      const now = formatAmount(row.latest, 'percent');
+      const goal = formatAmount(row.target, 'percent');
+      const name = nl ? row.labelNl : row.labelEn;
+      return t(`${name} ${now} → doel ${goal}`, `${name} ${now} → goal ${goal}`);
+    }
+    if (row.remaining == null) return t('Nog geen meting. Je therapeut beoordeelt.', 'No measurement yet. Your therapist judges it.');
+    const left = formatAmount(row.remaining, row.unit);
+    return t(`nog ${left}`, `${left} to go`);
+  };
+  const rows = measure.lines?.length ? measure.lines : [measure];
+  return (
+    <span className="block">
+      <span className="mb-1 block text-[13px] font-semibold text-ink-900">{nl ? measure.labelNl : measure.labelEn}</span>
+      <span role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(measure.ratio * 100)} aria-label={t('Voortgang naar het meetdoel', 'Progress toward the measurement goal')} className="block h-2.5 overflow-hidden rounded-full bg-ink-100">
+        <span className="block h-full rounded-full bg-[#8C3A32]" style={{ width: `${Math.round(measure.ratio * 100)}%` }} />
+      </span>
+      {measure.defeated ? (
+        <span className="mt-1 block text-[13px] text-ink-700">{t('Doel gehaald. Je therapeut beoordeelt de volgende stap.', 'Goal met. Your therapist judges the next step.')}</span>
+      ) : rows.map((row) => (
+        <span key={row.labelNl} className="mt-1 block text-[13px] text-ink-700">
+          {rows.length > 1 && <span className="font-semibold">{nl ? row.labelNl : row.labelEn}. </span>}
+          {lineOf(row)}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function ZoneSheet({ zone, prizes, clinical, when }: {
-  zone: WorldZone;
+  zone: WorldResponse['zones'][number];
   prizes: { trophies: { key: string; skill: string; level: number; tier: string }[]; badges: string[] } | undefined;
   clinical: boolean;
   when: (iso: string) => string;
@@ -270,6 +332,7 @@ function ZoneSheet({ zone, prizes, clinical, when }: {
   };
   return (
     <div className="space-y-5">
+      {zone.measure && <BossMeter measure={zone.measure} />}
       {(zone.releasedOn || zone.startedOn || zone.endedOn || zone.weeks) && (
         <dl className="grid grid-cols-1 gap-2 text-[14.5px]">
           {zone.releasedOn && <div><dt className="text-[12px] font-semibold uppercase tracking-wide text-ink-500">{clinical ? t('Vrijgegeven', 'Released') : t('Gestart', 'Started')}</dt><dd><time dateTime={zone.releasedOn}>{when(zone.releasedOn)}</time></dd></div>}

@@ -9,6 +9,9 @@ import { uuid } from '../lib/crypto';
 import { exposeInviteLinks } from '../config';
 import { inviteUser, linkPatientLogin, unlinkPendingPatientLogin } from '../auth/service';
 import { adherenceForPatient, loadAdherenceInputs, weeklyForPatient } from '../lib/progress';
+import { ACL_MEASURE_KEYS } from '../../../shared/aclRoute';
+import { isClinical } from '../../../shared/accountKind';
+import { refreshBosses } from '../lib/boss';
 
 export const patients = new Hono<AppEnv>();
 
@@ -43,6 +46,8 @@ patients.get('/', async (c) => {
       const { rows } = await tx.query(
         `SELECT pt.*, app.user_activated(pt.user_id) AS activated,
             (SELECT count(*) FROM programs p WHERE p.patient_id = pt.id AND p.status = 'active') AS active_programs,
+            (SELECT p.phase_name FROM programs p WHERE p.patient_id = pt.id AND p.series_key = 'acl_vkb_flagship' AND p.status = 'active' ORDER BY p.phase_no LIMIT 1) AS acl_phase,
+            (SELECT p.phase_no FROM programs p WHERE p.patient_id = pt.id AND p.series_key = 'acl_vkb_flagship' AND p.status = 'active' ORDER BY p.phase_no LIMIT 1) AS acl_phase_no,
             (SELECT max(completed_at) FROM workout_sessions s WHERE s.patient_id = pt.id) AS last_activity,
             (SELECT coalesce(json_agg(json_build_object('id', u.id, 'fullName', u.full_name)), '[]')
                FROM patient_therapists a JOIN users u ON u.id = a.therapist_id WHERE a.patient_id = pt.id) AS therapists
@@ -57,10 +62,29 @@ patients.get('/', async (c) => {
         [practiceId, f.status, f.q.trim(), f.scope],
       );
       const inputs = await loadAdherenceInputs(tx, rows.map((r) => r.id));
+      const aclIds = rows.filter((r) => r.acl_phase).map((r) => r.id);
+      const aclCounts = new Map<string, { met: number; total: number }>();
+      if (aclIds.length) {
+        const counts = await tx.query(
+          `SELECT g.patient_id,
+                  count(*) FILTER (WHERE g.active AND g.defeated_at IS NOT NULL)::int AS met,
+                  count(*) FILTER (WHERE g.active)::int AS total
+             FROM phase_boss_goals g
+             JOIN programs p ON p.id = g.program_id AND p.status = 'active' AND p.series_key = 'acl_vkb_flagship'
+            WHERE g.patient_id = ANY($1::uuid[])
+            GROUP BY g.patient_id`,
+          [aclIds],
+        );
+        for (const row of counts.rows) aclCounts.set(row.patient_id, { met: Number(row.met), total: Number(row.total) });
+      }
       return {
         items: rows.map((r) => ({
           ...mapPatient(r),
           activePrograms: r.active_programs,
+          aclPhase: r.acl_phase ?? null,
+          aclPhaseNo: r.acl_phase_no == null ? null : Number(r.acl_phase_no),
+          aclMet: aclCounts.get(r.id)?.met ?? null,
+          aclTotal: aclCounts.get(r.id)?.total ?? null,
           lastActivity: r.last_activity,
           therapists: r.therapists,
           adherence7d: adherenceForPatient(inputs, r.id, 7),
@@ -244,12 +268,21 @@ const measuredDate=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>{
   return !Number.isNaN(d.getTime())&&d.toISOString().slice(0,10)===v;
 },{message:'Invalid calendar date'});
 
-const outcomeBody = z.discriminatedUnion('domain', [
-  z.object({ domain: z.literal('rom'), metric: z.string().trim().min(1).max(80), value:z.number().finite().min(0).max(360), unit:z.literal('degrees'), side:z.enum(['left','right','bilateral','not_applicable']).default('not_applicable'), measuredOn:measuredDate, note:z.string().trim().max(300).default('') }),
-  z.object({ domain: z.literal('strength'), metric: z.string().trim().min(1).max(80), value:z.number().finite().min(0).max(100000), unit:z.enum(['kg','N']), side:z.enum(['left','right','bilateral','not_applicable']).default('not_applicable'), measuredOn:measuredDate, note:z.string().trim().max(300).default('') }),
-  z.object({ domain: z.enum(['function','confidence']), metric: z.string().trim().min(1).max(80), value:z.number().finite().min(0).max(100), unit:z.enum(['score_0_10','percent']), side:z.enum(['left','right','bilateral','not_applicable']).default('not_applicable'), measuredOn:measuredDate, note:z.string().trim().max(300).default('') }),
-]).superRefine((v,ctx)=>{
-  if(v.unit==='score_0_10' && v.value>10)ctx.addIssue({code:z.ZodIssueCode.custom,message:'score above 10',path:['value']});
+const outcomeBody = z.object({
+  domain: z.enum(['rom', 'strength', 'function', 'confidence']),
+  metric: z.string().trim().min(1).max(80),
+  metricKey: z.string().regex(/^[a-z0-9_]{2,40}$/).optional(),
+  value: z.number().finite().min(0).max(100000),
+  unit: z.enum(['degrees', 'kg', 'N', 'Nm', 'score_0_10', 'percent', 'grade', 'seconds', 'cm']),
+  side: z.enum(['left', 'right', 'bilateral', 'not_applicable']).default('not_applicable'),
+  measuredOn: measuredDate,
+  note: z.string().trim().max(300).default(''),
+}).superRefine((v, ctx) => {
+  const ok = (v.domain === 'rom' && v.unit === 'degrees' && v.value <= 360)
+    || (v.domain === 'strength' && (v.unit === 'kg' || v.unit === 'N' || v.unit === 'Nm'))
+    || (v.domain === 'function' && ((v.unit === 'score_0_10' && v.value <= 10) || (v.unit === 'percent' && v.value <= 100) || (v.unit === 'grade' && v.value <= 4) || (v.unit === 'seconds' && v.value <= 600) || (v.unit === 'cm' && v.value <= 2000)))
+    || (v.domain === 'confidence' && ((v.unit === 'score_0_10' && v.value <= 10) || (v.unit === 'percent' && v.value <= 100)));
+  if (!ok) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'unit', path: ['unit'] });
 });
 
 patients.post('/:id/outcomes', async (c)=>{
@@ -259,18 +292,23 @@ patients.post('/:id/outcomes', async (c)=>{
   return c.json(await withUser(user.id,async(tx)=>{
     const p=await loadPatient(tx,id);
     if(!p)throw notFound();
+    if (b.metricKey && ACL_MEASURE_KEYS.has(b.metricKey)) {
+      const kind = (await tx.query('SELECT kind FROM practices WHERE id = $1', [p.practice_id])).rows[0]?.kind;
+      if (!isClinical(kind)) throw badRequest('clinical_measure');
+    }
     const r=await tx.query(`INSERT INTO patient_outcomes
-      (patient_id,practice_id,recorded_by,measured_on,domain,metric,value,unit,side,note)
-      VALUES ($1,$2,app.uid(),$3,$4,$5,$6,$7,$8,$9)
-      RETURNING id,measured_on,domain,metric,value,unit,side,note,created_at`,
-      [id,p.practice_id,b.measuredOn,b.domain,b.metric,b.value,b.unit,b.side,b.note]);
+      (patient_id,practice_id,recorded_by,measured_on,domain,metric,metric_key,value,unit,side,note)
+      VALUES ($1,$2,app.uid(),$3,$4,$5,$6,$7,$8,$9,$10)
+      RETURNING id,measured_on,domain,metric,metric_key,value,unit,side,note,created_at`,
+      [id,p.practice_id,b.measuredOn,b.domain,b.metric,b.metricKey ?? null,b.value,b.unit,b.side,b.note]);
     await audit(tx,user.id,p.practice_id,'create','patient_outcome',r.rows[0].id,{domain:b.domain});
+    await refreshBosses(tx, id);
     return {item:mapOutcome(r.rows[0])};
   }),201);
 });
 
 const mapOutcome=(r:any)=>({
-  id:r.id,measuredOn:r.measured_on,domain:r.domain,metric:r.metric,
+  id:r.id,measuredOn:r.measured_on,domain:r.domain,metric:r.metric,metricKey:r.metric_key ?? null,
   value:Number(r.value),unit:r.unit,side:r.side,note:r.note,createdAt:r.created_at,
 });
 
@@ -299,7 +337,7 @@ patients.get('/:id/progress', async (c) => {
         [id],
       );
       const outcomes=await tx.query(
-        `SELECT id,measured_on,domain,metric,value,unit,side,note,created_at
+        `SELECT id,measured_on,domain,metric,metric_key,value,unit,side,note,created_at
            FROM patient_outcomes WHERE patient_id=$1
            ORDER BY measured_on DESC,created_at DESC LIMIT 100`,[id]);
       const perExercise = await tx.query(
