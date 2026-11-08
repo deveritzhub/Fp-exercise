@@ -50,38 +50,38 @@ export function RpgGear({ item, look, shapes }: { item: string; look: FigureLook
     {item==='headphones' && <g fill={teal} stroke="#d2b77d" strokeWidth="2"><path d="M74,39 V25 Q100,-4 126,25 V39" fill="none" strokeWidth="4"/><rect x="69" y="33" width="12" height="20" rx="5"/><rect x="119" y="33" width="12" height="20" rx="5"/></g>}
     {/* ACL reward gear: all shapes are anchored to the same body coordinates as the character,
         rather than the inventory thumbnail coordinates (which previously put knee gear on the chest). */}
-    {item==='ice_pack' && <g><path d={\`M\${100-g.neck},77 L100,105 \${100+g.neck},77\`} fill="none" stroke="#3b7c91" strokeWidth="2.5"/><circle cx="100" cy="107" r="10" fill="#a7d9e6" stroke="#23546c" strokeWidth="2"/><path d="M100,100 v14 M93,107 h14" stroke="#f7fcff" strokeWidth="2"/></g>}
+    {item==='ice_pack' && <g><path d={`M${100-g.neck},77 L100,105 ${100+g.neck},77`} fill="none" stroke="#3b7c91" strokeWidth="2.5"/><circle cx="100" cy="107" r="10" fill="#a7d9e6" stroke="#23546c" strokeWidth="2"/><path d="M100,100 v14 M93,107 h14" stroke="#f7fcff" strokeWidth="2"/></g>}
     {['deswell_mantle','wind_cape'].includes(item) && <g>
-      <path d={\`M\${100-g.shoulder},82 Q100,93 \${100+g.shoulder},82 C\${138+g.hip},160 \${139+g.hip},265 \${132+g.hip},\${item==='wind_cape'?361:318} Q100,\${item==='wind_cape'?380:328} \${68-g.hip},\${item==='wind_cape'?361:318} C\${61-g.hip},265 \${62-g.hip},160 \${100-g.shoulder},82Z\`} fill={item==='wind_cape'?'#d2e5e9':'#5c8e9a'} stroke={item==='wind_cape'?'#4c8693':'#1e4458'} strokeWidth="3"/>
-      <path d={\`M\${100-g.shoulder+4},92 Q\${91-g.hip},218 \${72-g.hip},\${item==='wind_cape'?353:309} M\${100+g.shoulder-4},92 Q\${109+g.hip},218 \${128+g.hip},\${item==='wind_cape'?353:309}\`} stroke="#eff8f2" strokeOpacity=".55" strokeWidth="2" fill="none"/>
+      <path d={`M${100-g.shoulder},82 Q100,93 ${100+g.shoulder},82 C${138+g.hip},160 ${139+g.hip},265 ${132+g.hip},${item==='wind_cape'?361:318} Q100,${item==='wind_cape'?380:328} ${68-g.hip},${item==='wind_cape'?361:318} C${61-g.hip},265 ${62-g.hip},160 ${100-g.shoulder},82Z`} fill={item==='wind_cape'?'#d2e5e9':'#5c8e9a'} stroke={item==='wind_cape'?'#4c8693':'#1e4458'} strokeWidth="3"/>
+      <path d={`M${100-g.shoulder+4},92 Q${91-g.hip},218 ${72-g.hip},${item==='wind_cape'?353:309} M${100+g.shoulder-4},92 Q${109+g.hip},218 ${128+g.hip},${item==='wind_cape'?353:309}`} stroke="#eff8f2" strokeOpacity=".55" strokeWidth="2" fill="none"/>
     </g>}
-    {['iron_brace','rune_guard'].includes(item) && <g transform={\`translate(\${100-g.legX} 294)\`}>
-      <path d={\`M\${-10*g.legW},-29 Q0,-34 \${10*g.legW},-29 L\${9*g.legW},30 Q0,35 \${-9*g.legW},30Z\`} fill={item==='rune_guard'?'#d9c27a':'#95aaac'} stroke={item==='rune_guard'?'#685323':'#354850'} strokeWidth="2"/>
+    {['iron_brace','rune_guard'].includes(item) && <g transform={`translate(${100-g.legX} 294)`}>
+      <path d={`M${-10*g.legW},-29 Q0,-34 ${10*g.legW},-29 L${9*g.legW},30 Q0,35 ${-9*g.legW},30Z`} fill={item==='rune_guard'?'#d9c27a':'#95aaac'} stroke={item==='rune_guard'?'#685323':'#354850'} strokeWidth="2"/>
       <path d="M-12,-16 H12 M-12,16 H12" stroke={item==='rune_guard'?'#7b5a21':'#dfeaed'} strokeWidth="3"/>
       <circle cx="-10" cy="0" r="3" fill="#f6e9c8"/><circle cx="10" cy="0" r="3" fill="#f6e9c8"/>
       {item==='rune_guard' && jewel(0,0,6)}
     </g>}
-    {item==='crutch_staff' && <g transform={\`translate(\${g.armX(1,214)+10} 0)\`}>
+    {item==='crutch_staff' && <g transform={`translate(${g.armX(1,214)+10} 0)`}>
       <path d="M0,127 Q-4,137 -3,158 L-2,402 Q1,409 4,402 L3,158 Q7,137 0,127Z" fill="#ad8556" stroke="#4a372b" strokeWidth="1.8"/>
       <path d="M-12,196 H10 M-9,201 H7" stroke="#dec692" strokeWidth="4" strokeLinecap="round"/>
       <circle cy="126" r="7" fill={gold} stroke="#82602a" strokeWidth="2"/>
     </g>}
-    {['pilgrim_boots','wing_shoes'].includes(item) && pair((x,side) => <g transform={\`translate(\${x} 382)\`}>
+    {['pilgrim_boots','wing_shoes'].includes(item) && pair((x,side) => <g transform={`translate(${x} 382)`}>
       <path d="M-8,-4 Q0,-9 8,-4 L10,12 Q17,16 16,23 Q9,28 -13,23 L-12,10Z" fill={item==='pilgrim_boots'?'#805c3d':'#dfe8e2'} stroke="#33443b" strokeWidth="1.6"/>
       <path d="M-12,21 H16 M-4,0 H6 M-4,5 H6" stroke={item==='pilgrim_boots'?'#d4b47e':'#678e83'} strokeWidth="2"/>
-      {item==='wing_shoes' && <path d={\`M\${side*10},6 l\${side*11},-16 -\${side*2},13 \${side*11},-9 -\${side*8},16Z\`} fill="#fcfaf0" stroke="#7f9a8d" strokeWidth="1.2"/>}
+      {item==='wing_shoes' && <path d={`M${side*10},6 l${side*11},-16 -${side*2},13 ${side*11},-9 -${side*8},16Z`} fill="#fcfaf0" stroke="#7f9a8d" strokeWidth="1.2"/>}
     </g>)}
-    {['golden_hinge','frog_badge'].includes(item) && <g transform={\`translate(\${100+g.chest*.45} 116)\`}>
+    {['golden_hinge','frog_badge'].includes(item) && <g transform={`translate(${100+g.chest*.45} 116)`}>
       {item==='frog_badge' ? <><circle r="9" fill="#7dbe6a" stroke="#24522c" strokeWidth="1.5"/><circle cx="-4" cy="-3" r="2" fill="#f9f5e9"/><circle cx="4" cy="-3" r="2" fill="#f9f5e9"/><path d="M-4,3 Q0,6 4,3" fill="none" stroke="#24522c"/></> :
       <><rect x="-10" y="-5" width="20" height="10" rx="3" fill={gold} stroke="#6a4a12"/><path d="M-5,-11 V11 M5,-11 V11" stroke="#f6dea5" strokeWidth="3"/></>}
     </g>}
-    {item==='smith_hammer' && <g transform={\`translate(\${g.armX(1,214)+7} 0)\`}>
+    {item==='smith_hammer' && <g transform={`translate(${g.armX(1,214)+7} 0)`}>
       <path d="M0,195 V272" stroke="#815532" strokeWidth="6" strokeLinecap="round"/>
       <rect x="-20" y="187" width="42" height="19" rx="4" fill="#b1b9ba" stroke="#364547" strokeWidth="2"/>
       <path d="M-15,191 H17" stroke="#eef3ee" strokeWidth="2.2"/>
     </g>}
     {item==='spring_belt' && <g>
-      <path d={\`M\${100-g.hip},188 Q100,194 \${100+g.hip},188 L\${100+g.hip},204 Q100,211 \${100-g.hip},204Z\`} fill="#3d6b4f" stroke="#d7bb75" strokeWidth="2"/>
+      <path d={`M${100-g.hip},188 Q100,194 ${100+g.hip},188 L${100+g.hip},204 Q100,211 ${100-g.hip},204Z`} fill="#3d6b4f" stroke="#d7bb75" strokeWidth="2"/>
       <rect x="93" y="190" width="14" height="16" rx="3" fill={gold} stroke="#5a431e"/>{jewel(100,198,4)}
     </g>}
     {item==='champion_helm' && <g>
