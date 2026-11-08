@@ -4,7 +4,7 @@ import { ACL_REWARDS, ACL_SPORTS } from '@shared/aclRewards';
 import { GearArtwork } from '@/components/hero/RpgGear';
 import { HEIRLOOM_KINDS } from '@shared/measurementBoss';
 import '../../components/hero/rpg.css';
-import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Award, BookOpen, Brain, CalendarCheck, Check, ChevronRight, CircleCheck, Coins, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Utensils, Droplets, Zap, Swords, type LucideIcon } from 'lucide-react';
@@ -16,8 +16,6 @@ import { cn } from '@/lib/cn';
 import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, ScaleInput, Segmented, Spinner, useToast } from '@/components/ui';
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
-// three.js is only downloaded when someone opens the 3D view.
-const Hero3D = lazy(() => import('@/components/hero/Hero3D'));
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
 import { HumanFigure, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
@@ -1142,8 +1140,9 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
   const [open, setOpen] = useState<GearSlot | null>(null);
   const [illustrated, setIllustrated] = useState(() => { try { return sessionStorage.getItem('fp.inventory.illustrated') === 'true'; } catch { return false; } });
   useEffect(() => { try { sessionStorage.setItem('fp.inventory.illustrated', String(illustrated)); } catch { /* storage optional */ } }, [illustrated]);
-  const [view3d, setView3d] = useState(() => { try { return sessionStorage.getItem('fp.inventory.3d') === 'true'; } catch { return false; } });
-  useEffect(() => { try { sessionStorage.setItem('fp.inventory.3d', String(view3d)); } catch { /* storage optional */ } }, [view3d]);
+  // 3D is parked. Clear the old session preference so it cannot unexpectedly return
+  // when an improved renderer is introduced in a future release.
+  useEffect(() => { try { sessionStorage.removeItem('fp.inventory.3d'); } catch { /* storage optional */ } }, []);
   const look = { ...d.hero!, gear: [...(preview ? onePerSlot([...d.gear.equipped, preview]) : d.gear.equipped), ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero!.frame) : null, photo: d.customPhoto ?? null };
   const inSlot = (k: GearSlot) => d.gear.equipped.find((g) => GEAR_SLOT[g] === k) ?? null;
   const slotBtn = (k: GearSlot) => {
@@ -1168,18 +1167,13 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
       <TrophyWall d={d} compact className="mb-2" />
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-[12.5px] text-ink-700">{t('Verander je outfit zonder je behandelschema te veranderen.', 'Change your outfit without changing your treatment.')}</p>
-        <span className="flex gap-2">
-          <button type="button" onClick={() => setView3d(x => !x)} aria-pressed={view3d} className={cn('tap inline-flex min-h-[44px] items-center rounded-full border border-accent px-3 text-[13px] font-semibold', view3d ? 'bg-accent text-white' : 'bg-white text-accent hover:bg-accent-soft')}>
-            {t('3D-weergave', '3D view')}
-          </button>
-          {!view3d && <button type="button" onClick={() => setIllustrated(x => !x)} aria-pressed={illustrated} className="tap inline-flex min-h-[44px] items-center rounded-full border border-accent bg-white px-3 text-[13px] font-semibold text-accent hover:bg-accent-soft">
-            {illustrated ? t('Fotoweergave', 'Photo view') : t('RPG-weergave', 'RPG view')}
-          </button>}
-        </span>
+        <button type="button" onClick={() => setIllustrated(x => !x)} aria-pressed={illustrated} className="tap inline-flex min-h-[44px] items-center rounded-full border border-accent bg-white px-3 text-[13px] font-semibold text-accent hover:bg-accent-soft">
+          {illustrated ? t('Fotoweergave', 'Photo view') : t('RPG-weergave', 'RPG view')}
+        </button>
       </div>
       <div className="grid grid-cols-[44px_1fr_44px] sm:grid-cols-[64px_1fr_64px] items-start gap-2">
         <div className="grid gap-2">{side('left')}</div>
-        {view3d ? <Suspense fallback={<p role="status" className="grid h-[420px] place-items-center text-[13px] font-semibold text-ink-700">{t('3D-held laden…', 'Loading 3D hero…')}</p>}><Hero3D look={look} className="h-[420px] sm:h-[520px] w-full" /></Suspense> : illustrated ? <span className="flex h-full min-h-[300px] min-w-0 items-center justify-center overflow-hidden rounded-2xl rpg-podium" role="img" aria-label={t('Je geïllustreerde held met je gedragen uitrusting', 'Your illustrated hero wearing equipped items')}><HumanFigure rpg look={look} viewBox="0 -10 200 440" className="h-[420px] sm:h-[520px] w-full max-w-[260px]" /></span> : <span role="img" aria-label={t('Je fotorealistische held met je gedragen uitrusting', 'Your photographic hero wearing equipped items')} className="min-w-0"><HeroPhoto fittedGear look={look} className="h-[420px] sm:h-[520px] w-full" /></span>}
+        {illustrated ? <span className="flex h-full min-h-[300px] min-w-0 items-center justify-center overflow-hidden rounded-2xl rpg-podium" role="img" aria-label={t('Je geïllustreerde held met je gedragen uitrusting', 'Your illustrated hero wearing equipped items')}><HumanFigure rpg look={look} viewBox="0 -10 200 440" className="h-[420px] sm:h-[520px] w-full max-w-[260px]" /></span> : <span role="img" aria-label={t('Je fotorealistische held met je gedragen uitrusting', 'Your photographic hero wearing equipped items')} className="min-w-0"><HeroPhoto fittedGear look={look} className="h-[420px] sm:h-[520px] w-full" /></span>}
         <div className="grid gap-2">{side('right')}</div>
       </div>
       <div className="mx-auto mt-2 grid w-[136px] grid-cols-2 gap-2">{GEAR_SLOTS.filter((x) => x.side === 'bottom').map((x) => slotBtn(x.key))}</div>
