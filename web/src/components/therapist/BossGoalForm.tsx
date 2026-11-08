@@ -70,6 +70,7 @@ export function BossGoalForm({ programId }: { programId: string }) {
     }
   };
 
+  if (q.isLoading) return <p className="text-[14px] text-ink-600">{t('Laden…', 'Loading…')}</p>;
   if (acl) return <AclGoalEditor programId={programId} goals={goals} />;
 
   return (

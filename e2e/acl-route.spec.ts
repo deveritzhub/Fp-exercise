@@ -49,8 +49,8 @@ test('ACL route bosses, heirloom bar and clinical review fit a phone', async ({ 
     await login(staff, 'therapeut@praktijk-a.test');
     await staff.goto(`/app/programmas/${phase.id}`);
     const form = staff.locator('form[aria-labelledby="boss-goal-title"]');
-    await form.scrollIntoViewIfNeeded();
     await expect(form).toContainText('Standaardwaarden');
+    await form.scrollIntoViewIfNeeded();
     await expect(form.getByText('80').first()).toBeVisible();
     await form.screenshot({ path: `${SHOTS}/acl-form-360.png`, animations: 'disabled' });
     await expectAccessible(staff, 'acl boss form');
