@@ -251,6 +251,13 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     alleen tussen 23:00 en 00:00 UTC (de test gebruikte de UTC-datum, de app terecht de Nederlandse);
     test aangepast. Wisselvallige test bibliotheekfilters opgelost: twee snelle filterwijzigingen (regio + materiaal) overschreven elkaar; nu worden ze samengevoegd. Uitloggen-test blijft wisselvallig (slaagt los).
 
+87. [x] **Held in 3D** (8 nov): eigen figuurtje in stevige fantasy-stijl met sportieve basis (shirt,
+    korte broek, sneakers), man en vrouw. Gemaakt in Blender met een script (`tools/blender/hero.py`):
+    elk uitrustingsstuk, kapsel, baard, bril, outfit en de krukken is een los onderdeel. In de app:
+    Held → Inventaris → "3D-weergave" (three.js, pas geladen als je erop tikt), draaien met slepen
+    of knoppen, huid-, haar-, oog- en tenuekleur uit de held. Model ~0,7 MB gecomprimeerd.
+    Volgende stappen: vrouwfiguur slanker en vrouwelijker, vingers, animatie (zwaaien, juichen).
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.

@@ -3,6 +3,7 @@ import { heroAssetFile, isHeroAsset } from './lib/heroAssets';
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
 import { serveStatic } from '@hono/node-server/serve-static';
+import { compress } from 'hono/compress';
 import { bodyLimit } from 'hono/body-limit';
 import { HTTPException } from 'hono/http-exception';
 import fs from 'node:fs';
@@ -155,6 +156,11 @@ export function createApp() {
     app.use('/sw.js', async (c, next) => {
       await next();
       c.header('Cache-Control', 'no-cache');
+    });
+    // 3D hero models: ~2.6 MB each, about a quarter of that compressed. Versioned with ?v= in the app.
+    app.use('/hero3d/*', compress({ contentTypeFilter: () => true }), async (c, next) => {
+      await next();
+      c.header('Cache-Control', 'public, max-age=604800');
     });
     app.use('*', serveStatic({ root }));
     app.get('*', serveStatic({ root, path: 'index.html' }));
