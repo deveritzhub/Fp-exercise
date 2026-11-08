@@ -12,8 +12,6 @@ Nine movements already have a master prompt from 3 November (leg press, plank, h
 
 Duration for every new shot: **5 seconds**, one slow repetition, so it can loop in the app. No medical claims in the prompts: no pain scores, no diagnosis, no promise of recovery.
 
-For the hop and bound clips only (lateral bound, on-the-spot stiff jumps, single-leg hop and stick, pogo hops), delete the words `jumping` and `running` from the negative prompt so the jump itself is allowed. Every other clip keeps them.
-
 ## Negative prompt (paste with every clip)
 
 ```
@@ -69,7 +67,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Half-kneeling hip-flexor stretch
 - **Id:** `mb_hip_flexor_stretch`
 - **Why here:** 6× in programme templates. Prompt copied from the 3 November masterprompt.
-- **Movement:** Shift the pelvis slightly forward, the trunk stays upright, and the lower back stays neutral.
+- **Movement:** Half-kneeling hip-flexor stretch
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -90,7 +88,7 @@ The back knee stays on the mat, the front knee does not move past the toes.
 - **English:** Leg press
 - **Id:** `kr_leg_press`
 - **Why here:** 6× in programme templates. Prompt copied from the 3 November masterprompt.
-- **Movement:** Voeten op schouderbreedte, knieën niet volledig op slot.
+- **Movement:** Leg press
 - **Start:** In the leg press machine, back and pelvis against the backrest, feet at shoulder width on the platform.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -134,7 +132,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Face pull
 - **Id:** `kr_face_pull`
 - **Why here:** 5× in programme templates. Prompt copied from the 3 November masterprompt.
-- **Movement:** Trek het touw naar het gezicht, ellebogen hoog.
+- **Movement:** Face pull
 - **Start:** Standing facing a cable or band at eye level, rope or band in both hands, arms straight.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -156,7 +154,7 @@ The body stays upright, no leaning back.
 - **English:** Incline dumbbell press
 - **Id:** `kr_incline_db_press`
 - **Why here:** 5× in programme templates. Prompt copied from the 3 November masterprompt.
-- **Movement:** Bank op 30 tot 45 graden, elleboog onder de schouder.
+- **Movement:** Incline dumbbell press
 - **Start:** On your back on an incline bench, a dumbbell in each hand at shoulder level.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -178,16 +176,16 @@ Wrists straight, back and head stay on the bench, feet stay on the floor.
 - **English:** Knee-to-wall bend
 - **Id:** `mb_kniebuiging_muur`
 - **Why here:** 5× in programme templates.
-- **Movement:** Voet op vaste lijn, knie naar de muur, hiel blijft op de grond
+- **Movement:** Knee-to-wall bend
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body in frame, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Voet op vaste lijn, knie naar de muur, hiel blijft op de grond
+0 to 2 seconds: moves slowly into the effort: Knee-to-wall bend
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -199,7 +197,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Lat pulldown
 - **Id:** `kr_lat_pulldown`
 - **Why here:** 5× in programme templates. Prompt copied from the 3 November masterprompt.
-- **Movement:** Borst naar de stang, schouderbladen naar beneden.
+- **Movement:** Lat pulldown
 - **Start:** Sitting in the machine, thighs under the pad, bar held wide with straight arms.
 - **Camera:** Three-quarter view, person and any cable or bench fully in frame, camera locked. Duration 5 s.
 
@@ -220,7 +218,7 @@ The bar never goes behind the neck.
 - **English:** Overhead press
 - **Id:** `kr_overhead_press`
 - **Why here:** 5× in programme templates. Prompt copied from the 3 November masterprompt.
-- **Movement:** Bil en buik aan, stang langs het gezicht, hoofd naar voren bij het passeren.
+- **Movement:** Overhead press
 - **Start:** Standing, bar on the front of the shoulders, hands just outside shoulder width, abdomen and glutes engaged.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -241,7 +239,7 @@ Glutes and core tight, no backward lean, legs stay straight, no knee bend.
 - **English:** Standing calf raise
 - **Id:** `kr_standing_calf_raise`
 - **Why here:** 5× in programme templates. Prompt copied from the 3 November masterprompt.
-- **Movement:** Volledige rek onderin, volledige contractie bovenin.
+- **Movement:** Standing calf raise
 - **Start:** Standing with the forefeet on a raised edge, heels free, optionally with weight or in a machine.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -264,7 +262,7 @@ The feet never move position, the person does not step off, the body stays verti
 - **English:** 90/90 hip mobility
 - **Id:** `mb_90_90`
 - **Why here:** 4× in programme templates.
-- **Movement:** Zit op de grond, beide knieën op 90 graden, draai het bekken van de ene naar de andere zijde
+- **Movement:** 90/90 hip mobility
 - **Start:** Sitting on the floor, both knees bent 90 degrees: one leg in front of you, the other to the side.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
@@ -273,7 +271,7 @@ Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side vie
 
 Start position: Sitting on the floor, both knees bent 90 degrees: one leg in front of you, the other to the side.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Zit op de grond, beide knieën op 90 graden, draai het bekken van de ene naar de andere zijde
+0 to 2 seconds: moves slowly into the effort: 90/90 hip mobility
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -285,7 +283,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Barbell bench press
 - **Id:** `kr_bench_press`
 - **Why here:** 4× in programme templates.
-- **Movement:** Schouderbladen samen, stang naar onderste borst, voeten stevig op de grond.
+- **Movement:** Barbell bench press
 - **Start:** On your back on a bench, eyes under the bar, feet flat on the floor, shoulder blades together.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -294,9 +292,9 @@ Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view 
 
 Start position: On your back on a bench, eyes under the bar, feet flat on the floor, shoulder blades together.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Schouderbladen samen, stang naar onderste borst, voeten stevig op de grond. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Barbell bench press
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -306,7 +304,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Doorway chest stretch
 - **Id:** `mb_doorway_pec`
 - **Why here:** 4× in programme templates.
-- **Movement:** Onderarm tegen de deurpost, licht naar voren
+- **Movement:** Doorway chest stretch
 - **Start:** Standing in a doorway, forearm vertical against the frame with the elbow at shoulder height.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -315,7 +313,7 @@ Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view 
 
 Start position: Standing in a doorway, forearm vertical against the frame with the elbow at shoulder height.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Onderarm tegen de deurpost, licht naar voren
+0 to 2 seconds: moves slowly into the effort: Doorway chest stretch
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -327,7 +325,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Chest-supported row
 - **Id:** `kr_chest_supported_row`
 - **Why here:** 4× in programme templates. Prompt copied from the 3 November masterprompt.
-- **Movement:** Borst op de steun, trek de ellebogen naar achteren.
+- **Movement:** Chest-supported row
 - **Start:** Chest against an inclined bench or support, arms hanging with a weight in each hand.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -349,7 +347,7 @@ The chest stays on the bench the whole time.
 - **English:** Deep squat hold
 - **Id:** `mb_deep_squat_hold`
 - **Why here:** 4× in programme templates.
-- **Movement:** Hielen op de grond, romp rechtop, gebruik een steun als dat nodig is
+- **Movement:** Deep squat hold
 - **Start:** Standing, feet slightly wider than hip width, toes slightly out; optionally a support in front of you.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -359,7 +357,7 @@ Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view 
 Start position: Standing, feet slightly wider than hip width, toes slightly out; optionally a support in front of you.
 Movement, one slow repetition:
 0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Hielen op de grond, romp rechtop, gebruik een steun als dat nodig is The body does not bounce.
+1 to 4.5 seconds: holds still: Deep squat hold The body does not bounce.
 4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
 The feet or supporting hands stay where they started. One person only.
 ```
@@ -370,7 +368,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Supine hamstring stretch with a band
 - **Id:** `mb_hamstring_stretch`
 - **Why here:** 4× in programme templates.
-- **Movement:** Knie licht gebogen mag, rek tot licht ongemak
+- **Movement:** Supine hamstring stretch with a band
 - **Start:** On your back, a band around the foot of the exercising leg, the other leg bent or straight on the floor.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -379,7 +377,7 @@ Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view 
 
 Start position: On your back, a band around the foot of the exercising leg, the other leg bent or straight on the floor.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Knie licht gebogen mag, rek tot licht ongemak
+0 to 2 seconds: moves slowly into the effort: Supine hamstring stretch with a band
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -412,7 +410,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Lying leg curl
 - **Id:** `kr_leg_curl`
 - **Why here:** 4× in programme templates.
-- **Movement:** Heupen plat op de bank, langzame excentrische fase.
+- **Movement:** Lying leg curl
 - **Start:** Face down in the machine, the pad just above the heels, knees just over the edge of the bench.
 - **Camera:** Exact side view, whole body in frame, camera locked on a tripod. Duration 5 s.
 
@@ -421,7 +419,7 @@ Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view 
 
 Start position: Face down in the machine, the pad just above the heels, knees just over the edge of the bench.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Heupen plat op de bank, langzame excentrische fase.
+0 to 2 seconds: moves slowly into the effort: Lying leg curl
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -475,7 +473,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Forearm plank
 - **Id:** `kr_core_plank`
 - **Why here:** 4× in programme templates. Prompt copied from the 3 November masterprompt.
-- **Movement:** Rechte lijn van hoofd tot hielen, buik aan.
+- **Movement:** Forearm plank
 - **Start:** Supported on forearms and toes, elbows under the shoulders.
 - **Camera:** Exact side view, whole body in frame, camera locked on a tripod. Duration 5 s.
 
@@ -502,9 +500,9 @@ Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view 
 
 Start position: Sitting or standing upright, arms relaxed by your sides.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Gently draw the shoulder blades together and down without shrugging the shoulders. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Gently draw the shoulder blades together and down without shrugging the shoulders.
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -514,16 +512,16 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Thoracic rotation
 - **Id:** `mb_thoracic_rotatie`
 - **Why here:** 4× in programme templates.
-- **Movement:** Hand achter het hoofd, draai de borst open naar het plafond
+- **Movement:** Thoracic rotation
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Hand achter het hoofd, draai de borst open naar het plafond
+0 to 2 seconds: moves slowly into the effort: Thoracic rotation
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -556,7 +554,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Wall slide
 - **Id:** `mb_wall_slide`
 - **Why here:** 4× in programme templates.
-- **Movement:** Onderarmen tegen de muur, schuif omhoog zonder de onderrug te laten holtrekken
+- **Movement:** Wall slide
 - **Start:** Back or face to a wall, forearms against the wall, elbows at shoulder height.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -565,7 +563,7 @@ Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view 
 
 Start position: Back or face to a wall, forearms against the wall, elbows at shoulder height.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Onderarmen tegen de muur, schuif omhoog zonder de onderrug te laten holtrekken
+0 to 2 seconds: moves slowly into the effort: Wall slide
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -577,7 +575,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Back squat
 - **Id:** `kr_back_squat`
 - **Why here:** 3× in programme templates.
-- **Movement:** Brace voor het afzetten, knie in lijn met de voet, diepte tot parallel of dieper zonder dat het bekken kantelt.
+- **Movement:** Back squat
 - **Start:** Standing under the barbell in the rack, bar on the upper back, feet at shoulder width, toes slightly out.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -586,7 +584,7 @@ Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view 
 
 Start position: Standing under the barbell in the rack, bar on the upper back, feet at shoulder width, toes slightly out.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Brace voor het afzetten, knie in lijn met de voet, diepte tot parallel of dieper zonder dat het bekken kantelt.
+0 to 2 seconds: moves slowly into the effort: Back squat
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -598,7 +596,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Dumbbell curl
 - **Id:** `kr_db_curl`
 - **Why here:** 3× in programme templates.
-- **Movement:** Ellebogen vast, gecontroleerd zakken.
+- **Movement:** Dumbbell curl
 - **Start:** Standing, a dumbbell in each hand, arms straight by your sides, palms forward.
 - **Camera:** Exact side view, whole body in frame, camera locked on a tripod. Duration 5 s.
 
@@ -607,7 +605,7 @@ Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view 
 
 Start position: Standing, a dumbbell in each hand, arms straight by your sides, palms forward.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Ellebogen vast, gecontroleerd zakken.
+0 to 2 seconds: moves slowly into the effort: Dumbbell curl
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -619,7 +617,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Child's pose
 - **Id:** `mb_child_pose`
 - **Why here:** 3× in programme templates.
-- **Movement:** Heupen naar de hielen, armen voor je uit
+- **Movement:** Child's pose
 - **Start:** On hands and knees, knees slightly apart.
 - **Camera:** Exact side view, whole body in frame, camera locked on a tripod. Duration 5 s.
 
@@ -628,9 +626,9 @@ Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view 
 
 Start position: On hands and knees, knees slightly apart.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Heupen naar de hielen, armen voor je uit The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Child's pose
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -640,7 +638,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Triceps pushdown
 - **Id:** `kr_triceps_pushdown`
 - **Why here:** 3× in programme templates.
-- **Movement:** Ellebogen vast tegen de zij, volledig strekken.
+- **Movement:** Triceps pushdown
 - **Start:** Standing facing a cable, bar or rope in your hands with the elbows bent against your sides.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
@@ -649,7 +647,7 @@ Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side vie
 
 Start position: Standing facing a cable, bar or rope in your hands with the elbows bent against your sides.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Ellebogen vast tegen de zij, volledig strekken.
+0 to 2 seconds: moves slowly into the effort: Triceps pushdown
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -682,7 +680,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Dumbbell lateral raise
 - **Id:** `kr_lateral_raise`
 - **Why here:** 3× in programme templates.
-- **Movement:** Lichte elleboogbuiging, tot schouderhoogte, geen zwaaien.
+- **Movement:** Dumbbell lateral raise
 - **Start:** Standing, a dumbbell in each hand by your sides, elbows slightly bent.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
@@ -691,9 +689,9 @@ Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side vie
 
 Start position: Standing, a dumbbell in each hand by your sides, elbows slightly bent.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Lichte elleboogbuiging, tot schouderhoogte, geen zwaaien. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Dumbbell lateral raise
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -703,7 +701,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Barbell row
 - **Id:** `kr_barbell_row`
 - **Why here:** 2× in programme templates.
-- **Movement:** Rug rechte hoek met de grond, trek naar de navel.
+- **Movement:** Barbell row
 - **Start:** Standing with the bar in your hands, knees slightly bent, trunk tilted forward with a straight back.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -712,7 +710,7 @@ Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view 
 
 Start position: Standing with the bar in your hands, knees slightly bent, trunk tilted forward with a straight back.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Rug rechte hoek met de grond, trek naar de navel.
+0 to 2 seconds: moves slowly into the effort: Barbell row
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -973,10 +971,10 @@ The feet or supporting hands stay where they started. One person only.
 ## 46. Slaapstretch schouder
 
 - **Dutch:** Slaapstretch schouder
-- **English:** Slaapstretch schouder
+- **English:** Sleeper stretch for the shoulder
 - **Id:** `mb_sleeper_stretch`
 - **Why here:** 2× in programme templates.
-- **Movement:** Lig op de zij, duw de onderarm zacht naar de vloer
+- **Movement:** Sleeper stretch for the shoulder
 - **Start:** On your side on the shoulder you are training, arm in front of you with the elbow bent 90 degrees.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
@@ -985,9 +983,9 @@ Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side vie
 
 Start position: On your side on the shoulder you are training, arm in front of you with the elbow bent 90 degrees.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Lig op de zij, duw de onderarm zacht naar de vloer The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Sleeper stretch for the shoulder
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -1081,7 +1079,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** World's greatest stretch
 - **Id:** `mb_world_greatest`
 - **Why here:** 2× in programme templates.
-- **Movement:** Diepe lunge, draai open naar het plafond, dan het been naar voren
+- **Movement:** World's greatest stretch
 - **Start:** In a deep lunge, back knee straight or on the floor, hands beside the front foot.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -1090,7 +1088,7 @@ Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view 
 
 Start position: In a deep lunge, back knee straight or on the floor, hands beside the front foot.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Diepe lunge, draai open naar het plafond, dan het been naar voren
+0 to 2 seconds: moves slowly into the effort: World's greatest stretch
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -1111,9 +1109,9 @@ Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view 
 
 Start position: Stand or sit with the band anchored at chest height in front of you, arms straight.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Pull the band towards you, elbows close to your body, gently squeezing the shoulder blades. Return under control. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Pull the band towards you, elbows close to your body, gently squeezing the shoulder blades. Return under control.
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -1384,9 +1382,9 @@ Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view 
 
 Start position: Stand tall holding a dowel along your back: touching head, upper back and tailbone.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Hinge forward at the hips with soft knees while the dowel keeps all three contact points. Return. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Hinge forward at the hips with soft knees while the dowel keeps all three contact points. Return.
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -1459,7 +1457,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Leg extension
 - **Id:** `kr_leg_extension`
 - **Why here:** 1× in programme templates.
-- **Movement:** Gecontroleerd strekken en langzaam terug.
+- **Movement:** Leg extension
 - **Start:** Sitting in the machine, back against the backrest, the pad in front of the lower legs just above the ankles.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
@@ -1468,7 +1466,7 @@ Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view 
 
 Start position: Sitting in the machine, back against the backrest, the pad in front of the lower legs just above the ankles.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Gecontroleerd strekken en langzaam terug.
+0 to 2 seconds: moves slowly into the effort: Leg extension
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -1501,7 +1499,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Pull-up
 - **Id:** `kr_pull_up`
 - **Why here:** 1× in programme templates.
-- **Movement:** Kin over de stang, gecontroleerd zakken.
+- **Movement:** Pull-up
 - **Start:** Hanging from a pull-up bar, hands at shoulder width, arms straight.
 - **Camera:** Three-quarter view, person and any cable or bench fully in frame, camera locked. Duration 5 s.
 
@@ -1510,7 +1508,7 @@ Static locked-off camera on a tripod, 4.5 metres away, wide shot, three-quarter 
 
 Start position: Hanging from a pull-up bar, hands at shoulder width, arms straight.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Kin over de stang, gecontroleerd zakken.
+0 to 2 seconds: moves slowly into the effort: Pull-up
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -1627,16 +1625,16 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Voorwaartse uitvalspas
 - **Id:** `kr_forward_lunge`
 - **Why here:** 1× in programme templates.
-- **Movement:** Romp rechtop, handen in de zij. Stap naar voren en zak tot de voorste knie ongeveer 90 graden boven de enkel staat en de achterste knie net boven de grond. Duw terug naar de start.
+- **Movement:** Voorwaartse uitvalspas
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Romp rechtop, handen in de zij. Stap naar voren en zak tot de voorste knie ongeveer 90 graden boven de enkel staat en de achterste knie net boven de grond. Duw terug naar de start.
+0 to 2 seconds: moves slowly into the effort: Voorwaartse uitvalspas
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -1901,13 +1899,13 @@ The feet or supporting hands stay where they started. One person only.
 - **Id:** `pendulum`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
 - **Movement:** Gently sway your body so the arm makes small circles and swings.
-- **Start:** Support yourself with your unaffected hand on a table and lean forward. Let the working arm hang relaxed.
+- **Start:** Support yourself with your unaffected hand on a table and lean forward. Let the painful arm hang relaxed.
 - **Camera:** Exact side view, whole body in frame, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: Support yourself with your unaffected hand on a table and lean forward. Let the working arm hang relaxed.
+Start position: Support yourself with your unaffected hand on a table and lean forward. Let the painful arm hang relaxed.
 Movement, one slow repetition:
 0 to 2 seconds: moves slowly into the effort: Gently sway your body so the arm makes small circles and swings.
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
@@ -1928,11 +1926,11 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: On hands and knees, back neutral. Extend one arm forward and the opposite leg back at the same time, without arching the back or rotating the pelvis. Hold two counts, keep breathing and switch. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: On hands and knees, back neutral. Extend one arm forward and the opposite leg back at the same time, without arching the back or rotating the pelvis. Hold two counts, keep breathing and switch.
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -1949,7 +1947,7 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
 0 to 1 seconds: the person settles into the start position and gets ready.
 1 to 4.5 seconds: holds still: Sit upright and hold the seat of the chair with the hand on the side to stretch. Tilt the head gently to the other side, ear towards shoulder, until you feel a stretch at the top of the shoulder and side of the neck. Hold and breathe out calmly. The body does not bounce.
@@ -1970,11 +1968,11 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Lie on your stomach with your forehead on a towel. Lift the arms in a Y shape (diagonally forward) with thumbs up, shoulders low and away from the ears. Then in a T shape (to the side). Slowly up and down. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Lie on your stomach with your forehead on a towel. Lift the arms in a Y shape (diagonally forward) with thumbs up, shoulders low and away from the ears. Then in a T shape (to the side). Slowly up and down.
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -1984,16 +1982,16 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Cable fly
 - **Id:** `kr_cable_fly`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Lichte buiging in de ellebogen, breng je handen voor je borst samen in een boog.
+- **Movement:** Cable fly
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body in frame, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Lichte buiging in de ellebogen, breng je handen voor je borst samen in een boog.
+0 to 2 seconds: moves slowly into the effort: Cable fly
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2005,16 +2003,16 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Chin-up
 - **Id:** `kr_chin_up`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Handpalmen naar je toe, trek je op tot je kin boven de stang is. Te zwaar: met elastiek of machine.
+- **Movement:** Chin-up
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Handpalmen naar je toe, trek je op tot je kin boven de stang is. Te zwaar: met elastiek of machine.
+0 to 2 seconds: moves slowly into the effort: Chin-up
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2033,7 +2031,7 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
 0 to 1 seconds: the person settles into the start position and gets ready.
 1 to 4.5 seconds: holds still: Lie on your side on your forearm. Rest the inside of the top knee on a bench or chair. Lift your hips until your body is a straight line and hold; the bottom leg hangs free. Progress to a straight leg (long lever) when this goes well. The body does not bounce.
@@ -2047,18 +2045,18 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Dips
 - **Id:** `kr_dips`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Schouders laag, zak tot je bovenarm ongeveer horizontaal is. Te zwaar: met ondersteuning of op een bank.
+- **Movement:** Dips
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body in frame, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Schouders laag, zak tot je bovenarm ongeveer horizontaal is. Te zwaar: met ondersteuning of op een bank. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Dips
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -2075,7 +2073,7 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
 0 to 2 seconds: moves slowly into the effort: Put a rubber band around thumb and index finger. Bring the thumb slowly towards the little finger against the resistance and back. Then around thumb and middle finger. Wrist straight, slow pace.
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
@@ -2089,18 +2087,18 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Dumbbell bench press
 - **Id:** `kr_db_bench_press`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Schouderbladen samen, dumbbells boven je borst. Zak gecontroleerd tot je ellebogen net onder de bank zijn.
+- **Movement:** Dumbbell bench press
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Schouderbladen samen, dumbbells boven je borst. Zak gecontroleerd tot je ellebogen net onder de bank zijn. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Dumbbell bench press
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -2110,18 +2108,18 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Dumbbell schouderdrukken
 - **Id:** `kr_db_shoulder_press`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Zit rechtop, druk de dumbbells boven je hoofd zonder je rug hol te maken.
+- **Movement:** Dumbbell schouderdrukken
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Zit rechtop, druk de dumbbells boven je hoofd zonder je rug hol te maken. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Dumbbell schouderdrukken
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -2131,16 +2129,16 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Eenarmige dumbbell row
 - **Id:** `kr_db_row`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Steun met hand en knie op de bank, rug plat. Trek de dumbbell naar je heup.
+- **Movement:** Eenarmige dumbbell row
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Steun met hand en knie op de bank, rug plat. Trek de dumbbell naar je heup.
+0 to 2 seconds: moves slowly into the effort: Eenarmige dumbbell row
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2159,11 +2157,11 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Lie on your back with one knee bent and the foot close to your buttock; the other leg straight in the air. Squeeze your buttock and lift the pelvis to a straight line from knee to shoulder. Keep the pelvis level. Lower slowly. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Lie on your back with one knee bent and the foot close to your buttock; the other leg straight in the air. Squeeze your buttock and lift the pelvis to a straight line from knee to shoulder. Keep the pelvis level. Lower slowly.
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -2180,7 +2178,7 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
 0 to 2 seconds: moves slowly into the effort: Sit with the forearm on a table, palm up and the wrist over the edge. Lift the weight with the other hand and lower it with the affected hand over three counts.
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
@@ -2201,7 +2199,7 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
 0 to 2 seconds: moves slowly into the effort: Sit with the forearm on a table, palm down and the wrist over the edge. Lift the weight with the other hand and lower it with the affected hand over three counts. Elbow slightly bent.
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
@@ -2215,18 +2213,18 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Farmer carry
 - **Id:** `kr_farmer_carry`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Loop rechtop met in elke hand een zwaar gewicht, schouders laag, kleine stappen.
+- **Movement:** Farmer carry
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body in frame, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Loop rechtop met in elke hand een zwaar gewicht, schouders laag, kleine stappen. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Farmer carry
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -2236,16 +2234,16 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Femoralis slider in zijlig
 - **Id:** `nd_femoral_slider`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Lig op je zij met de onderste knie naar je borst getrokken. Pak de enkel van het bovenste been en breng de knie rustig naar achteren terwijl je de kin naar de borst buigt. Ga terug terwijl je het hoofd optilt. Rustig heen en weer, zonder door te drukken.
+- **Movement:** Femoralis slider in zijlig
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Lig op je zij met de onderste knie naar je borst getrokken. Pak de enkel van het bovenste been en breng de knie rustig naar achteren terwijl je de kin naar de borst buigt. Ga terug terwijl je het hoofd optilt. Rustig heen en weer, zonder door te drukken.
+0 to 2 seconds: moves slowly into the effort: Femoralis slider in zijlig
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2257,16 +2255,16 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Fibularis slider
 - **Id:** `nd_fibular_slider`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Zit op de rand van een stoel. Buig de knie iets en strek tegelijk de voet, met de voetzool naar binnen gedraaid. Strek daarna de knie terwijl je de voet ontspant en rustig naar je toe laat komen. Rustig heen en weer, zonder door te drukken.
+- **Movement:** Fibularis slider
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Zit op de rand van een stoel. Buig de knie iets en strek tegelijk de voet, met de voetzool naar binnen gedraaid. Strek daarna de knie terwijl je de voet ontspant en rustig naar je toe laat komen. Rustig heen en weer, zonder door te drukken.
+0 to 2 seconds: moves slowly into the effort: Fibularis slider
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2278,17 +2276,17 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Goblet squat
 - **Id:** `kr_goblet_squat`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Houd het gewicht voor je borst, ellebogen omlaag. Zak tussen je knieën, borst omhoog, hielen op de grond.
+- **Movement:** Goblet squat
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
 0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Houd het gewicht voor je borst, ellebogen omlaag. Zak tussen je knieën, borst omhoog, hielen op de grond. The body does not bounce.
+1 to 4.5 seconds: holds still: Goblet squat The body does not bounce.
 4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
 The feet or supporting hands stay where they started. One person only.
 ```
@@ -2299,18 +2297,18 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Hack squat
 - **Id:** `kr_hack_squat`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Rug tegen het kussen, voeten op schouderbreedte. Zak tot minstens 90 graden in de knie.
+- **Movement:** Hack squat
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Rug tegen het kussen, voeten op schouderbreedte. Zak tot minstens 90 graden in de knie. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Hack squat
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -2320,16 +2318,16 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Hammer curl
 - **Id:** `kr_hammer_curl`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Duimen omhoog, ellebogen langs je lichaam, buig je armen zonder te zwaaien.
+- **Movement:** Hammer curl
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body in frame, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Duimen omhoog, ellebogen langs je lichaam, buig je armen zonder te zwaaien.
+0 to 2 seconds: moves slowly into the effort: Hammer curl
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2348,7 +2346,7 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
 0 to 2 seconds: moves slowly into the effort: Stand with a stick along your back touching the back of the head, upper back and tailbone. Bend forward from the hips with slightly bent knees; the stick keeps touching all three points. Come back up by squeezing the buttocks.
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
@@ -2362,16 +2360,16 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Heupabductie machine
 - **Id:** `kr_hip_abduction`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Zit rechtop, duw je knieën naar buiten tegen de kussens en kom gecontroleerd terug.
+- **Movement:** Heupabductie machine
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Zit rechtop, duw je knieën naar buiten tegen de kussens en kom gecontroleerd terug.
+0 to 2 seconds: moves slowly into the effort: Heupabductie machine
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2404,16 +2402,16 @@ The back knee stays on the mat, the front knee does not move past the toes.
 - **English:** Inverted row
 - **Id:** `kr_inverted_row`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Lichaam in één lijn, trek je borst naar de stang. Lichter: voeten dichterbij, lichaam rechter.
+- **Movement:** Inverted row
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Lichaam in één lijn, trek je borst naar de stang. Lichter: voeten dichterbij, lichaam rechter.
+0 to 2 seconds: moves slowly into the effort: Inverted row
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2467,16 +2465,16 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Kettlebell swing
 - **Id:** `kr_kettlebell_swing`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Beweging komt uit de heup: kantel voorover met platte rug, duw je heupen krachtig naar voren. Armen sturen alleen.
+- **Movement:** Kettlebell swing
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body in frame, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Beweging komt uit de heup: kantel voorover met platte rug, duw je heupen krachtig naar voren. Armen sturen alleen.
+0 to 2 seconds: moves slowly into the effort: Kettlebell swing
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2495,7 +2493,7 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
 0 to 2 seconds: moves slowly into the effort: Put coins, buttons or marbles on the table. Pick them up one by one between thumb and fingertips and put them in a bowl. Wrist straight. Alternate the thumb with the index, middle and ring finger.
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
@@ -2537,7 +2535,7 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
 0 to 1 seconds: the person settles into the start position and gets ready.
 1 to 4.5 seconds: holds still: Hold a soft ball or therapy putty in the hand. Squeeze gently to about half your strength, hold 3 counts and let go. Wrist in a straight position. The body does not bounce.
@@ -2551,18 +2549,18 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Musculocutaneus slider
 - **Id:** `nd_musculocutaneous_slider`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Sta met de arm langs het lichaam en iets naar achteren, schouder rustig omlaag, elleboog gestrekt en de handpalm naar achteren gedraaid. Buig de pols naar de pinkkant en kantel tegelijk het hoofd naar dezelfde kant. Laat de pols ontspannen terwijl het hoofd naar de andere kant gaat. Rustig heen en weer.
+- **Movement:** Musculocutaneus slider
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Sta met de arm langs het lichaam en iets naar achteren, schouder rustig omlaag, elleboog gestrekt en de handpalm naar achteren gedraaid. Buig de pols naar de pinkkant en kantel tegelijk het hoofd naar dezelfde kant. Laat de pols ontspannen terwijl het hoofd naar de andere kant gaat. Rustig heen en weer. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Musculocutaneus slider
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -2572,17 +2570,17 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Wall sit (isometric, knee)
 - **Id:** `kt_muurzit`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Lean with the back against a wall and lower until both knees are bent about 90 degrees. Weight over both feet, knees over the feet. Hold.
+- **Movement:** Lean with your back against a wall and lower until the knees reach an angle that is pain-free or slightly painful (for example 60 degrees). Weight over both feet, knees over the feet. Hold.
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body in frame, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
 0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Lean with the back against a wall and lower until both knees are bent about 90 degrees. Weight over both feet, knees over the feet. Hold. The body does not bounce.
+1 to 4.5 seconds: holds still: Lean with your back against a wall and lower until the knees reach an angle that is pain-free or slightly painful (for example 60 degrees). Weight over both feet, knees over the feet. Hold. The body does not bounce.
 4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
 The feet or supporting hands stay where they started. One person only.
 ```
@@ -2593,7 +2591,7 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Nek en zenuwglijding, sliders
 - **Id:** `mb_nerve_glide_neck`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Sitting tall, one arm out to the side with the palm up. Tip the head away from that arm as the wrist bends back, then return the head and the wrist together.
+- **Movement:** Zie revalidatiebibliotheek, alleen bij klachten
 - **Start:** Sitting upright, shoulders relaxed, arm out to the side with the palm up.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
@@ -2602,7 +2600,7 @@ Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side vie
 
 Start position: Sitting upright, shoulders relaxed, arm out to the side with the palm up.
 Movement, one slow repetition:
-0 to 2 seconds: the person tips the head away from the outstretched arm while the wrist bends back, the shoulder stays down.
+0 to 2 seconds: moves slowly into the effort: Zie revalidatiebibliotheek, alleen bij klachten
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2614,16 +2612,16 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Obturatorius slider
 - **Id:** `nd_obturator_slider`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Zit rechtop op een stoel met de voeten plat. Laat één knie rustig naar buiten zakken terwijl je de kin iets optilt. Breng de knie terug terwijl je de kin naar de borst buigt. Rustig heen en weer, alleen tot een lichte rek aan de binnenkant van het bovenbeen.
+- **Movement:** Obturatorius slider
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Zit rechtop op een stoel met de voeten plat. Laat één knie rustig naar buiten zakken terwijl je de kin iets optilt. Breng de knie terug terwijl je de kin naar de borst buigt. Rustig heen en weer, alleen tot een lichte rek aan de binnenkant van het bovenbeen.
+0 to 2 seconds: moves slowly into the effort: Obturatorius slider
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2642,7 +2640,7 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
 0 to 2 seconds: moves slowly into the effort: Lie on your side with knees bent at hip height and arms straight in front of you. Open the top arm like a book to the other side and follow it with your eyes, while the knees stay down. Breathe out in the end position and return.
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
@@ -2656,16 +2654,16 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Pallof press
 - **Id:** `kr_pallof_press`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Sta zijwaarts naar de kabel, duw je handen recht naar voren en weersta het draaien.
+- **Movement:** Pallof press
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Sta zijwaarts naar de kabel, duw je handen recht naar voren en weersta het draaien.
+0 to 2 seconds: moves slowly into the effort: Pallof press
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2684,7 +2682,7 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
 0 to 2 seconds: moves slowly into the effort: Start with straight fingers. Make in turn a hook (bend the fingertips), a fist, a flat fist (straight fingers onto the palm) and straighten again. Slowly through all positions, wrist straight.
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
@@ -2705,11 +2703,11 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Stand with your hands against the wall at shoulder height, arms straight. Push the wall further away so the shoulder blades slide forward around the ribs, then let them come back slowly. Elbows stay straight. Later on the knees or the floor. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Stand with your hands against the wall at shoulder height, arms straight. Push the wall further away so the shoulder blades slide forward around the ribs, then let them come back slowly. Elbows stay straight. Later on the knees or the floor.
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -2719,18 +2717,18 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Radialis slider
 - **Id:** `nd_radial_slider`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Sta of zit rechtop met de arm langs het lichaam, schouder iets omlaag, elleboog gestrekt en de handpalm naar achteren gedraaid. Buig de pols en vingers rustig en kantel tegelijk het hoofd naar dezelfde kant. Laat daarna de pols ontspannen terwijl het hoofd naar de andere kant gaat. Rustig heen en weer.
+- **Movement:** Radialis slider
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Sta of zit rechtop met de arm langs het lichaam, schouder iets omlaag, elleboog gestrekt en de handpalm naar achteren gedraaid. Buig de pols en vingers rustig en kantel tegelijk het hoofd naar dezelfde kant. Laat daarna de pols ontspannen terwijl het hoofd naar de andere kant gaat. Rustig heen en weer. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Radialis slider
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -2740,18 +2738,18 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Reverse fly
 - **Id:** `kr_reverse_fly`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Voorovergebogen met platte rug, armen zijwaarts omhoog tot schouderhoogte, licht gewicht.
+- **Movement:** Reverse fly
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Voorovergebogen met platte rug, armen zijwaarts omhoog tot schouderhoogte, licht gewicht. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Reverse fly
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -2761,16 +2759,16 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Rugstrekken op bank
 - **Id:** `kr_back_extension`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Heupen op het kussen, buig voorover vanuit de heup en kom terug tot een rechte lijn. Niet overstrekken.
+- **Movement:** Rugstrekken op bank
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Heupen op het kussen, buig voorover vanuit de heup en kom terug tot een rechte lijn. Niet overstrekken.
+0 to 2 seconds: moves slowly into the effort: Rugstrekken op bank
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2782,18 +2780,18 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Seated cable row
 - **Id:** `kr_seated_cable_row`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Borst omhoog, trek het handvat naar je buik en knijp je schouderbladen samen.
+- **Movement:** Seated cable row
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Borst omhoog, trek het handvat naar je buik en knijp je schouderbladen samen. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Seated cable row
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -2810,11 +2808,11 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Sit or stand with the foot flat. Shorten the foot by drawing the ball of the foot towards the heel, without curling the toes. The arch rises a little. Hold five counts and relax. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Sit or stand with the foot flat. Shorten the foot by drawing the ball of the foot towards the heel, without curling the toes. The arch rises a little. Hold five counts and relax.
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -2852,7 +2850,7 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
 0 to 2 seconds: moves slowly into the effort: Stand on one leg on a step. Slowly lower the other leg until the heel just touches the floor and come back up. The knee stays over the second toe, the pelvis stays level. Use a hand on the rail if needed.
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
@@ -2863,19 +2861,19 @@ The feet or supporting hands stay where they started. One person only.
 ## 136. Step-up met dumbbells
 
 - **Dutch:** Step-up met dumbbells
-- **English:** Step-up met dumbbells
+- **English:** Dumbbell step-up
 - **Id:** `kr_step_up`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Hele voet op de bank, duw je omhoog via de hiel van het voorste been. Rustig weer omlaag.
+- **Movement:** Dumbbell step-up
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Hele voet op de bank, duw je omhoog via de hiel van het voorste been. Rustig weer omlaag.
+0 to 2 seconds: moves slowly into the effort: Dumbbell step-up
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2894,7 +2892,7 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
 0 to 1 seconds: the person settles into the start position and gets ready.
 1 to 4.5 seconds: holds still: Lift a light bag or a bottle of water with the palm facing down, the way you lift a bag by its handle. Wrist straight, elbow slightly bent. Lift, hold 5 counts and put it down slowly. Make it heavier when it gets easy. The body does not bounce.
@@ -2915,11 +2913,11 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 1 seconds: the person settles into the start position and gets ready.
-1 to 4.5 seconds: holds still: Stand next to a wall with the side to stretch towards the wall. Cross that leg behind the other. Push the hip gently sideways towards the wall until you feel a stretch on the outside of hip and thigh. Keep the trunk upright. Hold and breathe calmly. The body does not bounce.
-4.5 to 5 seconds: releases slowly back to an easy rest without standing up out of frame.
+0 to 2 seconds: moves slowly into the effort: Stand next to a wall with the side to stretch towards the wall. Cross that leg behind the other. Push the hip gently sideways towards the wall until you feel a stretch on the outside of hip and thigh. Keep the trunk upright. Hold and breathe calmly.
+2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
+2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
 ```
 
@@ -2929,16 +2927,16 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Tibialis slider
 - **Id:** `nd_tibial_slider`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Zit op de rand van een stoel. Buig de knie iets en trek tegelijk de voet naar je toe, met de voetzool licht naar buiten gedraaid. Strek daarna de knie terwijl je de voet ontspant en de tenen wegwijst. Rustig heen en weer: als de ene kant spanning krijgt, laat de andere kant los.
+- **Movement:** Tibialis slider
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body, camera at hip height, locked off. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Zit op de rand van een stoel. Buig de knie iets en trek tegelijk de voet naar je toe, met de voetzool licht naar buiten gedraaid. Strek daarna de knie terwijl je de voet ontspant en de tenen wegwijst. Rustig heen en weer: als de ene kant spanning krijgt, laat de andere kant los.
+0 to 2 seconds: moves slowly into the effort: Tibialis slider
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2947,19 +2945,19 @@ The feet or supporting hands stay where they started. One person only.
 ## 140. Triceps extension boven het hoofd
 
 - **Dutch:** Triceps extension boven het hoofd
-- **English:** Triceps extension boven het hoofd
+- **English:** Overhead triceps extension
 - **Id:** `kr_overhead_triceps`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Ellebogen naar voren gericht en dicht bij je hoofd, strek je armen volledig.
+- **Movement:** Overhead triceps extension
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Ellebogen naar voren gericht en dicht bij je hoofd, strek je armen volledig.
+0 to 2 seconds: moves slowly into the effort: Overhead triceps extension
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -2992,16 +2990,16 @@ The feet or supporting hands stay where they started. One person only.
 - **English:** Walking lunge
 - **Id:** `kr_walking_lunge`
 - **Why here:** 0× in programme templates; in the library, not yet placed in a shipped programme.
-- **Movement:** Grote stap, achterste knie zakt richting de grond, voorste knie boven de voet. Wissel elke stap.
+- **Movement:** Walking lunge
 - **Start:** See the prompt. The whole body stays in frame.
 - **Camera:** Exact side view, whole body from head to feet, camera locked on a tripod. Duration 5 s.
 
 ```
 Static locked-off camera on a tripod, 4 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
-0 to 2 seconds: moves slowly into the effort: Grote stap, achterste knie zakt richting de grond, voorste knie boven de voet. Wissel elke stap.
+0 to 2 seconds: moves slowly into the effort: Walking lunge
 2 to 2.5 seconds: short pause in that position, joints stay aligned, no bounce.
 2.5 to 5 seconds: returns slowly to the start position along the same path.
 The feet or supporting hands stay where they started. One person only.
@@ -3020,7 +3018,7 @@ The feet or supporting hands stay where they started. One person only.
 ```
 Static locked-off camera on a tripod, 3.5 metres away, wide shot, exact side view (90 degrees). The ENTIRE body is always fully in frame from the top of the head to the soles of the feet, with clear empty space above the head and below the feet; the person fills about 60 percent of the frame height and stays centred. No camera movement, no zoom, no cuts. Bright modern physiotherapy studio, light wooden floor, plain warm-beige wall, soft even daylight. One athletic adult in a forest green t-shirt, black shorts and black trainers, on a dark grey exercise mat when the exercise is on the floor. Realistic, natural human motion, one slow controlled repetition.
 
-Start position: The person is in the start position described below, centred in the frame.
+Start position: Centred in the frame, in the position named below, with the whole body visible.
 Movement, one slow repetition:
 0 to 1 seconds: the person settles into the start position and gets ready.
 1 to 4.5 seconds: holds still: Lie on your side with the bottom leg slightly bent. Move the top leg slightly back so the hip is slightly extended, and turn the toes a little towards the floor. Lift the leg slowly leading with the heel and lower it slowly. The pelvis stays still and does not roll back. The body does not bounce.
