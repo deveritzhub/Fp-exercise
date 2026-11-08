@@ -14,11 +14,13 @@ export const mobilityStaff = new Hono<AppEnv>();
 
 async function load(tx: Tx, patientId: string) {
   const { rows } = await tx.query(
-    `SELECT id, test, side, to_char(day, 'YYYY-MM-DD') AS day, cm FROM mobility_tests
+    `SELECT id, test, side, to_char(day, 'YYYY-MM-DD') AS day, cm,
+            EXISTS (SELECT 1 FROM mobility_confirmations c WHERE c.test_id = mobility_tests.id) AS confirmed
+       FROM mobility_tests
       WHERE patient_id = $1 AND day > now()::date - 730 ORDER BY day, test, side`,
     [patientId],
   );
-  return rows.map((r) => ({ id: r.id as string, test: r.test, side: r.side, day: r.day as string, cm: Number(r.cm) })) as (MobilityResult & { id: string })[];
+  return rows.map((r) => ({ id: r.id as string, test: r.test, side: r.side, day: r.day as string, cm: Number(r.cm), confirmed: !!r.confirmed })) as (MobilityResult & { id: string; confirmed: boolean })[];
 }
 
 mobilityPatient.get('/mobility-tests', async (c) => {

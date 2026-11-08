@@ -1,5 +1,8 @@
 import { PhotoGearThumbnail } from '../../components/hero/PhotoEquipment';
-import { GearArtwork } from '../../components/hero/RpgGear';
+import { HeirloomMark } from '@/components/hero/HeirloomMark';
+import { ACL_REWARDS, ACL_SPORTS } from '@shared/aclRewards';
+import { GearArtwork } from '@/components/hero/RpgGear';
+import { HEIRLOOM_KINDS } from '@shared/measurementBoss';
 import '../../components/hero/rpg.css';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -1346,6 +1349,7 @@ function TrophyCabinet({ d }: { d: HeroState }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 id="trophies-title" className="t-section scroll-mt-20">{t('Prijzenkast', 'Trophy cabinet')}</h2>
+          {!!d.aclJourney?.memorabilia.length && <p className="mt-1 text-[13.5px] text-ink-700">{t('Van de reis', 'From the journey')}: {d.aclJourney.memorabilia.map((k) => k === 'crutches' ? t('Krukken', 'Crutches') : (ACL_REWARDS.find((r) => r.key === k)?.[locale === 'nl' ? 'nl' : 'en'] ?? k)).join(', ')}</p>}
           <p className="mt-1 text-[13.5px] text-ink-600">{t(`Een beker per skill bij level ${TROPHY_TIERS.map((x) => x.level).join(', ')}.`, `A trophy per skill at level ${TROPHY_TIERS.map((x) => x.level).join(', ')}.`)}</p>
         </div>
         <span className="shrink-0 rounded-full bg-[#fdf3e3] px-3 py-1 text-[13px] font-bold text-[#8a5a12]">{earnedCount}/{d.trophies.length}</span>
@@ -1640,7 +1644,113 @@ export function HeroPage() {
   );
 }
 
+const HEIRLOOM_NAME = { weapon: ['Wapen', 'Weapon'], shield: ['Schild', 'Shield'], amulet: ['Amulet', 'Amulet'] } as const;
+
+function HeirloomPicker() {
+  const { t, locale } = useI18n();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const q = useHero();
+  const [busy, setBusy] = useState<string | null>(null);
+  if (!q.data?.hero) return null;
+  const current = q.data.heirloom;
+  const pick = async (kind: (typeof HEIRLOOM_KINDS)[number]) => {
+    setBusy(kind);
+    try {
+      await api.put('/patient/hero/heirloom', { kind });
+      await qc.invalidateQueries({ queryKey: ['patient-hero'] });
+      await qc.invalidateQueries({ queryKey: ['patient-world'] });
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <section className="rounded-2xl border border-line bg-white p-4 shadow-card" aria-labelledby="heirloom-title">
+      <h2 id="heirloom-title" className="t-section">{t('Kracht-erfstuk', 'Strength heirloom')}</h2>
+      <p className="mt-1 text-[14px] leading-relaxed text-ink-700">{t('Eén sieraad, één keer gekozen. Het groeit met je eigen metingen ten opzichte van je start, niet met extra herhalingen. Een mindere dag haalt het niet naar beneden.', 'One keepsake, chosen once. It grows with your own measurements against your start, not with extra repetitions. A worse day does not bring it down.')}</p>
+      {current ? (
+        <div className="mt-3 flex items-center gap-3">
+          <HeirloomMark kind={current.kind} tier={current.tier} className="h-16 w-16" />
+          <p className="text-[15px] font-semibold text-ink-900">{t(HEIRLOOM_NAME[current.kind][0], HEIRLOOM_NAME[current.kind][1])} · {t(`vorm ${current.tier} van 5`, `form ${current.tier} of 5`)}</p>
+        </div>
+      ) : (
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {HEIRLOOM_KINDS.map((kind) => (
+            <button key={kind} type="button" disabled={!!busy} onClick={() => void pick(kind)} className="flex min-h-[88px] flex-col items-center justify-center gap-1 rounded-xl border border-line bg-white p-2 text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+              <HeirloomMark kind={kind} tier={1} className="h-12 w-12" />
+              {t(HEIRLOOM_NAME[kind][0], HEIRLOOM_NAME[kind][1])}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="mt-3 flex gap-2" aria-hidden>
+        {([1, 2, 3, 4, 5] as const).map((tier) => <HeirloomMark key={tier} kind={current?.kind ?? 'shield'} tier={tier} className="h-10 w-10" />)}
+      </div>
+    </section>
+  );
+}
+
 /** Update the body map (a new check-in; the history is kept). */
+function AclJourneyCard() {
+  const { t, locale } = useI18n();
+  const qc = useQueryClient();
+  const q = useHero();
+  const bag = q.data?.aclJourney;
+  const [busy, setBusy] = useState(false);
+  if (!bag || (bag.owned.length === 0 && bag.sportChoice.length === 0)) return null;
+  const name = (key: string) => {
+    const item = ACL_REWARDS.find((r) => r.key === key);
+    return item ? (locale === 'nl' ? item.nl : item.en) : key;
+  };
+  const wear = async (key: string) => {
+    if (!q.data?.gear) return;
+    setBusy(true);
+    const equipped = q.data.gear.equipped.includes(key)
+      ? q.data.gear.equipped.filter((g) => g !== key)
+      : onePerSlot([...q.data.gear.equipped, key]);
+    try {
+      await api.put('/patient/hero/gear', { equipped });
+      await qc.invalidateQueries({ queryKey: ['patient-hero'] });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="rounded-2xl border border-line bg-white p-4 shadow-card" aria-labelledby="acl-gear-title">
+      <h2 id="acl-gear-title" className="t-section">{t('Reis van de knie', 'Knee journey')}</h2>
+      <p className="mt-1 text-[14px] leading-relaxed text-ink-700">{t('Sieraden die opengaan als een fasebaas valt. Meer herhalingen doen er niets bij. Een mindere dag haalt niets weg.', 'Keepsakes that open when a phase boss falls. Extra repetitions add nothing. A worse day takes nothing away.')}</p>
+      <ul className="mt-3 grid grid-cols-3 gap-2">
+        {bag.wearable.map((key) => (
+          <li key={key}>
+            <button type="button" disabled={busy} onClick={() => void wear(key)} className="flex min-h-[88px] w-full flex-col items-center justify-center gap-1 rounded-xl border border-line p-2 text-[12px] font-semibold">
+              <GearArtwork item={key} className="h-12 w-12" />
+              {name(key)}
+              {key === 'rune_guard' ? <span className="font-normal text-ink-600">{t(`runen ${bag.runeTier}/5`, `runes ${bag.runeTier}/5`)}</span> : null}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {bag.pets.length > 0 && <p className="mt-3 text-[14px]">{t('Metgezellen', 'Companions')}: {bag.pets.map(name).join(', ')}</p>}
+      {(bag.banner || bag.guildBanner) && <p className="mt-1 text-[14px]">{[bag.banner ? name('vkb_banner') : '', bag.guildBanner ? name('guild_banner') : ''].filter(Boolean).join(' · ')}</p>}
+      {bag.sportChoice.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {ACL_SPORTS.map((sport) => (
+            <button key={sport} type="button" disabled={busy} aria-pressed={bag.sport === sport} onClick={() => { setBusy(true); void api.put('/patient/hero/acl-sport', { sport }).then(() => qc.invalidateQueries({ queryKey: ['patient-hero'] })).finally(() => setBusy(false)); }} className="min-h-[44px] rounded-full border border-line px-3 text-[13px] font-semibold">
+              {name(`sport_${sport}`)}
+            </button>
+          ))}
+        </div>
+      )}
+      <label className="mt-3 flex min-h-[44px] items-center gap-2 text-[14px]">
+        <input type="checkbox" className="h-4 w-4" checked={bag.scar} onChange={(e) => { setBusy(true); void api.put('/patient/hero/scar', { on: e.target.checked }).then(() => qc.invalidateQueries({ queryKey: ['patient-hero'] })).finally(() => setBusy(false)); }} />
+        {t('Littekentje op de knie (uitstaat tot jij het aanzet)', 'A small knee mark (off until you turn it on)')}
+      </label>
+    </section>
+  );
+}
+
 /** Inventory and shop: owned gear to wear, the rest to buy with coins. */
 export function InventoryPage() {
   const { t } = useI18n();
@@ -1652,6 +1762,8 @@ export function InventoryPage() {
     <div className="space-y-5">
       <Link to="/p/held" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" aria-hidden />{t('Terug naar je held', 'Back to your hero')}</Link>
       <h1 className="t-page">{t('Inventaris', 'Inventory')}</h1>
+      <HeirloomPicker />
+      <AclJourneyCard />
       {q.data.hero ? <><GearCard d={q.data} /><TrophyCabinet d={q.data} /></> : <Notice tone="info">{t('Maak eerst je held.', 'Create your hero first.')}</Notice>}
     </div>
   );

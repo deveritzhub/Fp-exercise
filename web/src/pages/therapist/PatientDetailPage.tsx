@@ -19,8 +19,9 @@ import { progressionSignal } from '@shared/progression';
 import type { Member, PatientDetail, Progress } from '@/lib/types';
 import { PainMapCard } from '@/components/hero/PainMapCard';
 import { ClinicalTimeline } from '@/components/therapist/ClinicalTimeline';
+import { AclCriteriaPanel } from '@/components/therapist/AclWorkflow';
 
-type Tab = 'overzicht' | 'programmas' | 'sessies' | 'kracht' | 'mobiliteit' | 'modules' | 'gegevens';
+type Tab = 'overzicht' | 'programmas' | 'vkb' | 'sessies' | 'kracht' | 'mobiliteit' | 'modules' | 'gegevens';
 
 export function PatientDetailPage() {
   const clinical = useClinicalPractice();
@@ -129,6 +130,7 @@ export function PatientDetailPage() {
         tabs={[
           { value: 'overzicht', label: t('Overzicht', 'Overview') },
           { value: 'programmas', label: t('Programma’s', 'Programmes'), count: pt.programs.length },
+          ...(clinical ? [{ value: 'vkb' as const, label: t('VKB-criteria', 'ACL criteria') }] : []),
           { value: 'sessies', label: unreviewed ? <>{t('Sessies & feedback', 'Sessions & feedback')} <span className="ml-1 rounded-full bg-warn-soft px-2 py-0.5 text-[12px] font-semibold text-warn">{t(`${unreviewed} te beoordelen`, `${unreviewed} to review`)}</span></> : t('Sessies & feedback', 'Sessions & feedback') },
           { value: 'kracht', label: t('Krachtlog', 'Strength log') },
           { value: 'mobiliteit', label: t('Mobiliteit', 'Mobility') },
@@ -142,6 +144,7 @@ export function PatientDetailPage() {
       {tab === 'mobiliteit' && <MobilityTests base={`/patients/${pt.id}`} staff />}
       {tab === 'overzicht' && <Overview patientId={id} progress={prog.data} programs={pt.programs} />}
       {tab === 'programmas' && <Programs pt={pt} />}
+      {tab === 'vkb' && clinical && <AclCriteriaPanel patientId={id} />}
       {tab === 'sessies' && <Sessions progress={prog.data} onReviewed={() => qc.invalidateQueries({ queryKey: ['patient', id, 'progress'] })} />}
       {tab === 'gegevens' && <Details pt={pt} onEdit={() => setEditing(true)} />}
 

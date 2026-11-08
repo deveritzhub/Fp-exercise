@@ -13,6 +13,7 @@ export const DEMO_EMAILS = [
   'eigenaar@praktijk-b.test',
   'therapeut@praktijk-b.test',
   'patient@praktijk-b.test',
+  'vkb@praktijk-a.test',
 ] as const;
 
 export const isDemoEmail = (email: string) => (DEMO_EMAILS as readonly string[]).includes(email.trim().toLowerCase());

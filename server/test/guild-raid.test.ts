@@ -17,6 +17,8 @@ let seed: Seed;
 
 beforeAll(async () => {
   seed = await seedDb();
+  // The synthetic ACL patient would make this practice five people. This file still checks the under-five hide.
+  await ownerQuery(`UPDATE patients SET archived_at = now() WHERE email = 'vkb@praktijk-a.test'`);
   resetRateLimits();
 });
 

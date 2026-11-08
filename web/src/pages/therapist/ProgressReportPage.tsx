@@ -82,6 +82,39 @@ function ReportMobility({ patientId }: { patientId: string }) {
   );
 }
 
+function ReportAcl({ patientId }: { patientId: string }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const q = useQuery({ queryKey: ['acl-criteria', patientId], queryFn: () => api.get<{ assigned: boolean; phases: { no: number; name: string; bossNl: string; met: number; total: number; criteria: { slot: number; active: boolean; labelNl: string; labelEn: string; status: string; target: number; unit: string; latest: number | null; latestOn: string | null; lsi: number | null; mode: string }[] }[] }>(`/patients/${patientId}/acl-criteria`) });
+  if (!q.data?.assigned) return null;
+  const status = (s: string) => (s === 'met' ? t('gehaald', 'met') : s === 'open' ? t('nog niet', 'not yet') : t('niet gemeten', 'not measured'));
+  return (
+    <section className="mt-6" aria-labelledby="r-acl">
+      <h2 id="r-acl" className="t-section">{t('VKB-fasedoelen', 'ACL phase goals')}</h2>
+      <p className="mt-1 text-[12px] text-ink-500">{t('Standaardwaarden, door de fysiotherapeut te beoordelen. Een gehaald doel geeft de volgende fase niet vrij.', 'Default values, for the physiotherapist to judge. A met goal does not release the next phase.')}</p>
+      {q.data.phases.map((phase) => (
+        <div key={phase.no} className="mt-3 [break-inside:avoid]">
+          <h3 className="text-[14px] font-semibold">{t(`Fase ${phase.no}`, `Phase ${phase.no}`)} · {phase.name} · {phase.bossNl} · {phase.met}/{phase.total}</h3>
+          <table className="mt-1 w-full text-[13px]">
+            <thead className="border-b border-line text-left text-[12px] text-ink-500"><tr><th className="py-1">{t('Criterium', 'Criterion')}</th><th>{t('Streef', 'Target')}</th><th>{t('Laatste', 'Latest')}</th><th>LSI</th><th>{t('Status', 'Status')}</th></tr></thead>
+            <tbody>
+              {phase.criteria.filter((c) => c.active).map((c) => (
+                <tr key={c.slot} className="border-b border-line">
+                  <td className="py-1">{nl ? c.labelNl : c.labelEn}</td>
+                  <td>{c.mode === 'recorded' ? '—' : c.target}</td>
+                  <td>{c.latest == null ? '—' : `${c.latest}${c.latestOn ? ` (${c.latestOn})` : ''}`}</td>
+                  <td>{c.lsi == null ? '—' : `${c.lsi}%`}</td>
+                  <td>{status(c.status)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 const PERIODS = [4, 8, 12, 26];
 
 const avg = (xs: (number | null)[]) => {
@@ -228,6 +261,7 @@ export function ProgressReportPage() {
           </section>
         )}
 
+        {clinical && <ReportAcl patientId={id} />}
         <ReportMobility patientId={id} />
         {clinical && <ReportPainMap patientId={id} />}
 

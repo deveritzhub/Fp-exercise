@@ -19,6 +19,8 @@ import { ProgramStatusBadge } from '@/components/app/StatusBadge';
 import { ExerciseFilterBar, emptyFilters, useExerciseSearch, type ExerciseFilters } from '@/components/app/ExerciseSearch';
 import type { CriteriaCheck, Exercise, PatientListItem, Program, ProgramItem } from '@/lib/types';
 import { CriteriaList, Evidence, ModuleBadge, RedFlags, Warnings, PhaseTimeline } from '@/components/app/PhaseInfo';
+import { BossGoalForm } from '@/components/therapist/BossGoalForm';
+import { AclAssignButton } from '@/components/therapist/AclWorkflow';
 import { ProgramItemsList, RestDayCard, TodayProgramCard } from '@/components/patient/TodayCard';
 import { dayStatus, itemsForDate, nextSessionDate } from '@shared/schedule';
 import { ALL_DAYS, defaultDose, doseProblems, type DoseProblem } from '@/lib/dose';
@@ -335,6 +337,7 @@ export function ProgramBuilderPage() {
             {isNew && (
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 {!asTemplate ? <PatientPicker value={patientId} onChange={(v) => { setPatientId(v); setDirty(true); }} /> : <div className="flex-1 rounded-lg bg-accent-soft px-3 py-2 text-[13px] text-accent">{t(`Wordt opgeslagen als sjabloon van ${practice?.practiceName}`, `Will be saved as a ${practice?.practiceName} template`)}</div>}
+                {!asTemplate && <AclAssignButton patientId={patientId} />}
                 <label className="flex h-9 items-center gap-2 text-[13px] text-ink-700">
                   <input type="checkbox" className="h-4 w-4 accent-[rgb(var(--accent))]" checked={asTemplate} onChange={(e) => setAsTemplate(e.target.checked)} />
                   {t('Opslaan als sjabloon', 'Save as template')}
@@ -1123,7 +1126,7 @@ function PhaseCard({ source, programId, patientId }: { source: Program | null; p
   if (!source) return null;
   const criteria = source.criteria ?? [];
   const has = !!source.series || criteria.length > 0 || (source.redFlags ?? []).length > 0 || (source.warnings ?? []).length > 0;
-  if (!has) return null;
+  if (!has && !programId) return null;
   const total = criteria.reduce((n, g) => n + g.items.length, 0);
   const done = checks.length;
   const s = source.series;
@@ -1170,6 +1173,7 @@ function PhaseCard({ source, programId, patientId }: { source: Program | null; p
       )}
       <RedFlags flags={source.redFlags ?? []} />
       <Evidence text={source.evidence ?? ''} />
+      {programId && <BossGoalForm programId={programId} />}
       {programId && s && (
         <div className="flex flex-wrap items-center gap-3 border-t border-line pt-4">
           {next.data?.next ? (

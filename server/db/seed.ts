@@ -7,6 +7,9 @@ import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import pg from 'pg';
 import { EXERCISES, RELATIONS, TEMPLATES } from './seed-data/exercises';
+import { installAclRoute } from '../src/lib/aclInstall';
+import { refreshBosses } from '../src/lib/boss';
+import type { Tx } from '../src/db';
 
 export const DEMO_PASSWORD = 'Demo-wachtwoord-1';
 
@@ -18,6 +21,7 @@ export const DEMO_USERS = {
   ownerB: { email: 'eigenaar@praktijk-b.test', name: 'Lotte Smit' },
   therapistB: { email: 'therapeut@praktijk-b.test', name: 'Milan Meijer' },
   patientB: { email: 'patient@praktijk-b.test', name: 'Noah Mulder' },
+  aclPatient: { email: 'vkb@praktijk-a.test', name: 'Mila de Vries' },
 } as const;
 
 const TABLES = [
@@ -163,6 +167,7 @@ export async function seed(connectionString = process.env.DATABASE_OWNER_URL!, o
     const sophie = await patient(pA, 'Sophie', 'van Dijk', 'sophie.vandijk@voorbeeld.test', ids.ownerA, null, ids.ownerA);
     const daan = await patient(pA, 'Daan', 'Bos', null, ids.therapistA, null, ids.therapistA);
     const noah = await patient(pB, 'Noah', 'Mulder', DEMO_USERS.patientB.email, ids.therapistB, ids.patientB, ids.therapistB, 20);
+    const mila = await patient(pA, 'Mila', 'de Vries', DEMO_USERS.aclPatient.email, ids.therapistA, ids.aclPatient, ids.therapistA, 40);
     await patient(pB, 'Fleur', 'Hendriks', 'fleur.hendriks@voorbeeld.test', ids.therapistB, null, ids.therapistB);
 
     const program = async (practice: string, patientId: string, templateTitle: string, title: string, status: string, creator: string, startedDaysAgo: number, weeks = 8) => {
@@ -188,6 +193,36 @@ export async function seed(connectionString = process.env.DATABASE_OWNER_URL!, o
     await program(pA, sophie, 'Rotator cuff — krachtopbouw', 'Schouder — rotator cuff opbouw', 'active', ids.ownerA, 10);
     await program(pA, lucas, 'Enkel — na inversietrauma', 'Enkel — herstel na verstuiking', 'draft', ids.therapistA, 0, 6);
     const progNoah = await program(pB, noah, 'Achillespees — belastingsopbouw', 'Achillespees — opbouw', 'active', ids.therapistB, 18);
+
+    // Synthetic ACL route. Phase 4 is the open zone; earlier bosses are already met. No real patient.
+    const surgery = daysAgo(90);
+    await installAclRoute(db as unknown as Tx, {
+      practiceId: pA, patientId: mila, therapistId: ids.therapistA, side: 'right', currentPhase: 4,
+      surgeryOn: iso(surgery), startOn: iso(surgery),
+    });
+    await db.query(
+      `INSERT INTO patient_heroes(patient_id, practice_id, hero_name, skin, hair, outfit, sport, frame, build, hair_color, eye_color, beard, glasses, heirloom)
+       VALUES ($1,$2,'Mila','s3','long','forest','running','f','athletic','blond','blue','none','none','shield')`,
+      [mila, pA],
+    );
+    const aclRead = async (key: string, domain: string, metric: string, value: number, unit: string, side: string, days: number) => {
+      await db.query(
+        `INSERT INTO patient_outcomes(patient_id, practice_id, recorded_by, measured_on, domain, metric, metric_key, value, unit, side)
+         VALUES ($1,$2,$3, current_date - $4::int, $5,$6,$7,$8,$9,$10)`,
+        [mila, pA, ids.therapistA, days, domain, metric, key, value, unit, side],
+      );
+    };
+    await aclRead('knee_extension', 'rom', 'Knie strekken', 0, 'degrees', 'right', 30);
+    await aclRead('knee_flexion', 'rom', 'Knie buigen', 100, 'degrees', 'right', 30);
+    await aclRead('extension_lag', 'rom', 'Been gestrekt optillen', 0, 'degrees', 'right', 30);
+    await aclRead('effusion_grade', 'function', 'Zwelling', 1, 'grade', 'right', 30);
+    await aclRead('quad_strength', 'strength', 'Kracht voorkant been', 30, 'kg', 'right', 20);
+    await aclRead('quad_strength', 'strength', 'Kracht voorkant been', 50, 'kg', 'left', 20);
+    await aclRead('quad_strength', 'strength', 'Kracht voorkant been', 36, 'kg', 'right', 1);
+    await aclRead('quad_strength', 'strength', 'Kracht voorkant been', 50, 'kg', 'left', 1);
+    await aclRead('hop_single', 'function', 'Sprongtest', 100, 'cm', 'right', 1);
+    await aclRead('hop_single', 'function', 'Sprongtest', 110, 'cm', 'left', 1);
+    await refreshBosses(db as unknown as Tx, mila);
 
     await db.query('INSERT INTO exercise_favorites(user_id, exercise_id) VALUES ($1,$2),($1,$3),($1,$4)', [ids.therapistA, ex.spanish_squat, ex.er_band, ex.sl_calf_raise]);
     await db.query('INSERT INTO template_favorites(user_id, program_id) VALUES ($1,$2)', [ids.therapistA, tmpl['Patellapees — belastingsopbouw']]);
@@ -231,7 +266,7 @@ export async function seed(connectionString = process.env.DATABASE_OWNER_URL!, o
     }
     void daan;
     await db.query('COMMIT');
-    log(`Seeded ${EXERCISES.length + 2} exercises, ${TEMPLATES.length + 1} templates, 2 practices, 6 patients.`);
+    log(`Seeded ${EXERCISES.length + 2} exercises, ${TEMPLATES.length + 1} templates, 2 practices, 7 patients.`);
     log(`Demo password for all accounts: ${DEMO_PASSWORD}`);
     return { users: ids, practices: { A: pA, B: pB }, exercises: ex, customA, customB, patients: { emma, lucas, sophie, daan, noah }, programs: { emma: progEmma.id, noah: progNoah.id }, templates: tmpl };
   } catch (e) {
