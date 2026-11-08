@@ -24,7 +24,10 @@ const fromKey=(key:string):FigureLook=>{
  return {frame,skin,build:kind==='lean'?'slim':kind,...preset,outfit:'forest',body:{kind} as FigureLook['body']};
 };
 const full=['crown','medal','pin','yoga_mat','captain','watch','gloves','belt','shin_guards','gold_shoes','sport_item'];
-if(params.has('headphone')){
+if(params.has('cape')){
+ const keys=['f_s5_full_h2','f_s1_lean','m_s9_muscular_h3','m_s5_full'];
+ createRoot(document.getElementById('root')!).render(<I18nProvider><div style={{display:'grid',gridTemplateColumns:'repeat(4,260px)',gap:12,padding:12}}>{keys.map(key=><div key={key}><h2 style={{fontSize:12,color:'#29483c'}}>{key} · Meestercape (ontwerp)</h2><HeroPhoto fittedGear look={{...fromKey(key),gear:['master_cape']}} className="h-[400px] w-[260px]"/></div>)}</div></I18nProvider>);
+}else if(params.has('headphone')){
  const keys=['f_s5_full_h2','f_s7_full_h4','f_s1_lean','m_s5_full','m_s9_muscular_h3','m_s1_lean_h4'];
  const sets=params.get('headphone')==='1' ? [['headphones','headband'],['headphones','visor'],['headphones','crown']] : [['headphones'],['headphones','cap'],['headphones','champion']];
  const examples=keys.flatMap(key=>sets.map(gear=>({key,gear})));

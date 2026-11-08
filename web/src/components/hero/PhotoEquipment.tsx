@@ -2,6 +2,7 @@ import { gearTier, heroPhotoKey } from '@shared/hero';
 import { useId, useState, type ReactNode } from 'react';
 import type { FigureLook } from './HumanFigure';
 import bounds from './photoGearBounds.json';
+import { PhotoMasterCape } from './PhotoMasterCape';
 import { PhotoHeadphones } from './PhotoHeadphones';
 import { PhotoIdentity } from './PhotoIdentity';
 import { measuredPlacement, photoFit } from './photoFit';
@@ -37,16 +38,16 @@ export function PhotoEquipment({look, source}: {look:FigureLook;source:string}) 
     const box=FRONT_BOX[key] ?? asset.box;
     const x=measured?.x ?? .5+((mirror ? (['shin_guards','crew_socks'].includes(key) ? .99 : .965)-px:px)-.5)*spread;
     const width=measured?.width ?? w*(['belt','hr_band','captain'].includes(key)?spread:1);
-    return <svg key={key+mirror} data-photo-gear={key} data-tier={gearTier(key).tier} style={{filter:`drop-shadow(0 0 ${gearTier(key).tier * .18}px ${gearTier(key).glow})`}} className="photo-worn"  x={(x-width/2)*1000} y={y*1333.33} width={width*1000} height={h*1333.33} viewBox={box.join(' ')} preserveAspectRatio="none" overflow="hidden">
+    return <svg key={key+mirror} data-photo-gear={key} data-tier={gearTier(key).tier} style={{filter:`drop-shadow(0 0 ${gearTier(key).tier * .18}px ${gearTier(key).glow})`}} className="photo-worn" transform={measured?.angle?`rotate(${measured.angle} ${x*1000} ${(y+h/2)*1333.33})`:undefined} x={(x-width/2)*1000} y={y*1333.33} width={width*1000} height={h*1333.33} viewBox={box.join(' ')} preserveAspectRatio="none" overflow="hidden">
       <image href={`/api/hero-assets/wear/${key}`} width={asset.size[0]} height={asset.size[1]} clipPath={key==='headphones'?`url(#ears${uid})`:undefined} filter={`url(#cut${uid})`} transform={mirror?`translate(${asset.box[0]*2+asset.box[2]} 0) scale(-1 1)`:undefined}/>
     </svg>;
   };
   return <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 1000 1333.33" overflow="visible" aria-hidden>
     <defs><clipPath id={`ears${uid}`}><path d="M100,130 H920 V390 H100Z M100,390 H290 V880 H100Z M735,390 H930 V880 H735Z"/></clipPath><filter id={`cut${uid}`} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB"><feComponentTransfer><feFuncA type="table" tableValues="0 0 0 0 0 0 .6 1 1 1 1"/></feComponentTransfer><feDropShadow dx="0" dy="5" stdDeviation="4" floodColor="#271c10" floodOpacity=".22"/></filter>
     <clipPath id={`body${uid}`}><path d={photoFit(source)?.silhouette ?? `M400,20 H600 V235 L${500+180*spread},280  ${500+170*spread},760 620,1290 H350 L${500-170*spread},760 ${500-180*spread},280 400,235Z`}/></clipPath></defs>
-    {gear.includes('yoga_mat') && <>{piece('yoga_mat')}<image href={source} width="1000" height="1333.33" preserveAspectRatio="none" clipPath={`url(#body${uid})`}/></>}
+    {(gear.includes('yoga_mat') || gear.includes('master_cape')) && <>{gear.includes('master_cape') && <PhotoMasterCape source={source}/>} {gear.includes('yoga_mat') && piece('yoga_mat')}<image href={source} width="1000" height="1333.33" preserveAspectRatio="none" clipPath={`url(#body${uid})`}/></>}
     <PhotoIdentity key={source+'|'+heroPhotoKey(look,look.body ?? null)} look={look} source={source}/>
-    {Object.keys(FIT).filter(key=>key!=='yoga_mat' && gear.includes(key)).sort((a,b)=>(['scarf','towel','medal'].includes(a)?2:a==='crown'?1:0)-(['scarf','towel','medal'].includes(b)?2:b==='crown'?1:0)).map(key=><g key={key} clipPath={['sleeve','crew_socks'].includes(key)?`url(#body${uid})`:undefined}>{piece(key)}{PAIRED.has(key)&&piece(key,true)}</g>)}
+    {Object.keys(FIT).filter(key=>key!=='yoga_mat' && gear.includes(key)).sort((a,b)=>(['scarf','towel','medal'].includes(a)?2:a==='crown'?1:0)-(['scarf','towel','medal'].includes(b)?2:b==='crown'?1:0)).map(key=><g key={key} clipPath={['sleeve','crew_socks','wristbands','captain'].includes(key)?`url(#body${uid})`:undefined}>{piece(key)}{PAIRED.has(key)&&piece(key,true)}</g>)}
   </svg>;
 }
 

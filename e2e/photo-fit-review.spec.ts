@@ -17,6 +17,7 @@ test('photographic inventory equips and keeps photographic preview on mobile', a
   test.setTimeout(120000);
   const state={hero:{heroName:'Visuele test',skin:'s5',hair:'ponytail',outfit:'forest',frame:'f',build:'average',sports:[]},gear:{owned:['cap','wristbands','gold_shoes'],equipped:['wristbands','gold_shoes'],coins:999,score:90},showcase:[],trophies:[],skills:[],badges:[],level:{level:1,xp:0},totalLevel:1,metrics:null,logs:{protein:{},weight:{},survival:{water:{}},steps:{},trainings:[]},checkin:{}};
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  let writes=0;page.on('request',r=>{if(['PUT','POST','DELETE','PATCH'].includes(r.method()))writes++;});
   await page.route('**/api/**',async route=>{
     const url=new URL(route.request().url());const parts=url.pathname.split('/');let key=parts.at(-1)!;
     if(url.pathname.includes('/hero-assets/')){
@@ -60,6 +61,16 @@ test('photographic inventory equips and keeps photographic preview on mobile', a
   await page.setViewportSize({width:390,height:844});
   await page.locator('.rpg-stage').screenshot({path:`${assets}/inventory-mobile.png`,style:'header, nav { visibility:hidden !important }'});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  const before=JSON.stringify(state.gear), beforeWrites=writes;
+  await page.getByRole('button',{name:'Ontwerp bekijken',exact:true}).click();
+  const cape=page.getByRole('dialog',{name:'Meestercape — ontwerpvoorproefje'});
+  await expect(cape.locator('[data-photo-gear=master_cape]')).toHaveCount(1);
+  await expect(cape).toContainText('Nog niet te verdienen of uit te rusten');
+  await expect(cape.getByRole('button',{name:/Kopen|Aandoen/})).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(cape).not.toBeVisible();
+  expect(JSON.stringify(state.gear)).toBe(before);
+  expect(writes).toBe(beforeWrites);
   expect(errors).toEqual([]);
 });
 
