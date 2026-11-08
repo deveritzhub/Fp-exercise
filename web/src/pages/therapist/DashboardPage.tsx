@@ -1,5 +1,7 @@
 import { BODY_AREAS } from '@shared/hero';
 import { StaffStart, type StaffStartData } from '@/components/app/StaffStart';
+import { GuildRaidCard } from '@/components/patient/GuildRaid';
+import type { GuildPublic } from '@shared/worldMap';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -32,6 +34,7 @@ export function DashboardPage() {
   const [showAll, setShowAll] = useState(false);
   useDocumentMeta(t('Dashboard', 'Dashboard'));
   const q = useQuery({ queryKey: ['dashboard', practice?.practiceId], queryFn: () => api.get<Dashboard>('/dashboard') });
+  const guild = useQuery({ queryKey: ['practice-guild', practice?.practiceId], queryFn: () => api.get<GuildPublic>('/practice/guild') });
   const recent = useQuery({ queryKey: ['programs-recent', practice?.practiceId], queryFn: () => api.get<{ items: Program[] }>('/programs/recent') });
   const d = q.data;
 
@@ -64,6 +67,12 @@ export function DashboardPage() {
           ) : (
             Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[112px] rounded-xl" />)
           )}
+        </div>
+      )}
+
+      {guild.data && (
+        <div className="mt-6">
+          <GuildRaidCard guild={guild.data} />
         </div>
       )}
 

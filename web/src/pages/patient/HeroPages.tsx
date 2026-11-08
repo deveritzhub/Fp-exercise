@@ -603,6 +603,9 @@ function Quest({ d }: { d: HeroState }) {
         <>
           <h2 id="quest-title" className="t-section mt-1">{t('Nog geen quest', 'No quest yet')}</h2>
           <p className="mt-1 text-[15px] text-ink-600">{t('Zodra je fysiotherapeut een programma voor je klaarzet, zie je hier je doel en de weg ernaartoe.', 'As soon as your physiotherapist sets up a programme for you, you see your goal and the road to it here.')}</p>
+          <Link to="/p/wereld" className="mt-3 inline-flex min-h-[44px] items-center gap-2 font-semibold text-accent">
+            <MapPin className="h-4 w-4" aria-hidden />{t('Open de wereldkaart', 'Open the world map')}
+          </Link>
         </>
       ) : (
         <>
@@ -629,6 +632,9 @@ function Quest({ d }: { d: HeroState }) {
             <p className="mt-2 text-[14px] text-ink-600">{t('Voor dit programma is geen einddatum gepland; je fysiotherapeut bepaalt de duur.', 'This programme has no planned end date; your physiotherapist decides the duration.')}</p>
           )}
           {q.phases.length > 0 && <RehabRoute phases={q.phases} currentNo={q.phaseNo} />}
+          <Link to="/p/wereld" className="mt-4 inline-flex min-h-[44px] items-center gap-2 font-semibold text-accent">
+            <MapPin className="h-4 w-4" aria-hidden />{t('Open de wereldkaart', 'Open the world map')}
+          </Link>
         </>
       )}
       <dl className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-4 text-center">

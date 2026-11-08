@@ -31,7 +31,7 @@ test('patient screens fit a 360 px phone', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   await login(page, 'patient@praktijk-a.test');
-  for (const path of ['/p/revalidatie', '/p/berichten', '/p/uitleg?klacht=pfps', '/p/held/vrienden', '/p/instellingen', '/p/held']) {
+  for (const path of ['/p/revalidatie', '/p/berichten', '/p/uitleg?klacht=pfps', '/p/held/vrienden', '/p/instellingen', '/p/held', '/p/wereld']) {
     await page.goto(path);
     await page.waitForLoadState('networkidle');
     expect(await overflow(page), path).toBeLessThanOrEqual(1);

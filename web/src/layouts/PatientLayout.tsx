@@ -60,6 +60,7 @@ export function PatientLayout() {
       () => import('@/pages/patient/PatientProgress'),
       () => import('@/pages/patient/ModulePage'),
       () => import('@/pages/patient/HeroPages'),
+      () => import('@/pages/patient/WorldMapPage'),
       () => import('@/pages/patient/GymLogPage'),
       () => import('@/pages/patient/MobilityTestsPage'),
       () => import('@/pages/patient/AtlasPage'),
