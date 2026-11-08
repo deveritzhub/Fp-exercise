@@ -1,0 +1,117 @@
+import { Hono } from 'hono';
+import { isClinical } from '../../../shared/accountKind';
+import { itemsForDate } from '../../../shared/schedule';
+import { buildWorld, publicGuildRaid, type GuildCounts, type PhaseTemplate, type WorldProgram } from '../../../shared/worldMap';
+import { withUser, type Tx } from '../db';
+import { requirePatient, requireStaff, type AppEnv } from '../middleware';
+import { loadItems } from './programs';
+
+/**
+ * World map for the patient, and the practice guild raid for the patient and for staff.
+ * Phase status comes only from the programme the therapist released. Counts are aggregates.
+ */
+export const worldPatient = new Hono<AppEnv>();
+export const worldStaff = new Hono<AppEnv>();
+
+async function guildCounts(tx: Tx, practiceId: string): Promise<GuildCounts> {
+  const { rows } = await tx.query(
+    `SELECT cohort, workouts, mine
+       FROM app.practice_guild_week($1, date_trunc('week', now() AT TIME ZONE 'Europe/Amsterdam')::date)`,
+    [practiceId],
+  );
+  const row = rows[0] ?? { cohort: 0, workouts: 0, mine: 0 };
+  return { cohort: Number(row.cohort) || 0, workouts: Number(row.workouts) || 0, mine: Number(row.mine) || 0 };
+}
+
+worldStaff.get('/guild', async (c) => {
+  const { user, practiceId } = requireStaff(c);
+  const guild = await withUser(user.id, (tx) => guildCounts(tx, practiceId));
+  return c.json(publicGuildRaid(guild, 'staff'));
+});
+
+worldPatient.get('/world', async (c) => {
+  const { user, patient } = requirePatient(c);
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const today = (await tx.query("SELECT to_char(now() AT TIME ZONE 'Europe/Amsterdam', 'YYYY-MM-DD') AS d")).rows[0].d as string;
+      const { rows } = await tx.query(
+        `SELECT p.id, p.title, p.status, p.module, p.series_key, p.phase_no, p.phase_name, p.phase_weeks, p.phase_goal,
+                p.start_date, p.end_date,
+                (SELECT count(*)::int FROM workout_sessions s
+                  WHERE s.program_id = p.id AND s.patient_id = p.patient_id AND s.completed_at IS NOT NULL) AS nodes,
+                (SELECT e.body_region FROM program_items i JOIN exercises e ON e.id = i.exercise_id
+                  WHERE i.program_id = p.id GROUP BY e.body_region ORDER BY count(*) DESC, e.body_region LIMIT 1) AS region
+           FROM programs p
+          WHERE p.patient_id = $1 AND NOT p.is_template AND p.status IN ('active', 'completed')`,
+        [patient.id],
+      );
+      const programs: WorldProgram[] = rows.map((r) => ({
+        id: r.id as string,
+        title: r.title as string,
+        status: r.status as 'active' | 'completed',
+        module: r.module as string,
+        seriesKey: (r.series_key as string | null) ?? null,
+        phaseNo: r.phase_no == null ? null : Number(r.phase_no),
+        phaseName: (r.phase_name as string | null) ?? null,
+        phaseWeeks: (r.phase_weeks as string | null) ?? null,
+        phaseGoal: (r.phase_goal as string | null) ?? null,
+        nodes: Number(r.nodes) || 0,
+        region: (r.region as string | null) ?? null,
+      }));
+      const primary = programs.find((p) => p.status === 'active' && p.seriesKey && p.phaseNo != null)
+        ?? programs.find((p) => p.status === 'active');
+      let phaseTemplates: PhaseTemplate[] = [];
+      let seriesRegion: string | null = null;
+      if (primary?.seriesKey && primary.phaseNo != null) {
+        phaseTemplates = (await tx.query('SELECT * FROM app.patient_series_phases($1)', [primary.seriesKey])).rows.map((r) => ({
+          no: Number(r.phase_no),
+          name: (r.phase_name as string | null) ?? null,
+          weeks: (r.phase_weeks as string | null) ?? null,
+          goal: (r.phase_goal as string | null) ?? null,
+        }));
+        const region = await tx.query(
+          `SELECT e.body_region FROM program_items i
+             JOIN programs p ON p.id = i.program_id
+             JOIN exercises e ON e.id = i.exercise_id
+            WHERE p.patient_id = $1 AND p.series_key = $2 AND NOT p.is_template
+            GROUP BY e.body_region ORDER BY count(*) DESC, e.body_region LIMIT 1`,
+          [patient.id, primary.seriesKey],
+        );
+        seriesRegion = (region.rows[0]?.body_region as string | undefined) ?? null;
+      }
+      const paused = new Set(
+        (await tx.query('SELECT DISTINCT program_id FROM red_flag_reports WHERE patient_id = $1 AND handled_at IS NULL', [patient.id])).rows.map((r) => r.program_id as string),
+      );
+      let scheduledToday = 0;
+      for (const row of rows) {
+        if (row.status !== 'active' || paused.has(row.id)) continue;
+        const items = await loadItems(tx, row.id);
+        scheduledToday += itemsForDate(
+          { startDate: row.start_date as string | null, endDate: row.end_date as string | null },
+          items,
+          today,
+        ).length;
+      }
+      const reported = await tx.query(
+        `SELECT
+           EXISTS (SELECT 1 FROM daily_checkins WHERE patient_id = $1 AND day = $2::date AND score > 0)
+           OR EXISTS (SELECT 1 FROM pain_map_entries WHERE patient_id = $1 AND score > 0 AND (recorded_at AT TIME ZONE 'Europe/Amsterdam')::date = $2::date)
+           OR EXISTS (SELECT 1 FROM exercise_logs WHERE patient_id = $1 AND pain > 0 AND (created_at AT TIME ZONE 'Europe/Amsterdam')::date = $2::date)
+           OR EXISTS (SELECT 1 FROM workout_sessions WHERE patient_id = $1 AND pain > 0 AND (completed_at AT TIME ZONE 'Europe/Amsterdam')::date = $2::date)
+           OR EXISTS (SELECT 1 FROM self_trainings WHERE patient_id = $1 AND day = $2::date AND (stopped_for_pain OR coalesce(pain, 0) > 0))
+           AS reported`,
+        [patient.id, today],
+      );
+      const guild = await guildCounts(tx, patient.practiceId);
+      return buildWorld({
+        clinical: isClinical(patient.kind),
+        programs,
+        phaseTemplates,
+        seriesRegion,
+        scheduledToday,
+        reportedPain: !!reported.rows[0]?.reported,
+        guild,
+      });
+    }),
+  );
+});

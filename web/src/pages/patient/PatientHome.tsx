@@ -192,6 +192,10 @@ export function PatientHome() {
 
       <FirstSteps hasProgram={d.programs.length > 0} />
       <HeroHomeCard />
+      <Link to="/p/wereld" className="flex min-h-[48px] items-center justify-between gap-3 rounded-2xl border border-line bg-white px-4 py-3 font-semibold text-ink-900 shadow-card">
+        <span>{t('Wereldkaart', 'World map')}</span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />
+      </Link>
       <DayChestHomeCard />
       <BossHomeCard />
       <DailyQuizCard />
