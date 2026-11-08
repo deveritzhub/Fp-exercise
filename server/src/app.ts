@@ -32,6 +32,8 @@ import { gymPatient, gymStaff } from './routes/gymLog';
 import { atlasPatient, atlasStaff } from './routes/atlas';
 import { stepRoutes } from './routes/steps';
 import { patientCare, redFlags } from './routes/patientCare';
+import { worldPatient, worldStaff } from './routes/world';
+import { bossProgram, bossPatient } from './routes/boss';
 
 export function createApp() {
   const app = new Hono<AppEnv>();
@@ -92,7 +94,10 @@ export function createApp() {
   api.route('/patients', patientCare);
   api.route('/red-flags', redFlags);
   api.route('/programs', programs);
+  api.route('/programs', bossProgram);
+  api.route('/patients', bossPatient);
   api.route('/patient', patientApp);
+  api.route('/patient', worldPatient);
   api.route('/patient', patientModules);
   api.route('/patient', heroPatient);
   api.route('/patient', patientLogs);
@@ -106,6 +111,7 @@ export function createApp() {
   api.route('/patients', mobilityStaff);
   api.route('/dashboard', dashboard);
   api.route('/practice', practice);
+  api.route('/practice', worldStaff);
   api.route('/admin', admin);
   api.route('/feedback', feedback);
   api.route('/reminders', reminders);

@@ -63,6 +63,21 @@ dashboard.get('/', async (c) => {
       for (const r of areaRows) areasBy.set(r.patient_id, [...(areasBy.get(r.patient_id) ?? []), { area: r.area, score: r.score, at: r.recorded_at }]);
       const soon = new Date();
       soon.setDate(soon.getDate() + 7);
+      const bossRows = ids.length
+        ? (await tx.query(
+            `SELECT g.patient_id, max(g.defeated_at) AS at FROM phase_boss_goals g
+              WHERE g.patient_id = ANY($1) AND g.active AND g.defeated_at IS NOT NULL
+                AND NOT EXISTS (
+                  SELECT 1 FROM phase_boss_goals o
+                   WHERE o.program_id = g.program_id AND o.active AND o.defeated_at IS NULL
+                )
+              GROUP BY g.patient_id
+             HAVING max(g.defeated_at) > now() - interval '21 days'`,
+            [ids],
+          )).rows
+        : [];
+      const bossIds = new Set(bossRows.map((r) => r.patient_id as string));
+      const bossAt = new Map(bossRows.map((r) => [r.patient_id as string, r.at as string]));
       const attention: Attention[] = [];
       let planned = 0;
       let completed = 0;
@@ -93,10 +108,11 @@ dashboard.get('/', async (c) => {
         const worse = areaPainRising(areasBy.get(p.id) ?? [])[0];
         if (worse) signals.push({ reason: 'area_pain_rising', date: null, value: worse.to, planned: worse.from, area: worse.area });
         if (p.next_end && p.next_end <= toISODate(soon)) signals.push({ reason: 'program_ending', date: p.next_end });
+        if (bossIds.has(p.id)) signals.push({ reason: 'boss_met', date: bossAt.get(p.id) ?? null });
         if (p.active_programs === 0) signals.push({ reason: 'no_active_program', date: null });
         if (signals.length) attention.push({ patientId: p.id, name: `${p.first_name} ${p.last_name}`, reasons: signals.map((x) => x.reason), signals });
       }
-      const order = ['high_pain', 'pain_rising', 'area_pain_rising', 'new_feedback', 'too_heavy', 'inactive_long', 'no_registration', 'low_adherence', 'ready_heavier', 'program_ending', 'not_activated', 'no_active_program'];
+      const order = ['high_pain', 'boss_met', 'pain_rising', 'area_pain_rising', 'new_feedback', 'too_heavy', 'inactive_long', 'no_registration', 'low_adherence', 'ready_heavier', 'program_ending', 'not_activated', 'no_active_program'];
       attention.sort((x, y) => order.indexOf(x.reasons[0]) - order.indexOf(y.reasons[0]));
 
       const activity = await tx.query(
@@ -151,7 +167,25 @@ dashboard.get('/', async (c) => {
                   (SELECT count(*)::int FROM patients WHERE created_by = app.uid() AND invited_at IS NOT NULL) AS invited`,
         )
       ).rows[0];
+      const aclRows = clinical
+        ? (await tx.query(
+            `SELECT pt.id, pt.first_name, pt.last_name, p.phase_no, p.phase_name,
+                    count(*) FILTER (WHERE g.active AND g.defeated_at IS NOT NULL)::int AS met,
+                    count(*) FILTER (WHERE g.active)::int AS total
+               FROM programs p
+               JOIN patients pt ON pt.id = p.patient_id
+               LEFT JOIN phase_boss_goals g ON g.program_id = p.id
+              WHERE p.patient_id = ANY($1) AND p.series_key = 'acl_vkb_flagship' AND p.status = 'active' AND NOT p.is_template
+              GROUP BY pt.id, pt.first_name, pt.last_name, p.phase_no, p.phase_name
+              ORDER BY pt.last_name, pt.first_name`,
+            [ids],
+          )).rows
+        : [];
       return {
+        aclPatients: aclRows.map((r) => ({
+          patientId: r.id, name: `${r.first_name} ${r.last_name}`, phaseNo: Number(r.phase_no), phaseName: r.phase_name,
+          met: Number(r.met), total: Number(r.total),
+        })),
         start: { since: start.since, patients: start.patients, programs: start.programs, invited: start.invited },
         alerts: alerts.rows.map((r) => ({ kind: r.kind, createdAt: r.created_at, patientId: r.patient_id, name: `${r.first_name} ${r.last_name}` })),
         daily: daily.rows.map((r) => ({ day: r.day, sessions: r.n, list: r.list })),

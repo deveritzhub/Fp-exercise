@@ -956,18 +956,19 @@ export const GEAR_SLOTS: { key: GearSlot; nl: string; en: string; side: 'left' |
   { key: 'held', nl: 'In de hand', en: 'Held', side: 'bottom' },
 ];
 export const GEAR_SLOT: Record<string, GearSlot> = {
-  cap: 'head', visor: 'head', headband: 'head', crown: 'head',
-  scarf: 'neck', towel: 'neck', headphones: 'neck', medal: 'neck',
-  pin: 'chest', hr_band: 'chest',
-  yoga_mat: 'back',
+  cap: 'head', visor: 'head', headband: 'head', crown: 'head', champion_helm: 'head',
+  scarf: 'neck', towel: 'neck', headphones: 'neck', medal: 'neck', ice_pack: 'neck',
+  pin: 'chest', hr_band: 'chest', golden_hinge: 'chest', frog_badge: 'chest',
+  yoga_mat: 'back', deswell_mantle: 'back', wind_cape: 'back',
   captain: 'arm',
   watch: 'wrist', wristbands: 'wrist',
   gloves: 'hands',
-  belt: 'waist',
-  sleeve: 'legs', shin_guards: 'legs',
-  gold_shoes: 'feet', balance_shoes: 'feet', spikes: 'feet', crew_socks: 'feet',
-  sport_item: 'held',
+  belt: 'waist', spring_belt: 'waist',
+  sleeve: 'legs', shin_guards: 'legs', iron_brace: 'legs', rune_guard: 'legs',
+  gold_shoes: 'feet', balance_shoes: 'feet', spikes: 'feet', crew_socks: 'feet', pilgrim_boots: 'feet', wing_shoes: 'feet',
+  sport_item: 'held', crutch_staff: 'held', smith_hammer: 'held',
   tracksuit: 'outfit', team_kit: 'outfit', champion: 'outfit',
+  sport_football: 'outfit', sport_basketball: 'outfit', sport_hockey: 'outfit', sport_ski: 'outfit', sport_running: 'outfit', sport_padel: 'outfit',
 };
 /** Keep one piece per slot: the last one in the list wins (newest choice). */
 export function onePerSlot(equipped: string[]): string[] {

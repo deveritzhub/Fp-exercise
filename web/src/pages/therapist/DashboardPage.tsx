@@ -1,11 +1,14 @@
 import { BODY_AREAS } from '@shared/hero';
 import { StaffStart, type StaffStartData } from '@/components/app/StaffStart';
+import { GuildRaidCard } from '@/components/patient/GuildRaid';
+import type { GuildPublic } from '@shared/worldMap';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Activity, AlertCircle, ArrowRight, BookOpen, Layers, MessageSquareText, Plus, Star, UserPlus, Users } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import { isClinical } from '@shared/accountKind';
 import { useSession } from '@/lib/session';
 import { fmtDate, fmtDateTime, fmtRelative, greeting, pct } from '@/lib/format';
 import { useDocumentMeta, useLabels } from '@/lib/meta';
@@ -23,6 +26,7 @@ type Dashboard = {
   alerts: { kind: 'red_flag' | 'deletion_request'; createdAt: string; patientId: string; name: string }[];
   activity: { id: string; patientId: string; patientName: string; programTitle: string; completedAt: string; pain: number | null; difficulty: number | null; hasFeedback: boolean }[];
   favorites: Exercise[];
+  aclPatients?: { patientId: string; name: string; phaseNo: number; phaseName: string; met: number; total: number }[];
 };
 
 export function DashboardPage() {
@@ -32,6 +36,7 @@ export function DashboardPage() {
   const [showAll, setShowAll] = useState(false);
   useDocumentMeta(t('Dashboard', 'Dashboard'));
   const q = useQuery({ queryKey: ['dashboard', practice?.practiceId], queryFn: () => api.get<Dashboard>('/dashboard') });
+  const guild = useQuery({ queryKey: ['practice-guild', practice?.practiceId], queryFn: () => api.get<GuildPublic>('/practice/guild') });
   const recent = useQuery({ queryKey: ['programs-recent', practice?.practiceId], queryFn: () => api.get<{ items: Program[] }>('/programs/recent') });
   const d = q.data;
 
@@ -65,6 +70,28 @@ export function DashboardPage() {
             Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[112px] rounded-xl" />)
           )}
         </div>
+      )}
+
+      {guild.data && (
+        <div className="mt-6">
+          <GuildRaidCard guild={guild.data} />
+        </div>
+      )}
+
+      {isClinical(practice?.kind) && (d?.aclPatients?.length ?? 0) > 0 && (
+        <Card className="mt-6" aria-labelledby="acl-patients-title">
+          <CardHeader title={t('VKB-patiënten', 'ACL patients')} description={t('Huidige fase en hoeveel fasedoelen gehaald zijn. Geen vrijgave.', 'Current phase and how many phase goals are met. Not a clearance.')} action={<ButtonLink to="/app/patienten?filter=acl" variant="secondary" size="sm">{t('Filter', 'Filter')}</ButtonLink>} />
+          <ul id="acl-patients-title" className="divide-y divide-line">
+            {d!.aclPatients!.map((p) => (
+              <li key={p.patientId}>
+                <Link to={`/app/patienten/${p.patientId}?tab=vkb`} className="flex min-h-[52px] items-center justify-between gap-3 px-5 py-3">
+                  <span className="font-medium text-ink-900">{p.name}</span>
+                  <span className="text-[13px] text-ink-700">{p.phaseName} · {p.total ? Math.round((p.met / p.total) * 100) : 0}%</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
 
       {d?.start && <StaffStart data={d.start} />}
@@ -168,7 +195,7 @@ export function DashboardPage() {
  * Safety items (red-flag reports, deletion requests) come first.
  */
 function WorkList({ d }: { d?: Dashboard }) {
-  const { t, locale } = useI18n();
+  const { t, locale, kind } = useI18n();
   const reason = useReasonLabel();
   const date = (x: string | null) => (x ? fmtDate(x, locale, { day: 'numeric', month: 'long' }) : null);
   const explain = (s: Signal, patientId: string): { text: string; action: { label: string; to: string } } => {
@@ -201,6 +228,13 @@ function WorkList({ d }: { d?: Dashboard }) {
         return { text: t(`Uitgenodigd op ${date(s.date)}, account nog niet geactiveerd. De patiënt kan nog niets registreren.`, `Invited on ${date(s.date)}, account not activated yet. The patient cannot register anything yet.`), action: { label: t('Uitnodiging bekijken', 'View invitation'), to: p } };
       case 'no_active_program':
         return { text: t('Geen actief programma.', 'No active programme.'), action: { label: t('Programma maken', 'Create programme'), to: `/app/programmas/nieuw?patient=${patientId}` } };
+      case 'boss_met':
+        return {
+          text: isClinical(kind)
+            ? t('Fasedoel gehaald. De volgende fase gaat niet vanzelf open.', 'Phase goal met. The next phase does not open by itself.')
+            : t('Doel gehaald. Het volgende schema gaat niet vanzelf open.', 'Goal met. The next plan does not open by itself.'),
+          action: { label: t('Programma bekijken', 'View programme'), to: `${p}?tab=programmas` },
+        };
       default:
         return { text: reason(s.reason).text, action: { label: t('Openen', 'Open'), to: p } };
     }

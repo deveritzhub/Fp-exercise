@@ -7,10 +7,12 @@ import { cn } from '@/lib/cn';
 import { useI18n } from '@/lib/i18n';
 import type { Progress } from '@/lib/types';
 import { clinicalTimeline } from '@shared/clinicalTimeline';
+import { ACL_RECORDINGS } from '@shared/aclRoute';
+import { useClinicalPractice } from '@/lib/session';
 const DOMAINS=['rom','strength','function','confidence'] as const;
 type Domain = (typeof DOMAINS)[number];
 const unitFor=(d:Domain)=>d==='rom'?'degrees':d==='strength'?'kg':'score_0_10';
-const displayUnit=(u:PatientOutcome['unit'])=>({degrees:'°',kg:'kg',N:'N',score_0_10:'/10',percent:'%'})[u];
+const displayUnit=(u:PatientOutcome['unit'])=>({degrees:'°',kg:'kg',N:'N',score_0_10:'/10',percent:'%',grade:'',seconds:'s',cm:'cm'})[u];
 
 /**
  * Private, therapist-only view. Uses the existing tenant-filtered /patients/:id/progress
@@ -19,6 +21,7 @@ const displayUnit=(u:PatientOutcome['unit'])=>({degrees:'°',kg:'kg',N:'N',score
  */
 export function ClinicalTimeline({ patientId, sessions, outcomes }: { patientId:string; sessions:Progress['sessions']; outcomes: PatientOutcome[] }) {
   const { t, locale } = useI18n();
+  const clinical = useClinicalPractice();
   const qc=useQueryClient();
   const [open,setOpen]=useState(false);
   const [saving,setSaving]=useState(false);
@@ -30,12 +33,13 @@ export function ClinicalTimeline({ patientId, sessions, outcomes }: { patientId:
   const [side,setSide]=useState<PatientOutcome['side']>('not_applicable');
   const [measuredOn,setMeasuredOn]=useState(()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()));
   const [note,setNote]=useState('');
+  const [metricKey,setMetricKey]=useState('');
   const record=async()=>{
     const n=Number(value);
     if(!metric.trim()||!value.trim()||!Number.isFinite(n)||n<0){setError(t('Vul een geldige meetwaarde en meetnaam in.','Enter a valid measurement and name.'));return;}
     setSaving(true);setError('');
     try{
-      await api.post(`/patients/${patientId}/outcomes`,{domain,metric:metric.trim(),value:n,unit,side,measuredOn,note});
+      await api.post(`/patients/${patientId}/outcomes`,{domain,metric:metric.trim(),metricKey:metricKey||undefined,value:n,unit,side,measuredOn,note});
       await qc.invalidateQueries({queryKey:['patient',patientId,'progress']});
       setOpen(false);setMetric('');setValue('');setNote('');
     }catch(e){setError(t('Opslaan mislukt. Controleer waarde en bevoegdheid.','Could not save. Check the value and access rights.'));}
@@ -75,15 +79,33 @@ export function ClinicalTimeline({ patientId, sessions, outcomes }: { patientId:
               <option value="rom">ROM</option><option value="strength">{t('Kracht','Strength')}</option><option value="function">{t('Functie','Function')}</option><option value="confidence">{t('Vertrouwen','Confidence')}</option>
             </select>
           </label>
+          {clinical && <label className="grid gap-1 text-[13px] font-medium sm:col-span-2">{t('VKB-meting (optioneel)','ACL measurement (optional)')}
+            <select className="min-h-[44px] rounded-lg border border-line bg-white p-2" value={metricKey} onChange={(e) => {
+              const key = e.target.value;
+              setMetricKey(key);
+              const found = ACL_RECORDINGS.find((r) => r.key === key);
+              if (!found) return;
+              setDomain(found.domain);
+              setUnit(found.unit);
+              setMetric(locale === 'nl' ? found.nameNl : found.nameEn);
+              if (!found.sides) setSide('not_applicable');
+            }}>
+              <option value="">{t('Vrije meting', 'Free measurement')}</option>
+              {ACL_RECORDINGS.map((r) => <option key={r.key} value={r.key}>{locale === 'nl' ? r.nameNl : r.nameEn}</option>)}
+            </select>
+          </label>}
           <label className="grid gap-1 text-[13px] font-medium">{t('Testnaam / schaal','Test name / scale')}
             <input required maxLength={80} className="min-h-[44px] rounded-lg border border-line p-2" value={metric} onChange={e=>setMetric(e.target.value)} placeholder={t('Bijv. knie flexie, PSFS','E.g. knee flexion, PSFS')}/>
           </label>
           <label className="grid gap-1 text-[13px] font-medium">{t('Gemeten waarde','Measured value')}
-            <input type="number" required min={0} max={unit==='degrees'?360:unit==='score_0_10'?10:unit==='percent'?100:100000} step="any" className="min-h-[44px] rounded-lg border border-line p-2" value={value} onChange={e=>setValue(e.target.value)} />
+            <input type="number" required min={0} max={unit==='degrees'?360:unit==='score_0_10'?10:unit==='percent'?100:unit==='grade'?4:unit==='seconds'?600:unit==='cm'?2000:100000} step="any" className="min-h-[44px] rounded-lg border border-line p-2" value={value} onChange={e=>setValue(e.target.value)} />
           </label>
           <label className="grid gap-1 text-[13px] font-medium">{t('Eenheid','Unit')}
             <select className="min-h-[44px] rounded-lg border border-line bg-white p-2" value={unit} onChange={e=>setUnit(e.target.value as PatientOutcome['unit'])}>
-              {domain==='rom'?<option value="degrees">°</option>:domain==='strength'?<><option value="kg">kg</option><option value="N">N</option></>:<><option value="score_0_10">0–10</option><option value="percent">%</option></>}
+              {domain==='rom'?<option value="degrees">°</option>:domain==='strength'?<><option value="kg">kg</option><option value="N">N</option></>:<>
+                <option value="score_0_10">0–10</option><option value="percent">%</option>
+                {domain==='function' && <><option value="grade">0–4</option><option value="seconds">s</option><option value="cm">cm</option></>}
+              </>}
             </select>
           </label>
           <label className="grid gap-1 text-[13px] font-medium">{t('Meetdatum','Measurement date')}

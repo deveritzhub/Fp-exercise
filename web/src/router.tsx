@@ -46,6 +46,7 @@ const ProgramPrintPage = named(() => import('@/pages/PrintPages'), 'ProgramPrint
 const PatientProgramPrintPage = named(() => import('@/pages/PrintPages'), 'PatientProgramPrintPage');
 const ProgressReportPage = named(() => import('@/pages/therapist/ProgressReportPage'), 'ProgressReportPage');
 const HeroPage = named(() => import('@/pages/patient/HeroPages'), 'HeroPage');
+const WorldMapPage = named(() => import('@/pages/patient/WorldMapPage'), 'WorldMapPage');
 const HeroSetupPage = named(() => import('@/pages/patient/HeroPages'), 'HeroSetupPage');
 const HeroProfilePage = named(() => import('@/pages/patient/HeroPages'), 'HeroProfilePage');
 const InventoryPage = named(() => import('@/pages/patient/HeroPages'), 'InventoryPage');
@@ -180,6 +181,7 @@ export const router = createBrowserRouter([
           { path: 'sessie/:id', element: <S><SessionPlayer /></S> },
           { path: 'voortgang', element: <S><PatientProgress /></S> },
           { path: 'held', element: <S><HeroPage /></S> },
+          { path: 'wereld', element: <S><WorldMapPage /></S> },
           { path: 'held/nieuw', element: <S><HeroSetupPage /></S> },
           { path: 'held/uiterlijk', element: <S><HeroProfilePage /></S> },
           { path: 'held/inventaris', element: <S><InventoryPage /></S> },
