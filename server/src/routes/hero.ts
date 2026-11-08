@@ -346,6 +346,17 @@ async function heroState(tx: Tx, patientId: string) {
     // Coins stay with the patient: never on the friend card or the professional's view.
     gear: { owned, equipped, coins: Math.max(0, earned - spent), earned, spent, score: gearScore(equipped) },
     aclJourney: journey.public,
+    measurementBossDefeated: !!(await tx.query(
+      `SELECT 1 FROM phase_boss_goals g
+        WHERE g.patient_id = $1 AND g.active AND g.defeated_at IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM phase_boss_goals o
+             WHERE o.program_id = g.program_id AND o.active AND o.defeated_at IS NULL
+          )
+        LIMIT 1`,
+      [patientId],
+    )).rows[0],
+    operatedSide: ((await tx.query('SELECT side FROM acl_routes WHERE patient_id = $1', [patientId])).rows[0]?.side ?? null) as 'left' | 'right' | null,
     // Trophy cabinet: per skill at level 10/25/50/75/99; up to three on the shelf behind the hero.
     trophies: skillTrophies(skills),
     showcase: ((heroRow?.showcase ?? []) as string[]).filter((k) => skillTrophies(skills).some((t) => t.key === k && t.earned)),

@@ -192,6 +192,9 @@ export type HeroState = {
   /** Team quest: only a coarse group status, shown from five participants. */
   team?: { enabled: boolean; canJoin: boolean; available: boolean; participantsBand?: '5+'; status: 'not_started' | 'in_progress' | 'complete' };
   heirloom?: { kind: 'weapon' | 'shield' | 'amulet'; tier: 1 | 2 | 3 | 4 | 5 } | null;
+  /** A phase measurement boss is fully defeated. Cosmetic victory only. */
+  measurementBossDefeated?: boolean;
+  operatedSide?: 'left' | 'right' | null;
   aclJourney?: {
     owned: string[];
     wearable: string[];

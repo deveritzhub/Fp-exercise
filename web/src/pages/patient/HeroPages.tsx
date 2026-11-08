@@ -4,7 +4,7 @@ import { ACL_REWARDS, ACL_SPORTS } from '@shared/aclRewards';
 import { GearArtwork } from '@/components/hero/RpgGear';
 import { HEIRLOOM_KINDS } from '@shared/measurementBoss';
 import '../../components/hero/rpg.css';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Award, BookOpen, Brain, CalendarCheck, Check, ChevronRight, CircleCheck, Coins, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Utensils, Droplets, Zap, Swords, type LucideIcon } from 'lucide-react';
@@ -16,6 +16,8 @@ import { cn } from '@/lib/cn';
 import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, ScaleInput, Segmented, Spinner, useToast } from '@/components/ui';
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
+import { webglAvailable } from '@/components/hero/webgl';
+const Hero3DView = lazy(() => import('@/components/hero/Hero3DView'));
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
 import { HumanFigure, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
@@ -1480,6 +1482,7 @@ export function HeroPage() {
   const nl = locale === 'nl';
   useDocumentMeta(t('Mijn sportheld', 'My sports hero'));
   const q = useHero();
+  const [view3d, setView3d] = useState(false);
   if (q.isError) return <ErrorState error={q.error} />;
   if (!q.data) return <Spinner />;
   const d = q.data;
@@ -1505,6 +1508,7 @@ export function HeroPage() {
   const combos = comboTitles(Object.fromEntries(d.skills.filter((s) => !s.locked).map((s) => [s.key, s.level])), nl);
   const toEntries = (c: HeroState['painMap']['current']) => Object.fromEntries((c?.entries ?? []).map((e) => [e.area, e.score]));
   const earned = d.badges.filter((b) => b.earned).length;
+  const gl = webglAvailable();
 
   return (
     <div className="space-y-5">
@@ -1528,6 +1532,32 @@ export function HeroPage() {
               <Link to="/p/held/inventaris" className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-sand-soft px-3 text-[14px] font-semibold text-sand-ink"><Crown className="h-4 w-4" aria-hidden />{t(`Inventaris & winkel · ${d.gear.coins}`, `Inventory & shop · ${d.gear.coins}`)}</Link>
             </div>
           </div>
+        </div>
+        <div className="mt-3">
+          <button
+            type="button"
+            aria-pressed={view3d}
+            onClick={() => setView3d((v) => !v)}
+            className="inline-flex min-h-[44px] items-center rounded-xl border border-line bg-white px-3 text-[14px] font-semibold text-ink-900"
+          >
+            {view3d ? t('Bekijk de foto', 'View the photo') : t('Bekijk in 3D', 'View in 3D')}
+          </button>
+          {view3d && (gl ? (
+            <Suspense fallback={<p className="mt-2 text-[14px] text-ink-600">{t('3D laden…', 'Loading 3D…')}</p>}>
+              <Hero3DView
+                build={d.hero.build}
+                bodyKind={look.body?.kind}
+                skin={d.hero.skin}
+                equipped={d.gear.equipped}
+                aids={d.aids}
+                operatedSide={d.operatedSide ?? null}
+                heirloom={d.heirloom ?? null}
+                victory={!!d.measurementBossDefeated}
+              />
+            </Suspense>
+          ) : (
+            <p role="status" className="mt-2 text-[14px] text-ink-700">{t('3D is niet beschikbaar in deze browser. De foto blijft staan.', '3D is not available in this browser. The photo stays.')}</p>
+          ))}
         </div>
         {wallPlaced(d) && (
           <Link to="/p/held/inventaris" className={cn('mt-3 block rounded-xl px-3 py-2', WALL_BG)} aria-label={t('Je muur, naar je prijzenkast', 'Your wall, to your trophy cabinet')}>
