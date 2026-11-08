@@ -1,3 +1,4 @@
+import { isClinical } from '@shared/accountKind';
 import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError, getActivePractice, setActivePractice } from './api';
@@ -42,12 +43,18 @@ export function useLogout() {
   const qc = useQueryClient();
   return useCallback(
     async (reason?: 'inactief') => {
-      // A shared device must not keep this person's reminders, cached data or unsent workouts.
-      // Never let a stuck service worker keep the person logged in: give it at most 2 seconds.
-      await Promise.race([forgetDevice(), new Promise((r) => setTimeout(r, 2000))]);
-      await api.post('/auth/logout').catch(() => undefined);
+      const to = reason ? `/login?reden=${reason}` : '/login';
+      // Whatever hangs below, the person ends up on the login screen within 5 seconds.
+      const fallback = setTimeout(() => window.location.assign(to), 5000);
+      // A shared device must not keep this person's reminders, cached data or unsent workouts (this
+      // needs the session still, to unsubscribe reminders). Then end the session on the server.
+      // Never let a stuck service worker or request keep the person logged in: at most 2 s each.
+      const within = (p: Promise<unknown>) => Promise.race([p.catch(() => undefined), new Promise((r) => setTimeout(r, 2000))]);
+      await within(forgetDevice());
+      await within(api.post('/auth/logout'));
       qc.clear();
-      window.location.assign(reason ? `/login?reden=${reason}` : '/login');
+      clearTimeout(fallback);
+      window.location.assign(to);
     },
     [qc],
   );
@@ -59,4 +66,10 @@ export function homePathFor(u: SessionUser | null) {
   if (u.patient) return '/p';
   if (u.isPlatformAdmin) return '/admin';
   return '/login';
+}
+
+/** Whether the active practice is a physiotherapy practice (clinical tools such as the complaint guide). */
+export function useClinicalPractice() {
+  const { practice } = useSession();
+  return isClinical(practice?.kind);
 }

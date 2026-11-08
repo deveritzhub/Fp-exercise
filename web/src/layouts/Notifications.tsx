@@ -46,8 +46,8 @@ export function NotificationBell() {
             )}
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {!q.data?.items.length && <p className="px-2.5 py-6 text-center text-[13px] text-ink-500">{t('Geen meldingen', 'No notifications')}</p>}
-            {q.data?.items.map((n) => (
+            {!q.data?.items?.length && <p className="px-2.5 py-6 text-center text-[13px] text-ink-500">{t('Geen meldingen', 'No notifications')}</p>}
+            {(q.data?.items ?? []).map((n) => (
               <button
                 key={n.id}
                 type="button"

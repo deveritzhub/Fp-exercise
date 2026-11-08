@@ -910,7 +910,9 @@ function WeeklyQuests({ d }: { d: HeroState }) {
     if (q.key === 'train') return q.target === 1 ? t('Doe 1 training', 'Do 1 workout') : t(`Train ${q.target} dagen`, `Train on ${q.target} days`);
     if (q.key === 'checkin') return t('Doe een dagcheck of werk je pijnkaart bij', 'Do a daily check-in or update your body map');
     const sk = SKILLS.find((k) => k.key === q.skill)!;
-    return t(`Skill van de week: doe 2 oefeningen voor ${sk.nl}`, `Skill of the week: do 2 exercises for ${sk.en}`);
+    return q.byTherapist
+      ? t(`Gekozen door je fysiotherapeut: 2 oefeningen voor ${sk.nl}`, `Chosen by your physiotherapist: 2 exercises for ${sk.en}`)
+      : t(`Skill van de week: doe 2 oefeningen voor ${sk.nl}`, `Skill of the week: do 2 exercises for ${sk.en}`);
   };
   const allDone = w.quests.every((q) => q.done);
   return (

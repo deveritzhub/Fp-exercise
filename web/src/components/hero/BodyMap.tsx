@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BODY_AREAS, DEFAULT_LOOK, type Side } from '@shared/hero';
 import { HumanFigure, figureGeometry, type FigureLook } from './HumanFigure';
+import { heroPhotoSources } from './HeroPhoto';
+import type { PhotoFit } from './photoFit';
+import { photoPainPoints } from './photoPain';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import { Segmented } from '@/components/ui';
@@ -25,10 +28,35 @@ export function BodyMap({ entries, onChange, compare, className, look }: { entri
   const nl = locale === 'nl';
   const [side, setSide] = useState<Side>('front');
   const [selected, setSelected] = useState<string | null>(null);
-  // The patient's own hero, with the points placed on their body type.
+  // The patient's own hero: the photo (front) and its silhouette (back), with the points on the
+  // measured body. Falls back to the drawn figure when the photo or its measurements are missing.
   const figure: FigureLook = look ?? DEFAULT_LOOK;
+  const sources = heroPhotoSources(figure);
+  const sourcesKey = sources.join('|');
+  const [photo, setPhoto] = useState<{ src: string; fit: PhotoFit } | 'none' | null>(null);
+  useEffect(() => {
+    let live = true;
+    setPhoto(null);
+    import('./photoFit')
+      .then((m) => {
+        if (!live) return;
+        const src = sources.find((x) => m.photoFit(x));
+        setPhoto(src ? { src, fit: m.photoFit(src)! } : 'none');
+      })
+      .catch(() => live && setPhoto('none'));
+    return () => {
+      live = false;
+    };
+  }, [sourcesKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const usePhoto = photo !== null && photo !== 'none';
+  const photoPts = usePhoto ? photoPainPoints(photo.fit) : null;
   const pts = figureGeometry(figure).points;
-  const areas = BODY_AREAS.filter((a) => a.side === side).map((a) => ({ ...a, x: pts[a.key]?.[0] ?? a.x, y: pts[a.key]?.[1] ?? a.y }));
+  // Positions as fractions of the picture (photo 3:4, drawing 200:420).
+  const areas = BODY_AREAS.filter((a) => a.side === side).map((a) =>
+    photoPts && photoPts[a.key]
+      ? { ...a, fx: photoPts[a.key][0], fy: photoPts[a.key][1] }
+      : { ...a, fx: (pts[a.key]?.[0] ?? a.x) / 200, fy: (pts[a.key]?.[1] ?? a.y) / 420 },
+  );
   const sel = BODY_AREAS.find((a) => a.key === selected);
   const count = (s: Side) => BODY_AREAS.filter((a) => a.side === s && entries[a.key] !== undefined).length;
 
@@ -46,8 +74,24 @@ export function BodyMap({ entries, onChange, compare, className, look }: { entri
           ]}
         />
       </div>
-      <div className="relative mx-auto aspect-[200/420] w-full max-w-[260px]">
-        <HumanFigure look={figure} side={side} className="absolute inset-0 h-full w-full" />
+      <div className={cn('relative mx-auto w-full', usePhoto ? 'aspect-[3/4] max-w-[300px] overflow-hidden rounded-2xl bg-[#ece4d6]' : 'aspect-[200/420] max-w-[260px]')}>
+        {photo === null ? (
+          <span className="absolute inset-0 animate-pulse rounded-2xl bg-ink-100" aria-hidden />
+        ) : usePhoto ? (
+          side === 'front' ? (
+            <img src={`/api/hero-assets/${photo.src}`} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" onError={() => setPhoto('none')} />
+          ) : (
+            // No photo from behind: the person's own silhouette, mirrored (their left on the left).
+            <svg viewBox="0 0 1000 1333.33" className="absolute inset-0 h-full w-full" aria-hidden>
+              <g transform="translate(1000,0) scale(-1,1)">
+                <path d={photo.fit.silhouette} fill="#d6c4ab" stroke="#a88f72" strokeWidth={5} strokeLinejoin="round" />
+              </g>
+            </svg>
+          )
+        ) : (
+          <HumanFigure look={figure} side={side} className="absolute inset-0 h-full w-full" />
+        )}
+        {usePhoto && <span className="absolute left-2 top-2 rounded-full bg-white/85 px-2 py-0.5 text-[11.5px] font-semibold text-ink-700" aria-hidden>{side === 'front' ? t('Voorkant', 'Front') : t('Achterkant', 'Back')}</span>}
         <ul className="absolute inset-0" aria-label={side === 'front' ? t('Voorkant van het lichaam', 'Front of the body') : t('Achterkant van het lichaam', 'Back of the body')}>
           {areas.map((a) => {
             const v = entries[a.key];
@@ -59,7 +103,7 @@ export function BodyMap({ entries, onChange, compare, className, look }: { entri
               <span className="h-4 w-4 rounded-full border-2 border-ink-400 bg-white/80" />
             );
             return (
-              <li key={a.key} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${(a.x / 200) * 100}%`, top: `${(a.y / 420) * 100}%` }}>
+              <li key={a.key} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${a.fx * 100}%`, top: `${a.fy * 100}%` }}>
                 {onChange ? (
                   <button
                     type="button"

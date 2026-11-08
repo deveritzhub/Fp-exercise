@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, ChevronRight, Dumbbell, HeartPulse, Move, Play, X } from 'lucide-react';
+import { Bell, ChevronRight, Dumbbell, HeartPulse, Move, PartyPopper, Play, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { greeting, pct } from '@/lib/format';
+import { fmtDate, greeting, pct } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
 import { ButtonLink, ErrorState, ProgressRing, Skeleton } from '@/components/ui';
 import { RestDayCard, TodayProgramCard } from '@/components/patient/TodayCard';
@@ -19,6 +19,8 @@ import { cn } from '@/lib/cn';
 import { BossHomeCard, DayChestHomeCard, HeroHomeCard } from '@/pages/patient/HeroPages';
 import { LogbookHomeCard } from '@/pages/patient/LogbookPage';
 import { MobilityDueCard } from '@/components/MobilityTests';
+import { FirstSteps } from '@/components/patient/FirstSteps';
+import { FeedbackNudge } from '@/components/patient/FeedbackNudge';
 import { Check, Flame } from 'lucide-react';
 
 export type PatientHomeData = {
@@ -28,6 +30,8 @@ export type PatientHomeData = {
     itemCount: number;
     today: { scheduled: number; done: boolean; items: { id: string; exercise: Program['items'][number]['exercise']; sets: number | null; reps: number | null; holdS: number | null }[] };
     nextSession: string | null;
+    /** The coming seven days (today first): exercises of this programme per day. */
+    week?: { date: string; exercises: number }[];
     upcoming: boolean;
     openSession: { id: string; startedAt: string; logged: number } | null;
     paused: boolean;
@@ -36,6 +40,8 @@ export type PatientHomeData = {
   stats: { completedSessions: number; adherence7d: Adherence; weekly: (Adherence & { weekStart: string })[]; week: { date: string; weekday: number; state: DayState }[]; streak: number };
   recent: { id: string; completedAt: string; programTitle: string; difficulty: number | null; pain: number | null; exercisesDone: number }[];
   notifications: Notification[];
+  /** Complaints the practice sent an explanation of (newest first). */
+  explanations?: string[];
 };
 
 export type PatientProgramRow = PatientHomeData['programs'][number];
@@ -110,6 +116,24 @@ export function PatientHome() {
         </div>
       )}
 
+      {/* Everything planned today is done: a short, calm wrap-up with what comes next. */}
+      {todo.length > 0 && left === 0 && pausedToday === 0 && resumeOther.length === 0 && (() => {
+        const next = d.programs.map((p) => p.nextSession).filter((x): x is string => !!x).sort()[0];
+        return (
+          <section aria-labelledby="done-today" className="rounded-2xl bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-5 text-white shadow-card">
+            <h2 id="done-today" className="flex items-center gap-2 text-[20px] font-bold"><PartyPopper className="h-6 w-6" aria-hidden />{t('Klaar voor vandaag', 'Done for today')}</h2>
+            <p className="mt-1 text-[15px] text-white/85">
+              {d.stats.streak > 1 ? t(`Al ${d.stats.streak} trainingen op rij. `, `${d.stats.streak} workouts in a row. `) : ''}
+              {next ? t(`Volgende training: ${fmtDate(next, locale, { weekday: 'long', day: 'numeric', month: 'long' })}.`, `Next workout: ${fmtDate(next, locale, { weekday: 'long', day: 'numeric', month: 'long' })}.`) : t('Rust lekker uit.', 'Enjoy your rest.')}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link to="/p/held" className="inline-flex min-h-[44px] items-center rounded-xl bg-white/15 px-4 text-[14.5px] font-semibold">{t('Naar je held', 'To your hero')}</Link>
+              <Link to="/p/voortgang" className="inline-flex min-h-[44px] items-center rounded-xl bg-white/15 px-4 text-[14.5px] font-semibold">{t('Je voortgang', 'Your progress')}</Link>
+            </div>
+          </section>
+        );
+      })()}
+
       {/* With one workout today the mission only repeats its card; it earns its place when it picks between several. */}
       {todo.length > 1 && <DailyMissionCard programs={d.programs} />}
 
@@ -149,6 +173,8 @@ export function PatientHome() {
         </div>
       ))}
 
+      {d.programs.some((p) => p.week?.length) && <WeekAhead programs={d.programs} />}
+
       {startable.length > 0 && (
         // Nothing running in mobility or strength yet: point to what the patient can start alone.
         <section aria-labelledby="self-start-title" className="rounded-2xl border border-line bg-white p-4 shadow-card">
@@ -164,6 +190,7 @@ export function PatientHome() {
         </section>
       )}
 
+      <FirstSteps hasProgram={d.programs.length > 0} />
       <HeroHomeCard />
       <DayChestHomeCard />
       <BossHomeCard />
@@ -195,6 +222,7 @@ export function PatientHome() {
         </div>
       </section>
 
+      <FeedbackNudge sessions={d.stats.completedSessions} />
       <ReminderNudge />
     </div>
   );
@@ -300,5 +328,38 @@ function WeekStrip({ days }: { days: { date: string; weekday: number; state: Day
         );
       })}
     </ol>
+  );
+}
+
+/** "The coming week": which days which workout, folded away so Today stays calm. */
+function WeekAhead({ programs }: { programs: PatientHomeData['programs'] }) {
+  const { t, locale } = useI18n();
+  const days = (programs.find((p) => p.week?.length)?.week ?? []).map((w, i) => ({
+    date: w.date,
+    list: programs.filter((p) => !p.paused && (p.week?.[i]?.exercises ?? 0) > 0).map((p) => ({ title: p.title, n: p.week![i].exercises })),
+  }));
+  const trainingDays = days.filter((x) => x.list.length).length;
+  return (
+    <details className="group rounded-2xl border border-line bg-white shadow-card">
+      <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+        <span>
+          <span className="block font-semibold text-ink-900">{t('Komende week', 'The coming week')}</span>
+          <span className="block text-[13.5px] text-ink-600">{t(`${trainingDays} van de 7 dagen trainen`, `Training on ${trainingDays} of the 7 days`)}</span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-ink-500 transition-transform group-open:rotate-90" aria-hidden />
+      </summary>
+      <ul className="divide-y divide-line border-t border-line">
+        {days.map((day, i) => (
+          <li key={day.date} className="flex items-start gap-3 px-4 py-2.5">
+            <span className="w-24 shrink-0 text-[14px] font-medium text-ink-800">{i === 0 ? t('Vandaag', 'Today') : i === 1 ? t('Morgen', 'Tomorrow') : fmtDate(day.date, locale, { weekday: 'long', day: 'numeric' })}</span>
+            <span className="min-w-0 flex-1 text-[14px] text-ink-700">
+              {day.list.length
+                ? day.list.map((x) => `${x.title} (${x.n} ${x.n === 1 ? t('oefening', 'exercise') : t('oefeningen', 'exercises')})`).join(' · ')
+                : <span className="text-ink-500">{t('Rustdag', 'Rest day')}</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }

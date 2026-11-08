@@ -1,3 +1,5 @@
+import { BODY_AREAS } from '@shared/hero';
+import { StaffStart, type StaffStartData } from '@/components/app/StaffStart';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -12,8 +14,9 @@ import { ExerciseThumb } from '@/components/app/ExerciseThumb';
 import { ProgramStatusBadge, useReasonLabel } from '@/components/app/StatusBadge';
 import type { Exercise, Program } from '@/lib/types';
 
-type Signal = { reason: string; date: string | null; value?: number; planned?: number; completed?: number };
+type Signal = { reason: string; date: string | null; value?: number; planned?: number; completed?: number; area?: string };
 type Dashboard = {
+  start?: StaffStartData;
   daily: { day: string; sessions: number; list: { id: string; patientId: string; name: string; at: string; pain: number | null; program: string }[] }[];
   stats: { patients: number; activePrograms: number; adherence7d: number | null; adherence: { completed: number; planned: number; days: number }; sessions7d: number; attention: number };
   attention: { patientId: string; name: string; reasons: string[]; signals: Signal[] }[];
@@ -64,6 +67,8 @@ export function DashboardPage() {
         </div>
       )}
 
+      {d?.start && <StaffStart data={d.start} />}
+
       <WorkList d={d} />
 
       <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-5">
@@ -74,7 +79,7 @@ export function DashboardPage() {
           {!d ? (
             <div className="space-y-3 p-5">{Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-10" />)}</div>
           ) : d.activity.length === 0 ? (
-            <EmptyState title={t('Nog geen activiteit', 'No activity yet')} description={t('Afgeronde sessies van je patiënten verschijnen hier.', 'Completed sessions from your patients appear here.')} />
+            <EmptyState title={t('Nog geen activiteit', 'No activity yet')} description={t('Afgeronde sessies van je patiënten verschijnen hier.', 'Completed sessions from your patients appear here.')} action={<ButtonLink to="/app/patienten?filter=invite_open" variant="secondary">{t('Uitnodigingen bekijken', 'View invitations')}</ButtonLink>} />
           ) : (
             <ul className="divide-y divide-line">
               {(showAll ? d.activity : d.activity.slice(0, 6)).map((a) => (
@@ -136,7 +141,7 @@ export function DashboardPage() {
           {!d ? (
             <div className="space-y-3 p-5">{Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-9" />)}</div>
           ) : d.favorites.length === 0 ? (
-            <EmptyState icon={<Star className="h-5 w-5" />} title={t('Nog geen favorieten', 'No favourites yet')} description={t('Markeer oefeningen met een ster om ze hier snel terug te vinden.', 'Star exercises to find them here quickly.')} />
+            <EmptyState icon={<Star className="h-5 w-5" />} title={t('Nog geen favorieten', 'No favourites yet')} description={t('Markeer oefeningen met een ster om ze hier snel terug te vinden.', 'Star exercises to find them here quickly.')} action={<ButtonLink to="/app/oefeningen" variant="secondary">{t('Naar de oefenbibliotheek', 'To the exercise library')}</ButtonLink>} />
           ) : (
             <ul className="grid grid-cols-1 gap-px bg-line sm:grid-cols-2 sm:[&>li:last-child:nth-child(odd)]:col-span-2">
               {d.favorites.map((e) => (
@@ -171,8 +176,19 @@ function WorkList({ d }: { d?: Dashboard }) {
     switch (s.reason) {
       case 'high_pain':
         return { text: t(`Pijnscore ${s.value}/10 gemeld${s.date ? ` op ${date(s.date)}` : ''}.`, `Pain score ${s.value}/10 reported${s.date ? ` on ${date(s.date)}` : ''}.`), action: { label: t('Bekijk sessie', 'View session'), to: `${p}?tab=sessies` } };
+      case 'area_pain_rising': {
+        const a = BODY_AREAS.find((x) => x.key === s.area);
+        const name = a ? (locale === 'nl' ? a.nl : a.en) : s.area;
+        return { text: t(`${name}: van ${s.planned} naar ${s.value}/10 op de pijnkaart in twee weken.`, `${name}: from ${s.planned} to ${s.value}/10 on the pain map in two weeks.`), action: { label: t('Pijnkaart bekijken', 'View pain map'), to: `${p}?tab=overzicht` } };
+      }
+      case 'pain_rising':
+        return { text: t(`Pijn na de training stijgt drie keer op rij: van ${s.planned} naar ${s.value}/10${s.date ? ` (laatste ${date(s.date)})` : ''}. Belasting aanpassen?`, `Pain after workouts rose three times in a row: from ${s.planned} to ${s.value}/10${s.date ? ` (latest ${date(s.date)})` : ''}. Adjust the load?`), action: { label: t('Bekijk sessies', 'View sessions'), to: `${p}?tab=sessies` } };
       case 'new_feedback':
         return { text: t(`${s.value} ${s.value === 1 ? 'sessie' : 'sessies'} met feedback te beoordelen${s.date ? `, laatste ${date(s.date)}` : ''}.`, `${s.value} session(s) with feedback to review${s.date ? `, latest ${date(s.date)}` : ''}.`), action: { label: t('Feedback beoordelen', 'Review feedback'), to: `${p}?tab=sessies` } };
+      case 'ready_heavier':
+        return { text: t(`Laatste ${s.completed} trainingen licht (gem. zwaarte ${s.value}/10) en weinig pijn: tijd om op te bouwen.`, `Last ${s.completed} workouts light (avg effort ${s.value}/10) with little pain: time to build up.`), action: { label: t('Programma bekijken', 'View programme'), to: `${p}?tab=programmas` } };
+      case 'too_heavy':
+        return { text: t(`Laatste ${s.completed} trainingen erg zwaar (gem. zwaarte ${s.value}/10). Dosering verlagen of oefening aanpassen?`, `Last ${s.completed} workouts very heavy (avg effort ${s.value}/10). Lower the dose or adjust the exercise?`), action: { label: t('Programma bekijken', 'View programme'), to: `${p}?tab=programmas` } };
       case 'inactive_long':
         return { text: t(`${s.value} dagen geen training; laatst actief ${date(s.date)}.`, `${s.value} days without a workout; last active ${date(s.date)}.`), action: { label: t('Contact opnemen', 'Get in touch'), to: p } };
       case 'no_registration':

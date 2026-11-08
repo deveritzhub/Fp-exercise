@@ -238,7 +238,7 @@ authRoutes.post('/oauth/:provider/callback', async (c) => {
 // Passkeys
 // ---------------------------------------------------------------------------------------------
 
-const webauthnResponse = z.object({ id: z.string().min(1).max(1400), rawId: z.string().max(1400), type: z.literal('public-key'), response: z.record(z.unknown()) }).passthrough();
+const webauthnResponse = z.object({ id: z.string().min(1).max(1400), rawId: z.string().max(1400), type: z.literal('public-key'), response: z.record(z.string(), z.unknown()) }).passthrough();
 
 authRoutes.post('/passkeys/login/options', rateLimit('passkey-options', 30, 15 * minute), async (c) => c.json(await passkeys.loginOptions()));
 

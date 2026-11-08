@@ -15,5 +15,8 @@ export default defineConfig({
     port: 5173,
     proxy: { '/api': `http://localhost:${process.env.API_PORT ?? 8787}` },
   },
+  // Dependencies only loaded on demand (dynamic import) are prepared up front, so the dev server
+  // does not reload the page the first time one is used.
+  optimizeDeps: { include: ['qrcode'] },
   build: { outDir: '../dist/web', emptyOutDir: true },
 });

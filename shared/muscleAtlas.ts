@@ -1,3 +1,5 @@
+import { COMPENSATIONS } from './complaints';
+
 /**
  * Spierenatlas: the main muscles, what they do, which nerve drives them, and words to find the
  * exercises that train or stretch them (matched against an exercise's target muscles and name).
@@ -74,16 +76,16 @@ export type Muscle = {
 
 export const MUSCLES: Muscle[] = [
   // Neck
-  { key: 'diepe_nekflexoren', plural: true, nl: 'Diepe nekbuigers', en: 'Deep neck flexors', latin: 'm. longus colli, m. longus capitis', region: 'nek', nerve: 'cervicaal', functions: [['Kin intrekken, nek buigen', 'Tucking the chin, bending the neck'], ['Nek stabiliseren', 'Stabilising the neck']], match: ['longus colli', 'longus capitis', 'diepe nekflexoren', 'deep neck flexor'] },
+  { key: 'diepe_nekflexoren', plural: true, nl: 'Diepe nekbuigers', en: 'Deep neck flexors', latin: 'm. longus colli, m. longus capitis', region: 'nek', nerve: 'cervicaal', functions: [['Kin intrekken, nek buigen', 'Tucking the chin, bending the neck'], ['Nek stabiliseren', 'Stabilising the neck']], match: ['longus colli', 'longus capitis', 'diepe nekflexoren', 'deep neck flexor', 'kin intrekken', 'chin tuck', 'isometrische nek'] },
   { key: 'scalenus', plural: true, nl: 'Trapspieren van de nek', en: 'Scalenes', latin: 'mm. scaleni', region: 'nek', nerve: 'cervicaal', functions: [['Nek zijwaarts buigen', 'Side-bending the neck'], ['Bovenste ribben optillen bij inademen', 'Lifting the upper ribs when breathing in']], match: ['scalen'] },
-  { key: 'trapezius', nl: 'Monnikskapspier', en: 'Trapezius', latin: 'm. trapezius', region: 'nek', nerve: 'accessorius', also: ['cervicaal'], functions: [['Schouders optrekken (bovenste deel)', 'Shrugging the shoulders (upper part)'], ['Schouderbladen naar elkaar (middelste deel)', 'Drawing the shoulder blades together (middle part)'], ['Schouderblad omlaag (onderste deel)', 'Pulling the shoulder blade down (lower part)']], match: ['trapezius', 'monnikskap'] },
+  { key: 'trapezius', nl: 'Monnikskapspier', en: 'Trapezius', latin: 'm. trapezius', region: 'nek', nerve: 'accessorius', also: ['cervicaal'], functions: [['Schouders optrekken (bovenste deel)', 'Shrugging the shoulders (upper part)'], ['Schouderbladen naar elkaar (middelste deel)', 'Drawing the shoulder blades together (middle part)'], ['Schouderblad omlaag (onderste deel)', 'Pulling the shoulder blade down (lower part)']], match: ['trapezius', 'monnikskap', 'bovenrug', 'face pull', 'reverse fly', 'wall slide', 'schouderbladen samentrekken'] },
   // Shoulder
-  { key: 'deltoideus', nl: 'Deltaspier', en: 'Deltoid', latin: 'm. deltoideus', region: 'schouder', nerve: 'axillaris', functions: [['Arm zijwaarts heffen (abductie)', 'Raising the arm sideways (abduction)'], ['Arm naar voren heffen (voorste deel)', 'Raising the arm forward (front part)'], ['Arm naar achteren (achterste deel)', 'Moving the arm back (rear part)']], match: ['deltoid', 'schouders', 'deltaspier'] },
+  { key: 'deltoideus', nl: 'Deltaspier', en: 'Deltoid', latin: 'm. deltoideus', region: 'schouder', nerve: 'axillaris', functions: [['Arm zijwaarts heffen (abductie)', 'Raising the arm sideways (abduction)'], ['Arm naar voren heffen (voorste deel)', 'Raising the arm forward (front part)'], ['Arm naar achteren (achterste deel)', 'Moving the arm back (rear part)']], match: ['deltoid', 'schouders', 'deltaspier', 'middelste schouder', 'achterste schouder', 'lateral raise', 'zijwaartse dumbbell raise'] },
   { key: 'supraspinatus', nl: 'Bovengratspier', en: 'Supraspinatus', latin: 'm. supraspinatus', region: 'schouder', nerve: 'suprascapularis', functions: [['Start van arm zijwaarts heffen', 'Starting to raise the arm sideways'], ['Kop van de bovenarm in de kom houden', 'Keeping the head of the upper arm in its socket']], match: ['supraspinatus', 'rotatorcuff', 'rotator cuff'] },
-  { key: 'infraspinatus', nl: 'Ondergratspier', en: 'Infraspinatus', latin: 'm. infraspinatus', region: 'schouder', nerve: 'suprascapularis', functions: [['Arm naar buiten draaien (exorotatie)', 'Turning the arm outward (external rotation)'], ['Schouderkop stabiliseren', 'Stabilising the shoulder joint']], match: ['infraspinatus', 'exorotator', 'rotatorcuff', 'rotator cuff'] },
-  { key: 'teres_minor', nl: 'Kleine ronde spier', en: 'Teres minor', latin: 'm. teres minor', region: 'schouder', nerve: 'axillaris', functions: [['Arm naar buiten draaien (exorotatie)', 'Turning the arm outward (external rotation)']], match: ['teres minor'] },
+  { key: 'infraspinatus', nl: 'Ondergratspier', en: 'Infraspinatus', latin: 'm. infraspinatus', region: 'schouder', nerve: 'suprascapularis', functions: [['Arm naar buiten draaien (exorotatie)', 'Turning the arm outward (external rotation)'], ['Schouderkop stabiliseren', 'Stabilising the shoulder joint']], match: ['infraspinatus', 'exorotator schouder', 'schouder exorotator', 'rotatorcuff', 'rotator cuff', 'externe rotatie', 'external rotation', 'face pull', 'sleeper'] },
+  { key: 'teres_minor', nl: 'Kleine ronde spier', en: 'Teres minor', latin: 'm. teres minor', region: 'schouder', nerve: 'axillaris', functions: [['Arm naar buiten draaien (exorotatie)', 'Turning the arm outward (external rotation)']], match: ['teres minor', 'externe rotatie', 'external rotation'] },
   { key: 'subscapularis', nl: 'Onderschouderbladspier', en: 'Subscapularis', latin: 'm. subscapularis', region: 'schouder', nerve: 'subscapularis', functions: [['Arm naar binnen draaien (endorotatie)', 'Turning the arm inward (internal rotation)'], ['Voorkant schouder stabiliseren', 'Stabilising the front of the shoulder']], match: ['subscapularis', 'rotatorcuff', 'rotator cuff'] },
-  { key: 'serratus', nl: 'Voorste zaagspier', en: 'Serratus anterior', latin: 'm. serratus anterior', region: 'schouder', nerve: 'thoracicus_longus', functions: [['Schouderblad naar voren tegen de borstkas', 'Holding the shoulder blade forward against the ribcage'], ['Helpt bij arm boven het hoofd', 'Helps when lifting the arm overhead']], match: ['serratus'] },
+  { key: 'serratus', nl: 'Voorste zaagspier', en: 'Serratus anterior', latin: 'm. serratus anterior', region: 'schouder', nerve: 'thoracicus_longus', functions: [['Schouderblad naar voren tegen de borstkas', 'Holding the shoulder blade forward against the ribcage'], ['Helpt bij arm boven het hoofd', 'Helps when lifting the arm overhead']], match: ['serratus', 'wall slide', 'push-up plus'] },
   // Chest
   { key: 'pectoralis_major', nl: 'Grote borstspier', en: 'Pectoralis major', latin: 'm. pectoralis major', region: 'borst', nerve: 'pectorales', functions: [['Arm naar het lichaam toe (adductie)', 'Bringing the arm towards the body (adduction)'], ['Arm naar binnen draaien', 'Turning the arm inward'], ['Duwen, zoals bij opdrukken', 'Pushing, as in a push-up']], match: ['pectoralis major', 'borst', 'chest', 'pectoralis'] },
   // Upper arm
@@ -99,8 +101,8 @@ export const MUSCLES: Muscle[] = [
   { key: 'fcu', nl: 'Ellepijpszijdige polsbuiger', en: 'Flexor carpi ulnaris', latin: 'm. flexor carpi ulnaris', region: 'onderarm', nerve: 'ulnaris', functions: [['Pols buigen naar de pinkkant', 'Bending the wrist towards the little finger'], ['Helpt bij pols buigen en grijpen', 'Helps flex the wrist and grip']], match: ['flexor carpi ulnaris'] },
   // Back
   { key: 'latissimus', nl: 'Brede rugspier', en: 'Latissimus dorsi', latin: 'm. latissimus dorsi', region: 'rug', nerve: 'thoracodorsalis', functions: [['Arm van boven naar beneden trekken', 'Pulling the arm down from overhead'], ['Arm naar achteren en naar binnen draaien', 'Moving the arm back and turning it inward']], match: ['latissimus', 'brede rugspier', 'lats'] },
-  { key: 'rhomboideus', plural: true, nl: 'Ruitvormige spieren', en: 'Rhomboids', latin: 'mm. rhomboidei', region: 'rug', nerve: 'dorsalis_scapulae', functions: [['Schouderbladen naar elkaar trekken', 'Drawing the shoulder blades together']], match: ['rhomboid'] },
-  { key: 'erector_spinae', plural: true, nl: 'Rugstrekkers', en: 'Erector spinae', latin: 'm. erector spinae', region: 'rug', nerve: 'rami_dorsales', functions: [['Rug strekken', 'Straightening the back'], ['Rechtop blijven staan en tillen', 'Staying upright and lifting']], match: ['erector spinae', 'lumbale extensor', 'rugstrekker', 'back extensor'] },
+  { key: 'rhomboideus', plural: true, nl: 'Ruitvormige spieren', en: 'Rhomboids', latin: 'mm. rhomboidei', region: 'rug', nerve: 'dorsalis_scapulae', functions: [['Schouderbladen naar elkaar trekken', 'Drawing the shoulder blades together']], match: ['rhomboid', 'schouderbladen samentrekken', 'scapular retraction', 'midden rug', 'barbell row', 'cable row', 'dumbbell row', 'inverted row', 'chest-supported row', 'reverse fly', 'roeien'] },
+  { key: 'erector_spinae', plural: true, nl: 'Rugstrekkers', en: 'Erector spinae', latin: 'm. erector spinae', region: 'rug', nerve: 'rami_dorsales', functions: [['Rug strekken', 'Straightening the back'], ['Rechtop blijven staan en tillen', 'Staying upright and lifting']], match: ['erector spinae', 'lumbale extensor', 'rugstrekker', 'back extensor', 'thoracale', 'thoracic'] },
   { key: 'multifidus', nl: 'Multifidus', en: 'Multifidus', latin: 'm. multifidus', region: 'rug', nerve: 'rami_dorsales', functions: [['Wervels per segment stabiliseren', 'Stabilising the spine segment by segment']], match: ['multifidus'] },
   { key: 'quadratus_lumborum', nl: 'Vierkante lendenspier', en: 'Quadratus lumborum', latin: 'm. quadratus lumborum', region: 'rug', nerve: 'plexus_lumbalis', also: ['thoracoabdominales'], functions: [['Romp zijwaarts buigen', 'Side-bending the trunk'], ['Bekken aan één kant optrekken', 'Hitching one side of the pelvis']], match: ['quadratus lumborum'] },
   // Abdomen
@@ -187,10 +189,60 @@ const norm = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g
  * The muscles an exercise works, from its target muscles (and for broad words, its name), in the
  * order they are listed: the first one is the exercise's main target.
  */
+/**
+ * Target muscles of FP library exercises whose name or fields do not say it (rehab exercises carry
+ * no muscle list). Used first; name matching adds the rest.
+ */
+const SOURCE_MUSCLES: Record<string, string[]> = {
+  ex_heel_slide: ['quadriceps', 'hamstrings'],
+  ex_terminal_knee_extension: ['quadriceps'],
+  ex_iso_knie_extensie_90: ['quadriceps'],
+  ex_clamshell: ['gluteus_medius', 'exorotatoren'],
+  ex_iso_heup_abductie: ['gluteus_medius', 'gluteus_minimus'],
+  ex_single_leg_balance: ['gluteus_medius', 'voetspieren', 'peronei'],
+  ex_leg_press: ['quadriceps', 'gluteus_maximus'],
+  ex_step_up: ['quadriceps', 'gluteus_maximus', 'gluteus_medius'],
+  ex_single_leg_rdl: ['hamstrings', 'gluteus_maximus', 'gluteus_medius'],
+  ex_split_squat_bulgarian: ['quadriceps', 'gluteus_maximus', 'gluteus_medius'],
+  ex_side_plank: ['obliqui', 'quadratus_lumborum', 'gluteus_medius'],
+  ex_dead_bug: ['transversus', 'rectus_abdominis', 'obliqui'],
+  ex_cat_camel: ['erector_spinae', 'multifidus'],
+  ex_kniebuiging_muur: ['soleus', 'gastrocnemius'],
+  ex_pogo_hopping: ['gastrocnemius', 'soleus'],
+  ex_lateral_bound: ['gluteus_medius', 'quadriceps', 'adductoren'],
+  mb_child_pose: ['latissimus', 'erector_spinae'],
+  mb_sleeper_stretch: ['infraspinatus', 'teres_minor'],
+  mb_deep_squat_hold: ['adductoren', 'gluteus_maximus', 'soleus'],
+  mb_world_greatest: ['iliopsoas', 'hamstrings', 'adductoren'],
+  mb_90_90: ['exorotatoren', 'gluteus_maximus'],
+  kt_zijlig_abductie: ['gluteus_medius', 'gluteus_minimus'],
+  kt_step_down: ['quadriceps', 'gluteus_medius', 'gluteus_maximus'],
+  kt_eenbenige_bilbrug: ['gluteus_maximus', 'gluteus_medius'],
+  kt_bird_dog: ['multifidus', 'erector_spinae', 'transversus', 'gluteus_maximus'],
+  kt_copenhagen_kort: ['adductoren', 'gracilis', 'obliqui'],
+  kt_short_foot: ['voetspieren', 'tibialis_posterior'],
+  kt_buiklig_y_t: ['trapezius', 'rhomboideus', 'infraspinatus'],
+  kt_push_up_plus: ['serratus'],
+  kt_open_book: ['erector_spinae', 'pectoralis_major'],
+  kt_pols_excentrisch_strek: ['polsstrekkers'],
+  kt_pols_excentrisch_buig: ['polsbuigers', 'fcu'],
+  kt_peesglijden_hand: ['polsbuigers', 'fdp'],
+  kt_heup_hinge: ['gluteus_maximus', 'hamstrings'],
+  kt_muurzit: ['quadriceps'],
+  kt_tfl_rek: ['tfl'],
+  kt_duimoppositie: ['thenar'],
+  kt_knijpbal: ['polsbuigers', 'fdp', 'thenar'],
+  kt_dragen_handrug: ['polsstrekkers', 'supinator'],
+  kt_oppakken_knijpgreep: ['thenar', 'fdp'],
+  kt_bovenste_trapezius_rek: ['trapezius', 'levator_scapulae'],
+};
+
 export function musclesOf(e: AtlasExerciseInput): string[] {
   const hay = norm([...e.muscles, e.name].join(' | '));
   const at = (m: Muscle) => Math.min(...m.match.map((w) => hay.indexOf(norm(w))).filter((i) => i >= 0));
-  return MUSCLES.filter((m) => m.match.some((w) => hay.includes(norm(w)))).sort((a, b) => at(a) - at(b)).map((m) => m.key);
+  const byName = MUSCLES.filter((m) => m.match.some((w) => hay.includes(norm(w)))).sort((a, b) => at(a) - at(b)).map((m) => m.key);
+  const known = (e.sourceKey && SOURCE_MUSCLES[e.sourceKey]) || [];
+  return [...new Set([...known, ...byName])];
 }
 
 /**
@@ -337,6 +389,22 @@ function buildQuestions(): QuizQuestion[] {
       options: shuffle([{ id: b, label: [right.nl, right.en] as Fn }, ...wrong.map((x) => ({ id: x.key, label: [x.nl, x.en] as Fn }))], a + 'anto'),
       answer: b,
       explain: [`De ${right.nl.toLowerCase()} doet de tegengestelde beweging: ${right.functions[0][0].toLowerCase()} tegenover ${m.functions[0][0].toLowerCase()}.`, `The ${right.en.toLowerCase()} does the opposite movement: ${right.functions[0][1].toLowerCase()} versus ${m.functions[0][1].toLowerCase()}.`],
+    });
+  }
+  // 5. Compensations (level 2): when this muscle is weak, which one tends to take over?
+  for (const c of COMPENSATIONS) {
+    const weak = MUSCLES.find((m) => m.key === c.weak[0]);
+    const over = MUSCLES.find((m) => m.key === c.over[0]);
+    if (!weak || !over) continue;
+    // Never offer a muscle that also takes over (or is weak) in another pattern of this muscle.
+    const related = new Set(COMPENSATIONS.filter((x) => x.weak.includes(weak.key)).flatMap((x) => [...x.over, ...x.weak]));
+    const wrong = pickOthers(MUSCLES.filter((m) => !related.has(m.key) && !m.level && m.region !== over.region), 3, c.key + 'comp');
+    out.push({
+      id: `comp:${c.key}`, level: 2, muscle: weak.key, nerve: null,
+      q: [`Als je ${weak.nl.toLowerCase()} zwak ${weak.plural ? 'zijn' : 'is'}, welke spier neemt dan vaak het werk over?`, `If your ${weak.en.toLowerCase()} ${weak.plural ? 'are' : 'is'} weak, which muscle often takes over?`],
+      options: shuffle([{ id: over.key, label: [over.nl, over.en] as Fn }, ...wrong.map((m) => ({ id: m.key, label: [m.nl, m.en] as Fn }))], c.key + 'compo'),
+      answer: over.key,
+      explain: [`${c.name[0]}. ${c.see[0]}`, `${c.name[1]}. ${c.see[1]}`],
     });
   }
   return [...out, ...LEVEL2_SPECIALS];

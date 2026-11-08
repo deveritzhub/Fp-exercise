@@ -58,6 +58,13 @@ patientApp.get('/home', async (c) => {
         const items = await loadItems(tx, p.id);
         const win = { startDate: p.start_date, endDate: p.end_date };
         const todayItems = itemsForDate(win, items, today);
+        // The coming seven days (today included): how many exercises of this programme on each day.
+        const week = Array.from({ length: 7 }, (_, d) => {
+          const dt = new Date(today + 'T12:00:00Z');
+          dt.setUTCDate(dt.getUTCDate() + d);
+          const iso = dt.toISOString().slice(0, 10);
+          return { date: iso, exercises: itemsForDate(win, items, iso).length };
+        });
         programs.push({
           ...patientProgram(p),
           therapistName: p.therapist_name,
@@ -68,6 +75,7 @@ patientApp.get('/home', async (c) => {
           nextSession: nextSessionDate(win, items, today),
           openSession: open.get(p.id) ?? null,
           upcoming: p.start_date && p.start_date > today,
+          week,
         });
       }
       const inputs = await loadAdherenceInputs(tx, [patient.id]);
@@ -82,6 +90,11 @@ patientApp.get('/home', async (c) => {
         'SELECT id, kind, title, body, link, read_at, created_at FROM notifications WHERE user_id = app.uid() AND read_at IS NULL ORDER BY created_at DESC LIMIT 5',
       );
       const total = await tx.query('SELECT count(*) AS n FROM workout_sessions WHERE patient_id = $1 AND completed_at IS NOT NULL', [patient.id]);
+      // Explanations of complaints the practice sent stay reachable from Revalidatie (also once read).
+      const explained = await tx.query(
+        `SELECT link FROM (SELECT DISTINCT ON (link) link, created_at FROM notifications
+            WHERE user_id = app.uid() AND kind = 'complaint_explanation' ORDER BY link, created_at DESC) x ORDER BY created_at DESC LIMIT 3`,
+      );
       return {
         patient: { firstName: user.fullName.split(' ')[0], practiceName: patient.practiceName },
         mode,
@@ -103,6 +116,7 @@ patientApp.get('/home', async (c) => {
           exercisesDone: r.exercises_done,
         })),
         notifications: notifications.rows.map((n) => ({ id: n.id, kind: n.kind, title: n.title, body: n.body, link: n.link, createdAt: n.created_at })),
+        explanations: explained.rows.map((r) => new URLSearchParams(String(r.link).split('?')[1] ?? '').get('klacht')).filter(Boolean),
       };
     }),
   );
@@ -267,7 +281,7 @@ patientApp.get('/history', async (c) => {
     await withUser(user.id, async (tx) => {
       const inputs = await loadAdherenceInputs(tx, [patient.id]);
       const { rows } = await tx.query(
-        `SELECT s.id, s.completed_at, s.difficulty, s.pain, s.feedback, pr.title, pr.module,
+        `SELECT s.id, s.completed_at, s.difficulty, s.pain, s.feedback, s.review_note, pr.title, pr.module,
                 (SELECT count(*) FROM exercise_logs l WHERE l.session_id = s.id AND l.completed) AS exercises_done,
                 (SELECT count(*) FROM program_items i WHERE i.program_id = s.program_id) AS exercises_total
            FROM workout_sessions s JOIN programs pr ON pr.id = s.program_id
@@ -280,9 +294,12 @@ patientApp.get('/history', async (c) => {
           id: r.id,
           completedAt: r.completed_at,
           programTitle: r.title,
+          // Which part it belongs to, so Kracht and Mobiliteit can show their own workouts.
+          module: r.module as string,
           difficulty: r.difficulty,
           pain: r.pain,
           feedback: r.feedback,
+          reply: r.review_note ?? null,
           exercisesDone: r.exercises_done,
           exercisesTotal: r.exercises_total,
         })),

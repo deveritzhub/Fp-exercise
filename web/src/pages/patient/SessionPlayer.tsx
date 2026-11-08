@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Brain, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X, Printer, Trophy, Swords, Coins, Gift } from 'lucide-react';
+import { ArrowLeft, Brain, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X, Printer, Trophy, Swords, Coins, Gift, Volume2, VolumeX } from 'lucide-react';
 import { MUSCLES, musclesOf } from '@shared/muscleAtlas';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { useI18n, describeError } from '@/lib/i18n';
@@ -252,7 +252,7 @@ export function SessionPlayer() {
             <RedFlagButton programId={q.data.id} redFlags={q.data.redFlags ?? []} sessionId={sessionId} onReported={() => nav('/p')} className="min-h-[44px] border-transparent px-2 text-[14px]" />
           </div>
         )}
-        {phase === 'exercise' && item && <ExerciseStep key={item.id} item={item} next={items[idx + 1]} onDone={() => setPhase('rate')} onSkip={() => saveLog(item, { completed: false, setsDone: 0, repsDone: null, difficulty: null, pain: null, feedback: '' })} saving={saving} strength={q.data.module === 'kracht' ? { sessionId, userId: uid } : null} />}
+        {phase === 'exercise' && item && <ExerciseStep key={item.id} item={item} next={items[idx + 1]} onDone={() => setPhase('rate')} onSkip={() => saveLog(item, { completed: false, setsDone: 0, repsDone: null, difficulty: null, pain: null, feedback: '' })} onPainSkip={(pain) => saveLog(item, { completed: false, setsDone: 0, repsDone: null, difficulty: null, pain, feedback: t('Overgeslagen vanwege pijn tijdens de oefening.', 'Skipped because of pain during the exercise.') })} saving={saving} strength={q.data.module === 'kracht' ? { sessionId, userId: uid } : null} />}
 
         {phase === 'rate' && item && <RateStep key={`r-${item.id}`} item={item} saving={saving} onSave={(r) => saveLog(item, r)} onBack={() => setPhase('exercise')} />}
 
@@ -420,7 +420,15 @@ export function ExerciseInfo({ item }: { item: ProgramItem }) {
       )}
 
       <div>
-        <h1 className="text-[24px] font-bold leading-tight">{nl ? ex.nameNl : ex.nameEn}</h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-[24px] font-bold leading-tight">{nl ? ex.nameNl : ex.nameEn}</h1>
+          <ReadAloud text={[
+            nl ? ex.nameNl : ex.nameEn,
+            [item.sets && t(`${item.sets} sets`, `${item.sets} sets`), item.reps && t(`${item.reps} herhalingen`, `${item.reps} repetitions`), item.holdS && t(`${item.holdS} seconden vasthouden`, `hold ${item.holdS} seconds`)].filter(Boolean).join(', '),
+            item.notes ? t(`Notitie van je fysiotherapeut: ${item.notes}`, `Note from your physiotherapist: ${item.notes}`) : '',
+            ...sections.map(([, title, text]) => `${title}. ${text}`),
+          ].filter(Boolean).join('. ')} />
+        </div>
         <div className="mt-3 flex flex-wrap gap-2">
           {item.sets && <Pill label={t('Sets', 'Sets')} value={String(item.sets)} />}
           {item.reps && <Pill label={t('Herhalingen', 'Repetitions')} value={String(item.reps)} />}
@@ -458,6 +466,41 @@ export function ExerciseInfo({ item }: { item: ProgramItem }) {
   );
 }
 
+/**
+ * "Read aloud": the phone's own speech (Web Speech API, nothing is recorded or sent). Handy during the
+ * exercise and with poor eyesight. Hidden when the browser has no speech; stops when leaving the exercise.
+ */
+function ReadAloud({ text }: { text: string }) {
+  const { t, locale } = useI18n();
+  const [speaking, setSpeaking] = useState(false);
+  const supported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  useEffect(() => () => { if (supported) window.speechSynthesis.cancel(); }, [supported, text]);
+  if (!supported) return null;
+  const toggle = () => {
+    const synth = window.speechSynthesis;
+    if (speaking) {
+      synth.cancel();
+      setSpeaking(false);
+      return;
+    }
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = locale === 'nl' ? 'nl-NL' : 'en-GB';
+    u.rate = 0.95;
+    u.onend = () => setSpeaking(false);
+    u.onerror = () => setSpeaking(false);
+    synth.cancel();
+    synth.speak(u);
+    setSpeaking(true);
+  };
+  return (
+    <button type="button" onClick={toggle} aria-pressed={speaking}
+      className={cn('inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full border px-3 text-[14px] font-medium', speaking ? 'border-accent bg-accent-soft text-accent' : 'border-line text-ink-700 hover:bg-ink-50')}>
+      {speaking ? <VolumeX className="h-4 w-4" aria-hidden /> : <Volume2 className="h-4 w-4" aria-hidden />}
+      {speaking ? t('Stop', 'Stop') : t('Lees voor', 'Read aloud')}
+    </button>
+  );
+}
+
 const buzz = () => {
   try {
     navigator.vibrate?.(200);
@@ -466,9 +509,13 @@ const buzz = () => {
   }
 };
 
-function ExerciseStep({ item, next, onDone, onSkip, saving, strength }: { item: ProgramItem; next?: ProgramItem; onDone: () => void; onSkip: () => void; saving: boolean; strength: { sessionId: string | null; userId: string } | null }) {
+function ExerciseStep({ item, next, onDone, onSkip, onPainSkip, saving, strength }: { item: ProgramItem; next?: ProgramItem; onDone: () => void; onSkip: () => void; onPainSkip: (pain: number | null) => void; saving: boolean; strength: { sessionId: string | null; userId: string } | null }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
+  // "This hurts": a lighter variation, or skip with a note the physio sees.
+  const [painOpen, setPainOpen] = useState(false);
+  const [painNow, setPainNow] = useState<number | null>(null);
+  const [lighter, setLighter] = useState(false);
   const sets = item.sets ?? 1;
   const [setsDone, setSetsDone] = useState(0);
   const [holdEnded, setHoldEnded] = useState(false);
@@ -577,10 +624,30 @@ function ExerciseStep({ item, next, onDone, onSkip, saving, strength }: { item: 
         </div>
       )}
 
+      {lighter && item.alternative && (
+        <Notice tone="info">{t('Je doet nu de lichtere variant: ', 'You are now doing the lighter variation: ')}<strong>{nl ? item.alternative.nameNl : item.alternative.nameEn}</strong>. {t('Vertel na afloop hoe het ging.', 'Say how it went afterwards.')}</Notice>
+      )}
+
       <div className="sticky bottom-0 -mx-4 space-y-2 border-t border-line bg-white/95 px-4 py-3 backdrop-blur">
         <Button size="xl" className="w-full" icon={<CheckCircle2 className="h-5 w-5" />} onClick={onDone}>{t('Oefening gedaan', 'Exercise done')}</Button>
-        <Button size="lg" variant="ghost" className="w-full" icon={<SkipForward className="h-4 w-4" />} onClick={onSkip} loading={saving}>{t('Overslaan', 'Skip')}</Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button size="lg" variant="secondary" className="w-full" onClick={() => setPainOpen(true)}>{t('Dit doet pijn', 'This hurts')}</Button>
+          <Button size="lg" variant="ghost" className="w-full" icon={<SkipForward className="h-4 w-4" />} onClick={onSkip} loading={saving}>{t('Overslaan', 'Skip')}</Button>
+        </div>
       </div>
+
+      <Dialog open={painOpen} onClose={() => setPainOpen(false)} size="sm" title={t('Dit doet pijn', 'This hurts')}
+        description={t('Stop bij scherpe of toenemende pijn. Kies wat je nu doet.', 'Stop with sharp or increasing pain. Choose what you do now.')}>
+        <div className="space-y-4">
+          {item.alternative && (
+            <Button variant="secondary" className="w-full" icon={<Repeat className="h-4 w-4" />} onClick={() => { setLighter(true); setPainOpen(false); }}>
+              {t('Lichtere variant: ', 'Lighter variation: ')}{nl ? item.alternative.nameNl : item.alternative.nameEn}
+            </Button>
+          )}
+          <ScaleInput tone="pain" label={t('Hoeveel pijn nu? (mag je overslaan)', 'How much pain now? (optional)')} lowLabel={t('0 = geen', '0 = none')} highLabel={t('10 = ergst denkbaar', '10 = worst imaginable')} value={painNow} onChange={setPainNow} />
+          <Button className="w-full" loading={saving} onClick={() => { setPainOpen(false); onPainSkip(painNow); }}>{t('Sla over en laat het je fysiotherapeut weten', 'Skip and let your physiotherapist know')}</Button>
+        </div>
+      </Dialog>
     </div>
   );
 }

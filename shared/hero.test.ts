@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { seasons, seasonOf, longestDayRun, dayChestCoins, chestStreak, weeklyBoss, bossOf, BOSSES, BOSS_HP, coinsEarned, gearScore, wornOutfit, OUTFITS, GEAR_TIERS, SKILL_STARTER, WELCOME_COINS, BADGES, bodyShape, heroPhotoKey, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
+import { questSkillFor, withFocus, seasons, seasonOf, longestDayRun, dayChestCoins, chestStreak, weeklyBoss, bossOf, BOSSES, BOSS_HP, coinsEarned, gearScore, wornOutfit, OUTFITS, GEAR_TIERS, SKILL_STARTER, WELCOME_COINS, BADGES, bodyShape, heroPhotoKey, BODY_AREAS, CHEST_XP, COMBO_TITLES, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, QUEST_XP, REWARDS_ARE_COSMETIC, SKILLS, SKILL_DAILY_CAP, SKILL_GEAR, SKILL_XP, TOTAL_LEVEL_SCENES, averagePain, comboTitles, computeSkillXp, disciplineStreak, epley1Rm, friendSkillCard, levelFor, metricInRange, painDropEvents, parseMetric, plannedRestDates, questTimeline, questXp, sceneForTotal, skillLevel, skillLock, skillLockLabel, skillOfWeek, skillTitle, skillXpForLevel, skillsForExercise, strengthAwards, titleFor, validLook, weeklyQuests, xpFor, xpForLevel, type LoggedExercise, type SkillKey, type SkillLockContext, type SkillXpInput } from './hero';
 
 describe('sports hero rules', () => {
   it('levels grow gently and progress is between 0 and 1', () => {
@@ -571,5 +571,21 @@ describe('krachtlog and quiz feed the skills', () => {
     const ctx = { active: [], laterPhase: {}, phaseNo: null, strengthCleared: false, powerInProgram: false, sportPhase: false };
     expect(skillLock('knowledge', ctx).locked).toBe(true);
     expect(skillLock('knowledge', { ...ctx, selfTrained: ['knowledge'] }).locked).toBe(false);
+  });
+});
+
+describe('therapist-chosen skill quest', () => {
+  it('applies from its week on; earlier weeks keep the rotation; null goes back to automatic', () => {
+    const rot = ['mobility', 'strength'] as SkillKey[];
+    let f = withFocus([], '2026-11-02', 'balance');
+    expect(questSkillFor('2026-10-26', f, rot).byTherapist).toBe(false);
+    expect(questSkillFor('2026-11-02', f, rot)).toEqual({ skill: 'balance', byTherapist: true });
+    expect(questSkillFor('2026-11-16', f, rot)).toEqual({ skill: 'balance', byTherapist: true });
+    f = withFocus(f, '2026-11-09', null);
+    expect(questSkillFor('2026-11-02', f, rot).skill).toBe('balance');
+    expect(questSkillFor('2026-11-09', f, rot).byTherapist).toBe(false);
+    // Changing twice in a week keeps only the last choice.
+    f = withFocus(f, '2026-11-09', 'strength');
+    expect(f.filter((x) => x.from === '2026-11-09')).toEqual([{ skill: 'strength', from: '2026-11-09' }]);
   });
 });

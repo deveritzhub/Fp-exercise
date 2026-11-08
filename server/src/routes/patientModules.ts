@@ -272,6 +272,7 @@ patientModules.get('/export', async (c) => {
         dayChests: await q('SELECT day, coins, opened_at FROM hero_daily_chests WHERE patient_id = $1 ORDER BY day'),
       },
       heroFriends: (await q('SELECT kind, hero_name, since FROM app.hero_friends($1)')).map((f) => ({ kind: f.kind, heroName: f.hero_name, since: f.since })),
+      heroCheers: (await q('SELECT direction, hero_name, cheer, created_at FROM app.hero_cheers($1)')).map((c) => ({ direction: c.direction, from: c.hero_name, cheer: c.cheer, at: c.created_at })),
     };
     await audit(tx, user.id, patient.practiceId, 'export_self', 'patient', patient.id);
     return out;

@@ -187,7 +187,7 @@ describe('therapist → patient → therapist workflow', () => {
     const items = cur.items.map((i: any) => ({ id: i.id, exerciseId: i.exerciseId, sets: i.sets, reps: i.reps, holdS: i.holdS, days: i.days, notes: i.notes }));
     items[1].reps = 6; // regress squat volume after pain report
     items.reverse();
-    const r = await therapist.put(`/programs/${programId}`, { title: 'Knie basis (aangepast)', items, changeNote: 'Volume squat verlaagd', startDate: cur.startDate });
+    const r = await therapist.put(`/programs/${programId}`, { title: 'Knie basis (aangepast)', items, changeNote: 'Volume squat verlaagd', patientMessage: 'Goed bezig! De squat even wat lichter.', startDate: cur.startDate });
     expect(r.status).toBe(200);
     const after = (await therapist.get(`/programs/${programId}`)).body;
     expect(after.version).toBe(2);
@@ -200,6 +200,10 @@ describe('therapist → patient → therapist workflow', () => {
     expect(versions.body.items[0].changeNote).toBe('Volume squat verlaagd');
     const home = await patient.get('/patient/home');
     expect(home.body.notifications.some((n: any) => n.kind === 'program_updated')).toBe(true);
+    // The internal change note stays internal; the personal message reaches the patient.
+    const upd = home.body.notifications.find((n: any) => n.kind === 'program_updated');
+    expect(upd.body).toContain('“Goed bezig! De squat even wat lichter.”');
+    expect(upd.body).not.toContain('Volume squat verlaagd');
   });
 
   it('templates: list, favorite, instantiate for a patient, save program as template, duplicate', async () => {
@@ -240,5 +244,21 @@ describe('therapist → patient → therapist workflow', () => {
     expect(prog.body.completedSessions).toBeGreaterThan(5);
     expect(prog.body.adherence28d.rate).toBeGreaterThan(0.3);
     expect(prog.body.perExercise.length).toBeGreaterThan(0);
+  });
+});
+
+describe('recently used templates', () => {
+  it('a template you just used comes first (after favourites), marked with lastUsedAt', async () => {
+    const ther = await login('therapistA');
+    const before = (await ther.get('/programs/templates')).body.items as { id: string; favorite: boolean; lastUsedAt: string | null }[];
+    const pick = before.filter((x) => !x.favorite).at(-1)!;
+    const pat = (await ther.get('/patients?status=active&scope=practice')).body.items[0].id;
+    const full = (await ther.get(`/programs/${pick.id}`)).body;
+    const items = full.items.map((i: any) => ({ exerciseId: i.exerciseId, sets: i.sets, reps: i.reps, holdS: i.holdS, days: i.days }));
+    expect((await ther.post('/programs', { title: 'Vanuit sjabloon (test)', patientId: pat, status: 'draft', sourceTemplateId: pick.id, items })).status).toBe(201);
+    const after = (await ther.get('/programs/templates')).body.items as typeof before;
+    const firstNonFav = after.find((x) => !x.favorite)!;
+    expect(firstNonFav.id).toBe(pick.id);
+    expect(firstNonFav.lastUsedAt).toBeTruthy();
   });
 });

@@ -1,3 +1,5 @@
+import { fmtRelative } from '@/lib/format';
+import { CHEERS } from '@shared/hero';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -253,6 +255,24 @@ export function FriendsPage() {
             </section>
           )}
 
+          {(d.cheers ?? []).length > 0 && (
+            <section className="rounded-2xl border border-accent/25 bg-accent-soft p-5" aria-labelledby="cheers-title">
+              <h2 id="cheers-title" className="t-section">{t('Aanmoedigingen voor jou', 'Cheers for you')}</h2>
+              <ul className="mt-2 space-y-1.5">
+                {(d.cheers ?? []).slice(0, 8).map((c, i) => {
+                  const ch = CHEERS.find((x) => x.key === c.cheer);
+                  return (
+                    <li key={i} className="flex items-center gap-2 text-[15px] text-ink-900">
+                      <span aria-hidden>{ch?.emoji}</span>
+                      <span className="min-w-0 flex-1"><strong className="font-semibold">{c.heroName}</strong>: {ch ? (locale === 'nl' ? ch.nl : ch.en) : ''}</span>
+                      <span className="shrink-0 text-[12.5px] text-ink-600">{fmtRelative(c.at, locale)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+
           <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="friends-title">
             <h2 id="friends-title" className="t-section">{t(`Teamgenoten (${friends.length} ${friends.length === 1 ? 'vriend' : 'vrienden'})`, `Companions (${friends.length} ${friends.length === 1 ? 'friend' : 'friends'})`)}</h2>
             <p className="text-[13.5px] text-ink-600">{t('Vrijwillig gedeelde sporthelden, zonder rangorde op herstel of kracht.', 'Voluntarily shared heroes, without recovery or strength ranking.')}</p>
@@ -262,6 +282,32 @@ export function FriendsPage() {
             <ul className="mt-3 space-y-2" aria-label={t('Teamgenoten', 'Companions')}>
               {companions.map((f) => <FriendRow key={f.id} f={f} rank={0} me={f.me} />)}
             </ul>
+            {friends.length > 0 && (
+              <div className="mt-4 border-t border-line pt-3">
+                <h3 className="text-[14.5px] font-semibold text-ink-900">{t('Aanmoedigen', 'Cheer on')}</h3>
+                <p className="text-[13px] text-ink-600">{t('Eén keer per dag per vriend, met een vaste tekst.', 'Once a day per friend, with a fixed text.')}</p>
+                <ul className="mt-2 space-y-3">
+                  {friends.map((f) => {
+                    const done = (d.cheeredToday ?? []).includes(f.id);
+                    return (
+                      <li key={f.id}>
+                        <p className="text-[14px] font-medium text-ink-800">{f.heroName}{done && <span className="ml-2 text-[13px] font-normal text-ok">{t('aangemoedigd vandaag', 'cheered today')}</span>}</p>
+                        {!done && (
+                          <div className="mt-1 flex flex-wrap gap-2" role="group" aria-label={t(`${f.heroName} aanmoedigen`, `Cheer on ${f.heroName}`)}>
+                            {CHEERS.map((c) => (
+                              <button key={c.key} type="button" disabled={busy !== null} onClick={() => run(`ch-${f.id}`, () => api.post(`/patient/hero/friends/${f.id}/cheer`, { cheer: c.key }), t(`Verstuurd naar ${f.heroName}`, `Sent to ${f.heroName}`))}
+                                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-line bg-white px-3 text-[14px] font-medium text-ink-800 hover:border-accent hover:bg-accent-soft disabled:opacity-60">
+                                <span aria-hidden>{c.emoji}</span>{locale === 'nl' ? c.nl : c.en}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
             {friends.length > 0 && (
               <details className="mt-3 text-[14px]">
                 <summary className="min-h-[44px] cursor-pointer py-2 font-medium text-ink-700">{t('Vriend verwijderen', 'Remove a friend')}</summary>
@@ -386,13 +432,16 @@ export function FriendsCard() {
   const d = q.data;
   const friends = d?.friends.filter((f) => f.kind === 'friend').length ?? 0;
   const incoming = d?.friends.filter((f) => f.kind === 'incoming').length ?? 0;
+  // Cheers from the last two days, newest first.
+  const fresh = (d?.cheers ?? []).filter((c) => Date.now() - new Date(c.at).getTime() < 2 * 86400_000);
+  const cheer = fresh[0] && CHEERS.find((x) => x.key === fresh[0].cheer);
   return (
     <Link to="/p/held/vrienden" className="tap flex items-center gap-3 rounded-2xl border border-line bg-white p-5 shadow-card hover:border-ink-300">
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-soft"><Users className="h-5 w-5 text-accent" aria-hidden /></span>
       <span className="min-w-0 flex-1">
         <span className="t-card block">{t('Vrienden', 'Friends')}</span>
         <span className="block text-[13.5px] text-ink-600">
-          {!d ? '…' : !d.sharing.enabled ? t('Uit · vergelijk levels met vrienden als je wilt', 'Off · compare levels with friends if you like') : incoming ? t(`${incoming} nieuw verzoek${incoming > 1 ? 'en' : ''}`, `${incoming} new request${incoming > 1 ? 's' : ''}`) : t(`${friends} ${friends === 1 ? 'vriend' : 'vrienden'}`, `${friends} ${friends === 1 ? 'friend' : 'friends'}`)}
+          {cheer && fresh[0] ? <>{cheer.emoji} {t(`${fresh[0].heroName}: ${cheer.nl}`, `${fresh[0].heroName}: ${cheer.en}`)}{fresh.length > 1 ? t(` (+${fresh.length - 1})`, ` (+${fresh.length - 1})`) : ''}</> : !d ? '…' : !d.sharing.enabled ? t('Uit · vergelijk levels met vrienden als je wilt', 'Off · compare levels with friends if you like') : incoming ? t(`${incoming} nieuw verzoek${incoming > 1 ? 'en' : ''}`, `${incoming} new request${incoming > 1 ? 's' : ''}`) : t(`${friends} ${friends === 1 ? 'vriend' : 'vrienden'}`, `${friends} ${friends === 1 ? 'friend' : 'friends'}`)}
         </span>
       </span>
       {incoming > 0 && <span className="rounded-full bg-info px-2 py-0.5 text-[12px] font-bold text-white">{incoming}</span>}

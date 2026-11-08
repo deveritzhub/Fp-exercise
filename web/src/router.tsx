@@ -4,7 +4,7 @@ import { reportError } from '@/lib/reportError';
 import { Spinner } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { MarketingLayout } from '@/layouts/MarketingLayout';
-import { RequireAuth } from '@/layouts/Guards';
+import { RequireAuth, RequireClinical } from '@/layouts/Guards';
 import { HomePage } from '@/pages/marketing/HomePage';
 import { ForgotPasswordPage, InvitePage, LoginPage, MfaRequiredPage, ResetPasswordPage, VerifyEmailPage } from '@/pages/auth/AuthPages';
 import { SignupPage } from '@/pages/auth/SignupPage';
@@ -28,6 +28,9 @@ const PatientsPage = named(() => import('@/pages/therapist/PatientsPage'), 'Pati
 const PatientDetailPage = named(() => import('@/pages/therapist/PatientDetailPage'), 'PatientDetailPage');
 const ExercisesPage = named(() => import('@/pages/therapist/ExercisesPage'), 'ExercisesPage');
 const TherapistAtlasPage = named(() => import('@/pages/therapist/TherapistAtlasPage'), 'TherapistAtlasPage');
+const ComplaintGuidePage = named(() => import('@/pages/therapist/ComplaintGuidePage'), 'ComplaintGuidePage');
+const ComplaintReviewPage = named(() => import('@/pages/therapist/ComplaintReviewPage'), 'ComplaintReviewPage');
+const ComplaintHandoutPage = named(() => import('@/pages/therapist/ComplaintHandoutPage'), 'ComplaintHandoutPage');
 const ExerciseDetailPage = named(() => import('@/pages/therapist/ExerciseDetailPage'), 'ExerciseDetailPage');
 const ExerciseFormPage = named(() => import('@/pages/therapist/ExerciseFormPage'), 'ExerciseFormPage');
 const ProgramsPage = named(() => import('@/pages/therapist/ProgramsPage'), 'ProgramsPage');
@@ -50,6 +53,8 @@ const PainCheckinPage = named(() => import('@/pages/patient/HeroPages'), 'PainCh
 const FriendsPage = named(() => import('@/pages/patient/FriendsPage'), 'FriendsPage');
 const LogbookPage = named(() => import('@/pages/patient/LogbookPage'), 'LogbookPage');
 const GymLogPage = named(() => import('@/pages/patient/GymLogPage'), 'GymLogPage');
+const MessagesPage = named(() => import('@/pages/patient/MessagesPage'), 'MessagesPage');
+const ComplaintExplanationPage = named(() => import('@/pages/patient/ComplaintExplanationPage'), 'ComplaintExplanationPage');
 const MobilityTestsPage = named(() => import('@/pages/patient/MobilityTestsPage'), 'MobilityTestsPage');
 const ModulePage = named(() => import('@/pages/patient/ModulePage'), 'ModulePage');
 const AtlasPage = named(() => import('@/pages/patient/AtlasPage'), 'AtlasPage');
@@ -150,6 +155,9 @@ export const router = createBrowserRouter([
           { path: 'patienten/:id/rapport', element: <S><ProgressReportPage /></S> },
           { path: 'oefeningen', element: <S><ExercisesPage /></S> },
           { path: 'spieren', element: <S><TherapistAtlasPage /></S> },
+          { path: 'klachtwijzer', element: <S><RequireClinical><ComplaintGuidePage /></RequireClinical></S> },
+          { path: 'klachtwijzer/controle', element: <S><RequireClinical><ComplaintReviewPage /></RequireClinical></S> },
+          { path: 'klachtwijzer/uitleg', element: <S><RequireClinical><ComplaintHandoutPage /></RequireClinical></S> },
           { path: 'oefeningen/nieuw', element: <S><ExerciseFormPage /></S> },
           { path: 'oefeningen/:id', element: <S><ExerciseDetailPage /></S> },
           { path: 'oefeningen/:id/bewerken', element: <S><ExerciseFormPage /></S> },
@@ -183,6 +191,8 @@ export const router = createBrowserRouter([
           { path: 'mobiliteit', element: <S><ModulePage key="mobiliteit" module="mobiliteit" /></S> },
           { path: 'krachtlog', element: <S><GymLogPage /></S> },
           { path: 'mobiliteit/meten', element: <S><MobilityTestsPage /></S> },
+          { path: 'berichten', element: <S><MessagesPage /></S> },
+          { path: 'uitleg', element: <S><ComplaintExplanationPage /></S> },
           { path: 'spieren', element: <S><AtlasPage /></S> },
           { path: 'instellingen', element: <S><SettingsPage /></S> },
           { path: 'account', element: <S><AccountPage patient /></S> },

@@ -9,6 +9,7 @@ import { fmtRelative, pct } from '@/lib/format';
 import { useDocumentMeta } from '@/lib/meta';
 import { Avatar, Badge, Button, Card, Dialog, EmptyState, ErrorState, Input, Notice, PageHeader, ProgressBar, Segmented, Select, Skeleton, useDebounced, useToast, TableScroll } from '@/components/ui';
 import type { PatientListItem } from '@/lib/types';
+import { cn } from '@/lib/cn';
 
 export function PatientsPage() {
   const { t, locale } = useI18n();
@@ -27,6 +28,23 @@ export function PatientsPage() {
     placeholderData: (prev) => prev,
   });
   const creating = params.get('nieuw') === '1';
+  // Quick filters on the loaded list (?filter=… so a link can open one). "Needs attention" uses the
+  // dashboard's work list, the same signals as there.
+  type QuickFilter = 'all' | 'attention' | 'not_invited' | 'invite_open' | 'no_program';
+  const [quick, setQuick] = useState<QuickFilter>(() => (['attention', 'not_invited', 'invite_open', 'no_program'].includes(params.get('filter') ?? '') ? (params.get('filter') as QuickFilter) : 'all'));
+  const dash = useQuery({ queryKey: ['dashboard', practice?.practiceId], queryFn: () => api.get<{ attention: { patientId: string }[] }>('/dashboard'), enabled: status === 'active', staleTime: 60_000 });
+  const attentionIds = new Set((dash.data?.attention ?? []).map((a) => a.patientId));
+  const matches = (p: PatientListItem, f: QuickFilter) =>
+    f === 'all' ? true : f === 'attention' ? attentionIds.has(p.id) : f === 'not_invited' ? !p.hasAccount && !p.invitedAt : f === 'invite_open' ? !p.hasAccount && !!p.invitedAt : p.activePrograms === 0;
+  const all = list.data?.items ?? [];
+  const shown = all.filter((p) => matches(p, quick));
+  const quickOptions: { key: QuickFilter; label: string }[] = [
+    { key: 'all', label: t('Alle', 'All') },
+    { key: 'attention', label: t('Vraagt aandacht', 'Needs attention') },
+    { key: 'not_invited', label: t('Nog niet uitgenodigd', 'Not invited yet') },
+    { key: 'invite_open', label: t('Uitnodiging open', 'Invitation open') },
+    { key: 'no_program', label: t('Geen programma', 'No programme') },
+  ];
 
   return (
     <>
@@ -43,10 +61,26 @@ export function PatientsPage() {
             <Segmented label={t('Status', 'Status')} value={status} onChange={setStatus} options={[{ value: 'active', label: t('Actief', 'Active') }, { value: 'archived', label: t('Archief', 'Archive') }]} />
           </div>
         </div>
+        {status === 'active' && all.length > 0 && (
+          <div className="flex flex-wrap gap-2 border-b border-line px-4 py-3" role="group" aria-label={t('Snelfilters', 'Quick filters')}>
+            {quickOptions.map((o) => {
+              const n = all.filter((p) => matches(p, o.key)).length;
+              const on = quick === o.key;
+              return (
+                <button key={o.key} type="button" aria-pressed={on} onClick={() => setQuick(o.key)}
+                  className={cn('inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 text-[13.5px] font-medium', on ? 'border-accent bg-accent-soft text-accent' : 'border-line text-ink-700 hover:bg-ink-50')}>
+                  {o.label}<span className={cn('rounded-full px-1.5 text-[12px] tabular-nums', on ? 'bg-white/70' : 'bg-ink-100')}>{n}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
         {list.isError ? (
           <ErrorState error={list.error} onRetry={() => list.refetch()} />
         ) : !list.data ? (
           <div className="space-y-3 p-5">{Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-12" />)}</div>
+        ) : list.data.items.length > 0 && shown.length === 0 ? (
+          <EmptyState icon={<Users className="h-5 w-5" />} title={t('Niemand in dit filter', 'Nobody in this filter')} description={t('Mooi zo. Kies "Alle" om iedereen te zien.', 'Good. Choose "All" to see everyone.')} action={<Button variant="secondary" onClick={() => setQuick('all')}>{t('Alle patiënten', 'All patients')}</Button>} />
         ) : list.data.items.length === 0 ? (
           <EmptyState icon={<Users className="h-5 w-5" />} title={dq ? t('Geen patiënten gevonden', 'No patients found') : t('Nog geen patiënten', 'No patients yet')} description={dq ? t('Probeer een andere zoekterm.', 'Try a different search term.') : t('Voeg een patiënt toe om een programma voor te schrijven.', 'Add a patient to prescribe a programme.')} action={!dq && <Button onClick={() => setParams({ nieuw: '1' })} icon={<UserPlus className="h-4 w-4" />}>{t('Nieuwe patiënt', 'New patient')}</Button>} />
         ) : (
@@ -63,7 +97,7 @@ export function PatientsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {list.data.items.map((p) => (
+                {shown.map((p) => (
                   <tr key={p.id} className="group cursor-pointer hover:bg-ink-50/60" onClick={() => navigate(`/app/patienten/${p.id}`)}>
                     <td className="px-5 py-3">
                       <Link to={`/app/patienten/${p.id}`} className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>

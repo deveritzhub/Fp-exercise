@@ -20,6 +20,8 @@ export type Defaults = { sets: number | null; reps: number | null; holdS: number
 export type Exercise = {
   id: string;
   practiceId: string | null;
+  /** Library id (FP library), when imported from a bundle. */
+  sourceKey?: string | null;
   scope: 'global' | 'practice';
   nameNl: string;
   nameEn: string;
@@ -164,7 +166,7 @@ export type Progress = {
   adherence28d: Adherence;
   completedSessions: number;
   outcomes: PatientOutcome[];
-  sessions: { id: string; programId: string; programTitle: string; startedAt: string; completedAt: string | null; difficulty: number | null; pain: number | null; feedback: string | null; reviewedAt: string | null; logs: SessionLog[] }[];
+  sessions: { id: string; programId: string; programTitle: string; startedAt: string; completedAt: string | null; difficulty: number | null; pain: number | null; feedback: string | null; reviewedAt: string | null; reviewNote?: string | null; logs: SessionLog[] }[];
   perExercise: { exerciseId: string; nameNl: string; nameEn: string; completed: number; logged: number; avgDifficulty: number | null; avgPain: number | null; maxPain: number | null }[];
 };
 
@@ -266,4 +268,4 @@ export type HeroFriend = {
   statsUpdatedAt: string | null;
   since: string;
 };
-export type FriendsState = { hasHero: boolean; sharing: { enabled: boolean; code: string | null }; friends: HeroFriend[] };
+export type FriendsState = { hasHero: boolean; sharing: { enabled: boolean; code: string | null }; friends: HeroFriend[]; cheers?: { heroName: string; cheer: string; at: string }[]; cheeredToday?: string[] };

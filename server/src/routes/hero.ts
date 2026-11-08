@@ -14,7 +14,12 @@ import { loadPatientLogs } from '../lib/patientLogs';
 import { weeklyAdherence } from '../../../shared/adherence';
 import {
   AREA_KEYS, BADGES, CHECKIN_XP, CHEST_XP, GEAR, GEAR_KEYS, onePerSlot, coinsEarned, gearScore, dayChestCoins, chestStreak, longestDayRun, skillTrophies, SHOWCASE_MAX, WALL_BADGES_MAX, seasons, seasonMonth, seasonOf, SEASON_GOAL, SEASON_XP, GENERAL_AREA, HERO_OPTIONS, METRICS, QUEST_XP, averagePain, friendSkillCard, levelFor, questTimeline,
-  questXp, skillOfWeek, skillsForExercise, weeklyQuests, weeklyBoss, BOSS_XP, xpFor, type SkillKey, type WeekData,
+  questXp, SKILLS, skillsForExercise, weeklyQuests, weeklyBoss, BOSS_XP, xpFor, type SkillKey, type WeekData,
+  CHEERS,
+  type CheerKey,
+  questSkillFor,
+  withFocus,
+  type FocusEntry,
 } from '../../../shared/hero';
 import { loadSkillSnapshot } from '../lib/skillState';
 
@@ -93,7 +98,10 @@ async function heroState(tx: Tx, patientId: string) {
          (SELECT count(*)::int FROM workout_sessions WHERE patient_id = $1 AND completed_at IS NOT NULL AND pain IS NOT NULL) AS with_pain,
          (SELECT count(*)::int FROM red_flag_reports WHERE patient_id = $1) AS red_flags,
          (SELECT count(DISTINCT date_trunc('week', recorded_at))::int FROM pain_map_entries WHERE patient_id = $1) AS checkin_weeks,
-         (SELECT count(*)::int FROM programs WHERE patient_id = $1 AND status = 'completed' AND phase_no IS NOT NULL) AS phases_done,
+         -- A phase counts as done when it was completed, or when the therapist released a later phase of the same series.
+         (SELECT count(*)::int FROM programs p WHERE p.patient_id = $1 AND p.phase_no IS NOT NULL AND p.is_template = false
+            AND (p.status = 'completed' OR EXISTS (SELECT 1 FROM programs q WHERE q.patient_id = $1 AND q.series_key = p.series_key
+                 AND q.phase_no > p.phase_no AND q.status IN ('active', 'completed')))) AS phases_done,
          (SELECT count(*)::int FROM strength_sets WHERE patient_id = $1) AS strength_sets,
          (SELECT count(*)::int FROM workout_sessions w JOIN programs p ON p.id = w.program_id
             WHERE w.patient_id = $1 AND w.completed_at IS NOT NULL AND p.module = 'mobiliteit') AS mobility_sessions`,
@@ -155,6 +163,12 @@ async function heroState(tx: Tx, patientId: string) {
     )
   ).rows.flatMap((r) => skillsForExercise(r.training_categories ?? [], r.movement_category));
   const rotation = [...new Set(progSkills)] as SkillKey[];
+  // The therapist may choose the skill of the skill quest from a given week on.
+  const focus = ((await tx.query('SELECT hero_focus FROM patients WHERE id = $1', [patientId])).rows[0]?.hero_focus ?? []) as FocusEntry[];
+  const questsFor = (weekStart: string, wd: WeekData) => {
+    const pick = questSkillFor(weekStart, focus, rotation);
+    return weeklyQuests(wd, pick.skill).map((x) => (x.key === 'skill' && pick.byTherapist ? { ...x, byTherapist: true } : x));
+  };
   const weekData = (weekStart: string): WeekData => {
     const w = weekly.find((x) => x.weekStart === weekStart);
     const skillLogs: Partial<Record<SkillKey, number>> = {};
@@ -170,7 +184,7 @@ async function heroState(tx: Tx, patientId: string) {
   for (const w of weekly.slice(0, -1)) {
     if (!activeWeeks.has(w.weekStart)) continue;
     const wd = weekData(w.weekStart);
-    const q = weeklyQuests(wd, skillOfWeek(w.weekStart, rotation));
+    const q = questsFor(w.weekStart, wd);
     xp += questXp(q);
     if (q.every((x) => x.done)) chestWeeks++;
     const fell = weeklyBoss(w.weekStart, wd).defeated;
@@ -185,7 +199,7 @@ async function heroState(tx: Tx, patientId: string) {
   const sunday = new Date(thisWeek + 'T12:00:00');
   sunday.setDate(sunday.getDate() + 6);
   const fullWeek = weeklyAdherence(inputs.schedules.get(patientId) ?? [], inputs.done.get(patientId) ?? new Map(), sunday, 1)[0];
-  const quests = weeklyQuests({ ...weekData(thisWeek), planned: fullWeek.planned }, skillOfWeek(thisWeek, rotation));
+  const quests = questsFor(thisWeek, { ...weekData(thisWeek), planned: fullWeek.planned });
   xp += questXp(quests);
   if (quests.every((x) => x.done)) chestWeeks++;
   // This week's boss, on the same numbers as the quests.
@@ -438,8 +452,26 @@ async function friendsView(tx: Tx, patientId: string) {
         since: r.since,
       }))
     : [];
-  return { hasHero: !!me, sharing: { enabled: !!me?.share_with_friends, code: me?.share_with_friends ? (me.friend_code as string) : null }, friends };
+  const cheers = me?.share_with_friends ? (await tx.query('SELECT * FROM app.hero_cheers($1)', [patientId])).rows : [];
+  return {
+    hasHero: !!me,
+    sharing: { enabled: !!me?.share_with_friends, code: me?.share_with_friends ? (me.friend_code as string) : null },
+    friends,
+    // Cheers from friends (last 14 days) and the friends already cheered today.
+    cheers: cheers.filter((r) => r.direction === 'in').map((r) => ({ heroName: r.hero_name as string, cheer: r.cheer as string, at: r.created_at })),
+    cheeredToday: cheers.filter((r) => r.direction === 'out').map((r) => r.friendship_id as string),
+  };
 }
+
+/** Send a pre-chosen cheer to a friend: at most one per friend per day. */
+heroPatient.post('/hero/friends/:id/cheer', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  const b = parse(z.object({ cheer: z.enum(CHEERS.map((x) => x.key) as [CheerKey, ...CheerKey[]]) }), await c.req.json());
+  const r = await withUser(user.id, async (tx) => (await tx.query('SELECT app.hero_cheer_send($1, $2, $3) AS r', [patient.id, id, b.cheer])).rows[0].r as string);
+  if (r === 'not_friends') throw notFound();
+  return c.json({ result: r, ...(await withUser(user.id, (tx) => friendsView(tx, patient.id))) });
+});
 
 heroPatient.get('/hero/friends', async (c) => {
   const { user, patient } = requirePatient(c);
@@ -698,7 +730,18 @@ heroStaff.get('/:id/hero', async (c) => {
       const hero = mapHero((await tx.query('SELECT * FROM patient_heroes WHERE patient_id = $1', [id])).rows[0]);
       const inputs = await loadAdherenceInputs(tx, [id]);
       const skills = await loadSkillSnapshot(tx, id, weeklyForPatient(inputs, id, 52));
-      const pt = (await tx.query('SELECT hero_aids FROM patients WHERE id = $1', [id])).rows[0];
+      const pt = (await tx.query('SELECT hero_aids, hero_focus FROM patients WHERE id = $1', [id])).rows[0];
+      // The skill quest this week (chosen or automatic) and the skills the programme trains.
+      const progSkills = (
+        await tx.query(
+          `SELECT DISTINCT e.training_categories, e.movement_category FROM program_items i
+             JOIN programs p ON p.id = i.program_id JOIN exercises e ON e.id = i.exercise_id
+            WHERE p.patient_id = $1 AND p.status = 'active'`,
+          [id],
+        )
+      ).rows.flatMap((r) => skillsForExercise(r.training_categories ?? [], r.movement_category));
+      const rotation = [...new Set(progSkills)] as SkillKey[];
+      const thisWeek = weeklyForPatient(inputs, id, 1)[0].weekStart;
       // Suggest crutches in the first phases of an ACL / knee post-op programme.
       const acl = (
         await tx.query(
@@ -711,6 +754,7 @@ heroStaff.get('/:id/hero', async (c) => {
       return {
         hero,
         aids: (pt?.hero_aids ?? []) as string[],
+        questFocus: { ...questSkillFor(thisWeek, (pt?.hero_focus ?? []) as FocusEntry[], rotation), programmeSkills: rotation },
         suggestCrutches: !!acl,
         painMap: await painMap(tx, id),
         trends: await painTrends(tx, id),
@@ -723,6 +767,22 @@ heroStaff.get('/:id/hero', async (c) => {
 });
 
 /** The professional switches walking aids on the patient's hero (e.g. crutches after ACL surgery). */
+/** The therapist chooses the skill of the weekly skill quest from this week on (null = automatic). */
+heroStaff.put('/:id/hero/focus', async (c) => {
+  const { user } = requireStaff(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  const b = parse(z.object({ skill: z.enum(SKILLS.map((x) => x.key) as [SkillKey, ...SkillKey[]]).nullable() }), await c.req.json());
+  await withUser(user.id, async (tx) => {
+    const row = (await tx.query('SELECT hero_focus FROM patients WHERE id = $1 AND app.can_manage_patient($1)', [id])).rows[0];
+    if (!row) throw notFound();
+    const inputs = await loadAdherenceInputs(tx, [id]);
+    const week = weeklyForPatient(inputs, id, 1)[0].weekStart;
+    const next = withFocus(row.hero_focus ?? [], week, b.skill);
+    await tx.query('UPDATE patients SET hero_focus = $2 WHERE id = $1 AND app.can_manage_patient($1)', [id, JSON.stringify(next)]);
+  });
+  return c.json({ ok: true });
+});
+
 heroStaff.put('/:id/hero/aids', async (c) => {
   const { user } = requireStaff(c);
   const id = parse(uuidParam, c.req.param('id'));

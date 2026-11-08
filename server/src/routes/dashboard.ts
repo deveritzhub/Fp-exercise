@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { areaPainRising, progressionSignal, painRising } from '../../../shared/progression';
 import { withUser } from '../db';
 import { requireStaff, type AppEnv } from '../middleware';
 import { mapExercise, OV_COLS, OV_JOIN } from './exercises';
@@ -8,7 +9,7 @@ import { toISODate } from '../../../shared/adherence';
 export const dashboard = new Hono<AppEnv>();
 
 /** One reason to look at a patient, with its date and numbers so the next step is clear. */
-type Signal = { reason: string; date: string | null; value?: number; planned?: number; completed?: number };
+type Signal = { reason: string; date: string | null; value?: number; planned?: number; completed?: number; area?: string };
 type Attention = { patientId: string; name: string; reasons: string[]; signals: Signal[] };
 
 dashboard.get('/', async (c) => {
@@ -41,6 +42,25 @@ dashboard.get('/', async (c) => {
         [ids],
       );
       const painBy = new Map(recentPain.rows.map((r) => [r.patient_id, r]));
+      // The last few scored workouts per patient, for the progression signal.
+      const recentScores = await tx.query(
+        `SELECT patient_id, difficulty, pain, completed_at FROM (
+           SELECT s.patient_id, s.difficulty, s.pain, s.completed_at,
+                  row_number() OVER (PARTITION BY s.patient_id ORDER BY s.completed_at DESC) AS n
+             FROM workout_sessions s WHERE s.patient_id = ANY($1) AND s.completed_at > now() - interval '28 days') x
+          WHERE n <= 4 ORDER BY patient_id, completed_at DESC`,
+        [ids],
+      );
+      const scoresBy = new Map<string, { difficulty: number | null; pain: number | null; at: string }[]>();
+      for (const r of recentScores.rows) scoresBy.set(r.patient_id, [...(scoresBy.get(r.patient_id) ?? []), { difficulty: r.difficulty, pain: r.pain, at: r.completed_at }]);
+      // Coaches and personal accounts are not medical: the app draws no conclusions from how someone feels.
+      const clinical = (await tx.query('SELECT kind FROM practices WHERE id = $1', [practiceId])).rows[0]?.kind === 'physio';
+      // Pain map check-ins of the last two weeks, for "same spot getting worse" (physio only).
+      const areaRows = clinical
+        ? (await tx.query(`SELECT patient_id, area, score, recorded_at FROM pain_map_entries WHERE patient_id = ANY($1) AND recorded_at > now() - interval '14 days'`, [ids])).rows
+        : [];
+      const areasBy = new Map<string, { area: string; score: number; at: string }[]>();
+      for (const r of areaRows) areasBy.set(r.patient_id, [...(areasBy.get(r.patient_id) ?? []), { area: r.area, score: r.score, at: r.recorded_at }]);
       const soon = new Date();
       soon.setDate(soon.getDate() + 7);
       const attention: Attention[] = [];
@@ -52,7 +72,7 @@ dashboard.get('/', async (c) => {
         planned += a.planned;
         completed += a.completed;
         const pain = painBy.get(p.id);
-        if (pain && pain.max_pain >= 6) signals.push({ reason: 'high_pain', date: pain.pain_at, value: pain.max_pain });
+        if (clinical && pain && pain.max_pain >= 6) signals.push({ reason: 'high_pain', date: pain.pain_at, value: pain.max_pain });
         if (pain && pain.unreviewed > 0) signals.push({ reason: 'new_feedback', date: pain.feedback_at, value: pain.unreviewed });
         if (!p.activated) {
           // Without an activated account a patient cannot register anything: say that, not "low adherence".
@@ -65,11 +85,18 @@ dashboard.get('/', async (c) => {
         } else if (p.active_programs > 0 && a.planned >= 2 && (a.rate ?? 0) < 0.5) {
           signals.push({ reason: 'low_adherence', date: p.last_activity, planned: a.planned, completed: a.completed });
         }
+        const prog = p.active_programs > 0 ? progressionSignal(scoresBy.get(p.id) ?? []) : null;
+        if (prog) signals.push({ reason: prog.kind, date: scoresBy.get(p.id)?.[0]?.at ?? null, value: prog.avgDifficulty, completed: prog.sessions });
+        // Pain going up workout after workout, before it reaches "high pain".
+        const rising = clinical && p.active_programs > 0 && !signals.some((x) => x.reason === 'high_pain') ? painRising(scoresBy.get(p.id) ?? []) : null;
+        if (rising) signals.push({ reason: 'pain_rising', date: scoresBy.get(p.id)?.[0]?.at ?? null, value: rising.to, planned: rising.from });
+        const worse = areaPainRising(areasBy.get(p.id) ?? [])[0];
+        if (worse) signals.push({ reason: 'area_pain_rising', date: null, value: worse.to, planned: worse.from, area: worse.area });
         if (p.next_end && p.next_end <= toISODate(soon)) signals.push({ reason: 'program_ending', date: p.next_end });
         if (p.active_programs === 0) signals.push({ reason: 'no_active_program', date: null });
         if (signals.length) attention.push({ patientId: p.id, name: `${p.first_name} ${p.last_name}`, reasons: signals.map((x) => x.reason), signals });
       }
-      const order = ['high_pain', 'new_feedback', 'inactive_long', 'no_registration', 'low_adherence', 'program_ending', 'not_activated', 'no_active_program'];
+      const order = ['high_pain', 'pain_rising', 'area_pain_rising', 'new_feedback', 'too_heavy', 'inactive_long', 'no_registration', 'low_adherence', 'ready_heavier', 'program_ending', 'not_activated', 'no_active_program'];
       attention.sort((x, y) => order.indexOf(x.reasons[0]) - order.indexOf(y.reasons[0]));
 
       const activity = await tx.query(
@@ -115,7 +142,17 @@ dashboard.get('/', async (c) => {
            FROM deletion_requests d JOIN patients p ON p.id = d.patient_id WHERE d.handled_at IS NULL
          ORDER BY created_at DESC LIMIT 20`,
       );
+      // "Get started" for a new professional: what they did themselves so far (first month only).
+      const start = (
+        await tx.query(
+          `SELECT (SELECT created_at FROM users WHERE id = app.uid()) AS since,
+                  (SELECT count(*)::int FROM patients WHERE created_by = app.uid()) AS patients,
+                  (SELECT count(*)::int FROM programs WHERE created_by = app.uid() AND patient_id IS NOT NULL) AS programs,
+                  (SELECT count(*)::int FROM patients WHERE created_by = app.uid() AND invited_at IS NOT NULL) AS invited`,
+        )
+      ).rows[0];
       return {
+        start: { since: start.since, patients: start.patients, programs: start.programs, invited: start.invited },
         alerts: alerts.rows.map((r) => ({ kind: r.kind, createdAt: r.created_at, patientId: r.patient_id, name: `${r.first_name} ${r.last_name}` })),
         daily: daily.rows.map((r) => ({ day: r.day, sessions: r.n, list: r.list })),
         stats: {

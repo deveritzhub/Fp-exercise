@@ -153,7 +153,8 @@ export function ScaleInput({ value, onChange, label, lowLabel, highLabel, tone =
   return (
     <fieldset>
       <legend className="mb-3 text-[15px] font-semibold text-ink-900">{label}</legend>
-      <div className="grid grid-cols-11 gap-1">
+      {/* Two rows on narrow phones, so every number stays big enough to tap. */}
+      <div className="grid grid-cols-6 gap-1.5 min-[380px]:grid-cols-11 min-[380px]:gap-1">
         {Array.from({ length: 11 }, (_, i) => (
           <button
             key={i}

@@ -5,7 +5,9 @@ import { requirePatient, requireStaff, type AppEnv } from '../middleware';
 import { parse } from '../lib/validate';
 import { badRequest, notFound } from '../lib/errors';
 import { audit } from '../lib/audit';
-import { notifyPatientMuscle } from '../lib/notify';
+import { notifyPatientComplaint, notifyPatientMuscle } from '../lib/notify';
+import { complaintOf, proposeExercises, whyFor, type ProposalBlock, type ProposalExercise } from '../../../shared/complaints';
+import { exercisesToReview } from '../lib/fpLibrary';
 import { QUIZ_DAILY_CAP, QUIZ_LEVEL_XP, exerciseKind, level2Open, muscleByKey, musclesOf, nerveOf, questionById, quizXp, type AtlasExerciseKind } from '../../../shared/muscleAtlas';
 
 /**
@@ -63,6 +65,38 @@ async function atlasExercises(tx: Tx) {
       return exercises;
 }
 
+/**
+ * For the explanation of a complaint: the patient's own exercises (active rehabilitation programmes)
+ * that fit it, each with "why" in plain words. Nothing is stored; the same texts as the guide.
+ */
+atlasPatient.get('/complaint-exercises', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const complaint = complaintOf(c.req.query('klacht') ?? '');
+  if (!complaint) throw badRequest('unknown_complaint');
+  const nl = (c.req.query('lang') ?? 'nl') !== 'en';
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const rows = (
+        await tx.query(
+          `SELECT DISTINCT ON (e.id) e.id, e.name_nl, e.name_en, e.target_muscles, e.training_categories, e.movement_category, e.source_key, e.tags
+             FROM program_items i JOIN programs p ON p.id = i.program_id JOIN exercises e ON e.id = i.exercise_id
+            WHERE p.patient_id = $1 AND p.status = 'active' AND p.module = 'revalidatie'`,
+          [patient.id],
+        )
+      ).rows;
+      const mine: ProposalExercise[] = rows.map((r) => {
+        const input = { name: `${r.name_nl} ${r.name_en}`, muscles: r.target_muscles ?? [], training: r.training_categories ?? [], movement: r.movement_category, sourceKey: r.source_key, tags: r.tags ?? [] };
+        return { id: r.id, nameNl: r.name_nl, nameEn: r.name_en, kind: exerciseKind(input), muscles: musclesOf(input), nerve: nerveOf(input) };
+      });
+      const p = proposeExercises(complaint, mine, 50, 'opbouw');
+      const blocks: [ProposalBlock, ProposalExercise[]][] = [['calm', p.calm], ['activate', p.activate], ['function', p.function]];
+      return {
+        items: blocks.flatMap(([block, list]) => list.map((e) => ({ id: e.id, name: nl ? e.nameNl : e.nameEn, block, why: whyFor(complaint, e, block, nl) }))),
+      };
+    }),
+  );
+});
+
 atlasPatient.get('/atlas', async (c) => {
   const { user, patient } = requirePatient(c);
   return c.json(await withUser(user.id, async (tx) => ({ exercises: await atlasExercises(tx), quiz: await quizState(tx, patient.id) })));
@@ -86,6 +120,29 @@ atlasStaff.post('/send', async (c) => {
       return { ok: true, delivered };
     }),
   );
+});
+/** Send the plain-language explanation of a complaint (from the complaint guide) to a patient. */
+atlasStaff.post('/send-complaint', async (c) => {
+  const { user } = requireStaff(c);
+  const b = parse(z.object({ patientId: z.string().uuid(), complaint: z.string().min(2).max(40), note: z.string().trim().max(200).default('') }), await c.req.json());
+  const complaint = complaintOf(b.complaint);
+  if (!complaint) throw badRequest('unknown_complaint');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const p = (await tx.query('SELECT p.id, p.practice_id, pr.kind FROM patients p JOIN practices pr ON pr.id = p.practice_id WHERE p.id = $1 AND p.archived_at IS NULL AND app.can_manage_patient(p.id)', [b.patientId])).rows[0];
+      if (!p) throw notFound();
+      // The complaint guide is clinical: coaches and personal accounts do not send it.
+      if (p.kind !== 'physio') throw badRequest('not_clinical');
+      const delivered = await notifyPatientComplaint(tx, p.id, p.practice_id, complaint, b.note);
+      await audit(tx, user.id, p.practice_id, 'create', 'complaint_explanation_sent', p.id, { complaint: complaint.key });
+      return { ok: true, delivered };
+    }),
+  );
+});
+/** Library exercises with a conventional, not yet checked dose: for the clinical review page. */
+atlasStaff.get('/review-exercises', (c) => {
+  requireStaff(c);
+  return c.json({ items: exercisesToReview() });
 });
 atlasStaff.get('/', async (c) => {
   const { user } = requireStaff(c);

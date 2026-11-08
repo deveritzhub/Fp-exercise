@@ -3,6 +3,7 @@ import { heroAssetFile, isHeroAsset } from './lib/heroAssets';
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
 import { serveStatic } from '@hono/node-server/serve-static';
+import { bodyLimit } from 'hono/body-limit';
 import { HTTPException } from 'hono/http-exception';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -63,6 +64,10 @@ export function createApp() {
     // API responses may contain personal data: never cache in shared caches.
     if (!c.res.headers.get('Cache-Control')) c.header('Cache-Control', 'no-store');
   });
+  // Request size: JSON and forms at most 5 MB (a practice library file is ~0.2 MB). This also caps
+  // how much a validator has to look at. Media uploads have their own, larger limit (MAX_UPLOAD_MB).
+  const jsonLimit = bodyLimit({ maxSize: 5 * 1024 * 1024, onError: (c) => c.json({ error: 'request_too_large' }, 413) });
+  api.use('*', (c, next) => (c.req.path.startsWith('/api/media') ? next() : jsonLimit(c, next)));
   api.use('*', csrfMiddleware);
   api.use('*', sessionMiddleware);
 

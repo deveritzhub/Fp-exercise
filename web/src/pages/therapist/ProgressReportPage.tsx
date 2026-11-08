@@ -5,11 +5,49 @@ import { ArrowLeft, Printer } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
-import { useSession } from '@/lib/session';
+import { useClinicalPractice, useSession } from '@/lib/session';
+import { BODY_AREAS } from '@shared/hero';
 import { fmtDate, pct } from '@/lib/format';
 import { Button, ErrorState, Spinner } from '@/components/ui';
 import type { PatientDetail, Progress } from '@/lib/types';
 import { MOBILITY_TESTS, mobilityTrends, type MobilityResult } from '@shared/mobilityTests';
+
+/** Pain map: the first check-in against the latest, per area (physio only). */
+function ReportPainMap({ patientId }: { patientId: string }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  type Entry = { area: string; score: number };
+  type Map = { baseline: { recordedAt: string; entries: Entry[] } | null; current: { recordedAt: string; entries: Entry[] } | null; checkins: number };
+  const q = useQuery({ queryKey: ['patient', patientId, 'hero'], queryFn: () => api.get<{ painMap: Map }>(`/patients/${patientId}/hero`) });
+  const m = q.data?.painMap;
+  if (!m?.baseline || !m.current || m.checkins < 2) return null;
+  const areas = [...new Set([...m.baseline.entries, ...m.current.entries].map((e) => e.area))];
+  const score = (list: Entry[], a: string) => list.find((e) => e.area === a)?.score ?? 0;
+  const d = (x: string) => fmtDate(x, locale, { day: 'numeric', month: 'short', year: 'numeric' });
+  return (
+    <section className="mt-6 [break-inside:avoid]" aria-labelledby="r-pain">
+      <h2 id="r-pain" className="t-section">{t('Pijnkaart', 'Pain map')}</h2>
+      <table className="mt-2 w-full text-[13.5px]">
+        <thead className="border-b border-line text-left text-[12px] text-ink-500">
+          <tr><th className="py-1.5 font-medium">{t('Plek', 'Area')}</th><th className="py-1.5 font-medium">{t(`Start (${d(m.baseline.recordedAt)})`, `Start (${d(m.baseline.recordedAt)})`)}</th><th className="py-1.5 font-medium">{t(`Laatste (${d(m.current.recordedAt)})`, `Latest (${d(m.current.recordedAt)})`)}</th></tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {areas.map((a) => {
+            const meta = BODY_AREAS.find((x) => x.key === a);
+            return (
+              <tr key={a}>
+                <td className="py-1.5">{meta ? (nl ? meta.nl : meta.en) : a}</td>
+                <td className="py-1.5 tabular-nums">{score(m.baseline!.entries, a)}/10</td>
+                <td className="py-1.5 tabular-nums">{score(m.current!.entries, a)}/10</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="mt-1 text-[12px] text-ink-500">{t(`Door de patiënt zelf aangegeven op de pijnkaart in de app (${m.checkins} metingen).`, `Reported by the patient on the pain map in the app (${m.checkins} check-ins).`)}</p>
+    </section>
+  );
+}
 
 /** Self-measured mobility (only when the patient shares mobility): first and latest per test and side. */
 function ReportMobility({ patientId }: { patientId: string }) {
@@ -57,6 +95,7 @@ const avg = (xs: (number | null)[]) => {
  */
 export function ProgressReportPage() {
   const { id = '' } = useParams();
+  const clinical = useClinicalPractice();
   const [sp, setSp] = useSearchParams();
   const weeks = PERIODS.includes(Number(sp.get('weken'))) ? Number(sp.get('weken')) : 8;
   const [withFeedback, setWithFeedback] = useState(false);
@@ -190,6 +229,7 @@ export function ProgressReportPage() {
         )}
 
         <ReportMobility patientId={id} />
+        {clinical && <ReportPainMap patientId={id} />}
 
         <section className="mt-6 [break-inside:avoid]" aria-labelledby="r-prog">
           <h2 id="r-prog" className="t-section">{t('Actieve programma’s', 'Active programmes')}</h2>

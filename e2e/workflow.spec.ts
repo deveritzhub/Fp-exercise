@@ -11,7 +11,7 @@ test('therapist creates a patient and an exercise programme', async ({ page, req
   await login(page, 'therapeut@praktijk-a.test');
   await expect(page.getByRole('heading', { name: /Joris/ })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Patiënten' }).click();
+  await page.getByRole('link', { name: 'Patiënten', exact: true }).click();
   await page.getByRole('button', { name: 'Nieuwe patiënt' }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Voornaam').fill('Eva');
@@ -22,6 +22,12 @@ test('therapist creates a patient and an exercise programme', async ({ page, req
   patientUrl = page.url();
   await expect(page.getByRole('heading', { name: 'Eva Test' })).toBeVisible();
   await expect(page.getByText(/Uitgenodigd/)).toBeVisible();
+  // No real e-mail yet: hand the link over via WhatsApp, copy or a QR code.
+  const wa = page.getByRole('link', { name: 'Via WhatsApp' });
+  await expect(wa).toHaveAttribute('href', /^https:\/\/wa\.me\/\?text=Hoi%20Eva!.*uitnodiging/);
+  await page.getByRole('button', { name: 'QR-code' }).click();
+  await expect(page.getByRole('img', { name: 'QR-code met de uitnodigingslink' })).toBeVisible();
+  await expectAccessible(page, 'invite share');
 
   await page.getByRole('link', { name: 'Nieuw programma' }).last().click();
   await page.waitForURL(/programmas\/nieuw\?patient=/);
@@ -93,6 +99,10 @@ test('patient activates account on a phone and completes a session', async ({ br
   await expect(page.getByRole('heading', { name: 'Training afgerond!' })).toBeVisible();
   await page.getByRole('button', { name: 'Terug naar overzicht' }).click();
   await expect(page.getByText('Klaar voor vandaag — goed gedaan!')).toBeVisible();
+  // The wrap-up card says what comes next.
+  const done = page.getByRole('region', { name: 'Klaar voor vandaag' });
+  await expect(done).toBeVisible();
+  await expect(done.getByText(/Volgende training:|Rust lekker uit/)).toBeVisible();
   await ctx.close();
 });
 
@@ -103,8 +113,12 @@ test('therapist reviews progress and modifies the programme', async ({ page }) =
   await page.getByRole('button', { name: /E2E — knie basis/ }).click();
   await expect(page.getByText('“Ging redelijk”')).toBeVisible();
   await expect(page.getByText('“Pijn onderin de rug bij het omhoog komen”')).toBeVisible();
-  await page.getByRole('button', { name: 'Markeer als gezien' }).click();
+  // A short reply goes to the patient's app with "seen".
+  await page.getByLabel('Korte reactie aan de patiënt (optioneel)').fill('Goed gedaan! Kom bij de brug minder hoog als je rug opspeelt.');
+  await page.getByRole('button', { name: 'Gezien en versturen' }).click();
+  await expect(page.getByText(/je reactie staat in de app van de patiënt/)).toBeVisible();
   await expect(page.getByText('Gezien').first()).toBeVisible();
+  await expect(page.getByText(/Jouw reactie:.*Kom bij de brug minder hoog/)).toBeVisible();
 
   await page.goto(programUrl);
   await expect(page.getByText('Actief — de patiënt ziet versie 1.')).toBeVisible();
@@ -118,6 +132,7 @@ test('therapist reviews progress and modifies the programme', async ({ page }) =
   await expect(publish.getByText(/Wie krijgt een melding/)).toBeVisible();
   await expectAccessible(page, 'publish dialog');
   await publish.getByLabel(/Wijzigingsnotitie/).fill('Herhalingen opgehoogd');
+  await publish.getByLabel(/Bericht aan Eva Test/).fill('Goed bezig, we gaan iets zwaarder!');
   await publish.getByRole('button', { name: 'Publiceren' }).click();
   await expect(page.getByText('Wijzigingen opgeslagen')).toBeVisible();
   await expect(page.getByText('v2', { exact: true })).toBeVisible();

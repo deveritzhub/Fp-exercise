@@ -6,7 +6,7 @@ import { parse, uuidParam, nullableInt } from '../lib/validate';
 import { audit } from '../lib/audit';
 import { badRequest, notFound } from '../lib/errors';
 import { uuid } from '../lib/crypto';
-import { notifyPatientUser } from '../lib/notify';
+import { notifyPatientUser, notifyPhaseUnlocked } from '../lib/notify';
 
 export const programs = new Hono<AppEnv>();
 
@@ -243,6 +243,8 @@ programs.get('/templates', async (c) => {
     await withUser(user.id, async (tx) => {
       const { rows } = await tx.query(
         `SELECT p.*, (tf.user_id IS NOT NULL) AS favorite,
+                -- When this professional last made a programme from it (recently used first).
+                (SELECT max(u.created_at) FROM programs u WHERE u.source_template_id = p.id AND u.created_by = app.uid()) AS last_used,
                 (SELECT count(*) FROM program_items i WHERE i.program_id = p.id) AS item_count,
                 (SELECT array_agg(DISTINCT e.body_region) FROM program_items i JOIN exercises e ON e.id = i.exercise_id
                   WHERE i.program_id = p.id) AS regions
@@ -252,11 +254,11 @@ programs.get('/templates', async (c) => {
             AND ($1 = '' OR p.title ILIKE '%' || $1 || '%' OR p.description ILIKE '%' || $1 || '%')
             -- Rehab templates are for physiotherapy practices only.
             AND (app.practice_kind($2) = 'physio' OR coalesce(p.module, 'revalidatie') <> 'revalidatie')
-          ORDER BY (tf.user_id IS NOT NULL) DESC, (p.practice_id IS NOT NULL) DESC, p.title`,
+          ORDER BY (tf.user_id IS NOT NULL) DESC, last_used DESC NULLS LAST, (p.practice_id IS NOT NULL) DESC, p.title`,
         [q, practiceId],
       );
       return {
-        items: rows.map((r) => ({ ...mapProgram(r), favorite: r.favorite, itemCount: r.item_count, regions: r.regions ?? [] })),
+        items: rows.map((r) => ({ ...mapProgram(r), favorite: r.favorite, itemCount: r.item_count, regions: r.regions ?? [], lastUsedAt: r.last_used ?? null })),
       };
     }),
   );
@@ -400,7 +402,10 @@ programs.post('/', async (c) => {
       );
     }
     await snapshot(tx, id, 'created');
-    if (b.patientId && b.status === 'active') await notifyPatientUser(tx, b.patientId, progPractice, 'program_assigned', b.title);
+    if (b.patientId && b.status === 'active') {
+      await notifyPatientUser(tx, b.patientId, progPractice, 'program_assigned', b.title);
+      await notifyPhaseUnlocked(tx, id);
+    }
     await audit(tx, user.id, progPractice, 'create', b.isTemplate ? 'template' : 'program', id, { items: b.items.length, status: b.status });
   });
   return c.json({ id }, 201);
@@ -409,7 +414,7 @@ programs.post('/', async (c) => {
 programs.put('/:id', async (c) => {
   const { user } = requireStaff(c);
   const id = parse(uuidParam, c.req.param('id'));
-  const b = parse(programFields.extend({ changeNote: z.string().max(300).default('') }).refine(refineDates, 'end_before_start'), await c.req.json());
+  const b = parse(programFields.extend({ changeNote: z.string().max(300).default(''), patientMessage: z.string().trim().max(200).default('') }).refine(refineDates, 'end_before_start'), await c.req.json());
   await withUser(user.id, async (tx) => {
     const cur = await tx.query('SELECT * FROM programs WHERE id = $1', [id]);
     const p = cur.rows[0];
@@ -424,7 +429,7 @@ programs.put('/:id', async (c) => {
     if (!r.rowCount) throw notFound(); // RLS: not editable by this user
     await writeItems(tx, id, p.practice_id, b.items);
     await snapshot(tx, id, b.changeNote);
-    if (p.patient_id && p.status === 'active') await notifyPatientUser(tx, p.patient_id, p.practice_id, 'program_updated', b.title);
+    if (p.patient_id && p.status === 'active') await notifyPatientUser(tx, p.patient_id, p.practice_id, 'program_updated', b.title, b.patientMessage);
     await audit(tx, user.id, p.practice_id, 'update', p.is_template ? 'template' : 'program', id, { version: p.version + 1, items: b.items.length });
   });
   return c.json({ ok: true });
@@ -539,6 +544,7 @@ programs.post('/:id/status', async (c) => {
     if (!r.rowCount) throw notFound();
     if (status === 'active' && p.status !== 'active' && p.patient_id) {
       await notifyPatientUser(tx, p.patient_id, p.practice_id, 'program_assigned', p.title);
+      await notifyPhaseUnlocked(tx, id);
     }
     await audit(tx, user.id, p.practice_id, 'status', 'program', id, { from: p.status, to: status });
   });

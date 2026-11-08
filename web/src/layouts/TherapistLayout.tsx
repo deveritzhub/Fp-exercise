@@ -1,9 +1,10 @@
+import { isClinical } from '@shared/accountKind';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { TestBanner } from '@/components/app/TestBanner';
 import { useEffect, useState } from 'react';
-import { BookOpen, Brain, Building2, ChevronsUpDown, LayoutDashboard, LogOut, Menu, Plus, Search, Settings, Users, Layers, X, UserRound, Check } from 'lucide-react';
+import { BookOpen, Brain, Building2, ChevronsUpDown, LayoutDashboard, LogOut, Menu, Plus, Search, Settings, Users, Layers, X, UserRound, Check, Compass, Keyboard } from 'lucide-react';
 import { Logo, LocaleSwitch } from '@/components/app/Brand';
-import { Avatar, Popover, MenuItem, Button } from '@/components/ui';
+import { Avatar, Popover, MenuItem, Button, Dialog } from '@/components/ui';
 import { useI18n, useAccountKind } from '@/lib/i18n';
 import { usePracticeAccent } from '@/lib/accent';
 import { useLogout, useSession } from '@/lib/session';
@@ -13,6 +14,7 @@ import { NotificationBell } from './Notifications';
 import { CommandPalette } from '@/components/app/CommandPalette';
 import { IdleGuard } from '@/components/app/IdleGuard';
 import { FeedbackButton } from '@/components/app/Feedback';
+import { WhatsNew } from '@/components/app/WhatsNew';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function TherapistLayout() {
@@ -25,22 +27,36 @@ export function TherapistLayout() {
   const qc = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [palette, setPalette] = useState(false);
+  const [shortcuts, setShortcuts] = useState(false);
+  const clinicalKeys = isClinical(practice?.kind);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setPalette((p) => !p);
+        return;
       }
+      // Single-key shortcuts, never while typing or with a dialog open.
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName))) return;
+      if (document.querySelector('dialog[open], [role="dialog"], [aria-modal="true"]')) return;
+      const go: Record<string, string> = { d: '/app', p: '/app/patienten', o: '/app/oefeningen', s: '/app/spieren', n: '/app/programmas/nieuw', ...(clinicalKeys ? { k: '/app/klachtwijzer' } : {}) };
+      if (e.key === '?') { e.preventDefault(); setShortcuts(true); }
+      else if (e.key === '/') { e.preventDefault(); setPalette(true); }
+      else if (go[e.key]) { e.preventDefault(); nav(go[e.key]); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [nav, clinicalKeys]);
   if (!user || !practice) return null;
   const isAdmin = practice.role !== 'therapist';
   const links = [
     { to: '/app', end: true, icon: LayoutDashboard, label: t('Dashboard', 'Dashboard') },
     { to: '/app/patienten', icon: Users, label: t('Patiënten', 'Patients') },
     { to: '/app/oefeningen', icon: BookOpen, label: t('Oefeningen', 'Exercises') },
+    // The complaint guide is clinical: only for physiotherapy practices.
+    ...(isClinical(practice.kind) ? [{ to: '/app/klachtwijzer', icon: Compass, label: t('Klachtwijzer', 'Complaint guide') }] : []),
     { to: '/app/spieren', icon: Brain, label: t('Spierenatlas', 'Muscle atlas') },
     { to: '/app/programmas', icon: Layers, label: t("Programma's & sjablonen", 'Programmes & templates') },
     { to: '/app/praktijk', icon: Building2, label: t('Praktijk', 'Practice') },
@@ -117,6 +133,12 @@ export function TherapistLayout() {
           </NavLink>
         ))}
       </nav>
+      <div className="px-3"><WhatsNew audience="staff" clinical={isClinical(practice.kind)} /></div>
+      <div className="hidden px-3 lg:block">
+        <button type="button" onClick={() => setShortcuts(true)} className="flex min-h-[40px] w-full items-center gap-2 rounded-lg px-3 text-left text-[13.5px] font-medium text-ink-600 hover:bg-white/70">
+          <Keyboard className="h-[18px] w-[18px] shrink-0 text-ink-500" aria-hidden /><span className="flex-1">{t('Sneltoetsen', 'Shortcuts')}</span><kbd className="rounded border border-line bg-white px-1.5 font-mono text-[12px]">?</kbd>
+        </button>
+      </div>
       <div className="m-3 rounded-lg border border-line bg-white/60 px-3 py-2.5 text-[12px] leading-relaxed text-ink-500">
         {t('Ontwikkelomgeving — alleen synthetische gegevens.', 'Development environment — synthetic data only.')}
       </div>
@@ -180,6 +202,26 @@ export function TherapistLayout() {
         <Outlet />
       </main>
       <CommandPalette open={palette} onClose={() => setPalette(false)} />
+      <Dialog open={shortcuts} onClose={() => setShortcuts(false)} size="sm" title={t('Sneltoetsen', 'Keyboard shortcuts')} description={t('Werkt overal, behalve tijdens het typen.', 'Works everywhere, except while typing.')}>
+        <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-[14.5px]">
+          {[
+            ['Ctrl K', t('Snel zoeken (patiënt, oefening, klacht)', 'Quick search (patient, exercise, complaint)')],
+            ['/', t('Snel zoeken', 'Quick search')],
+            ['D', t('Dashboard', 'Dashboard')],
+            ['P', t('Patiënten', 'Patients')],
+            ['O', t('Oefeningen', 'Exercises')],
+            ['N', t('Nieuw programma', 'New programme')],
+            ...(clinicalKeys ? [['K', t('Klachtwijzer', 'Complaint guide')]] : []),
+            ['S', t('Spierenatlas', 'Muscle atlas')],
+            ['?', t('Dit overzicht', 'This overview')],
+          ].map(([k, label]) => (
+            <div key={k} className="contents">
+              <dt><kbd className="inline-flex min-w-[2.25rem] justify-center rounded-md border border-line bg-ink-50 px-2 py-0.5 font-mono text-[13px] text-ink-800">{k}</kbd></dt>
+              <dd className="text-ink-800">{label}</dd>
+            </div>
+          ))}
+        </dl>
+      </Dialog>
       <IdleGuard />
     </div>
   );

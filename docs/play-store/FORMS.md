@@ -40,4 +40,4 @@ niet: muntjes zijn spelpunten zonder geldwaarde.
 | Contentclassificatie (IARC) | Vragenlijst invullen: geen geweld, geen gokken met echt geld (muntjes zijn spelpunten zonder waarde), geen gebruikerscontact behalve vriendenlevels → meestal "Iedereen / PEGI 3" |
 | Overheids-/financiële/nieuwsapp | Nee |
 | App-toegang | "Alle of sommige functies zijn beperkt" → testaccount opgeven (zie `REVIEW.md`) |
-| Gegevensverwijdering (URL) | https://fp-exercise.onrender.com/privacy (of je eigen domein) — vermeld daar hoe je verwijdering aanvraagt |
+| Gegevensverwijdering (URL) | https://app.fpflow.nl/privacy — vermeld daar hoe je verwijdering aanvraagt |

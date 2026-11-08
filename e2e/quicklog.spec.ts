@@ -64,3 +64,27 @@ test('the therapist puts crutches on the hero; the patient sees them', async ({ 
   await expect(pp.locator('[data-gear="crutches"]')).toHaveCount(0);
   await ctx.close();
 });
+
+test('the therapist chooses the skill of the weekly quest; the patient sees it is chosen by the physio', async ({ browser, page }) => {
+  test.setTimeout(90_000);
+  const [emma] = await sql(`SELECT id FROM patients WHERE email = 'patient@praktijk-a.test'`);
+  await sql(`UPDATE patients SET hero_focus = '[]' WHERE id = $1`, [emma.id]);
+  try {
+    await login(page, 'therapeut@praktijk-a.test');
+    await page.goto(`/app/patienten/${emma.id}`);
+    const pick = page.getByLabel('Skill van de weekquest kiezen');
+    await pick.scrollIntoViewIfNeeded();
+    await pick.selectOption({ label: 'Balans' });
+    await expect(page.getByText('Door jou gekozen: Balans.')).toBeVisible();
+    await expectAccessible(page, 'quest focus');
+
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'nl-NL' });
+    const pp = await ctx.newPage();
+    await login(pp, 'patient@praktijk-a.test');
+    await pp.goto('/p/held');
+    await expect(pp.getByText('Gekozen door je fysiotherapeut: 2 oefeningen voor Balans')).toBeVisible();
+    await ctx.close();
+  } finally {
+    await sql(`UPDATE patients SET hero_focus = '[]' WHERE id = $1`, [emma.id]);
+  }
+});

@@ -1,0 +1,68 @@
+{
+ "_meta": {
+  "naam": "Ketens en compensaties: hand en elleboog in het dagelijks leven",
+  "versie": "fp-ketens-v4",
+  "toelichting": "Functionele oefeningen voor tennisarm en carpaletunnelklachten: de taak waarin het pijn doet, gedoseerd oefenen. Eigen tekst, gangbare dosering. Nog niet individueel klinisch getoetst."
+ },
+ "seed_data": {
+  "revalidatie": {
+   "oefeningen": [
+    {
+     "id": "kt_dragen_handrug",
+     "naam": "Tas dragen met de handrug naar boven",
+     "categorie": "functioneel",
+     "type_belasting": "isotoon",
+     "regio": "pols_hand",
+     "niveau": "basis",
+     "instructie": "Til een lichte tas of een fles water met de handpalm naar beneden, zoals je een tas aan het hengsel optilt. Pols recht, elleboog licht gebogen. Til op, houd 5 tellen vast en zet rustig neer. Maak het zwaarder als het makkelijk gaat.",
+     "dosering": {
+      "sets": 3,
+      "reps": 8,
+      "hold_sec": 5,
+      "tempo": "rustig",
+      "rust_sec": 60,
+      "intensiteit": "licht tot matig"
+     },
+     "symptoomregel": "Pijn aan de buitenkant van de elleboog maximaal 3 van 10 en de volgende ochtend niet erger",
+     "video_url": null,
+     "physitrack_id": null,
+     "tags": [
+      "elleboog",
+      "grijpen",
+      "dagelijks leven",
+      "tennisarm"
+     ],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    },
+    {
+     "id": "kt_oppakken_knijpgreep",
+     "naam": "Kleine voorwerpen oppakken met duim en vingertoppen",
+     "categorie": "functioneel",
+     "type_belasting": "isotoon",
+     "regio": "pols_hand",
+     "niveau": "basis",
+     "instructie": "Leg munten, knopen of knikkers op tafel. Pak ze een voor een op tussen duim en vingertoppen en leg ze in een bakje. Pols recht. Wissel duim met wijsvinger, middelvinger en ringvinger af.",
+     "dosering": {
+      "sets": 2,
+      "reps": 20,
+      "hold_sec": 0,
+      "tempo": "rustig",
+      "rust_sec": 30,
+      "intensiteit": "licht"
+     },
+     "symptoomregel": "Geen toename van tintelingen of doof gevoel in de vingers",
+     "video_url": null,
+     "physitrack_id": null,
+     "tags": [
+      "hand",
+      "duim",
+      "fijne motoriek",
+      "dagelijks leven"
+     ],
+     "dosis_status": "conventie: gangbare dosering, nog niet individueel getoetst"
+    }
+   ],
+   "programmas": []
+  }
+ }
+}

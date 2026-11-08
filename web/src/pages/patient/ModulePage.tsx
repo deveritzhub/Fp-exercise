@@ -1,8 +1,11 @@
 import { Link, Navigate } from 'react-router-dom';
 import { MOBILITY_MEASURE_XP, mobilityDue } from '@shared/mobilityTests';
+import { painRising, progressionSignal } from '@shared/progression';
+import { cn } from '@/lib/cn';
 import { localToday } from '@/components/MobilityTests';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, ChevronDown, ChevronRight, Dumbbell, Lock, Play, ShieldCheck, Ruler } from 'lucide-react';
+import { BookOpen, CheckCircle2, ChevronDown, ChevronRight, Dumbbell, Lock, Play, ShieldCheck, Ruler } from 'lucide-react';
+import { complaintOf } from '@shared/complaints';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtRelative } from '@/lib/format';
@@ -16,7 +19,7 @@ import { RehabRoute } from '@/components/hero/RehabRoute';
 import type { HeroState } from '@/lib/types';
 import { MODULE_ICON, moduleLabel, moduleOf, StartOrResume, type PatientHomeData, type PatientModule } from '@/pages/patient/PatientHome';
 
-type History = { sessions: { id: string; completedAt: string; programTitle: string; module?: string | null; exercisesDone: number; exercisesTotal: number }[] };
+type History = { sessions: { id: string; completedAt: string; programTitle: string; module?: string | null; exercisesDone: number; exercisesTotal: number; difficulty?: number | null; pain?: number | null }[] };
 
 const INTRO: Record<PatientModule, [string, string]> = {
   revalidatie: ['Het programma dat je fysiotherapeut voor je klaarzet, met je fases en doelen.', 'The programme your physiotherapist sets up for you, with your phases and goals.'],
@@ -99,6 +102,22 @@ export function ModulePage({ module }: { module: PatientModule }) {
         </p>
       )}
 
+      {/* Explanations the physiotherapist sent: always one tap away here, also after the message was read. */}
+      {module === 'revalidatie' && (home.data.explanations ?? []).map((key) => {
+        const c = complaintOf(key);
+        if (!c) return null;
+        return (
+          <Link key={key} to={`/p/uitleg?klacht=${key}`} className="tap flex items-center gap-3 rounded-2xl border border-line bg-white p-4 shadow-card">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><BookOpen className="h-6 w-6" aria-hidden /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-ink-900">{t('Uitleg over je klacht', 'About your complaint')}</span>
+              <span className="block text-[14px] text-ink-600">{nl ? c.name[0] : c.name[1]} · {t('van je fysiotherapeut', 'from your physiotherapist')}</span>
+            </span>
+            <ChevronRight className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />
+          </Link>
+        );
+      })}
+
       {module === 'revalidatie' && hero.data?.quest && hero.data.quest.phases.length > 0 && (
         <RehabRoute phases={hero.data.quest.phases} currentNo={hero.data.quest.phaseNo} />
       )}
@@ -124,6 +143,36 @@ export function ModulePage({ module }: { module: PatientModule }) {
           <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
         </Link>
       )}
+
+      {/* Pain after workouts going up three times in a row in this part: slow down (and tell the physio). */}
+      {(() => {
+        const rising = painRising([...sessions].sort((a, b) => b.completedAt.localeCompare(a.completedAt)).map((x) => ({ difficulty: x.difficulty ?? null, pain: x.pain ?? null })));
+        if (!rising) return null;
+        const clinical = modes.data.kind === 'physio';
+        return (
+          <p role="status" className="rounded-2xl border border-warn/30 bg-warn-soft/60 p-4 text-[15px] text-ink-900 shadow-card">
+            <span className="block font-semibold">{clinical ? t('Je pijn na het trainen loopt op', 'Your pain after training is going up') : t('Je lichaam voelt na het trainen steeds minder goed', 'Your body feels worse after each workout')}</span>
+            {clinical
+              ? t(`Je laatste drie trainingen: van ${rising.from} naar ${rising.to} op 10. Doe het rustiger aan (minder herhalingen of minder zwaar) en laat het je fysiotherapeut weten, bijvoorbeeld in de opmerking na je training.`, `Your last three workouts: from ${rising.from} to ${rising.to} out of 10. Take it easier (fewer reps or less load) and let your physiotherapist know, for example in the comment after your workout.`)
+              : t(`Je laatste drie trainingen: van ${rising.from} naar ${rising.to} op 10. Doe het rustiger aan: minder herhalingen, minder zwaar of een extra rustdag.`, `Your last three workouts: from ${rising.from} to ${rising.to} out of 10. Take it easier: fewer reps, less load or an extra rest day.`)}
+          </p>
+        );
+      })()}
+
+      {/* Own programmes (strength, mobility): a tip from the patient's own scores. Rehab stays with the therapist. */}
+      {module !== 'revalidatie' && programs.filter((p) => p.selfStarted).map((p) => {
+        const mine = sessions.filter((x) => x.programTitle === p.title).sort((a, b) => b.completedAt.localeCompare(a.completedAt));
+        const sig = progressionSignal(mine.map((x) => ({ difficulty: x.difficulty ?? null, pain: x.pain ?? null })));
+        if (!sig) return null;
+        return (
+          <p key={p.id} role="status" className={cn('rounded-2xl border p-4 text-[15px] shadow-card', sig.kind === 'ready_heavier' ? 'border-accent/30 bg-accent-soft text-ink-900' : 'border-warn/30 bg-warn-soft/60 text-ink-900')}>
+            <span className="block font-semibold">{sig.kind === 'ready_heavier' ? t('Dit gaat je makkelijk af', 'This is going easily') : t('Dit is nu erg zwaar', 'This is very heavy right now')}</span>
+            {sig.kind === 'ready_heavier'
+              ? t(`Je laatste ${sig.sessions} trainingen van "${p.title}" voelden licht. Tijd voor een stapje meer: één set extra, wat meer herhalingen of een zwaarder programma hieronder.`, `Your last ${sig.sessions} workouts of "${p.title}" felt light. Time for a step up: one extra set, a few more reps or a harder programme below.`)
+              : t(`Je laatste ${sig.sessions} trainingen van "${p.title}" voelden erg zwaar. Doe minder herhalingen of een lichtere variant. Bouw rustig op; pijn hoort niet op te lopen.`, `Your last ${sig.sessions} workouts of "${p.title}" felt very heavy. Do fewer reps or a lighter variation. Build up gradually; pain should not increase.`)}
+          </p>
+        );
+      })}
 
       {/* Programmes in this part */}
       <section aria-labelledby="mod-programs">

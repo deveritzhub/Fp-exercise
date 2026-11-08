@@ -1,7 +1,8 @@
+import { useClinicalPractice } from '@/lib/session';
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Archive, ArchiveRestore, Check, ChevronDown, Download, Layers, Mail, MessageSquareText, Pencil, Plus, Send, FileText } from 'lucide-react';
+import { Archive, ArchiveRestore, Check, ChevronDown, Download, Layers, Mail, MessageSquareText, Pencil, Plus, Send, FileText, Compass } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n, describeError } from '@/lib/i18n';
 import { fmtDate, fmtDateTime, fmtRelative, pct } from '@/lib/format';
@@ -13,6 +14,8 @@ import { PatientFormDialog } from './PatientsPage';
 import { OpenRedFlagsBanner, PatientModulesTab } from './PatientModulesTab';
 import { GymLog } from '@/components/GymLog';
 import { MobilitySummary, MobilityTests } from '@/components/MobilityTests';
+import { InviteShare } from '@/components/app/InviteShare';
+import { progressionSignal } from '@shared/progression';
 import type { Member, PatientDetail, Progress } from '@/lib/types';
 import { PainMapCard } from '@/components/hero/PainMapCard';
 import { ClinicalTimeline } from '@/components/therapist/ClinicalTimeline';
@@ -20,6 +23,7 @@ import { ClinicalTimeline } from '@/components/therapist/ClinicalTimeline';
 type Tab = 'overzicht' | 'programmas' | 'sessies' | 'kracht' | 'mobiliteit' | 'modules' | 'gegevens';
 
 export function PatientDetailPage() {
+  const clinical = useClinicalPractice();
   const { id = '' } = useParams();
   const nav = useNavigate();
   const { t, locale } = useI18n();
@@ -98,6 +102,7 @@ export function PatientDetailPage() {
                 </>
               )}
             </Popover>
+            {!pt.archived && clinical && <ButtonLink variant="secondary" to={`/app/klachtwijzer?patient=${id}`} icon={<Compass className="h-4 w-4" />}>{t('Op klacht', 'By complaint')}</ButtonLink>}
             {!pt.archived && <ButtonLink to={`/app/programmas/nieuw?patient=${id}`} icon={<Plus className="h-4 w-4" />}>{t('Nieuw programma', 'New programme')}</ButtonLink>}
           </>
         }
@@ -110,9 +115,9 @@ export function PatientDetailPage() {
       </PageHeader>
 
       {inviteUrl && (
-        <Notice tone="info" className="mb-5" title={t('Demo: uitnodigingslink voor de patiënt', 'Demo: patient invitation link')}>
-          {t('In de echte versie ontvangt de patiënt deze link per e-mail. Open hem bijvoorbeeld op je telefoon om de patiëntapp te proberen.', 'In the real version the patient receives this link by email. Open it, e.g. on your phone, to try the patient app.')}{' '}
-          <a href={inviteUrl} className="link break-all">{inviteUrl}</a>
+        <Notice tone="info" className="mb-5" title={t('Uitnodigingslink voor de patiënt', 'Patient invitation link')}>
+          {t('Er gaat nog geen e-mail uit. Stuur de link zelf naar de patiënt, of laat de QR-code scannen.', 'No e-mail is sent yet. Send the link to the patient yourself, or let them scan the QR code.')}
+          <InviteShare url={inviteUrl} firstName={pt.firstName} />
         </Notice>
       )}
 
@@ -145,6 +150,23 @@ export function PatientDetailPage() {
   );
 }
 
+/** "Ready for more load" / "too heavy?" from the patient's own scores after the latest workouts. */
+function ProgressionNotice({ sessions }: { sessions: Progress['sessions'] }) {
+  const { t } = useI18n();
+  const recent = sessions.filter((x) => x.completedAt).sort((a, b) => b.completedAt!.localeCompare(a.completedAt!));
+  const sig = progressionSignal(recent);
+  if (!sig) return null;
+  return sig.kind === 'ready_heavier' ? (
+    <Notice tone="info" title={t('Klaar voor zwaarder', 'Ready for more load')}>
+      {t(`De laatste ${sig.sessions} trainingen waren licht (gemiddelde zwaarte ${sig.avgDifficulty}/10, pijn hooguit ${sig.maxPain}/10). Tijd om op te bouwen: meer herhalingen, gewicht of een moeilijkere variant.`, `The last ${sig.sessions} workouts were light (average effort ${sig.avgDifficulty}/10, pain at most ${sig.maxPain}/10). Time to build up: more reps, load or a harder variation.`)}
+    </Notice>
+  ) : (
+    <Notice tone="warn" title={t('Te zwaar?', 'Too heavy?')}>
+      {t(`De laatste ${sig.sessions} trainingen waren erg zwaar (gemiddelde zwaarte ${sig.avgDifficulty}/10). Overweeg de dosering te verlagen of een lichtere variant.`, `The last ${sig.sessions} workouts were very heavy (average effort ${sig.avgDifficulty}/10). Consider lowering the dose or a lighter variation.`)}
+    </Notice>
+  );
+}
+
 function Overview({ patientId, progress, programs }: { patientId: string; progress?: Progress; programs: PatientDetail['programs'] }) {
   const { t, locale } = useI18n();
   if (!progress) return <div className="grid gap-4 sm:grid-cols-3">{Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>;
@@ -158,6 +180,7 @@ function Overview({ patientId, progress, programs }: { patientId: string; progre
         <Stat label={t('Afgeronde sessies', 'Completed sessions')} value={progress.completedSessions} hint={t('totaal', 'total')} />
         <Stat label={t('Actieve programma’s', 'Active programmes')} value={active.length} hint={active[0]?.title} />
       </div>
+      <ProgressionNotice sessions={progress.sessions} />
       <PainMapCard patientId={patientId} />
       {/* Self-measured mobility, only when the patient shares the mobility part. */}
       <MobilitySummary base={`/patients/${patientId}`} link="?tab=mobiliteit" />
@@ -236,9 +259,40 @@ function Programs({ pt }: { pt: PatientDetail }) {
   );
 }
 
-function Sessions({ progress, onReviewed }: { progress?: Progress; onReviewed: () => void }) {
+/** Mark a workout as seen, optionally with a short reply that the patient gets in the app. */
+function ReviewBox({ sessionId, onDone }: { sessionId: string; onDone: () => void }) {
   const { t, locale } = useI18n();
   const toast = useToast();
+  const [reply, setReply] = useState('');
+  const [busy, setBusy] = useState(false);
+  const send = async () => {
+    setBusy(true);
+    try {
+      const r = await api.post<{ delivered: boolean }>(`/patients/sessions/${sessionId}/review`, { reply: reply.trim() });
+      toast(r.delivered ? t('Gezien, en je reactie staat in de app van de patiënt', 'Seen, and your reply is in the patient\'s app') : t('Gemarkeerd als gezien', 'Marked as seen'));
+      setReply('');
+      onDone();
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-4 space-y-2">
+      <label className="block text-[13px] font-medium text-ink-700" htmlFor={`reply-${sessionId}`}>{t('Korte reactie aan de patiënt (optioneel)', 'Short reply to the patient (optional)')}</label>
+      <textarea id={`reply-${sessionId}`} value={reply} onChange={(e) => setReply(e.target.value)} maxLength={500} rows={2} className="input" placeholder={t('Bijv. "Goed gedaan! Neem bij de squat 1 kg meer."', 'E.g. "Well done! Add 1 kg to the squat."')} />
+      <div className="flex justify-end">
+        <Button size="sm" variant="secondary" loading={busy} icon={<Check className="h-3.5 w-3.5" />} onClick={send}>
+          {reply.trim() ? t('Gezien en versturen', 'Seen and send') : t('Markeer als gezien', 'Mark as seen')}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function Sessions({ progress, onReviewed }: { progress?: Progress; onReviewed: () => void }) {
+  const { t, locale } = useI18n();
   const [open, setOpen] = useState<string | null>(null);
   if (!progress) return <Spinner />;
   const done = progress.sessions.filter((s) => s.completedAt);
@@ -269,6 +323,9 @@ function Sessions({ progress, onReviewed }: { progress?: Progress; onReviewed: (
                   {s.feedback && (
                     <blockquote className="mb-4 rounded-lg border-l-2 border-info bg-white px-4 py-3 text-sm text-ink-800 shadow-xs">“{s.feedback}”</blockquote>
                   )}
+                  {s.reviewNote && (
+                    <p className="mb-4 rounded-lg border-l-2 border-accent bg-accent-soft px-4 py-3 text-sm text-ink-800"><span className="font-semibold">{t('Jouw reactie', 'Your reply')}: </span>{s.reviewNote}</p>
+                  )}
                   <table className="w-full text-[13px]">
                     <caption className="pb-2 text-left text-[12.5px] text-ink-600">{t('Oefenscores: ingevuld na elke oefening (0–10).', 'Exercise scores: filled in after each exercise (0–10).')}</caption>
                     <thead className="text-left text-[12px] text-ink-600"><tr><th className="py-1 font-medium">{t('Oefening', 'Exercise')}</th><th className="py-1 font-medium">{t('Uitgevoerd', 'Done')}</th><th className="py-1 font-medium">{t('Gedaan', 'Done')}</th><th className="py-1 font-medium">{t('Zwaarte', 'Difficulty')}</th><th className="py-1 font-medium">{t('Pijn', 'Pain')}</th></tr></thead>
@@ -291,13 +348,7 @@ function Sessions({ progress, onReviewed }: { progress?: Progress; onReviewed: (
                       ))}
                     </tbody>
                   </table>
-                  {!s.reviewedAt && (
-                    <div className="mt-4 flex justify-end">
-                      <Button size="sm" variant="secondary" icon={<Check className="h-3.5 w-3.5" />} onClick={async () => { await api.post(`/patients/sessions/${s.id}/review`); toast(t('Gemarkeerd als gezien', 'Marked as seen')); onReviewed(); }}>
-                        {t('Markeer als gezien', 'Mark as seen')}
-                      </Button>
-                    </div>
-                  )}
+                  {!s.reviewedAt && <ReviewBox sessionId={s.id} onDone={onReviewed} />}
                 </div>
               )}
             </li>

@@ -1,6 +1,7 @@
+import { complaintOf } from '@shared/complaints';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -69,6 +70,9 @@ export function ProgramBuilderPage() {
 
   const [patientId, setPatientId] = useState<string | null>(params.get('patient'));
   const [asTemplate, setAsTemplate] = useState(params.get('type') === 'sjabloon');
+  // From the complaint guide for a patient: also send the explanation of the complaint (ticked by default).
+  const guideComplaint = complaintOf(params.get('klacht') ?? '');
+  const [sendExplanation, setSendExplanation] = useState(true);
   const [meta, setMeta] = useState<Meta>({ title: '', description: '', patientInstructions: '', startDate: todayISO(), endDate: plusWeeks(todayISO(), 6) });
   const [items, setItems] = useState<BItem[]>([]);
   const [sourceTemplateId, setSourceTemplateId] = useState<string | null>(null);
@@ -76,6 +80,7 @@ export function ProgramBuilderPage() {
   const [busy, setBusy] = useState<false | 'draft' | 'active' | 'save'>(false);
   const [error, setError] = useState<string | null>(null);
   const [changeNote, setChangeNote] = useState('');
+  const [patientMessage, setPatientMessage] = useState('');
   const [preview, setPreview] = useState(false);
   const [history, setHistory] = useState(false);
   const [pickTemplate, setPickTemplate] = useState(false);
@@ -119,6 +124,28 @@ export function ProgramBuilderPage() {
     const base = fromExercise(e);
     update((x) => [...x, { ...base, sets: num('sets') ?? base.sets, reps: num('reps') ?? base.reps, holdS: num('holdS') ?? base.holdS, restS: num('restS') ?? base.restS, days: days.length ? days : base.days }]);
   }, [startEx.data]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Arriving from the complaint guide: several exercises (in the chosen order) and a title.
+  const multi = (params.get('oefeningen') ?? '').split(',').filter((x) => /^[0-9a-f-]{36}$/i.test(x)).slice(0, 20);
+  const multiQ = useQueries({ queries: multi.map((exId) => ({ queryKey: ['exercise', exId], queryFn: () => api.get<Exercise>(`/exercises/${exId}`), enabled: isNew })) });
+  const multiAdded = useRef(false);
+  const multiReady = multi.length > 0 && multiQ.every((q) => q.data || q.isError);
+  useEffect(() => {
+    if (!multiReady || multiAdded.current) return;
+    multiAdded.current = true;
+    const list = multiQ.map((q) => q.data).filter((e): e is Exercise => !!e);
+    // From the complaint guide: a plain "why this exercise" as the note for the patient.
+    let notes: Record<string, string> = {};
+    try {
+      notes = JSON.parse(sessionStorage.getItem('fp.guide.notes') ?? '{}');
+      sessionStorage.removeItem('fp.guide.notes');
+    } catch {
+      /* none */
+    }
+    update((x) => [...x, ...list.map((e) => ({ ...fromExercise(e), notes: typeof notes[e.id] === 'string' ? notes[e.id].slice(0, 2000) : '' }))]);
+    const title = params.get('titel');
+    if (title) setMeta((m) => ({ ...m, title: m.title || title.slice(0, 120) }));
+  }, [multiReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!dirty) return;
@@ -192,14 +219,19 @@ export function ProgramBuilderPage() {
           sourceTemplateId,
         });
         setDirty(false);
-        toast(asTemplate ? t('Sjabloon opgeslagen', 'Template saved') : mode === 'active' ? t('Programma toegewezen aan patiënt', 'Programme assigned to patient') : t('Concept opgeslagen', 'Draft saved'));
+        let explained = false;
+        if (mode === 'active' && !asTemplate && patientId && guideComplaint && sendExplanation) {
+          explained = await api.post<{ delivered: boolean }>('/atlas/send-complaint', { patientId, complaint: guideComplaint.key }).then((x) => x.delivered, () => false);
+        }
+        toast(asTemplate ? t('Sjabloon opgeslagen', 'Template saved') : mode === 'active' ? (explained ? t('Programma toegewezen en uitleg verstuurd', 'Programme assigned and explanation sent') : t('Programma toegewezen aan patiënt', 'Programme assigned to patient')) : t('Concept opgeslagen', 'Draft saved'));
         qc.invalidateQueries({ queryKey: ['patient'] });
         nav(`/app/programmas/${r.id}`, { replace: true });
       } else {
-        await api.put(`/programs/${id}`, { ...payload(), changeNote });
+        await api.put(`/programs/${id}`, { ...payload(), changeNote, patientMessage });
         if (mode === 'active' && program?.status !== 'active') await api.post(`/programs/${id}/status`, { status: 'active' });
         setDirty(false);
         setChangeNote('');
+        setPatientMessage('');
         toast(mode === 'active' && program?.status === 'draft' ? t('Programma toegewezen aan patiënt', 'Programme assigned to patient') : t('Wijzigingen opgeslagen', 'Changes saved'));
         qc.invalidateQueries({ queryKey: ['program', id] });
         qc.invalidateQueries({ queryKey: ['program-versions', id] });
@@ -221,6 +253,7 @@ export function ProgramBuilderPage() {
     }
   };
 
+  const [copyTo, setCopyTo] = useState(false);
   const duplicate = async (asTpl: boolean) => {
     try {
       const r = await api.post<{ id: string }>(`/programs/${id}/duplicate`, asTpl ? { asTemplate: true, title: meta.title } : { patientId });
@@ -263,6 +296,7 @@ export function ProgramBuilderPage() {
                   {!readOnlyGlobal && <MenuItem icon={<History className="h-4 w-4" />} onClick={() => { close(); setHistory(true); }}>{t('Versiegeschiedenis', 'Version history')}</MenuItem>}
                   <MenuItem icon={<BookCopy className="h-4 w-4" />} onClick={() => { close(); duplicate(true); }}>{program.isTemplate ? t('Kopiëren naar praktijksjabloon', 'Copy to practice template') : t('Opslaan als sjabloon', 'Save as template')}</MenuItem>
                   {program.isTemplate && <MenuItem icon={<Copy className="h-4 w-4" />} onClick={() => { close(); nav(`/app/programmas/nieuw?sjabloon=${program.id}`); }}>{t('Gebruiken voor patiënt', 'Use for patient')}</MenuItem>}
+                  {!program.isTemplate && <MenuItem icon={<Copy className="h-4 w-4" />} onClick={() => { close(); setCopyTo(true); }}>{t('Kopiëren naar andere patiënt…', 'Copy to another patient…')}</MenuItem>}
                   {!program.isTemplate && program.status === 'active' && <MenuItem icon={<CheckCircle2 className="h-4 w-4" />} onClick={() => { close(); setStatus('completed'); }}>{t('Markeer als afgerond', 'Mark as completed')}</MenuItem>}
                   {!program.isTemplate && (program.status === 'completed' || program.status === 'archived') && <MenuItem icon={<CheckCircle2 className="h-4 w-4" />} onClick={() => { close(); setStatus('active'); }}>{t('Opnieuw activeren', 'Reactivate')}</MenuItem>}
                   {!program.isTemplate && program.status !== 'archived' && <MenuItem danger icon={<Archive className="h-4 w-4" />} onClick={() => { close(); setStatus('archived'); }}>{t('Archiveren', 'Archive')}</MenuItem>}
@@ -364,6 +398,12 @@ export function ProgramBuilderPage() {
             <span className={cn('text-[13px]', dirty ? 'font-medium text-warn' : 'text-ink-600')} role="status">
               {dirty ? t('Niet-opgeslagen wijzigingen', 'Unsaved changes') : program ? t(`Opgeslagen · ${fmtDateTime(program.updatedAt, locale)}`, `Saved · ${fmtDateTime(program.updatedAt, locale)}`) : t('Nog niet opgeslagen', 'Not saved yet')}
             </span>
+            {isNew && !asTemplate && patientId && guideComplaint && (
+              <label className="flex min-h-[44px] items-center gap-2 text-[13.5px] text-ink-800">
+                <input type="checkbox" checked={sendExplanation} onChange={(e) => setSendExplanation(e.target.checked)} className="h-4 w-4 accent-[rgb(var(--accent))]" />
+                {t(`Stuur ook de uitleg "${locale === 'nl' ? guideComplaint.name[0] : guideComplaint.name[1]}" mee`, `Also send the explanation "${locale === 'nl' ? guideComplaint.name[0] : guideComplaint.name[1]}"`)}
+              </label>
+            )}
             <div className="ml-auto flex gap-2">
               {asTemplate || program?.isTemplate ? (
                 <Button loading={busy === 'save'} onClick={() => save('save')}>{t('Sjabloon opslaan', 'Save template')}</Button>
@@ -383,6 +423,7 @@ export function ProgramBuilderPage() {
       <Dialog open={libOpen} onClose={() => setLibOpen(false)} title={t('Oefening toevoegen', 'Add exercise')} side>
         <LibraryPanel onAdd={addExercise} addedIds={items.map((i) => i.exerciseId)} bare />
       </Dialog>
+      {program && copyTo && <CopyToPatientDialog programId={program.id} title={meta.title} currentPatient={program.patient?.id ?? null} onClose={() => setCopyTo(false)} />}
       <TemplatePicker open={pickTemplate} onClose={() => setPickTemplate(false)} onPick={(p) => { loadTemplate(p); setPickTemplate(false); }} />
       <PreviewDialog open={preview} onClose={() => setPreview(false)} meta={meta} items={items} unsaved={dirty} />
       {id && <VersionsDialog open={history} onClose={() => setHistory(false)} programId={id} />}
@@ -395,6 +436,8 @@ export function ProgramBuilderPage() {
           items={items}
           changeNote={changeNote}
           setChangeNote={setChangeNote}
+          patientMessage={patientMessage}
+          setPatientMessage={setPatientMessage}
           busy={busy === 'save'}
           onConfirm={() => save('save', true)}
         />
@@ -704,7 +747,7 @@ function diffProgram(saved: Program, meta: Meta, items: BItem[], locale: 'nl' | 
   return out;
 }
 
-function PublishDialog({ open, onClose, program, meta, items, changeNote, setChangeNote, busy, onConfirm }: { open: boolean; onClose: () => void; program: Program; meta: Meta; items: BItem[]; changeNote: string; setChangeNote: (s: string) => void; busy: boolean; onConfirm: () => void }) {
+function PublishDialog({ open, onClose, program, meta, items, changeNote, setChangeNote, patientMessage, setPatientMessage, busy, onConfirm }: { open: boolean; onClose: () => void; program: Program; meta: Meta; items: BItem[]; changeNote: string; setChangeNote: (s: string) => void; patientMessage: string; setPatientMessage: (s: string) => void; busy: boolean; onConfirm: () => void }) {
   const { t, locale } = useI18n();
   const changes = open ? diffProgram(program, meta, items, locale, t) : [];
   const who = program.patient ? `${program.patient.firstName} ${program.patient.lastName}` : t('de patiënt', 'the patient');
@@ -739,7 +782,10 @@ function PublishDialog({ open, onClose, program, meta, items, changeNote, setCha
         <div className="rounded-lg bg-ink-50 px-3 py-2 text-[13px] text-ink-700">
           <strong className="font-semibold">{t('Wie krijgt een melding', 'Who is notified')}:</strong> {t(`${who}: een melding in de app, als het account geactiveerd is (geen e-mail). Afgeronde trainingen en resultaten blijven gekoppeld aan de versie waarmee ze zijn gedaan; versie ${program.version} blijft in de versiegeschiedenis.`, `${who}: an in-app notification, if the account is activated (no email). Completed workouts and results stay linked to the version they were done with; version ${program.version} stays in the version history.`)}
         </div>
-        <Input label={t('Wijzigingsnotitie', 'Change note')} optional={t('optioneel', 'optional')} placeholder={t('bijv. volume squat verlaagd na pijnmelding', 'e.g. squat volume lowered after pain report')} value={changeNote} onChange={(e) => setChangeNote(e.target.value)} maxLength={300} />
+        <Input label={t('Wijzigingsnotitie (intern)', 'Change note (internal)')} optional={t('optioneel', 'optional')} placeholder={t('bijv. volume squat verlaagd na pijnmelding', 'e.g. squat volume lowered after pain report')} value={changeNote} onChange={(e) => setChangeNote(e.target.value)} maxLength={300} />
+        {program.patient && (
+          <Input label={t(`Bericht aan ${who}`, `Message to ${who}`)} optional={t('optioneel', 'optional')} hint={t('Komt bij de melding in de app. Geen diagnose of medische details.', 'Comes with the notification in the app. No diagnosis or medical details.')} placeholder={t('bijv. Goed bezig, we gaan zwaarder!', 'e.g. Well done, we are stepping it up!')} value={patientMessage} onChange={(e) => setPatientMessage(e.target.value)} maxLength={200} />
+        )}
       </div>
     </Dialog>
   );
@@ -881,6 +927,38 @@ function SubstitutePicker({ item, relations, onChange }: { item: BItem; relation
   );
 }
 
+/** Copy this programme (as a draft) to another patient: the same exercises and doses, then adjust. */
+function CopyToPatientDialog({ programId, title, currentPatient, onClose }: { programId: string; title: string; currentPatient: string | null; onClose: () => void }) {
+  const { t, locale } = useI18n();
+  const toast = useToast();
+  const nav = useNavigate();
+  const [patientId, setPatientId] = useState('');
+  const [busy, setBusy] = useState(false);
+  const list = useQuery({ queryKey: ['patients', 'copy-to'], queryFn: () => api.get<{ items: PatientListItem[] }>('/patients?status=active&scope=practice') });
+  const patients = (list.data?.items ?? []).filter((p) => p.id !== currentPatient);
+  const copy = async () => {
+    setBusy(true);
+    try {
+      const r = await api.post<{ id: string }>(`/programs/${programId}/duplicate`, { patientId, title });
+      const who = patients.find((p) => p.id === patientId);
+      toast(t(`Kopie gemaakt voor ${who?.firstName ?? 'de patiënt'} (concept)`, `Copy made for ${who?.firstName ?? 'the patient'} (draft)`), 'ok');
+      nav(`/app/programmas/${r.id}`);
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+      setBusy(false);
+    }
+  };
+  return (
+    <Dialog open onClose={onClose} size="sm" title={t('Kopiëren naar andere patiënt', 'Copy to another patient')} description={t('Dezelfde oefeningen en dosering, als concept. Daarna pas je het aan en wijs je het toe.', 'The same exercises and doses, as a draft. Then adjust and assign it.')}
+      footer={<><Button variant="secondary" onClick={onClose}>{t('Annuleren', 'Cancel')}</Button><Button onClick={copy} loading={busy} disabled={!patientId} icon={<Copy className="h-4 w-4" />}>{t('Kopiëren', 'Copy')}</Button></>}>
+      <Select label={t('Patiënt', 'Patient')} value={patientId} onChange={(e) => setPatientId(e.target.value)}>
+        <option value="">{list.isLoading ? t('Laden…', 'Loading…') : t('Kies een patiënt', 'Choose a patient')}</option>
+        {patients.map((p) => <option key={p.id} value={p.id}>{p.lastName}, {p.firstName}</option>)}
+      </Select>
+    </Dialog>
+  );
+}
+
 function TemplatePicker({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (p: Program) => void }) {
   const { t } = useI18n();
   const toast = useToast();
@@ -909,6 +987,7 @@ function TemplatePicker({ open, onClose, onPick }: { open: boolean; onClose: () 
                 <span className="flex items-start justify-between gap-2">
                   <span className="text-[14px] font-semibold">{p.title}</span>
                   {p.favorite && <Badge tone="warn">★</Badge>}
+                  {!p.favorite && (p as Program & { lastUsedAt?: string | null }).lastUsedAt && <Badge tone="accent">{t('Onlangs gebruikt', 'Recently used')}</Badge>}
                 </span>
                 <span className="mt-1 line-clamp-2 text-[12.5px] text-ink-500">{p.description}</span>
                 <span className="mt-2 flex flex-wrap gap-1">

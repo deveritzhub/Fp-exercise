@@ -106,6 +106,62 @@ describe('sending a muscle card to a patient', () => {
   });
 });
 
+describe('sending a complaint explanation to a patient', () => {
+  it('arrives as a notification that opens the explanation; only for own patients and known complaints', async () => {
+    resetRateLimits();
+    const pro = await login('therapistA');
+    const pid = (await ownerQuery(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`)).rows[0].id;
+    expect((await pro.post('/atlas/send-complaint', { patientId: pid, complaint: 'itbs' })).body).toEqual({ ok: true, delivered: true });
+    const home = (await (await login('patientA')).get('/patient/home')).body;
+    expect(home.notifications.find((x: { link: string }) => x.link === '/p/uitleg?klacht=itbs')).toMatchObject({ title: 'Uitleg: Loperknie (ITBS)' });
+    expect((await pro.post('/atlas/send-complaint', { patientId: pid, complaint: 'nope' })).body.error).toBe('unknown_complaint');
+    const other = (await ownerQuery(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-b.test'`)).rows[0].id;
+    expect((await pro.post('/atlas/send-complaint', { patientId: other, complaint: 'itbs' })).status).toBe(404);
+    expect((await (await login('patientA')).post('/atlas/send-complaint', { patientId: pid, complaint: 'itbs' })).status).toBe(403);
+  });
+});
+
+describe('the patient\'s own exercises in an explanation', () => {
+  it('lists fitting exercises from active rehab programmes with why; unknown complaint refused; staff not', async () => {
+    resetRateLimits();
+    const emma = await login('patientA');
+    const r = await emma.get('/patient/complaint-exercises?klacht=pfps');
+    expect(r.status).toBe(200);
+    expect(Array.isArray(r.body.items)).toBe(true);
+    for (const x of r.body.items) expect(x.why.length).toBeGreaterThan(20);
+    expect(r.body.items.map((x: { name: string }) => x.name)).toContain('Muurzit');
+    expect((await emma.get('/patient/complaint-exercises?klacht=nope')).body.error).toBe('unknown_complaint');
+    expect((await (await login('therapistA')).get('/patient/complaint-exercises?klacht=pfps')).status).toBe(403);
+  });
+});
+
+describe('the complaint guide is clinical', () => {
+  it('a coach practice cannot send a complaint explanation', async () => {
+    resetRateLimits();
+    const pid = (await ownerQuery(`SELECT p.id, p.practice_id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`)).rows[0];
+    await ownerQuery(`ALTER TABLE practices DISABLE TRIGGER USER`);
+    await ownerQuery(`UPDATE practices SET kind = 'coach' WHERE id = $1`, [pid.practice_id]);
+    try {
+      expect((await (await login('therapistA')).post('/atlas/send-complaint', { patientId: pid.id, complaint: 'itbs' })).body.error).toBe('not_clinical');
+    } finally {
+      await ownerQuery(`UPDATE practices SET kind = 'physio' WHERE id = $1`, [pid.practice_id]);
+      await ownerQuery(`ALTER TABLE practices ENABLE TRIGGER USER`);
+    }
+  });
+});
+
+describe('clinical review of library exercises', () => {
+  it('lists exercises with a conventional dose for staff only', async () => {
+    resetRateLimits();
+    const r = await (await login('therapistA')).get('/atlas/review-exercises');
+    expect(r.status).toBe(200);
+    expect(r.body.items.length).toBeGreaterThan(20);
+    expect(r.body.items.every((x: { status: string }) => /niet individueel getoetst/.test(x.status))).toBe(true);
+    expect(r.body.items.find((x: { id: string }) => x.id === 'kt_duimoppositie')).toMatchObject({ name: 'Duimoppositie met elastiekje' });
+    expect((await (await login('patientA')).get('/atlas/review-exercises')).status).toBe(403);
+  });
+});
+
 describe('skills from the quiz and the strength log', () => {
   it('a right quiz answer opens Kennis; a logged set gives Strength XP', async () => {
     resetRateLimits();
