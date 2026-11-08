@@ -258,6 +258,14 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     of knoppen, huid-, haar-, oog- en tenuekleur uit de held. Model ~0,7 MB gecomprimeerd.
     Volgende stappen: vrouwfiguur slanker en vrouwelijker, vingers, animatie (zwaaien, juichen).
 
+88. [x] **Held in 3D op een MakeHuman-lichaam** (8 nov): op verzoek van de eigenaar opnieuw gebouwd met
+    MakeHuman (MPFB in Blender 5.2, CC0): echte anatomie, vingers (losse vuisten), ogen met iris.
+    Kleding, schoenen, braces, handschoenen en haar zijn "schillen" van het lichaam zelf, met nette
+    zomen, dus ze passen precies; helmen, kronen, capes en wapens richten zich naar de gewrichten.
+    Script: `tools/blender/mh_hero.py` (uitleg in `tools/blender/README.md`). Model ~1,8 MB
+    gecomprimeerd. Volgende stappen: haar uit MakeHuman-pakketten (download geblokkeerd in de
+    bouwomgeving), lichte animatie.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.

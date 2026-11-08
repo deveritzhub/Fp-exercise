@@ -2,12 +2,12 @@ import { GEAR_SLOT, onePerSlot } from '@shared/hero';
 import { EYE_COLOURS, HAIR_COLOURS, KIT, SKIN_TONES, type FigureLook } from './HumanFigure';
 
 /**
- * What the 3D hero shows: which nodes of the model (tools/blender/hero.py) are visible and which
+ * What the 3D hero shows: which nodes of the model (tools/blender/mh_hero.py) are visible and which
  * colours the tintable materials get. Pure, so it can be tested without WebGL.
  */
 
 /** Bump when the .glb files change, so phones fetch the new model. */
-export const HERO3D_VERSION = 1;
+export const HERO3D_VERSION = 2;
 export const hero3dUrl = (frame?: string) => `/hero3d/hero_${frame === 'm' ? 'm' : 'f'}.glb?v=${HERO3D_VERSION}`;
 
 /** Node name prefixes the viewer switches on and off; everything else is always shown. */

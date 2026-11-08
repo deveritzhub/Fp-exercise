@@ -29,7 +29,7 @@ const webglOk = () => {
   }
 };
 
-type Stage = { root: THREE.Group; model: THREE.Object3D | null; url: string | null; controls: OrbitControls };
+type Stage = { root: THREE.Group; base: THREE.Group; model: THREE.Object3D | null; url: string | null; controls: OrbitControls };
 
 /**
  * Turnable 3D figurine of the hero with the worn gear (model: tools/blender/hero.py). Drag to turn,
@@ -70,7 +70,9 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
     ped.position.y = -0.06;
     const top = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.56, 0.03, 8), new THREE.MeshStandardMaterial({ color: 0x29483c, roughness: 0.8 }));
     top.position.y = 0.01;
-    scene.add(ped, top);
+    const base = new THREE.Group();
+    base.add(ped, top);
+    scene.add(base);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 1.05, 0);
     controls.enablePan = false;
@@ -83,7 +85,7 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
     controls.autoRotateSpeed = 1.2;
     controls.addEventListener('start', () => (controls.autoRotate = false));
     controls.update();
-    stage.current = { root, model: null, url: null, controls };
+    stage.current = { root, base, model: null, url: null, controls };
 
     const resize = () => {
       const w = el.clientWidth || 1;
@@ -147,6 +149,13 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
           st.root.add(model);
           st.model = model;
           st.url = scene3d.url;
+          // Frame the figure, whatever the model's height.
+          const box = new THREE.Box3().setFromObject(model.getObjectByName('body') ?? model);
+          const h = Math.max(0.5, box.max.y - box.min.y);
+          st.controls.target.set(0, box.min.y + h * 0.5, 0);
+          st.controls.object.position.set(0, box.min.y + h * 0.6, h * 2.55);
+          st.controls.update();
+          st.base.scale.setScalar(h / 2.15);
         }
         const model = st.model!;
         model.traverse((o) => {
