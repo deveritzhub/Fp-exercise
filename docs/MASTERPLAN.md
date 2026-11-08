@@ -266,6 +266,12 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     gecomprimeerd. Volgende stappen: haar uit MakeHuman-pakketten (download geblokkeerd in de
     bouwomgeving), lichte animatie.
 
+89. [geparkeerd] **3D-held uit de app gehaald** (9 nov, op verzoek: "erg lelijk"). Code en modellen blijven
+    staan (`tools/blender/mh_hero.py`, `web/src/components/hero/Hero3D.tsx`, `hero3d.ts`,
+    `web/public/hero3d/`); alleen de knop "3D-weergave" en het nieuws-item zijn weg. Terugzetten: de
+    knop en `e2e/hero-3d.spec.ts` uit commit 1025a1b. Later opnieuw: realistisch, 1-op-1 met de avatar,
+    echt haar uit MakeHuman-pakketten.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.

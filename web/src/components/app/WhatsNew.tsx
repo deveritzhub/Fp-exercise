@@ -29,7 +29,6 @@ const STAFF: Item[] = [
   { nl: 'Reageren op een training bij "Markeer als gezien"; de patiënt krijgt je reactie.', en: 'Reply to a workout with "Mark as seen"; the patient gets your reply.' },
 ];
 const PATIENT: Item[] = [
-  { nl: 'Je held in 3D: tik bij Held → Inventaris op "3D-weergave" en draai je held rond met alles wat je draagt.', en: 'Your hero in 3D: on Hero → Inventory tap "3D view" and turn your hero around with everything it wears.', to: '/p/held/inventaris' },
   { nl: 'Laat een oefening voorlezen met de knop "Lees voor" in de training.', en: 'Have an exercise read aloud with the "Read aloud" button in the workout.' },
   { nl: 'Doet een oefening pijn? Tik op "Dit doet pijn": kies een lichtere variant of sla over.', en: 'Does an exercise hurt? Tap "This hurts": choose a lighter variation or skip it.' },
   { nl: 'Alles gedaan voor vandaag? Je ziet je reeks en wanneer je volgende training is.', en: 'Done for today? You see your streak and when your next workout is.' },
@@ -43,7 +42,7 @@ const PATIENT: Item[] = [
   { nl: 'Op Voortgang zie je hoe zwaar en pijnlijk je trainingen waren, in gewone taal.', en: 'Progress shows how hard and painful your workouts were, in plain words.', to: '/p/voortgang' },
   { nl: 'Nieuwe quizvragen over welke spier het werk overneemt als een andere zwak is.', en: 'New quiz questions on which muscle takes over when another is weak.' },
 ];
-const VERSION = '2026-11-08b';
+const VERSION = '2026-11-08c';
 const KEY = 'fp.whatsnew.v1';
 
 function seen() {
