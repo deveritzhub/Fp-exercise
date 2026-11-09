@@ -11,7 +11,7 @@ export function RpgGear({ item, look, shapes }: { item: string; look: FigureLook
   const pair = (fn: (x: number, s: -1 | 1) => React.ReactNode) => ([-1, 1] as const).map(s => <g key={s}>{fn(100 + s * (g.legX - 2), s)}</g>);
   const jewel = (x: number, y: number, r = 4) => <path d={`M${x},${y-r} l${r},${r} -${r},${r} -${r},-${r}Z`} fill="#8affdc" stroke="#e9ffe7" strokeWidth=".7" />;
   const shoe = ['gold_shoes', 'balance_shoes', 'spikes'].includes(item);
-  const outfit = ['tracksuit', 'team_kit', 'champion'].includes(item) || item.startsWith('sport_');
+  const outfit = ['tracksuit', 'team_kit', 'champion'].includes(item);
   return <g data-rpg-item={item} className="rpg-item" style={{filter:`drop-shadow(0 0 ${gearTier(item).tier * .25}px ${gearTier(item).glow})`}} strokeLinejoin="round" strokeLinecap="round">
     <defs>
       <linearGradient id={`gold${id}`} x2="90%" y2="100%"><stop stopColor="#fff1b8"/><stop offset=".35" stopColor="#dbaa4e"/><stop offset=".6" stopColor="#8e591d"/><stop offset=".8" stopColor="#f6d887"/><stop offset="1" stopColor="#a47332"/></linearGradient>
