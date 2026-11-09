@@ -1,0 +1,32 @@
+name: FP Flow ACL cosmetic fit
+on:
+  pull_request:
+    paths:
+      - 'web/src/components/hero/HumanFigure.tsx'
+      - 'web/src/components/hero/RpgGear.tsx'
+      - 'web/src/components/hero/aclGearFit.test.ts'
+      - 'e2e/acl-cosmetic-fit.spec.ts'
+      - 'playwright.acl-cosmetic.config.ts'
+      - '.github/workflows/fp-acl-cosmetic-fit.yml'
+jobs:
+  cosmetic-fit:
+    runs-on: ubuntu-24.04
+    env:
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx vite build
+      - run: npx vitest run -c vitest.rpg.config.ts
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test -c playwright.acl-cosmetic.config.ts
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: acl-cosmetic-failures
+          path: test-results/
