@@ -28,7 +28,7 @@ describe('ACL journey cosmetic gear positioning', () => {
   it('draws capes underneath the body, not as a rectangle on the chest', () => {
     for (const key of ['wind_cape','deswell_mantle']) {
       const svg = figure([key]);
-      expect(svg.indexOf(`data-rpg-item="${key}"`)).toBeLessThan(svg.indexOf('linearGradient'));
+      expect(svg.indexOf(`data-rpg-item="${key}"`)).toBeLessThan(svg.indexOf('fill="url(#sk'));
       expect(svg).toContain(`data-rpg-item="${key}"`);
     }
   });
