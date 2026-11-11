@@ -10,8 +10,8 @@ import { cn } from '@/lib/cn';
 import type { Exercise } from '@/lib/types';
 
 /** source (central/practice/mine), review status and favourites combine freely. */
-export type ExerciseFilters = { q: string; region: string; category: string; equipment: string; difficulty: string; source: string; review: string; favorites: string; muscle: string; nerve: string };
-export const emptyFilters: ExerciseFilters = { q: '', region: '', category: '', equipment: '', difficulty: '', source: 'all', review: 'all', favorites: '', muscle: '', nerve: '' };
+export type ExerciseFilters = { q: string; region: string; category: string; equipment: string; difficulty: string; source: string; review: string; video: string; favorites: string; muscle: string; nerve: string };
+export const emptyFilters: ExerciseFilters = { q: '', region: '', category: '', equipment: '', difficulty: '', source: 'all', review: 'all', video: 'all', favorites: '', muscle: '', nerve: '' };
 const KEYS = Object.keys(emptyFilters) as (keyof ExerciseFilters)[];
 const LAST_SEARCH = 'fp.library.search';
 
@@ -29,11 +29,12 @@ const toQuery = (f: ExerciseFilters) => ({
   ...f,
   source: f.source === 'all' ? undefined : f.source,
   review: f.review === 'all' ? undefined : f.review,
+  video: f.video === 'all' ? undefined : f.video,
   favorites: f.favorites === '1' ? '1' : undefined,
   muscle: f.muscle || undefined,
   nerve: f.nerve || undefined,
 });
-export const scopeFiltered = (f: ExerciseFilters) => f.source !== 'all' || f.review !== 'all' || f.favorites === '1' || !!f.muscle || !!f.nerve;
+export const scopeFiltered = (f: ExerciseFilters) => f.source !== 'all' || f.review !== 'all' || f.video !== 'all' || f.favorites === '1' || !!f.muscle || !!f.nerve;
 
 /**
  * Search results never show a count or an empty state that belongs to an earlier search:
@@ -268,7 +269,7 @@ export function ScopeFilters({ value, onChange }: { value: ExerciseFilters; onCh
   const { t } = useI18n();
   const sel = 'h-11 rounded-lg border border-line bg-white px-3 pr-8 text-[13.5px] font-medium text-ink-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50';
   return (
-    <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('Bron, status en favorieten', 'Source, status and favourites')}>
+    <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('Bron, reviewstatus, video en favorieten', 'Source, review status, video and favourites')}>
       <label className="sr-only" htmlFor="flt-source">{t('Bron', 'Source')}</label>
       <select id="flt-source" className={sel} value={value.source} onChange={(e) => onChange({ ...value, source: e.target.value })}>
         <option value="all">{t('Alle bronnen', 'All sources')}</option>
@@ -281,6 +282,12 @@ export function ScopeFilters({ value, onChange }: { value: ExerciseFilters; onCh
         <option value="all">{t('Elke status', 'Any status')}</option>
         <option value="unreviewed">{t('Te controleren', 'To review')}</option>
         <option value="reviewed">{t('Goedgekeurd', 'Approved')}</option>
+      </select>
+      <label className="sr-only" htmlFor="flt-video">{t('Beschikbaarheid video', 'Video availability')}</label>
+      <select id="flt-video" className={sel} value={value.video} onChange={(e) => onChange({ ...value, video: e.target.value })}>
+        <option value="all">{t('Alle video’s', 'All videos')}</option>
+        <option value="missing">{t('Zonder video', 'Missing video')}</option>
+        <option value="available">{t('Met video', 'Has video')}</option>
       </select>
       <button
         type="button"
