@@ -100,8 +100,8 @@ export function ExercisesPage() {
         <div role="status" className="mb-3 flex items-start gap-2 rounded-xl border border-line bg-white px-3 py-3 text-[13px] text-ink-700">
           <VideoOff className="mt-0.5 h-4 w-4 shrink-0 text-ink-500" aria-hidden />
           <span>{t(
-            'Deze oefeningen hebben voor jouw praktijk nog geen afspeelbare video. Open een oefening en kies ‘Media beheren’ om zelf een opname toe te voegen. Een betaald AI-abonnement is niet nodig.',
-            'These exercises have no playable video for your practice yet. Open an exercise and choose “Manage media” to add your own recording. A paid AI subscription is not required.',
+            'Deze oefeningen hebben voor jouw praktijk nog geen video gekoppeld. Open een oefening en kies ‘Media beheren’ om een eigen opname toe te voegen. Controleer de uitvoering vóór gebruik bij patiënten; een betaald AI-abonnement is niet nodig.',
+            'These exercises have no video linked for your practice yet. Open an exercise and choose “Manage media” to add your own recording. Review the movement before patients see it; a paid AI subscription is not required.',
           )}</span>
         </div>
       )}
