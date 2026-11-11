@@ -11,6 +11,7 @@ import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
 import { BOSSES, SKILLS, XP, bodyShape, levelTier, titleFor } from '@shared/hero';
 import { CountUp, HeroStage, LevelUpBurst, XpBar } from '@/components/hero/GameFx';
+import { villageChanges, villageGrowth, type VillageNews } from '@shared/villageGrowth';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { useCountdown } from '@/lib/useCountdown';
 import { isNetworkError, postOrQueue } from '@/lib/outbox';
@@ -155,6 +156,9 @@ export function SessionPlayer() {
   const [heroRun, setHeroRun] = useState<{ before: HeroState; after: HeroState } | null>(null);
   // Loaded up front, so level ups can be shown after the workout.
   useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero') });
+  // The world (completed workouts per zone), so the reward screen can tell when the village grew.
+  useQuery({ queryKey: ['patient-world'], queryFn: () => api.get<{ zones: { nodes: number }[] }>('/patient/world'), staleTime: 60_000 });
+  const [villageNews, setVillageNews] = useState<VillageNews[]>([]);
   const [leaving, setLeaving] = useState(false);
   const { user } = useSession();
   const uid = user?.id ?? '';
@@ -286,6 +290,13 @@ export function SessionPlayer() {
                     if (after.level.level > before.level.level) ups.unshift({ key: 'hero' as never, from: before.level.level, to: after.level.level });
                     setLevelUps(ups);
                     setHeroRun({ before, after });
+                    const world = qc.getQueryData<{ zones: { nodes: number }[] }>(['patient-world']);
+                    if (world && before.level && after.level) {
+                      const w0 = world.zones.reduce((n, z) => n + z.nodes, 0);
+                      const g0 = villageGrowth({ workouts: w0, bossesDefeated: before.weekly.bossesDefeated ?? 0, level: before.level.level });
+                      const g1 = villageGrowth({ workouts: w0 + 1, bossesDefeated: after.weekly.bossesDefeated ?? 0, level: after.level.level });
+                      setVillageNews(villageChanges(g0, g1));
+                    }
                     // What this workout did in the game: boss damage, coins, the day chest.
                     const b0 = before.weekly.boss;
                     const b1 = after.weekly.boss;
@@ -333,6 +344,7 @@ export function SessionPlayer() {
 
         {phase === 'done' && (
           <RewardScreen
+            villageNews={villageNews}
             earned={earned}
             levelUps={levelUps}
             rewards={rewards}
@@ -683,7 +695,7 @@ type Rewards = { bossKey: string | null; bossDamage: number; bossDefeated: boole
  * After a workout: the hero cheers on its podium, XP and coins count up, the XP bar fills (across a
  * level-up), and a new level or rank gets rays and a shield. Every value is also plain text.
  */
-function RewardScreen({ earned, levelUps, rewards, heroRun, savedOffline }: { earned: number; levelUps: { key: string; from: number; to: number }[]; rewards: Rewards | null; heroRun: { before: HeroState; after: HeroState } | null; savedOffline: boolean }) {
+function RewardScreen({ villageNews, earned, levelUps, rewards, heroRun, savedOffline }: { villageNews: VillageNews[]; earned: number; levelUps: { key: string; from: number; to: number }[]; rewards: Rewards | null; heroRun: { before: HeroState; after: HeroState } | null; savedOffline: boolean }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const after = heroRun?.after;
@@ -742,6 +754,22 @@ function RewardScreen({ earned, levelUps, rewards, heroRun, savedOffline }: { ea
               return <li key={u.key}><strong>{meta ? (nl ? meta.nl : meta.en) : u.key}</strong> {u.from} → {u.to}</li>;
             })}
           </ul>
+        </div>
+      )}
+      {villageNews.length > 0 && (
+        <div className="reward-in mt-4 flex w-full max-w-xs items-center gap-3 rounded-2xl border border-[#C9D3BC] bg-[linear-gradient(180deg,#e7f2e6,#f3f7f1)] p-3 text-left" style={delay()} role="status">
+          <svg viewBox="0 0 60 50" className="animate-level-pop h-12 w-14 shrink-0" aria-hidden>
+            <path d="M6 24 L30 5 L54 24Z" fill="#b5532c" />
+            <rect x="11" y="23" width="38" height="24" rx="1.5" fill="#f3ead8" />
+            <rect x="26" y="32" width="8" height="15" fill="#8a6038" />
+            <rect x="15" y="28" width="7" height="6" fill="#ffd36b" />
+            <rect x="38" y="28" width="7" height="6" fill="#ffd36b" />
+          </svg>
+          <span>
+            <span className="block font-display text-[16px] font-bold text-[#29483c]">{t('Je dorp is gegroeid!', 'Your village grew!')}</span>
+            <span className="block text-[14px] text-ink-800">{villageNews.map((n) => (nl ? n.nl : n.en)).join(', ')}</span>
+            <Link to="/p/wereld" className="mt-0.5 inline-flex min-h-[32px] items-center text-[13.5px] font-semibold text-accent">{t('Bekijk je dorp', 'See your village')}</Link>
+          </span>
         </div>
       )}
       {rewards && (rewards.bossDamage > 0 || rewards.coins > 0 || rewards.chestReady) && (

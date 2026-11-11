@@ -47,3 +47,17 @@ export function villageGrowth(p: VillageProgress): VillageGrowth {
   g.next = byWorkouts[0] ?? options[0] ?? null;
   return g;
 }
+
+export type VillageNews = { nl: string; en: string };
+/** What appeared in the village between two growth states (only additions; it never shrinks). */
+export function villageChanges(a: VillageGrowth, b: VillageGrowth): VillageNews[] {
+  const out: VillageNews[] = [];
+  const houses = b.houses - a.houses;
+  if (houses > 0) out.push({ nl: houses === 1 ? 'een nieuw huisje' : `${houses} nieuwe huisjes`, en: houses === 1 ? 'a new cottage' : `${houses} new cottages` });
+  if (b.pennants > a.pennants) out.push({ nl: 'een bazenvlag', en: 'a boss pennant' });
+  if (b.windmill && !a.windmill) out.push({ nl: 'de molen', en: 'the windmill' });
+  if (b.fields && !a.fields) out.push({ nl: 'akkers', en: 'fields' });
+  if (b.statue && !a.statue) out.push({ nl: 'een standbeeld van je held', en: 'a statue of your hero' });
+  if (b.lighthouse && !a.lighthouse) out.push({ nl: 'de vuurtoren', en: 'the lighthouse' });
+  return out;
+}
