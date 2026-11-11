@@ -135,7 +135,7 @@ export function HomeLobby({ greeting, subtitle, date }: { greeting: string; subt
     <section aria-labelledby="lobby-greeting" className="relative overflow-hidden rounded-3xl border border-line shadow-card" data-daypart={daypart}>
       <div className="relative min-h-[236px]">
         <VillageScene daypart={daypart} growth={growth} />
-        <div className="relative flex min-h-[236px] items-end gap-3 p-4 pb-3">
+        <div className="relative flex min-h-[236px] items-end gap-2.5 p-3 pb-3 pt-10">
           {look && L ? (
             <Link
               to="/p/held/uiterlijk"
@@ -148,9 +148,11 @@ export function HomeLobby({ greeting, subtitle, date }: { greeting: string; subt
               <LevelBadge level={L.level} size={34} className="absolute -left-2 -top-2" />
             </Link>
           ) : null}
-          <div className="min-w-0 flex-1 pb-1">
+          <div className={cn('min-w-0 flex-1 rounded-2xl px-3 py-2 backdrop-blur-[2px]', light ? 'bg-[#17233f]/70' : 'bg-white/80')}>
             <p className={cn('text-[13.5px] font-medium', light ? 'text-white/85' : 'text-ink-700')}>{date}</p>
-            <h1 id="lobby-greeting" className={cn('font-display text-[24px] font-bold leading-tight [overflow-wrap:anywhere]', light ? 'text-white' : 'text-ink-950')}>{greeting}</h1>
+            <h1 id="lobby-greeting" className={cn('font-display text-[20px] font-bold leading-tight sm:text-[24px]', light ? 'text-white' : 'text-ink-950')}>
+              {greeting.includes(', ') ? <><span className="block">{greeting.slice(0, greeting.indexOf(', ') + 1)}</span><span className="block [overflow-wrap:anywhere]">{greeting.slice(greeting.indexOf(', ') + 2)}</span></> : greeting}
+            </h1>
             {d?.hero && L && tier && (
               <p className={cn('mt-1 text-[13px] font-semibold', light ? 'text-white/90' : 'text-ink-800')}>
                 <Link to="/p/held" className="underline-offset-2 hover:underline">{d.hero.heroName}</Link> · {t(`Level ${L.level}`, `Level ${L.level}`)} ·{' '}
@@ -160,9 +162,6 @@ export function HomeLobby({ greeting, subtitle, date }: { greeting: string; subt
             {subtitle && <p className={cn('mt-1 text-[14px] leading-snug', light ? 'text-white/90' : 'text-ink-800')}>{subtitle}</p>}
           </div>
         </div>
-        <Link to="/p/wereld" className="absolute right-3 top-3 inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-white/90 px-3 text-[13px] font-bold text-ink-900 shadow-card">
-          <MapIcon className="h-4 w-4 text-accent" aria-hidden />{t('Wereldkaart', 'World map')}
-        </Link>
       </div>
       <div className="bg-white px-4 pb-3 pt-2.5">
         {d?.hero && L ? (

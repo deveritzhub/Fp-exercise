@@ -48,6 +48,8 @@ test('patient app fits a phone with large text', async ({ browser }) => {
       for (const el of Array.from(document.querySelectorAll('main *'))) {
         const b = el.getBoundingClientRect();
         if (!b.width || getComputedStyle(el).position === 'fixed') continue;
+        // Decorative drawings (aria-hidden SVG scenes) are clipped by their own box; only real content counts.
+        if (el.closest('svg[aria-hidden="true"]')) continue;
         let p = el.parentElement, scroller = false;
         while (p) { const o = getComputedStyle(p).overflowX; if ((o === 'auto' || o === 'scroll') && p !== document.body && p !== document.documentElement) { scroller = true; break; } p = p.parentElement; }
         if (!scroller && b.right > vw + 1) out.push(`${el.tagName.toLowerCase()}.${String(el.className).slice(0, 50)} right=${Math.round(b.right)} “${(el.textContent ?? '').trim().slice(0, 30)}”`);
