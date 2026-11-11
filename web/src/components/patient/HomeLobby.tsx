@@ -153,8 +153,8 @@ export function HomeLobby({ greeting, subtitle, date }: { greeting: string; subt
             <h1 id="lobby-greeting" className={cn('font-display text-[24px] font-bold leading-tight [overflow-wrap:anywhere]', light ? 'text-white' : 'text-ink-950')}>{greeting}</h1>
             {d?.hero && L && tier && (
               <p className={cn('mt-1 text-[13px] font-semibold', light ? 'text-white/90' : 'text-ink-800')}>
-                {d.hero.heroName} · {t(`Level ${L.level}`, `Level ${L.level}`)} ·{' '}
-                <span className="rounded-full px-1.5 py-0.5 text-[12px]" style={{ background: tier.light, color: tier.color }}>{nl ? tier.nl : tier.en}</span>
+                <Link to="/p/held" className="underline-offset-2 hover:underline">{d.hero.heroName}</Link> · {t(`Level ${L.level}`, `Level ${L.level}`)} ·{' '}
+                <span className="rounded-full border bg-white px-1.5 py-0.5 text-[12px]" style={{ borderColor: tier.glow, color: tier.color }}>{nl ? tier.nl : tier.en}</span>
               </p>
             )}
             {subtitle && <p className={cn('mt-1 text-[14px] leading-snug', light ? 'text-white/90' : 'text-ink-800')}>{subtitle}</p>}
@@ -204,7 +204,7 @@ export function VillageTiles() {
       <ul className="grid grid-cols-3 gap-2">
         {tiles.map((x) => (
           <li key={x.key}>
-            <Link to={x.to} className="tap relative flex min-h-[104px] flex-col items-center justify-end overflow-hidden rounded-2xl border border-line bg-white px-1 pb-2 pt-1 text-center shadow-card hover:border-ink-300" aria-label={`${x.label}: ${x.hint}${x.dot ? t(', er wacht iets', ', something is waiting') : ''}`}>
+            <Link to={x.to} className="tap relative flex min-h-[104px] flex-col items-center justify-end overflow-hidden rounded-2xl border border-line bg-white px-1 pb-2 pt-1 text-center shadow-card hover:border-ink-300">
               <svg viewBox="0 0 60 44" className="h-11 w-16" aria-hidden>
                 <path d="M6 22 L30 4 L54 22Z" fill={x.roof} />
                 <rect x="11" y="21" width="38" height="21" rx="1.5" fill="#f3ead8" />
@@ -214,6 +214,7 @@ export function VillageTiles() {
               <span className="mt-0.5 text-[13px] font-bold leading-tight text-ink-950">{x.label}</span>
               <span className="text-[11.5px] leading-tight text-ink-600">{x.hint}</span>
               {x.dot && <span className="absolute right-2 top-2 h-3 w-3 rounded-full border-2 border-white bg-[#c2410c] shadow" aria-hidden />}
+              {x.dot && <span className="sr-only">{t(', er wacht iets', ', something is waiting')}</span>}
             </Link>
           </li>
         ))}

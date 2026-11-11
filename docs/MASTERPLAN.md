@@ -283,6 +283,13 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     level 10 en een vuurtoren vanaf level 20. Onder het dorp staat wat er al staat en wat de volgende
     stap is. Alleen cosmetisch; krimpt nooit (`shared/villageGrowth.ts`).
 
+92. [x] **Beginscherm als lobby** (11 nov): bovenaan je held op zijn podium voor je eigen dorp (in code
+    getekend, dezelfde groei als de wereldkaart), lucht per dagdeel (ochtend, dag, avond, nacht met
+    sterren en verlichte ramen), rang en XP-balk; "Missie van vandaag" boven de training; dorpstegels
+    (Prikbord, Smederij, Arena, Bibliotheek, Gildehal, Wereldkaart) met een stip als er iets wacht.
+    Let op: e2e `acl-route` en `measurement-boss` en de unit test "recently used templates" falen al
+    vóór deze wijziging (los uitzoeken).
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.

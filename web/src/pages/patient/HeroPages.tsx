@@ -1518,7 +1518,7 @@ export function HeroPage() {
           <HeroPhotoLink look={look} level={L.level} />
           <div className="min-w-0">
             <p className="t-label">{t(`Level ${L.level}`, `Level ${L.level}`)} · {titleFor(L.level, nl)}</p>
-            <p className="mb-0.5 inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-bold" style={{ background: tier.light, color: tier.color }}>{t(`Rang ${tier.nl}`, `${tier.en} rank`)}</p>
+            <p className="mb-0.5 inline-flex items-center rounded-full border bg-white px-2 py-0.5 text-[12px] font-bold" style={{ borderColor: tier.glow, color: tier.color }}>{t(`Rang ${tier.nl}`, `${tier.en} rank`)}</p>
             <h1 id="hero-name" className={cn('t-page [overflow-wrap:anywhere]', scene?.key === 'stadium' && 'text-white')}>{d.hero.heroName}</h1>
             {scene && <p className={cn('text-[12.5px] font-semibold', scene.key === 'stadium' ? 'text-sand' : 'text-ink-600')}>{nl ? scene.nl : scene.en}</p>}
             {(emblems.length > 0 || ownTitles.length > 0 || combos.length > 0) && (
