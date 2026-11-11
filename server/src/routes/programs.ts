@@ -244,7 +244,9 @@ programs.get('/templates', async (c) => {
       const { rows } = await tx.query(
         `SELECT p.*, (tf.user_id IS NOT NULL) AS favorite,
                 -- When this professional last made a programme from it (recently used first).
-                (SELECT max(u.created_at) FROM programs u WHERE u.source_template_id = p.id AND u.created_by = app.uid()) AS last_used,
+                (SELECT max(u.created_at) FROM programs u
+                   WHERE u.source_template_id = p.id AND u.created_by = app.uid()
+                     AND u.created_at <= now()) AS last_used,
                 (SELECT count(*) FROM program_items i WHERE i.program_id = p.id) AS item_count,
                 (SELECT array_agg(DISTINCT e.body_region) FROM program_items i JOIN exercises e ON e.id = i.exercise_id
                   WHERE i.program_id = p.id) AS regions
