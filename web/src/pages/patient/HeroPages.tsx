@@ -1139,8 +1139,10 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const [open, setOpen] = useState<GearSlot | null>(null);
-  const [illustrated, setIllustrated] = useState(() => { try { return sessionStorage.getItem('fp.inventory.illustrated') === 'true'; } catch { return false; } });
-  useEffect(() => { try { sessionStorage.setItem('fp.inventory.illustrated', String(illustrated)); } catch { /* storage optional */ } }, [illustrated]);
+  // Photo is always the default, including when an old session had RPG mode enabled.
+  // The illustrated character remains an explicit, temporary preview within this screen.
+  const [illustrated, setIllustrated] = useState(false);
+  useEffect(() => { try { sessionStorage.removeItem('fp.inventory.illustrated'); } catch { /* storage optional */ } }, []);
   const look = { ...d.hero!, gear: [...(preview ? onePerSlot([...d.gear.equipped, preview]) : d.gear.equipped), ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero!.frame) : null, photo: d.customPhoto ?? null };
   const inSlot = (k: GearSlot) => d.gear.equipped.find((g) => GEAR_SLOT[g] === k) ?? null;
   const slotBtn = (k: GearSlot) => {
