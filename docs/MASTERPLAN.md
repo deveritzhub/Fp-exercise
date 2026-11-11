@@ -290,6 +290,11 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     Let op: e2e `acl-route` en `measurement-boss` en de unit test "recently used templates" falen al
     vóór deze wijziging (los uitzoeken).
 
+93. [x] **Lobby leeft** (11 nov): na de training "Terug naar je dorp": je held juicht in de lobby met
+    "Welkom terug in je dorp! +XP verdiend"; Smederij-tegel met stuiterend kistje als de dagkist klaarstaat,
+    Arena-tegel met de HP-balk van de baas, Prikbord met quests x/3. Heldfoto's ook in de testomgeving
+    (fotoserver toegestaan), zodat screenshots gelijk zijn aan live.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.

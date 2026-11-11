@@ -97,7 +97,9 @@ test('patient activates account on a phone and completes a session', async ({ br
   await page.getByLabel(/Bericht voor je fysiotherapeut/).fill('Ging redelijk');
   await page.getByRole('button', { name: 'Training afronden' }).click();
   await expect(page.getByRole('heading', { name: 'Training afgerond!' })).toBeVisible();
-  await page.getByRole('button', { name: 'Terug naar overzicht' }).click();
+  await page.getByRole('button', { name: 'Terug naar je dorp' }).click();
+  // Back in the lobby: the hero cheers and the earned XP is named once.
+  await expect(page.getByRole('status').filter({ hasText: /Welkom terug in je dorp! \+\d+ XP verdiend/ })).toBeVisible();
   await expect(page.getByText('Klaar voor vandaag — goed gedaan!')).toBeVisible();
   // The wrap-up card says what comes next.
   const done = page.getByRole('region', { name: 'Klaar voor vandaag' });

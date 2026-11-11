@@ -1,6 +1,7 @@
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, Hammer, Map as MapIcon, Pin, Sparkles, Swords, Users } from 'lucide-react';
+import { BookOpen, Gift, Hammer, Map as MapIcon, Pin, Sparkles, Swords, Users } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
@@ -126,6 +127,14 @@ export function HomeLobby({ greeting, subtitle, date }: { greeting: string; subt
   const q = useHero();
   const d = q.data;
   const growth = useGrowth(d);
+  // Coming back from a workout: the hero cheers once and the lobby says what was earned.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [welcome] = useState<{ xp: number } | null>(() => (location.state as { fromWorkout?: { xp: number } } | null)?.fromWorkout ?? null);
+  useEffect(() => {
+    if (welcome) navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const daypart = daypartOf(new Date().getHours());
   const light = SKY[daypart].text === 'light';
   const look = d?.hero ? { ...d.hero, gear: [...d.gear.equipped, ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null, photo: d.customPhoto ?? null } : null;
@@ -142,7 +151,7 @@ export function HomeLobby({ greeting, subtitle, date }: { greeting: string; subt
               aria-label={t(`Uiterlijk en maten aanpassen, level ${L.level}`, `Edit look and measurements, level ${L.level}`)}
               className="tap relative shrink-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
-              <HeroStage level={L.level} className="block">
+              <HeroStage level={L.level} className="block" cheer={!!welcome}>
                 <HeroPhoto look={look} className="h-[144px] w-[96px] shadow-lift min-[400px]:h-[156px] min-[400px]:w-[104px]" />
               </HeroStage>
               <LevelBadge level={L.level} size={34} className="absolute -left-2 -top-2" />
@@ -159,7 +168,11 @@ export function HomeLobby({ greeting, subtitle, date }: { greeting: string; subt
                 <span className="rounded-full border bg-white px-1.5 py-0.5 text-[12px]" style={{ borderColor: tier.glow, color: tier.color }}>{nl ? tier.nl : tier.en}</span>
               </p>
             )}
-            {subtitle && <p className={cn('mt-1 text-[14px] leading-snug', light ? 'text-white/90' : 'text-ink-800')}>{subtitle}</p>}
+            {welcome ? (
+              <p role="status" className="reward-in mt-1 text-[14px] font-semibold leading-snug" style={{ color: light ? '#f6e2a6' : '#855806' }}>
+                {t(`Welkom terug in je dorp! +${welcome.xp} XP verdiend.`, `Welcome back to your village! +${welcome.xp} XP earned.`)}
+              </p>
+            ) : subtitle && <p className={cn('mt-1 text-[14px] leading-snug', light ? 'text-white/90' : 'text-ink-800')}>{subtitle}</p>}
           </div>
         </div>
       </div>
@@ -190,7 +203,7 @@ export function VillageTiles() {
   if (!d?.hero) return null;
   const questsOpen = d.weekly.quests.some((x) => !x.done);
   const tiles = [
-    { key: 'board', to: '/p/held#weekly-title', label: t('Prikbord', 'Notice board'), hint: !d.checkin.today ? t('Dagcheck', 'Check-in') : t('Weekquests', 'Weekly quests'), icon: Pin, roof: '#8e3b5f', dot: !d.checkin.today || questsOpen },
+    { key: 'board', to: '/p/held#weekly-title', label: t('Prikbord', 'Notice board'), hint: !d.checkin.today ? t('Dagcheck', 'Check-in') : t(`Quests ${d.weekly.quests.filter((x) => x.done).length}/${d.weekly.quests.length}`, `Quests ${d.weekly.quests.filter((x) => x.done).length}/${d.weekly.quests.length}`), icon: Pin, roof: '#8e3b5f', dot: !d.checkin.today || questsOpen },
     { key: 'smithy', to: '/p/held/inventaris', label: t('Smederij', 'Smithy'), hint: d.chest?.available ? t('Dagkist klaar', 'Day chest ready') : t(`${d.gear.coins} muntjes`, `${d.gear.coins} coins`), icon: Hammer, roof: '#b5532c', dot: !!d.chest?.available },
     { key: 'arena', to: '/p/held#boss', label: t('Arena', 'Arena'), hint: d.weekly.boss ? (d.weekly.boss.defeated ? t('Baas verslagen', 'Boss defeated') : t('Baas van de week', 'Boss of the week')) : t('Geen baas', 'No boss'), icon: Swords, roof: '#9a3412', dot: !!d.weekly.boss && !d.weekly.boss.defeated },
     { key: 'library', to: '/p/spieren?tab=quiz', label: t('Bibliotheek', 'Library'), hint: t('Quiz en atlas', 'Quiz and atlas'), icon: BookOpen, roof: '#2759a0', dot: false },
@@ -209,9 +222,18 @@ export function VillageTiles() {
                 <rect x="11" y="21" width="38" height="21" rx="1.5" fill="#f3ead8" />
                 <rect x="26" y="29" width="8" height="13" fill="#8a6038" />
               </svg>
-              <x.icon className="-mt-1 h-4 w-4" style={{ color: x.roof }} aria-hidden />
+              {x.key === 'smithy' && d.chest?.available ? (
+                <Gift className="chest-bounce -mt-1 h-5 w-5 text-[#855806]" aria-hidden />
+              ) : (
+                <x.icon className="-mt-1 h-4 w-4" style={{ color: x.roof }} aria-hidden />
+              )}
               <span className="mt-0.5 text-[13px] font-bold leading-tight text-ink-950">{x.label}</span>
               <span className="text-[11.5px] leading-tight text-ink-600">{x.hint}</span>
+              {x.key === 'arena' && d.weekly.boss && !d.weekly.boss.defeated && (
+                <span className="mt-1 block h-1.5 w-[70%] overflow-hidden rounded-full bg-[#fde8dc]" aria-hidden>
+                  <span className="block h-full rounded-full bg-[#c2410c]" style={{ width: `${Math.max(4, 100 - (100 * d.weekly.boss.damage) / Math.max(1, d.weekly.boss.hp))}%` }} />
+                </span>
+              )}
               {x.dot && <span className="absolute right-2 top-2 h-3 w-3 rounded-full border-2 border-white bg-[#c2410c] shadow" aria-hidden />}
               {x.dot && <span className="sr-only">{t(', er wacht iets', ', something is waiting')}</span>}
             </Link>

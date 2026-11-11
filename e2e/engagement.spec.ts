@@ -46,7 +46,7 @@ test('patient trains without internet; the workout is sent once back online', as
   // Nothing about the workout is stored on the device.
   expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toMatch(/pain|sessions/);
 
-  await page.getByRole('button', { name: 'Terug naar overzicht' }).click();
+  await page.getByRole('button', { name: 'Terug naar je dorp' }).click();
   await expect(page.getByText(/Geen internet/)).toBeVisible();
 
   await context.setOffline(false);

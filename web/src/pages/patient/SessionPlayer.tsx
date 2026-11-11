@@ -342,7 +342,7 @@ export function SessionPlayer() {
         )}
         {phase === 'done' && (
           <div className="flex justify-center pb-8">
-            <Button size="xl" className="mt-2 w-full max-w-xs" onClick={() => nav('/p')}>{t('Terug naar overzicht', 'Back to overview')}</Button>
+            <Button size="xl" className="mt-2 w-full max-w-xs" onClick={() => nav('/p', { state: earned > 0 ? { fromWorkout: { xp: earned } } : null })}>{t('Terug naar je dorp', 'Back to your village')}</Button>
           </div>
         )}
       </div>
