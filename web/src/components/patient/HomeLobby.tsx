@@ -219,7 +219,7 @@ export function VillageTiles() {
             <Link
               to={x.to}
               data-village-tile={x.key}
-              className="tap group relative flex min-h-[176px] flex-col items-center justify-start overflow-hidden rounded-[20px] border border-[#dedfd7] bg-[#fffdfa] px-1.5 pb-2.5 pt-1 text-center shadow-card transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-[#a6b39b] hover:shadow-lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="tap group relative flex min-h-[176px] flex-col items-center justify-start overflow-hidden rounded-[20px] border border-[#dedfd7] bg-[#fffdfa] px-1.5 dark:border-line dark:bg-surface pb-2.5 pt-1 text-center shadow-card transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-[#a6b39b] hover:shadow-lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {/* One optimized 20 KB atlas for all six illustrated buildings.
                   The art is decorative: the visible label/hint remains the link's accessible name. */}

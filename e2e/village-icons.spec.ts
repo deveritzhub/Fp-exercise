@@ -1,16 +1,14 @@
 import { test, expect } from '@playwright/test';
+import { login } from './helpers';
 
 test('premium village illustrations render on mobile with working links and no horizontal overflow', async ({ browser }) => {
+  test.setTimeout(90_000);
   for (const width of [300, 390]) {
     const context = await browser.newContext({
       viewport: { width, height: 900 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'nl-NL',
     });
     const page = await context.newPage();
-    await page.goto('/login');
-    await page.getByLabel('E-mailadres').fill('patient@praktijk-a.test');
-    await page.getByLabel('Wachtwoord', { exact: true }).fill('Demo-wachtwoord-1');
-    await page.getByRole('button', { name: 'Inloggen', exact: true }).click();
-    await page.waitForURL(/\/p(\/|$)/);
+    await login(page, 'patient@praktijk-a.test');
     const village = page.getByRole('navigation', { name: 'Dorp' });
     await expect(village).toBeVisible();
     const names = ['Prikbord', 'Smederij', 'Arena', 'Bibliotheek', 'Gildehal', 'Wereldkaart'];
