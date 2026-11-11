@@ -23,8 +23,8 @@ test('ACL route bosses, heirloom bar and clinical review fit a phone', async ({ 
   try {
     await login(patient, 'vkb@praktijk-a.test');
     await patient.goto('/p/wereld');
-    await expect(patient.getByRole('button', { name: /De Poort/ })).toBeVisible();
-    await expect(patient.getByRole('button', { name: /Het Veld/ })).toBeVisible();
+    await expect(patient.getByRole('list', { name: 'Zones van je kaart' }).getByRole('button', { name: /De Poort/ })).toBeVisible();
+    await expect(patient.getByRole('list', { name: 'Zones van je kaart' }).getByRole('button', { name: /Het Veld/ })).toBeVisible();
     await expect(patient.getByText('De Terugkeer').first()).toBeVisible();
     await patient.screenshot({ path: `${SHOTS}/acl-map-360.png`, fullPage: true, animations: 'disabled' });
 
@@ -38,7 +38,7 @@ test('ACL route bosses, heirloom bar and clinical review fit a phone', async ({ 
     await patient.locator('[data-zone-status="done"]').first().screenshot({ path: `${SHOTS}/acl-victory-360.png`, animations: 'disabled' });
     await expectAccessible(patient, 'acl world');
 
-    const locked = patient.getByRole('button', { name: /Het Veld/ });
+    const locked = patient.getByRole('list', { name: 'Zones van je kaart' }).getByRole('button', { name: /Het Veld/ });
     await locked.click();
     const sheet = patient.getByRole('dialog');
     await expect(sheet).toContainText('Je therapeut geeft deze zone vrij');

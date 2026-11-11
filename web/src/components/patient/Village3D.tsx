@@ -390,6 +390,8 @@ export default function Village3D({ zones, heroZoneNo, buildings, onZone, heroCo
     const placeLabels = () => {
       const w = el.clientWidth;
       const h = el.clientHeight;
+      // Labels never overlap: a label that would cover an earlier one moves down until it is free.
+      const placed: { l: number; r: number; t: number; b: number }[] = [];
       for (const a of anchors) {
         const node = labels.current.get(a.id);
         if (!node) continue;
@@ -399,7 +401,17 @@ export default function Village3D({ zones, heroZoneNo, buildings, onZone, heroCo
         const behind = v.z > 1;
         const half = node.offsetWidth / 2 + 4;
         const x = Math.min(w - half, Math.max(half, ((v.x + 1) / 2) * w));
-        const y = Math.min(h - 52, Math.max(node.offsetHeight + 4, ((1 - v.y) / 2) * h));
+        let y = Math.min(h - 52, Math.max(node.offsetHeight + 4, ((1 - v.y) / 2) * h));
+        const nh = node.offsetHeight;
+        if (!behind) {
+          for (let tries = 0; tries < 8; tries++) {
+            const box = { l: x - half, r: x + half, t: y - nh - 3, b: y + 3 };
+            const hit = placed.find((p) => box.l < p.r && box.r > p.l && box.t < p.b && box.b > p.t);
+            if (!hit) break;
+            y = hit.b + nh + 3;
+          }
+          placed.push({ l: x - half, r: x + half, t: y - nh - 3, b: y + 3 });
+        }
         node.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
         node.style.opacity = behind ? '0' : '1';
       }

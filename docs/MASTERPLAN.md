@@ -287,13 +287,18 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     getekend, dezelfde groei als de wereldkaart), lucht per dagdeel (ochtend, dag, avond, nacht met
     sterren en verlichte ramen), rang en XP-balk; "Missie van vandaag" boven de training; dorpstegels
     (Prikbord, Smederij, Arena, Bibliotheek, Gildehal, Wereldkaart) met een stip als er iets wacht.
-    Let op: e2e `acl-route` en `measurement-boss` en de unit test "recently used templates" falen al
-    vóór deze wijziging (los uitzoeken).
+    De drie falende tests zijn opgelost (11 nov, stap 94).
 
 93. [x] **Lobby leeft** (11 nov): na de training "Terug naar je dorp": je held juicht in de lobby met
     "Welkom terug in je dorp! +XP verdiend"; Smederij-tegel met stuiterend kistje als de dagkist klaarstaat,
     Arena-tegel met de HP-balk van de baas, Prikbord met quests x/3. Heldfoto's ook in de testomgeving
     (fotoserver toegestaan), zodat screenshots gelijk zijn aan live.
+
+94. [x] **Falende tests opgelost** (11 nov): (1) "onlangs gebruikte sjablonen" faalde vóór 17:00 UTC:
+    de demo-seed gaf een concept dat vandaag start een aanmaaktijd van vandaag 18:00 (toekomst), dus dat
+    sjabloon leek altijd het laatst gebruikt; aanmaaktijd is nu nooit later dan nu. (2+3) ACL-route en
+    metingsbaas: in het 3D-dorp overlapten gebouw- en zonelabels bij veel zones (te kleine raakvlakken);
+    labels wijken nu voor elkaar uit. "Je dorp is gegroeid!" op het beloningsscherm.
 
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
