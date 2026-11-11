@@ -7,7 +7,7 @@ import { useDocumentMeta } from '@/lib/meta';
 import { Button, Card } from '@/components/ui';
 import { ReminderCard } from '@/components/app/Reminders';
 import { ConsentToggle, MyDataCard, useModes } from '@/components/patient/Modules';
-import { TextSizeCard } from '@/pages/AccountPage';
+import { TextSizeCard, ThemeCard } from '@/pages/AccountPage';
 import { WhatsNew } from '@/components/app/WhatsNew';
 
 /**
@@ -49,6 +49,7 @@ export function SettingsPage() {
         <h2 id="set-app" className="text-[13px] font-semibold uppercase tracking-wide text-ink-600">{t('App', 'App')}</h2>
         <ReminderCard />
         <TextSizeCard />
+        <ThemeCard />
         <div className="rounded-2xl border border-line bg-white p-1 shadow-card"><WhatsNew audience="patient" clinical={isClinical(user?.patient?.kind)} /></div>
       </section>
 

@@ -1016,7 +1016,7 @@ function GearCard({ d }: { d: HeroState }) {
       <p className="mt-2 text-[13.5px] text-ink-600">{t('Verzamel je eigen uitrusting. Tier toont de zeldzaamheid; itemlevel is de cosmetische waarde die meetelt voor je gearscore. Je hoeft geen hoger heldlevel te halen om een item te dragen.', 'Collect your own equipment. Tier shows rarity; item level is the cosmetic value contributing to your gear score. No hero-level requirement applies to wearing items.')}</p>
 
       <ul className="my-3 flex flex-wrap gap-2" aria-label={t('Uitrustingstiers', 'Equipment tiers')}>
-        {GEAR_TIERS.map(tier => <li key={tier.key} className="rounded-lg border bg-white px-2 py-1 text-xs" style={{borderColor:tier.glow,color:tier.color}}>
+        {GEAR_TIERS.map(tier => <li key={tier.key} className="rounded-lg border bg-white px-2 py-1 text-xs text-[color:var(--c)] dark:text-[color:var(--cd)]" style={{ borderColor: tier.glow, '--c': tier.color, '--cd': tier.glow } as React.CSSProperties}>
           <span className="font-semibold">{tier.tier} · {nl ? tier.nl : tier.en}</span>
           <span className="ml-1">{(tier.tier-1)*20+1}–{tier.tier*20}</span>
         </li>)}
@@ -1084,7 +1084,7 @@ function TierTag({ g }: { g: GearItem }) {
   const tier = GEAR_TIERS[g.tier - 1];
   return (
     <span className="gear-labels">
-      <span className="gear-rarity" style={{color:tier.color}}>Tier {g.tier} · {locale === 'nl' ? tier.nl : tier.en}</span>
+      <span className="gear-rarity text-[color:var(--c)] dark:text-[color:var(--cd)]" style={{ '--c': tier.color, '--cd': tier.glow } as React.CSSProperties}>Tier {g.tier} · {locale === 'nl' ? tier.nl : tier.en}</span>
       <span className="gear-level">{locale === 'nl' ? 'Itemlevel' : 'Item level'} {g.itemLevel}</span>
     </span>
   );
@@ -1518,7 +1518,7 @@ export function HeroPage() {
           <HeroPhotoLink look={look} level={L.level} />
           <div className="min-w-0">
             <p className="t-label">{t(`Level ${L.level}`, `Level ${L.level}`)} · {titleFor(L.level, nl)}</p>
-            <p className="mb-0.5 inline-flex items-center rounded-full border bg-white px-2 py-0.5 text-[12px] font-bold" style={{ borderColor: tier.glow, color: tier.color }}>{t(`Rang ${tier.nl}`, `${tier.en} rank`)}</p>
+            <p className="mb-0.5 inline-flex items-center rounded-full border bg-white px-2 py-0.5 text-[12px] font-bold text-[color:var(--c)] dark:text-[color:var(--cd)]" style={{ borderColor: tier.glow, '--c': tier.color, '--cd': tier.light } as React.CSSProperties}>{t(`Rang ${tier.nl}`, `${tier.en} rank`)}</p>
             <h1 id="hero-name" className={cn('t-page [overflow-wrap:anywhere]', scene?.key === 'stadium' && 'text-white')}>{d.hero.heroName}</h1>
             {scene && <p className={cn('text-[12.5px] font-semibold', scene.key === 'stadium' ? 'text-sand' : 'text-ink-600')}>{nl ? scene.nl : scene.en}</p>}
             {(emblems.length > 0 || ownTitles.length > 0 || combos.length > 0) && (
@@ -1544,7 +1544,7 @@ export function HeroPage() {
             <span className="text-ink-600">{t(`nog ${L.to - L.xp} XP tot level ${L.level + 1}`, `${L.to - L.xp} XP to level ${L.level + 1}`)}</span>
           </div>
           <XpBar xp={L.xp} className="mt-1.5" label={t(`Voortgang naar level ${L.level + 1}`, `Progress to level ${L.level + 1}`)} />
-          {nextTier && <p className="mt-1.5 text-[12.5px] text-ink-600">{t(`Nog ${nextTier.levels} ${nextTier.levels === 1 ? 'level' : 'levels'} tot rang `, `${nextTier.levels} ${nextTier.levels === 1 ? 'level' : 'levels'} to `)}<strong style={{ color: nextTier.tier.color }}>{nl ? nextTier.tier.nl : `${nextTier.tier.en} rank`}</strong></p>}
+          {nextTier && <p className="mt-1.5 text-[12.5px] text-ink-600">{t(`Nog ${nextTier.levels} ${nextTier.levels === 1 ? 'level' : 'levels'} tot rang `, `${nextTier.levels} ${nextTier.levels === 1 ? 'level' : 'levels'} to `)}<strong className="text-[color:var(--c)] dark:text-[color:var(--cd)]" style={{ '--c': nextTier.tier.color, '--cd': nextTier.tier.light } as React.CSSProperties}>{nl ? nextTier.tier.nl : `${nextTier.tier.en} rank`}</strong></p>}
         </div>
         <HeroTotals d={d} />
         <details className="mt-3 text-[14px] text-ink-700">

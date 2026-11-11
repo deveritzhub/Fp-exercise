@@ -165,7 +165,7 @@ export function HomeLobby({ greeting, subtitle, date }: { greeting: string; subt
             {d?.hero && L && tier && (
               <p className={cn('mt-1 text-[13px] font-semibold', light ? 'text-white/90' : 'text-ink-800')}>
                 <Link to="/p/held" className="underline-offset-2 hover:underline">{d.hero.heroName}</Link> · {t(`Level ${L.level}`, `Level ${L.level}`)} ·{' '}
-                <span className="rounded-full border bg-white px-1.5 py-0.5 text-[12px]" style={{ borderColor: tier.glow, color: tier.color }}>{nl ? tier.nl : tier.en}</span>
+                <span className="rounded-full border bg-white px-1.5 py-0.5 text-[12px] text-[color:var(--c)] dark:text-[color:var(--cd)]" style={{ borderColor: tier.glow, '--c': tier.color, '--cd': tier.light } as React.CSSProperties}>{nl ? tier.nl : tier.en}</span>
               </p>
             )}
             {welcome ? (
