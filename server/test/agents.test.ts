@@ -25,6 +25,7 @@ import { createApp } from '../src/app';
 import { setClaudeClient, systemPrompt, type ClaudeClient } from '../src/agents/agent';
 import { whatsappTransport } from '../src/agents/whatsapp';
 import { twilioSignature } from '../src/agents/voice';
+import { isOpen, parseHours } from '../src/agents/hours';
 
 const app = createApp();
 
@@ -215,6 +216,23 @@ describe('practice assistant: phone', () => {
     expect(body).toContain('<Dial callerId="+3110000000">+31600000000</Dial>');
   });
 
+  it('never transfers a forwarded call (e.g. the practice mobile on no-answer) but offers a callback', async () => {
+    const fake = new FakeClaude([
+      [[tool('handoff_to_human', { reason: 'wil mens', summary: 'vraag' })], 'tool_use'],
+      [[text('Ik kan je nu niet doorverbinden. Zal ik zorgen dat je wordt teruggebeld?')], 'end_turn'],
+    ]);
+    setClaudeClient(fake);
+    const r = await postTwilio('/agents/voice/respond?silent=0', {
+      CallSid: 'CA5', From: '+31655555555', ForwardedFrom: '+31681700829', SpeechResult: 'Mag ik iemand spreken',
+    });
+    const body = await r.text();
+    expect(body).not.toContain('<Dial');
+    expect(body).toContain('teruggebeld');
+    const msgs = (fake.calls[1] as { messages: { role: string; content: { type: string; content?: string; text?: string }[] }[] }).messages;
+    expect(JSON.stringify(msgs)).toContain('doorverbinden met een medewerker kan nu niet');
+    expect(JSON.stringify(msgs.at(-1))).toContain('Doorverbinden kan nu niet');
+  });
+
   it('hangs up after repeated silence', async () => {
     const r = await postTwilio('/agents/voice/respond?silent=3', { CallSid: 'CA4', From: '+31655555555', SpeechResult: '' });
     expect(await r.text()).toContain('<Hangup/>');
@@ -241,5 +259,31 @@ describe('practice assistant: database isolation', () => {
     } finally {
       await appDb.end();
     }
+  });
+});
+
+describe('practice assistant: practice hours', () => {
+  const rules = parseHours('ma-vr 08:00-18:00; za 09:00-12:00');
+  const at = (iso: string) => isOpen(rules, new Date(iso), 'Europe/Amsterdam');
+
+  it('knows when the practice is open, in Amsterdam time', () => {
+    expect(at('2026-11-11T09:30:00+01:00')).toBe(true); // Wednesday morning
+    expect(at('2026-11-11T07:59:00+01:00')).toBe(false);
+    expect(at('2026-11-11T18:00:00+01:00')).toBe(false); // closing time itself is closed
+    expect(at('2026-11-11T16:59:00Z')).toBe(true); // 17:59 in Amsterdam (CET, UTC+1)
+  });
+
+  it('handles Saturday, Sunday and summer time', () => {
+    expect(at('2026-11-14T10:00:00+01:00')).toBe(true); // Saturday
+    expect(at('2026-11-14T12:30:00+01:00')).toBe(false);
+    expect(at('2026-11-15T10:00:00+01:00')).toBe(false); // Sunday
+    expect(at('2026-07-01T06:30:00Z')).toBe(true); // 08:30 in Amsterdam (CEST, UTC+2)
+    expect(at('2026-07-01T05:30:00Z')).toBe(false); // 07:30 in Amsterdam
+  });
+
+  it('returns null without configured hours and rejects bad input', () => {
+    expect(isOpen(parseHours(''), new Date(), 'Europe/Amsterdam')).toBeNull();
+    expect(() => parseHours('maandag 9-17')).toThrow(/PRACTICE_HOURS/);
+    expect(() => parseHours('ma-xx 08:00-18:00')).toThrow(/Invalid day/);
   });
 });

@@ -83,11 +83,14 @@ ${practiceSummary(p)}
 `;
 }
 
-function contextNote(channel: Channel, phone: string): string {
+function contextNote(channel: Channel, phone: string, opts: MessageOptions): string {
   const now = new Intl.DateTimeFormat('nl-NL', {
     timeZone: practice.timezone, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
   }).format(new Date());
-  return `[Systeeminfo — huidige tijd: ${now} (${practice.timezone}); kanaal: ${channel}; telefoonnummer klant: ${phone}]`;
+  const extra: string[] = [];
+  if (channel === 'voice' && opts.practiceOpen === false) extra.push('de praktijk is nu gesloten');
+  if (channel === 'voice' && opts.canTransfer === false) extra.push('doorverbinden met een medewerker kan nu niet, zet in plaats daarvan een terugbelverzoek klaar');
+  return `[Systeeminfo — huidige tijd: ${now} (${practice.timezone}); kanaal: ${channel}; telefoonnummer klant: ${phone}${extra.map((e) => '; ' + e).join('')}]`;
 }
 
 const textOf = (content: ContentBlock[]) =>
@@ -100,7 +103,20 @@ const textOf = (content: ContentBlock[]) =>
 let lastPurge = 0;
 
 /** Handles one customer message (or spoken sentence) and returns the reply. */
-export async function handleMessage(channel: Channel, sessionKey: string, customerPhone: string, userText: string): Promise<AgentReply> {
+export interface MessageOptions {
+  /** Phone only: false when a transfer to a person is impossible (after hours, or the call was forwarded to us). */
+  canTransfer?: boolean;
+  /** Phone only: true/false when practice hours are configured, null otherwise. */
+  practiceOpen?: boolean | null;
+}
+
+export async function handleMessage(
+  channel: Channel,
+  sessionKey: string,
+  customerPhone: string,
+  userText: string,
+  opts: MessageOptions = {},
+): Promise<AgentReply> {
   if (Date.now() - lastPurge > 6 * 3600_000) {
     lastPurge = Date.now();
     purgeOld().catch((e) => console.error(`[agents] purge failed: ${(e as Error).message}`));
@@ -108,12 +124,13 @@ export async function handleMessage(channel: Channel, sessionKey: string, custom
 
   const conv = await getOrCreateConversation(channel, sessionKey, customerPhone);
   const messages = conv.messages as MessageParam[];
-  const ctx: ToolContext = { channel, customerPhone, handoffReason: null, endCall: false, notifications: [] };
+  const canTransfer = channel === 'voice' ? opts.canTransfer ?? true : true;
+  const ctx: ToolContext = { channel, customerPhone, canTransfer, handoffReason: null, endCall: false, notifications: [] };
 
   messages.push({
     role: 'user',
     content: [
-      { type: 'text', text: contextNote(channel, customerPhone) },
+      { type: 'text', text: contextNote(channel, customerPhone, opts) },
       { type: 'text', text: userText.slice(0, 4000) },
     ],
   });

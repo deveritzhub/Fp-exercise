@@ -31,6 +31,11 @@ export const agentConfig = {
   },
   /** WhatsApp number of the practice owner (notifications, "#bot <number>"), e.g. 31612345678. */
   ownerWhatsapp: env('OWNER_WHATSAPP').replace(/^\+/, ''),
+  /**
+   * Practice hours, e.g. "ma-vr 08:00-18:00; za 09:00-12:00". Outside these hours the phone
+   * assistant says the practice is closed and never transfers (it takes a callback request instead).
+   */
+  practiceHours: env('PRACTICE_HOURS'),
   /** Number callers are transferred to, e.g. +31612345678. */
   ownerPhone: env('OWNER_PHONE'),
   /** Protects POST /agents/voice/outbound. */

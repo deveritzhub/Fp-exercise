@@ -57,6 +57,39 @@ dat kanaal met 503. De rest van FP Flow werkt gewoon door. Controleer na het ins
 **Telefoon (Twilio):** stel bij je nummer in: *A call comes in → Webhook →
 `https://<app>/agents/voice/incoming` (POST)*.
 
+### Na werktijd laten opnemen
+
+Zet `PRACTICE_HOURS` op je werktijden, bijvoorbeeld `ma-vr 08:00-18:00` of
+`ma-vr 08:00-18:00; za 09:00-12:00`. Dagen schrijf je als ma di wo do vr za zo, en de tijden
+gelden in Nederlandse tijd. Buiten die tijden doet de assistent het volgende:
+- hij neemt op met "De praktijk is nu gesloten, maar ik kan je vragen beantwoorden of zorgen dat
+  je teruggebeld wordt";
+- hij verbindt **nooit** door, maar zet een **terugbelverzoek** klaar. Dat krijg je op WhatsApp.
+
+**Je praktijknummer (06 81 70 08 29) naar de assistent laten doorschakelen.** Het praktijknummer
+is een mobiel nummer. Laat dat doorschakelen naar je Twilio-nummer **als je niet opneemt**. Typ
+op die telefoon (bij de meeste Nederlandse providers):
+
+| Code | Wat het doet |
+|---|---|
+| `**61*+31TWILIONUMMER*11*20#` + bellen | doorschakelen bij geen gehoor (na 20 seconden) |
+| `**67*+31TWILIONUMMER#` + bellen | doorschakelen bij in gesprek / weigeren |
+| `**62*+31TWILIONUMMER#` + bellen | doorschakelen als je telefoon uit staat of geen bereik heeft |
+| `##004#` + bellen | alle doorschakelingen weer uit |
+
+Werkt een code niet, kijk dan in de app of bel de klantenservice van je provider (KPN, Vodafone,
+Odido). Daarna gaat het zo:
+- **Overdag** neem je zelf op. Neem je niet op, dan neemt de assistent het over.
+- **'s Avonds en in het weekend** zet je je telefoon op stil of op een focusmodus. Bellers komen
+  dan bij de assistent. Twilio betaalt het doorgeschakelde deel, zoals bij een gewoon inkomend
+  gesprek. Je eigen provider kan voor doorschakelen ook kosten rekenen.
+
+**Belangrijk:** schakelt je praktijkmobiel door naar Twilio, laat `OWNER_PHONE` dan **leeg** of
+vul een ander nummer in, bijvoorbeeld een collega. Anders zou de assistent bij "ik wil iemand
+spreken" de mobiel bellen die weer terugschakelt naar de assistent. Gesprekken die Twilio als
+doorgeschakeld herkent (`ForwardedFrom`), verbindt de assistent al nooit terug, maar niet elke
+provider geeft dat door.
+
 **Plan:** gebruik voor de telefoon het **Starter**-plan. Twilio wacht maximaal 15 seconden op een
 antwoord, en een gratis service die slaapt doet er ongeveer 50 seconden over om op te starten.
 

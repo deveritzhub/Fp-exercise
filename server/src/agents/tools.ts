@@ -6,6 +6,8 @@ type Tool = Anthropic.Beta.Messages.BetaTool;
 export interface ToolContext {
   channel: Channel;
   customerPhone: string;
+  /** Phone: whether the caller can be transferred to a person right now. */
+  canTransfer: boolean;
   /** Set by tools; the channel code acts on these after the reply. */
   handoffReason: string | null;
   endCall: boolean;
@@ -83,6 +85,9 @@ export async function executeTool(ctx: ToolContext, name: string, input: Record<
       return 'Terugbelverzoek staat klaar; de praktijk belt de klant zo snel mogelijk terug (binnen een werkdag).';
     }
     case 'handoff_to_human':
+      if (ctx.channel === 'voice' && !ctx.canTransfer) {
+        return 'Doorverbinden kan nu niet (buiten werktijd of niemand beschikbaar). Bied aan dat de praktijk terugbelt en zet met de naam van de klant een terugbelverzoek klaar (request_callback).';
+      }
       ctx.handoffReason = `${str(input.reason)} — ${str(input.summary)}`;
       return ctx.channel === 'voice'
         ? 'Overdracht gestart. Zeg de klant dat je doorverbindt met een medewerker.'

@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { Hono, type Context } from 'hono';
 import { handleMessage } from './agent';
 import { agentConfig, twilioConfigured } from './config';
+import { isOpen, parseHours } from './hours';
 import { practice } from './practice';
 import { notifyOwner } from './whatsapp';
 
@@ -63,19 +64,33 @@ async function validatedForm(c: Context): Promise<Record<string, string> | null>
   return expected.length === got.length && crypto.timingSafeEqual(expected, got) ? form : null;
 }
 
+const hoursRules = parseHours(agentConfig.practiceHours); // invalid PRACTICE_HOURS fails at start-up
+
+/**
+ * Whether a person can take over this call. Not after hours, not without OWNER_PHONE, and not when
+ * the call was forwarded to us (e.g. the practice mobile forwards on no-answer): dialling that
+ * number again would just bounce the caller back here.
+ */
+function callState(form: Record<string, string>, now = new Date()) {
+  const practiceOpen = isOpen(hoursRules, now, practice.timezone);
+  const forwarded = !!form.ForwardedFrom;
+  return { practiceOpen, canTransfer: !!agentConfig.ownerPhone && practiceOpen !== false && !forwarded };
+}
+
 const customerNumber = (form: Record<string, string>) =>
   (form.Direction ?? '').startsWith('outbound') ? form.To ?? 'onbekend' : form.From ?? 'onbekend';
 
 async function respond(c: Context, form: Record<string, string>, userText: string) {
   const phone = customerNumber(form);
-  const reply = await handleMessage('voice', form.CallSid ?? 'onbekend', phone, userText);
+  const state = callState(form);
+  const reply = await handleMessage('voice', form.CallSid ?? 'onbekend', phone, userText, state);
   await notifyOwner(reply.notifications);
   const t = new TwiML();
 
   if (reply.handoffReason) {
     t.say(reply.text);
     await notifyOwner([`📞 Beller ${phone} wil een medewerker\n${reply.handoffReason}`]);
-    if (agentConfig.ownerPhone) t.dial(agentConfig.ownerPhone);
+    if (state.canTransfer) t.dial(agentConfig.ownerPhone);
     else t.say('Er is op dit moment geen medewerker bereikbaar. We bellen je zo snel mogelijk terug.').hangup();
     return twiml(c, t);
   }
@@ -102,7 +117,11 @@ voiceRoutes.post('/incoming', async (c) => {
       `(Uitgaand gesprek dat jij namens de praktijk voert; de klant heeft net opgenomen. Doel van het gesprek: ${purpose.slice(0, 500)}. Stel jezelf kort voor en begin het gesprek.)`,
     );
   }
-  return twiml(c, new TwiML().gather(`Goedendag, je spreekt met de digitale assistent van ${practice.name}. Waarmee kan ik je helpen?`));
+  const greeting =
+    callState(form).practiceOpen === false
+      ? `Hallo, je spreekt met de digitale assistent van ${practice.name}. De praktijk is nu gesloten, maar ik kan je vragen beantwoorden of zorgen dat je teruggebeld wordt. Waarmee kan ik je helpen?`
+      : `Goedendag, je spreekt met de digitale assistent van ${practice.name}. Waarmee kan ik je helpen?`;
+  return twiml(c, new TwiML().gather(greeting));
 });
 
 voiceRoutes.post('/respond', async (c) => {
