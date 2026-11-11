@@ -85,6 +85,9 @@ function WhatsNewDialog({ audience, clinical, onClose }: { audience: 'staff' | '
           </li>
         ))}
       </ul>
+      <p className="mt-4 border-t border-line pt-3 text-[14.5px]">
+        <Link to={audience === 'staff' ? '/app/versies' : '/p/versies'} onClick={onClose} className="font-semibold text-accent hover:underline">{t('Alle versies sinds de eerste, met datum', 'All versions since the first, with dates')}</Link>
+      </p>
     </Dialog>
   );
 }

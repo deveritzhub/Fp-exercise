@@ -60,6 +60,7 @@ const MobilityTestsPage = named(() => import('@/pages/patient/MobilityTestsPage'
 const ModulePage = named(() => import('@/pages/patient/ModulePage'), 'ModulePage');
 const AtlasPage = named(() => import('@/pages/patient/AtlasPage'), 'AtlasPage');
 const SettingsPage = named(() => import('@/pages/patient/SettingsPage'), 'SettingsPage');
+const VersionsPage = named(() => import('@/pages/VersionsPage'), 'VersionsPage');
 const AdminPage = named(() => import('@/pages/admin/AdminPage'), 'AdminPage');
 const AdminAccountPage = named(() => import('@/pages/admin/AdminPage'), 'AdminAccountPage');
 
@@ -168,6 +169,7 @@ export const router = createBrowserRouter([
           { path: 'programmas/:id/afdrukken', element: <S><ProgramPrintPage /></S> },
           { path: 'praktijk', element: <S><PracticePage /></S> },
           { path: 'account', element: <S><AccountPage /></S> },
+          { path: 'versies', element: <S><VersionsPage audience="staff" /></S> },
         ],
       },
       {
@@ -198,6 +200,7 @@ export const router = createBrowserRouter([
           { path: 'spieren', element: <S><AtlasPage /></S> },
           { path: 'instellingen', element: <S><SettingsPage /></S> },
           { path: 'account', element: <S><AccountPage patient /></S> },
+          { path: 'versies', element: <S><VersionsPage audience="patient" /></S> },
         ],
       },
       { path: '/admin', element: <RequireAuth kind="admin"><S><AdminPage /></S></RequireAuth> },

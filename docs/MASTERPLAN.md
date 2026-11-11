@@ -300,6 +300,15 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     metingsbaas: in het 3D-dorp overlapten gebouw- en zonelabels bij veel zones (te kleine raakvlakken);
     labels wijken nu voor elkaar uit. "Je dorp is gegroeid!" op het beloningsscherm.
 
+95. [x] **Donkere modus** (11 nov): Licht, Donker of Automatisch (volgt de telefoon), in Instellingen
+    (patiënt) en Account (therapeut). Kleuren als CSS-variabelen, praktijkkleur krijgt een donkere
+    variant; alle schermen getest op contrast (axe). Alleen een weergavevoorkeur op het apparaat.
+
+96. [x] **Wat is er nieuw + versiegeschiedenis** (11 nov): na een update één keer een melding
+    "FP Flow is bijgewerkt" met de nieuwe punten; vanuit "Wat is er nieuw?" de link "Alle versies sinds
+    de eerste, met datum" naar `/p/versies` of `/app/versies`: elke versie vanaf 22 oktober 2026 met
+    datum en wat er verbeterd is, per doelgroep (`shared/changelog.ts`).
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.

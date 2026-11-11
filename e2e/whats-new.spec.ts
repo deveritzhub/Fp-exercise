@@ -24,6 +24,13 @@ test('patient: "What\'s new" in Settings', async ({ browser }) => {
   await expect(dlg.getByText(/Lees voor/)).toBeVisible();
   await expectAccessible(page, 'whats new (patient)');
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+  // The full history, from the first version, with dates.
+  await dlg.getByRole('link', { name: 'Alle versies sinds de eerste, met datum' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Versiegeschiedenis' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Eerste versie' })).toBeVisible();
+  await expect(page.getByText('donderdag 22 oktober 2026')).toBeVisible();
+  await expectAccessible(page, 'version history');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
   await ctx.close();
 });
 
