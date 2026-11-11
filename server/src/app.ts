@@ -1,5 +1,4 @@
-import { readFile } from 'node:fs/promises';
-import { heroAssetFile, isHeroAsset } from './lib/heroAssets';
+import { isHeroAsset, loadHeroAsset } from './lib/heroAssets';
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
 import { serveStatic } from '@hono/node-server/serve-static';
@@ -80,7 +79,9 @@ export function createApp() {
     const kind = c.req.param('kind');
     const key = c.req.param('key').replace(/\.png$/, '');
     if (!isHeroAsset(kind, key)) return c.json({ error: 'not_found' }, 404);
-    const buf = await readFile(heroAssetFile(config.storageDir, kind, key)).catch(() => null);
+    // Render free instances have ephemeral storage; warm the requested image from the
+    // fixed, vetted catalog instead of returning 404 while background sync is pending.
+    const buf = await loadHeroAsset(config.storageDir, kind, key);
     if (!buf) return c.json({ error: 'not_found' }, 404);
     c.header('Content-Type', 'image/png');
     c.header('Cache-Control', 'public, max-age=604800, immutable');
