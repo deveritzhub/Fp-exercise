@@ -234,7 +234,7 @@ export function VillageTiles() {
                 }}
                 aria-hidden="true"
               />
-              <span className="mt-0.5 block text-[13px] font-extrabold leading-tight text-ink-950 sm:text-[14px]">{x.label}</span>
+              <span className="mt-0.5 block max-w-full text-[13px] font-extrabold leading-tight text-ink-950 [overflow-wrap:anywhere] sm:text-[14px]">{x.label}</span>
               <span className="mt-1 block text-[11.5px] leading-[1.22] text-ink-700">{x.hint}</span>
               {x.key === 'smithy' && d.chest?.available && (
                 <span className="absolute left-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#fff5db] text-[#855806] shadow-xs">
