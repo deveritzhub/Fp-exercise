@@ -29,6 +29,7 @@ const STAFF: Item[] = [
   { nl: 'Reageren op een training bij "Markeer als gezien"; de patiënt krijgt je reactie.', en: 'Reply to a workout with "Mark as seen"; the patient gets your reply.' },
 ];
 const PATIENT: Item[] = [
+  { nl: 'Je dorp groeit mee: een huisje per 5 trainingen, een vlag per verslagen baas, een molen, akkers, een standbeeld en een vuurtoren.', en: 'Your village grows with you: a cottage per 5 workouts, a pennant per defeated boss, a windmill, fields, a statue and a lighthouse.', to: '/p/wereld' },
   { nl: 'Je wereldkaart is nu een 3D-eiland met je dorp en je route. Draai rond en tik op een gebouw of zone.', en: 'Your world map is now a 3D island with your village and route. Turn it and tap a building or zone.', to: '/p/wereld' },
   { nl: 'Na een training: je held juicht, XP en muntjes tellen op, en een level-up krijgt een schild in de kleur van je rang.', en: 'After a workout: your hero cheers, XP and coins count up, and a level-up gets a shield in your rank colour.' },
   { nl: 'Laat een oefening voorlezen met de knop "Lees voor" in de training.', en: 'Have an exercise read aloud with the "Read aloud" button in the workout.' },
@@ -44,7 +45,7 @@ const PATIENT: Item[] = [
   { nl: 'Op Voortgang zie je hoe zwaar en pijnlijk je trainingen waren, in gewone taal.', en: 'Progress shows how hard and painful your workouts were, in plain words.', to: '/p/voortgang' },
   { nl: 'Nieuwe quizvragen over welke spier het werk overneemt als een andere zwak is.', en: 'New quiz questions on which muscle takes over when another is weak.' },
 ];
-const VERSION = '2026-11-11a';
+const VERSION = '2026-11-11b';
 const KEY = 'fp.whatsnew.v1';
 
 function seen() {

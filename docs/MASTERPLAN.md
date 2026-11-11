@@ -278,6 +278,11 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     met dorp, pad, zonevlaggen, mist over vergrendelde zones en een baken bij je held; namen zijn echte
     knoppen (toetsenbord, schermlezer). Animaties stoppen bij "beweging beperken".
 
+91. [x] **Dorp groeit mee** (11 nov): per 5 afgeronde trainingen een huisje (max 10), per verslagen
+    baas een vlaggetje (max 8), molen bij 15 en akkers bij 30 trainingen, standbeeld van je held vanaf
+    level 10 en een vuurtoren vanaf level 20. Onder het dorp staat wat er al staat en wat de volgende
+    stap is. Alleen cosmetisch; krimpt nooit (`shared/villageGrowth.ts`).
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.

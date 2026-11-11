@@ -5,6 +5,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RotateCcw, RotateCw } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
+import type { VillageGrowth } from '@shared/villageGrowth';
 
 /**
  * The village and the rehab path as a small 3D island (three.js, loaded only on the world map).
@@ -14,7 +15,7 @@ import { cn } from '@/lib/cn';
 
 export type VillageZone = { no: number; status: 'done' | 'current' | 'locked'; name: string };
 export type VillageBuilding = { key: string; label: string; to: string };
-type Props = { zones: VillageZone[]; heroZoneNo: number | null; buildings: VillageBuilding[]; onZone: (no: number) => void; heroColor?: string; className?: string };
+type Props = { zones: VillageZone[]; heroZoneNo: number | null; buildings: VillageBuilding[]; onZone: (no: number) => void; heroColor?: string; growth?: VillageGrowth; className?: string };
 
 const PALETTE = {
   grass: 0x8fbf6a, grassDark: 0x6e9e52, sand: 0xe6d3a3, water: 0x7cc4d8, path: 0xd9c08f, stone: 0xb8b2a6,
@@ -91,13 +92,13 @@ function rng(seed: number) {
   return () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;
 }
 
-export default function Village3D({ zones, heroZoneNo, buildings, onZone, heroColor = '#e4bc63', className }: Props) {
+export default function Village3D({ zones, heroZoneNo, buildings, onZone, heroColor = '#e4bc63', growth, className }: Props) {
   const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null);
   const labels = useRef<Map<string, HTMLElement>>(new Map());
   const turnRef = useRef<(deg: number) => void>(() => {});
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
-  const key = JSON.stringify([zones, heroZoneNo, buildings.map((b) => b.key)]);
+  const key = JSON.stringify([zones, heroZoneNo, buildings.map((b) => b.key), growth, heroColor]);
 
   useEffect(() => {
     const el = host.current;
@@ -206,8 +207,114 @@ export default function Village3D({ zones, heroZoneNo, buildings, onZone, heroCo
       }
     });
 
-    // Trees and rocks, away from the square and the path.
-    const near = (x: number, z: number) => Math.hypot(x + 2.6, z - 1.2) < 3.6 || pts.some((p) => Math.hypot(x - p.x, z - p.z) < 1.2) || Math.hypot(x, z) > 7.3;
+    // What the patient built so far (villageGrowth): cottages, pennants, windmill, fields, statue, lighthouse.
+    const taken: [number, number, number][] = [];
+    let blades: THREE.Group | null = null;
+    let lamp: THREE.Group | null = null;
+    if (growth) {
+      const pathNear = (x: number, z: number) => pts.some((p) => Math.hypot(x - p.x, z - p.z) < 1.3) || curve.getPoints(30).some((p) => Math.hypot(x - p.x, z - p.z) < 0.9);
+      for (let i = 0, made = 0; i < 80 && made < growth.houses; i++) {
+        const a = Math.PI * 0.55 + i * 0.62;
+        const r = 4.3 + (i % 3) * 0.55;
+        const x = -2.6 + Math.cos(a) * r;
+        const z = 1.2 + Math.sin(a) * r * 0.85;
+        if (Math.hypot(x, z) > 7 || pathNear(x, z) || taken.some(([tx, tz, tr]) => Math.hypot(x - tx, z - tz) < tr + 0.8)) continue;
+        const roofs = [0xb5532c, 0x2759a0, 0x8e3b5f, 0x29483c, 0xc9a14a];
+        const h = house(roofs[made % roofs.length], 0.62);
+        h.position.set(x, 0.2, z);
+        h.lookAt(-2.6, 0.2, 1.2);
+        world.add(h);
+        taken.push([x, z, 0.7]);
+        made++;
+      }
+      for (let i = 0; i < growth.pennants; i++) {
+        const a = (i / Math.max(growth.pennants, 1)) * Math.PI * 2;
+        const pole = new THREE.Group();
+        const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.9, 5), mat(PALETTE.wood));
+        stick.position.y = 0.45;
+        const tri = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.34, 3), mat([0xc9a14a, 0xb5532c, 0x2759a0, 0x8e3b5f][i % 4]));
+        tri.rotation.z = -Math.PI / 2;
+        tri.position.set(0.17, 0.78, 0);
+        pole.add(stick, tri);
+        pole.position.set(-2.6 + Math.cos(a) * 1.55, 0.22, 1.2 + Math.sin(a) * 1.55);
+        world.add(pole);
+        flags.push(tri);
+      }
+      if (growth.windmill) {
+        const mill = new THREE.Group();
+        const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.55, 1.8, 8), mat(PALETTE.wall));
+        tower.position.y = 0.9;
+        const cap = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.55, 8), mat(0xb5532c));
+        cap.position.y = 2.05;
+        blades = new THREE.Group();
+        for (let k = 0; k < 4; k++) {
+          const b = new THREE.Mesh(new THREE.BoxGeometry(0.14, 1.1, 0.03), mat(0xf6efe2));
+          b.position.y = 0.55;
+          const arm = new THREE.Group();
+          arm.add(b);
+          arm.rotation.z = (k * Math.PI) / 2;
+          blades.add(arm);
+        }
+        blades.position.set(0, 1.6, 0.42);
+        mill.add(tower, cap, blades);
+        mill.position.set(-6.0, 0.2, -1.6);
+        mill.lookAt(0, 0.2, 2);
+        mill.traverse((o) => { o.castShadow = true; });
+        world.add(mill);
+        taken.push([-6.0, -1.6, 1]);
+      }
+      if (growth.fields) {
+        const stripes = [0xd9b65a, 0x9cc46b, 0xd9b65a, 0x9cc46b];
+        stripes.forEach((c, k) => {
+          const f = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.05, 0.38), mat(c));
+          f.position.set(-4.6, 0.23, 4.5 + k * 0.42);
+          f.receiveShadow = true;
+          world.add(f);
+        });
+        taken.push([-4.6, 5.1, 1.3]);
+      }
+      if (growth.statue) {
+        const st = new THREE.Group();
+        const ped = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.35, 0.45), mat(PALETTE.stone));
+        ped.position.y = 0.4;
+        const goldM = mat(new THREE.Color(heroColor).getHex(), { metalness: 0.7, roughness: 0.3 });
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 0.5, 8), goldM);
+        body.position.y = 0.83;
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), goldM);
+        head.position.y = 1.16;
+        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.45, 6), goldM);
+        arm.position.set(0.14, 1.12, 0);
+        arm.rotation.z = -0.4;
+        st.add(ped, body, head, arm);
+        st.position.set(-2.6 + 0.75, 0.2, 1.2 - 0.6);
+        st.traverse((o) => { o.castShadow = true; });
+        world.add(st);
+      }
+      if (growth.lighthouse) {
+        const lh = new THREE.Group();
+        const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.45, 2.4, 10), mat(0xf6efe2));
+        tower.position.y = 1.2;
+        const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.38, 0.35, 10), mat(0xb5532c));
+        stripe.position.y = 1.2;
+        lamp = new THREE.Group();
+        const glow = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), new THREE.MeshStandardMaterial({ color: 0xfff1b8, emissive: 0xffd36b, emissiveIntensity: 1.2 }));
+        const beam = new THREE.Mesh(new THREE.ConeGeometry(0.4, 2.2, 12, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff1b8, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false }));
+        beam.rotation.z = Math.PI / 2;
+        beam.position.x = 1.1;
+        lamp.add(glow, beam);
+        lamp.position.y = 2.55;
+        const roofL = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.4, 10), mat(0xb5532c));
+        roofL.position.y = 2.95;
+        lh.add(tower, stripe, lamp, roofL);
+        lh.position.set(5.9, 0.2, 3.9);
+        lh.traverse((o) => { o.castShadow = true; });
+        world.add(lh);
+        taken.push([5.9, 3.9, 0.8]);
+      }
+    }
+
+    // Trees and rocks, away from the square, the path and what was built.
+    const near = (x: number, z: number) => Math.hypot(x + 2.6, z - 1.2) < 3.6 || pts.some((p) => Math.hypot(x - p.x, z - p.z) < 1.2) || Math.hypot(x, z) > 7.3 || taken.some(([tx, tz, tr]) => Math.hypot(x - tx, z - tz) < tr + 0.5);
     for (let i = 0, placed = 0; i < 400 && placed < 34; i++) {
       const a = R() * Math.PI * 2;
       const r = 2 + R() * 5.5;
@@ -235,7 +342,11 @@ export default function Village3D({ zones, heroZoneNo, buildings, onZone, heroCo
         puff.position.set(k * 0.7, R() * 0.3, R() * 0.4);
         c.add(puff);
       }
-      c.position.set(-9 + i * 5, 6 + R() * 1.5, -6 + R() * 6);
+      // High up on a ring around the island, so a cloud never drifts in front of the camera.
+      c.userData.angle = (i / 4) * Math.PI * 2 + R();
+      c.userData.radius = 8 + R() * 2;
+      c.position.set(Math.cos(c.userData.angle) * c.userData.radius, 8.6 + R() * 1.2, Math.sin(c.userData.angle) * c.userData.radius);
+      c.scale.setScalar(0.8);
       scene.add(c);
       clouds.push(c);
     }
@@ -305,10 +416,16 @@ export default function Village3D({ zones, heroZoneNo, buildings, onZone, heroCo
       const tt = clock.getElapsedTime();
       if (!reduce) {
         flags.forEach((f, i) => (f.rotation.y = Math.sin(tt * 2 + i) * 0.25));
-        clouds.forEach((c, i) => (c.position.x = ((c.position.x + 0.004 * (i + 1) + 12) % 24) - 12));
+        clouds.forEach((c, i) => {
+          const a = c.userData.angle + tt * 0.01 * (1 + i * 0.2);
+          c.position.x = Math.cos(a) * c.userData.radius;
+          c.position.z = Math.sin(a) * c.userData.radius;
+        });
         fogs.forEach((f, i) => (f.position.y = Math.sin(tt * 0.8 + i) * 0.08));
         if (beacon) (beacon.material as THREE.MeshBasicMaterial).opacity = 0.25 + Math.sin(tt * 2.2) * 0.12;
         water.position.y = -0.35 + Math.sin(tt * 0.9) * 0.02;
+        if (blades) blades.rotation.z = tt * 0.9;
+        if (lamp) lamp.rotation.y = tt * 0.8;
       }
       controls.update();
       renderer.render(scene, camera);
