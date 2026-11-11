@@ -50,6 +50,10 @@
 .animate-level-pop { animation: level-pop 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.25s both; }
 .level-rays { animation: level-rays 14s linear infinite; transform-origin: 50% 50%; }
 .reward-in { animation: reward-in 0.45s ease-out both; }
+@keyframes lobby-blades { to { transform: rotate(360deg); } }
+@keyframes lobby-clouds { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(14px); } }
+.lobby-blades { animation: lobby-blades 6s linear infinite; }
+.lobby-clouds { animation: lobby-clouds 18s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .hero-sparkle { opacity: 0.9; } }
 
 @keyframes confetti-fall {
