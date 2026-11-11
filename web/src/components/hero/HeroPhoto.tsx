@@ -1,16 +1,17 @@
 import { lazy, Suspense, useState } from 'react';
+import { ImageOff } from 'lucide-react';
 const PhotoEquipment=lazy(()=>import('./PhotoEquipment').then(m=>({default:m.PhotoEquipment})));
 import { cn } from '@/lib/cn';
 import { useI18n } from '@/lib/i18n';
 import { heroPhotoKey, wornOutfit } from '@shared/hero';
-import { HumanFigure, type FigureLook } from './HumanFigure';
+import type { FigureLook } from './HumanFigure';
 import { WEAR_SLOTS, wearPlacements, type BodyKind } from './wear';
 
 /**
  * The hero as a real person: a full-body photo matching figure, skin group, body type and
  * hairstyle (generated art, see server/db/seed-data/hero-assets.ts), or the bought outfit's photo. Worn gear is drawn on the
  * photo from cut-outs at fixed places per build (wear.ts); gear without a cut-out shows as a small
- * product photo. Falls back to the drawn figure when no photo loads.
+ * product photo. If all photos fail, show an explicit unavailable state, never a cartoon avatar.
  * Decorative: callers give the surrounding element its accessible name.
  */
 /**
@@ -30,7 +31,7 @@ export function HeroPhoto(props: HeroPhotoProps) {
   return <HeroPhotoContent key={heroPhotoSources(props.look).join('|')} {...props}/>;
 }
 function HeroPhotoContent({ look, className, gearChips = false, fittedGear = false }: HeroPhotoProps) {
-  // Try the personal/guest photo, then this hairstyle, then the base photo, then the drawing.
+  // Try the personal/guest photo, then this hairstyle, then the base photo.
   const keys = heroPhotoSources(look);
   const { t } = useI18n();
   const [attempt, setAttempt] = useState(0);
@@ -44,7 +45,10 @@ function HeroPhotoContent({ look, className, gearChips = false, fittedGear = fal
   return (
     <span className={cn('relative block overflow-hidden rounded-2xl bg-[#ece4d6]', className)} aria-hidden>
       {failed ? (
-        <HumanFigure look={look} className="h-full w-full" />
+        <span data-photo-unavailable="true" className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#e7e4dc] px-2 text-center text-[11px] font-medium text-ink-700">
+          <ImageOff className="h-5 w-5 shrink-0" aria-hidden />
+          {t('Foto tijdelijk niet beschikbaar', 'Photo temporarily unavailable')}
+        </span>
       ) : (
         // A 3:4 layer that matches the photo exactly, so the gear lands on the body at any box size.
         <span className="absolute left-1/2 top-0 block aspect-[3/4] h-full -translate-x-1/2" style={fittedGear ? {transform:"translateX(-50%) scale(.92)",transformOrigin:"50% 50%"} : undefined}>
