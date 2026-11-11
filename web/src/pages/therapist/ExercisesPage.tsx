@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Brain, CheckCircle2, Dumbbell, Loader2, Play, Plus, SearchX, X } from 'lucide-react';
+import { BookOpen, Brain, CheckCircle2, Dumbbell, Loader2, Play, Plus, SearchX, VideoOff, X } from 'lucide-react';
 import { muscleByKey, nerveByKey } from '@shared/muscleAtlas';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta, useLabels } from '@/lib/meta';
@@ -96,6 +96,15 @@ export function ExercisesPage() {
         {(f.muscle || f.nerve) && <AtlasFilterChip f={f} onClear={() => setF({ ...f, muscle: '', nerve: '' })} />}
       </div>
 
+      {f.video === 'missing' && (
+        <div role="status" className="mb-3 flex items-start gap-2 rounded-xl border border-line bg-white px-3 py-3 text-[13px] text-ink-700">
+          <VideoOff className="mt-0.5 h-4 w-4 shrink-0 text-ink-500" aria-hidden />
+          <span>{t(
+            'Deze oefeningen hebben voor jouw praktijk nog geen afspeelbare video. Open een oefening en kies ‘Media beheren’ om zelf een opname toe te voegen. Een betaald AI-abonnement is niet nodig.',
+            'These exercises have no playable video for your practice yet. Open an exercise and choose “Manage media” to add your own recording. A paid AI subscription is not required.',
+          )}</span>
+        </div>
+      )}
       <div className="mb-3 flex h-5 items-center gap-2 text-[13px] text-ink-500" aria-live="polite">
         {q.pending && !q.isError ? (
           <span className="inline-flex items-center gap-1.5"><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />{f.q.trim() ? t(`Zoeken naar “${f.q.trim()}”…`, `Searching for “${f.q.trim()}”…`) : t('Oefeningen laden…', 'Loading exercises…')}</span>
