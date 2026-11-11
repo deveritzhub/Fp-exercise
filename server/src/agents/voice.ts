@@ -30,9 +30,15 @@ class TwiML {
     this.parts.push(`<Redirect method="POST">/agents/voice/respond?silent=${silent + 1}</Redirect>`);
     return this;
   }
-  dial(number: string) {
-    const callerId = agentConfig.twilio.phoneNumber ? ` callerId="${xml(agentConfig.twilio.phoneNumber)}"` : '';
-    this.parts.push(`<Dial${callerId}>${xml(number)}</Dial>`);
+  /** Rings `number`. With `action`, Twilio posts the outcome there (e.g. to fall back to the assistant). */
+  dial(number: string, opts: { callerId?: string; timeout?: number; action?: string } = {}) {
+    const callerId = opts.callerId ?? agentConfig.twilio.phoneNumber;
+    const attrs = [
+      callerId ? ` callerId="${xml(callerId)}"` : '',
+      opts.timeout ? ` timeout="${opts.timeout}"` : '',
+      opts.action ? ` action="${xml(opts.action)}" method="POST"` : '',
+    ].join('');
+    this.parts.push(`<Dial${attrs}>${xml(number)}</Dial>`);
     return this;
   }
   hangup() {
@@ -64,6 +70,9 @@ async function validatedForm(c: Context): Promise<Record<string, string> | null>
   return expected.length === got.length && crypto.timingSafeEqual(expected, got) ? form : null;
 }
 
+/** Calls where the practice was rung and nobody answered (in memory; calls are short-lived). */
+const missedRing = new Set<string>();
+
 const hoursRules = parseHours(agentConfig.practiceHours); // invalid PRACTICE_HOURS fails at start-up
 
 /**
@@ -73,7 +82,8 @@ const hoursRules = parseHours(agentConfig.practiceHours); // invalid PRACTICE_HO
  */
 function callState(form: Record<string, string>, now = new Date()) {
   const practiceOpen = isOpen(hoursRules, now, practice.timezone);
-  const forwarded = !!form.ForwardedFrom;
+  // Forwarded to us, or the practice was already rung for this call and nobody answered.
+  const forwarded = !!form.ForwardedFrom || !!form.DialCallStatus || missedRing.has(form.CallSid ?? '');
   return { practiceOpen, canTransfer: !!agentConfig.ownerPhone && practiceOpen !== false && !forwarded };
 }
 
@@ -117,11 +127,38 @@ voiceRoutes.post('/incoming', async (c) => {
       `(Uitgaand gesprek dat jij namens de praktijk voert; de klant heeft net opgenomen. Doel van het gesprek: ${purpose.slice(0, 500)}. Stel jezelf kort voor en begin het gesprek.)`,
     );
   }
-  const greeting =
-    callState(form).practiceOpen === false
-      ? `Hallo, je spreekt met de digitale assistent van ${practice.name}. De praktijk is nu gesloten, maar ik kan je vragen beantwoorden of zorgen dat je teruggebeld wordt. Waarmee kan ik je helpen?`
-      : `Goedendag, je spreekt met de digitale assistent van ${practice.name}. Waarmee kan ik je helpen?`;
-  return twiml(c, new TwiML().gather(greeting));
+  const state = callState(form);
+  // During practice hours (when the Twilio number is the published number): ring the practice
+  // first; the assistant only answers when nobody picks up.
+  if (agentConfig.ringOwnerFirst && state.practiceOpen === true && state.canTransfer) {
+    return twiml(
+      c,
+      new TwiML().dial(agentConfig.ownerPhone, { callerId: form.From, timeout: RING_SECONDS, action: '/agents/voice/dial-result' }),
+    );
+  }
+  return twiml(c, new TwiML().gather(state.practiceOpen === false ? CLOSED_GREETING() : OPEN_GREETING()));
+});
+
+const RING_SECONDS = 20;
+const OPEN_GREETING = () => `Goedendag, je spreekt met de digitale assistent van ${practice.name}. Waarmee kan ik je helpen?`;
+const CLOSED_GREETING = () =>
+  `Hallo, je spreekt met de digitale assistent van ${practice.name}. De praktijk is nu gesloten, maar ik kan je vragen beantwoorden of zorgen dat je teruggebeld wordt. Waarmee kan ik je helpen?`;
+
+/** Outcome of ringing the practice: answered = done, otherwise the assistant takes the call. */
+voiceRoutes.post('/dial-result', async (c) => {
+  const form = await validatedForm(c);
+  if (!form) return c.json({ error: 'invalid_signature' }, 403);
+  if (form.DialCallStatus === 'completed') return twiml(c, new TwiML().hangup());
+  if (form.CallSid) {
+    missedRing.add(form.CallSid);
+    if (missedRing.size > 1000) missedRing.delete(missedRing.values().next().value!);
+  }
+  return twiml(
+    c,
+    new TwiML().gather(
+      `Hallo, je spreekt met de digitale assistent van ${practice.name}. Mijn collega's zijn even bezet. Ik kan je vragen beantwoorden of zorgen dat je teruggebeld wordt. Waarmee kan ik je helpen?`,
+    ),
+  );
 });
 
 voiceRoutes.post('/respond', async (c) => {

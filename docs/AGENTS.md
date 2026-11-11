@@ -59,6 +59,21 @@ dat kanaal met 503. De rest van FP Flow werkt gewoon door. Controleer na het ins
 
 ### Na werktijd laten opnemen
 
+Er zijn twee opzetten. Kies er één.
+
+**Opzet B (exact op tijd, aanbevolen): het Twilio-nummer wordt je praktijknummer.**
+Zet het Twilio-nummer op je website, bij Google en op ZorgkaartNederland, en stel in:
+`PRACTICE_HOURS="ma-vr 09:00-18:00"`, `RING_OWNER_FIRST=1` en `OWNER_PHONE=+31681700829`.
+Je mobiel schakelt dan **níet** door. Zo werkt het:
+- Ma-vr 09:00-18:00 gaat eerst je mobiel 20 seconden over, en de beller ziet het nummer van de
+  klant. Neem je niet op, dan neemt de assistent het over.
+- Vóór 09:00, na 18:00 en in het weekend neemt de assistent direct op: "De praktijk is nu gesloten…".
+
+**Opzet A (nummer blijft hetzelfde): je mobiel schakelt door bij geen gehoor.** Dit is hieronder
+beschreven. Zet daarbij op je telefoon een focusmodus (iPhone: Focus, Android: Niet storen) met
+schema 18:00-09:00. Bellers horen 's avonds dan eerst ongeveer 20 seconden overgaan voordat de
+assistent opneemt.
+
 Zet `PRACTICE_HOURS` op je werktijden, bijvoorbeeld `ma-vr 08:00-18:00` of
 `ma-vr 08:00-18:00; za 09:00-12:00`. Dagen schrijf je als ma di wo do vr za zo, en de tijden
 gelden in Nederlandse tijd. Buiten die tijden doet de assistent het volgende:

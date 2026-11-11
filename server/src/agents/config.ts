@@ -36,6 +36,12 @@ export const agentConfig = {
    * assistant says the practice is closed and never transfers (it takes a callback request instead).
    */
   practiceHours: env('PRACTICE_HOURS'),
+  /**
+   * "1" = during PRACTICE_HOURS, ring OWNER_PHONE first and let the assistant answer only when
+   * nobody picks up. Only for when the Twilio number is the number customers call (never when
+   * OWNER_PHONE itself forwards to Twilio).
+   */
+  ringOwnerFirst: env('RING_OWNER_FIRST') === '1',
   /** Number callers are transferred to, e.g. +31612345678. */
   ownerPhone: env('OWNER_PHONE'),
   /** Protects POST /agents/voice/outbound. */
