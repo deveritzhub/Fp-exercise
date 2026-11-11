@@ -19,9 +19,14 @@ test('all cosmetics, persistence, previews, character variants and keyboard', as
     if(path==='/api/patient/hero'){state.gear.score=GEAR.filter(g=>state.gear.equipped.includes(g.key)).reduce((n,g)=>n+g.score,0);return route.fulfill({json:state});}
     return route.fulfill({json:{}});
   });
+  const showIllustrated = async () => {
+    // The photographic avatar is the product default on every navigation/reload.
+    await expect(page.getByRole('img', { name:'Je fotorealistische held met je gedragen uitrusting' })).toBeVisible();
+    await page.getByRole('button',{name:'RPG-weergave',exact:true}).click();
+  };
   mkdirSync('docs/rpg-screenshots',{recursive:true});
   await page.goto('/p/held/inventaris');
-  await page.getByRole('button',{name:'RPG-weergave',exact:true}).click();
+  await showIllustrated();
   const character=page.getByRole('img',{name:'Je geïllustreerde held met je gedragen uitrusting'});
   await expect(character).toBeVisible();
   await page.locator('.rpg-stage').screenshot({style:'header, nav { visibility:hidden !important }',path:'docs/rpg-screenshots/unequipped.png'});
@@ -32,19 +37,19 @@ test('all cosmetics, persistence, previews, character variants and keyboard', as
     await expect(character.locator(`[data-rpg-item="${item.key}"]`)).toHaveCount(1);
     const box=await character.locator(`[data-rpg-item="${item.key}"]`).boundingBox();
     expect(box?.width).toBeGreaterThan(5);expect(box?.height).toBeGreaterThan(4);
-    await page.reload();await expect(character.locator(`[data-rpg-item="${item.key}"]`)).toHaveCount(1);
+    await page.reload(); await showIllustrated();await expect(character.locator(`[data-rpg-item="${item.key}"]`)).toHaveCount(1);
     await page.getByRole('button',{pressed:true}).filter({hasText:item.nl}).last().click();
     await expect(character.locator(`[data-rpg-item="${item.key}"]`)).toHaveCount(0);
   }
   const full=['crown','medal','pin','yoga_mat','captain','watch','gloves','belt','shin_guards','gold_shoes','champion','sport_item'];
   for(const [i,build] of ['slim','athletic','full'].entries()){
     Object.assign(state.hero,{build,frame:i===1?'m':'f',hair:['long','afro','bun'][i],skin:['s2','s7','s10'][i]});state.gear.equipped=full;
-    await page.reload();await expect(character.locator('[data-rpg-item]')).toHaveCount(12);
+    await page.reload(); await showIllustrated();await expect(character.locator('[data-rpg-item]')).toHaveCount(12);
     await page.locator('.rpg-stage').screenshot({style:'header, nav { visibility:hidden !important }',path:`docs/rpg-screenshots/equipped-${build}.png`});
   }
   for(const frame of HERO_OPTIONS.frame) for(const build of HERO_OPTIONS.build) for(const hair of HERO_OPTIONS.hair){
     Object.assign(state.hero,{frame,build,hair});state.gear.equipped=full;
-    await page.reload();await expect(character.locator('[data-rpg-item]')).toHaveCount(12);
+    await page.reload(); await showIllustrated();await expect(character.locator('[data-rpg-item]')).toHaveCount(12);
     const outside=await character.locator('[data-rpg-item]').evaluateAll(nodes=>nodes.filter(n=>{const b=(n as SVGGraphicsElement).getBBox();return b.x < 0 || b.x+b.width > 200 || b.y < -10 || b.y+b.height > 430}).map(n=>n.getAttribute('data-rpg-item')));
     expect(outside,`${frame}/${build}/${hair}`).toEqual([]);
     // Neck decoration must remain above the belt; back item precedes the visible body.
@@ -58,13 +63,13 @@ test('all cosmetics, persistence, previews, character variants and keyboard', as
   await page.getByRole('dialog').screenshot({path:'docs/rpg-screenshots/master-cape-preview.png'});
   await page.keyboard.press('Escape');
   await page.locator('[aria-labelledby="gear-title"]').screenshot({style:'header, nav { visibility:hidden !important }',path:'docs/rpg-screenshots/collection.png'});
-  state.gear.owned=state.gear.owned.filter(k=>k!=='cap');await page.reload();
+  state.gear.owned=state.gear.owned.filter(k=>k!=='cap');await page.reload(); await showIllustrated();
   const before=writes;await page.getByRole('button',{name:'Passen: '+GEAR.find(g=>g.key==='cap')!.nl,exact:true}).click();
   await expect(character.locator('[data-rpg-item="cap"]')).toHaveCount(1);expect(writes).toBe(before);
   await page.getByRole('button',{name:'Preview sluiten'}).click();await expect(character.locator('[data-rpg-item="crown"]')).toHaveCount(1);
   await page.getByRole('button',{name:/Kopen .*: .*pet/i}).click();await expect(page.getByRole('dialog')).toBeVisible();await page.getByRole('dialog').screenshot({animations:'disabled',path:'docs/rpg-screenshots/loot.png'});await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).not.toBeVisible();
   await page.getByRole('button',{name:/Hoofd:.*Wijzigen/}).focus();await page.keyboard.press('Enter');await expect(page.getByRole('dialog')).toBeVisible();await page.keyboard.press('Escape');
-  await page.setViewportSize({width:390,height:844});await page.emulateMedia({reducedMotion:'reduce'});await page.reload();await expect(character).toBeVisible();
+  await page.setViewportSize({width:390,height:844});await page.emulateMedia({reducedMotion:'reduce'});await page.reload(); await showIllustrated();await expect(character).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.locator('.rpg-stage').screenshot({style:'header, nav { visibility:hidden !important }',path:'docs/rpg-screenshots/mobile.png'});
   await expect(character.locator('.rpg-item').first()).toHaveCSS('animation-name','none');
