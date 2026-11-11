@@ -74,9 +74,17 @@ describe('private media storage', () => {
     expect(a.body.videoMediaId).toBe(videoId);
     expect(a.body.practiceMedia).toBe(true);
     expect((await A.get('/exercises?q=bekkenbrug')).body.items.find((e: any) => e.id === id).videoMediaId).toBe(videoId);
+    // Filter uses the video that this practice's users actually see, not just the central media field.
+    const withVideo = await A.get('/exercises?q=bekkenbrug&video=available');
+    expect(withVideo.status).toBe(200);
+    expect(withVideo.body.items.map((e: any) => e.id)).toContain(id);
+    expect((await A.get('/exercises?q=bekkenbrug&video=missing')).body.items.map((e: any) => e.id)).not.toContain(id);
     // practice B and its patient still see the library version (no video)
     const B = await login('therapistB');
     expect((await B.get(`/exercises/${id}`)).body.videoMediaId).toBeNull();
+    // No cross-practice leakage: another practice still sees this video as missing.
+    expect((await B.get('/exercises?q=bekkenbrug&video=missing')).body.items.map((e: any) => e.id)).toContain(id);
+    expect((await B.get('/exercises?q=bekkenbrug&video=available')).body.items.map((e: any) => e.id)).not.toContain(id);
     expect((await (await login('patientB')).get(`/exercises/${id}`)).body.videoMediaId).toBeNull();
     // practice A's patient sees it inside their programme
     const prog = await A.post('/programs', { patientId: s.patients.emma, title: 'Met video', status: 'active', items: [{ exerciseId: id, days: [1, 2, 3, 4, 5, 6, 7] }] });
@@ -87,6 +95,8 @@ describe('private media storage', () => {
     expect((await B.put(`/exercises/${id}/media`, { videoMediaId: videoId, thumbnailMediaId: null })).status).toBe(400);
     await A.put(`/exercises/${id}/media`, { videoMediaId: null, thumbnailMediaId: null });
     expect((await A.get(`/exercises/${id}`)).body.videoMediaId).toBeNull();
+    expect((await A.get('/exercises?q=bekkenbrug&video=missing')).body.items.map((e: any) => e.id)).toContain(id);
+    expect((await A.get('/exercises?video=invalid')).status).toBe(400);
   });
 
   it('public showcase streams only central-library exercise videos, never practice media', async () => {
