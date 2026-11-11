@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, X } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { Dialog } from '@/components/ui';
 import { cn } from '@/lib/cn';
@@ -48,50 +48,106 @@ const PATIENT: Item[] = [
 const VERSION = '2026-11-11b';
 const KEY = 'fp.whatsnew.v1';
 
-function seen() {
+function seenVersion(): string | null | undefined {
   try {
-    return localStorage.getItem(KEY) === VERSION;
+    return localStorage.getItem(KEY);
   } catch {
-    return true;
+    return undefined; // storage blocked: never nag
   }
 }
+function markSeen() {
+  try {
+    localStorage.setItem(KEY, VERSION);
+  } catch {
+    /* storage unavailable */
+  }
+  window.dispatchEvent(new Event('fp-whatsnew-seen'));
+}
+/** "11 november 2026" from the version, so people see which update they have. */
+function versionLabel(nl: boolean) {
+  const d = new Date(VERSION.slice(0, 10) + 'T12:00:00');
+  return d.toLocaleDateString(nl ? 'nl-NL' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+}
 
-export function WhatsNew({ audience, clinical = true, className }: { audience: 'staff' | 'patient'; clinical?: boolean; className?: string }) {
+function WhatsNewDialog({ audience, clinical, onClose }: { audience: 'staff' | 'patient'; clinical: boolean; onClose: () => void }) {
   const { t, locale } = useI18n();
-  const [open, setOpen] = useState(false);
-  const [isNew, setIsNew] = useState(() => !seen());
   const items = (audience === 'staff' ? STAFF : PATIENT).filter((x) => clinical || !x.clinical).slice(0, 8);
-  const show = () => {
-    setOpen(true);
-    setIsNew(false);
-    try {
-      localStorage.setItem(KEY, VERSION);
-    } catch {
-      /* storage unavailable */
-    }
-  };
+  return (
+    <Dialog open onClose={onClose} title={t('Wat is er nieuw?', "What's new?")} description={t(`Versie van ${versionLabel(true)}. Probeer het uit en laat via de feedbackknop weten wat je ervan vindt.`, `Version of ${versionLabel(false)}. Try it and tell us what you think with the feedback button.`)}>
+      <ul className="space-y-3">
+        {items.map((x, i) => (
+          <li key={i} className="flex gap-2 text-[15px] text-ink-800">
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
+            <span>
+              {locale === 'nl' ? x.nl : x.en}
+              {x.to && <> <Link to={x.to} onClick={onClose} className="font-semibold text-accent hover:underline">{t('Bekijken', 'View')}</Link></>}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </Dialog>
+  );
+}
+
+/** The "What's new?" button (settings, sidebar) with a "New" label until the newest version was opened. */
+export function WhatsNew({ audience, clinical = true, className }: { audience: 'staff' | 'patient'; clinical?: boolean; className?: string }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [isNew, setIsNew] = useState(() => { const v = seenVersion(); return v !== undefined && v !== VERSION; });
+  useEffect(() => {
+    const on = () => setIsNew(false);
+    window.addEventListener('fp-whatsnew-seen', on);
+    return () => window.removeEventListener('fp-whatsnew-seen', on);
+  }, []);
   return (
     <>
-      <button type="button" onClick={show} className={cn('flex min-h-[44px] w-full items-center gap-2 rounded-lg px-3 text-left text-[14px] font-medium text-ink-700 hover:bg-white/70', className)}>
+      <button type="button" onClick={() => { setOpen(true); markSeen(); }} className={cn('flex min-h-[44px] w-full items-center gap-2 rounded-lg px-3 text-left text-[14px] font-medium text-ink-700 hover:bg-white/70', className)}>
         <Sparkles className="h-[18px] w-[18px] shrink-0 text-accent" aria-hidden />
         <span className="flex-1">{t('Wat is er nieuw?', "What's new?")}</span>
         {isNew && <span className="rounded-full bg-accent px-2 py-0.5 text-[11.5px] font-semibold text-accent-ink">{t('Nieuw', 'New')}</span>}
       </button>
-      {open && (
-        <Dialog open onClose={() => setOpen(false)} title={t('Wat is er nieuw?', "What's new?")} description={t('De laatste verbeteringen. Probeer ze uit en laat via de feedbackknop weten wat je ervan vindt.', 'The latest improvements. Try them and tell us what you think with the feedback button.')}>
-          <ul className="space-y-3">
-            {items.map((x, i) => (
-              <li key={i} className="flex gap-2 text-[15px] text-ink-800">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
-                <span>
-                  {locale === 'nl' ? x.nl : x.en}
-                  {x.to && <> <Link to={x.to} onClick={() => setOpen(false)} className="font-semibold text-accent hover:underline">{t('Bekijken', 'View')}</Link></>}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Dialog>
+      {open && <WhatsNewDialog audience={audience} clinical={clinical} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+/**
+ * A notice at the top of the app right after an update: "FP Flow was updated" with the number of new
+ * things and a button to read them. Shown once per version, only to people who used an earlier one.
+ */
+export function UpdateNotice({ audience, clinical = true }: { audience: 'staff' | 'patient'; clinical?: boolean }) {
+  const { t } = useI18n();
+  const [show, setShow] = useState(() => { const v = seenVersion(); return typeof v === 'string' && v !== VERSION; });
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    // First visit ever: remember this version quietly, so the notice only comes with the next update.
+    if (seenVersion() === null) {
+      try { localStorage.setItem(KEY, VERSION); } catch { /* storage unavailable */ }
+    }
+    const on = () => setShow(false);
+    window.addEventListener('fp-whatsnew-seen', on);
+    return () => window.removeEventListener('fp-whatsnew-seen', on);
+  }, []);
+  const count = (audience === 'staff' ? STAFF : PATIENT).filter((x) => clinical || !x.clinical).slice(0, 8).length;
+  if (!show && !open) return null;
+  return (
+    <>
+      {show && (
+        <div role="status" className="mb-4 flex items-center gap-3 rounded-2xl border border-accent/25 bg-accent-soft px-4 py-3 shadow-card">
+          <Sparkles className="h-5 w-5 shrink-0 text-accent" aria-hidden />
+          <p className="min-w-0 flex-1 text-[14.5px] text-ink-900">
+            <strong>{t('FP Flow is bijgewerkt.', 'FP Flow was updated.')}</strong>{' '}
+            {t(`${count} nieuwe dingen sinds je laatste bezoek.`, `${count} new things since your last visit.`)}
+          </p>
+          <button type="button" onClick={() => { setOpen(true); setShow(false); markSeen(); }} className="tap inline-flex min-h-[44px] shrink-0 items-center rounded-xl bg-accent px-3 text-[14px] font-semibold text-accent-ink">
+            {t('Bekijk', 'View')}
+          </button>
+          <button type="button" onClick={() => { setShow(false); markSeen(); }} aria-label={t('Melding sluiten', 'Dismiss notice')} className="-mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-lg text-ink-500 hover:bg-white/60">
+            <X className="h-5 w-5" aria-hidden />
+          </button>
+        </div>
       )}
+      {open && <WhatsNewDialog audience={audience} clinical={clinical} onClose={() => setOpen(false)} />}
     </>
   );
 }

@@ -17,6 +17,7 @@ import { useTextSize } from '@/lib/textSize';
 import { useSession } from '@/lib/session';
 import { QuickLogButton } from '@/components/patient/QuickLog';
 import { PhaseCelebration } from '@/components/patient/PhaseCelebration';
+import { UpdateNotice } from '@/components/app/WhatsNew';
 import { cn } from '@/lib/cn';
 
 const HERO_LATER_KEY = 'fp.heroLater';
@@ -166,6 +167,7 @@ export function PatientLayout() {
       {/* A released rehabilitation phase: celebrate once (not during a workout or hero setup). */}
       {!inPlayer && !inSetup && <PhaseCelebration />}
       <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : 'px-4 pb-28 pt-5')}>
+        {!inPlayer && <UpdateNotice audience="patient" clinical={isClinical(user?.patient?.kind)} />}
         <Outlet />
       </main>
       {!inPlayer && !inSetup && (

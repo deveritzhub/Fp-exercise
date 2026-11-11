@@ -14,7 +14,7 @@ import { NotificationBell } from './Notifications';
 import { CommandPalette } from '@/components/app/CommandPalette';
 import { IdleGuard } from '@/components/app/IdleGuard';
 import { FeedbackButton } from '@/components/app/Feedback';
-import { WhatsNew } from '@/components/app/WhatsNew';
+import { UpdateNotice, WhatsNew } from '@/components/app/WhatsNew';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function TherapistLayout() {
@@ -199,6 +199,7 @@ export function TherapistLayout() {
       </header>
       <TestBanner />
       <main className="mx-auto w-full max-w-[1320px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 print:max-w-none print:p-0">
+        <UpdateNotice audience="staff" clinical={isClinical(practice.kind)} />
         <Outlet />
       </main>
       <CommandPalette open={palette} onClose={() => setPalette(false)} />
