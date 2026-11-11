@@ -114,6 +114,7 @@ const listQuery = z.object({
   scope: z.enum(['all', 'global', 'practice', 'favorites', 'mine', 'unreviewed', 'reviewed']).optional().default('all'),
   source: z.enum(['all', 'global', 'practice', 'mine']).optional().default('all'),
   review: z.enum(['all', 'reviewed', 'unreviewed']).optional().default('all'),
+  video: z.enum(['all', 'missing', 'available']).optional().default('all'),
   favorites: z.enum(['0', '1']).optional().default('0'),
   // Muscle atlas: a muscle key or a nerve key (shared/muscleAtlas.ts).
   muscle: z.string().max(40).optional(),
@@ -156,6 +157,10 @@ exercises.get('/', async (c) => {
                  OR ($11 = 'unreviewed' AND rv.exercise_id IS NULL)
                  OR ($11 = 'reviewed' AND rv.exercise_id IS NOT NULL))
             AND (NOT $12 OR fav.user_id IS NOT NULL)
+            -- Filter the effective player video: a practice override takes precedence over the central library.
+            AND ($14 = 'all'
+                 OR ($14 = 'missing' AND COALESCE(ov.video_media_id, e.video_media_id) IS NULL)
+                 OR ($14 = 'available' AND COALESCE(ov.video_media_id, e.video_media_id) IS NOT NULL))
             AND ($13::text[] IS NULL OR EXISTS (
                   SELECT 1 FROM unnest(e.target_muscles || ARRAY[e.name_nl, e.name_en]) t
                    WHERE lower(unaccent(t)) LIKE ANY($13::text[])))
@@ -163,7 +168,7 @@ exercises.get('/', async (c) => {
                    ($8 <> '' AND (e.name_nl ILIKE '%' || $8 || '%' OR e.name_en ILIKE '%' || $8 || '%')) DESC,
                    rank DESC, e.name_nl
           LIMIT $6 OFFSET $7`,
-        [tsq, f.region ?? null, f.category ?? null, f.equipment ?? null, f.difficulty ?? null, f.limit, f.offset, f.q.trim().slice(0, 60), source, mediaPracticeId(c), review, favorites, atlasWords],
+        [tsq, f.region ?? null, f.category ?? null, f.equipment ?? null, f.difficulty ?? null, f.limit, f.offset, f.q.trim().slice(0, 60), source, mediaPracticeId(c), review, favorites, atlasWords, f.video],
       );
       return { items: rows.map((r) => ({ ...mapExercise(r), variantCount: r.variant_count })), total: rows[0]?.total ?? 0 };
     }),
