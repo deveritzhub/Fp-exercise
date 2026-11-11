@@ -224,12 +224,18 @@ const ExerciseCard = memo(function ExerciseCard({ e, onPreview, onAdd }: { e: Ex
           <Dumbbell className="h-3.5 w-3.5 shrink-0 text-ink-400" aria-hidden />
           <span className="truncate">{L.equipmentList(e.equipment)}</span>
         </p>
-        <div className="mt-auto flex items-center gap-1.5 pt-1.5 sm:pt-3">
+        <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-1.5 sm:pt-3">
           <span className={cn('rounded-md px-2 py-0.5 text-[12px] font-semibold', e.scope === 'practice' ? 'bg-accent-soft text-accent' : 'bg-ink-100 text-ink-700')}>{e.scope === 'practice' ? t('Praktijk', 'Practice') : t('Centraal', 'Central')}</span>
           {e.reviewStatus === 'reviewed' && (
             <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-ok">
               <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
               {t('Goedgekeurd', 'Approved')}
+            </span>
+          )}
+          {!e.videoMediaId && (
+            <span className="inline-flex items-center gap-1 rounded-md border border-line px-2 py-0.5 text-[12px] font-medium text-ink-600" title={t('Nog geen video beschikbaar voor jouw praktijk', 'No video available for your practice yet')}>
+              <VideoOff className="h-3.5 w-3.5" aria-hidden />
+              {t('Geen video', 'No video')}
             </span>
           )}
           {!!e.variantCount && (
