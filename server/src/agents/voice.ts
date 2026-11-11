@@ -136,13 +136,18 @@ voiceRoutes.post('/incoming', async (c) => {
       new TwiML().dial(agentConfig.ownerPhone, { callerId: form.From, timeout: RING_SECONDS, action: '/agents/voice/dial-result' }),
     );
   }
-  return twiml(c, new TwiML().gather(state.practiceOpen === false ? CLOSED_GREETING() : OPEN_GREETING()));
+  // Forwarded from the practice phone during the day (nobody picked up): say colleagues are busy.
+  const greeting = state.practiceOpen === false ? CLOSED_GREETING() : form.ForwardedFrom ? BUSY_GREETING() : OPEN_GREETING();
+  return twiml(c, new TwiML().gather(greeting));
 });
 
 const RING_SECONDS = 20;
 const OPEN_GREETING = () => `Goedendag, je spreekt met de digitale assistent van ${practice.name}. Waarmee kan ik je helpen?`;
 const CLOSED_GREETING = () =>
   `Hallo, je spreekt met de digitale assistent van ${practice.name}. De praktijk is nu gesloten, maar ik kan je vragen beantwoorden of zorgen dat je teruggebeld wordt. Waarmee kan ik je helpen?`;
+
+const BUSY_GREETING = () =>
+  `Hallo, je spreekt met de digitale assistent van ${practice.name}. Mijn collega's zijn even bezet. Ik kan je vragen beantwoorden of zorgen dat je teruggebeld wordt. Waarmee kan ik je helpen?`;
 
 /** Outcome of ringing the practice: answered = done, otherwise the assistant takes the call. */
 voiceRoutes.post('/dial-result', async (c) => {
@@ -153,12 +158,7 @@ voiceRoutes.post('/dial-result', async (c) => {
     missedRing.add(form.CallSid);
     if (missedRing.size > 1000) missedRing.delete(missedRing.values().next().value!);
   }
-  return twiml(
-    c,
-    new TwiML().gather(
-      `Hallo, je spreekt met de digitale assistent van ${practice.name}. Mijn collega's zijn even bezet. Ik kan je vragen beantwoorden of zorgen dat je teruggebeld wordt. Waarmee kan ik je helpen?`,
-    ),
-  );
+  return twiml(c, new TwiML().gather(BUSY_GREETING()));
 });
 
 voiceRoutes.post('/respond', async (c) => {

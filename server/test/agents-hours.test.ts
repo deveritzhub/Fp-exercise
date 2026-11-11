@@ -69,4 +69,14 @@ describe('phone: practice hours ma-vr 09:00-18:00', () => {
       expect(body, t).toContain('De praktijk is nu gesloten');
     }
   });
+
+  it('option A: a call forwarded from the practice mobile during hours gets the "busy" greeting, after hours the closed one', async () => {
+    vi.setSystemTime(new Date('2026-11-11T11:00:00+01:00'));
+    const day = await (await postTwilio('/agents/voice/incoming', { CallSid: 'CF1', From: '+31655555555', ForwardedFrom: '+31681700829', Direction: 'inbound' })).text();
+    expect(day).not.toContain('<Dial');
+    expect(day).toContain('even bezet');
+    vi.setSystemTime(new Date('2026-11-11T21:00:00+01:00'));
+    const night = await (await postTwilio('/agents/voice/incoming', { CallSid: 'CF2', From: '+31655555555', ForwardedFrom: '+31681700829', Direction: 'inbound' })).text();
+    expect(night).toContain('De praktijk is nu gesloten');
+  });
 });
