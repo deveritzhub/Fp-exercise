@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, Gift, Hammer, Map as MapIcon, Pin, Sparkles, Swords, Users } from 'lucide-react';
+import { Gift, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
@@ -203,12 +203,12 @@ export function VillageTiles() {
   if (!d?.hero) return null;
   const questsOpen = d.weekly.quests.some((x) => !x.done);
   const tiles = [
-    { key: 'board', to: '/p/held#weekly-title', label: t('Prikbord', 'Notice board'), hint: !d.checkin.today ? t('Dagcheck', 'Check-in') : t(`Quests ${d.weekly.quests.filter((x) => x.done).length}/${d.weekly.quests.length}`, `Quests ${d.weekly.quests.filter((x) => x.done).length}/${d.weekly.quests.length}`), icon: Pin, roof: '#8e3b5f', dot: !d.checkin.today || questsOpen },
-    { key: 'smithy', to: '/p/held/inventaris', label: t('Smederij', 'Smithy'), hint: d.chest?.available ? t('Dagkist klaar', 'Day chest ready') : t(`${d.gear.coins} muntjes`, `${d.gear.coins} coins`), icon: Hammer, roof: '#b5532c', dot: !!d.chest?.available },
-    { key: 'arena', to: '/p/held#boss', label: t('Arena', 'Arena'), hint: d.weekly.boss ? (d.weekly.boss.defeated ? t('Baas verslagen', 'Boss defeated') : t('Baas van de week', 'Boss of the week')) : t('Geen baas', 'No boss'), icon: Swords, roof: '#9a3412', dot: !!d.weekly.boss && !d.weekly.boss.defeated },
-    { key: 'library', to: '/p/spieren?tab=quiz', label: t('Bibliotheek', 'Library'), hint: t('Quiz en atlas', 'Quiz and atlas'), icon: BookOpen, roof: '#2759a0', dot: false },
-    { key: 'guild', to: '/p/held/vrienden', label: t('Gildehal', 'Guild hall'), hint: t('Vrienden', 'Friends'), icon: Users, roof: '#29483c', dot: false },
-    { key: 'map', to: '/p/wereld', label: t('Wereldkaart', 'World map'), hint: t('Je route', 'Your route'), icon: MapIcon, roof: '#c9a14a', dot: false },
+    { key: 'board', to: '/p/held#weekly-title', label: t('Prikbord', 'Notice board'), hint: !d.checkin.today ? t('Dagcheck', 'Check-in') : t(`Quests ${d.weekly.quests.filter((x) => x.done).length}/${d.weekly.quests.length}`, `Quests ${d.weekly.quests.filter((x) => x.done).length}/${d.weekly.quests.length}`), sprite: [0, 0], dot: !d.checkin.today || questsOpen },
+    { key: 'smithy', to: '/p/held/inventaris', label: t('Smederij', 'Smithy'), hint: d.chest?.available ? t('Dagkist klaar', 'Day chest ready') : t(`${d.gear.coins} muntjes`, `${d.gear.coins} coins`), sprite: [1, 0], dot: !!d.chest?.available },
+    { key: 'arena', to: '/p/held#boss', label: t('Arena', 'Arena'), hint: d.weekly.boss ? (d.weekly.boss.defeated ? t('Baas verslagen', 'Boss defeated') : t('Baas van de week', 'Boss of the week')) : t('Geen baas', 'No boss'), sprite: [2, 0], dot: !!d.weekly.boss && !d.weekly.boss.defeated },
+    { key: 'library', to: '/p/spieren?tab=quiz', label: t('Bibliotheek', 'Library'), hint: t('Quiz en atlas', 'Quiz and atlas'), sprite: [0, 1], dot: false },
+    { key: 'guild', to: '/p/held/vrienden', label: t('Gildehal', 'Guild hall'), hint: t('Vrienden', 'Friends'), sprite: [1, 1], dot: false },
+    { key: 'map', to: '/p/wereld', label: t('Wereldkaart', 'World map'), hint: t('Je route', 'Your route'), sprite: [2, 1], dot: false },
   ];
   return (
     <nav aria-label={t('Dorp', 'Village')}>
@@ -216,19 +216,31 @@ export function VillageTiles() {
       <ul className="grid grid-cols-3 gap-2">
         {tiles.map((x) => (
           <li key={x.key}>
-            <Link to={x.to} className="tap relative flex min-h-[104px] flex-col items-center justify-end overflow-hidden rounded-2xl border border-line bg-white px-1 pb-2 pt-1 text-center shadow-card hover:border-ink-300">
-              <svg viewBox="0 0 60 44" className="h-11 w-16" aria-hidden>
-                <path d="M6 22 L30 4 L54 22Z" fill={x.roof} />
-                <rect x="11" y="21" width="38" height="21" rx="1.5" fill="#f3ead8" />
-                <rect x="26" y="29" width="8" height="13" fill="#8a6038" />
-              </svg>
-              {x.key === 'smithy' && d.chest?.available ? (
-                <Gift className="chest-bounce -mt-1 h-5 w-5 text-[#855806]" aria-hidden />
-              ) : (
-                <x.icon className="-mt-1 h-4 w-4" style={{ color: x.roof }} aria-hidden />
+            <Link
+              to={x.to}
+              data-village-tile={x.key}
+              className="tap group relative flex min-h-[176px] flex-col items-center justify-start overflow-hidden rounded-[20px] border border-[#dedfd7] bg-[#fffdfa] px-1.5 pb-2.5 pt-1 text-center shadow-card transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-[#a6b39b] hover:shadow-lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              {/* One optimized 20 KB atlas for all six illustrated buildings.
+                  The art is decorative: the visible label/hint remains the link's accessible name. */}
+              <span
+                data-village-art={x.key}
+                className="block aspect-square w-full max-w-[112px] shrink-0 rounded-xl bg-[#f9f1e8]"
+                style={{
+                  backgroundImage: "url('/village/fp-flow-village.webp')",
+                  backgroundSize: '300% 200%',
+                  backgroundPosition: `${x.sprite[0] * 50}% ${x.sprite[1] * 100}%`,
+                  backgroundRepeat: 'no-repeat',
+                }}
+                aria-hidden="true"
+              />
+              <span className="mt-0.5 block max-w-full text-[13px] font-extrabold leading-tight text-ink-950 [overflow-wrap:anywhere] sm:text-[14px]">{x.label}</span>
+              <span className="mt-1 block text-[11.5px] leading-[1.22] text-ink-700">{x.hint}</span>
+              {x.key === 'smithy' && d.chest?.available && (
+                <span className="absolute left-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#fff5db] text-[#855806] shadow-xs">
+                  <Gift className="chest-bounce h-3.5 w-3.5" aria-hidden="true" />
+                </span>
               )}
-              <span className="mt-0.5 text-[13px] font-bold leading-tight text-ink-950">{x.label}</span>
-              <span className="text-[11.5px] leading-tight text-ink-600">{x.hint}</span>
               {x.key === 'arena' && d.weekly.boss && !d.weekly.boss.defeated && (
                 <span className="mt-1 block h-1.5 w-[70%] overflow-hidden rounded-full bg-[#fde8dc]" aria-hidden>
                   <span className="block h-full rounded-full bg-[#c2410c]" style={{ width: `${Math.max(4, 100 - (100 * d.weekly.boss.damage) / Math.max(1, d.weekly.boss.hp))}%` }} />
