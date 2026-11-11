@@ -178,7 +178,10 @@ export async function seed(connectionString = process.env.DATABASE_OWNER_URL!, o
       const r = await db.query(
         `INSERT INTO programs(practice_id, patient_id, title, description, patient_instructions, status, start_date, end_date,
            source_template_id, created_by, activated_at, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, CASE WHEN $6 = 'active' THEN $11::timestamptz END, $11::timestamptz) RETURNING id`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, CASE WHEN $6 = 'active' THEN $11::timestamptz END,
+                -- Demo start dates use 18:00 to keep their date stable across timezones, but
+                -- created_at must never be in the future (it drives recently-used sorting).
+                LEAST($11::timestamptz, now() - interval '1 second')) RETURNING id`,
         [practice, patientId, title, t.description, t.instructions, status, iso(start), iso(end), tmpl[templateTitle], creator, start],
       );
       await addItems(r.rows[0].id, practice, t.items);

@@ -258,6 +258,8 @@ describe('recently used templates', () => {
     expect((await ther.post('/programs', { title: 'Vanuit sjabloon (test)', patientId: pat, status: 'draft', sourceTemplateId: pick.id, items })).status).toBe(201);
     const after = (await ther.get('/programs/templates')).body.items as typeof before;
     const firstNonFav = after.find((x) => !x.favorite)!;
+    // The chosen template must be the newest actual use, not a future-dated seed.
+    expect(Date.parse(after.find(x => x.id === pick.id)!.lastUsedAt!)).toBeLessThanOrEqual(Date.now());
     expect(firstNonFav.id).toBe(pick.id);
     expect(firstNonFav.lastUsedAt).toBeTruthy();
   });
