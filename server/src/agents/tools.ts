@@ -1,4 +1,6 @@
 import type Anthropic from '@anthropic-ai/sdk';
+import { practice } from './practice';
+import { smsTransport } from './sms';
 import { createCallbackRequest, type Channel } from './store';
 
 type Tool = Anthropic.Beta.Messages.BetaTool;
@@ -13,7 +15,13 @@ export interface ToolContext {
   endCall: boolean;
   /** Messages for the practice owner (sent on WhatsApp). */
   notifications: string[];
+  /** Phone: call id, to limit the number of text messages per call. */
+  sessionKey?: string;
 }
+
+/** At most this many booking-link texts per call (no SMS flooding through the assistant). */
+const MAX_SMS_PER_CALL = 2;
+const smsPerCall = new Map<string, number>();
 
 const schema = (properties: Record<string, unknown>, required: string[]) => ({
   type: 'object' as const,
@@ -63,8 +71,21 @@ const endCall: Tool = {
   strict: true,
 };
 
+const sendBookingLink: Tool = {
+  name: 'send_booking_link',
+  description:
+    'Stuurt de beller een sms met de online boekingslink (Flux), zodat de beller zelf direct een afspraak kan ' +
+    'inplannen. Vraag eerst of de beller een sms wil ontvangen op het nummer waarmee hij belt. Kies de link die ' +
+    'past: bij een nieuwe klacht de intake (op de gewenste locatie), wie al onder behandeling is de vervolgafspraak.',
+  input_schema: schema(
+    { link: { type: 'string', enum: practice.bookingLinks.map((l) => l.label), description: 'Welke boekingslink' } },
+    ['link'],
+  ),
+  strict: true,
+};
+
 export function toolsFor(channel: Channel): Tool[] {
-  return channel === 'voice' ? [requestCallback, handoff, endCall] : [requestCallback, handoff];
+  return channel === 'voice' ? [requestCallback, sendBookingLink, handoff, endCall] : [requestCallback, handoff];
 }
 
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
@@ -83,6 +104,22 @@ export async function executeTool(ctx: ToolContext, name: string, input: Record<
           (preference ? `\nVoorkeur: ${preference}` : ''),
       );
       return 'Terugbelverzoek staat klaar; de praktijk belt de klant zo snel mogelijk terug (binnen een werkdag).';
+    }
+    case 'send_booking_link': {
+      const link = practice.bookingLinks.find((l) => l.label === str(input.link));
+      if (!link) return 'Onbekende boekingslink.';
+      if (!/^\+\d{8,15}$/.test(ctx.customerPhone)) return 'Het nummer van de beller is onbekend; sms sturen kan niet. Bied een terugbelverzoek aan.';
+      const key = ctx.sessionKey ?? ctx.customerPhone;
+      const sent = smsPerCall.get(key) ?? 0;
+      if (sent >= MAX_SMS_PER_CALL) return 'Er zijn in dit gesprek al genoeg sms-berichten verstuurd.';
+      const res = await smsTransport.send(
+        ctx.customerPhone,
+        `${practice.name}: plan hier je afspraak (${link.label}):\n${link.url}\n\nVragen? Bel of WhatsApp ${practice.phone}.`,
+      );
+      if (!res.ok) return 'De sms kon niet worden verstuurd (misschien belt de klant met een vast nummer). Bied een terugbelverzoek aan.';
+      smsPerCall.set(key, sent + 1);
+      if (smsPerCall.size > 1000) smsPerCall.delete(smsPerCall.keys().next().value!);
+      return 'De sms met de boekingslink is verstuurd.';
     }
     case 'handoff_to_human':
       if (ctx.channel === 'voice' && !ctx.canTransfer) {

@@ -17,7 +17,10 @@ Telefoon ──► Twilio (spraak↔tekst) ──► /agents/voice/* ───�
 - **Afspraken:** de praktijk plant in Flux, dus de assistent boekt niet zelf.
   - Op WhatsApp stuurt hij de juiste Flux-link: intake per locatie, vervolgafspraak, massage,
     personal training of leefstijlcoaching.
-  - Aan de telefoon, of bij verzetten of annuleren, zet hij een **terugbelverzoek** klaar.
+  - Aan de telefoon biedt hij aan de boekingslink **per sms** te sturen (max. 2 per gesprek), zodat
+    de beller direct zelf in Flux plant, ook 's avonds. Wil de beller dat niet of lukt de sms niet
+    (vast nummer), dan zet hij een **terugbelverzoek** klaar.
+  - Bij verzetten of annuleren zet hij een **terugbelverzoek** klaar.
     Dat komt als WhatsApp-bericht binnen bij `OWNER_WHATSAPP`.
 - **Overdracht** aan een medewerker:
   - Op WhatsApp krijg je een melding en zwijgt de bot in dat gesprek. Stuur `#bot 316…` om hem

@@ -29,6 +29,8 @@ export const agentConfig = {
     voiceLanguage: env('VOICE_LANGUAGE', 'nl-NL'),
     voiceName: env('VOICE_NAME', 'Google.nl-NL-Standard-A'),
   },
+  /** SMS sender: your Twilio number (default) or a name like "FuncPerf" (max 11 characters). */
+  smsFrom: env('SMS_FROM'),
   /** WhatsApp number of the practice owner (notifications, "#bot <number>"), e.g. 31612345678. */
   ownerWhatsapp: env('OWNER_WHATSAPP').replace(/^\+/, ''),
   /**

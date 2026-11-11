@@ -25,6 +25,7 @@ import { createApp } from '../src/app';
 import { setClaudeClient, systemPrompt, type ClaudeClient } from '../src/agents/agent';
 import { whatsappTransport } from '../src/agents/whatsapp';
 import { twilioSignature } from '../src/agents/voice';
+import { smsTransport } from '../src/agents/sms';
 import { isOpen, parseHours } from '../src/agents/hours';
 
 const app = createApp();
@@ -231,6 +232,50 @@ describe('practice assistant: phone', () => {
     const msgs = (fake.calls[1] as { messages: { role: string; content: { type: string; content?: string; text?: string }[] }[] }).messages;
     expect(JSON.stringify(msgs)).toContain('doorverbinden met een medewerker kan nu niet');
     expect(JSON.stringify(msgs.at(-1))).toContain('Doorverbinden kan nu niet');
+  });
+
+  it('texts the caller the Flux booking link (at most twice per call) and reports a failed text', async () => {
+    const texts: [string, string][] = [];
+    let ok = true;
+    const spy = vi.spyOn(smsTransport, 'send').mockImplementation(async (to, body) => {
+      texts.push([to, body]);
+      return { ok, status: ok ? 201 : 400 };
+    });
+    const intake = 'Nieuwe klacht: intake op locatie Rotterdam Centrum (Wijnhaven)';
+    const results: string[] = [];
+    const fake = new FakeClaude([
+      [[tool('send_booking_link', { link: intake })], 'tool_use'],
+      [[text('Ik heb je een sms gestuurd met de link.')], 'end_turn'],
+    ]);
+    setClaudeClient(fake);
+    const r = await postTwilio('/agents/voice/respond?silent=0', { CallSid: 'CA6', From: '+31666666666', SpeechResult: 'Ik wil een intake in het centrum' });
+    expect(await r.text()).toContain('sms gestuurd');
+    expect(texts).toHaveLength(1);
+    expect(texts[0][0]).toBe('+31666666666');
+    expect(texts[0][1]).toContain('location=9ca9fc8d-17a1-4576-bfac-e92a0ffe47f1');
+    expect(texts[0][1]).toContain('Functional Performance');
+    const tools = (fake.calls[0] as { tools: { name: string; input_schema: { properties: { link?: { enum: string[] } } } }[] }).tools;
+    expect(tools.find((t) => t.name === 'send_booking_link')?.input_schema.properties.link?.enum).toContain(intake);
+
+    // two more requests in the same call: one is sent, the third is refused
+    setClaudeClient(new FakeClaude([
+      [[tool('send_booking_link', { link: intake }), tool('send_booking_link', { link: intake })], 'tool_use'],
+      [[text('Klaar.')], 'end_turn'],
+    ]));
+    await postTwilio('/agents/voice/respond?silent=0', { CallSid: 'CA6', From: '+31666666666', SpeechResult: 'Nog eens graag' });
+    expect(texts).toHaveLength(2);
+
+    // landline / failed text: the assistant is told so it can offer a callback
+    ok = false;
+    const failing = new FakeClaude([
+      [[tool('send_booking_link', { link: intake })], 'tool_use'],
+      [[text('Dat lukte niet, zal ik je laten terugbellen?')], 'end_turn'],
+    ]);
+    setClaudeClient(failing);
+    await postTwilio('/agents/voice/respond?silent=0', { CallSid: 'CA7', From: '+31101234567', SpeechResult: 'Stuur maar een sms' });
+    results.push(JSON.stringify((failing.calls[1] as { messages: unknown[] }).messages.at(-1)));
+    expect(results[0]).toContain('kon niet worden verstuurd');
+    spy.mockRestore();
   });
 
   it('hangs up after repeated silence', async () => {

@@ -40,7 +40,7 @@ const CHANNEL_RULES: Record<Channel, string> = {
   voice: `## Kanaal: telefoon
 - Je antwoorden worden hardop voorgelezen. Spreek in korte, natuurlijke zinnen; maximaal 2-3 zinnen per beurt.
 - Gebruik GEEN opmaak, opsommingstekens, emoji, URL's of afkortingen. Zeg tijden zoals "half drie" en bedragen zoals "negenenveertig euro".
-- Je kunt zelf geen afspraken inplannen of zien. Bied aan dat de praktijk terugbelt (request_callback), of vertel dat online plannen kan via de website.
+- Je kunt zelf geen afspraken inplannen of zien. Wil de beller een afspraak maken, bied dan aan een sms te sturen met de link om direct zelf online te plannen (send_booking_link); dat kan ook 's avonds en in het weekend. Wil de beller dat liever niet, of lukt de sms niet, zet dan een terugbelverzoek klaar (request_callback).
 - De spraakherkenning kan fouten maken: herhaal de naam ter controle voordat je een terugbelverzoek klaarzet.
 - Neemt de klant afscheid of is alles geregeld, zeg dan gedag en gebruik end_call.`,
 };
@@ -125,7 +125,7 @@ export async function handleMessage(
   const conv = await getOrCreateConversation(channel, sessionKey, customerPhone);
   const messages = conv.messages as MessageParam[];
   const canTransfer = channel === 'voice' ? opts.canTransfer ?? true : true;
-  const ctx: ToolContext = { channel, customerPhone, canTransfer, handoffReason: null, endCall: false, notifications: [] };
+  const ctx: ToolContext = { channel, customerPhone, canTransfer, sessionKey, handoffReason: null, endCall: false, notifications: [] };
 
   messages.push({
     role: 'user',
