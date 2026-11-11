@@ -1,0 +1,436 @@
+{
+ "_meta": {
+  "naam": "Extra krachtprogramma's",
+  "versie": "fp-kracht-v2",
+  "toelichting": "Vier krachtprogramma's die patiënten zelf kunnen starten: beginners 2× en 3× per week (sportschool), thuis zonder materiaal en bilspieren/benen. Dosering volgens de richtlijnen in de krachtmodule (beginners 6 tot 10 sets per spiergroep per week, dubbele progressie, RPE 7-8). Eén nieuwe oefening: opdrukken."
+ },
+ "seed_data": {
+  "krachttraining": {
+   "_toelichting": {
+    "veiligheid": {
+     "screening_vooraf": "Bij bekende hartklachten, hoge bloeddruk, duizeligheid of pijn in de borst: eerst met de huisarts overleggen.",
+     "rode_vlaggen_tijdens_training": [
+      "Pijn op de borst",
+      "Duizeligheid of zwart zien",
+      "Scherpe pijn in een gewricht",
+      "Gevoelloosheid of uitstraling in een arm of been"
+     ]
+    }
+   },
+   "oefeningen": [
+    {
+     "id": "kr_push_up",
+     "naam": "Opdrukken",
+     "categorie": "push",
+     "hoofdspier": "borst, triceps, schouders",
+     "materiaal": "Geen",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "6-15",
+     "rust_min": "1-2",
+     "cues": "Handen iets breder dan je schouders, lichaam in één rechte lijn van hoofd tot hielen, buik aangespannen. Zak tot je borst bijna de grond raakt en duw jezelf weer omhoog. Lichter: vanaf je knieën of met je handen op een aanrecht.",
+     "tags": [
+      "kracht",
+      "thuis",
+      "lichaamsgewicht"
+     ]
+    }
+   ],
+   "programmas": [
+    {
+     "id": "kr2_fullbody_2d",
+     "naam": "Full body voor beginners, 2× per week",
+     "niveau": "beginner",
+     "doel": "Starten met krachttraining in de sportschool: alle grote spiergroepen, rustig opbouwen",
+     "geschat_sets_per_week": "5 tot 8 per spiergroep: passend om mee te beginnen (6 tot 10 sets bij beginners).",
+     "dagen": [
+      {
+       "dag": "Training A",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_leg_press",
+         "sets": 3,
+         "herhalingen": "10-12",
+         "rust_min": 2,
+         "rpe": "7"
+        },
+        {
+         "exercise_id": "kr_chest_supported_row",
+         "sets": 3,
+         "herhalingen": "10-12",
+         "rust_min": 2,
+         "rpe": "7"
+        },
+        {
+         "exercise_id": "kr_incline_db_press",
+         "sets": 3,
+         "herhalingen": "10-12",
+         "rust_min": 2,
+         "rpe": "7"
+        },
+        {
+         "exercise_id": "kr_rdl",
+         "sets": 3,
+         "herhalingen": "8-10",
+         "rust_min": 2,
+         "rpe": "7"
+        },
+        {
+         "exercise_id": "kr_core_plank",
+         "sets": 3,
+         "herhalingen": "30 sec",
+         "rust_min": 1
+        }
+       ]
+      },
+      {
+       "dag": "Training B",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_lat_pulldown",
+         "sets": 3,
+         "herhalingen": "10-12",
+         "rust_min": 2,
+         "rpe": "7"
+        },
+        {
+         "exercise_id": "kr_hip_thrust",
+         "sets": 3,
+         "herhalingen": "10-12",
+         "rust_min": 2,
+         "rpe": "7"
+        },
+        {
+         "exercise_id": "kr_overhead_press",
+         "sets": 3,
+         "herhalingen": "8-10",
+         "rust_min": 2,
+         "rpe": "7"
+        },
+        {
+         "exercise_id": "kr_leg_curl",
+         "sets": 2,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_face_pull",
+         "sets": 2,
+         "herhalingen": "12-15",
+         "rust_min": 1,
+         "rpe": "8"
+        }
+       ]
+      }
+     ],
+     "opmerking": "Begin licht: de laatste herhalingen moeten goed lukken (RPE 7, nog ongeveer 3 herhalingen over). Verhoog het gewicht pas als alle sets de bovengrens halen."
+    },
+    {
+     "id": "kr2_fullbody_3d",
+     "naam": "Full body, 3× per week",
+     "niveau": "beginner tot gemiddeld",
+     "doel": "Kracht opbouwen op de grote basisoefeningen, met genoeg herstel tussen de trainingen",
+     "geschat_sets_per_week": "9 tot 12 per grote spiergroep.",
+     "dagen": [
+      {
+       "dag": "Training A",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_back_squat",
+         "sets": 3,
+         "herhalingen": "6-8",
+         "rust_min": 3,
+         "rpe": "7"
+        },
+        {
+         "exercise_id": "kr_bench_press",
+         "sets": 3,
+         "herhalingen": "6-8",
+         "rust_min": 3,
+         "rpe": "7"
+        },
+        {
+         "exercise_id": "kr_barbell_row",
+         "sets": 3,
+         "herhalingen": "8-10",
+         "rust_min": 2,
+         "rpe": "7"
+        },
+        {
+         "exercise_id": "kr_core_plank",
+         "sets": 3,
+         "herhalingen": "30-45 sec",
+         "rust_min": 1
+        }
+       ]
+      },
+      {
+       "dag": "Training B",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_conventional_deadlift",
+         "sets": 3,
+         "herhalingen": "5",
+         "rust_min": 3,
+         "rpe": "7"
+        },
+        {
+         "exercise_id": "kr_overhead_press",
+         "sets": 3,
+         "herhalingen": "6-8",
+         "rust_min": 2,
+         "rpe": "7"
+        },
+        {
+         "exercise_id": "kr_lat_pulldown",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_standing_calf_raise",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "8"
+        }
+       ]
+      },
+      {
+       "dag": "Training C",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_leg_press",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_incline_db_press",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_chest_supported_row",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_hip_thrust",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_face_pull",
+         "sets": 2,
+         "herhalingen": "12-15",
+         "rust_min": 1,
+         "rpe": "8"
+        }
+       ]
+      }
+     ],
+     "opmerking": "Basisoefeningen (squat, bankdrukken, deadlift, overhead press) tellen mee voor je 1RM in de Krachtlog."
+    },
+    {
+     "id": "kr2_thuis_3d",
+     "naam": "Thuis zonder materiaal, 3× per week",
+     "niveau": "beginner",
+     "doel": "Sterker worden zonder sportschool: alleen je eigen lichaamsgewicht",
+     "geschat_sets_per_week": "6 tot 9 per spiergroep.",
+     "dagen": [
+      {
+       "dag": "Thuis A",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_bodyweight_squat",
+         "sets": 3,
+         "herhalingen": "12-15",
+         "rust_min": 1,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_push_up",
+         "sets": 3,
+         "herhalingen": "6-12",
+         "rust_min": 1.5,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "ex_glute_bridge",
+         "sets": 3,
+         "herhalingen": "12-15",
+         "rust_min": 1,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_core_plank",
+         "sets": 3,
+         "herhalingen": "30 sec",
+         "rust_min": 1
+        }
+       ]
+      },
+      {
+       "dag": "Thuis B",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_forward_lunge",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 1.5,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_push_up",
+         "sets": 3,
+         "herhalingen": "6-12",
+         "rust_min": 1.5,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "ex_single_leg_rdl",
+         "sets": 3,
+         "herhalingen": "8-10",
+         "rust_min": 1,
+         "rpe": "7"
+        },
+        {
+         "exercise_id": "ex_side_plank",
+         "sets": 2,
+         "herhalingen": "20-30 sec",
+         "rust_min": 1
+        },
+        {
+         "exercise_id": "ex_heel_raise_bilateraal",
+         "sets": 3,
+         "herhalingen": "12-15",
+         "rust_min": 1,
+         "rpe": "8"
+        }
+       ]
+      },
+      {
+       "dag": "Thuis A",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_bodyweight_squat",
+         "sets": 3,
+         "herhalingen": "12-15",
+         "rust_min": 1,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_push_up",
+         "sets": 3,
+         "herhalingen": "6-12",
+         "rust_min": 1.5,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "ex_glute_bridge",
+         "sets": 3,
+         "herhalingen": "12-15",
+         "rust_min": 1,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_core_plank",
+         "sets": 3,
+         "herhalingen": "30 sec",
+         "rust_min": 1
+        }
+       ]
+      }
+     ],
+     "opmerking": "Te makkelijk? Doe de herhalingen langzamer (3 tellen omlaag) of kies de zwaardere variant. Opdrukken te zwaar? Doe ze vanaf je knieën of tegen een aanrecht."
+    },
+    {
+     "id": "kr2_bilspieren_2d",
+     "naam": "Bilspieren en benen, 2× per week",
+     "niveau": "beginner tot gemiddeld",
+     "doel": "Sterkere bilspieren en hamstrings, ook als aanvulling op een ander schema",
+     "geschat_sets_per_week": "10 tot 13 voor de bilspieren.",
+     "dagen": [
+      {
+       "dag": "Benen A",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_hip_thrust",
+         "sets": 4,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_rdl",
+         "sets": 3,
+         "herhalingen": "8-10",
+         "rust_min": 2,
+         "rpe": "7"
+        },
+        {
+         "exercise_id": "ex_split_squat_bulgarian",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 1.5,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_leg_curl",
+         "sets": 2,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "8"
+        }
+       ]
+      },
+      {
+       "dag": "Benen B",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_leg_press",
+         "sets": 3,
+         "herhalingen": "10-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "ex_glute_bridge",
+         "sets": 3,
+         "herhalingen": "12-15",
+         "rust_min": 1,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_forward_lunge",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 1.5,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_standing_calf_raise",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "8"
+        }
+       ]
+      }
+     ],
+     "opmerking": "Combineer gerust met een full-body- of bovenlichaamtraining op andere dagen. Plan minstens één rustdag tussen twee beentrainingen."
+    }
+   ]
+  }
+ }
+}

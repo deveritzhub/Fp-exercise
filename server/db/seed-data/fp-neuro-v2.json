@@ -1,0 +1,74 @@
+{
+ "_meta": {
+  "naam": "Zenuwmobiliteit: tibialis, fibularis, musculocutaneus en obturatorius",
+  "versie": "fp-neuro-v2",
+  "toelichting": "Vier neurodynamische sliders, zodat elke zenuw waarvoor een gangbare slider bestaat een oefening in de spierenatlas heeft. Eigen tekst, dosering als bij de bestaande sliders. Nog niet individueel klinisch getoetst."
+ },
+ "seed_data": {
+  "revalidatie": {
+   "oefeningen": [
+    {
+     "id": "nd_tibial_slider",
+     "naam": "Tibialis slider",
+     "categorie": "neurodynamiek",
+     "type_belasting": "neurodynamisch",
+     "regio": "enkel_voet",
+     "niveau": "basis",
+     "instructie": "Zit op de rand van een stoel. Buig de knie iets en trek tegelijk de voet naar je toe, met de voetzool licht naar buiten gedraaid. Strek daarna de knie terwijl je de voet ontspant en de tenen wegwijst. Rustig heen en weer: als de ene kant spanning krijgt, laat de andere kant los.",
+     "dosering": { "sets": 2, "reps": 10, "hold_sec": 0, "tempo": "rustig, continu", "rust_sec": 30, "intensiteit": "symptoomgeleid, lichte rek toegestaan" },
+     "symptoomregel": "Geen scherpe of uitstralende klachten in kuit of voetzool, geen toename 24 uur na oefenen",
+     "video_url": null,
+     "physitrack_id": null,
+     "tags": ["neurodynamiek", "kuit", "voetzool", "tintelingen"],
+     "dosis_status": "conventie: dosering als de bestaande sliders, nog niet individueel getoetst"
+    },
+    {
+     "id": "nd_fibular_slider",
+     "naam": "Fibularis slider",
+     "categorie": "neurodynamiek",
+     "type_belasting": "neurodynamisch",
+     "regio": "enkel_voet",
+     "niveau": "basis",
+     "instructie": "Zit op de rand van een stoel. Buig de knie iets en strek tegelijk de voet, met de voetzool naar binnen gedraaid. Strek daarna de knie terwijl je de voet ontspant en rustig naar je toe laat komen. Rustig heen en weer, zonder door te drukken.",
+     "dosering": { "sets": 2, "reps": 10, "hold_sec": 0, "tempo": "rustig, continu", "rust_sec": 30, "intensiteit": "symptoomgeleid, lichte rek toegestaan" },
+     "symptoomregel": "Geen scherpe of uitstralende klachten aan de buitenkant van het onderbeen of de voetrug, geen toename 24 uur na oefenen",
+     "video_url": null,
+     "physitrack_id": null,
+     "tags": ["neurodynamiek", "onderbeen", "voetrug", "tintelingen"],
+     "dosis_status": "conventie: dosering als de bestaande sliders, nog niet individueel getoetst"
+    },
+    {
+     "id": "nd_musculocutaneous_slider",
+     "naam": "Musculocutaneus slider",
+     "categorie": "neurodynamiek",
+     "type_belasting": "neurodynamisch",
+     "regio": "elleboog",
+     "niveau": "basis",
+     "instructie": "Sta met de arm langs het lichaam en iets naar achteren, schouder rustig omlaag, elleboog gestrekt en de handpalm naar achteren gedraaid. Buig de pols naar de pinkkant en kantel tegelijk het hoofd naar dezelfde kant. Laat de pols ontspannen terwijl het hoofd naar de andere kant gaat. Rustig heen en weer.",
+     "dosering": { "sets": 2, "reps": 10, "hold_sec": 0, "tempo": "rustig, continu", "rust_sec": 30, "intensiteit": "symptoomgeleid, lichte rek toegestaan" },
+     "symptoomregel": "Geen scherpe of uitstralende klachten aan de buitenkant van de onderarm, geen toename 24 uur na oefenen",
+     "video_url": null,
+     "physitrack_id": null,
+     "tags": ["neurodynamiek", "arm", "elleboog", "tintelingen"],
+     "dosis_status": "conventie: dosering als de bestaande sliders, nog niet individueel getoetst"
+    },
+    {
+     "id": "nd_obturator_slider",
+     "naam": "Obturatorius slider",
+     "categorie": "neurodynamiek",
+     "type_belasting": "neurodynamisch",
+     "regio": "heup",
+     "niveau": "basis",
+     "instructie": "Zit rechtop op een stoel met de voeten plat. Laat één knie rustig naar buiten zakken terwijl je de kin iets optilt. Breng de knie terug terwijl je de kin naar de borst buigt. Rustig heen en weer, alleen tot een lichte rek aan de binnenkant van het bovenbeen.",
+     "dosering": { "sets": 2, "reps": 10, "hold_sec": 0, "tempo": "rustig, continu", "rust_sec": 30, "intensiteit": "symptoomgeleid, lichte rek toegestaan" },
+     "symptoomregel": "Geen scherpe of uitstralende klachten in lies of binnenkant bovenbeen, geen toename 24 uur na oefenen",
+     "video_url": null,
+     "physitrack_id": null,
+     "tags": ["neurodynamiek", "heup", "lies", "tintelingen"],
+     "dosis_status": "conventie: dosering als de bestaande sliders, nog niet individueel getoetst"
+    }
+   ],
+   "programmas": []
+  }
+ }
+}

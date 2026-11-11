@@ -1,0 +1,227 @@
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource-variable/manrope/wght.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Long words (and large system text on phones) wrap instead of running off the screen. */
+  h1, h2, h3, h4, p, li, dd, dt, label, legend { overflow-wrap: break-word; }
+  :root {
+    --ink-950: 20 28 24;
+    --ink-900: 32 43 38;
+    --ink-800: 42 55 49;
+    --ink-700: 52 67 60;
+    --ink-600: 70 85 78;
+    --ink-500: 85 99 92;
+    --ink-400: 93 106 100;
+    --ink-300: 181 193 186;
+    --ink-200: 211 220 214;
+    --ink-100: 232 238 233;
+    --ink-50: 241 245 242;
+    --canvas: 247 249 247;
+    --line: 225 232 226;
+    --sage: 230 238 232;
+    --mist: 238 243 239;
+    --surface: 255 255 255;
+    --sand-soft: 243 239 231;
+    --sand-ink: 91 74 46;
+    --ok: 27 110 69;
+    --ok-soft: 229 243 234;
+    --warn: 138 90 0;
+    --warn-soft: 251 240 217;
+    --bad: 180 35 24;
+    --bad-soft: 253 235 233;
+    --info: 29 95 153;
+    --info-soft: 231 240 249;
+  }
+  :root {
+    /* Primary interaction colour: Deep Forest Green, hover Dark Forest, soft Clinical Sage.
+       Overridable per practice (branding.accent, see lib/accent.ts). RGB triplets for alpha support. */
+    --accent: 41 72 60;
+    --accent-strong: 29 54 45;
+    --accent-soft: 230 238 232;
+    --accent-ink: 255 255 255;
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: dark;
+    --ink-950: 243 246 244;
+    --ink-900: 232 238 233;
+    --ink-800: 219 227 221;
+    --ink-700: 203 213 206;
+    --ink-600: 182 194 186;
+    --ink-500: 163 176 168;
+    --ink-400: 152 166 158;
+    --ink-300: 91 106 98;
+    --ink-200: 61 74 67;
+    --ink-100: 44 55 50;
+    --ink-50: 34 44 39;
+    --canvas: 18 26 22;
+    --line: 46 58 51;
+    --sage: 34 48 42;
+    --mist: 24 34 29;
+    --surface: 26 35 31;
+    --sand-soft: 45 42 34;
+    --sand-ink: 230 214 180;
+    --ok: 95 207 147;
+    --ok-soft: 23 51 38;
+    --warn: 232 176 75;
+    --warn-soft: 51 40 15;
+    --bad: 255 138 122;
+    --bad-soft: 58 29 26;
+    --info: 124 184 236;
+    --info-soft: 21 40 58;
+    /* Lighter brand green on dark surfaces; buttons get dark text on it. */
+    --accent: 111 186 150;
+    --accent-strong: 140 205 172;
+    --accent-soft: 34 52 44;
+    --accent-ink: 14 28 21;
+  }
+  html { -webkit-text-size-adjust: 100%; text-rendering: optimizeLegibility; font-feature-settings: 'cv11', 'ss01'; }
+  body { @apply bg-canvas text-ink-900 antialiased; }
+  h1, h2, h3 { @apply font-display font-bold tracking-[-0.015em] text-ink-950; }
+  /* Numbers line up in tables, stats and timers. */
+  table, .tabular { font-variant-numeric: tabular-nums; }
+  h4 { @apply text-ink-950; }
+  :focus-visible { @apply outline-none ring-2 ring-accent/60 ring-offset-2 ring-offset-white; }
+  .dark :focus-visible { --tw-ring-offset-color: rgb(var(--surface)); }
+  ::selection { @apply bg-accent/15; }
+  @media print {
+    body { background: #fff; }
+    @page { margin: 14mm; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+}
+
+/* Sports hero game feel (GameFx.tsx). Decorative; reduced motion switches all of it off above. */
+@keyframes hero-breathe { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-2px) scale(1.012); } }
+@keyframes hero-aura { 0%, 100% { opacity: 0.55; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1.04); } }
+@keyframes hero-sparkle { 0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); } 40%, 60% { opacity: 1; transform: scale(1) rotate(45deg); } }
+@keyframes hero-cheer { 0% { transform: translateY(24px) scale(0.85); opacity: 0; } 55% { transform: translateY(-10px) scale(1.04); opacity: 1; } 75% { transform: translateY(0) scale(1); } 87% { transform: translateY(-5px); } 100% { transform: translateY(0); } }
+@keyframes xp-shine { 0% { left: -3rem; } 55%, 100% { left: 110%; } }
+@keyframes level-pop { 0% { transform: scale(0.2) rotate(-18deg); opacity: 0; } 60% { transform: scale(1.18) rotate(4deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
+@keyframes level-rays { from { transform: rotate(0deg) scale(1); } to { transform: rotate(360deg) scale(1); } }
+@keyframes reward-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.hero-breathe { animation: hero-breathe 4.5s ease-in-out infinite; transform-origin: 50% 100%; }
+.hero-aura { animation: hero-aura 5s ease-in-out infinite; }
+.hero-sparkle { opacity: 0; animation: hero-sparkle 3.6s ease-in-out infinite; }
+.animate-hero-cheer { animation: hero-cheer 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) both; transform-origin: 50% 100%; }
+.xp-shine { animation: xp-shine 2.8s ease-in-out infinite; }
+.animate-level-pop { animation: level-pop 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.25s both; }
+.level-rays { animation: level-rays 14s linear infinite; transform-origin: 50% 50%; }
+.reward-in { animation: reward-in 0.45s ease-out both; }
+@keyframes lobby-blades { to { transform: rotate(360deg); } }
+@keyframes lobby-clouds { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(14px); } }
+.lobby-blades { animation: lobby-blades 6s linear infinite; }
+.lobby-clouds { animation: lobby-clouds 18s ease-in-out infinite; }
+@keyframes chest-bounce { 0%, 60%, 100% { transform: translateY(0) rotate(0); } 70% { transform: translateY(-5px) rotate(-8deg); } 80% { transform: translateY(0) rotate(6deg); } 90% { transform: translateY(-2px) rotate(0); } }
+.chest-bounce { animation: chest-bounce 2.4s ease-in-out infinite; transform-origin: 50% 100%; }
+@media (prefers-reduced-motion: reduce) { .hero-sparkle { opacity: 0.9; } }
+
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate3d(30px, 105vh, 0) rotate(720deg); opacity: 0.9; }
+}
+
+@layer components {
+  .card { @apply rounded-xl border border-line bg-white shadow-card; }
+  /* Clickable card: calm lift on hover, no movement. */
+  .card-hover { @apply transition-[box-shadow,border-color] duration-150 hover:border-ink-200 hover:shadow-lift; }
+  /* Type scale: page title, section heading, card title, body, small label, help text. */
+  .t-page { @apply font-display text-[24px] font-bold leading-tight tracking-[-0.02em] text-ink-950 sm:text-[28px]; }
+  .t-section { @apply font-display text-[18px] font-bold leading-snug text-ink-950; }
+  .t-card { @apply font-display text-[15.5px] font-bold leading-snug text-ink-950; }
+  .t-body { @apply text-[14.5px] leading-relaxed text-ink-800; }
+  .t-label { @apply text-[12.5px] font-semibold uppercase tracking-[0.06em] text-ink-500; }
+  .t-help { @apply text-[13px] leading-snug text-ink-500; }
+  .label { @apply block text-[13.5px] font-medium text-ink-800; }
+  .input {
+    @apply block w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink-900 shadow-xs
+      placeholder:text-ink-400 transition-colors
+      hover:border-ink-300 focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-accent/15
+      disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-400;
+  }
+  .input[aria-invalid='true'] { @apply border-bad focus:ring-bad/20; }
+  /* Patient app: every field is a comfortable touch target (44 px). */
+  .patient-app .input { min-height: 44px; font-size: 16px; }
+  /* Patient text size (lib/textSize.ts): zoom scales text and touch targets together and reflows. */
+  html[data-text-size='large'] .patient-app main { zoom: 1.12; }
+  html[data-text-size='xlarge'] .patient-app main { zoom: 1.25; }
+  .muted { @apply text-ink-500; }
+  .link { @apply font-medium text-accent underline-offset-4 hover:underline; }
+  .skeleton { @apply relative overflow-hidden rounded-md bg-ink-100; }
+  .skeleton::after {
+    content: ''; @apply absolute inset-0 -translate-x-full;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent);
+    animation: shimmer 1.4s infinite;
+  }
+  .prose-app p + p { @apply mt-3; }
+  /* Horizontal scrollers (tabs, chips): swipeable, no visible scrollbar. */
+  .no-scrollbar { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  /* Long lists: let the browser skip rendering off-screen cards (smooth scrolling with many items). */
+  .cv-auto { content-visibility: auto; contain-intrinsic-size: auto 112px; }
+  .tap { -webkit-tap-highlight-color: transparent; }
+}
+
+/*
+ * iPhone/iPad: Safari zooms into any text field under 16 px when you tap it, and stays zoomed
+ * after logging in. On touch screens the standard field is therefore 16 px; other small fields
+ * use text-[16px] on phones. (Pinch-zoom stays allowed: the viewport does not block it.)
+ */
+@media (pointer: coarse), (max-width: 1023px) {
+  /*
+   * Every field, also those with their own (smaller) size class; the :not(#\#) raises the weight
+   * above utility classes. Fields that are deliberately larger (17 px and up, text-lg and up) keep
+   * their size.
+   */
+  :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), select, textarea):not(#\#):not([class*='text-[17']):not([class*='text-[18']):not([class*='text-[19']):not([class*='text-[2']):not([class*='text-[3']):not([class*='text-lg']):not([class*='text-xl']):not([class*='text-2xl']):not([class*='text-3xl']) {
+    font-size: 16px;
+  }
+}
+
+/* Dark mode: literal light colours used across the app (white cards, tinted panels, dark text hexes). */
+@layer utilities {
+  .dark .text-brand-forest { color: #9fd3b8; }
+  /* The accent is light green in dark mode: white text on it becomes the dark accent ink. */
+  .dark .bg-accent.text-white, .dark .bg-accent .text-white { color: rgb(var(--accent-ink)); }
+  .dark .bg-white { background-color: rgb(var(--surface)); }
+  .dark .hover\:bg-white:hover { background-color: rgb(var(--surface)); }
+  .dark .bg-white\/60 { background-color: rgb(var(--surface) / 0.6); }
+  .dark .hover\:bg-white\/60:hover { background-color: rgb(var(--surface) / 0.6); }
+  .dark .bg-white\/70 { background-color: rgb(var(--surface) / 0.7); }
+  .dark .hover\:bg-white\/70:hover { background-color: rgb(var(--surface) / 0.7); }
+  .dark .bg-white\/80 { background-color: rgb(var(--surface) / 0.8); }
+  .dark .hover\:bg-white\/80:hover { background-color: rgb(var(--surface) / 0.8); }
+  .dark .bg-white\/85 { background-color: rgb(var(--surface) / 0.85); }
+  .dark .hover\:bg-white\/85:hover { background-color: rgb(var(--surface) / 0.85); }
+  .dark .bg-white\/90 { background-color: rgb(var(--surface) / 0.9); }
+  .dark .hover\:bg-white\/90:hover { background-color: rgb(var(--surface) / 0.9); }
+  .dark .bg-white\/95 { background-color: rgb(var(--surface) / 0.95); }
+  .dark .hover\:bg-white\/95:hover { background-color: rgb(var(--surface) / 0.95); }
+  .dark .bg-\[\#fbf0d9\] { background-color: #33280f; }
+  .dark .bg-\[\#fde8dc\] { background-color: #3a2119; }
+  .dark .bg-\[\#F3F7F1\] { background-color: #1e2a23; }
+  .dark .bg-\[\#E8DFCD\] { background-color: #2d2a22; }
+  .dark .bg-\[\#E7EFE3\] { background-color: #1f2b23; }
+  .dark .bg-\[\#fdf3e3\] { background-color: #332a17; }
+  .dark .bg-\[\#f7f7f4\] { background-color: #202925; }
+  .dark .bg-\[\#eef1ea\] { background-color: #1d2621; }
+  .dark .text-\[\#855806\] { color: #f0c770; }
+  .dark .text-\[\#343F2A\] { color: #cfe0c2; }
+  .dark .text-\[\#c2410c\] { color: #ff9d6e; }
+  .dark .text-\[\#9a3412\] { color: #ffa07a; }
+  .dark .text-\[\#496246\] { color: #a9cf9d; }
+  .dark .text-\[\#8a6a46\] { color: #e1c49b; }
+  .dark .text-\[\#8a5a12\] { color: #f0c770; }
+  .dark .text-\[\#3d5236\] { color: #b9d6ad; }
+  .dark .text-\[\#29483c\] { color: #9fd3b8; }
+  .dark .text-\[\#273622\] { color: #cfe0c2; }
+  .dark .border-\[\#C9D3BC\] { border-color: #3a4a3f; }
+  .dark .border-\[\#E0D5BF\] { border-color: #4a4335; }
+  .dark .border-\[\#D5C8AF\] { border-color: #4a4335; }
+  .dark .border-\[\#C9D7C2\] { border-color: #3a4a3f; }
+}

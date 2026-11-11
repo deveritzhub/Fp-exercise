@@ -1,0 +1,1871 @@
+{
+  "_toelichting": {
+    "doel": "Seed-data voor de oefeningen-app: oefenbibliotheek plus programma-templates die als pakket naar patiënten gestuurd kunnen worden.",
+    "doseringen": "Alle sets, reps, hold_sec, tempo en rust zijn startwaarden uit de klinische literatuur en praktijkervaring. Pas aan per patiënt, per protocol en op klinisch oordeel.",
+    "isometrie": "Isometrie is een startpunt bij Achillespees, patellapees en schouder. Geen bewezen acuut pijneffect bij Achillespees, dus niet verkopen als pijnbehandeling.",
+    "neurodynamiek": "Doseringen van sliders en tensioners (2 sets van 10, symptoomgeleid) zijn praktijkconventie. Het bewijs over dosering en effect is heterogeen. Gebruik ze als aanvulling en monitor de respons.",
+    "symptoomregel_standaard": "Pijn mag tijdens de oefening oplopen tot maximaal 3 of 4 op een schaal van 10 en moet binnen 24 uur terug naar het uitgangsniveau.",
+    "velden": {
+      "type_belasting": "isometrisch | concentrisch | excentrisch | isotoon | neurodynamisch | mobiliteit | balans | plyometrisch | activatie",
+      "dosering": "sets, reps, hold_sec, tempo, rust_sec, intensiteit",
+      "video_url": "vul in na opname of Physitrack-koppeling",
+      "physitrack_id": "vul in na koppeling"
+    },
+    "gecheckt": "Gecheckt: Achillespees (Alfredson, HSR, isometrie), VKB (criteriegestuurd, 90 procent limb symmetry voor return to sport, minimaal ongeveer 9 maanden), SAPS-schouder (NOV/KNGF en doseringsreviews), nek (motor control en DCF), lage rug (KNGF 2021), Nordic hamstring (van der Horst 2015, Behan 2023), neurodynamiek (bewijs gemengd). Niet individueel getoetst: quad sets, heel slides, terminale knie-extensie, leg press, bilbrug, clamshell, step-up, Bulgarian split squat, single leg RDL, zijplank, dead bug, teen-yoga, tibialis raise, pogo, lateral bound, balans, rek- en mobiliteitsoefeningen. Die zijn praktijkconventie en moeten door de fysiotherapeut zelf worden beoordeeld.",
+    "criteria": "Criteria per fase staan onder criteria_per_fase bij elk programma. Elk criterium heeft een afvinkveld (afvinken), drempel, meetmethode en bron. Criteria voor de VKB en Achillespees zijn toegevoegd. Schouder, nek en lage rug moeten nog worden uitgewerkt."
+  },
+  "oefeningen": [
+    {
+      "id": "ex_quad_set",
+      "naam": "Quadriceps isometrisch",
+      "categorie": "activatie",
+      "type_belasting": "isometrisch",
+      "regio": "knie",
+      "niveau": "basis",
+      "instructie": "Ligt op de rug met het been gestrekt. Span de bovenbeenspier aan en druk de knieholte richting de grond.",
+      "dosering": {
+        "sets": 3,
+        "reps": 10,
+        "hold_sec": 5,
+        "tempo": "aanspannen 5 sec, ontspannen 5 sec",
+        "rust_sec": 30,
+        "intensiteit": "licht, 30 procent"
+      },
+      "symptoomregel": "Geen toename van pijn",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "postoperatief",
+        "vroeg"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_heel_slide",
+      "naam": "Hielglijden",
+      "categorie": "mobiliteit",
+      "type_belasting": "mobiliteit",
+      "regio": "knie",
+      "niveau": "basis",
+      "instructie": "Ligt op de rug, glijd de hiel richting de billen tot de knie buigt en weer terug.",
+      "dosering": {
+        "sets": 3,
+        "reps": 10,
+        "hold_sec": 0,
+        "tempo": "2-0-2",
+        "rust_sec": 30,
+        "intensiteit": "tot lichte rek"
+      },
+      "symptoomregel": "Pijn max 3 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "postoperatief",
+        "ROM"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_terminal_knee_extension",
+      "naam": "Terminale knie-extensie met band",
+      "categorie": "kracht",
+      "type_belasting": "concentrisch",
+      "regio": "knie",
+      "niveau": "basis",
+      "instructie": "Band achter de knie vastgemaakt, knie licht gebogen. Strek de knie volledig en houd vast.",
+      "dosering": {
+        "sets": 3,
+        "reps": 12,
+        "hold_sec": 2,
+        "tempo": "2-2-2",
+        "rust_sec": 45,
+        "intensiteit": "licht tot matig"
+      },
+      "symptoomregel": "Pijn max 4 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "postoperatief",
+        "quadriceps"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_iso_knie_extensie_90",
+      "naam": "Isometrische knie-extensie onder 90 graden",
+      "categorie": "isometrisch",
+      "type_belasting": "isometrisch",
+      "regio": "knie",
+      "niveau": "basis",
+      "instructie": "Zit met de knie onder 90 graden gebogen, tegen een vaste weerstand. Duw naar voren zonder beweging.",
+      "dosering": {
+        "sets": 5,
+        "reps": 1,
+        "hold_sec": 30,
+        "tempo": "n.v.t.",
+        "rust_sec": 60,
+        "intensiteit": "70 procent"
+      },
+      "symptoomregel": "Pijn max 3 op 10 tijdens en 24 uur na",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "patellapees",
+        "pijnarm",
+        "kracht"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_glute_bridge",
+      "naam": "Bilbrug",
+      "categorie": "kracht",
+      "type_belasting": "concentrisch",
+      "regio": "heup",
+      "niveau": "basis",
+      "instructie": "Ligt op de rug met opgetrokken knieën. Til de heupen op tot een rechte lijn van knie tot schouder.",
+      "dosering": {
+        "sets": 3,
+        "reps": 12,
+        "hold_sec": 2,
+        "tempo": "2-1-2",
+        "rust_sec": 45,
+        "intensiteit": "matig"
+      },
+      "symptoomregel": "Pijn max 3 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "core",
+        "heup",
+        "postoperatief"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_iso_bilbrug",
+      "naam": "Isometrische bilbrug",
+      "categorie": "isometrisch",
+      "type_belasting": "isometrisch",
+      "regio": "heup",
+      "niveau": "basis",
+      "instructie": "Vanuit de bilbrug de heupen opgetild houden zonder te bewegen.",
+      "dosering": {
+        "sets": 3,
+        "reps": 1,
+        "hold_sec": 30,
+        "tempo": "n.v.t.",
+        "rust_sec": 45,
+        "intensiteit": "licht tot matig"
+      },
+      "symptoomregel": "Pijn max 3 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "lage_rug",
+        "heup",
+        "pijnarm"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_clamshell",
+      "naam": "Clamshell",
+      "categorie": "kracht",
+      "type_belasting": "concentrisch",
+      "regio": "heup",
+      "niveau": "basis",
+      "instructie": "Ligt op de zij met de knieën gebogen. Open het bovenste knie omhoog zonder het bekken te kantelen.",
+      "dosering": {
+        "sets": 3,
+        "reps": 12,
+        "hold_sec": 1,
+        "tempo": "2-1-2",
+        "rust_sec": 30,
+        "intensiteit": "licht"
+      },
+      "symptoomregel": "Pijn max 3 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "heup",
+        "gluteus_medius"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_iso_heup_abductie",
+      "naam": "Isometrische heupabductie tegen muur",
+      "categorie": "isometrisch",
+      "type_belasting": "isometrisch",
+      "regio": "heup",
+      "niveau": "basis",
+      "instructie": "Staat zijwaarts tegen een muur met een band of kussen tussen de enkel en de muur. Duw naar buiten zonder beweging.",
+      "dosering": {
+        "sets": 5,
+        "reps": 1,
+        "hold_sec": 30,
+        "tempo": "n.v.t.",
+        "rust_sec": 45,
+        "intensiteit": "70 procent"
+      },
+      "symptoomregel": "Pijn max 3 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "heup",
+        "gluteus_medius",
+        "pijnarm"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_heel_raise_bilateraal",
+      "naam": "Kuitheffen op twee benen",
+      "categorie": "kracht",
+      "type_belasting": "excentrisch",
+      "regio": "enkel_voet",
+      "niveau": "basis",
+      "instructie": "Sta op de bal van de voet en kom langzaam omhoog en zak even langzaam terug.",
+      "dosering": {
+        "sets": 3,
+        "reps": 15,
+        "hold_sec": 0,
+        "tempo": "3-0-3",
+        "rust_sec": 60,
+        "intensiteit": "zwaar, tot 6 tot 8 herhalingen reserve"
+      },
+      "symptoomregel": "Pijn max 3 op 10 tijdens, 24 uur terug naar uitgangsniveau",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "achillespees",
+        "kuit"
+      ],
+      "dosis_status": "gecheckt: Alfredson 3x15 of HSR 3x per week"
+    },
+    {
+      "id": "ex_iso_kuit_staand",
+      "naam": "Isometrisch kuitheffen staand",
+      "categorie": "isometrisch",
+      "type_belasting": "isometrisch",
+      "regio": "enkel_voet",
+      "niveau": "basis",
+      "instructie": "Sta op de bal van de voet met de knie gestrekt en houd de hiel omhoog zonder te bewegen.",
+      "dosering": {
+        "sets": 5,
+        "reps": 1,
+        "hold_sec": 45,
+        "tempo": "n.v.t.",
+        "rust_sec": 60,
+        "intensiteit": "70 procent"
+      },
+      "symptoomregel": "Pijn max 4 op 10, 24 uur terug naar uitgangsniveau. Acute pijnstilling niet gegarandeerd",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "achillespees",
+        "pijnarm",
+        "tendinopathie"
+      ],
+      "dosis_status": "gecheckt: isometrie als startpunt Achillespees, geen bewezen acuut pijneffect"
+    },
+    {
+      "id": "ex_heel_raise_eenbenig",
+      "naam": "Kuitheffen op één been",
+      "categorie": "kracht",
+      "type_belasting": "excentrisch",
+      "regio": "enkel_voet",
+      "niveau": "gevorderd",
+      "instructie": "Op één been, knie gestrekt. Kom langzaam omhoog en zak gecontroleerd terug met de hiel onder de grond.",
+      "dosering": {
+        "sets": 3,
+        "reps": 12,
+        "hold_sec": 0,
+        "tempo": "3-0-3",
+        "rust_sec": 60,
+        "intensiteit": "zwaar"
+      },
+      "symptoomregel": "Pijn max 4 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "achillespees",
+        "kuit"
+      ],
+      "dosis_status": "gecheckt: HSR-principe, zwaar en langzaam"
+    },
+    {
+      "id": "ex_tibialis_raise",
+      "naam": "Tibialis raise",
+      "categorie": "kracht",
+      "type_belasting": "concentrisch",
+      "regio": "enkel_voet",
+      "niveau": "basis",
+      "instructie": "Hielen op de grond, tenen omhoog richting het scheenbeen.",
+      "dosering": {
+        "sets": 3,
+        "reps": 15,
+        "hold_sec": 1,
+        "tempo": "2-0-2",
+        "rust_sec": 45,
+        "intensiteit": "matig"
+      },
+      "symptoomregel": "Pijn max 3 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "enkel",
+        "scheen"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_toe_yoga",
+      "naam": "Teen-yoga",
+      "categorie": "activatie",
+      "type_belasting": "activatie",
+      "regio": "enkel_voet",
+      "niveau": "basis",
+      "instructie": "Til de grote teen op terwijl de overige tenen op de grond blijven, en wissel af.",
+      "dosering": {
+        "sets": 2,
+        "reps": 10,
+        "hold_sec": 2,
+        "tempo": "2-0-2",
+        "rust_sec": 30,
+        "intensiteit": "licht"
+      },
+      "symptoomregel": "Geen pijn",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "voet",
+        "activatie"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_single_leg_balance",
+      "naam": "Eenbenige balans",
+      "categorie": "balans",
+      "type_belasting": "balans",
+      "regio": "enkel_voet",
+      "niveau": "basis",
+      "instructie": "Sta op één been en houd het evenwicht. Gebruik zo nodig steun met een vinger.",
+      "dosering": {
+        "sets": 3,
+        "reps": 1,
+        "hold_sec": 30,
+        "tempo": "n.v.t.",
+        "rust_sec": 30,
+        "intensiteit": "progressie: ogen dicht, wiebelkussen, bal gooien"
+      },
+      "symptoomregel": "Geen pijn",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "balans",
+        "propriocepsis"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_leg_press",
+      "naam": "Leg press",
+      "categorie": "kracht",
+      "type_belasting": "concentrisch",
+      "regio": "knie",
+      "niveau": "basis",
+      "instructie": "Duw het platform weg met beide voeten en laat het gecontroleerd terugkomen tot de knie 90 graden is.",
+      "dosering": {
+        "sets": 3,
+        "reps": 10,
+        "hold_sec": 0,
+        "tempo": "3-0-2",
+        "rust_sec": 90,
+        "intensiteit": "matig tot zwaar"
+      },
+      "symptoomregel": "Pijn max 3 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "knie",
+        "kracht"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_step_up",
+      "naam": "Step-up",
+      "categorie": "kracht",
+      "type_belasting": "concentrisch",
+      "regio": "knie",
+      "niveau": "basis",
+      "instructie": "Stap met één been op een box of trede en zak gecontroleerd terug.",
+      "dosering": {
+        "sets": 3,
+        "reps": 10,
+        "hold_sec": 0,
+        "tempo": "2-0-2",
+        "rust_sec": 60,
+        "intensiteit": "matig, boxhoogte afhankelijk van knie"
+      },
+      "symptoomregel": "Pijn max 3 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "knie",
+        "heup",
+        "functioneel"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_single_leg_rdl",
+      "naam": "Eenbenige romp-heup",
+      "categorie": "kracht",
+      "type_belasting": "excentrisch",
+      "regio": "heup",
+      "niveau": "gevorderd",
+      "instructie": "Sta op één been, kantel het bovenlichaam naar voren vanuit de heup met een rechte rug tot het andere been achter je meekomt.",
+      "dosering": {
+        "sets": 3,
+        "reps": 8,
+        "hold_sec": 0,
+        "tempo": "3-0-2",
+        "rust_sec": 60,
+        "intensiteit": "matig tot zwaar"
+      },
+      "symptoomregel": "Geen pijn",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "heup",
+        "achterkant_been"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_split_squat_bulgarian",
+      "naam": "Bulgarian split squat",
+      "categorie": "kracht",
+      "type_belasting": "excentrisch",
+      "regio": "knie",
+      "niveau": "gevorderd",
+      "instructie": "Achterste voet op een bankje, zak gecontroleerd met het voorste been tot de achterste knie bijna de grond raakt.",
+      "dosering": {
+        "sets": 3,
+        "reps": 8,
+        "hold_sec": 0,
+        "tempo": "3-0-2",
+        "rust_sec": 90,
+        "intensiteit": "zwaar"
+      },
+      "symptoomregel": "Pijn max 3 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "knie",
+        "heup",
+        "sport"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_nordic_hamstring",
+      "naam": "Nordic hamstring",
+      "categorie": "kracht",
+      "type_belasting": "excentrisch",
+      "regio": "heup",
+      "niveau": "gevorderd",
+      "instructie": "Enkels geborgd, knieën op de grond. Zak langzaam voorover zo ver als je kunt controleren en vang jezelf op met de handen.",
+      "dosering": {
+        "sets": 3,
+        "reps": 5,
+        "hold_sec": 0,
+        "tempo": "4 sec excentrisch",
+        "rust_sec": 90,
+        "intensiteit": "start laag, progressie naar 3x10 tot 12 richting prevention-dosering"
+      },
+      "symptoomregel": "Pijn max 3 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "hamstring",
+        "sport"
+      ],
+      "dosis_status": "gecheckt: van der Horst 2015 eindigde op 3x12, Behan 2023 laag starten vanwege DOMS"
+    },
+    {
+      "id": "ex_iso_hamstring_muur",
+      "naam": "Isometrische hamstring tegen muur",
+      "categorie": "isometrisch",
+      "type_belasting": "isometrisch",
+      "regio": "knie",
+      "niveau": "basis",
+      "instructie": "Zit of lig met de hiel tegen een vaste onderlaag. Duw de hiel naar beneden zonder beweging.",
+      "dosering": {
+        "sets": 5,
+        "reps": 1,
+        "hold_sec": 30,
+        "tempo": "n.v.t.",
+        "rust_sec": 45,
+        "intensiteit": "70 procent"
+      },
+      "symptoomregel": "Pijn max 3 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "hamstring",
+        "pijnarm"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_side_plank",
+      "naam": "Zijplank",
+      "categorie": "kracht",
+      "type_belasting": "isometrisch",
+      "regio": "core",
+      "niveau": "basis",
+      "instructie": "Steun op de onderarm en de zijkant van de voet, til de heup op in een rechte lijn.",
+      "dosering": {
+        "sets": 3,
+        "reps": 1,
+        "hold_sec": 30,
+        "tempo": "n.v.t.",
+        "rust_sec": 30,
+        "intensiteit": "progressie: knieën, voeten, arm omhoog"
+      },
+      "symptoomregel": "Geen pijn",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "core"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_dead_bug",
+      "naam": "Dead bug",
+      "categorie": "activatie",
+      "type_belasting": "activatie",
+      "regio": "core",
+      "niveau": "basis",
+      "instructie": "Ligt op de rug, armen en benen omhoog. Strek tegengestelde arm en been uit terwijl de onderrug op de grond blijft.",
+      "dosering": {
+        "sets": 3,
+        "reps": 8,
+        "hold_sec": 2,
+        "tempo": "3-0-3",
+        "rust_sec": 45,
+        "intensiteit": "licht"
+      },
+      "symptoomregel": "Geen toename van rugklachten",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "core",
+        "stabiliteit",
+        "lage_rug"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_iso_schouder_extern",
+      "naam": "Isometrische externe rotatie tegen deurpost",
+      "categorie": "isometrisch",
+      "type_belasting": "isometrisch",
+      "regio": "schouder",
+      "niveau": "basis",
+      "instructie": "Elleboog 90 graden tegen de zij, onderarm tegen een vaste deurpost of band. Duw naar buiten zonder beweging.",
+      "dosering": {
+        "sets": 5,
+        "reps": 1,
+        "hold_sec": 30,
+        "tempo": "n.v.t.",
+        "rust_sec": 45,
+        "intensiteit": "50 tot 70 procent"
+      },
+      "symptoomregel": "Pijn max 3 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "schouder",
+        "rotatorcuff",
+        "pijnarm"
+      ],
+      "dosis_status": "gecheckt: isometrie als onderdeel van oefentherapie SAPS"
+    },
+    {
+      "id": "ex_band_external_rotation",
+      "naam": "Externe rotatie met band",
+      "categorie": "kracht",
+      "type_belasting": "concentrisch",
+      "regio": "schouder",
+      "niveau": "basis",
+      "instructie": "Elleboog tegen de zij, draai de onderarm naar buiten tegen de band.",
+      "dosering": {
+        "sets": 3,
+        "reps": 12,
+        "hold_sec": 1,
+        "tempo": "2-1-2",
+        "rust_sec": 45,
+        "intensiteit": "licht tot matig"
+      },
+      "symptoomregel": "Pijn max 3 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "schouder",
+        "rotatorcuff"
+      ],
+      "dosis_status": "gecheckt: rotatorcuff-oefening onderdeel van oefentherapie SAPS"
+    },
+    {
+      "id": "ex_scapular_retraction",
+      "naam": "Schouderbladen samentrekken",
+      "categorie": "activatie",
+      "type_belasting": "activatie",
+      "regio": "schouder",
+      "niveau": "basis",
+      "instructie": "Trek de schouderbladen zacht naar elkaar en naar beneden zonder de schouders op te trekken.",
+      "dosering": {
+        "sets": 3,
+        "reps": 12,
+        "hold_sec": 2,
+        "tempo": "2-2-2",
+        "rust_sec": 30,
+        "intensiteit": "licht"
+      },
+      "symptoomregel": "Geen pijn",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "schouder",
+        "nek",
+        "houding"
+      ],
+      "dosis_status": "gecheckt: scapula-gerichte oefeningen onderdeel van SAPS-oefentherapie"
+    },
+    {
+      "id": "ex_iso_nek",
+      "naam": "Isometrische nek in vier richtingen",
+      "categorie": "isometrisch",
+      "type_belasting": "isometrisch",
+      "regio": "nek",
+      "niveau": "basis",
+      "instructie": "Hand tegen voorhoofd, achterhoofd, zij of slaap. Duw tegen de hand zonder het hoofd te bewegen.",
+      "dosering": {
+        "sets": 4,
+        "reps": 1,
+        "hold_sec": 10,
+        "tempo": "n.v.t.",
+        "rust_sec": 20,
+        "intensiteit": "licht, 30 procent"
+      },
+      "symptoomregel": "Geen toename van nekpijn",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "nek",
+        "pijnarm"
+      ],
+      "dosis_status": "gecheckt: isometrie in neck pain, veilig, lage evidentie"
+    },
+    {
+      "id": "ex_chin_tuck",
+      "naam": "Kin intrekken",
+      "categorie": "mobiliteit",
+      "type_belasting": "mobiliteit",
+      "regio": "nek",
+      "niveau": "basis",
+      "instructie": "Trek de kin recht naar achteren alsof je een dubbele kin maakt. Houd even vast.",
+      "dosering": {
+        "sets": 3,
+        "reps": 10,
+        "hold_sec": 5,
+        "tempo": "n.v.t.",
+        "rust_sec": 20,
+        "intensiteit": "licht"
+      },
+      "symptoomregel": "Geen toename van nekpijn of uitstraling",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "nek",
+        "houding"
+      ],
+      "dosis_status": "gecheckt: low-load craniocervicale flexie (DCF) met gunstige evidentie"
+    },
+    {
+      "id": "ex_thoracic_rotatie",
+      "naam": "Thoracale rotatie in zijligging",
+      "categorie": "mobiliteit",
+      "type_belasting": "mobiliteit",
+      "regio": "rug",
+      "niveau": "basis",
+      "instructie": "Lig op de zij, knieën gebogen. Draai het bovenlichaam open naar de andere kant en houd de knieën bij elkaar.",
+      "dosering": {
+        "sets": 2,
+        "reps": 8,
+        "hold_sec": 3,
+        "tempo": "2-3-2",
+        "rust_sec": 20,
+        "intensiteit": "tot lichte rek"
+      },
+      "symptoomregel": "Geen pijn",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "rug",
+        "mobiliteit",
+        "nek"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_cat_camel",
+      "naam": "Kat-koe",
+      "categorie": "mobiliteit",
+      "type_belasting": "mobiliteit",
+      "regio": "rug",
+      "niveau": "basis",
+      "instructie": "Op handen en knieën wissel je af tussen een holle en bolle rug in een rustig tempo.",
+      "dosering": {
+        "sets": 2,
+        "reps": 10,
+        "hold_sec": 0,
+        "tempo": "3-0-3",
+        "rust_sec": 20,
+        "intensiteit": "tot lichte rek"
+      },
+      "symptoomregel": "Geen pijn",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "rug",
+        "mobiliteit"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_hip_flexor_stretch",
+      "naam": "Heupflexor-rek in kniestand",
+      "categorie": "stretch",
+      "type_belasting": "mobiliteit",
+      "regio": "heup",
+      "niveau": "basis",
+      "instructie": "Knie op de grond, voorste voet plat. Schuif het bekken licht naar voren tot je een rek voelt in de voorkant van de heup.",
+      "dosering": {
+        "sets": 3,
+        "reps": 1,
+        "hold_sec": 30,
+        "tempo": "n.v.t.",
+        "rust_sec": 20,
+        "intensiteit": "lichte rek"
+      },
+      "symptoomregel": "Geen pijn",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "heup",
+        "rek"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_kniebuiging_muur",
+      "naam": "Kniebuiging tegen muur (dorsaalflexie)",
+      "categorie": "mobiliteit",
+      "type_belasting": "mobiliteit",
+      "regio": "enkel_voet",
+      "niveau": "basis",
+      "instructie": "Voet op een vaste lijn, knie naar de muur toe. Houd de hiel op de grond.",
+      "dosering": {
+        "sets": 3,
+        "reps": 10,
+        "hold_sec": 2,
+        "tempo": "2-0-2",
+        "rust_sec": 30,
+        "intensiteit": "tot lichte rek"
+      },
+      "symptoomregel": "Pijn max 3 op 10",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "enkel",
+        "mobiliteit",
+        "knie"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "nd_median_slider",
+      "naam": "Medianus slider",
+      "categorie": "neurodynamiek",
+      "type_belasting": "neurodynamisch",
+      "regio": "schouder",
+      "niveau": "basis",
+      "instructie": "Zit rechtop, arm naar de zij met de elleboog gebogen en de pols gestrekt. Beweeg de hand en het hoofd tegelijk van het lichaam af en daarna weer terug, met een rustige beweging.",
+      "dosering": {
+        "sets": 2,
+        "reps": 10,
+        "hold_sec": 0,
+        "tempo": "rustig, continu",
+        "rust_sec": 30,
+        "intensiteit": "symptoomgeleid, lichte rek toegestaan"
+      },
+      "symptoomregel": "Geen scherpe of uitstralende klachten, geen toename 24 uur na oefenen",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "neurodynamiek",
+        "nek",
+        "arm",
+        "tintelingen"
+      ],
+      "dosis_status": "gecheckt: neurodynamiek, bewijs gemengd, dosering is conventie"
+    },
+    {
+      "id": "nd_median_tensioner",
+      "naam": "Medianus tensioner",
+      "categorie": "neurodynamiek",
+      "type_belasting": "neurodynamisch",
+      "regio": "schouder",
+      "niveau": "gevorderd",
+      "instructie": "Arm naar opzij, elleboog gestrekt, pols en vingers gestrekt. Kantel het hoofd weg van de arm en houd dan één van beide posities vast.",
+      "dosering": {
+        "sets": 2,
+        "reps": 5,
+        "hold_sec": 10,
+        "tempo": "n.v.t.",
+        "rust_sec": 30,
+        "intensiteit": "lichte spanning, geen pijn"
+      },
+      "symptoomregel": "Lichte spanning toegestaan, geen toename van tintelingen",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "neurodynamiek",
+        "nek",
+        "arm"
+      ],
+      "dosis_status": "gecheckt: neurodynamiek, bewijs gemengd, tensioners lijken soms sterker dan sliders"
+    },
+    {
+      "id": "nd_ulnar_slider",
+      "naam": "Ulnaris slider",
+      "categorie": "neurodynamiek",
+      "type_belasting": "neurodynamisch",
+      "regio": "schouder",
+      "niveau": "basis",
+      "instructie": "Elleboog gebogen, pols gebogen en vingers gestrekt. Strek de elleboog en pols en buig deze daarna weer terug.",
+      "dosering": {
+        "sets": 2,
+        "reps": 10,
+        "hold_sec": 0,
+        "tempo": "rustig",
+        "rust_sec": 30,
+        "intensiteit": "symptoomgeleid"
+      },
+      "symptoomregel": "Geen toename van tintelingen in pink en ringvinger",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "neurodynamiek",
+        "elleboog",
+        "arm"
+      ],
+      "dosis_status": "gecheckt: neurodynamiek, bewijs gemengd, dosering is conventie"
+    },
+    {
+      "id": "nd_sciatic_slider",
+      "naam": "Nervus ischiadicus slider zittend",
+      "categorie": "neurodynamiek",
+      "type_belasting": "neurodynamisch",
+      "regio": "heup",
+      "niveau": "basis",
+      "instructie": "Zit op de rand van een stoel. Strek het been en de nek tegelijk, en buig daarna weer terug in de tegenovergestelde beweging.",
+      "dosering": {
+        "sets": 2,
+        "reps": 10,
+        "hold_sec": 0,
+        "tempo": "rustig, continu",
+        "rust_sec": 30,
+        "intensiteit": "symptoomgeleid"
+      },
+      "symptoomregel": "Geen toename van uitstraling in been, geen scherpe pijn",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "neurodynamiek",
+        "ischias",
+        "lage_rug"
+      ],
+      "dosis_status": "gecheckt: neurodynamiek, bewijs gemengd bij radiculair, dosering is conventie"
+    },
+    {
+      "id": "nd_slr_dorsiflexie",
+      "naam": "Gestrekt been heffen met dorsaalflexie (tensioner)",
+      "categorie": "neurodynamiek",
+      "type_belasting": "neurodynamisch",
+      "regio": "heup",
+      "niveau": "gevorderd",
+      "instructie": "Lig op de rug, til het gestrekte been op tot de eerste spanning voelbaar is en trek de voet naar je toe. Houd vast of zak rustig terug.",
+      "dosering": {
+        "sets": 2,
+        "reps": 5,
+        "hold_sec": 10,
+        "tempo": "n.v.t.",
+        "rust_sec": 30,
+        "intensiteit": "tot milde spanning"
+      },
+      "symptoomregel": "Milde spanning toegestaan, geen uitstralende pijn",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "neurodynamiek",
+        "ischias",
+        "lage_rug"
+      ],
+      "dosis_status": "gecheckt: neurodynamiek, bewijs gemengd, dosering is conventie"
+    },
+    {
+      "id": "nd_slump_slider",
+      "naam": "Slump slider",
+      "categorie": "neurodynamiek",
+      "type_belasting": "neurodynamisch",
+      "regio": "rug",
+      "niveau": "gevorderd",
+      "instructie": "Zit onderuit met de rug licht gebogen. Strek de knie en buig de nek naar voren, en daarna in omgekeerde volgorde terug.",
+      "dosering": {
+        "sets": 2,
+        "reps": 10,
+        "hold_sec": 0,
+        "tempo": "rustig, continu",
+        "rust_sec": 30,
+        "intensiteit": "symptoomgeleid"
+      },
+      "symptoomregel": "Geen toename van been- of nekklachten 24 uur na oefenen",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "neurodynamiek",
+        "ischias",
+        "nek"
+      ],
+      "dosis_status": "gecheckt: neurodynamiek, bewijs gemengd, dosering is conventie"
+    },
+    {
+      "id": "ex_pogo_hopping",
+      "naam": "Stijve sprongen op de plaats",
+      "categorie": "plyometrisch",
+      "type_belasting": "plyometrisch",
+      "regio": "enkel_voet",
+      "niveau": "gevorderd",
+      "instructie": "Korte stugge sprongetjes op de plaats waarbij je vooral in de enkel veert en de knie licht gebogen blijft.",
+      "dosering": {
+        "sets": 3,
+        "reps": 20,
+        "hold_sec": 0,
+        "tempo": "snel, stug",
+        "rust_sec": 60,
+        "intensiteit": "progressie: hoogte, ritme, één been"
+      },
+      "symptoomregel": "Geen pijn tijdens of na oefenen",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "achillespees",
+        "sport",
+        "plyo"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    },
+    {
+      "id": "ex_lateral_bound",
+      "naam": "Laterale sprong met gecontroleerde landing",
+      "categorie": "plyometrisch",
+      "type_belasting": "plyometrisch",
+      "regio": "knie",
+      "niveau": "gevorderd",
+      "instructie": "Spring zijwaarts op één been en land stabiel. Houd de landing 2 seconden vast.",
+      "dosering": {
+        "sets": 3,
+        "reps": 5,
+        "hold_sec": 2,
+        "tempo": "gecontroleerde landing",
+        "rust_sec": 90,
+        "intensiteit": "zwaar, kwaliteit boven kwantiteit"
+      },
+      "symptoomregel": "Geen pijn of zwelling 24 uur na oefenen",
+      "video_url": null,
+      "physitrack_id": null,
+      "tags": [
+        "knie",
+        "sport",
+        "return_to_sport"
+      ],
+      "dosis_status": "praktijkconventie, niet individueel getoetst"
+    }
+  ],
+  "programmas": [
+    {
+      "id": "tpl_achilles_12w",
+      "naam": "Achillespees belastingsprogramma",
+      "indicatie": "Achillestendinopathie, mid-portion of insertie",
+      "duur_weken": 12,
+      "fases": [
+        {
+          "naam": "Fase 1",
+          "weken": "1-4",
+          "doel": "Pijnarme isometrie en zware langzame belasting",
+          "oefeningen": [
+            {
+              "exercise_id": "ex_iso_kuit_staand",
+              "sets": 5,
+              "reps": 1,
+              "hold_sec": 45,
+              "frequentie_per_week": 7,
+              "opmerking": "Dagelijks, 70 procent"
+            },
+            {
+              "exercise_id": "ex_heel_raise_bilateraal",
+              "sets": 3,
+              "reps": 15,
+              "frequentie_per_week": 3,
+              "opmerking": "Alfredson 3x15 met 3 sec dalen, of HSR 3x per week. Kies op basis van voorkeur patiënt"
+            },
+            {
+              "exercise_id": "ex_tibialis_raise",
+              "sets": 3,
+              "reps": 15,
+              "frequentie_per_week": 5,
+              "opmerking": "Optioneel. Geen bewezen meerwaarde als losse interventie bij Achillespees"
+            },
+            {
+              "exercise_id": "ex_toe_yoga",
+              "sets": 2,
+              "reps": 10,
+              "frequentie_per_week": 5,
+              "opmerking": "Optioneel. Geen bewezen meerwaarde als losse interventie bij Achillespees"
+            }
+          ]
+        },
+        {
+          "naam": "Fase 2",
+          "weken": "5-8",
+          "doel": "Opbouw naar eenbenige belasting",
+          "oefeningen": [
+            {
+              "exercise_id": "ex_heel_raise_eenbenig",
+              "sets": 3,
+              "reps": 12,
+              "frequentie_per_week": 3,
+              "opmerking": "Zodra fase 1 pijnvrij of pijnarm"
+            },
+            {
+              "exercise_id": "ex_single_leg_balance",
+              "sets": 3,
+              "reps": 1,
+              "hold_sec": 30,
+              "frequentie_per_week": 5,
+              "opmerking": ""
+            },
+            {
+              "exercise_id": "ex_nordic_hamstring",
+              "sets": 3,
+              "reps": 5,
+              "frequentie_per_week": 2,
+              "opmerking": "Algemene beenkracht"
+            }
+          ]
+        },
+        {
+          "naam": "Fase 3",
+          "weken": "9-12",
+          "doel": "Plyometrie en terugkeer naar belasting",
+          "oefeningen": [
+            {
+              "exercise_id": "ex_pogo_hopping",
+              "sets": 3,
+              "reps": 20,
+              "frequentie_per_week": 3,
+              "opmerking": "Pas pas toe na eenbenige kuitheffen zonder pijn"
+            },
+            {
+              "exercise_id": "ex_lateral_bound",
+              "sets": 3,
+              "reps": 5,
+              "frequentie_per_week": 2,
+              "opmerking": ""
+            }
+          ]
+        }
+      ],
+      "progressiecriteria": [
+        "Eenbenige kuitheffen 25 herhalingen pijnvrij",
+        "Hop-test vergeleken met de andere kant op 90 procent"
+      ],
+      "rode_vlaggen": [
+        "Plotselinge scheur of knap gevoel",
+        "Zwelling of verlies van kracht na de oefening"
+      ],
+      "aanpassen_aan_protocol": true,
+      "evidentie_status": "Gecheckt: Alfredson en HSR, isometrie als startpunt, plyometrie als laatste stap",
+      "criteria_per_fase": [
+        {
+          "van": "Fase 1",
+          "naar": "Fase 2",
+          "criteria": [
+            {
+              "afvinken": false,
+              "criterium": "Pijn tijdens isometrie",
+              "drempel": "Max 4 op 10, binnen 24 uur terug naar uitgangsniveau",
+              "meetmethode": "VAS en dagboek",
+              "bron": "Praktijkcriterium, gebaseerd op isometrie-literatuur"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Zware kuitheffen tweebenig",
+              "drempel": "3x15 met 3 sec dalen zonder pijnopvlamming",
+              "meetmethode": "Observatie",
+              "bron": "Alfredson/HSR-protocol"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Dagelijkse belasting tolereerbaar",
+              "drempel": "Geen stijging van de ochtendstijfheid of pijn bij lopen",
+              "meetmethode": "Anamnese",
+              "bron": "Praktijkcriterium"
+            }
+          ]
+        },
+        {
+          "van": "Fase 2",
+          "naar": "Fase 3",
+          "criteria": [
+            {
+              "afvinken": false,
+              "criterium": "Eenbenige kuitheffen",
+              "drempel": "3x12 pijnarm, controle van de daling",
+              "meetmethode": "Observatie",
+              "bron": "HSR/Alfredson-protocol"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Symmetrie met de andere kant",
+              "drempel": "Kuitkracht minimaal 90 procent vergelijkbaar",
+              "meetmethode": "Herhalingstest of dynamometer",
+              "bron": "Praktijkcriterium"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Eenbenige balans",
+              "drempel": "30 seconden stabiel",
+              "meetmethode": "Stopwatch",
+              "bron": "Praktijkcriterium"
+            }
+          ]
+        },
+        {
+          "van": "Fase 3",
+          "naar": "Terugkeer naar sport",
+          "criteria": [
+            {
+              "afvinken": false,
+              "criterium": "Hop-test",
+              "drempel": "Minimaal 90 procent symmetrie",
+              "meetmethode": "Hop-test",
+              "bron": "Praktijkcriterium"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Pijn na sprongen",
+              "drempel": "Geen pijnopvlamming 24 uur na belasting",
+              "meetmethode": "Anamnese",
+              "bron": "Praktijkcriterium"
+            }
+          ]
+        }
+      ],
+      "criteria_toelichting": "Achillespees-criteria zijn praktijkcriteria. Zij zijn niet uit een richtlijn afgeleid en moeten als zodanig worden gebruikt."
+    },
+    {
+      "id": "tpl_acl_postop_criteria",
+      "naam": "VKB postoperatief, criteriegestuurd",
+      "indicatie": "Na VKB-reconstructie, fasering volgens chirurgisch protocol",
+      "duur_weken": 36,
+      "fases": [
+        {
+          "naam": "Fase 1",
+          "weken": "0-2",
+          "doel": "Zwelling beheersen, ROM en quadriceps activeren",
+          "oefeningen": [
+            {
+              "exercise_id": "ex_quad_set",
+              "sets": 3,
+              "reps": 10,
+              "frequentie_per_week": 7,
+              "opmerking": "Dagelijks, meerdere keren"
+            },
+            {
+              "exercise_id": "ex_heel_slide",
+              "sets": 3,
+              "reps": 10,
+              "frequentie_per_week": 7,
+              "opmerking": "Volgens ROM-afspraken"
+            },
+            {
+              "exercise_id": "ex_iso_knie_extensie_90",
+              "sets": 5,
+              "reps": 1,
+              "hold_sec": 30,
+              "frequentie_per_week": 7,
+              "opmerking": "Start na mobilisatie"
+            },
+            {
+              "exercise_id": "ex_glute_bridge",
+              "sets": 3,
+              "reps": 12,
+              "frequentie_per_week": 5,
+              "opmerking": ""
+            }
+          ]
+        },
+        {
+          "naam": "Fase 2",
+          "weken": "3-6",
+          "doel": "Kracht en controle opbouwen",
+          "oefeningen": [
+            {
+              "exercise_id": "ex_terminal_knee_extension",
+              "sets": 3,
+              "reps": 12,
+              "frequentie_per_week": 5,
+              "opmerking": ""
+            },
+            {
+              "exercise_id": "ex_leg_press",
+              "sets": 3,
+              "reps": 10,
+              "frequentie_per_week": 3,
+              "opmerking": "Binnen ROM-afspraken"
+            },
+            {
+              "exercise_id": "ex_clamshell",
+              "sets": 3,
+              "reps": 12,
+              "frequentie_per_week": 5,
+              "opmerking": ""
+            },
+            {
+              "exercise_id": "ex_single_leg_balance",
+              "sets": 3,
+              "reps": 1,
+              "hold_sec": 30,
+              "frequentie_per_week": 5,
+              "opmerking": ""
+            },
+            {
+              "exercise_id": "ex_dead_bug",
+              "sets": 3,
+              "reps": 8,
+              "frequentie_per_week": 5,
+              "opmerking": ""
+            }
+          ]
+        },
+        {
+          "naam": "Fase 3",
+          "weken": "7-12",
+          "doel": "Functionele kracht, sprong en landing",
+          "oefeningen": [
+            {
+              "exercise_id": "ex_split_squat_bulgarian",
+              "sets": 3,
+              "reps": 8,
+              "frequentie_per_week": 3,
+              "opmerking": "Vanaf week 7 bij goede quadriceps-controle"
+            },
+            {
+              "exercise_id": "ex_single_leg_rdl",
+              "sets": 3,
+              "reps": 8,
+              "frequentie_per_week": 3,
+              "opmerking": ""
+            },
+            {
+              "exercise_id": "ex_nordic_hamstring",
+              "sets": 3,
+              "reps": 5,
+              "frequentie_per_week": 2,
+              "opmerking": "Pas na voldoende hamstringkracht"
+            }
+          ]
+        },
+        {
+          "naam": "Fase 4",
+          "weken": "13-36",
+          "doel": "Plyometrie, sprong en terugkeer naar sport op criteria",
+          "oefeningen": [
+            {
+              "exercise_id": "ex_lateral_bound",
+              "sets": 3,
+              "reps": 5,
+              "frequentie_per_week": 2,
+              "opmerking": "Pas starten als landingscontrole goed is en quadriceps-LSI bijna 90 procent"
+            },
+            {
+              "exercise_id": "ex_step_up",
+              "sets": 3,
+              "reps": 8,
+              "frequentie_per_week": 3,
+              "opmerking": "Zwaarder maken met gewicht"
+            }
+          ]
+        }
+      ],
+      "progressiecriteria": [
+        "Volledige strekking en pijnarme buiging",
+        "Quadriceps-LSI 85 tot 90 procent voor plyometrie",
+        "Return to sport pas bij quadriceps-LSI en hop-tests van minimaal 90 procent, plus psychologische gereedheid (bijv. ACL-RSI)",
+        "Return to sport op zijn vroegst na ongeveer 9 maanden, afhankelijk van sport en protocol"
+      ],
+      "rode_vlaggen": [
+        "Toenemende zwelling of warmte in het kniegewricht",
+        "Kuitpijn of benige zwelling",
+        "Knie die blokkeert of geeft"
+      ],
+      "aanpassen_aan_protocol": true,
+      "evidentie_status": "Gecheckt: criteriegestuurd. Return to sport niet op tijd maar op criteria, minimaal 9 maanden voor snijdende sporten",
+      "criteria_per_fase": [
+        {
+          "van": "Fase 1",
+          "naar": "Fase 2",
+          "criteria": [
+            {
+              "afvinken": false,
+              "criterium": "Volledige knie-extensie",
+              "drempel": "0 graden (strekking)",
+              "meetmethode": "Goniometer",
+              "bron": "Criteriegestuurde ACL-richtlijnen"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Buiging",
+              "drempel": "0-90 graden of meer",
+              "meetmethode": "Goniometer",
+              "bron": "Criteriegestuurde ACL-richtlijnen (ROM 0-90 rond week 2)"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Geen quadriceps-lag bij SLR",
+              "drempel": "Been 1 seconde gestrekt omhoog zonder lag",
+              "meetmethode": "Observatie",
+              "bron": "OHSU ACL-protocol"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Quadriceps actief",
+              "drempel": "Aanspanning voelbaar en zichtbaar",
+              "meetmethode": "Palpatie",
+              "bron": "Quad sets als startcriterium"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Zwelling beheerst",
+              "drempel": "Geen progressieve effusie",
+              "meetmethode": "Palpatie, omtrekmeting",
+              "bron": "Criteriegestuurde ACL-richtlijnen"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Pijn onder controle",
+              "drempel": "Max 3 op 10 bij oefeningen",
+              "meetmethode": "VAS",
+              "bron": "Praktijkcriterium"
+            }
+          ]
+        },
+        {
+          "van": "Fase 2",
+          "naar": "Fase 3",
+          "criteria": [
+            {
+              "afvinken": false,
+              "criterium": "Volledige ROM",
+              "drempel": "Symmetrisch aan de andere kant",
+              "meetmethode": "Goniometer",
+              "bron": "Criteriegestuurde ACL-richtlijnen"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Quadriceps-kracht (isometrisch of isokinetisch)",
+              "drempel": "Minimaal 75 procent limb symmetry",
+              "meetmethode": "Isokinetisch of handdynamometer",
+              "bron": "OHSU ACL-protocol"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Gecontroleerde squat",
+              "drempel": "Tot 90 graden zonder valgus en pijnvrij",
+              "meetmethode": "Observatie",
+              "bron": "OHSU ACL-protocol"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Eenbenige balans",
+              "drempel": "30 seconden stabiel",
+              "meetmethode": "Stopwatch",
+              "bron": "Praktijkcriterium"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Effusie stabiel",
+              "drempel": "Geen toename na belasting",
+              "meetmethode": "Palpatie",
+              "bron": "Criteriegestuurde ACL-richtlijnen"
+            }
+          ]
+        },
+        {
+          "van": "Fase 3",
+          "naar": "Fase 4 (plyometrie en joggen)",
+          "criteria": [
+            {
+              "afvinken": false,
+              "criterium": "Quadriceps-kracht",
+              "drempel": "Minimaal 85 procent limb symmetry",
+              "meetmethode": "Isokinetisch of dynamometer",
+              "bron": "Criteriegestuurde ACL-richtlijnen"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Single leg press",
+              "drempel": "2x lichaamsgewicht, 10 herhalingen",
+              "meetmethode": "Leg press",
+              "bron": "Criteriegestuurde ACL-richtlijnen (LMH)"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Lateral step-down symmetrisch",
+              "drempel": "Geen valgus, geen verschil tussen benen",
+              "meetmethode": "Video of observatie",
+              "bron": "Criteriegestuurde ACL-richtlijnen (week 12)"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Kniestabiliteit bij gecontroleerde beweging",
+              "drempel": "Geen instabiliteit of pijn",
+              "meetmethode": "Observatie",
+              "bron": "Praktijkcriterium"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Tijdsgrens",
+              "drempel": "Minimaal 12 weken na operatie",
+              "meetmethode": "Kalender",
+              "bron": "Criteriegestuurde ACL-richtlijnen"
+            }
+          ]
+        },
+        {
+          "van": "Fase 4",
+          "naar": "Fase 5 (terugkeer naar sport)",
+          "criteria": [
+            {
+              "afvinken": false,
+              "criterium": "Quadriceps-kracht",
+              "drempel": "Minimaal 90 procent limb symmetry",
+              "meetmethode": "Isokinetisch of dynamometer",
+              "bron": "OHSU ACL-protocol"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Hamstring-kracht",
+              "drempel": "Minimaal 90 procent limb symmetry",
+              "meetmethode": "Dynamometer",
+              "bron": "UNC ACLR-criteria"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Hop-tests (single, triple, crossover, timed)",
+              "drempel": "Minimaal 90 procent limb symmetry",
+              "meetmethode": "Hop-test battery",
+              "bron": "OHSU, UNC, LMH"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Y-balance",
+              "drempel": "Minimaal 90 procent composite score",
+              "meetmethode": "Y-balance test",
+              "bron": "Criteriegestuurde ACL-richtlijnen"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Drop jump",
+              "drempel": "Gecontroleerde landing, geen valgus",
+              "meetmethode": "Video of observatie",
+              "bron": "OHSU ACL-protocol"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Sport-specifieke cuts en 90 graden draaien",
+              "drempel": "Pijnvrij en stabiel, binnen en buiten been",
+              "meetmethode": "Observatie",
+              "bron": "Criteriegestuurde ACL-richtlijnen"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Tijdsgrens",
+              "drempel": "Minimaal 9 maanden voor snijdende sporten",
+              "meetmethode": "Kalender",
+              "bron": "OHSU ACL-protocol"
+            }
+          ]
+        },
+        {
+          "van": "Fase 5",
+          "naar": "Volledige terugkeer en ontslag",
+          "criteria": [
+            {
+              "afvinken": false,
+              "criterium": "Battery volledig gehaald",
+              "drempel": "Alle onderdelen minimaal 90 procent LSI",
+              "meetmethode": "Volledige testbatterij",
+              "bron": "OHSU, UNC"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Psychologische gereedheid",
+              "drempel": "ACL-RSI-score (drempel afhankelijk van protocol, 60 tot 100)",
+              "meetmethode": "ACL-RSI vragenlijst",
+              "bron": "UNC, LMH"
+            },
+            {
+              "afvinken": false,
+              "criterium": "Patiënt-gerapporteerde uitkomst",
+              "drempel": "IKDC minimaal 90",
+              "meetmethode": "IKDC vragenlijst",
+              "bron": "LMH ACL-richtlijn"
+            }
+          ]
+        }
+      ],
+      "criteria_toelichting": "Criteria zijn samengesteld uit ACL-richtlijnen en protocollen (LMH, OHSU, UNC, criteriegestuurde reviews). Drempels verschillen per protocol: de 85 procent en 90 procent grenzen en de ACL-RSI-drempel variëren. Vink criteria af tijdens de consult. Gebruik het chirurgisch protocol als bindend kader."
+    },
+    {
+      "id": "tpl_schouder_sapps_12w",
+      "naam": "Subacromiaal pijnsyndroom, oefentherapie",
+      "indicatie": "Subacromiaal pijnsyndroom en rotatorcuffklachten",
+      "duur_weken": 12,
+      "fases": [
+        {
+          "naam": "Fase 1",
+          "weken": "1-4",
+          "doel": "Pijnarm isometrie en mobiliteit",
+          "oefeningen": [
+            {
+              "exercise_id": "ex_iso_schouder_extern",
+              "sets": 5,
+              "reps": 1,
+              "hold_sec": 30,
+              "frequentie_per_week": 7,
+              "opmerking": "Eerst dagelijks"
+            },
+            {
+              "exercise_id": "ex_scapular_retraction",
+              "sets": 3,
+              "reps": 12,
+              "frequentie_per_week": 7,
+              "opmerking": ""
+            },
+            {
+              "exercise_id": "ex_chin_tuck",
+              "sets": 3,
+              "reps": 10,
+              "frequentie_per_week": 5,
+              "opmerking": ""
+            },
+            {
+              "exercise_id": "nd_median_slider",
+              "sets": 2,
+              "reps": 10,
+              "frequentie_per_week": 5,
+              "opmerking": "Alleen als tintelingen aanwezig zijn"
+            }
+          ]
+        },
+        {
+          "naam": "Fase 2",
+          "weken": "5-8",
+          "doel": "Concentrische kracht opbouwen",
+          "oefeningen": [
+            {
+              "exercise_id": "ex_band_external_rotation",
+              "sets": 3,
+              "reps": 12,
+              "frequentie_per_week": 3,
+              "opmerking": "Lichte band"
+            },
+            {
+              "exercise_id": "ex_thoracic_rotatie",
+              "sets": 2,
+              "reps": 8,
+              "frequentie_per_week": 5,
+              "opmerking": ""
+            },
+            {
+              "exercise_id": "ex_dead_bug",
+              "sets": 3,
+              "reps": 8,
+              "frequentie_per_week": 3,
+              "opmerking": ""
+            }
+          ]
+        },
+        {
+          "naam": "Fase 3",
+          "weken": "9-12",
+          "doel": "Belastbaarheid en terugkeer naar activiteit",
+          "oefeningen": [
+            {
+              "exercise_id": "ex_band_external_rotation",
+              "sets": 3,
+              "reps": 10,
+              "frequentie_per_week": 3,
+              "opmerking": "Zwaardere band, pijnarm"
+            },
+            {
+              "exercise_id": "ex_side_plank",
+              "sets": 3,
+              "reps": 1,
+              "hold_sec": 30,
+              "frequentie_per_week": 3,
+              "opmerking": "Schouder als steun"
+            }
+          ]
+        }
+      ],
+      "progressiecriteria": [
+        "Pijnvrije externe rotatie tegen weerstand",
+        "Pijnvrij overhead werken",
+        "Kracht van de rotatoren vergelijkbaar met de andere kant"
+      ],
+      "rode_vlaggen": [
+        "Nachtelijke pijn die toeneemt",
+        "Plotselinge krachtsverlies in de arm",
+        "Tintelingen of gevoelloosheid die blijft"
+      ],
+      "aanpassen_aan_protocol": false,
+      "evidentie_status": "Gecheckt: SAPS-richtlijn (NOV/KNGF) en reviews bevelen oefentherapie aan. Reviews noemen 1 tot 3 sets, 4 tot 30 herhalingen, 2 tot 7 keer per week, 4 tot 16 weken. Geen optimale dosering vastgesteld."
+    },
+    {
+      "id": "tpl_nek_neurodynamisch_6w",
+      "naam": "Nek met uitstraling naar de arm",
+      "indicatie": "Cervicale klachten met tintelingen of neurodynamische component",
+      "duur_weken": 6,
+      "fases": [
+        {
+          "naam": "Fase 1",
+          "weken": "1-2",
+          "doel": "Symptoomreductie en neurodynamische mobiliteit",
+          "oefeningen": [
+            {
+              "exercise_id": "nd_median_slider",
+              "sets": 2,
+              "reps": 10,
+              "frequentie_per_week": 7,
+              "opmerking": "Optioneel, alleen bij tintelingen. Bewijs gemengd"
+            },
+            {
+              "exercise_id": "ex_iso_nek",
+              "sets": 4,
+              "reps": 1,
+              "hold_sec": 10,
+              "frequentie_per_week": 7,
+              "opmerking": ""
+            },
+            {
+              "exercise_id": "ex_chin_tuck",
+              "sets": 3,
+              "reps": 10,
+              "frequentie_per_week": 7,
+              "opmerking": "Dagelijks, lage intensiteit. Motorische controle profiteert van frequentie"
+            }
+          ]
+        },
+        {
+          "naam": "Fase 2",
+          "weken": "3-4",
+          "doel": "Kracht en houding",
+          "oefeningen": [
+            {
+              "exercise_id": "nd_median_tensioner",
+              "sets": 2,
+              "reps": 5,
+              "hold_sec": 10,
+              "frequentie_per_week": 5,
+              "opmerking": "Optioneel, alleen als fase 1 goed verdraagt"
+            },
+            {
+              "exercise_id": "ex_scapular_retraction",
+              "sets": 3,
+              "reps": 12,
+              "frequentie_per_week": 5,
+              "opmerking": ""
+            },
+            {
+              "exercise_id": "ex_thoracic_rotatie",
+              "sets": 2,
+              "reps": 8,
+              "frequentie_per_week": 5,
+              "opmerking": ""
+            }
+          ]
+        },
+        {
+          "naam": "Fase 3",
+          "weken": "5-6",
+          "doel": "Belastbaarheid en terugkeer",
+          "oefeningen": [
+            {
+              "exercise_id": "ex_band_external_rotation",
+              "sets": 3,
+              "reps": 12,
+              "frequentie_per_week": 3,
+              "opmerking": ""
+            },
+            {
+              "exercise_id": "ex_dead_bug",
+              "sets": 3,
+              "reps": 8,
+              "frequentie_per_week": 3,
+              "opmerking": ""
+            }
+          ]
+        }
+      ],
+      "progressiecriteria": [
+        "Geen tintelingen bij 2 minuten werkhouding",
+        "Symptomen verminderd met 50 procent of meer"
+      ],
+      "rode_vlaggen": [
+        "Uitvalsverschijnselen of spierzwakte in de arm",
+        "Gevoelsverlies in de handen",
+        "Duizeligheid, dubbelzien of slikklachten"
+      ],
+      "aanpassen_aan_protocol": false,
+      "evidentie_status": "Gecheckt: motor control (low-load DCF) plus segmentale oefeningen hebben het beste bewijs bij chronische nekklachten. Dosering is niet vastgesteld. Frequentie en intensiteit zijn de belangrijkste variabelen. Neurodynamiek is optioneel."
+    },
+    {
+      "id": "tpl_lage_rug_ischias_6w",
+      "naam": "Lage rug met uitstraling naar het been",
+      "indicatie": "Lumbale klachten met ischias-achtige uitstraling",
+      "duur_weken": 12,
+      "fases": [
+        {
+          "naam": "Fase 1",
+          "weken": "1-4",
+          "doel": "Symptoomreductie en zenuwmobiliteit",
+          "oefeningen": [
+            {
+              "exercise_id": "nd_sciatic_slider",
+              "sets": 2,
+              "reps": 10,
+              "frequentie_per_week": 7,
+              "opmerking": "Symptoomgeleid"
+            },
+            {
+              "exercise_id": "ex_cat_camel",
+              "sets": 2,
+              "reps": 10,
+              "frequentie_per_week": 7,
+              "opmerking": ""
+            },
+            {
+              "exercise_id": "ex_iso_bilbrug",
+              "sets": 3,
+              "reps": 1,
+              "hold_sec": 30,
+              "frequentie_per_week": 5,
+              "opmerking": ""
+            }
+          ]
+        },
+        {
+          "naam": "Fase 2",
+          "weken": "5-8",
+          "doel": "Core en heupkracht",
+          "oefeningen": [
+            {
+              "exercise_id": "nd_slr_dorsiflexie",
+              "sets": 2,
+              "reps": 5,
+              "hold_sec": 10,
+              "frequentie_per_week": 3,
+              "opmerking": "Alleen bij tolerantie fase 1"
+            },
+            {
+              "exercise_id": "ex_dead_bug",
+              "sets": 3,
+              "reps": 8,
+              "frequentie_per_week": 5,
+              "opmerking": ""
+            },
+            {
+              "exercise_id": "ex_clamshell",
+              "sets": 3,
+              "reps": 12,
+              "frequentie_per_week": 5,
+              "opmerking": ""
+            },
+            {
+              "exercise_id": "ex_glute_bridge",
+              "sets": 3,
+              "reps": 12,
+              "frequentie_per_week": 5,
+              "opmerking": ""
+            }
+          ]
+        },
+        {
+          "naam": "Fase 3",
+          "weken": "9-12",
+          "doel": "Functionele belasting",
+          "oefeningen": [
+            {
+              "exercise_id": "ex_single_leg_rdl",
+              "sets": 3,
+              "reps": 8,
+              "frequentie_per_week": 3,
+              "opmerking": ""
+            },
+            {
+              "exercise_id": "ex_step_up",
+              "sets": 3,
+              "reps": 10,
+              "frequentie_per_week": 3,
+              "opmerking": ""
+            }
+          ]
+        }
+      ],
+      "progressiecriteria": [
+        "Geen uitstraling bij 30 minuten zitten",
+        "Zelfstandig tillen van 15 kilo uit de knieën"
+      ],
+      "rode_vlaggen": [
+        "Blaas- of darmklachten",
+        "Zadelanesthesie",
+        "Progressief krachtsverlies in het been",
+        "Koorts met rugpijn"
+      ],
+      "aanpassen_aan_protocol": false,
+      "evidentie_status": "Gecheckt: KNGF 2021 (herziene richtlijn LBP/LRS) adviseert informatie en oefentherapie, mobilisatie als aanvulling. Neurodynamiek bij radiculaire klachten heeft gemengd bewijs. Duur en dosering zijn niet getoetst aan de richtlijn. Check rode vlaggen en risicoprofiel."
+    }
+  ]
+}
