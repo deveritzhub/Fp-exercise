@@ -143,15 +143,15 @@ export function HomeLobby({ greeting, subtitle, date }: { greeting: string; subt
               className="tap relative shrink-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
               <HeroStage level={L.level} className="block">
-                <HeroPhoto look={look} className="h-[156px] w-[104px] shadow-lift" />
+                <HeroPhoto look={look} className="h-[144px] w-[96px] shadow-lift min-[400px]:h-[156px] min-[400px]:w-[104px]" />
               </HeroStage>
               <LevelBadge level={L.level} size={34} className="absolute -left-2 -top-2" />
             </Link>
           ) : null}
-          <div className={cn('min-w-0 flex-1 rounded-2xl px-3 py-2 backdrop-blur-[2px]', light ? 'bg-[#17233f]/70' : 'bg-white/80')}>
+          <div className={cn('min-w-0 flex-1 rounded-2xl px-2.5 py-2 backdrop-blur-[2px]', light ? 'bg-[#17233f]/70' : 'bg-white/80')}>
             <p className={cn('text-[13.5px] font-medium', light ? 'text-white/85' : 'text-ink-700')}>{date}</p>
-            <h1 id="lobby-greeting" className={cn('font-display text-[20px] font-bold leading-tight sm:text-[24px]', light ? 'text-white' : 'text-ink-950')}>
-              {greeting.includes(', ') ? <><span className="block">{greeting.slice(0, greeting.indexOf(', ') + 1)}</span><span className="block [overflow-wrap:anywhere]">{greeting.slice(greeting.indexOf(', ') + 2)}</span></> : greeting}
+            <h1 id="lobby-greeting" className={cn('font-display text-[18px] font-bold leading-tight min-[400px]:text-[21px] sm:text-[24px]', light ? 'text-white' : 'text-ink-950')}>
+              {greeting.includes(', ') ? <><span className="block whitespace-nowrap">{greeting.slice(0, greeting.indexOf(', ') + 1)}</span><span className="block [overflow-wrap:anywhere]">{greeting.slice(greeting.indexOf(', ') + 2)}</span></> : greeting}
             </h1>
             {d?.hero && L && tier && (
               <p className={cn('mt-1 text-[13px] font-semibold', light ? 'text-white/90' : 'text-ink-800')}>
