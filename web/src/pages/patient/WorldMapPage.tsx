@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { BookOpen, CloudFog, Flag, Hammer, LockKeyhole, Map as MapIcon, Pin, ShieldCheck, Swords, Trophy } from 'lucide-react';
@@ -15,6 +15,9 @@ import { prizesForZones, villageBuildings, worldCopy, zoneTheme, type WorldZone,
 import type { HeroState } from '@/lib/types';
 import { GuildRaidCard } from '@/components/patient/GuildRaid';
 import { useHero } from '@/pages/patient/HeroPages';
+import { levelTier } from '@shared/hero';
+// three.js only loads on this page.
+const Village3D = lazy(() => import('@/components/patient/Village3D'));
 
 type BossLine = {
   labelNl: string;
@@ -111,6 +114,19 @@ export function WorldMapPage() {
           <span>{line(data.rest.reason === 'pain' ? copy.pain : copy.rest)}</span>
         </p>
       )}
+
+      <section aria-label={t('Je dorp en je route in 3D. Tik op een gebouw of zone.', 'Your village and route in 3D. Tap a building or zone.')}>
+        <Suspense fallback={<div className="h-[340px] animate-pulse rounded-2xl bg-[#E7EFE3]" />}>
+          <Village3D
+            className="h-[340px] sm:h-[420px]"
+            zones={data.zones.map((z) => ({ no: z.no, name: z.name ?? '', status: z.status === 'done' ? 'done' : z.status === 'current' && !z.locked ? 'current' : 'locked' }))}
+            heroZoneNo={data.heroZoneNo}
+            buildings={buildings.map((b) => ({ key: b.key, to: b.to, label: t(VILLAGE_LABEL[b.key][0], VILLAGE_LABEL[b.key][1]) }))}
+            onZone={(no) => setZoneNo(no)}
+            heroColor={heroQ.data?.level ? levelTier(heroQ.data.level.level).glow : undefined}
+          />
+        </Suspense>
+      </section>
 
       <section aria-labelledby="village-heading" className="overflow-hidden rounded-2xl border border-[#C9D3BC] bg-[#E7EFE3]">
         <h2 id="village-heading" className="sr-only">{t('Dorp', 'Village')}</h2>

@@ -272,6 +272,12 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     knop en `e2e/hero-3d.spec.ts` uit commit 1025a1b. Later opnieuw: realistisch, 1-op-1 met de avatar,
     echt haar uit MakeHuman-pakketten.
 
+90. [x] **Gamification, deel 1** (11 nov): rangen per level (Brons 1, Zilver 5, Goud 10, Smaragd 20,
+    Diamant 35, Meester 50) met schild; levend podium voor de held; glanzende XP-balk; beloningsscherm
+    na de training (juichende held, level-up met stralen, tellende XP en muntjes). Wereldkaart: 3D-eiland
+    met dorp, pad, zonevlaggen, mist over vergrendelde zones en een baken bij je held; namen zijn echte
+    knoppen (toetsenbord, schermlezer). Animaties stoppen bij "beweging beperken".
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.
