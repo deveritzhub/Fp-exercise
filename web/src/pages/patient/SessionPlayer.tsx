@@ -9,7 +9,9 @@ import { toISODate } from '@shared/adherence';
 import { itemsForDate } from '@shared/schedule';
 import { useDocumentMeta } from '@/lib/meta';
 import { cn } from '@/lib/cn';
-import { BOSSES, SKILLS, XP } from '@shared/hero';
+import { BOSSES, SKILLS, XP, bodyShape, levelTier, titleFor } from '@shared/hero';
+import { CountUp, HeroStage, LevelUpBurst, XpBar } from '@/components/hero/GameFx';
+import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { useCountdown } from '@/lib/useCountdown';
 import { isNetworkError, postOrQueue } from '@/lib/outbox';
 import { useSession } from '@/lib/session';
@@ -149,6 +151,8 @@ export function SessionPlayer() {
   const [earned, setEarned] = useState(0);
   const [levelUps, setLevelUps] = useState<{ key: string; from: number; to: number }[]>([]);
   const [rewards, setRewards] = useState<{ bossKey: string | null; bossDamage: number; bossDefeated: boolean; coins: number; chestReady: boolean } | null>(null);
+  // The hero before and after this workout, for the reward screen (XP bar, level-up, cheering hero).
+  const [heroRun, setHeroRun] = useState<{ before: HeroState; after: HeroState } | null>(null);
   // Loaded up front, so level ups can be shown after the workout.
   useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero') });
   const [leaving, setLeaving] = useState(false);
@@ -281,6 +285,7 @@ export function SessionPlayer() {
                       .map((k) => ({ key: k.key, from: before.skills.find((b) => b.key === k.key)?.level ?? k.level, to: k.level }));
                     if (after.level.level > before.level.level) ups.unshift({ key: 'hero' as never, from: before.level.level, to: after.level.level });
                     setLevelUps(ups);
+                    setHeroRun({ before, after });
                     // What this workout did in the game: boss damage, coins, the day chest.
                     const b0 = before.weekly.boss;
                     const b1 = after.weekly.boss;
@@ -327,60 +332,17 @@ export function SessionPlayer() {
         </Dialog>
 
         {phase === 'done' && (
-          <div className="relative flex flex-col items-center py-10 text-center">
-            <Confetti />
-            <div className="mb-5 flex h-20 w-20 animate-scale-in items-center justify-center rounded-full bg-ok-soft text-ok">
-              <PartyPopper className="h-10 w-10" />
-            </div>
-            <h1 className="text-[26px] font-bold">{t('Training afgerond!', 'Workout complete!')}</h1>
-            <p className="mt-2 max-w-xs text-[16px] text-ink-600">
-              {savedOffline
-                ? t('Goed bezig! Houd de app open: je training wordt automatisch verstuurd zodra je weer internet hebt.', 'Great work! Keep the app open: your workout is sent automatically once you are back online.')
-                : t('Goed bezig. Je fysiotherapeut kan je voortgang en feedback nu bekijken.', 'Great work. Your physiotherapist can now see your progress and feedback.')}
-            </p>
-            {earned > 0 && (
-              <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-sand-soft px-4 py-2 font-display text-[17px] font-bold text-sand-ink">
-                <Trophy className="h-5 w-5" aria-hidden />+{earned} XP {t('voor je sportheld', 'for your sports hero')}
-              </p>
-            )}
-            {levelUps.length > 0 && (
-              <div className="mt-4 w-full max-w-xs rounded-2xl border border-accent/30 bg-accent-soft p-4" role="status">
-                <p className="font-display text-[20px] font-bold text-accent">{t('Level up!', 'Level up!')}</p>
-                <ul className="mt-1 space-y-0.5 text-[15px] text-ink-800">
-                  {levelUps.map((u) => {
-                    const meta = SKILLS.find((k) => k.key === u.key);
-                    const name = meta ? (locale === 'nl' ? meta.nl : meta.en) : t('Je sportheld', 'Your sports hero');
-                    return <li key={u.key}><strong>{name}</strong> {u.from} → {u.to}</li>;
-                  })}
-                </ul>
-              </div>
-            )}
-            {rewards && (rewards.bossDamage > 0 || rewards.coins > 0 || rewards.chestReady) && (
-              <ul className="mt-4 w-full max-w-xs space-y-2 text-left" aria-label={t('Beloningen', 'Rewards')}>
-                {rewards.bossDamage > 0 && rewards.bossKey && (
-                  <li className="flex items-center gap-3 rounded-xl border border-line bg-white px-3 py-2.5 text-[15px] shadow-card">
-                    <Swords className="h-5 w-5 shrink-0 text-[#c2410c]" aria-hidden />
-                    <span>{(() => { const bm = BOSSES.find((x) => x.key === rewards.bossKey); const n = bm ? (locale === 'nl' ? bm.nl : bm.en) : ''; return rewards.bossDefeated ? t(`${n} verslagen! −${rewards.bossDamage}`, `${n} defeated! −${rewards.bossDamage}`) : t(`−${rewards.bossDamage} schade aan ${n}`, `−${rewards.bossDamage} damage to ${n}`); })()}</span>
-                  </li>
-                )}
-                {rewards.coins > 0 && (
-                  <li className="flex items-center gap-3 rounded-xl border border-line bg-white px-3 py-2.5 text-[15px] shadow-card">
-                    <Coins className="h-5 w-5 shrink-0 text-sand-ink" aria-hidden />
-                    <span>{t(`+${rewards.coins} muntjes voor de winkel`, `+${rewards.coins} coins for the shop`)}</span>
-                  </li>
-                )}
-                {rewards.chestReady && (
-                  <li>
-                    <Link to="/p/held" className="flex min-h-[48px] items-center gap-3 rounded-xl border border-sand/40 bg-sand-soft px-3 py-2.5 text-[15px] font-semibold text-sand-ink shadow-card">
-                      <Gift className="h-5 w-5 shrink-0" aria-hidden />
-                      <span className="flex-1">{t('Je dagkist staat klaar!', 'Your day chest is ready!')}</span>
-                      <ChevronRight className="h-4 w-4" aria-hidden />
-                    </Link>
-                  </li>
-                )}
-              </ul>
-            )}
-            <Button size="xl" className="mt-8 w-full max-w-xs" onClick={() => nav('/p')}>{t('Terug naar overzicht', 'Back to overview')}</Button>
+          <RewardScreen
+            earned={earned}
+            levelUps={levelUps}
+            rewards={rewards}
+            heroRun={heroRun}
+            savedOffline={savedOffline}
+          />
+        )}
+        {phase === 'done' && (
+          <div className="flex justify-center pb-8">
+            <Button size="xl" className="mt-2 w-full max-w-xs" onClick={() => nav('/p')}>{t('Terug naar overzicht', 'Back to overview')}</Button>
           </div>
         )}
       </div>
@@ -715,6 +677,103 @@ function SummaryStep({ completed, total, saving, onFinish }: { completed: number
 }
 
 /** Lightweight CSS confetti in brand colours (disabled automatically with prefers-reduced-motion). */
+type Rewards = { bossKey: string | null; bossDamage: number; bossDefeated: boolean; coins: number; chestReady: boolean };
+
+/**
+ * After a workout: the hero cheers on its podium, XP and coins count up, the XP bar fills (across a
+ * level-up), and a new level or rank gets rays and a shield. Every value is also plain text.
+ */
+function RewardScreen({ earned, levelUps, rewards, heroRun, savedOffline }: { earned: number; levelUps: { key: string; from: number; to: number }[]; rewards: Rewards | null; heroRun: { before: HeroState; after: HeroState } | null; savedOffline: boolean }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const after = heroRun?.after;
+  const before = heroRun?.before;
+  const heroUp = levelUps.find((u) => (u.key as string) === 'hero');
+  const skillUps = levelUps.filter((u) => (u.key as string) !== 'hero');
+  const newTier = heroUp && levelTier(heroUp.to).key !== levelTier(heroUp.from).key ? levelTier(heroUp.to) : null;
+  const look = after?.hero ? { ...after.hero, gear: [...after.gear.equipped, ...(after.aids ?? [])], body: after.metrics ? bodyShape(after.metrics, after.hero.frame) : null, photo: after.customPhoto ?? null } : null;
+  let step = 0;
+  const delay = () => ({ animationDelay: `${0.35 + 0.15 * step++}s` });
+  return (
+    <div className="relative flex flex-col items-center py-8 text-center">
+      <Confetti />
+      {heroUp ? (
+        <div className="reward-in flex flex-col items-center" role="status">
+          <LevelUpBurst level={heroUp.to} />
+          <p className="mt-1 font-display text-[28px] font-bold text-accent">{t('Level up!', 'Level up!')}</p>
+          <p className="text-[16px] text-ink-700">{t(`Level ${heroUp.from} → ${heroUp.to} · ${titleFor(heroUp.to, true)}`, `Level ${heroUp.from} → ${heroUp.to} · ${titleFor(heroUp.to, false)}`)}</p>
+          {newTier && <p className="mt-2 rounded-full px-3 py-1 text-[14px] font-bold" style={{ background: newTier.light, color: newTier.color }}>{t(`Nieuwe rang: ${newTier.nl}!`, `New rank: ${newTier.en}!`)}</p>}
+        </div>
+      ) : look && after ? (
+        <HeroStage level={after.level.level} cheer className="mb-2">
+          <HeroPhoto look={look} className="h-[200px] w-[134px] shadow-card" />
+        </HeroStage>
+      ) : (
+        <div className="mb-5 flex h-20 w-20 animate-scale-in items-center justify-center rounded-full bg-ok-soft text-ok">
+          <PartyPopper className="h-10 w-10" />
+        </div>
+      )}
+      <h1 className="mt-3 text-[26px] font-bold">{t('Training afgerond!', 'Workout complete!')}</h1>
+      <p className="mt-1 max-w-xs text-[16px] text-ink-600">
+        {savedOffline
+          ? t('Goed bezig! Houd de app open: je training wordt automatisch verstuurd zodra je weer internet hebt.', 'Great work! Keep the app open: your workout is sent automatically once you are back online.')
+          : t('Goed bezig. Je fysiotherapeut kan je voortgang en feedback nu bekijken.', 'Great work. Your physiotherapist can now see your progress and feedback.')}
+      </p>
+      {earned > 0 && (
+        <p className="reward-in mt-4 inline-flex items-center gap-2 rounded-full bg-sand-soft px-4 py-2 font-display text-[19px] font-bold text-sand-ink" style={delay()}>
+          <Trophy className="h-5 w-5" aria-hidden /><CountUp value={earned} prefix="+" /> XP {t('voor je sportheld', 'for your sports hero')}
+        </p>
+      )}
+      {after && before && (
+        <div className="reward-in mt-3 w-full max-w-xs text-left" style={delay()}>
+          <div className="flex items-baseline justify-between text-[13px] text-ink-700">
+            <span className="font-semibold">{t(`Level ${after.level.level}`, `Level ${after.level.level}`)}</span>
+            <span>{t(`nog ${after.level.to - after.level.xp} XP`, `${after.level.to - after.level.xp} XP to go`)}</span>
+          </div>
+          <XpBar xp={after.level.xp} fromXp={before.level.xp} className="mt-1" label={t(`Voortgang naar level ${after.level.level + 1}`, `Progress to level ${after.level.level + 1}`)} />
+        </div>
+      )}
+      {skillUps.length > 0 && (
+        <div className="reward-in mt-4 w-full max-w-xs rounded-2xl border border-accent/30 bg-accent-soft p-4" style={delay()} role="status">
+          <p className="font-display text-[18px] font-bold text-accent">{t('Skill omhoog!', 'Skill up!')}</p>
+          <ul className="mt-1 space-y-0.5 text-[15px] text-ink-800">
+            {skillUps.map((u) => {
+              const meta = SKILLS.find((k) => k.key === u.key);
+              return <li key={u.key}><strong>{meta ? (nl ? meta.nl : meta.en) : u.key}</strong> {u.from} → {u.to}</li>;
+            })}
+          </ul>
+        </div>
+      )}
+      {rewards && (rewards.bossDamage > 0 || rewards.coins > 0 || rewards.chestReady) && (
+        <ul className="mt-4 w-full max-w-xs space-y-2 text-left" aria-label={t('Beloningen', 'Rewards')}>
+          {rewards.bossDamage > 0 && rewards.bossKey && (
+            <li className="reward-in flex items-center gap-3 rounded-xl border border-line bg-white px-3 py-2.5 text-[15px] shadow-card" style={delay()}>
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#fde8dc] text-[#9a3412]"><Swords className="h-5 w-5" aria-hidden /></span>
+              <span>{(() => { const bm = BOSSES.find((x) => x.key === rewards.bossKey); const n = bm ? (nl ? bm.nl : bm.en) : ''; return rewards.bossDefeated ? t(`${n} verslagen! −${rewards.bossDamage}`, `${n} defeated! −${rewards.bossDamage}`) : t(`−${rewards.bossDamage} schade aan ${n}`, `−${rewards.bossDamage} damage to ${n}`); })()}</span>
+            </li>
+          )}
+          {rewards.coins > 0 && (
+            <li className="reward-in flex items-center gap-3 rounded-xl border border-line bg-white px-3 py-2.5 text-[15px] shadow-card" style={delay()}>
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#fbf0d9] text-[#855806]"><Coins className="h-5 w-5" aria-hidden /></span>
+              <span>{t(`+${rewards.coins} muntjes voor de winkel`, `+${rewards.coins} coins for the shop`)}</span>
+            </li>
+          )}
+          {rewards.chestReady && (
+            <li className="reward-in" style={delay()}>
+              <Link to="/p/held" className="flex min-h-[48px] items-center gap-3 rounded-xl border border-sand/40 bg-sand-soft px-3 py-2.5 text-[15px] font-semibold text-sand-ink shadow-card">
+                <Gift className="h-5 w-5 shrink-0" aria-hidden />
+                <span className="flex-1">{t('Je dagkist staat klaar!', 'Your day chest is ready!')}</span>
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              </Link>
+            </li>
+          )}
+        </ul>
+      )}
+      <div className="h-6" />
+    </div>
+  );
+}
+
 function Confetti() {
   const colors = ['#29483c', '#1d362d', '#5b8a74', '#a9c4b2', '#d8ccb6', '#e6eee8'];
   return (
