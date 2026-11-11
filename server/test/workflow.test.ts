@@ -258,6 +258,14 @@ describe('recently used templates', () => {
     expect((await ther.post('/programs', { title: 'Vanuit sjabloon (test)', patientId: pat, status: 'draft', sourceTemplateId: pick.id, items })).status).toBe(201);
     const after = (await ther.get('/programs/templates')).body.items as typeof before;
     const firstNonFav = after.find((x) => !x.favorite)!;
+    if (firstNonFav.id !== pick.id) {
+      const matching = after.find(x => x.id === pick.id);
+      console.info('RECENT_TEMPLATE_DIAGNOSTIC', JSON.stringify({
+        picked: { id: pick.id, before: pick.lastUsedAt, after: matching?.lastUsedAt ?? null },
+        first: { id: firstNonFav.id, after: firstNonFav.lastUsedAt },
+        recent: after.filter(x => !x.favorite).slice(0, 6).map(x => ({ id: x.id, lastUsedAt: x.lastUsedAt })),
+      }));
+    }
     expect(firstNonFav.id).toBe(pick.id);
     expect(firstNonFav.lastUsedAt).toBeTruthy();
   });
