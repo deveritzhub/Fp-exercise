@@ -27,7 +27,7 @@ export const agentConfig = {
     authToken: env('TWILIO_AUTH_TOKEN'),
     phoneNumber: env('TWILIO_PHONE_NUMBER'),
     voiceLanguage: env('VOICE_LANGUAGE', 'nl-NL'),
-    voiceName: env('VOICE_NAME', 'Google.nl-NL-Standard-A'),
+    voiceName: env('VOICE_NAME', 'Polly.Laura-Neural'),
   },
   /** SMS sender: your Twilio number (default) or a name like "FuncPerf" (max 11 characters). */
   smsFrom: env('SMS_FROM'),

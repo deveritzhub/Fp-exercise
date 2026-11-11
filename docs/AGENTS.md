@@ -47,6 +47,7 @@ dat kanaal met 503. De rest van FP Flow werkt gewoon door. Controleer na het ins
 | `WHATSAPP_VERIFY_TOKEN` | zelf verzonnen (Render genereert er een); dezelfde waarde vul je in bij Meta |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` | twilio.com console |
 | `OWNER_WHATSAPP` / `OWNER_PHONE` | jouw nummers, voor meldingen en doorverbinden |
+| `VOICE_NAME` | stem aan de telefoon; standaard `Polly.Laura-Neural` (natuurlijke Nederlandse vrouwenstem) |
 | `CLAUDE_EFFORT` | `low` (standaard; snelst, aanbevolen voor de telefoon) |
 
 **WhatsApp (Meta):**
