@@ -22,7 +22,9 @@ export async function loadHeroAsset(storageDir: string, kind: string, key: strin
   if (!isHeroAsset(kind, key)) return null;
   const target = heroAssetFile(storageDir, kind, key);
   const local = await fs.readFile(target).catch(() => null);
-  if (local?.length) return local;
+  if (local?.length && sniff(local)?.mime === 'image/png') return local;
+  // A cancelled download from an older release may have left an invalid file behind.
+  if (local?.length) await fs.rm(target, { force: true }).catch(() => {});
 
   const id = `${kind}/${key}`;
   const inFlight = loading.get(id);
