@@ -88,3 +88,9 @@ export function nearestSpot<T extends { door: Vec }>(pos: Vec, spots: readonly T
   }
   return best;
 }
+
+export type Rect = { x0: number; x1: number; z0: number; z1: number };
+/** Keep a point inside a room. */
+export function clampRect<T extends Vec>(p: T, r: Rect): T {
+  return { ...p, x: Math.min(r.x1, Math.max(r.x0, p.x)), z: Math.min(r.z1, Math.max(r.z0, p.z)) };
+}
