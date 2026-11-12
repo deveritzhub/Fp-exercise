@@ -2,6 +2,7 @@ import { PhotoGearThumbnail } from '../../components/hero/PhotoEquipment';
 import { HeirloomMark } from '@/components/hero/HeirloomMark';
 import { ACL_REWARDS, ACL_SPORTS } from '@shared/aclRewards';
 import { GearArtwork } from '@/components/hero/RpgGear';
+import { GEAR_COLLECTIONS, COLLECTION_ITEM_KEYS } from '@shared/gearCollections';
 import { HEIRLOOM_KINDS } from '@shared/measurementBoss';
 import '../../components/hero/rpg.css';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
@@ -977,6 +978,7 @@ function GearCard({ d }: { d: HeroState }) {
   const [loot, setLoot] = useState<string | null>(null);
   const [cape, setCape] = useState(false);
   const [filter, setFilter] = useState<'all' | 'open' | 'shop'>('all');
+  const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
   const save = async (next: string[], key: string) => {
     setBusy(key);
     try {
@@ -1008,7 +1010,7 @@ function GearCard({ d }: { d: HeroState }) {
   const toggle = (key: string) => save(d.gear.equipped.includes(key) ? d.gear.equipped.filter((g) => g !== key) : onePerSlot([...d.gear.equipped, key]), key);
   const owned = (k: string) => d.gear.owned.includes(k);
   const items = [...GEAR].sort((a, b) => Number(owned(b.key)) - Number(owned(a.key)) || a.tier - b.tier || a.score - b.score);
-  const shown = items.filter((g) => filter === 'all' || (filter === 'open') === owned(g.key));
+  const shown = items.filter((g) => (!selectedCollection || GEAR_COLLECTIONS.find(c => c.key === selectedCollection)?.items.some(i => i.key === g.key)) && (filter === 'all' || (filter === 'open') === owned(g.key)));
   return (
     <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-labelledby="gear-title">
       <h2 id="gear-title" className="t-section">{t(`Uitrusting (${d.gear.owned.length} van ${GEAR.length})`, `Gear (${d.gear.owned.length} of ${GEAR.length})`)}</h2>
@@ -1021,6 +1023,25 @@ function GearCard({ d }: { d: HeroState }) {
           <span className="ml-1">{(tier.tier-1)*20+1}–{tier.tier*20}</span>
         </li>)}
       </ul>
+      <div className="my-4">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-[14px] font-semibold text-ink-900">{t('Complete uitrustingssets', 'Complete gear collections')}</h3>
+          {selectedCollection && <button type="button" onClick={() => setSelectedCollection(null)} className="tap min-h-[36px] text-[13px] font-semibold text-accent underline">{t('Alle items tonen', 'Show all items')}</button>}
+        </div>
+        <div role="group" aria-label={t('Kies een uitrustingsset', 'Choose a gear collection')} className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          {GEAR_COLLECTIONS.map(c => {
+            const count = c.items.filter(piece => owned(piece.key)).length;
+            const active = selectedCollection === c.key;
+            return <button key={c.key} type="button" data-collection={c.key} aria-pressed={active} onClick={() => { setSelectedCollection(active ? null : c.key); setFilter('all'); }}
+              className={cn('tap flex min-h-[112px] flex-col items-start gap-1 rounded-xl border-2 bg-white p-3 text-left transition-colors hover:bg-accent-soft/40', active ? 'border-accent' : 'border-line')}
+              style={{ borderTopColor: c.accent }}>
+              <span className="text-[11.5px] font-semibold text-ink-500">{t('Tier', 'Tier')} {c.tier} · {count}/{c.items.length}</span>
+              <span className="text-[14px] font-bold leading-snug text-ink-900">{nl ? c.nl : c.en}</span>
+              <span className="text-[11.5px] leading-snug text-ink-600">{nl ? c.descriptionNl : c.descriptionEn}</span>
+            </button>;
+          })}
+        </div>
+      </div>
       <CharacterScreen d={d} onPreview={setPreview} preview={preview} busy={busy} onSave={save} onBuy={buy} />
 
       {preview && <div className="my-3 flex flex-wrap items-center gap-3" role="status"><span>{t('Paskamer — nog niet gekocht:', 'Preview — not purchased:')} {nl ? GEAR.find(g=>g.key===preview)?.nl : GEAR.find(g=>g.key===preview)?.en}</span><Button variant="secondary" onClick={()=>setPreview(null)}>{t('Preview sluiten','Close preview')}</Button></div>}
@@ -1142,6 +1163,7 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
   const [illustrated, setIllustrated] = useState(() => { try { return sessionStorage.getItem('fp.inventory.illustrated') === 'true'; } catch { return false; } });
   useEffect(() => { try { sessionStorage.setItem('fp.inventory.illustrated', String(illustrated)); } catch { /* storage optional */ } }, [illustrated]);
   const look = { ...d.hero!, gear: [...(preview ? onePerSlot([...d.gear.equipped, preview]) : d.gear.equipped), ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero!.frame) : null, photo: d.customPhoto ?? null };
+  const vectorOnly = look.gear.filter(k => COLLECTION_ITEM_KEYS.has(k));
   const inSlot = (k: GearSlot) => d.gear.equipped.find((g) => GEAR_SLOT[g] === k) ?? null;
   const slotBtn = (k: GearSlot) => {
     const item = inSlot(k);
@@ -1169,6 +1191,7 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
           {illustrated ? t('Fotoweergave', 'Photo view') : t('RPG-weergave', 'RPG view')}
         </button>
       </div>
+      {!illustrated && vectorOnly.length > 0 && <div role="status" className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-white px-3 py-2 text-[12.5px] text-ink-700"><span>{t('Deze nieuwe items passen al op de 2D-held. Een bijpassende fotoversie volgt nog.', 'These new items already fit the 2D hero. Matched photo assets are still to come.')}</span><button type="button" onClick={() => setIllustrated(true)} className="tap min-h-[36px] rounded-full border border-accent px-3 font-semibold text-accent">{t('Bekijk 2D-pasvorm', 'View fitted 2D gear')}</button></div>}
       <div className="grid grid-cols-[44px_1fr_44px] sm:grid-cols-[64px_1fr_64px] items-start gap-2">
         <div className="grid gap-2">{side('left')}</div>
         {illustrated ? <span className="flex h-full min-h-[300px] min-w-0 items-center justify-center overflow-hidden rounded-2xl rpg-podium" role="img" aria-label={t('Je geïllustreerde held met je gedragen uitrusting', 'Your illustrated hero wearing equipped items')}><HumanFigure rpg look={look} viewBox="0 -10 200 440" className="h-[420px] sm:h-[520px] w-full max-w-[260px]" /></span> : <span role="img" aria-label={t('Je fotorealistische held met je gedragen uitrusting', 'Your photographic hero wearing equipped items')} className="min-w-0"><HeroPhoto fittedGear look={look} className="h-[420px] sm:h-[520px] w-full" /></span>}
@@ -1184,7 +1207,7 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
               const on = d.gear.equipped.includes(g.key);
               return (
                 <li key={g.key}>
-                  <GearTile g={g} d={d} busy={busy} onPreview={GEAR_SLOT[g.key] === 'outfit' ? ()=>{onPreview(g.key);setOpen(null);} : undefined}
+                  <GearTile g={g} d={d} busy={busy} onPreview={GEAR_SLOT[g.key] === 'outfit' || COLLECTION_ITEM_KEYS.has(g.key) ? ()=>{onPreview(g.key);setOpen(null);} : undefined}
                     onToggle={async () => { await onSave(on ? d.gear.equipped.filter((x) => x !== g.key) : onePerSlot([...d.gear.equipped, g.key]), g.key); setOpen(null); }}
                     onBuy={async () => { await onBuy(g.key); if (!mine) setOpen(null); }} />
                 </li>
