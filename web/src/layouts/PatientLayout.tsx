@@ -1,13 +1,12 @@
 import { useEffect } from 'react';
 import { TestBanner } from '@/components/app/TestBanner';
 import { WelcomeTour } from '@/components/patient/WelcomeTour';
-import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Bell, CalendarCheck2, CloudOff, Dumbbell, HeartPulse, Move, RefreshCw, Settings, Trophy } from 'lucide-react';
 import type { PatientHomeData } from '@/pages/patient/PatientHome';
 import { isClinical } from '@shared/accountKind';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { HeroState } from '@/lib/types';
 import { usePendingCount, useOnline, useOutboxSync } from '@/lib/outbox';
 import { Logo } from '@/components/app/Brand';
 import { FeedbackButton } from '@/components/app/Feedback';
@@ -20,7 +19,6 @@ import { PhaseCelebration } from '@/components/patient/PhaseCelebration';
 import { UpdateNotice } from '@/components/app/WhatsNew';
 import { cn } from '@/lib/cn';
 
-const HERO_LATER_KEY = 'fp.heroLater';
 
 /** Messages from the practice, with a dot while something is unread. */
 function MessagesButton() {
@@ -96,17 +94,10 @@ export function PatientLayout() {
   }, [inPlayer]);
   // Creating the hero is a focused flow: no tab bar.
   const inSetup = loc.pathname === '/p/held/nieuw';
-  // First visit: create the sports hero first (once per session it can be postponed with "Later").
-  const hero = useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero'), enabled: !!user?.patient });
   const home = useQuery({ queryKey: ['patient-home'], queryFn: () => api.get<PatientHomeData>('/patient/home'), enabled: !!user?.patient });
-  let later = false;
-  try {
-    later = sessionStorage.getItem(HERO_LATER_KEY) === '1';
-  } catch {
-    /* storage unavailable */
-  }
   if (!user?.patient) return null;
-  if (loc.pathname === '/p' && hero.data && !hero.data.hero && !later) return <Navigate to="/p/held/nieuw" replace />;
+  // Today always opens on today's training. Someone without a hero gets an invitation there, not the
+  // character creator in the way (a new account still starts with it, straight after signing up).
   // Tabs: today's overview, one per part (rehabilitation only with a physiotherapist), and the hero
   // (logbook inside). A dot marks a part that still has a workout open today. Account is in the header.
   const clinical = isClinical(user.patient.kind);

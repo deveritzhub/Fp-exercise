@@ -24,6 +24,7 @@ const DemoPage = named(() => import('@/pages/marketing/DemoPage'), 'DemoPage');
 const TherapistLayout = named(() => import('@/layouts/TherapistLayout'), 'TherapistLayout');
 const PatientLayout = named(() => import('@/layouts/PatientLayout'), 'PatientLayout');
 const DashboardPage = named(() => import('@/pages/therapist/DashboardPage'), 'DashboardPage');
+const PracticeVillagePage = named(() => import('@/pages/therapist/PracticeVillagePage'), 'PracticeVillagePage');
 const PatientsPage = named(() => import('@/pages/therapist/PatientsPage'), 'PatientsPage');
 const PatientDetailPage = named(() => import('@/pages/therapist/PatientDetailPage'), 'PatientDetailPage');
 const ExercisesPage = named(() => import('@/pages/therapist/ExercisesPage'), 'ExercisesPage');
@@ -154,6 +155,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <S><DashboardPage /></S> },
           { path: 'patienten', element: <S><PatientsPage /></S> },
+          { path: 'dorp', element: <S><PracticeVillagePage /></S> },
           { path: 'patienten/:id', element: <S><PatientDetailPage /></S> },
           { path: 'patienten/:id/rapport', element: <S><ProgressReportPage /></S> },
           { path: 'oefeningen', element: <S><ExercisesPage /></S> },

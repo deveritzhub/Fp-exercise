@@ -72,11 +72,10 @@ export function DashboardPage() {
         </div>
       )}
 
-      {guild.data && (
-        <div className="mt-6">
-          <GuildRaidCard guild={guild.data} />
-        </div>
-      )}
+      {d?.start && <StaffStart data={d.start} />}
+
+      {/* Work first: who needs attention comes straight under the numbers; the guild raid follows the patients. */}
+      <WorkList d={d} />
 
       {isClinical(practice?.kind) && (d?.aclPatients?.length ?? 0) > 0 && (
         <Card className="mt-6" aria-labelledby="acl-patients-title">
@@ -94,9 +93,11 @@ export function DashboardPage() {
         </Card>
       )}
 
-      {d?.start && <StaffStart data={d.start} />}
-
-      <WorkList d={d} />
+      {guild.data && (
+        <div className="mt-6">
+          <GuildRaidCard guild={guild.data} />
+        </div>
+      )}
 
       <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-5">
         <div className="min-w-0 lg:col-span-3">{d && <ActivityChart daily={d.daily} />}</div>

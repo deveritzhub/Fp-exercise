@@ -148,7 +148,7 @@ function groundTexture(roads: Road[], R: () => number) {
 
 /** Hand-painted surface textures, in grey so each material can tint them. Made once, reused. */
 const TEX: Record<string, THREE.CanvasTexture> = {};
-function painted(kind: 'plaster' | 'shingle' | 'stone' | 'wood', rx = 1, ry = 1) {
+export function painted(kind: 'plaster' | 'shingle' | 'stone' | 'wood', rx = 1, ry = 1) {
   const key = `${kind}:${rx}:${ry}`;
   if (TEX[key]) return TEX[key];
   const S = 256;
@@ -229,7 +229,7 @@ function painted(kind: 'plaster' | 'shingle' | 'stone' | 'wood', rx = 1, ry = 1)
 }
 
 /** Soft round dot for smoke, glow and drifting motes. */
-function softDot() {
+export function softDot() {
   if (TEX.dot) return TEX.dot;
   const c = document.createElement('canvas');
   c.width = c.height = 64;
@@ -287,7 +287,7 @@ function yard(scene: THREE.Scene, kind: 'kracht' | 'mobiliteit', site: Site, obs
 }
 
 /** Timber cottage: stone footing, plastered walls with beams, a pitched roof. The front faces +z. */
-function cottage(roofColor: number, scale = 1) {
+export function cottage(roofColor: number, scale = 1) {
   const g = new THREE.Group();
   const box = (w: number, h: number, d: number, color: number, x: number, y: number, z: number, opts: Partial<THREE.MeshStandardMaterialParameters> = {}) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color, opts));
@@ -343,7 +343,7 @@ function shaded<T extends THREE.BufferGeometry>(geo: T) {
   return geo;
 }
 /** Round leafy tree, about 3–4 hero heights. */
-function leafTree(R: () => number, size = 1) {
+export function leafTree(R: () => number, size = 1) {
   const g = new THREE.Group();
   const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.17, 1.5, 6), mat(0x5d4027));
   trunk.position.y = 0.75;

@@ -5,6 +5,8 @@ import { requireStaff, type AppEnv } from '../middleware';
 import { mapExercise, OV_COLS, OV_JOIN } from './exercises';
 import { adherenceForPatient, loadAdherenceInputs } from '../lib/progress';
 import { toISODate } from '../../../shared/adherence';
+import { heroState } from './hero';
+import type { VillageHome } from '../../../shared/practiceVillage';
 
 export const dashboard = new Hono<AppEnv>();
 
@@ -211,6 +213,35 @@ dashboard.get('/', async (c) => {
         })),
         favorites: favs.rows.map((r) => mapExercise(r)),
       };
+    }),
+  );
+});
+
+/**
+ * The practice village: one home per patient this member may see, with the hero's level. A home has a
+ * number (the order in which patients joined) and the id for the link to the record. Names are left
+ * out unless the member asks for them (`?names=1`): the village is often on a screen others can see.
+ */
+dashboard.get('/village', async (c) => {
+  const { user, practiceId } = requireStaff(c);
+  const names = c.req.query('names') === '1';
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const { rows } = await tx.query(
+        `SELECT pt.id, pt.first_name, pt.last_name,
+                (SELECT count(*)::int FROM workout_sessions s WHERE s.patient_id = pt.id AND s.completed_at > now() - interval '7 days') AS week
+           FROM patients pt
+          WHERE pt.practice_id = $1 AND pt.archived_at IS NULL AND app.can_manage_patient(pt.id)
+          ORDER BY pt.created_at, pt.id
+          LIMIT 80`,
+        [practiceId],
+      );
+      const homes: VillageHome[] = [];
+      for (const [i, r] of rows.entries()) {
+        const level = (await heroState(tx, r.id)).level;
+        homes.push({ id: r.id, no: i + 1, level: level.level, progress: level.progress, week: Number(r.week), ...(names ? { name: `${r.first_name} ${r.last_name}`.trim() } : {}) });
+      }
+      return { homes };
     }),
   );
 });
