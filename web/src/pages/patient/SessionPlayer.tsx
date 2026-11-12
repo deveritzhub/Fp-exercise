@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Brain, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X, Printer, Trophy, Swords, Coins, Gift, Volume2, VolumeX } from 'lucide-react';
 import { MUSCLES, musclesOf } from '@shared/muscleAtlas';
@@ -139,6 +139,8 @@ export function SessionPlayer() {
   const { id = '' } = useParams();
   const { t, locale } = useI18n();
   const nav = useNavigate();
+  // Started at the TV in the walkable village: the workout ends back there, at the TV.
+  const home = (useLocation().state as { from?: string } | null)?.from === 'dorp' ? '/p/dorp' : '/p';
   const qc = useQueryClient();
   useDocumentMeta(t('Training', 'Workout'));
   const q = useQuery({ queryKey: ['patient-program', id], queryFn: () => api.get<PatientProgram>(`/patient/programs/${id}`), staleTime: Infinity });
@@ -333,7 +335,7 @@ export function SessionPlayer() {
           size="sm"
           footer={
             <div className="grid w-full grid-cols-2 gap-2">
-              <Button size="lg" variant="secondary" onClick={() => nav('/p')}>{t('Onderbreken', 'Pause')}</Button>
+              <Button size="lg" variant="secondary" onClick={() => nav(home)}>{t('Onderbreken', 'Pause')}</Button>
               <Button size="lg" data-autofocus onClick={() => setLeaving(false)}>{t('Doorgaan', 'Continue')}</Button>
             </div>
           }
@@ -354,7 +356,7 @@ export function SessionPlayer() {
         )}
         {phase === 'done' && (
           <div className="flex justify-center pb-8">
-            <Button size="xl" className="mt-2 w-full max-w-xs" onClick={() => nav('/p', { state: earned > 0 ? { fromWorkout: { xp: earned } } : null })}>{t('Terug naar je dorp', 'Back to your village')}</Button>
+            <Button size="xl" className="mt-2 w-full max-w-xs" onClick={() => nav(home, { state: earned > 0 ? { fromWorkout: { xp: earned } } : home === '/p' ? null : { fromWorkout: { xp: 0 } } })}>{t('Terug naar je dorp', 'Back to your village')}</Button>
           </div>
         )}
       </div>

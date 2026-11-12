@@ -17,14 +17,14 @@ export type VillageZone = { no: number; status: 'done' | 'current' | 'locked'; n
 export type VillageBuilding = { key: string; label: string; to: string };
 type Props = { zones: VillageZone[]; heroZoneNo: number | null; buildings: VillageBuilding[]; onZone: (no: number) => void; heroColor?: string; growth?: VillageGrowth; className?: string };
 
-const PALETTE = {
+export const PALETTE = {
   grass: 0x8fbf6a, grassDark: 0x6e9e52, sand: 0xe6d3a3, water: 0x7cc4d8, path: 0xd9c08f, stone: 0xb8b2a6,
   wall: 0xf3ead8, wood: 0x8a6038, trunk: 0x7a5232, leaf: 0x4f8a4a, leafLight: 0x72a85e,
   roof: { smithy: 0xb5532c, library: 0x2759a0, hall: 0xc9a14a, board: 0x8e3b5f, guild: 0x29483c } as Record<string, number>,
   done: 0x2f8f6a, current: 0xe4bc63, locked: 0x9aa5a0, fog: 0xffffff,
 };
 
-const webglOk = () => {
+export const webglOk = () => {
   try {
     const c = document.createElement('canvas');
     return !!(c.getContext('webgl2') || c.getContext('webgl'));
@@ -33,11 +33,11 @@ const webglOk = () => {
   }
 };
 
-function mat(color: number, opts: Partial<THREE.MeshStandardMaterialParameters> = {}) {
+export function mat(color: number, opts: Partial<THREE.MeshStandardMaterialParameters> = {}) {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.85, flatShading: true, ...opts });
 }
 
-function house(roofColor: number, scale = 1) {
+export function house(roofColor: number, scale = 1) {
   const g = new THREE.Group();
   const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 1), mat(PALETTE.wall));
   body.position.y = 0.45;
@@ -59,7 +59,7 @@ function house(roofColor: number, scale = 1) {
   return g;
 }
 
-function tree(size = 1, light = false) {
+export function tree(size = 1, light = false) {
   const g = new THREE.Group();
   const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 0.4, 6), mat(PALETTE.trunk));
   trunk.position.y = 0.2;
@@ -87,7 +87,7 @@ function banner(color: number) {
 }
 
 /** Seeded random, so the island looks the same every visit. */
-function rng(seed: number) {
+export function rng(seed: number) {
   let s = seed;
   return () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;
 }

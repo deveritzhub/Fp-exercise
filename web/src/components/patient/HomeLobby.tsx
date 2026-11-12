@@ -212,7 +212,10 @@ export function VillageTiles() {
   ];
   return (
     <nav aria-label={t('Dorp', 'Village')}>
-      <h2 className="t-section mb-2">{t('Je dorp', 'Your village')}</h2>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h2 className="t-section">{t('Je dorp', 'Your village')}</h2>
+        <Link to="/p/dorp" data-testid="walk-village-link" className="inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">{t('Loop rond in 3D', 'Walk around in 3D')}<span aria-hidden>→</span></Link>
+      </div>
       <ul className="grid grid-cols-3 gap-2">
         {tiles.map((x) => (
           <li key={x.key}>

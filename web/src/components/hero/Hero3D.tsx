@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { RotateCcw, RotateCw } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
@@ -10,7 +11,7 @@ import { hero3dScene, isToggleNode } from './hero3d';
 
 /** One download per model per app session; every viewer clones it. */
 const models = new Map<string, Promise<GLTF>>();
-const loadModel = (url: string) => {
+export const loadModel = (url: string) => {
   let p = models.get(url);
   if (!p) {
     p = new GLTFLoader().loadAsync(url);
@@ -141,7 +142,8 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
           const gltf = await loadModel(scene3d.url);
           if (cancelled) return;
           if (st.model) st.root.remove(st.model);
-          const model = gltf.scene.clone(true);
+          // The model has a skeleton: a plain clone would leave the copy bound to the original's bones.
+          const model = cloneSkinned(gltf.scene);
           model.traverse((o) => {
             const m = o as THREE.Mesh;
             if (m.isMesh) m.material = (m.material as THREE.Material).clone();

@@ -9,6 +9,16 @@ export type Release = { date: string; titleNl: string; titleEn: string; items: C
 
 export const RELEASES: Release[] = [
   {
+    date: '2026-11-12',
+    titleNl: 'Loop door je dorp',
+    titleEn: 'Walk through your village',
+    items: [
+      { for: 'patient', nl: 'Je dorp is een 3D-wereld waar je held zelf rondloopt: tik op de grond of op een gebouw.', en: 'Your village is a 3D world your hero walks around in: tap the ground or a building.' },
+      { for: 'patient', nl: 'In de oefenzaal staat een tv met je oefeningen van vandaag. Tik op een oefening voor de video en start daar je training.', en: 'The gym has a TV with your exercises for today. Tap an exercise for the video and start your workout there.' },
+      { for: 'patient', nl: 'Na een training die je bij de tv startte, sta je terug in je dorp en zie je de XP boven je held.', en: 'After a workout started at the TV you are back in your village and see the XP above your hero.' },
+    ],
+  },
+  {
     date: '2026-11-11',
     titleNl: 'Het beginscherm wordt een dorp',
     titleEn: 'Home becomes a village',
