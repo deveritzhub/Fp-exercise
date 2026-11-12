@@ -1,0 +1,158 @@
+<title>Functional Performance Redesign</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Proza+Libre:ital,wght@0,500;1,400&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column (analysis → plan → preview), wide before/after figure rows. Same palette as the proposed site. */
+:root{
+  --bg:#EFE8DC; --surface:#F7F3EC; --fg:#2B2721; --muted:#5E574C; --line:#D6CAB6;
+  --olive:#4E5B3C; --terra:#B5643E; --p1:#B5643E; --p2:#8A7A3C; --p3:#6E7A5C; --chip-fg:#fff;
+  --display:"Proza Libre",Georgia,serif; --text:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#1F211B;--surface:#2A2D24;--fg:#EDE6D8;--muted:#B9B1A1;--line:#454A3B;--olive:#B8C690;--terra:#E09A74;--p1:#C77650;--p2:#A3924F;--p3:#7F8C6A;--chip-fg:#1F211B;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1F211B;--surface:#2A2D24;--fg:#EDE6D8;--muted:#B9B1A1;--line:#454A3B;--olive:#B8C690;--terra:#E09A74;--p1:#C77650;--p2:#A3924F;--p3:#7F8C6A;--chip-fg:#1F211B;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:400 16px/1.65 var(--text)}
+.wrap{max-width:1080px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:48px 80px}
+h1,h2,h3{font-family:var(--display);font-weight:500;line-height:1.15;margin:0;text-wrap:balance}
+h1{font-size:clamp(2rem,1.5rem + 2.4vw,3.2rem)}
+h1 em,h2 em{font-style:italic;font-weight:400;color:var(--olive)}
+h2{font-size:clamp(1.5rem,1.3rem + 1vw,2.1rem);margin-bottom:18px}
+h3{font-size:1.15rem}
+p{margin:0}
+.eyebrow{font:600 .78rem/1.2 var(--text);letter-spacing:.14em;text-transform:uppercase;color:var(--terra)}
+.lede{color:var(--muted);font-size:1.1rem;max-width:62ch}
+section{margin-top:72px}
+a{color:var(--olive)}
+.cta{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 22px;border-radius:999px;background:var(--olive);color:var(--bg);font-weight:600;text-decoration:none}
+.head{display:grid;gap:18px}
+.status{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.status span{font-size:.85rem;border:1px solid var(--line);border-radius:999px;padding:6px 12px;color:var(--muted)}
+.findings{display:grid;gap:14px}
+@media(min-width:760px){.findings{grid-template-columns:1fr 1fr}}
+.f{background:var(--surface);border-radius:14px;padding:20px 22px;display:grid;gap:8px;min-width:0}
+.f p{color:var(--muted);font-size:.94rem}
+.f .ev{font-size:.82rem;color:var(--fg);opacity:.75}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:22px}
+.kpi{border-top:2px solid var(--fg);padding-top:12px;display:grid;gap:4px}
+.kpi b{font:500 1.7rem/1.1 var(--display);font-variant-numeric:tabular-nums}
+.kpi span{font-size:.88rem;color:var(--muted)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:.93rem}
+th,td{text-align:left;padding:14px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+tr:last-child td{border-bottom:0}
+td:first-child{white-space:nowrap}
+.chip{display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.06em;padding:4px 9px;border-radius:999px;color:var(--chip-fg)}
+.c1{background:var(--p1)}.c2{background:var(--p2)}.c3{background:var(--p3)}
+td small{display:block;color:var(--muted);margin-top:4px}
+.keep{display:grid;gap:10px;list-style:none;padding:0;margin:0}
+@media(min-width:760px){.keep{grid-template-columns:1fr 1fr}}
+.keep li{display:flex;gap:10px;background:var(--surface);border-radius:12px;padding:14px 16px;font-size:.94rem}
+.keep li::before{content:"✓";color:var(--olive);font-weight:700}
+.compare{display:grid;gap:18px}
+@media(min-width:860px){.compare{grid-template-columns:1fr 1fr}}
+figure{margin:0;display:grid;gap:10px;min-width:0}
+figure img{border-radius:12px;border:1px solid var(--line);width:100%;height:auto}
+figcaption{font-size:.88rem;color:var(--muted)}
+figcaption b{color:var(--fg)}
+.phones{display:grid;gap:16px;grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(min-width:860px){.phones{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.preview-box{background:var(--surface);border-radius:18px;padding:28px;display:grid;gap:16px;border:1px solid var(--line)}
+.steps{margin:0;padding-left:1.2em;display:grid;gap:8px;color:var(--muted)}
+.steps b{color:var(--fg)}
+.note{font-size:.88rem;color:var(--muted)}
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <p class="eyebrow">Functional Performance · Herontwerp homepage</p>
+    <h1>Van drukke sportpraktijk naar <em>boutique fysiotherapie.</em></h1>
+    <p class="lede">Analyse van functionalperformance.nl op desktop (1440px) en mobiel (iPhone 13), een verbeterplan met prioriteiten en een klikbare preview. Er is niets aan de live website veranderd.</p>
+    <div class="status"><span>Analyse: 12 november 2026</span><span>Status: wacht op jouw goedkeuring</span><span>Live site: ongewijzigd</span></div>
+    <p><a class="cta" href="preview.html" target="_blank" rel="noopener">Open de interactieve preview →</a></p>
+  </header>
+
+  <section>
+    <p class="eyebrow">1 · Analyse</p>
+    <h2>Wat er nu gebeurt</h2>
+    <div class="kpis">
+      <div class="kpi"><b>20.354 px</b><span>lengte homepage op mobiel, ongeveer 24 schermen scrollen</span></div>
+      <div class="kpi"><b>3×</b><span>dezelfde klachtenlijst: “Waar we mee helpen”, de klacht-finder en “Behandelingen”</span></div>
+      <div class="kpi"><b>0</b><span>keer zichtbare openingstijden op de homepage (alleen in de schema-data)</span></div>
+      <div class="kpi"><b>10+</b><span>losse elementen in de hero, inclusief slider-knoppen</span></div>
+    </div>
+    <div class="findings">
+      <div class="f"><h3>De hero vraagt te veel tegelijk</h3><p>Label, kop, alinea, drie vinkjes, twee knoppen, een vervolglink, twee locatielinks en een slider met pauzeknop op een donkere foto. De kop is sterk, maar wordt omringd door ruis.</p><p class="ev">Op mobiel valt de cookiebanner precies over de knop “Plan een afspraak”.</p></div>
+      <div class="f"><h3>Herhaling maakt de pagina lang</h3><p>Klachten komen drie keer terug in kaarten (4 + 7 + 9). Een tekst-ticker herhaalt de USP's twee keer achter elkaar. Locaties staan in twee aparte secties.</p><p class="ev">Bezoekers moeten ver scrollen voor team, reviews en contact.</p></div>
+      <div class="f"><h3>Alles is een kaart</h3><p>Bijna elk blok heeft dezelfde rand, schaduw en ronding. Daardoor valt niets op en voelt de pagina eerder als een template dan als een boutique praktijk.</p><p class="ev">20+ kaarten met dezelfde stijl op de homepage.</p></div>
+      <div class="f"><h3>Kleur: beige en bruin, zonder spanning</h3><p>Het beige past bij het merk, maar de bruine knoppen en donkere banden maken het zwaar. Olijfgroen en terracotta ontbreken nog.</p><p class="ev">Het label “Eerste stap” in de slot-CTA is bijna onleesbaar (te weinig contrast).</p></div>
+      <div class="f"><h3>Fotografie wordt verstopt</h3><p>Sterke eigen foto's (behandeling, gym, wachtruimte) staan onder een donkere overlay of in een slider. Teamfoto's hebben verschillende achtergronden en de naam staat over de foto heen.</p><p class="ev">In de statistiekenrij vallen de sterren buiten hun vak (vier van de vijf zichtbaar).</p></div>
+      <div class="f"><h3>Boeken kan beter op mobiel</h3><p>Er is geen vaste afspraakknop tijdens het scrollen. De locatiekeuze voor de intake staat diep in de pagina. Het mobiele menu heeft geen boekknop of openingstijden.</p><p class="ev">Kansen: vaste actiebalk, locatiekeuze direct onder de hero.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">2 · Verbeterplan</p>
+    <h2>Prioriteiten</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Prioriteit</th><th>Verbetering</th><th>Waarom</th><th>Inspanning</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip c1">P1</span></td><td><b>Rustige split-hero</b><small>Kop links op zand, foto rechts in boogvorm; één primaire knop, bellen als tweede. Slider weg.</small></td><td>Directe focus op de afspraak, snellere laadtijd (één foto in plaats van drie).</td><td>Klein</td></tr>
+        <tr><td><span class="chip c1">P1</span></td><td><b>Boekmodule onder de hero</b><small>Kies Noord, Centrum of vervolgafspraak, met de bestaande Flux-links. Duur en tarieven direct zichtbaar.</small></td><td>Minder twijfel voor het boeken, meer online intakes.</td><td>Klein</td></tr>
+        <tr><td><span class="chip c1">P1</span></td><td><b>Mobiele actiebalk + nieuw menu</b><small>Vaste balk met “Plan afspraak”, bellen en WhatsApp. Menu op volledig scherm met grote tikvlakken, boekknop en openingstijden.</small></td><td>De boekknop is altijd binnen bereik van de duim.</td><td>Klein</td></tr>
+        <tr><td><span class="chip c1">P1</span></td><td><b>Cookiebanner compacter</b><small>Smalle balk onderaan die de hero-knoppen niet bedekt.</small></td><td>Nu blokkeert de banner de belangrijkste knop op mobiel.</td><td>Klein</td></tr>
+        <tr><td><span class="chip c2">P2</span></td><td><b>Drie klachtenlijsten samenvoegen</b><small>Eén lijst van 8 klachten die elk naar de bestaande URL linkt. De SEO-introtekst met interne links blijft staan.</small></td><td>Pagina op mobiel ongeveer 30% korter, zelfde interne links.</td><td>Middel</td></tr>
+        <tr><td><span class="chip c2">P2</span></td><td><b>Locaties en openingstijden in één sectie</b><small>Per locatie: adres, openingstijden, “Plan hier”, route. Ook in de footer en de bovenbalk.</small></td><td>Openingstijden nu nergens zichtbaar; dit is lokale SEO en vertrouwen.</td><td>Klein</td></tr>
+        <tr><td><span class="chip c2">P2</span></td><td><b>Nieuw kleurenpalet en typografie</b><small>Zandbeige als basis, olijfgroen voor knoppen en donkere banden, terracotta alleen voor kleine accenten. Proza Libre blijft voor koppen; Inter voor leesbare tekst.</small></td><td>Warmer en luxer, en het merk blijft herkenbaar.</td><td>Middel</td></tr>
+        <tr><td><span class="chip c2">P2</span></td><td><b>Minder kaarten, meer witruimte</b><small>Lijsten met lijnen in plaats van kaarten, ticker en statistiekenrij weg, “Zo werken we” in drie echte stappen.</small></td><td>Duidelijke hiërarchie en een rustiger beeld.</td><td>Middel</td></tr>
+        <tr><td><span class="chip c3">P3</span></td><td><b>Fotografie consistent maken</b><small>Teamfoto's op dezelfde zandkleurige achtergrond, namen onder de foto, praktijkfoto's zonder donkere overlay.</small></td><td>Persoonlijk en premium, zonder nieuwe fotoshoot nodig.</td><td>Klein</td></tr>
+        <tr><td><span class="chip c3">P3</span></td><td><b>Reviews als één groot citaat</b><small>Eén echte review groot weergegeven, met links naar Google en ZorgkaartNederland in plaats van een carrousel.</small></td><td>Rustiger en geloofwaardiger.</td><td>Klein</td></tr>
+        <tr><td><span class="chip c3">P3</span></td><td><b>Zelfde systeem op subpagina's</b><small>Klacht-, locatie- en dienstpagina's in dezelfde stijl, met de boekmodule per locatie.</small></td><td>Eén consistente ervaring door de hele site.</td><td>Groot</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Randvoorwaarden</p>
+    <h2>Wat ongewijzigd blijft</h2>
+    <ul class="keep">
+      <li>Alle bestaande URL's (/behandelingen, /klachten-revalidatie/…, /rotterdam-noord, /rotterdam-centrum, /kennisbank/…)</li>
+      <li>Title, meta description, Open Graph, canonical en robots van de homepage</li>
+      <li>Schema.org: Organization, 2× MedicalClinic en de FAQPage met alle 12 vragen</li>
+      <li>De H1 “Fysiotherapie in Rotterdam, beweeg weer zonder pijn.”</li>
+      <li>Flux-boekingslinks: intake algemeen, intake Noord, intake Centrum, vervolgafspraak</li>
+      <li>Noorderhavenkade 158C, 3038 XV en Wijnhaven 66, 3011 WT</li>
+      <li>Openingstijden ma–do 07:30–21:00, vr 07:30–18:00, weekend gesloten</li>
+      <li>Telefoon, WhatsApp, Instagram, NL/EN, zoekfunctie, cookievoorkeuren, kennisbank</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="eyebrow">3 · Visuele preview</p>
+    <h2>Voor en na</h2>
+    <div class="compare">
+      <figure><img src="shots/voor-desktop.jpg" alt="Huidige homepage op desktop: donkere fotohero met veel elementen" loading="lazy"><figcaption><b>Nu</b> · donkere slider, veel elementen, bruine knoppen</figcaption></figure>
+      <figure><img src="shots/na-desktop.jpg" alt="Voorgestelde homepage op desktop: zandkleurige split-hero met boogfoto" loading="lazy"><figcaption><b>Voorstel</b> · split-hero, olijfgroene knop, openingstijden in de bovenbalk</figcaption></figure>
+    </div>
+    <div class="phones" style="margin-top:24px">
+      <figure><img src="shots/voor-mobiel.jpg" alt="Huidige homepage op mobiel met cookiebanner over de knop" loading="lazy"><figcaption><b>Nu</b> · cookiebanner over de knop</figcaption></figure>
+      <figure><img src="shots/na-mobiel.jpg" alt="Voorgestelde homepage op mobiel" loading="lazy"><figcaption><b>Voorstel</b> · kop en knop in beeld</figcaption></figure>
+      <figure><img src="shots/na-actiebalk.jpg" alt="Voorgestelde mobiele boekmodule met vaste actiebalk" loading="lazy"><figcaption><b>Voorstel</b> · boekmodule en vaste actiebalk</figcaption></figure>
+      <figure><img src="shots/na-menu.jpg" alt="Voorgesteld mobiel menu op volledig scherm" loading="lazy"><figcaption><b>Voorstel</b> · menu op volledig scherm</figcaption></figure>
+    </div>
+    <div class="preview-box" style="margin-top:28px">
+      <h3>Probeer de preview zelf</h3>
+      <p class="note">De preview is een losse HTML-pagina met jullie eigen foto's en teksten. Alle links gaan naar de echte pagina's en Flux-boekingen. Open hem ook op je telefoon voor de actiebalk en het menu. Bekijk alleen de homepage; de subpagina's zijn nog niet herontworpen.</p>
+      <p><a class="cta" href="preview.html" target="_blank" rel="noopener">Open de preview →</a></p>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Volgende stap</p>
+    <h2>Wat ik van je nodig heb</h2>
+    <ol class="steps">
+      <li><b>Feedback op de richting</b>: kleuren, de boogvorm van de hero-foto en de samengevoegde klachtenlijst.</li>
+      <li><b>Keuze voor de cookiebanner</b>: welke tool er nu draait, zodat de compacte variant er goed op aansluit.</li>
+      <li><b>Expliciete goedkeuring</b> voordat er iets op de live website verandert. Daarna werk ik het uit in de bestaande code, eerst op een testomgeving.</li>
+    </ol>
+  </section>
+</div>
