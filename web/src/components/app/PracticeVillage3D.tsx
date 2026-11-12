@@ -246,7 +246,7 @@ export default function PracticeVillage3D({ homes, practiceName, selected, onPic
                 className="absolute left-0 top-0 inline-flex min-h-[28px] items-center gap-1 whitespace-nowrap rounded-full border border-white/80 bg-white/95 px-2 text-[12px] font-bold text-ink-900 shadow-card transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent aria-pressed:border-[#c9912a] aria-pressed:bg-[#fbf0d9]"
                 style={{ transform: 'translate(-9999px,0)' }}>
                 {/* The name starts with what is on the badge, then says the kind of home. */}
-                <span><span className="sr-only">{t('Huisje ', 'Home ')}</span>{h.no}</span>
+                {h.name ? <span>{h.name}</span> : <span><span className="sr-only">{t('Huisje ', 'Home ')}</span>{h.no}</span>}
                 <span className="font-medium text-ink-600">· lv {h.level}</span>
                 <span className="sr-only">, {nl ? stage.nl : stage.en}</span>
               </button>

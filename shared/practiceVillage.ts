@@ -36,6 +36,8 @@ export type VillageHome = {
   progress: number;
   /** Workouts finished in the last seven days. */
   week: number;
+  /** Only when the member asked for names; never part of the default answer. */
+  name?: string;
 };
 
 /** Plots in rings round the square: the first eight close by, then wider rings. */

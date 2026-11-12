@@ -24,6 +24,16 @@ test('therapist sees a home per patient without names and opens the record from 
   await expect(panel.getByRole('link', { name: 'Open het dossier' })).toHaveAttribute('href', /\/app\/patienten\/[0-9a-f-]{36}$/);
   await expectAccessible(page, 'practice village');
 
+  // Names are off until asked for; switched on, the home says whose it is.
+  await expect(page.getByTestId('home-name')).toHaveCount(0);
+  await page.getByTestId('toggle-names').click();
+  await expect(page.getByTestId('home-name')).toHaveText(/\S+ \S+/);
+  await expect(page.getByTestId('home-list')).toContainText('Emma de Jong');
+  await expectAccessible(page, 'practice village with names');
+  await page.getByTestId('toggle-names').click();
+  await expect(page.getByTestId('home-name')).toHaveCount(0);
+  await expect(main).not.toContainText('Emma');
+
   // The example shows every kind of home, is marked as made up and has no record behind it.
   await page.getByRole('button', { name: 'Voorbeeld: alle soorten huisjes' }).click();
   await expect(page.getByTestId('sample-notice')).toBeVisible();

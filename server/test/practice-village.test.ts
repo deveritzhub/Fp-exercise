@@ -25,6 +25,17 @@ describe('practice village (staff)', () => {
     expect(JSON.stringify(r.body)).not.toMatch(/Emma|Jong|@|first|last|name/i);
   });
 
+  it('adds the names only when the member asks for them', async () => {
+    const A = await login('therapistA');
+    const r = await A.get('/dashboard/village?names=1');
+    expect(r.status).toBe(200);
+    const emma = r.body.homes.find((h: { id: string }) => h.id === s.patients.emma);
+    expect(emma.name).toBe('Emma de Jong');
+    // Asking for names never widens who is listed.
+    const plain = (await A.get('/dashboard/village')).body.homes.map((h: { id: string }) => h.id);
+    expect(r.body.homes.map((h: { id: string }) => h.id)).toEqual(plain);
+  });
+
   it('never shows another practice its patients, and is closed to patients', async () => {
     const A = await login('therapistA');
     const B = await login('therapistB');

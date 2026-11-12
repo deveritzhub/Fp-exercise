@@ -1,6 +1,6 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Flag, Home, Users } from 'lucide-react';
+import { Eye, EyeOff, Flag, Home, Users } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
@@ -23,7 +23,9 @@ export function PracticeVillagePage() {
   const nl = locale === 'nl';
   const { practice } = useSession();
   useDocumentMeta(t('Dorp', 'Village'));
-  const q = useQuery({ queryKey: ['practice-village'], queryFn: () => api.get<{ homes: VillageHome[] }>('/dashboard/village') });
+  // Names are off when the page opens, every time: the village may be on a screen others see.
+  const [names, setNames] = useState(false);
+  const q = useQuery({ queryKey: ['practice-village', names], queryFn: () => api.get<{ homes: VillageHome[] }>(`/dashboard/village${names ? '?names=1' : ''}`), placeholderData: (prev) => prev });
   const [picked, setPicked] = useState<string | null>(null);
   // A look ahead: twelve made-up homes, two of every kind. Clearly marked, and without a record behind them.
   const [sample, setSample] = useState(false);
@@ -41,10 +43,13 @@ export function PracticeVillagePage() {
     <>
       <PageHeader
         title={t('Dorp', 'Village')}
-        actions={<Button variant="secondary" aria-pressed={sample} onClick={() => { setSample((v) => !v); setPicked(null); }}>{sample ? t('Terug naar mijn patiënten', 'Back to my patients') : t('Voorbeeld: alle soorten huisjes', 'Example: every kind of home')}</Button>}
+        actions={<>
+          {!sample && <Button variant="secondary" aria-pressed={names} data-testid="toggle-names" icon={names ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />} onClick={() => setNames((v) => !v)}>{names ? t('Namen verbergen', 'Hide names') : t('Namen tonen', 'Show names')}</Button>}
+          <Button variant="secondary" aria-pressed={sample} onClick={() => { setSample((v) => !v); setPicked(null); }}>{sample ? t('Terug naar mijn patiënten', 'Back to my patients') : t('Voorbeeld: alle soorten huisjes', 'Example: every kind of home')}</Button>
+        </>}
         description={t(
-          'Elk huisje is een patiënt, zonder naam. Het groeit mee met het level van de held: van een kamp tot een villa. Een groene vlag betekent: deze week getraind.',
-          'Every home is a patient, without a name. It grows with the hero’s level: from a camp to a villa. A green flag means: trained this week.',
+          'Elk huisje is een patiënt. Het groeit mee met het level van de held: van een kamp tot een villa. Een groene vlag betekent: deze week getraind. Namen staan uit tot je ze aanzet.',
+          'Every home is a patient. It grows with the hero’s level: from a camp to a villa. A green flag means: trained this week. Names are off until you switch them on.',
         )}
       />
 
@@ -78,6 +83,7 @@ export function PracticeVillagePage() {
                 {home ? (
                   <div className="p-5" data-testid="home-panel">
                     <p className="t-label">{t(`Huisje ${home.no}`, `Home ${home.no}`)}</p>
+                    {home.name && !sample && <p className="mt-1 text-[17px] font-semibold text-ink-950" data-testid="home-name">{home.name}</p>}
                     <h2 className="t-section mt-1">{stageName(home.level)} · {t(`level ${home.level}`, `level ${home.level}`)}</h2>
                     <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#E7EFE3]" role="img" aria-label={t(`${Math.round(Math.min(1, home.progress) * 100)}% naar het volgende level`, `${Math.round(Math.min(1, home.progress) * 100)}% to the next level`)}>
                       <div className="h-full bg-accent" style={{ width: `${Math.round(Math.min(1, home.progress) * 100)}%` }} />
@@ -91,7 +97,7 @@ export function PracticeVillagePage() {
                     {!sample && (
                       <>
                         <ButtonLink to={`/app/patienten/${home.id}`} className="mt-4 w-full" icon={<Users className="h-4 w-4" />}>{t('Open het dossier', 'Open the record')}</ButtonLink>
-                        <p className="mt-2 text-[12.5px] text-ink-600">{t('De naam zie je pas in het dossier.', 'The name shows only in the record.')}</p>
+                        {!names && <p className="mt-2 text-[12.5px] text-ink-600">{t('Zet “Namen tonen” aan om te zien van wie dit huisje is.', 'Switch on “Show names” to see whose home this is.')}</p>}
                       </>
                     )}
                   </div>
@@ -101,12 +107,12 @@ export function PracticeVillagePage() {
               </Card>
 
               <Card>
-                <CardHeader title={t('Alle huisjes', 'All homes')} description={t('Op nummer, zonder namen.', 'By number, without names.')} />
+                <CardHeader title={t('Alle huisjes', 'All homes')} description={names && !sample ? t('Met naam.', 'With names.') : t('Op nummer, zonder namen.', 'By number, without names.')} />
                 <ul className="max-h-[300px] divide-y divide-line overflow-y-auto" data-testid="home-list">
                   {homes.map((h) => (
                     <li key={h.id}>
                       <button type="button" onClick={() => setPicked(h.id)} aria-pressed={picked === h.id} className="flex min-h-[48px] w-full items-center justify-between gap-3 px-5 py-2 text-left hover:bg-[#F3F7F1] aria-pressed:bg-[#fbf0d9]">
-                        <span className="font-medium text-ink-900">{t(`Huisje ${h.no}`, `Home ${h.no}`)} <span className="font-normal text-ink-700">· {stageName(h.level)}</span></span>
+                        <span className="font-medium text-ink-900">{t(`Huisje ${h.no}`, `Home ${h.no}`)} <span className="font-normal text-ink-700">· {h.name ? `${h.name} · ` : ''}{stageName(h.level)}</span></span>
                         <span className="flex items-center gap-2 text-[13px] text-ink-700">{h.week > 0 && <Flag className="h-3.5 w-3.5 text-[#2f9e44]" aria-label={t('deze week getraind', 'trained this week')} />}{t(`level ${h.level}`, `level ${h.level}`)}</span>
                       </button>
                     </li>
