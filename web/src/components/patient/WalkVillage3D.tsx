@@ -4,7 +4,8 @@ import { RotateCcw, RotateCw } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import type { FigureLook } from '@/components/hero/HumanFigure';
-import { hero3dScene, isToggleNode } from '@/components/hero/hero3d';
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { GAIT_SPEED, hero3dScene, isToggleNode, type HeroMotion } from '@/components/hero/hero3d';
 import { loadModel } from '@/components/hero/Hero3D';
 import { PALETTE, mat, rng, webglOk } from './Village3D';
 import { VILLAGE_LAYOUT, nearestSpot, reachable, slotPosition, stepToward, type Obstacle, type Vec } from './walk';
@@ -531,11 +532,23 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     hero.add(shadowDisc);
     scene.add(hero);
     let cancelled = false;
+    // The model's own motions (walk and run from gait analysis, idle, cheer); null while the stand-in shows.
+    let mixer: THREE.AnimationMixer | null = null;
+    const motions: Partial<Record<HeroMotion, THREE.AnimationAction>> = {};
+    let motion: HeroMotion | null = null;
+    const play = (next: HeroMotion) => {
+      const to = motions[next];
+      if (!to || motion === next) return;
+      const from = motion ? motions[motion] : null;
+      to.reset().setEffectiveWeight(1).play();
+      if (from) from.crossFadeTo(to, 0.22, false);
+      motion = next;
+    };
     if (heroScene) {
       loadModel(heroScene.url)
         .then((gltf) => {
           if (cancelled) return;
-          const model = gltf.scene.clone(true);
+          const model = cloneSkinned(gltf.scene);
           model.traverse((o) => {
             if (isToggleNode(o.name)) o.visible = heroScene.visible.has(o.name);
             const m = o as THREE.Mesh;
@@ -545,6 +558,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               if (tint) mm.color.set(tint);
               m.material = mm;
               m.castShadow = true;
+              m.frustumCulled = false; // the bounds are those of the rest pose
             }
           });
           model.scale.set(heroScene.width, 1, (1 + heroScene.width) / 2);
@@ -556,6 +570,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           holder.position.y = -box.min.y * k;
           figure.clear();
           figure.add(holder);
+          mixer = new THREE.AnimationMixer(model);
+          for (const clip of gltf.animations) motions[clip.name as HeroMotion] = mixer.clipAction(clip);
+          play('idle');
           el.dataset.hero = 'model';
         })
         .catch(() => { /* the stand-in stays */ });
@@ -567,10 +584,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     marker.position.y = 0.06;
     scene.add(marker);
 
-    let goal: { target: Vec; key: string | null } | null = null;
+    let goal: { target: Vec; key: string | null; run: boolean } | null = null;
     let stuck = 0;
     walkTo.current = (p, k) => {
-      goal = { target: reachable(p, obstacles, B), key: k };
+      const target = reachable(p, obstacles, B);
+      // A few steps are walked; anything further is a run.
+      goal = { target, key: k, run: Math.hypot(target.x - pos.current.x, target.z - pos.current.z) > 4.5 };
       stuck = 0;
       marker.position.set(goal.target.x, 0.06, goal.target.z);
       (marker.material as THREE.MeshBasicMaterial).opacity = k ? 0 : 0.9;
@@ -646,17 +665,24 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     let tt = 0;
     const loop = () => {
       raf = requestAnimationFrame(loop);
-      const dt = Math.min(clock.getDelta(), 0.1);
+      const dt = Math.min(clock.getDelta(), 0.2);
       if (!visible || document.hidden) return;
       tt += dt;
       const p = pos.current;
 
       let walking = false;
       if (goal) {
-        const n = stepToward(p, goal.target, SPEED * dt, obstacles, B);
+        // With the model the ground speed is the one its gait was made for, so the feet do not slide.
+        const pace = goal.run ? 1.12 : 1.1;
+        const speed = motions.walk && motions.run ? GAIT_SPEED[goal.run ? 'run' : 'walk'] * HERO_HEIGHT * pace : SPEED;
+        if (mixer) {
+          play(goal.run ? 'run' : 'walk');
+          mixer.timeScale = pace;
+        }
+        const n = stepToward(p, goal.target, speed * dt, obstacles, B);
         const moved = Math.hypot(n.x - p.x, n.z - p.z);
         if (moved > 1e-4) facing.current = Math.atan2(n.x - p.x, n.z - p.z);
-        stuck = moved < SPEED * dt * 0.2 ? stuck + 1 : 0;
+        stuck = moved < speed * dt * 0.2 ? stuck + 1 : 0;
         p.x = n.x;
         p.z = n.z;
         walking = true;
@@ -680,8 +706,17 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       if (c && c.at === null && (!heroScene || el.dataset.hero === 'model' || tt > 4)) c.at = performance.now();
       const since = c && c.at !== null ? (performance.now() - c.at) / 1000 : 99;
       const jump = since < 1.8 && !reduce ? Math.abs(Math.sin(since * 7)) * 0.38 * (1 - since / 1.8) : 0;
-      figure.position.y = jump + (walking && !reduce ? Math.abs(Math.sin(tt * 11)) * 0.07 : 0);
-      figure.rotation.z = walking && !reduce ? Math.sin(tt * 11) * 0.05 : 0;
+      if (mixer) {
+        if (!walking) {
+          mixer.timeScale = 1;
+          play(since < 2.6 ? 'cheer' : 'idle');
+        }
+        if (!reduce || walking) mixer.update(dt);
+        figure.position.y = jump * 0.6;
+      } else {
+        figure.position.y = jump + (walking && !reduce ? Math.abs(Math.sin(tt * 11)) * 0.07 : 0);
+        figure.rotation.z = walking && !reduce ? Math.sin(tt * 11) * 0.05 : 0;
+      }
       if ((marker.material as THREE.MeshBasicMaterial).opacity > 0) marker.scale.setScalar(1 + Math.sin(tt * 6) * 0.12);
 
       // The camera follows from behind and above.

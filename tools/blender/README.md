@@ -24,7 +24,21 @@ git clone --depth 1 --filter=blob:none --sparse https://github.com/makehumancomm
 for f in m f; do .bpy/bin/python tools/blender/mh_hero.py --frame $f --eyes mh/makehuman/data/eyes --glb web/public/hero3d/hero_$f.glb; done
 ```
 
-Then bump `HERO3D_VERSION` in `hero3d.ts` so phones fetch the new files. A preview render:
+Then bump `HERO3D_VERSION` in `hero3d.ts` so phones fetch the new files.
+
+## Skeleton and motions
+
+The model keeps the MakeHuman game rig (53 bones); the hero stance is its rest pose. Clothes, shoes and
+braces are shells of the body and move with the same weights. Other gear takes its weights from the
+nearest skin; hard things (helmet, glasses, buckles, crutches) follow one bone.
+
+Four motions are exported as glTF animations: `idle`, `walk`, `run`, `cheer`. Walking and running use
+joint angles from normal gait analysis (hip, knee, ankle and toe curves over one gait cycle; pelvis
+rotation and list, trunk counter-rotation, arm swing opposite to the legs). The height of the body is
+computed per frame so that a sole rests on the ground. The build prints the ground speed that fits each
+gait (`MOTION speeds ...`); `GAIT_SPEED` in `hero3d.ts` holds them per body height.
+
+Judge a gait from the side: `--render out.png --pose walk:8 --side` (motion:frame, 30 frames per second). A preview render:
 `--render out.png --show hair_short,gear_crown,outfit_champion` (add `--face` for a close-up).
 
 Licences: MPFB code GPL-3 (only used as a build tool, not shipped); MakeHuman base mesh, targets and
