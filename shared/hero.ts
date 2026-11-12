@@ -1,5 +1,5 @@
 import { isoWeekday, parseDate } from './adherence';
-import { COLLECTION_GEAR, COLLECTION_OUTFIT_KEYS } from './gearCollections';
+import { COLLECTION_GEAR } from './gearCollections';
 
 /**
  * Sports hero (gamified revalidatie). Pure rules shared by server and app:
@@ -941,7 +941,9 @@ export const GEAR: (GearDef & { price: number; itemLevel: number })[] = ([
   // Twenty-two original sports, dojo and fantasy pieces, with anatomy-aware 2D artwork.
   ...COLLECTION_GEAR.map(({ key, nl, en, tier, score }) => ({ key, nl, en, tier, score })), 
 ] as GearDef[]).map((g) => ({ ...g, itemLevel: g.score, price: GEAR_TIERS[g.tier - 1].price }));
-export const OUTFITS = ['tracksuit', 'team_kit', 'champion', ...COLLECTION_GEAR.filter((g) => COLLECTION_OUTFIT_KEYS.has(g.key)).map((g) => g.key)] as const;
+// Only these three outfits have body-specific generated photographic replacements.
+// New SVG-only collection outfits use the standard hero photo until matching photos are approved.
+export const OUTFITS = ['tracksuit', 'team_kit', 'champion'] as const;
 /** The outfit the hero wears, if any (one per slot, so at most one). */
 export const wornOutfit = (gear: readonly string[]) => (OUTFITS as readonly string[]).find((o) => gear.includes(o)) ?? null;
 export const gearTier = (key: string) => GEAR_TIERS[(GEAR.find((g) => g.key === key)?.tier ?? 1) - 1];
