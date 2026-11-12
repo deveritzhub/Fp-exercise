@@ -9,6 +9,17 @@ export type Release = { date: string; titleNl: string; titleEn: string; items: C
 
 export const RELEASES: Release[] = [
   {
+    date: '2026-11-13',
+    titleNl: 'Een dorp voor de praktijk',
+    titleEn: 'A village for the practice',
+    items: [
+      { for: 'staff', nl: 'Nieuw in het menu: Dorp. Elke patiënt heeft er een huisje met een nummer, zonder naam. Het groeit met het level van de held: kamp, hut, huisje, woonhuis, landhuis, villa.', en: 'New in the menu: Village. Every patient has a numbered home there, without a name. It grows with the hero’s level: camp, hut, cottage, house, manor, villa.' },
+      { for: 'staff', nl: 'Een groene vlag bij een huisje betekent: deze week getraind. Kies een huisje voor het level en open van daaruit het dossier.', en: 'A green flag at a home means: trained this week. Pick a home for its level and open the record from there.' },
+      { for: 'staff', nl: 'Op het dashboard staat de werklijst “Vraagt aandacht” nu direct onder de cijfers.', en: 'On the dashboard the work list “Needs attention” now comes straight under the figures.' },
+      { for: 'patient', nl: 'Vandaag opent altijd op je training, ook als je nog geen held hebt gemaakt.', en: 'Today always opens on your workout, also when you have not made a hero yet.' },
+    ],
+  },
+  {
     date: '2026-11-12',
     titleNl: 'Loop door je dorp',
     titleEn: 'Walk through your village',

@@ -91,7 +91,7 @@ async function painMap(tx: Tx, patientId: string) {
   return { baseline, current, checkins };
 }
 
-async function heroState(tx: Tx, patientId: string) {
+export async function heroState(tx: Tx, patientId: string) {
   const heroRow = (await tx.query('SELECT * FROM patient_heroes WHERE patient_id = $1', [patientId])).rows[0];
   const hero = mapHero(heroRow);
   const map = await painMap(tx, patientId);
