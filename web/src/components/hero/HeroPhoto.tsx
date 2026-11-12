@@ -3,6 +3,7 @@ const PhotoEquipment=lazy(()=>import('./PhotoEquipment').then(m=>({default:m.Pho
 import { cn } from '@/lib/cn';
 import { useI18n } from '@/lib/i18n';
 import { heroPhotoKey, wornOutfit } from '@shared/hero';
+import { COLLECTION_OUTFIT_KEYS } from '@shared/gearCollections';
 import { HumanFigure, type FigureLook } from './HumanFigure';
 import { WEAR_SLOTS, wearPlacements, type BodyKind } from './wear';
 
@@ -20,7 +21,8 @@ import { WEAR_SLOTS, wearPlacements, type BodyKind } from './wear';
  */
 export function heroPhotoSources(look: FigureLook): string[] {
   const outfit = wornOutfit(look.gear ?? []);
-  const outfitKeys = outfit ? [...(look.photo ? [`outfit/${look.photo}__${outfit}`] : []), `outfit/${heroPhotoKey(look, look.body ?? null, false)}__${outfit}`] : [];
+  // The new SVG collection outfits do not have per-body photographic assets yet.
+  const outfitKeys = outfit && !COLLECTION_OUTFIT_KEYS.has(outfit) ? [...(look.photo ? [`outfit/${look.photo}__${outfit}`] : []), `outfit/${heroPhotoKey(look, look.body ?? null, false)}__${outfit}`] : [];
   const plain = [...(look.photo ? [look.photo] : []), heroPhotoKey(look, look.body ?? null), heroPhotoKey(look, look.body ?? null, false)].map((k) => `avatar/${k}`);
   return [...new Set([...outfitKeys, ...plain])];
 }
