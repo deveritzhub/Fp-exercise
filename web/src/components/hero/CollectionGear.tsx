@@ -28,6 +28,10 @@ export function CollectionGear({ item, look, shapes }: { item: string; look: Fig
     astral_armor: { main: '#1d3052', light: '#c8a75e', stroke: '#0d1e39' },
   };
   const material = clothes[item];
+  const skin = ({
+    s1:'#f8e0d0',s2:'#f1d0b5',s3:'#e6b994',s4:'#d9a77f',s5:'#c68e66',
+    s6:'#ad7550',s7:'#8f5c3c',s8:'#74472d',s9:'#5a3522',s10:'#432719',
+  } as Record<string,string>)[look.skin] ?? '#d9a77f';
   return (
     <g data-rpg-item={item} data-collection-tier={tier.tier} className="rpg-item" strokeLinejoin="round" strokeLinecap="round"
       style={{ filter: 'drop-shadow(0 0 ' + (tier.tier * .45) + 'px ' + tier.glow + ')' }}>
@@ -77,6 +81,12 @@ export function CollectionGear({ item, look, shapes }: { item: string; look: Fig
           <path d="M76 183 H124 M73 195 H127" stroke="#d5d0c4" strokeWidth="2.5"/>
           <path d="M78 104 L85 153 M122 104 L115 153" fill="none" stroke="#fffdfa" strokeWidth="2"/>
           {legXs.map(({x,side})=><g key={side}><path d={'M'+(x-side*11)+' 366 H'+(x+side*11)} stroke="#c2bcb1" strokeWidth="3"/><path d={'M'+x+' 218 V355'} stroke="#ddd8cc" strokeWidth="2"/></g>)}
+          {/* Traditional Kyokushin is barefoot, so cover the generic RPG boots with skin-matched feet. */}
+          {legXs.map(({x,side}) => <g key={'barefoot'+side}>
+            <path d={'M'+(x-8)+' 380 Q'+x+' 376 '+(x+8)+' 380 L'+(x+11)+' 401 Q'+x+' 411 '+(x-12)+' 402Z'} fill={skin} stroke="#957b67" strokeWidth="1.3"/>
+            <path d={'M'+(x-8)+' 401 Q'+x+' 405 '+(x+10)+' 401'} stroke="#957b67" strokeWidth=".9" fill="none"/>
+            {[-5,-2,1,4,7].map(d => <path key={d} d={'M'+(x+d)+' 404 v2'} stroke="#8b7665" strokeWidth=".55"/>)}
+          </g>)}
         </g>}
         {item === 'astral_armor' && <g>
           <path d={'M'+(100-g.shoulder+4)+' 91 Q100 77 '+(100+g.shoulder-4)+' 91 L124 122 100 164 76 122Z'} fill={'url(#'+shade+')'} stroke="#e8dcae" strokeWidth="2"/>
