@@ -48,6 +48,8 @@ type Props = {
   coachLabel?: string;
   /** Filled by the scene: send the hero to a spot from outside (HUD buttons). */
   api?: MutableRefObject<WorldApi | null>;
+  /** Joystick: x to the right and y forward as seen on screen, each -1..1. Zero = not in use. */
+  stick?: MutableRefObject<{ x: number; y: number }>;
   /** Name on the practice building. */
   practiceLabel?: string;
   /** Kept up to date by the scene, for the minimap. */
@@ -412,7 +414,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, heroName, questOpen = false, coachLabel = 'Coach', api, track, practiceLabel = 'Praktijk', className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, heroName, questOpen = false, coachLabel = 'Coach', api, track, stick, practiceLabel = 'Praktijk', className }: Props) {
   const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null);
   const labels = useRef<Map<string, HTMLElement>>(new Map());
@@ -1056,7 +1058,35 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const p = pos.current;
 
       let walking = false;
-      if (goal) {
+      const push = stick?.current;
+      const force = push ? Math.min(1, Math.hypot(push.x, push.y)) : 0;
+      if (push && force > 0.18) {
+        // The joystick steers by hand, relative to the view; it takes over from a tapped target.
+        if (goal) {
+          goal = null;
+          (marker.material as THREE.MeshBasicMaterial).opacity = 0;
+        }
+        el.dataset.walking = '1';
+        const run = force > 0.8;
+        const pace = run ? 1.12 : 1.1;
+        const speed = motions.walk && motions.run ? GAIT_SPEED[run ? 'run' : 'walk'] * HERO_HEIGHT * pace : SPEED * (run ? 1 : 0.5);
+        if (mixer) {
+          play(run ? 'run' : 'walk');
+          mixer.timeScale = pace;
+        }
+        const ca = Math.cos(camAngle.current);
+        const sa = Math.sin(camAngle.current);
+        const dx = (push.x * ca - push.y * sa) / force;
+        const dz = (-push.x * sa - push.y * ca) / force;
+        const indoors = inside();
+        const ahead = { x: p.x + dx * 2, z: p.z + dz * 2 };
+        const n = indoors ? { ...stepToward(p, ahead, speed * dt, here().obstacles, 1e6) } : stepToward(p, ahead, speed * dt, obstacles, B);
+        if (indoors) Object.assign(n, clampRect({ x: n.x, z: n.z }, here().rect));
+        if (Math.hypot(n.x - p.x, n.z - p.z) > 1e-4) facing.current = Math.atan2(dx, dz);
+        p.x = n.x;
+        p.z = n.z;
+        walking = true;
+      } else if (goal) {
         // With the model the ground speed is the one its gait was made for, so the feet do not slide.
         const pace = goal.run ? 1.12 : 1.1;
         const speed = motions.walk && motions.run ? GAIT_SPEED[goal.run ? 'run' : 'walk'] * HERO_HEIGHT * pace : SPEED;
@@ -1088,6 +1118,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           else if (k && n.arrived) cb.current.onArrive(k);
         }
       }
+      if (!walking && !goal && el.dataset.walking) delete el.dataset.walking;
       hero.position.set(p.x, 0, p.z);
       // Turn the short way round toward where the hero walks.
       const diff = Math.atan2(Math.sin(facing.current - hero.rotation.y), Math.cos(facing.current - hero.rotation.y));

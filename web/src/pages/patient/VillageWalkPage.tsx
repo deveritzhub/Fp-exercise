@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Backpack, ChevronRight, ClipboardList, DoorOpen, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
+import { Backpack, ChevronRight, ClipboardList, DoorOpen, Gamepad2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
 import { api, mediaUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -97,6 +97,47 @@ function Minimap({ track, sites }: { track: RefObject<Track>; sites: Site[] }) {
   return <canvas ref={ref} width={192} height={192} aria-hidden className="h-[88px] w-[88px] rounded-full border-2 border-[#e4bc63] shadow-lift" />;
 }
 
+const STICK_KEY = 'fp.village.joystick';
+
+/** Thumb stick: drag the knob and the hero walks that way; push it to the rim to run. */
+function Joystick({ stick, label }: { stick: RefObject<{ x: number; y: number }>; label: string }) {
+  const knob = useRef<HTMLSpanElement>(null);
+  const R = 34;
+  const set = (x: number, y: number) => {
+    if (stick.current) {
+      stick.current.x = x / R;
+      stick.current.y = -y / R;
+    }
+    if (knob.current) knob.current.style.transform = `translate(${x}px, ${y}px)`;
+  };
+  useEffect(() => () => set(0, 0), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const move = (e: React.PointerEvent<HTMLDivElement>) => {
+    const box = e.currentTarget.getBoundingClientRect();
+    let x = e.clientX - (box.left + box.width / 2);
+    let y = e.clientY - (box.top + box.height / 2);
+    const d = Math.hypot(x, y);
+    if (d > R) {
+      x = (x / d) * R;
+      y = (y / d) * R;
+    }
+    set(x, y);
+  };
+  return (
+    <div
+      role="img"
+      aria-label={label}
+      data-testid="joystick"
+      className="pointer-events-auto grid h-[108px] w-[108px] touch-none select-none place-items-center rounded-full border-2 border-[#e4bc63]/70 bg-[#141c18]/55 shadow-lift"
+      onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); move(e); }}
+      onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) move(e); }}
+      onPointerUp={() => set(0, 0)}
+      onPointerCancel={() => set(0, 0)}
+    >
+      <span ref={knob} className="block h-[46px] w-[46px] rounded-full border border-[#e4bc63] bg-[linear-gradient(180deg,#3a4a42,#1c2420)] shadow-[0_2px_6px_rgba(0,0,0,.5)]" />
+    </div>
+  );
+}
+
 const SLOT = 'tap grid h-[46px] w-[46px] place-items-center rounded-lg border border-[#e4bc63]/70 bg-[linear-gradient(180deg,#2c3832,#141c18)] text-[#f6e2a6] shadow-[inset_0_0_0_1px_rgba(0,0,0,.6),0_2px_6px_rgba(0,0,0,.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]';
 const PANEL = 'rounded-xl border border-[#e4bc63]/60 bg-[#141c18]/85 text-white shadow-lift backdrop-blur-[2px]';
 
@@ -123,6 +164,27 @@ export function VillageWalkPage() {
   const [playing, setPlaying] = useState<string | null>(null);
   const track = useRef<Track>({ x: 0, z: 0, facing: 0 });
   const world = useRef<WorldApi | null>(null);
+  const stick = useRef({ x: 0, y: 0 });
+  // Joystick on or off: a choice kept in this browser.
+  const [joystick, setJoystick] = useState(() => {
+    try {
+      return localStorage.getItem(STICK_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const toggleJoystick = () => {
+    setJoystick((on) => {
+      try {
+        localStorage.setItem(STICK_KEY, on ? '0' : '1');
+      } catch {
+        /* storage unavailable */
+      }
+      stick.current.x = 0;
+      stick.current.y = 0;
+      return !on;
+    });
+  };
 
   const d = heroQ.data;
   const look = useMemo(
@@ -182,6 +244,7 @@ export function VillageWalkPage() {
             api={world}
             practiceLabel={home.data?.patient.practiceName ?? t('De praktijk', 'The practice')}
             track={track}
+            stick={stick}
             onNear={setNear}
             onArrive={(k) => { if (k === TV_KEY) setTvOpen(true); }}
           />
@@ -228,7 +291,12 @@ export function VillageWalkPage() {
         )}
 
         {/* What you can do where you stand. */}
-        <div className="pointer-events-none absolute inset-x-2 bottom-[64px] flex justify-center">
+        {joystick && (
+          <div className="pointer-events-none absolute bottom-[64px] left-2">
+            <Joystick stick={stick} label={t('Joystick: sleep om te lopen, tot de rand om te rennen', 'Joystick: drag to walk, to the rim to run')} />
+          </div>
+        )}
+        <div className={`pointer-events-none absolute inset-x-2 flex justify-center ${joystick ? 'bottom-[182px]' : 'bottom-[64px]'}`}>
           {near === TV_KEY ? (
             <Button size="lg" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<Tv className="h-5 w-5" />} onClick={() => setTvOpen(true)}>{t('Bekijk de tv', 'Watch the TV')}</Button>
           ) : near === PRACTICE_KEY ? (
@@ -254,11 +322,12 @@ export function VillageWalkPage() {
           <Link to="/p/held/inventaris" className={SLOT} aria-label={t('Rugzak: je uitrusting', 'Backpack: your gear')}><Backpack className="h-5 w-5" aria-hidden /></Link>
           <Link to="/p/held" className={SLOT} aria-label={t('Skills en je held', 'Skills and your hero')}><Swords className="h-5 w-5" aria-hidden /></Link>
           <Link to="/p/wereld" className={SLOT} aria-label={t('Wereldkaart', 'World map')}><MapIcon className="h-5 w-5" aria-hidden /></Link>
+          <button type="button" data-testid="slot-joystick" aria-pressed={joystick} className={`${SLOT} aria-pressed:border-[#ffd76a] aria-pressed:bg-[linear-gradient(180deg,#5a4a1c,#2a2410)]`} aria-label={t('Joystick aan of uit', 'Joystick on or off')} onClick={toggleJoystick}><Gamepad2 className="h-5 w-5" aria-hidden /></button>
         </nav>
       </section>
 
       <p className="text-[13.5px] leading-relaxed text-ink-700">
-        {t('Tik op de grond om te lopen en sleep opzij om rond te kijken. In de oefenzaal van je praktijk staan de coach en de tv met je oefeningen van vandaag.', 'Tap the ground to walk and drag sideways to look around. In the exercise room of your practice you find the coach and the TV with your exercises for today.')}
+        {t('Tik op de grond om te lopen en sleep opzij om rond te kijken. Liever een joystick? Zet hem aan met de knop met de gamepad. In de oefenzaal van je praktijk staan de coach en de tv met je oefeningen van vandaag.', 'Tap the ground to walk and drag sideways to look around. Prefer a joystick? Switch it on with the gamepad button. In the exercise room of your practice you find the coach and the TV with your exercises for today.')}
       </p>
 
       <Dialog open={tvOpen} onClose={() => { setTvOpen(false); setPlaying(null); }} title={t('Je oefeningen van vandaag', "Today's exercises")} size="md" sheet>
