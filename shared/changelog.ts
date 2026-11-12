@@ -13,6 +13,8 @@ export const RELEASES: Release[] = [
     titleNl: 'Een dorp voor de praktijk',
     titleEn: 'A village for the practice',
     items: [
+      { for: 'patient', nl: 'In je dorp: tik op een taak en je held loopt er vanzelf heen, met de route op de grond. Tik op de kaart voor “Waar wil je heen?”.', en: 'In your village: tap a task and your hero walks there by itself, with the route on the ground. Tap the map for “Where do you want to go?”.' },
+      { for: 'patient', nl: '“Bekijken” bij een bericht over een programma opent nu dat programma.', en: '“View” on a message about a programme now opens that programme.' },
       { for: 'staff', nl: 'Nieuw in het menu: Dorp. Elke patiënt heeft er een huisje met een nummer; namen zet je zelf aan. Het groeit met het level van de held: kamp, hut, huisje, woonhuis, landhuis, villa.', en: 'New in the menu: Village. Every patient has a numbered home there; you switch names on yourself. It grows with the hero’s level: camp, hut, cottage, house, manor, villa.' },
       { for: 'staff', nl: 'Een groene vlag bij een huisje betekent: deze week getraind. Kies een huisje voor het level en open van daaruit het dossier.', en: 'A green flag at a home means: trained this week. Pick a home for its level and open the record from there.' },
       { for: 'staff', nl: 'Op het dashboard staat de werklijst “Vraagt aandacht” nu direct onder de cijfers.', en: 'On the dashboard the work list “Needs attention” now comes straight under the figures.' },
