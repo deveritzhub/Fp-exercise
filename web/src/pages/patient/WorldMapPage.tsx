@@ -121,6 +121,11 @@ export function WorldMapPage() {
         </p>
       )}
 
+      <Link to="/p/dorp" className="tap flex min-h-[52px] items-center justify-between gap-3 rounded-2xl border border-[#C9D3BC] bg-[#F3F7F1] px-4 py-2.5 text-[15px] font-semibold text-ink-900">
+        <span>{t('Loop zelf door je dorp', 'Walk through your village')}<span className="block text-[13px] font-normal text-ink-700">{t('Met de tv waarop je oefeningen staan.', 'With the TV that shows your exercises.')}</span></span>
+        <span aria-hidden className="text-accent">→</span>
+      </Link>
+
       <section aria-label={t('Je dorp en je route in 3D. Tik op een gebouw of zone.', 'Your village and route in 3D. Tap a building or zone.')}>
         <Suspense fallback={<div className="h-[340px] animate-pulse rounded-2xl bg-[#E7EFE3]" />}>
           <Village3D

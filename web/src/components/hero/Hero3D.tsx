@@ -10,7 +10,7 @@ import { hero3dScene, isToggleNode } from './hero3d';
 
 /** One download per model per app session; every viewer clones it. */
 const models = new Map<string, Promise<GLTF>>();
-const loadModel = (url: string) => {
+export const loadModel = (url: string) => {
   let p = models.get(url);
   if (!p) {
     p = new GLTFLoader().loadAsync(url);
