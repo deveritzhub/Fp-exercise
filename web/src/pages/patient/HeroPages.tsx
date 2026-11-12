@@ -1042,6 +1042,18 @@ function GearCard({ d }: { d: HeroState }) {
           })}
         </div>
       </div>
+      {selectedCollection && GEAR_COLLECTIONS.filter(c => c.key === selectedCollection).map(c => {
+        const ready = c.items.every(piece => owned(piece.key));
+        return <div key={c.key} className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-canvas px-3 py-3">
+          <span className="text-[12.5px] text-ink-700">{ready
+            ? t('Je hebt alle onderdelen van deze set verzameld.', 'You own every piece of this set.')
+            : t('Verzamel alle onderdelen om de set in één keer aan te trekken.', 'Collect every piece to equip the complete set at once.')}</span>
+          <Button size="sm" variant="secondary" disabled={!ready || busy !== null} loading={busy === c.items[0].key}
+            onClick={() => void save(onePerSlot([...d.gear.equipped, ...c.items.map(piece => piece.key)]), c.items[0].key)}>
+            {t('Complete set aantrekken', 'Equip complete set')}
+          </Button>
+        </div>;
+      })}
       <CharacterScreen d={d} onPreview={setPreview} preview={preview} busy={busy} onSave={save} onBuy={buy} />
 
       {preview && <div className="my-3 flex flex-wrap items-center gap-3" role="status"><span>{t('Paskamer — nog niet gekocht:', 'Preview — not purchased:')} {nl ? GEAR.find(g=>g.key===preview)?.nl : GEAR.find(g=>g.key===preview)?.en}</span><Button variant="secondary" onClick={()=>setPreview(null)}>{t('Preview sluiten','Close preview')}</Button></div>}
