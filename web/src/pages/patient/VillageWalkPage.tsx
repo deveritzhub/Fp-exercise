@@ -11,7 +11,7 @@ import { useHero } from '@/pages/patient/HeroPages';
 import { MODULE_PATH, moduleOf, openToday, type PatientHomeData } from '@/pages/patient/PatientHome';
 import { SKILLS, bodyShape, levelTier } from '@shared/hero';
 import { villageBuildings } from '@shared/worldMap';
-import { EXIT_KEY, HOME_KEY, PRACTICE_KEY, TV_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
+import { EXIT_KEY, HOME_AT, HOME_KEY, PRACTICE_KEY, TV_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
 import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@shared/homeDecor';
 import { HOME_STAGES, homeStage, levelsToNextHome } from '@shared/practiceVillage';
 import { MODULE_SITES, VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
@@ -37,9 +37,6 @@ const SIGN: Record<string, [string, string]> = {
   kracht: ['🏋️', '#7a2f24'],
   mobiliteit: ['🧘', '#2f7f8a'],
 };
-
-/** Where the own home stands (the same spot as in the 3D village). */
-const OWN_HOME_AT = { x: Math.cos((52 * Math.PI) / 180) * 8.7, z: Math.sin((52 * Math.PI) / 180) * 8.7 };
 
 const PLACE_HINT: Record<string, [string, string]> = {
   smithy: ['Je uitrusting en de winkel', 'Your gear and the shop'],
@@ -342,7 +339,7 @@ export function VillageWalkPage() {
   const landmarks: Landmark[] = [
       { key: TV_KEY, label: practiceName.replace(/\s*\(.*?\)\s*/g, ' ').trim(), x: VILLAGE_LAYOUT.gym.x, z: VILLAGE_LAYOUT.gym.z - 1.6, icon: '🏥', color: '#b4532f', wide: true, alert: todo.some((p) => moduleOf(p) === 'revalidatie') },
       ...buildings.map((b, i) => ({ key: 'kind' in b ? boardKey(b.key) : b.key, label: b.label, x: sites[i].x, z: sites[i].z, icon: SIGN[b.key]?.[0] ?? '🏠', color: SIGN[b.key]?.[1] ?? '#8a6038', alert: 'alert' in b && !!b.alert })),
-      ...(own ? [{ key: HOME_KEY, label: homeLabel, x: OWN_HOME_AT.x, z: OWN_HOME_AT.z, icon: '🏡', color: '#3f8f5a' }] : []),
+      ...(own ? [{ key: HOME_KEY, label: homeLabel, x: HOME_AT.x, z: HOME_AT.z, icon: '🏡', color: '#3f8f5a' }] : []),
     ];
 
   const toPlace = (key: string) => {

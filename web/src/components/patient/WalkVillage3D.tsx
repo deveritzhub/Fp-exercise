@@ -31,7 +31,7 @@ export const boardKey = (house: string) => `in:${house}`;
 /** The patient's own home: outside in the village, and the room inside (`in:home` is its furnishing table). */
 export const HOME_KEY = 'home';
 /** Where the own home stands: south-east of the square, with room to grow into a villa. */
-const HOME_AT = { x: Math.cos((52 * Math.PI) / 180) * 8.7, z: Math.sin((52 * Math.PI) / 180) * 8.7 };
+export const HOME_AT = { x: Math.cos((60 * Math.PI) / 180) * 9, z: Math.sin((60 * Math.PI) / 180) * 9 };
 const HOME_REACH = [1.3, 1.5, 1.8, 2.2, 2.8, 3.1];
 /** A room behind a door in the village. */
 type Place = { group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[] };
@@ -100,9 +100,44 @@ const segDist = (x: number, z: number, r: Road) => {
   return Math.hypot(x - (r.a.x + dx * t), z - (r.a.z + dz * t));
 };
 
-/** The ground picture: meadow with lighter and darker patches, dirt roads and the village square. */
-function groundTexture(roads: Road[], R: () => number) {
-  const S = 2048;
+// ---- Ground: patches of different kinds of ground instead of a field of loose blades. ----
+const hash2 = (x: number, y: number) => {
+  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return s - Math.floor(s);
+};
+function vnoise(x: number, y: number) {
+  const xi = Math.floor(x);
+  const yi = Math.floor(y);
+  const xf = x - xi;
+  const yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf);
+  const v = yf * yf * (3 - 2 * yf);
+  const a = hash2(xi, yi);
+  const b = hash2(xi + 1, yi);
+  const c = hash2(xi, yi + 1);
+  const d = hash2(xi + 1, yi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+const fbm = (x: number, y: number) => vnoise(x, y) * 0.6 + vnoise(x * 2.1 + 5.2, y * 2.1 + 1.3) * 0.3 + vnoise(x * 4.3 + 9.1, y * 4.3 + 3.7) * 0.1;
+const step = (lo: number, hi: number, v: number) => {
+  const t = Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
+  return t * t * (3 - 2 * t);
+};
+/** The kinds of ground and their colours: lush meadow, tall dark grass, dry grass, clover, bare earth. */
+const GROUNDS = [[104, 164, 64], [54, 106, 44], [196, 182, 98], [66, 152, 92], [152, 120, 80]] as const;
+/** How much of each kind of ground there is at a spot in the village (the five weights add up to 1). */
+export function terrainAt(x: number, z: number): [number, number, number, number, number] {
+  const dry = step(0.5, 0.62, fbm(x * 0.09 + 3.1, z * 0.09 - 7.4));
+  const dark = step(0.55, 0.68, fbm(x * 0.15 + 40.2, z * 0.15 - 17.3)) * (1 - dry);
+  const clover = step(0.6, 0.72, fbm(x * 0.2 - 30.5, z * 0.2 + 60.8)) * (1 - dry) * (1 - dark);
+  const earth = step(0.63, 0.72, fbm(x * 0.33 + 90.4, z * 0.33 + 12.9)) * (1 - dark);
+  const rest = Math.max(0, 1 - dry - dark - clover);
+  const lush = rest * (1 - earth);
+  return [lush, dark, dry * (1 - earth), clover * (1 - earth), earth * (rest + dry + clover)];
+}
+
+/** The ground picture: patches of meadow, tall grass, dry grass, clover and bare earth; dirt roads and the square on top. */
+function groundTexture(roads: Road[], R: () => number, S: number) {
   const c = document.createElement('canvas');
   c.width = S;
   c.height = S;
@@ -110,30 +145,62 @@ function groundTexture(roads: Road[], R: () => number) {
   const px = (v: number) => (v / GROUND + 0.5) * S;
   const u = S / GROUND;
   if (g) {
-    g.fillStyle = '#5f8f3e';
-    g.fillRect(0, 0, S, S);
-    const greens = ['#6fa046', '#557f37', '#7aa84e', '#4c7632', '#689a42'];
-    for (let i = 0; i < 2600; i++) {
-      g.globalAlpha = 0.1 + R() * 0.16;
-      g.fillStyle = greens[Math.floor(R() * greens.length)];
-      g.beginPath();
-      g.ellipse(R() * S, R() * S, 8 + R() * 46, 6 + R() * 30, R() * Math.PI, 0, Math.PI * 2);
-      g.fill();
+    // The kinds of ground on a coarse grid; every pixel takes its mix from there and gets its own grain.
+    const N = 192;
+    const grid = new Float32Array(N * N * 5);
+    for (let j = 0; j < N; j++) {
+      for (let i = 0; i < N; i++) {
+        const w = terrainAt((i / (N - 1) - 0.5) * GROUND, (j / (N - 1) - 0.5) * GROUND);
+        grid.set(w, (j * N + i) * 5);
+      }
     }
-    // Fine strokes all over, so the ground between the blades reads as grass too, not as a flat colour.
-    g.lineCap = 'round';
-    for (let i = 0; i < 26000; i++) {
-      const x = R() * S;
-      const y = R() * S;
-      const len = 3 + R() * 7;
-      const a = -Math.PI / 2 + (R() - 0.5) * 1.6;
-      g.globalAlpha = 0.12 + R() * 0.2;
-      g.strokeStyle = R() > 0.6 ? '#4f8a35' : R() > 0.3 ? '#93c75c' : '#77ad49';
-      g.lineWidth = 1 + R() * 1.2;
+    const img = g.createImageData(S, S);
+    const d = img.data;
+    for (let y = 0; y < S; y++) {
+      const gy = (y / (S - 1)) * (N - 1);
+      const j0 = Math.min(N - 2, Math.floor(gy));
+      const fy = gy - j0;
+      for (let x = 0; x < S; x++) {
+        const gx = (x / (S - 1)) * (N - 1);
+        const i0 = Math.min(N - 2, Math.floor(gx));
+        const fx = gx - i0;
+        const a = (j0 * N + i0) * 5;
+        const b = a + 5;
+        const e = a + N * 5;
+        const f = e + 5;
+        let r = 0;
+        let gr = 0;
+        let bl = 0;
+        let earth = 0;
+        let clover = 0;
+        for (let k = 0; k < 5; k++) {
+          const w = (grid[a + k] * (1 - fx) + grid[b + k] * fx) * (1 - fy) + (grid[e + k] * (1 - fx) + grid[f + k] * fx) * fy;
+          r += GROUNDS[k][0] * w;
+          gr += GROUNDS[k][1] * w;
+          bl += GROUNDS[k][2] * w;
+          if (k === 4) earth = w;
+          if (k === 3) clover = w;
+        }
+        // Grain: fine speckle everywhere, light dots in the clover, pebbles on bare earth.
+        const h = hash2(x, y);
+        let shade = 0.86 + h * 0.26;
+        if (clover > 0.5 && h > 0.955) shade = 1.45;
+        if (earth > 0.5 && h > 0.965) shade = h > 0.985 ? 1.35 : 0.6;
+        const o = (y * S + x) * 4;
+        d[o] = Math.min(255, r * shade);
+        d[o + 1] = Math.min(255, gr * shade);
+        d[o + 2] = Math.min(255, bl * shade);
+        d[o + 3] = 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
+    // Soft lighter and darker sweeps over it, so no patch is one flat tone.
+    for (let i = 0; i < 700; i++) {
+      g.globalAlpha = 0.05 + R() * 0.07;
+      g.fillStyle = R() > 0.5 ? '#f4ffd0' : '#1f3a14';
       g.beginPath();
-      g.moveTo(x, y);
-      g.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len);
-      g.stroke();
+      g.ellipse(R() * S, R() * S, (10 + R() * 60) * (S / 2048), (8 + R() * 36) * (S / 2048), R() * Math.PI, 0, Math.PI * 2);
+      g.fill();
     }
     g.globalAlpha = 1;
     g.lineCap = 'round';
@@ -779,7 +846,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const gp = groundGeo.attributes.position;
     for (let i = 0; i < gp.count; i++) gp.setY(i, hillAt(gp.getX(i), gp.getZ(i)));
     groundGeo.computeVertexNormals();
-    const ground3d = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ map: groundTexture(roads, R), roughness: 1 }));
+    const ground3d = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ map: groundTexture(roads, R, phone ? 1024 : 2048), roughness: 1 }));
     ground3d.receiveShadow = true;
     scene.add(ground3d);
 
@@ -877,37 +944,34 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         ].join('\n'),
       );
     };
-    const blades = phone ? 20000 : 60000;
+    // Only tufts: clumps of taller grass where the ground picture shows tall or lush grass. A whole
+    // field of loose blades cost a lot of drawing for little; the patches on the ground do that work now.
+    const blades = phone ? 5000 : 12000;
     const grass = new THREE.InstancedMesh(bladeGeo, bladeMat, blades);
     grass.frustumCulled = false; // its bounds are those of one blade
-    const DEEP = new THREE.Color(0x4f9a3a);
-    const LUSH = new THREE.Color(0x6fb844);
-    const LIGHT = new THREE.Color(0xa0d45a);
+    const TALL = new THREE.Color(0x4f9a3a);
+    const LUSH = new THREE.Color(0x76bd48);
     const DRY = new THREE.Color(0xb9c05a);
     const E = new THREE.Euler();
-    const patch = (x: number, z: number) => 0.5 + 0.5 * Math.sin(x * 0.35 + 1.2) * Math.cos(z * 0.31 + 0.4);
-    const sunny = (x: number, z: number) => 0.5 + 0.5 * Math.sin(x * 0.12 - z * 0.17 + 2.1);
     let made = 0;
-    const blade = (x: number, z: number, tall: number) => {
-      const n = patch(x, z);
-      const edge = roads.some((rd) => segDist(x, z, rd) < rd.w / 2 + 1.1) || Math.hypot(x, z) < 4.4 ? 0.6 : 1;
-      // Ankle to shin high; the hero must stay in view from behind.
-      const hgt = (0.14 + R() * 0.17) * (0.7 + 0.6 * n) * edge * tall;
-      grass.setMatrixAt(made, M.compose(new THREE.Vector3(x, hillAt(x, z), z), Q.setFromEuler(E.set((R() - 0.5) * 0.5, R() * Math.PI * 2, 0)), new THREE.Vector3(1 + R() * 0.9, hgt, hgt)));
-      col.copy(DEEP).lerp(LUSH, Math.min(1, n * 1.6)).lerp(LIGHT, Math.max(0, n - 0.45) * 1.2 * R());
-      if (sunny(x, z) > 0.72) col.lerp(DRY, (sunny(x, z) - 0.72) * 2.4 * R());
+    const blade = (x: number, z: number, tall: number, w: readonly number[]) => {
+      const hgt = (0.16 + R() * 0.16) * tall;
+      grass.setMatrixAt(made, M.compose(new THREE.Vector3(x, hillAt(x, z), z), Q.setFromEuler(E.set((R() - 0.5) * 0.5, R() * Math.PI * 2, 0)), new THREE.Vector3(1.2 + R() * 0.9, hgt, hgt)));
+      col.copy(LUSH).lerp(TALL, Math.min(1, w[1] * 1.4)).lerp(DRY, Math.min(1, w[2]) * 0.8);
       grass.setColorAt(made, col);
       made++;
     };
-    for (let i = 0; i < blades * 3 && made < blades; i++) {
+    for (let i = 0; i < blades * 6 && made < blades - 6; i++) {
       const a = R() * Math.PI * 2;
-      const r = Math.sqrt(R()) * 27;
+      const r = Math.sqrt(R()) * 26;
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
       if (onDirt(x, z) || obstacles.some((o) => o.r > 0.9 && Math.hypot(x - o.x, z - o.z) < o.r - 0.3)) continue;
-      blade(x, z, 1);
-      // Now and then a tuft: a handful of taller blades from one root.
-      if (R() < 0.03) for (let k = 0; k < 6 && made < blades; k++) blade(x + (R() - 0.5) * 0.22, z + (R() - 0.5) * 0.22, 1.5 + R() * 0.4);
+      const w = terrainAt(x, z);
+      // Many in tall grass, some in the meadow and the dry grass, none on clover or bare earth.
+      if (R() > w[1] * 0.9 + w[0] * 0.16 + w[2] * 0.22) continue;
+      const tall = 1 + w[1] * 0.9 + R() * 0.4;
+      for (let k = 0; k < 6; k++) blade(x + (R() - 0.5) * 0.24, z + (R() - 0.5) * 0.24, tall, w);
     }
     grass.count = made;
     grass.receiveShadow = true;
