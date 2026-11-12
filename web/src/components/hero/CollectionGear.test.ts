@@ -3,7 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { COLLECTION_GEAR, COLLECTION_ITEM_KEYS, COLLECTION_OUTFIT_KEYS, GEAR_COLLECTIONS } from '@shared/gearCollections';
 import { GEAR, GEAR_SLOT, GEAR_TIERS, gearScore, onePerSlot } from '@shared/hero';
-import { HeroPhoto, heroPhotoSources } from './HeroPhoto';
+import { heroPhotoSources } from './HeroPhoto';
 import { HumanFigure } from './HumanFigure';
 import { GearArtwork } from './RpgGear';
 
