@@ -6,7 +6,7 @@ import { cn } from '@/lib/cn';
 import type { FigureLook } from '@/components/hero/HumanFigure';
 import { hero3dScene, isToggleNode } from '@/components/hero/hero3d';
 import { loadModel } from '@/components/hero/Hero3D';
-import { PALETTE, house, mat, rng, tree, webglOk } from './Village3D';
+import { PALETTE, mat, rng, webglOk } from './Village3D';
 import { VILLAGE_LAYOUT, nearestSpot, reachable, slotPosition, stepToward, type Obstacle, type Vec } from './walk';
 
 /**
@@ -37,6 +37,136 @@ const SPEED = 3.3;
 const HERO_HEIGHT = 1.3;
 const GYM = VILLAGE_LAYOUT.gym;
 const TV_SPOT: Vec = { x: GYM.x, z: GYM.z + 0.7 };
+
+
+type Road = { a: Vec; b: Vec; w: number };
+const HORIZON = 0xcfe3ee;
+const GROUND = 150;
+
+const segDist = (x: number, z: number, r: Road) => {
+  const dx = r.b.x - r.a.x;
+  const dz = r.b.z - r.a.z;
+  const t = Math.max(0, Math.min(1, ((x - r.a.x) * dx + (z - r.a.z) * dz) / (dx * dx + dz * dz || 1)));
+  return Math.hypot(x - (r.a.x + dx * t), z - (r.a.z + dz * t));
+};
+
+/** The ground picture: meadow with lighter and darker patches, dirt roads and the village square. */
+function groundTexture(roads: Road[], R: () => number) {
+  const S = 2048;
+  const c = document.createElement('canvas');
+  c.width = S;
+  c.height = S;
+  const g = c.getContext('2d');
+  const px = (v: number) => (v / GROUND + 0.5) * S;
+  const u = S / GROUND;
+  if (g) {
+    g.fillStyle = '#5f8f3e';
+    g.fillRect(0, 0, S, S);
+    const greens = ['#6fa046', '#557f37', '#7aa84e', '#4c7632', '#689a42'];
+    for (let i = 0; i < 2600; i++) {
+      g.globalAlpha = 0.1 + R() * 0.16;
+      g.fillStyle = greens[Math.floor(R() * greens.length)];
+      g.beginPath();
+      g.ellipse(R() * S, R() * S, 8 + R() * 46, 6 + R() * 30, R() * Math.PI, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.globalAlpha = 1;
+    g.lineCap = 'round';
+    const stroke = (color: string, grow: number, blur: number) => {
+      g.strokeStyle = color;
+      g.shadowColor = color;
+      g.shadowBlur = blur;
+      for (const r of roads) {
+        g.lineWidth = Math.max(2, (r.w + grow) * u);
+        g.beginPath();
+        g.moveTo(px(r.a.x), px(r.a.z));
+        g.lineTo(px(r.b.x), px(r.b.z));
+        g.stroke();
+      }
+      g.fillStyle = color;
+      g.beginPath();
+      g.arc(px(0), px(0), (3.2 + grow / 2) * u, 0, Math.PI * 2);
+      g.fill();
+    };
+    stroke('#7d6a45', 0.5, 14);
+    stroke('#9a7850', 0, 8);
+    stroke('#ab8a5f', -0.7, 10);
+    g.shadowBlur = 0;
+    // Pebbles and darker tracks on the dirt.
+    for (const r of roads.concat([{ a: { x: -2.4, z: 0 }, b: { x: 2.4, z: 0 }, w: 4.6 }])) {
+      const len = Math.hypot(r.b.x - r.a.x, r.b.z - r.a.z);
+      for (let i = 0; i < len * 26; i++) {
+        const t = R();
+        const off = (R() - 0.5) * r.w;
+        const nx = -(r.b.z - r.a.z) / (len || 1);
+        const nz = (r.b.x - r.a.x) / (len || 1);
+        g.globalAlpha = 0.18 + R() * 0.3;
+        g.fillStyle = R() > 0.5 ? '#6b5236' : '#c4a67c';
+        g.beginPath();
+        g.arc(px(r.a.x + (r.b.x - r.a.x) * t + nx * off), px(r.a.z + (r.b.z - r.a.z) * t + nz * off), 1 + R() * 2.4, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+    g.globalAlpha = 1;
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  return tex;
+}
+
+/** Timber cottage: stone footing, plastered walls with beams, a pitched roof. The front faces +z. */
+function cottage(roofColor: number, scale = 1) {
+  const g = new THREE.Group();
+  const box = (w: number, h: number, d: number, color: number, x: number, y: number, z: number, opts: Partial<THREE.MeshStandardMaterialParameters> = {}) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color, opts));
+    m.position.set(x, y, z);
+    g.add(m);
+    return m;
+  };
+  box(2.5, 0.36, 2.1, 0x8d8a82, 0, 0.18, 0);
+  box(2.3, 1.5, 1.9, 0xe9dcc0, 0, 1.1, 0);
+  for (const [x, z] of [[-1.15, -0.95], [1.15, -0.95], [-1.15, 0.95], [1.15, 0.95]]) box(0.16, 1.5, 0.16, 0x6b4a2b, x, 1.1, z);
+  box(2.46, 0.14, 2.06, 0x6b4a2b, 0, 1.85, 0);
+  box(2.46, 0.1, 0.1, 0x6b4a2b, 0, 1.1, 0.96);
+  const tri = new THREE.Shape();
+  tri.moveTo(-1.5, 0);
+  tri.lineTo(1.5, 0);
+  tri.lineTo(0, 1.2);
+  tri.closePath();
+  const roofGeo = new THREE.ExtrudeGeometry(tri, { depth: 2.5, bevelEnabled: false });
+  roofGeo.translate(0, 0, -1.25);
+  const roof = new THREE.Mesh(roofGeo, mat(roofColor));
+  roof.position.y = 1.9;
+  g.add(roof);
+  box(0.52, 0.98, 0.07, 0x4f3520, 0, 0.85, 0.97);
+  for (const x of [-0.74, 0.74]) box(0.44, 0.44, 0.07, 0xfff1b8, x, 1.3, 0.97, { emissive: 0xffd36b, emissiveIntensity: 0.55 });
+  box(0.32, 1.0, 0.32, 0x8d8a82, 0.75, 2.7, -0.35);
+  g.scale.setScalar(scale);
+  g.traverse((o) => { o.castShadow = true; o.receiveShadow = true; });
+  return g;
+}
+
+const LEAVES = [0x3f7d3a, 0x4d8f43, 0x5c9c4c, 0x356e36, 0x6aa350];
+/** Round leafy tree, about 3–4 hero heights. */
+function leafTree(R: () => number, size = 1) {
+  const g = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.17, 1.5, 6), mat(0x5d4027));
+  trunk.position.y = 0.75;
+  g.add(trunk);
+  const n = 4 + Math.floor(R() * 2);
+  for (let i = 0; i < n; i++) {
+    const blob = new THREE.Mesh(new THREE.IcosahedronGeometry(0.62 + R() * 0.3, 1), mat(LEAVES[Math.floor(R() * LEAVES.length)]));
+    const a = (i / n) * Math.PI * 2 + R();
+    const r = i === 0 ? 0 : 0.5 + R() * 0.25;
+    blob.position.set(Math.cos(a) * r, 1.9 + (i === 0 ? 0.55 : R() * 0.5), Math.sin(a) * r);
+    blob.scale.y = 0.85;
+    g.add(blob);
+  }
+  g.scale.setScalar(size);
+  g.traverse((o) => { o.castShadow = true; });
+  return g;
+}
 
 /** The TV picture: drawn on a canvas, so it always shows today's real exercises. */
 function tvTexture(title: string, lines: string[]) {
@@ -164,7 +294,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       setState('nogl');
       return;
     }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    // Phones render a little below their full sharpness: the meadow costs more than the old island.
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, (el.clientWidth || 400) < 520 ? 1.5 : 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -173,31 +304,43 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     canvas.style.touchAction = 'pan-y';
     el.prepend(canvas);
 
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0xdfeee6, 24, 46);
-    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 120);
-    scene.add(new THREE.HemisphereLight(0xfffbe8, 0x6e8f6a, 1.5));
-    const sun = new THREE.DirectionalLight(0xfff0d6, 2.4);
-    sun.position.set(-9, 16, 10);
+    scene.fog = new THREE.Fog(HORIZON, 28, 140);
+    const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 420);
+    scene.add(new THREE.HemisphereLight(0xdcecff, 0x5d7a45, 1.2));
+    const sun = new THREE.DirectionalLight(0xffe9c4, 3);
+    sun.position.set(-14, 20, 12);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
-    Object.assign(sun.shadow.camera, { left: -16, right: 16, top: 16, bottom: -16, far: 50 });
+    sun.shadow.mapSize.setScalar((el.clientWidth || 400) < 520 ? 1024 : 2048);
+    sun.shadow.bias = -0.0004;
+    sun.shadow.normalBias = 0.03;
+    Object.assign(sun.shadow.camera, { left: -18, right: 18, top: 18, bottom: -18, far: 70 });
     scene.add(sun);
 
     const R = rng(11);
     const B = VILLAGE_LAYOUT.bound;
-    const water = new THREE.Mesh(new THREE.CylinderGeometry(40, 40, 0.2, 48), mat(PALETTE.water, { roughness: 0.3 }));
-    water.position.y = -0.5;
-    const sand = new THREE.Mesh(new THREE.CylinderGeometry(B + 1.4, B + 2.2, 0.5, 20), mat(PALETTE.sand));
-    sand.position.y = -0.3;
-    const grass = new THREE.Mesh(new THREE.CylinderGeometry(B + 0.7, B + 1, 0.4, 20), mat(PALETTE.grass));
-    grass.position.y = -0.2;
-    grass.receiveShadow = true;
-    scene.add(water, sand, grass);
+    const phone = (el.clientWidth || 400) < 520;
+
+    // Sky: blue above, hazy at the horizon. It travels with the camera.
+    const sky = new THREE.Mesh(
+      new THREE.SphereGeometry(300, 24, 12),
+      new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        fog: false,
+        uniforms: { top: { value: new THREE.Color(0x3f86d4) }, bottom: { value: new THREE.Color(HORIZON) } },
+        vertexShader: 'varying float h;\nvoid main() {\n  h = normalize(position).y;\n  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n}',
+        fragmentShader: 'uniform vec3 top;\nuniform vec3 bottom;\nvarying float h;\nvoid main() {\n  gl_FragColor = vec4(mix(bottom, top, pow(clamp(h, 0.0, 1.0), 0.5)), 1.0);\n  #include <colorspace_fragment>\n}',
+      }),
+    );
+    scene.add(sky);
 
     const obstacles: Obstacle[] = [];
     const anchors: { id: string; obj: THREE.Object3D; y: number }[] = [];
     const spots: { key: string; door: Vec }[] = [];
+    const roads: Road[] = [];
     /** Things that can stand between the camera and the hero; they turn see-through then. */
     const occluders: { obj: THREE.Object3D; x: number; z: number; r: number; mats: THREE.Material[]; a: number }[] = [];
     const occluder = (obj: THREE.Object3D, x: number, z: number, r: number) => {
@@ -212,77 +355,167 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       occluders.push({ obj, x, z, r, mats, a: 1 });
     };
 
-    // The square with the well.
-    const square = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 0.06, 24), mat(PALETTE.path));
-    square.position.y = 0.02;
-    square.receiveShadow = true;
-    const well = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.6, 10), mat(PALETTE.stone));
+    // The village is flat; around it the land rolls up into hills, with a valley for the road south.
+    const hillAt = (x: number, z: number) => {
+      const k = THREE.MathUtils.smoothstep(Math.hypot(x, z), B + 2.5, B + 22);
+      const valley = z > 0 ? THREE.MathUtils.smoothstep(Math.abs(x), 1.6, 11) : 1;
+      return k * valley * (1.6 + 3.4 * (0.5 + 0.5 * Math.sin(x * 0.13 + 1.7) * Math.cos(z * 0.11 + 0.4)) + 1.1 * Math.sin(x * 0.31 + z * 0.27));
+    };
+
+    // Well on the square.
+    const well = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.6, 10), mat(0x8d8a82));
     well.position.y = 0.3;
     well.castShadow = true;
-    const wellWater = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.02, 10), mat(PALETTE.water));
+    const wellWater = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.02, 10), mat(PALETTE.water, { roughness: 0.2 }));
     wellWater.position.y = 0.6;
-    scene.add(square, well, wellWater);
+    scene.add(well, wellWater);
     obstacles.push({ x: 0, z: 0, r: 0.95 });
-
-    const stones = (from: Vec, to: Vec) => {
-      const n = Math.max(2, Math.round(Math.hypot(to.x - from.x, to.z - from.z) / 0.62));
-      for (let i = 1; i < n; i++) {
-        const s = new THREE.Mesh(new THREE.CylinderGeometry(0.2 + R() * 0.08, 0.24, 0.05, 7), mat(PALETTE.path));
-        s.position.set(from.x + ((to.x - from.x) * i) / n + (R() - 0.5) * 0.14, 0.02, from.z + ((to.z - from.z) * i) / n + (R() - 0.5) * 0.14);
-        s.receiveShadow = true;
-        scene.add(s);
-      }
-    };
 
     buildings.forEach((b, i) => {
       const p = slotPosition(i);
-      const h = house(PALETTE.roof[b.key] ?? 0x8a6038, b.key === 'hall' ? 2.2 : 2);
+      const h = cottage(PALETTE.roof[b.key] ?? 0x8a6038, b.key === 'hall' ? 1.12 : 1);
       h.position.set(p.x, 0, p.z);
       h.lookAt(0, 0, 0);
       scene.add(h);
-      obstacles.push({ x: p.x, z: p.z, r: 1.75 });
-      occluder(h, p.x, p.z, 1.9);
-      anchors.push({ id: b.key, obj: h, y: 3.5 });
+      obstacles.push({ x: p.x, z: p.z, r: 1.9 });
+      occluder(h, p.x, p.z, 2.1);
+      anchors.push({ id: b.key, obj: h, y: 3.9 });
       spots.push({ key: b.key, door: p.door });
-      const k = 3 / Math.hypot(p.door.x, p.door.z);
-      stones({ x: p.door.x * k, z: p.door.z * k }, p.door);
+      const k = 2.6 / Math.hypot(p.door.x, p.door.z);
+      roads.push({ a: { x: p.door.x * k, z: p.door.z * k }, b: p.door, w: 1.3 });
     });
 
     const hall = gym(tvTitle, tvLines);
     hall.position.set(GYM.x, 0, GYM.z);
     scene.add(hall);
     [-1.9, 0, 1.9].forEach((dx) => obstacles.push({ x: GYM.x + dx, z: GYM.z - 1.95, r: 1.0 }));
+    occluder(hall, GYM.x, GYM.z - 1.6, 2.9);
     anchors.push({ id: TV_KEY, obj: hall, y: 3.5 });
     spots.push({ key: TV_KEY, door: TV_SPOT });
-    stones({ x: 0, z: -3 }, { x: GYM.x, z: GYM.z + 1.7 });
+    roads.push({ a: { x: 0, z: -2.6 }, b: { x: GYM.x, z: GYM.z + 1.9 }, w: 1.6 });
+    roads.push({ a: { x: 0, z: 2.6 }, b: { x: 0, z: GROUND / 2 }, w: 2.3 });
 
-    // Trees around the edge and between the buildings; each one is something to walk around.
-    for (let i = 0, placed = 0; i < 500 && placed < 30; i++) {
+    const groundGeo = new THREE.PlaneGeometry(GROUND, GROUND, 110, 110);
+    groundGeo.rotateX(-Math.PI / 2);
+    const gp = groundGeo.attributes.position;
+    for (let i = 0; i < gp.count; i++) gp.setY(i, hillAt(gp.getX(i), gp.getZ(i)));
+    groundGeo.computeVertexNormals();
+    const ground3d = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ map: groundTexture(roads, R), roughness: 1 }));
+    ground3d.receiveShadow = true;
+    scene.add(ground3d);
+
+    const onDirt = (x: number, z: number) =>
+      Math.hypot(x, z) < 3.5 || roads.some((r) => segDist(x, z, r) < r.w / 2 + 0.3) || (Math.abs(x - GYM.x) < 3.1 && z > GYM.z - 2.6 && z < GYM.z + 1.9);
+
+    // Trees in the village: each one is something to walk around.
+    for (let i = 0, placed = 0; i < 600 && placed < 22; i++) {
       const a = R() * Math.PI * 2;
-      const r = 4.2 + R() * (B - 4.4);
+      const r = 4.4 + R() * (B - 4.2);
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
-      if (obstacles.some((o) => Math.hypot(x - o.x, z - o.z) < o.r + 1.5) || spots.some((s) => Math.hypot(x - s.door.x, z - s.door.z) < 2.2)) continue;
-      if (Math.abs(x) < 1.6 && z < 0) continue; // keep the path to the gym open
-      const tr = tree(1.5 + R() * 0.9, R() > 0.5);
+      if (onDirt(x, z) || obstacles.some((o) => Math.hypot(x - o.x, z - o.z) < o.r + 1.7) || spots.some((s) => Math.hypot(x - s.door.x, z - s.door.z) < 2.4)) continue;
+      const tr = leafTree(R, 0.95 + R() * 0.5);
       tr.position.set(x, 0, z);
       tr.rotation.y = R() * Math.PI;
       scene.add(tr);
-      obstacles.push({ x, z, r: 0.45 });
-      occluder(tr, x, z, 1.0);
+      obstacles.push({ x, z, r: 0.5 });
+      occluder(tr, x, z, 1.3);
       placed++;
     }
+
+    // Woods on the hills: two instanced meshes for all of them.
+    const far = phone ? 110 : 190;
+    const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.2, 1.6, 5), mat(0x5d4027), far);
+    const crowns = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), mat(0xffffff), far * 3);
+    const M = new THREE.Matrix4();
+    const Q = new THREE.Quaternion();
+    const col = new THREE.Color();
+    for (let i = 0, n = 0; i < 4000 && n < far; i++) {
+      const a = R() * Math.PI * 2;
+      const r = B + 3 + R() * 52;
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      if (roads.some((rd) => segDist(x, z, rd) < 3.2)) continue;
+      const y = hillAt(x, z);
+      const sc = 1 + R() * 0.9;
+      trunks.setMatrixAt(n, M.compose(new THREE.Vector3(x, y + 0.8 * sc, z), Q, new THREE.Vector3(sc, sc, sc)));
+      for (let k = 0; k < 3; k++) {
+        const br = (0.75 + R() * 0.35) * sc;
+        crowns.setMatrixAt(n * 3 + k, M.compose(new THREE.Vector3(x + (k - 1) * 0.55 * sc * (R() + 0.4), y + (2.1 + (k === 1 ? 0.6 : R() * 0.4)) * sc, z + (R() - 0.5) * 0.9 * sc), Q, new THREE.Vector3(br, br * 0.85, br)));
+        crowns.setColorAt(n * 3 + k, col.setHex(LEAVES[Math.floor(R() * LEAVES.length)]));
+      }
+      n++;
+      trunks.count = n;
+      crowns.count = n * 3;
+    }
+    trunks.castShadow = true;
+    crowns.castShadow = true;
+    scene.add(trunks, crowns);
+
+    // Blue mountains on the horizon.
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2 + R() * 0.3;
+      const d = 135 + R() * 45;
+      const hgt = 34 + R() * 34;
+      const m = new THREE.Mesh(new THREE.ConeGeometry(34 + R() * 24, hgt, 6), new THREE.MeshLambertMaterial({ color: i % 3 ? 0x6f8fa8 : 0x86a1b6, flatShading: true }));
+      m.position.set(Math.cos(a) * d, hgt / 2 - 3, Math.sin(a) * d);
+      m.rotation.y = R() * Math.PI;
+      scene.add(m);
+    }
+
+    // Grass: thousands of blades in one draw call, moving in the wind.
+    const bladeGeo = new THREE.PlaneGeometry(0.1, 1, 1, 3);
+    bladeGeo.translate(0, 0.5, 0);
+    const bp = bladeGeo.attributes.position;
+    const shade: number[] = [];
+    for (let i = 0; i < bp.count; i++) {
+      const y = bp.getY(i);
+      bp.setX(i, bp.getX(i) * (1 - y * 0.85));
+      shade.push(0.62 + y * 0.38, 0.62 + y * 0.38, 0.62 + y * 0.38);
+    }
+    bladeGeo.setAttribute('color', new THREE.Float32BufferAttribute(shade, 3));
+    bladeGeo.setAttribute('normal', new THREE.Float32BufferAttribute(new Array(bp.count).fill([0, 1, 0]).flat(), 3));
+    const wind = { value: 0 };
+    const bladeMat = new THREE.MeshLambertMaterial({ side: THREE.DoubleSide, vertexColors: true });
+    bladeMat.onBeforeCompile = (sh) => {
+      sh.uniforms.uTime = wind;
+      sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace(
+        '#include <begin_vertex>',
+        '#include <begin_vertex>\n#ifdef USE_INSTANCING\n  vec4 root = instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);\n  transformed.x += sin(uTime * 1.6 + root.x * 0.8 + root.z * 0.6) * 0.32 * position.y * position.y;\n#endif',
+      );
+    };
+    const blades = phone ? 14000 : 30000;
+    const grass = new THREE.InstancedMesh(bladeGeo, bladeMat, blades);
+    const greens = [0x6fae3f, 0x5c9a36, 0x86bd4c, 0x4f8a30, 0x9cc75a];
+    const E = new THREE.Euler();
+    let made = 0;
+    for (let i = 0; i < blades * 3 && made < blades; i++) {
+      const a = R() * Math.PI * 2;
+      const r = Math.sqrt(R()) * 26;
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      if (onDirt(x, z) || obstacles.some((o) => o.r > 0.9 && Math.hypot(x - o.x, z - o.z) < o.r - 0.3)) continue;
+      const hgt = 0.16 + R() * 0.26;
+      grass.setMatrixAt(made, M.compose(new THREE.Vector3(x, hillAt(x, z), z), Q.setFromEuler(E.set((R() - 0.5) * 0.4, R() * Math.PI, 0)), new THREE.Vector3(1 + R(), hgt, 1)));
+      grass.setColorAt(made, col.setHex(greens[Math.floor(R() * greens.length)]));
+      made++;
+    }
+    grass.count = made;
+    grass.receiveShadow = true;
+    scene.add(grass);
+
     const clouds: THREE.Group[] = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       const c = new THREE.Group();
-      for (let k = 0; k < 4; k++) {
-        const puff = new THREE.Mesh(new THREE.SphereGeometry(0.9 + R() * 0.6, 10, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, transparent: true, opacity: 0.9 }));
-        puff.position.set(k * 1.1, R() * 0.4, R() * 0.6);
+      for (let k = 0; k < 5; k++) {
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(3 + R() * 2.4, 10, 8), new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.92, fog: false }));
+        puff.position.set(k * 3.6, R() * 1.4, R() * 2);
+        puff.scale.y = 0.55;
         c.add(puff);
       }
-      c.userData.angle = (i / 5) * Math.PI * 2 + R();
-      c.userData.radius = 20 + R() * 6;
-      c.position.y = 13 + R() * 2;
+      c.userData.angle = (i / 6) * Math.PI * 2 + R();
+      c.userData.radius = 70 + R() * 50;
+      c.position.y = 38 + R() * 14;
       scene.add(c);
       clouds.push(c);
     }
@@ -348,6 +581,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     // Tap = walk there; sideways drag = turn the view.
     const ray = new THREE.Raycaster();
     const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const limit = new THREE.Vector3();
     let down: { x: number; y: number; moved: boolean } | null = null;
     const onDown = (e: PointerEvent) => { down = { x: e.clientX, y: e.clientY, moved: false }; };
     const onMove = (e: PointerEvent) => {
@@ -362,7 +596,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const rect = canvas.getBoundingClientRect();
       ray.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), camera);
       const hit = new THREE.Vector3();
-      if (ray.ray.intersectPlane(ground, hit)) walkTo.current({ x: hit.x, z: hit.z }, null);
+      // A tap on the sky or far hills: walk in that direction, as far as the village goes.
+      if (!ray.ray.intersectPlane(ground, hit)) hit.copy(limit.copy(ray.ray.direction).setY(0).normalize().multiplyScalar(B * 2).add(camera.position)).setY(0);
+      walkTo.current({ x: hit.x, z: hit.z }, null);
     };
     const onCancel = () => { down = null; };
     canvas.addEventListener('pointerdown', onDown);
@@ -410,7 +646,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     let tt = 0;
     const loop = () => {
       raf = requestAnimationFrame(loop);
-      const dt = Math.min(clock.getDelta(), 0.05);
+      const dt = Math.min(clock.getDelta(), 0.1);
       if (!visible || document.hidden) return;
       tt += dt;
       const p = pos.current;
@@ -449,12 +685,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       if ((marker.material as THREE.MeshBasicMaterial).opacity > 0) marker.scale.setScalar(1 + Math.sin(tt * 6) * 0.12);
 
       // The camera follows from behind and above.
-      const zoom = narrow ? 1.12 : 1;
-      camPos.set(p.x + Math.sin(camAngle.current) * 7.6 * zoom, 6.2 * zoom, p.z + Math.cos(camAngle.current) * 7.6 * zoom);
+      const zoom = narrow ? 1.08 : 1;
+      camPos.set(p.x + Math.sin(camAngle.current) * 6.6 * zoom, 3.5 * zoom, p.z + Math.cos(camAngle.current) * 6.6 * zoom);
       if (first || reduce) camera.position.copy(camPos);
       else camera.position.lerp(camPos, Math.min(1, dt * 6));
       first = false;
-      camera.lookAt(p.x, 1.1, p.z);
+      camera.lookAt(p.x, 1.5, p.z);
+      sky.position.copy(camera.position);
+      if (!reduce) wind.value = tt;
 
       // A tree or house between the camera and the hero fades, so the hero stays in view.
       const cx = camera.position.x - p.x;
@@ -463,7 +701,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       for (const o of occluders) {
         const f = ((o.x - p.x) * cx + (o.z - p.z) * cz) / cl2;
         const off = Math.hypot(o.x - (p.x + cx * f), o.z - (p.z + cz * f));
-        const want = f > 0.04 && f < 1 && off < o.r ? 0.22 : 1;
+        // Also anything right next to the camera: with the camera this low it would fill the view.
+        const want = (f > 0.04 && f < 1 && off < o.r) || Math.hypot(o.x - camera.position.x, o.z - camera.position.z) < o.r + 3.2 ? 0.16 : 1;
         if (Math.abs(o.a - want) < 0.01) continue;
         o.a = reduce ? want : o.a + (want - o.a) * Math.min(1, dt * 8);
         for (const m of o.mats) {
@@ -484,9 +723,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       for (const a of anchors) {
         const node = labels.current.get(a.id);
         if (!node) continue;
-        const front = place(node, a.obj.position.x, a.y, a.obj.position.z);
-        node.style.opacity = front ? '1' : '0';
-        node.style.pointerEvents = front ? 'auto' : 'none';
+        // A name shows when its building is in view and not too far off; the button itself stays reachable by keyboard.
+        const inFront = place(node, a.obj.position.x, a.y, a.obj.position.z);
+        const show = inFront && Math.abs(v.x) < 1.05 && v.y < 1.1 && Math.hypot(a.obj.position.x - p.x, a.obj.position.z - p.z) < 19;
+        node.style.opacity = show ? '1' : '0';
+        node.style.pointerEvents = show ? 'auto' : 'none';
       }
       const xp = xpLabel.current;
       if (xp) {
