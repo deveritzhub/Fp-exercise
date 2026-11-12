@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { RotateCcw, RotateCw } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
@@ -31,6 +31,15 @@ type Props = {
   startAtTv?: boolean;
   onNear: (key: string | null) => void;
   onArrive: (key: string) => void;
+  /** Name shown above the hero's head. */
+  heroName?: string;
+  /** A workout waits today: the coach at the gym shows a quest marker. */
+  questOpen?: boolean;
+  coachLabel?: string;
+  /** Filled by the scene: send the hero to a spot from outside (HUD buttons). */
+  api?: MutableRefObject<{ goTo: (key: string) => void } | null>;
+  /** Kept up to date by the scene, for the minimap. */
+  track?: MutableRefObject<{ x: number; z: number; facing: number }>;
   className?: string;
 };
 
@@ -38,10 +47,15 @@ const SPEED = 3.3;
 const HERO_HEIGHT = 1.3;
 const GYM = VILLAGE_LAYOUT.gym;
 const TV_SPOT: Vec = { x: GYM.x, z: GYM.z + 0.7 };
+const COACH_KEY = 'coach';
+const COACH_AT: Vec = { x: GYM.x + 2.05, z: GYM.z + 1.0 };
+/** What the coach wears: the same model as the hero, in the practice colours. */
+const COACH_WEAR = new Set(['hair_short', 'outfit_tracksuit', 'gear_cap', 'base_shoes']);
+const COACH_TINT: Record<string, string> = { kit_main: '#29483c', kit_dark: '#1d362d', kit_soft: '#e4bc63', hair: '#3b2a1a', skin: '#c99670' };
 
 
 type Road = { a: Vec; b: Vec; w: number };
-const HORIZON = 0xcfe3ee;
+const HORIZON = 0xf0dcbb;
 const GROUND = 150;
 
 const segDist = (x: number, z: number, r: Road) => {
@@ -116,6 +130,106 @@ function groundTexture(roads: Road[], R: () => number) {
   return tex;
 }
 
+/** Hand-painted surface textures, in grey so each material can tint them. Made once, reused. */
+const TEX: Record<string, THREE.CanvasTexture> = {};
+function painted(kind: 'plaster' | 'shingle' | 'stone' | 'wood', rx = 1, ry = 1) {
+  const key = `${kind}:${rx}:${ry}`;
+  if (TEX[key]) return TEX[key];
+  const S = 256;
+  const c = document.createElement('canvas');
+  c.width = S;
+  c.height = S;
+  const g = c.getContext('2d');
+  const R = rng(kind.length * 31 + 5);
+  if (g) {
+    g.fillStyle = '#e6e6e6';
+    g.fillRect(0, 0, S, S);
+    const blot = (n: number, lo: number, hi: number, a: number) => {
+      for (let i = 0; i < n; i++) {
+        const v = Math.round(lo + R() * (hi - lo));
+        g.globalAlpha = a;
+        g.fillStyle = `rgb(${v},${v},${v})`;
+        g.beginPath();
+        g.ellipse(R() * S, R() * S, 6 + R() * 26, 4 + R() * 16, R() * 3, 0, 7);
+        g.fill();
+      }
+      g.globalAlpha = 1;
+    };
+    if (kind === 'plaster') blot(90, 190, 255, 0.18);
+    if (kind === 'shingle') {
+      const rows = 8;
+      const h = S / rows;
+      for (let r = 0; r < rows; r++) {
+        for (let i = -1; i < 7; i++) {
+          const w = S / 6;
+          const x = i * w + (r % 2 ? w / 2 : 0);
+          const v = Math.round(150 + R() * 90);
+          g.fillStyle = `rgb(${v},${v},${v})`;
+          g.beginPath();
+          g.roundRect(x + 1, r * h, w - 2, h + 6, [0, 0, 9, 9]);
+          g.fill();
+          g.fillStyle = 'rgba(0,0,0,0.28)';
+          g.fillRect(x, r * h + h - 2, w, 4);
+        }
+      }
+    }
+    if (kind === 'stone') {
+      g.fillStyle = '#8a8a8a';
+      g.fillRect(0, 0, S, S);
+      for (let r = 0; r < 5; r++) {
+        for (let i = -1; i < 4; i++) {
+          const w = S / 3.2;
+          const v = Math.round(170 + R() * 80);
+          g.fillStyle = `rgb(${v},${v},${v})`;
+          g.beginPath();
+          g.roundRect(i * w + (r % 2 ? w / 2 : 0) + 3, r * (S / 5) + 3, w - 6, S / 5 - 6, 8);
+          g.fill();
+        }
+      }
+      blot(40, 120, 255, 0.12);
+    }
+    if (kind === 'wood') {
+      for (let i = 0; i < 6; i++) {
+        const v = Math.round(185 + R() * 60);
+        g.fillStyle = `rgb(${v},${v},${v})`;
+        g.fillRect(i * (S / 6), 0, S / 6 - 2, S);
+      }
+      g.strokeStyle = 'rgba(0,0,0,0.16)';
+      for (let i = 0; i < 40; i++) {
+        g.beginPath();
+        const x = R() * S;
+        g.moveTo(x, R() * S);
+        g.lineTo(x + (R() - 0.5) * 6, R() * S);
+        g.stroke();
+      }
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(rx, ry);
+  TEX[key] = t;
+  return t;
+}
+
+/** Soft round dot for smoke, glow and drifting motes. */
+function softDot() {
+  if (TEX.dot) return TEX.dot;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  if (g) {
+    const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(255,255,255,1)');
+    gr.addColorStop(0.4, 'rgba(255,255,255,0.45)');
+    gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, 64, 64);
+  }
+  TEX.dot = new THREE.CanvasTexture(c);
+  return TEX.dot;
+}
+
 /** Timber cottage: stone footing, plastered walls with beams, a pitched roof. The front faces +z. */
 function cottage(roofColor: number, scale = 1) {
   const g = new THREE.Group();
@@ -125,8 +239,8 @@ function cottage(roofColor: number, scale = 1) {
     g.add(m);
     return m;
   };
-  box(2.5, 0.36, 2.1, 0x8d8a82, 0, 0.18, 0);
-  box(2.3, 1.5, 1.9, 0xe9dcc0, 0, 1.1, 0);
+  box(2.5, 0.36, 2.1, 0xa9a59b, 0, 0.18, 0, { map: painted('stone', 2, 0.5), flatShading: false });
+  box(2.3, 1.5, 1.9, 0xf3e6c8, 0, 1.1, 0, { map: painted('plaster'), flatShading: false });
   for (const [x, z] of [[-1.15, -0.95], [1.15, -0.95], [-1.15, 0.95], [1.15, 0.95]]) box(0.16, 1.5, 0.16, 0x6b4a2b, x, 1.1, z);
   box(2.46, 0.14, 2.06, 0x6b4a2b, 0, 1.85, 0);
   box(2.46, 0.1, 0.1, 0x6b4a2b, 0, 1.1, 0.96);
@@ -137,10 +251,19 @@ function cottage(roofColor: number, scale = 1) {
   tri.closePath();
   const roofGeo = new THREE.ExtrudeGeometry(tri, { depth: 2.5, bevelEnabled: false });
   roofGeo.translate(0, 0, -1.25);
-  const roof = new THREE.Mesh(roofGeo, mat(roofColor));
+  const roof = new THREE.Mesh(roofGeo, mat(roofColor, { map: painted('shingle', 0.5, 0.9), flatShading: false }));
   roof.position.y = 1.9;
   g.add(roof);
-  box(0.52, 0.98, 0.07, 0x4f3520, 0, 0.85, 0.97);
+  box(0.62, 1.08, 0.05, 0x6b4a2b, 0, 0.88, 0.96);
+  box(0.52, 0.98, 0.07, 0x7a5232, 0, 0.85, 0.97, { map: painted('wood'), flatShading: false });
+  // Flower boxes under the windows and a hanging sign in the roof colour.
+  for (const x of [-0.74, 0.74]) {
+    box(0.5, 0.1, 0.14, 0x6b4a2b, x, 1.03, 1.02);
+    for (const [dx, c] of [[-0.15, 0xe8536b], [0, 0xf4c542], [0.15, 0xf2f0ea]] as const) box(0.09, 0.09, 0.09, c, x + dx, 1.12, 1.03);
+  }
+  box(0.07, 0.07, 0.6, 0x4f3520, 1.0, 1.72, 1.25);
+  box(0.05, 0.36, 0.46, roofColor, 1.0, 1.48, 1.34);
+  box(0.06, 0.14, 0.14, 0xe4bc63, 1.0, 1.48, 1.34, { metalness: 0.6, roughness: 0.35 });
   for (const x of [-0.74, 0.74]) box(0.44, 0.44, 0.07, 0xfff1b8, x, 1.3, 0.97, { emissive: 0xffd36b, emissiveIntensity: 0.55 });
   box(0.32, 1.0, 0.32, 0x8d8a82, 0.75, 2.7, -0.35);
   g.scale.setScalar(scale);
@@ -148,7 +271,21 @@ function cottage(roofColor: number, scale = 1) {
   return g;
 }
 
-const LEAVES = [0x3f7d3a, 0x4d8f43, 0x5c9c4c, 0x356e36, 0x6aa350];
+const LEAVES = [0x3f8a3a, 0x4f9d43, 0x62ad4c, 0x357a36, 0x76b850];
+/** Painted light: tops of the foliage catch the sun, the undersides stay dark. */
+function shaded<T extends THREE.BufferGeometry>(geo: T) {
+  const pos = geo.attributes.position;
+  geo.computeBoundingBox();
+  const lo = geo.boundingBox!.min.y;
+  const span = geo.boundingBox!.max.y - lo || 1;
+  const col: number[] = [];
+  for (let i = 0; i < pos.count; i++) {
+    const k = 0.55 + 0.6 * ((pos.getY(i) - lo) / span);
+    col.push(k, k * 1.02, k * 0.9);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  return geo;
+}
 /** Round leafy tree, about 3–4 hero heights. */
 function leafTree(R: () => number, size = 1) {
   const g = new THREE.Group();
@@ -157,7 +294,7 @@ function leafTree(R: () => number, size = 1) {
   g.add(trunk);
   const n = 4 + Math.floor(R() * 2);
   for (let i = 0; i < n; i++) {
-    const blob = new THREE.Mesh(new THREE.IcosahedronGeometry(0.62 + R() * 0.3, 1), mat(LEAVES[Math.floor(R() * LEAVES.length)]));
+    const blob = new THREE.Mesh(shaded(new THREE.IcosahedronGeometry(0.62 + R() * 0.3, 1)), mat(LEAVES[Math.floor(R() * LEAVES.length)], { vertexColors: true }));
     const a = (i / n) * Math.PI * 2 + R();
     const r = i === 0 ? 0 : 0.5 + R() * 0.25;
     blob.position.set(Math.cos(a) * r, 1.9 + (i === 0 ? 0.55 : R() * 0.5), Math.sin(a) * r);
@@ -263,11 +400,12 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, heroName, questOpen = false, coachLabel = 'Coach', api, track, className }: Props) {
   const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null);
   const labels = useRef<Map<string, HTMLElement>>(new Map());
   const xpLabel = useRef<HTMLDivElement>(null);
+  const nameLabel = useRef<HTMLDivElement>(null);
   const walkTo = useRef<(p: Vec, key: string | null) => void>(() => {});
   const turn = useRef<(deg: number) => void>(() => {});
   const pos = useRef<Vec>(startAtTv ? { ...TV_SPOT } : { ...VILLAGE_LAYOUT.spawn });
@@ -310,9 +448,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const scene = new THREE.Scene();
     scene.fog = new THREE.Fog(HORIZON, 28, 140);
     const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 420);
-    scene.add(new THREE.HemisphereLight(0xdcecff, 0x5d7a45, 1.2));
-    const sun = new THREE.DirectionalLight(0xffe9c4, 3);
-    sun.position.set(-14, 20, 12);
+    scene.add(new THREE.HemisphereLight(0xd6e6ff, 0x7d8c46, 1.55));
+    const sun = new THREE.DirectionalLight(0xffdca8, 3.1);
+    sun.position.set(-15, 17, 10);
     sun.castShadow = true;
     sun.shadow.mapSize.setScalar((el.clientWidth || 400) < 520 ? 1024 : 2048);
     sun.shadow.bias = -0.0004;
@@ -331,12 +469,19 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         side: THREE.BackSide,
         depthWrite: false,
         fog: false,
-        uniforms: { top: { value: new THREE.Color(0x3f86d4) }, bottom: { value: new THREE.Color(HORIZON) } },
+        uniforms: { top: { value: new THREE.Color(0x3a7fd2) }, bottom: { value: new THREE.Color(HORIZON) } },
         vertexShader: 'varying float h;\nvoid main() {\n  h = normalize(position).y;\n  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n}',
         fragmentShader: 'uniform vec3 top;\nuniform vec3 bottom;\nvarying float h;\nvoid main() {\n  gl_FragColor = vec4(mix(bottom, top, pow(clamp(h, 0.0, 1.0), 0.5)), 1.0);\n  #include <colorspace_fragment>\n}',
       }),
     );
     scene.add(sky);
+    // The low sun with a glow around it.
+    const sunDir = sun.position.clone().normalize();
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot(), color: 0xffe2a6, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, transparent: true }));
+    glow.scale.setScalar(150);
+    const disc = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot(), color: 0xfff6d8, depthWrite: false, fog: false, transparent: true }));
+    disc.scale.setScalar(38);
+    scene.add(glow, disc);
 
     const obstacles: Obstacle[] = [];
     const anchors: { id: string; obj: THREE.Object3D; y: number }[] = [];
@@ -394,7 +539,81 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     anchors.push({ id: TV_KEY, obj: hall, y: 3.5 });
     spots.push({ key: TV_KEY, door: TV_SPOT });
     roads.push({ a: { x: 0, z: -2.6 }, b: { x: GYM.x, z: GYM.z + 1.9 }, w: 1.6 });
+    let coachMixer: THREE.AnimationMixer | null = null;
+    if (heroScene) {
+      const stand = new THREE.Object3D();
+      stand.position.set(COACH_AT.x, 0, COACH_AT.z);
+      scene.add(stand);
+      anchors.push({ id: COACH_KEY, obj: stand, y: HERO_HEIGHT + 0.55 });
+      obstacles.push({ x: COACH_AT.x, z: COACH_AT.z, r: 0.42 });
+    }
     roads.push({ a: { x: 0, z: 2.6 }, b: { x: 0, z: GROUND / 2 }, w: 2.3 });
+
+    // Well roof, lanterns round the square, crates by the houses and banners at the gym.
+    const prop = (geo: THREE.BufferGeometry, material: THREE.Material, x: number, y: number, z: number, ry = 0) => {
+      const m = new THREE.Mesh(geo, material);
+      m.position.set(x, y, z);
+      m.rotation.y = ry;
+      m.castShadow = true;
+      m.receiveShadow = true;
+      scene.add(m);
+      return m;
+    };
+    const woodM = mat(0x8a5f38, { map: painted('wood'), flatShading: false });
+    const darkWood = mat(0x4f3520);
+    for (const x of [-0.5, 0.5]) prop(new THREE.BoxGeometry(0.09, 1.5, 0.09), darkWood, x, 0.95, 0);
+    const wellRoof = prop(new THREE.ConeGeometry(0.85, 0.5, 4), mat(0x8e3b5f, { map: painted('shingle', 2, 1), flatShading: false }), 0, 1.92, 0, Math.PI / 4);
+    wellRoof.scale.z = 0.8;
+    const lampM = new THREE.MeshStandardMaterial({ color: 0xfff1b8, emissive: 0xffc35a, emissiveIntensity: 1.6 });
+    const lamps: THREE.Sprite[] = [];
+    for (let i = 0; i < 4; i++) {
+      const a = Math.PI / 4 + (i * Math.PI) / 2;
+      const x = Math.cos(a) * 3.5;
+      const z = Math.sin(a) * 3.5;
+      prop(new THREE.CylinderGeometry(0.05, 0.07, 2.1, 6), darkWood, x, 1.05, z);
+      prop(new THREE.BoxGeometry(0.24, 0.3, 0.24), lampM, x, 2.2, z).castShadow = false;
+      prop(new THREE.ConeGeometry(0.24, 0.2, 4), darkWood, x, 2.45, z, Math.PI / 4);
+      const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot(), color: 0xffc35a, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.55 }));
+      halo.position.set(x, 2.2, z);
+      halo.scale.setScalar(1.6);
+      scene.add(halo);
+      lamps.push(halo);
+      obstacles.push({ x, z, r: 0.3 });
+    }
+    buildings.forEach((_, i) => {
+      const p = slotPosition(i);
+      const side = { x: -p.z / VILLAGE_LAYOUT.ring, z: p.x / VILLAGE_LAYOUT.ring };
+      const cx = p.x * 0.74 + side.x * 1.5;
+      const cz = p.z * 0.74 + side.z * 1.5;
+      prop(new THREE.BoxGeometry(0.5, 0.5, 0.5), woodM, cx, 0.25, cz, i);
+      prop(new THREE.CylinderGeometry(0.24, 0.24, 0.6, 10), woodM, cx + side.x * 0.6, 0.3, cz + side.z * 0.6);
+      obstacles.push({ x: cx + side.x * 0.3, z: cz + side.z * 0.3, r: 0.6 });
+    });
+    const flags: THREE.Mesh[] = [];
+    for (const sx of [-3.3, 3.3]) {
+      prop(new THREE.CylinderGeometry(0.05, 0.06, 3.4, 6), darkWood, GYM.x + sx, 1.7, GYM.z + 1.7);
+      const flag = prop(new THREE.BoxGeometry(0.03, 1.3, 0.62), mat(0x29483c), GYM.x + sx, 2.6, GYM.z + 2.05);
+      prop(new THREE.BoxGeometry(0.04, 0.3, 0.3), mat(0xe4bc63, { metalness: 0.5, roughness: 0.4 }), GYM.x + sx, 2.75, GYM.z + 2.05).castShadow = false;
+      flags.push(flag);
+      obstacles.push({ x: GYM.x + sx, z: GYM.z + 1.7, r: 0.3 });
+    }
+    // Chimney smoke and motes drifting in the light.
+    const smoke: THREE.Sprite[] = [];
+    buildings.forEach((_, i) => {
+      const p = slotPosition(i);
+      for (let k = 0; k < 3; k++) {
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot(), color: 0xf2efe8, transparent: true, opacity: 0, depthWrite: false }));
+        sp.userData = { x: p.x, z: p.z, off: k / 3 + i * 0.13 };
+        scene.add(sp);
+        smoke.push(sp);
+      }
+    });
+    const moteGeo = new THREE.BufferGeometry();
+    const motePos: number[] = [];
+    for (let i = 0; i < 140; i++) motePos.push((R() - 0.5) * 30, 0.4 + R() * 3.4, (R() - 0.5) * 30);
+    moteGeo.setAttribute('position', new THREE.Float32BufferAttribute(motePos, 3));
+    const motes = new THREE.Points(moteGeo, new THREE.PointsMaterial({ map: softDot(), color: 0xffe9a8, size: 0.14, transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending }));
+    scene.add(motes);
 
     const groundGeo = new THREE.PlaneGeometry(GROUND, GROUND, 110, 110);
     groundGeo.rotateX(-Math.PI / 2);
@@ -427,7 +646,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     // Woods on the hills: two instanced meshes for all of them.
     const far = phone ? 110 : 190;
     const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.2, 1.6, 5), mat(0x5d4027), far);
-    const crowns = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), mat(0xffffff), far * 3);
+    const crowns = new THREE.InstancedMesh(shaded(new THREE.IcosahedronGeometry(1, 1)), mat(0xffffff, { vertexColors: true }), far * 3);
     const M = new THREE.Matrix4();
     const Q = new THREE.Quaternion();
     const col = new THREE.Color();
@@ -504,6 +723,35 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     grass.count = made;
     grass.receiveShadow = true;
     scene.add(grass);
+    // Flowers in the meadow and stones along the roads.
+    const petals = [0xf2f0ea, 0xf4c542, 0xe8536b, 0xb07ae0, 0xff9a52];
+    const flowers = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.07, 0), new THREE.MeshLambertMaterial(), phone ? 320 : 600);
+    let fl = 0;
+    for (let i = 0; i < 4000 && fl < flowers.count; i++) {
+      const a = R() * Math.PI * 2;
+      const r = 3.6 + Math.sqrt(R()) * 20;
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      if (onDirt(x, z) || obstacles.some((o) => o.r > 0.9 && Math.hypot(x - o.x, z - o.z) < o.r)) continue;
+      flowers.setMatrixAt(fl, M.compose(new THREE.Vector3(x, hillAt(x, z) + 0.22 + R() * 0.12, z), Q.identity(), new THREE.Vector3(1, 0.7, 1)));
+      flowers.setColorAt(fl, col.setHex(petals[Math.floor(R() * petals.length)]));
+      fl++;
+    }
+    flowers.count = fl;
+    const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.3, 0), mat(0x9a968c), 46);
+    for (let i = 0; i < rocks.count; i++) {
+      const rd = roads[Math.floor(R() * roads.length)];
+      const u = R();
+      const sideways = (rd.w / 2 + 0.35 + R() * 0.5) * (R() > 0.5 ? 1 : -1);
+      const len = Math.hypot(rd.b.x - rd.a.x, rd.b.z - rd.a.z) || 1;
+      const x = rd.a.x + (rd.b.x - rd.a.x) * u - ((rd.b.z - rd.a.z) / len) * sideways;
+      const z = rd.a.z + (rd.b.z - rd.a.z) * u + ((rd.b.x - rd.a.x) / len) * sideways;
+      const sc = 0.4 + R() * 0.9;
+      rocks.setMatrixAt(i, M.compose(new THREE.Vector3(x, hillAt(x, z) + 0.05, z), Q.setFromEuler(E.set(R(), R() * 3, R())), new THREE.Vector3(sc, sc * 0.7, sc)));
+    }
+    rocks.castShadow = true;
+    rocks.receiveShadow = true;
+    scene.add(flowers, rocks);
 
     const clouds: THREE.Group[] = [];
     for (let i = 0; i < 6; i++) {
@@ -573,6 +821,31 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           mixer = new THREE.AnimationMixer(model);
           for (const clip of gltf.animations) motions[clip.name as HeroMotion] = mixer.clipAction(clip);
           play('idle');
+          // The coach waits by the TV: the same model in the practice colours, breathing quietly.
+          const cm = cloneSkinned(gltf.scene);
+          cm.traverse((o) => {
+            if (isToggleNode(o.name)) o.visible = COACH_WEAR.has(o.name);
+            const m = o as THREE.Mesh;
+            if (m.isMesh) {
+              const mm = (m.material as THREE.MeshStandardMaterial).clone();
+              const tint = COACH_TINT[mm.name.replace(/\.\d+$/, '')];
+              if (tint) mm.color.set(tint);
+              m.material = mm;
+              m.castShadow = true;
+              m.frustumCulled = false;
+            }
+          });
+          const coach = new THREE.Group();
+          coach.add(cm);
+          coach.scale.setScalar(k * 1.05);
+          coach.position.set(COACH_AT.x, -box.min.y * k * 1.05, COACH_AT.z);
+          coach.rotation.y = Math.atan2(TV_SPOT.x - COACH_AT.x, TV_SPOT.z + 1.2 - COACH_AT.z);
+          scene.add(coach);
+          const breathe = gltf.animations.find((c) => c.name === 'idle');
+          if (breathe) {
+            coachMixer = new THREE.AnimationMixer(cm);
+            coachMixer.clipAction(breathe).play();
+          }
           el.dataset.hero = 'model';
         })
         .catch(() => { /* the stand-in stays */ });
@@ -596,6 +869,15 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       el.dataset.walking = '1';
     };
     turn.current = (deg) => { camAngle.current += THREE.MathUtils.degToRad(deg); };
+    if (api) {
+      api.current = {
+        goTo: (k) => {
+          const i = buildings.findIndex((b) => b.key === k);
+          if (k === TV_KEY) walkTo.current(TV_SPOT, k);
+          else if (i >= 0) walkTo.current(slotPosition(i).door, k);
+        },
+      };
+    }
 
     // Tap = walk there; sideways drag = turn the view.
     const ray = new THREE.Raycaster();
@@ -727,6 +1009,26 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       first = false;
       camera.lookAt(p.x, 1.5, p.z);
       sky.position.copy(camera.position);
+      glow.position.copy(camera.position).addScaledVector(sunDir, 250);
+      disc.position.copy(glow.position);
+      if (track) {
+        track.current.x = p.x;
+        track.current.z = p.z;
+        track.current.facing = hero.rotation.y;
+      }
+      if (!reduce) {
+        coachMixer?.update(dt);
+        flags.forEach((f, i) => (f.rotation.y = Math.sin(tt * 2.2 + i) * 0.22));
+        lamps.forEach((l, i) => ((l.material as THREE.SpriteMaterial).opacity = 0.5 + Math.sin(tt * 5 + i * 2) * 0.07));
+        for (const sp of smoke) {
+          const u = (tt * 0.11 + sp.userData.off) % 1;
+          sp.position.set(sp.userData.x + u * 0.9, 3.3 + u * 2.8, sp.userData.z + u * 0.3);
+          sp.scale.setScalar(0.5 + u * 1.5);
+          (sp.material as THREE.SpriteMaterial).opacity = 0.42 * (1 - u) * Math.min(1, u * 6);
+        }
+        motes.rotation.y = tt * 0.012;
+        motes.position.y = Math.sin(tt * 0.35) * 0.18;
+      }
       if (!reduce) wind.value = tt;
 
       // A tree or house between the camera and the hero fades, so the hero stays in view.
@@ -764,6 +1066,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         node.style.opacity = show ? '1' : '0';
         node.style.pointerEvents = show ? 'auto' : 'none';
       }
+      const plate = nameLabel.current;
+      if (plate) place(plate, p.x, HERO_HEIGHT + 0.3 + figure.position.y, p.z);
       const xp = xpLabel.current;
       if (xp) {
         if (c && c.xp > 0 && since < 3.2) {
@@ -795,6 +1099,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       canvas.removeEventListener('pointercancel', onCancel);
       canvas.removeEventListener('pointerleave', onCancel);
       walkTo.current = () => {};
+      if (api) api.current = null;
       scene.traverse((o) => {
         const m = o as THREE.Mesh;
         if (m.isMesh) {
@@ -819,27 +1124,38 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     else labels.current.delete(id);
   };
   const go = (k: string, i: number) => walkTo.current(k === TV_KEY ? TV_SPOT : slotPosition(i).door, k);
-  const pill = 'absolute left-0 top-0 inline-flex min-h-[32px] items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[12.5px] font-bold shadow-card transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent';
+  // Nameplates as in an online world: bright letters with a dark outline, straight over the scene.
+  const plate = 'absolute left-0 top-0 inline-flex min-h-[32px] items-center whitespace-nowrap rounded-md px-1.5 font-display text-[13.5px] font-extrabold tracking-wide transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a] [text-shadow:0_1px_0_#000,0_-1px_0_#000,1px_0_0_#000,-1px_0_0_#000,0_2px_6px_rgba(0,0,0,.75)]';
   return (
-    <div className={cn('relative overflow-hidden rounded-2xl border border-[#C9D3BC] bg-[linear-gradient(180deg,#cfe8f0_0%,#e7f2e6_70%)]', className)}>
+    <div className={cn('relative overflow-hidden rounded-2xl border-2 border-[#3a2f1c] bg-[#1b2a22] shadow-lift', className)}>
       <div ref={host} data-testid="walk-village" className="absolute inset-0 cursor-pointer">
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(10,14,8,.38)_100%)]" />
         <div className="pointer-events-none absolute inset-0">
           {buildings.map((b, i) => (
             <button key={b.key} ref={setLabel(b.key)} type="button" data-spot={b.key} onClick={() => go(b.key, i)} aria-label={t(`Loop naar ${b.label}`, `Walk to ${b.label}`)}
-              className={cn(pill, 'border-white/80 bg-white/95 text-ink-900')} style={{ transform: 'translate(-9999px,0)' }}>
+              className={cn(plate, 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
               {b.label}
             </button>
           ))}
           <button ref={setLabel(TV_KEY)} type="button" data-spot={TV_KEY} onClick={() => go(TV_KEY, 0)} aria-label={t(`Loop naar ${tvLabel}`, `Walk to ${tvLabel}`)}
-            className={cn(pill, 'border-[#e4bc63] bg-[#fbf0d9] text-[#855806]')} style={{ transform: 'translate(-9999px,0)' }}>
+            className={cn(plate, 'text-white')} style={{ transform: 'translate(-9999px,0)' }}>
             {tvLabel}
           </button>
-          <div ref={xpLabel} aria-hidden className="absolute left-0 top-0 whitespace-nowrap rounded-full bg-[#29483c] px-3 py-1 text-[17px] font-extrabold text-[#f6e2a6] shadow-lift" style={{ opacity: 0, transform: 'translate(-9999px,0)' }} />
+          {heroKey && (
+            <button ref={setLabel(COACH_KEY)} type="button" data-spot={COACH_KEY} onClick={() => go(TV_KEY, 0)}
+              aria-label={questOpen ? t(`${coachLabel}: je training van vandaag wacht`, `${coachLabel}: today's workout is waiting`) : t(`Loop naar ${coachLabel}`, `Walk to ${coachLabel}`)}
+              className={cn(plate, 'flex-col !items-center leading-none text-[#b8f0a8]')} style={{ transform: 'translate(-9999px,0)' }}>
+              {questOpen && <span aria-hidden className="quest-mark text-[26px] leading-none text-[#ffd21f]">!</span>}
+              <span>{coachLabel}</span>
+            </button>
+          )}
+          {heroName && <div ref={nameLabel} aria-hidden className={cn(plate, '!min-h-0 text-[12.5px] text-[#9dff9a]')} style={{ transform: 'translate(-9999px,0)' }}>{heroName}</div>}
+          <div ref={xpLabel} aria-hidden className="absolute left-0 top-0 whitespace-nowrap font-display text-[22px] font-extrabold text-[#ffe27a] [text-shadow:0_2px_0_#000,0_-1px_0_#000,1px_0_0_#000,-1px_0_0_#000,0_0_12px_rgba(255,200,60,.8)]" style={{ opacity: 0, transform: 'translate(-9999px,0)' }} />
         </div>
       </div>
       <div className="absolute bottom-2 right-2 flex gap-1.5">
-        <button type="button" onClick={() => turn.current(-45)} aria-label={t('Draai naar links', 'Turn left')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-line bg-white/95 text-ink-800"><RotateCcw size={18} aria-hidden /></button>
-        <button type="button" onClick={() => turn.current(45)} aria-label={t('Draai naar rechts', 'Turn right')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-line bg-white/95 text-ink-800"><RotateCw size={18} aria-hidden /></button>
+        <button type="button" onClick={() => turn.current(-45)} aria-label={t('Draai naar links', 'Turn left')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[#f6e2a6]"><RotateCcw size={18} aria-hidden /></button>
+        <button type="button" onClick={() => turn.current(45)} aria-label={t('Draai naar rechts', 'Turn right')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[#f6e2a6]"><RotateCw size={18} aria-hidden /></button>
       </div>
     </div>
   );
