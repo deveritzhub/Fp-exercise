@@ -8,8 +8,8 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import { GAIT_SPEED, hero3dScene, isToggleNode, type HeroMotion } from '@/components/hero/hero3d';
 import { loadModel } from '@/components/hero/Hero3D';
 import { PALETTE, mat, rng, webglOk } from './Village3D';
-import { VILLAGE_LAYOUT, clampRect, nearestSpot, reachable, slotPosition, stepToward, type Obstacle, type Vec } from './walk';
-import { ROOM, ROOM_AT, practiceBuilding, practiceRoom } from './practice3d';
+import { VILLAGE_LAYOUT, clampRect, findPath, nearestSpot, reachable, slotPosition, stepToward, type Obstacle, type Site, type Vec } from './walk';
+import { PRACTICE_DOOR_X, ROOM, ROOM_AT, practiceBuilding, practiceRoom } from './practice3d';
 
 /**
  * The village as a place to walk around in (three.js). Tap the ground and the hero walks there;
@@ -22,7 +22,8 @@ export const PRACTICE_KEY = 'practice';
 export const EXIT_KEY = 'exit';
 export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void };
 type Props = {
-  buildings: { key: string; label: string }[];
+  /** Buildings round the square take the next free slot; one with a `site` stands there instead. */
+  buildings: { key: string; label: string; site?: Site; roof?: number; kind?: 'kracht' | 'mobiliteit'; alert?: boolean }[];
   tvLabel: string;
   /** What the TV in the gym shows: a heading and today's exercises. */
   tvTitle: string;
@@ -54,7 +55,7 @@ const HERO_HEIGHT = 1.3;
 const GYM = VILLAGE_LAYOUT.gym;
 const TV_SPOT: Vec = ROOM.tv;
 /** In front of the practice's door in the village. */
-const PRACTICE_DOOR: Vec = { x: GYM.x - 1.9, z: GYM.z + 0.55 };
+const PRACTICE_DOOR: Vec = { x: GYM.x + PRACTICE_DOOR_X, z: GYM.z + 0.55 };
 const COACH_KEY = 'coach';
 const COACH_AT: Vec = ROOM.coach;
 /** What the coach wears: the same model as the hero, in the practice colours. */
@@ -238,6 +239,46 @@ function softDot() {
   return TEX.dot;
 }
 
+/** What stands in front of the strength house (bar on a rack, kettlebells, tyre) and the mobility house (mats, ball, stretch frame). */
+function yard(scene: THREE.Scene, kind: 'kracht' | 'mobiliteit', site: Site, obstacles: Obstacle[]) {
+  const ring = Math.hypot(site.x, site.z);
+  const out = { x: site.x / ring, z: site.z / ring };
+  const side = { x: -out.z, z: out.x };
+  const g = new THREE.Group();
+  g.position.set(site.x - out.x * 2.3 + side.x * 2.1, 0, site.z - out.z * 2.3 + side.z * 2.1);
+  g.rotation.y = Math.atan2(-out.x, -out.z);
+  scene.add(g);
+  const put = (geo: THREE.BufferGeometry, color: number, x: number, y: number, z: number, opts: Partial<THREE.MeshStandardMaterialParameters> = {}) => {
+    const m = new THREE.Mesh(geo, mat(color, { flatShading: false, ...opts }));
+    m.position.set(x, y, z);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    g.add(m);
+    return m;
+  };
+  if (kind === 'kracht') {
+    for (const x of [-0.55, 0.55]) put(new THREE.BoxGeometry(0.09, 1.25, 0.09), 0x1d1f1e, x, 0.62, 0);
+    for (const x of [-0.55, 0.55]) put(new THREE.BoxGeometry(0.09, 0.07, 0.7), 0x1d1f1e, x, 0.035, 0.1);
+    put(new THREE.CylinderGeometry(0.025, 0.025, 1.9, 8), 0xc9cccc, 0, 1.2, 0.08, { metalness: 0.8, roughness: 0.3 }).rotation.z = Math.PI / 2;
+    for (const x of [-0.82, 0.82]) put(new THREE.CylinderGeometry(0.27, 0.27, 0.08, 16), 0xb5532c, x, 1.2, 0.08).rotation.z = Math.PI / 2;
+    for (const [x, r] of [[-0.3, 0.13], [0, 0.11], [0.28, 0.09]]) {
+      put(new THREE.SphereGeometry(r, 12, 10), 0x1d1f1e, x, r, 0.9);
+      put(new THREE.TorusGeometry(r * 0.6, r * 0.18, 6, 12), 0x1d1f1e, x, r * 2, 0.9);
+    }
+    put(new THREE.TorusGeometry(0.42, 0.17, 8, 18), 0x2a2c2b, 1.35, 0.17, 0.5).rotation.x = Math.PI / 2;
+  } else {
+    [0x3f8f7a, 0x8e3b5f, 0x2759a0].forEach((c, i) => {
+      const roll = put(new THREE.CylinderGeometry(0.11, 0.11, 0.7, 12), c, -0.5 + i * 0.26, 0.11 + (i === 1 ? 0.19 : 0), 0.1 + (i === 1 ? 0 : 0));
+      roll.rotation.x = Math.PI / 2;
+    });
+    put(new THREE.BoxGeometry(0.75, 0.03, 1.7), 0x3f8f7a, 0.75, 0.02, 0.6);
+    put(new THREE.SphereGeometry(0.34, 16, 12), 0x2759a0, 1.55, 0.34, 0.1);
+    for (const x of [-0.45, 0.45]) put(new THREE.BoxGeometry(0.08, 1.9, 0.08), 0xc79a62, x - 1.6, 0.95, 0.2);
+    for (let i = 0; i < 6; i++) put(new THREE.CylinderGeometry(0.022, 0.022, 0.9, 6), 0xc79a62, -1.6, 0.4 + i * 0.28, 0.2).rotation.z = Math.PI / 2;
+  }
+  obstacles.push({ x: g.position.x, z: g.position.z, r: 0.95 });
+}
+
 /** Timber cottage: stone footing, plastered walls with beams, a pitched roof. The front faces +z. */
 function cottage(roofColor: number, scale = 1) {
   const g = new THREE.Group();
@@ -386,7 +427,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
   const heroScene = look ? hero3dScene(look) : null;
   const heroKey = heroScene ? JSON.stringify([heroScene.url, [...heroScene.visible].sort(), heroScene.tints, heroScene.width]) : '';
-  const key = JSON.stringify([buildings.map((b) => b.key), tvTitle, tvLines, heroColor, heroKey]);
+  const key = JSON.stringify([buildings.map((b) => b.key), tvTitle, tvLines, heroColor, heroKey, practiceLabel]);
+  let slot = 0;
+  const sites = buildings.map((b) => b.site ?? slotPosition(slot++));
 
   useEffect(() => {
     if (cheer !== null) cheerRef.current = { xp: cheer, at: null };
@@ -488,8 +531,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     obstacles.push({ x: 0, z: 0, r: 0.95 });
 
     buildings.forEach((b, i) => {
-      const p = slotPosition(i);
-      const h = cottage(PALETTE.roof[b.key] ?? 0x8a6038, b.key === 'hall' ? 1.12 : 1);
+      const p = sites[i];
+      const h = cottage(b.roof ?? PALETTE.roof[b.key] ?? 0x8a6038, b.key === 'hall' || b.kind ? 1.12 : 1);
       h.position.set(p.x, 0, p.z);
       h.lookAt(0, 0, 0);
       scene.add(h);
@@ -499,10 +542,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       spots.push({ key: b.key, door: p.door });
       const k = 2.6 / Math.hypot(p.door.x, p.door.z);
       roads.push({ a: { x: p.door.x * k, z: p.door.z * k }, b: p.door, w: 1.3 });
+      if (b.kind) yard(scene, b.kind, p, obstacles);
     });
 
     // The practice: a building in the village, and behind its door the exercise room with the TV.
-    const hall = practiceBuilding();
+    const hall = practiceBuilding(practiceLabel.replace(/\s*\(.*?\)\s*/g, ' ').trim());
     hall.position.set(GYM.x, 0, GYM.z - 1.6);
     scene.add(hall);
     [-1.9, 0, 1.9].forEach((dx) => obstacles.push({ x: GYM.x + dx, z: GYM.z - 1.95, r: 1.0 }));
@@ -564,11 +608,15 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       lamps.push(halo);
       obstacles.push({ x, z, r: 0.3 });
     }
-    buildings.forEach((_, i) => {
-      const p = slotPosition(i);
-      const side = { x: -p.z / VILLAGE_LAYOUT.ring, z: p.x / VILLAGE_LAYOUT.ring };
+    buildings.forEach((b, i) => {
+      if (b.kind) return; // these have their own yard
+      const p = sites[i];
+      const ring = Math.hypot(p.x, p.z);
+      const side = { x: -p.z / ring, z: p.x / ring };
       const cx = p.x * 0.74 + side.x * 1.5;
       const cz = p.z * 0.74 + side.z * 1.5;
+      // Never on a road: the way to the houses further out runs between these buildings.
+      if (roads.some((r) => segDist(cx + side.x * 0.3, cz + side.z * 0.3, r) < r.w / 2 + 1.0)) return;
       prop(new THREE.BoxGeometry(0.5, 0.5, 0.5), woodM, cx, 0.25, cz, i);
       prop(new THREE.CylinderGeometry(0.24, 0.24, 0.6, 10), woodM, cx + side.x * 0.6, 0.3, cz + side.z * 0.6);
       obstacles.push({ x: cx + side.x * 0.3, z: cz + side.z * 0.3, r: 0.6 });
@@ -584,7 +632,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     // Chimney smoke and motes drifting in the light.
     const smoke: THREE.Sprite[] = [];
     buildings.forEach((_, i) => {
-      const p = slotPosition(i);
+      const p = sites[i];
       for (let k = 0; k < 3; k++) {
         const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot(), color: 0xf2efe8, transparent: true, opacity: 0, depthWrite: false }));
         sp.userData = { x: p.x, z: p.z, off: k / 3 + i * 0.13 };
@@ -841,14 +889,16 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     marker.position.y = 0.06;
     scene.add(marker);
 
-    let goal: { target: Vec; key: string | null; run: boolean; then?: string } | null = null;
+    let goal: { target: Vec; path: Vec[]; key: string | null; run: boolean; then?: string } | null = null;
     let stuck = 0;
     walkTo.current = (p, k, then) => {
       const target = inside() ? clampRect(reachable(p, inObstacles, 1e6), ROOM.rect) : reachable(p, obstacles, B);
       // A few steps are walked; anything further is a run.
-      goal = { target, key: k, then, run: !inside() && Math.hypot(target.x - pos.current.x, target.z - pos.current.z) > 4.5 };
+      // Round the buildings, not into them: corner points first, the target last.
+      const path = findPath(pos.current, target, inside() ? inObstacles : obstacles, inside() ? { rect: ROOM.rect } : { bound: B });
+      goal = { target: path.shift() ?? target, path, key: k, then, run: !inside() && Math.hypot(target.x - pos.current.x, target.z - pos.current.z) > 4.5 };
       stuck = 0;
-      marker.position.set(goal.target.x, 0.06, goal.target.z);
+      marker.position.set(target.x, 0.06, target.z);
       (marker.material as THREE.MeshBasicMaterial).opacity = k ? 0 : 0.9;
       el.dataset.walking = '1';
     };
@@ -885,7 +935,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const i = buildings.findIndex((b) => b.key === k);
       if (k === TV_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY, TV_KEY);
       else if (k === PRACTICE_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY);
-      else if (i >= 0) walkTo.current(slotPosition(i).door, k);
+      else if (i >= 0) walkTo.current(sites[i].door, k);
     };
     if (api) {
       api.current = {
@@ -994,7 +1044,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         p.x = n.x;
         p.z = n.z;
         walking = true;
-        if (n.arrived || stuck > 40) {
+        if (n.arrived && goal.path.length) {
+          goal.target = goal.path.shift()!;
+        } else if (n.arrived || stuck > 40) {
           const k = goal.key;
           const next = goal.then;
           goal = null;
@@ -1173,8 +1225,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         <div className="pointer-events-none absolute inset-0">
           {buildings.map((b) => (
             <button key={b.key} ref={setLabel(b.key)} type="button" data-spot={b.key} onClick={() => go(b.key)} aria-label={t(`Loop naar ${b.label}`, `Walk to ${b.label}`)}
-              className={cn(plate, 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
-              {b.label}
+              className={cn(plate, 'flex-col !items-center leading-none', b.kind ? 'text-white' : 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
+              {b.alert && <span aria-hidden className="quest-mark text-[26px] leading-none text-[#ffd21f]">!</span>}
+              <span>{b.label}</span>
             </button>
           ))}
           <button ref={setLabel(TV_KEY)} type="button" data-spot={TV_KEY} onClick={() => go(TV_KEY)} aria-label={t(`Loop naar ${tvLabel}`, `Walk to ${tvLabel}`)}

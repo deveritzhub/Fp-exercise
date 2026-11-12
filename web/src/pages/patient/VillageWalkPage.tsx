@@ -8,11 +8,11 @@ import { useDocumentMeta } from '@/lib/meta';
 import { Button, Dialog, ErrorState } from '@/components/ui';
 import { LevelBadge } from '@/components/hero/GameFx';
 import { useHero } from '@/pages/patient/HeroPages';
-import { openToday, type PatientHomeData } from '@/pages/patient/PatientHome';
+import { MODULE_PATH, moduleOf, openToday, type PatientHomeData } from '@/pages/patient/PatientHome';
 import { bodyShape, levelTier } from '@shared/hero';
 import { villageBuildings } from '@shared/worldMap';
 import { EXIT_KEY, PRACTICE_KEY, TV_KEY, type WorldApi } from '@/components/patient/WalkVillage3D';
-import { VILLAGE_LAYOUT, slotPosition } from '@/components/patient/walk';
+import { MODULE_SITES, VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 // three.js only loads on the 3D pages.
 const WalkVillage3D = lazy(() => import('@/components/patient/WalkVillage3D'));
 
@@ -30,7 +30,7 @@ const dose = (i: { sets: number | null; reps: number | null; holdS: number | nul
 type Track = { x: number; z: number; facing: number };
 
 /** Round map of the village, north up: roads, buildings, the gym and an arrow for the hero. */
-function Minimap({ track, count }: { track: RefObject<Track>; count: number }) {
+function Minimap({ track, sites }: { track: RefObject<Track>; sites: Site[] }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current;
@@ -56,7 +56,7 @@ function Minimap({ track, count }: { track: RefObject<Track>; count: number }) {
         g.lineTo(...at(x2, z2));
         g.stroke();
       };
-      for (let i = 0; i < count; i++) line(0, 0, slotPosition(i).door.x, slotPosition(i).door.z);
+      for (const st of sites) line(0, 0, st.door.x, st.door.z);
       line(0, 0, VILLAGE_LAYOUT.gym.x, VILLAGE_LAYOUT.gym.z + 1.9);
       line(0, 0, 0, 30);
       g.fillStyle = '#b4915f';
@@ -66,8 +66,8 @@ function Minimap({ track, count }: { track: RefObject<Track>; count: number }) {
       g.fillStyle = '#e4bc63';
       g.strokeStyle = '#1c2420';
       g.lineWidth = 2;
-      for (let i = 0; i < count; i++) {
-        const [x, y] = at(slotPosition(i).x, slotPosition(i).z);
+      for (const st of sites) {
+        const [x, y] = at(st.x, st.z);
         g.fillRect(x - S * 0.045, y - S * 0.045, S * 0.09, S * 0.09);
         g.strokeRect(x - S * 0.045, y - S * 0.045, S * 0.09, S * 0.09);
       }
@@ -93,7 +93,7 @@ function Minimap({ track, count }: { track: RefObject<Track>; count: number }) {
     draw();
     const id = window.setInterval(draw, 120);
     return () => window.clearInterval(id);
-  }, [track, count]);
+  }, [track, sites]);
   return <canvas ref={ref} width={192} height={192} aria-hidden className="h-[88px] w-[88px] rounded-full border-2 border-[#e4bc63] shadow-lift" />;
 }
 
@@ -129,8 +129,21 @@ export function VillageWalkPage() {
     () => (d?.hero ? { ...d.hero, gear: [...d.gear.equipped, ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null } : null),
     [d],
   );
-  const buildings = useMemo(() => villageBuildings({ hero: true, atlas: true, mission: true, guild: true }).map((b) => ({ key: b.key, to: b.to, label: nl ? LABEL[b.key][0] : LABEL[b.key][1] })), [nl]);
   const todo = useMemo(() => (home.data?.programs ?? []).filter(openToday), [home.data]);
+  const waiting = { kracht: todo.some((p) => moduleOf(p) === 'kracht'), mobiliteit: todo.some((p) => moduleOf(p) === 'mobiliteit') };
+  // Round the square: the hero's buildings. Further out, west and east: the houses for strength and mobility.
+  const buildings = useMemo(
+    () => [
+      ...villageBuildings({ hero: true, atlas: true, mission: true, guild: true }).map((b) => ({ key: b.key as string, to: b.to as string, label: nl ? LABEL[b.key][0] : LABEL[b.key][1] })),
+      { key: 'kracht', to: MODULE_PATH.kracht, label: nl ? 'Krachthonk' : 'Strength house', site: MODULE_SITES.kracht as Site, roof: 0x7a2f24, kind: 'kracht' as const, alert: waiting.kracht },
+      { key: 'mobiliteit', to: MODULE_PATH.mobiliteit, label: nl ? 'Mobiliteitsstudio' : 'Mobility studio', site: MODULE_SITES.mobiliteit as Site, roof: 0x2f7f8a, kind: 'mobiliteit' as const, alert: waiting.mobiliteit },
+    ],
+    [nl, waiting.kracht, waiting.mobiliteit],
+  );
+  const sites = useMemo(() => {
+    let slot = 0;
+    return buildings.map((b) => ('site' in b && b.site ? b.site : slotPosition(slot++)));
+  }, [buildings]);
   const doneToday = (home.data?.programs ?? []).some((p) => p.today.scheduled > 0 && p.today.done);
   const tvLines = useMemo(() => {
     if (!home.data) return [t('Laden…', 'Loading…')];
@@ -192,7 +205,7 @@ export function VillageWalkPage() {
 
         {/* Minimap and today's quest. */}
         <div className="absolute right-2 top-2 flex flex-col items-end gap-1.5">
-          <Minimap track={track} count={buildings.length} />
+          <Minimap track={track} sites={sites} />
           <button type="button" onClick={() => world.current?.goTo(TV_KEY)} data-testid="quest-tracker" className={`${PANEL} max-w-[158px] px-2.5 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]`}>
             <span className="flex items-center gap-1 font-display text-[12.5px] font-bold text-[#ffd76a]"><ScrollText className="h-3.5 w-3.5" aria-hidden />{t('Dagtaak', 'Daily quest')}</span>
             {quests.length > 0 ? (
