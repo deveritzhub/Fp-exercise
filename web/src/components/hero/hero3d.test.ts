@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { GEAR_SLOT, HERO_OPTIONS } from '@shared/hero';
+import { COLLECTION_ITEM_KEYS } from '@shared/gearCollections';
 import { hero3dScene, isToggleNode } from './hero3d';
 
 /** Node names inside a .glb (the JSON chunk right after the 12-byte header). */
@@ -19,7 +20,7 @@ describe('3D hero', () => {
     it(`model ${frame} has a node for every gear piece, hair style, beard and glasses`, () => {
       const names = glbNodeNames(path.resolve(import.meta.dirname, `../../../public/hero3d/hero_${frame}.glb`));
       const want = [
-        ...Object.entries(GEAR_SLOT).map(([k, slot]) => (slot === 'outfit' ? `outfit_${k}` : `gear_${k}`)),
+        ...Object.entries(GEAR_SLOT).filter(([k]) => !COLLECTION_ITEM_KEYS.has(k)).map(([k, slot]) => (slot === 'outfit' ? `outfit_${k}` : `gear_${k}`)),
         ...HERO_OPTIONS.hair.filter((h) => h !== 'none').map((h) => `hair_${h}`),
         ...HERO_OPTIONS.beard.filter((b) => b !== 'none').map((b) => `beard_${b}`),
         ...HERO_OPTIONS.glasses.filter((g) => g !== 'none').map((g) => `glasses_${g}`),
