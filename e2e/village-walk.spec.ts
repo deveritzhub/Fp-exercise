@@ -12,6 +12,9 @@ test('patient walks to the TV in the village, starts the workout there and retur
   const village = page.getByTestId('walk-village');
   await expect(village).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
 
+  // The village has people in it: the smith, the messenger and the librarian walk their rounds.
+  await expect(village).toHaveAttribute('data-villagers', '3', { timeout: 30_000 });
+
   // A tap on the ground makes the hero walk.
   const box = (await village.boundingBox())!;
   await page.mouse.click(box.x + box.width * 0.75, box.y + box.height * 0.5);

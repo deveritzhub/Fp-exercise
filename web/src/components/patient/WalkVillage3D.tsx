@@ -11,6 +11,7 @@ import { PALETTE, mat, rng, webglOk } from './Village3D';
 import { VILLAGE_LAYOUT, clampRect, findPath, nearestSpot, reachable, slotPosition, stepToward, type Obstacle, type Rect, type Site, type Vec } from './walk';
 import { PRACTICE_DOOR_X, ROOM, ROOM_AT, practiceBuilding, practiceRoom, type RoomWall } from './practice3d';
 import { houseRoom } from './house3d';
+import { VILLAGERS, routePoint } from './villagers';
 
 /**
  * The village as a place to walk around in (three.js). Tap the ground and the hero walks there;
@@ -599,6 +600,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const here = () => places[zone.current];
     roads.push({ a: { x: 0, z: -2.6 }, b: { x: GYM.x, z: GYM.z + 1.9 }, w: 1.6 });
     let coachMixer: THREE.AnimationMixer | null = null;
+    // The villagers: each walks its own round and rests at its stops.
+    type Npc = { g: THREE.Group; mixer: THREE.AnimationMixer; walk: THREE.AnimationAction | null; idle: THREE.AnimationAction | null; path: Vec[]; at: number; rest: number; wait: number; moving: boolean };
+    const npcs: Npc[] = [];
     if (heroScene) {
       const stand = new THREE.Object3D();
       stand.position.set(COACH_AT.x, 0, COACH_AT.z);
@@ -909,9 +913,61 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             coachMixer = new THREE.AnimationMixer(cm);
             coachMixer.clipAction(breathe).play();
           }
+          // Villagers. Their own model when they have one; until then this model in other clothes.
+          VILLAGERS.forEach((v, n) => {
+            const doorOf = (key: string) => {
+              const i = buildings.findIndex((b) => b.key === key);
+              if (i < 0) return null;
+              // Beside the door, not on it: that spot is where the hero stands.
+              const d = sites[i].door;
+              const len = Math.hypot(d.x, d.z) || 1;
+              return { x: d.x + (-d.z / len) * 1.1, z: d.z + (d.x / len) * 1.1 };
+            };
+            const path = v.route.map((stop) => routePoint(stop, doorOf)).filter((pt): pt is Vec => !!pt);
+            if (path.length < 2) return;
+            const place = (src: typeof gltf, own: boolean) => {
+              if (cancelled) return;
+              const fig = cloneSkinned(src.scene);
+              const wear = new Set(v.wear);
+              fig.traverse((o) => {
+                if (!own && isToggleNode(o.name)) o.visible = wear.has(o.name);
+                const m = o as THREE.Mesh;
+                if (m.isMesh) {
+                  if (!own) {
+                    const mm = (m.material as THREE.MeshStandardMaterial).clone();
+                    const tint = v.tint[mm.name.replace(/\.\d+$/, '')];
+                    if (tint) mm.color.set(tint);
+                    m.material = mm;
+                  }
+                  m.castShadow = true;
+                  m.frustumCulled = false;
+                }
+              });
+              const fb = own ? new THREE.Box3().setFromObject(fig) : box;
+              const fk = own ? HERO_HEIGHT / Math.max(0.5, fb.max.y - fb.min.y) : k;
+              const g = new THREE.Group();
+              const inner = new THREE.Group();
+              inner.add(fig);
+              inner.scale.setScalar(fk * (0.96 + n * 0.03));
+              inner.position.y = -fb.min.y * fk;
+              g.add(inner);
+              g.position.set(path[0].x, 0, path[0].z);
+              scene.add(g);
+              const mx = new THREE.AnimationMixer(fig);
+              const clip = (name: string) => src.animations.find((c) => c.name.toLowerCase().includes(name)) ?? null;
+              const walk = clip('walk') ? mx.clipAction(clip('walk')!) : null;
+              const idle = clip('idle') ? mx.clipAction(clip('idle')!) : null;
+              idle?.play();
+              npcs.push({ g, mixer: mx, walk, idle, path, at: 0, rest: v.rest, wait: 1 + n * 1.7, moving: false });
+              anchors.push({ id: `npc:${v.key}`, obj: g, y: HERO_HEIGHT + 0.3 });
+              el.dataset.villagers = String(npcs.length);
+            };
+            if (v.model) loadModel(v.model).then((own) => place(own, true)).catch(() => place(gltf, false));
+            else place(gltf, false);
+          });
           el.dataset.hero = 'model';
         })
-        .catch(() => { /* the stand-in stays */ });
+        .catch((err) => { if (import.meta.env.DEV) console.warn("village figures", err); /* the stand-in stays */ });
     }
 
     // Where the hero is going: a ring on the ground.
@@ -1263,6 +1319,37 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       if (!reduce) {
         coachMixer?.update(dt);
+        // Villagers only live while the hero is in the village: indoors nobody sees them.
+        if (!indoor) {
+          for (const npc of npcs) {
+            const to = npc.path[(npc.at + 1) % npc.path.length];
+            if (npc.wait > 0) {
+              npc.wait -= dt;
+              if (npc.wait <= 0) {
+                npc.moving = true;
+                if (npc.walk && npc.idle) npc.walk.reset().play().crossFadeFrom(npc.idle, 0.3, false);
+              }
+            } else {
+              const dx = to.x - npc.g.position.x;
+              const dz = to.z - npc.g.position.z;
+              const left = Math.hypot(dx, dz);
+              const stepLen = GAIT_SPEED.walk * HERO_HEIGHT * dt;
+              if (left <= stepLen) {
+                npc.g.position.set(to.x, 0, to.z);
+                npc.at = (npc.at + 1) % npc.path.length;
+                npc.wait = npc.rest;
+                npc.moving = false;
+                if (npc.walk && npc.idle) npc.idle.reset().play().crossFadeFrom(npc.walk, 0.3, false);
+              } else {
+                npc.g.position.x += (dx / left) * stepLen;
+                npc.g.position.z += (dz / left) * stepLen;
+                const want = Math.atan2(dx, dz);
+                npc.g.rotation.y += Math.atan2(Math.sin(want - npc.g.rotation.y), Math.cos(want - npc.g.rotation.y)) * Math.min(1, dt * 8);
+              }
+            }
+            npc.mixer.update(dt);
+          }
+        }
         flags.forEach((f, i) => (f.rotation.y = Math.sin(tt * 2.2 + i) * 0.22));
         lamps.forEach((l, i) => ((l.material as THREE.SpriteMaterial).opacity = 0.5 + Math.sin(tt * 5 + i * 2) * 0.07));
         for (const sp of smoke) {
@@ -1422,6 +1509,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               <span>{coachLabel}</span>
             </button>
           )}
+          {heroKey && VILLAGERS.map((v) => (
+            <div key={v.key} ref={setLabel(`npc:${v.key}`)} aria-hidden data-npc={v.key} className={cn(plate, '!min-h-0 text-[12px] text-[#cfe8ff]')} style={{ transform: 'translate(-9999px,0)' }}>{t(v.nl, v.en)}</div>
+          ))}
           {heroName && <div ref={nameLabel} aria-hidden className={cn(plate, '!min-h-0 text-[12.5px] text-[#9dff9a]')} style={{ transform: 'translate(-9999px,0)' }}>{heroName}</div>}
           <div ref={fade} aria-hidden className="absolute inset-0 bg-black transition-opacity duration-200" style={{ opacity: 0 }} />
           <div ref={xpLabel} aria-hidden className="absolute left-0 top-0 whitespace-nowrap font-display text-[22px] font-extrabold text-[#ffe27a] [text-shadow:0_2px_0_#000,0_-1px_0_#000,1px_0_0_#000,-1px_0_0_#000,0_0_12px_rgba(255,200,60,.8)]" style={{ opacity: 0, transform: 'translate(-9999px,0)' }} />
