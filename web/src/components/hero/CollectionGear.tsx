@@ -83,7 +83,7 @@ export function CollectionGear({ item, look, shapes }: { item: string; look: Fig
           <path d="M100 107 L111 127 100 147 89 127Z" fill="#3e7792" stroke="#edf6e5" strokeWidth="1.5"/>
           <path d="M82 163 L100 172 118 163 L128 190 100 212 72 190Z" fill="#1c3657" stroke="#d6b46d" strokeWidth="2"/>
           <path d="M85 185 L100 197 115 185" fill="none" stroke="#d6b46d" strokeWidth="2"/>
-          {([-1,1] as const).map(side=><g key={side}><path d={'M'+(100+side*g.shoulder)+' 90 l'+(side*12)+' -10 '+(side*14)+' 9 -6 26 -'+(side*19)+' 4Z'} fill={'url(#'+shade+')'} stroke="#9d793d" strokeWidth="2"/><path d={'M'+(100+side*g.legX)+' 250 l'+(side*7)+' 0 -'+(side*4)+' 120'} fill="none" stroke="#d9c27c" strokeWidth="3"/></g>)}
+          {([-1,1] as const).map(side=><g key={side}><path d={'M'+(100+side*g.shoulder)+' 90 l'+(side*12)+' -10 '+(side*14)+' 9 -6 26 '+(-side*19)+' 4Z'} fill={'url(#'+shade+')'} stroke="#9d793d" strokeWidth="2"/><path d={'M'+(100+side*g.legX)+' 250 l'+(side*7)+' 0 -'+(side*4)+' 120'} fill="none" stroke="#d9c27c" strokeWidth="3"/></g>)}
           <circle cx="100" cy="125" r="4" fill="#d7f4ff"/>
         </g>}
       </g>}
