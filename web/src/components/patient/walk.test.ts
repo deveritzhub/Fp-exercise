@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nearestSpot, reachable, slotPosition, stepToward, VILLAGE_LAYOUT, type Obstacle, type Vec } from './walk';
+import { findPath, nearestSpot, reachable, slotPosition, stepToward, VILLAGE_LAYOUT, type Obstacle, type Vec } from './walk';
 
 const walk = (from: Vec, to: Vec, obstacles: Obstacle[], bound = 12) => {
   let p = { ...from };
@@ -45,6 +45,34 @@ describe('walking in the village', () => {
         if (i !== j) expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThan(3.2);
       });
     });
+  });
+
+  it('finds a way round obstacles that touch and form a pocket', () => {
+    // A wall of touching circles across the direct line, open only at the far south end.
+    const wall: Obstacle[] = [-3, -1.5, 0, 1.5, 3].map((z) => ({ x: 0, z, r: 1 }));
+    const from = { x: -4, z: 0 };
+    const to = { x: 4, z: 0 };
+    expect(findPath(from, to, [], { bound: 12 })).toEqual([to]);
+    const path = findPath(from, to, wall, { bound: 12 });
+    expect(path.length).toBeGreaterThan(1);
+    expect(path[path.length - 1]).toEqual(to);
+    let p = from;
+    for (const corner of path) {
+      for (let i = 0; i <= 20; i++) {
+        const x = p.x + ((corner.x - p.x) * i) / 20;
+        const z = p.z + ((corner.z - p.z) * i) / 20;
+        for (const o of wall) expect(Math.hypot(x - o.x, z - o.z)).toBeGreaterThan(o.r - 0.05);
+        expect(Math.hypot(x, z)).toBeLessThanOrEqual(12.05);
+      }
+      p = corner;
+    }
+  });
+
+  it('finds a way inside a room', () => {
+    const rect = { x0: -3, x1: 3, z0: -2, z1: 2 };
+    const path = findPath({ x: -2.5, z: 0 }, { x: 2.5, z: 0 }, [{ x: 0, z: 0, r: 1 }], { rect });
+    expect(path.length).toBeGreaterThan(1);
+    for (const c of path) expect(Math.abs(c.z)).toBeLessThanOrEqual(2);
   });
 
   it('finds the nearest spot only within range', () => {
