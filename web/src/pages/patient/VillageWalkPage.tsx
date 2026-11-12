@@ -11,7 +11,7 @@ import { useHero } from '@/pages/patient/HeroPages';
 import { openToday, type PatientHomeData } from '@/pages/patient/PatientHome';
 import { bodyShape, levelTier } from '@shared/hero';
 import { villageBuildings } from '@shared/worldMap';
-import { TV_KEY } from '@/components/patient/WalkVillage3D';
+import { EXIT_KEY, PRACTICE_KEY, TV_KEY, type WorldApi } from '@/components/patient/WalkVillage3D';
 import { VILLAGE_LAYOUT, slotPosition } from '@/components/patient/walk';
 // three.js only loads on the 3D pages.
 const WalkVillage3D = lazy(() => import('@/components/patient/WalkVillage3D'));
@@ -122,7 +122,7 @@ export function VillageWalkPage() {
   const [tvOpen, setTvOpen] = useState(false);
   const [playing, setPlaying] = useState<string | null>(null);
   const track = useRef<Track>({ x: 0, z: 0, facing: 0 });
-  const world = useRef<{ goTo: (key: string) => void } | null>(null);
+  const world = useRef<WorldApi | null>(null);
 
   const d = heroQ.data;
   const look = useMemo(
@@ -166,6 +166,7 @@ export function VillageWalkPage() {
             heroName={d?.hero?.heroName}
             questOpen={todo.length > 0}
             api={world}
+            practiceLabel={home.data?.patient.practiceName ?? t('De praktijk', 'The practice')}
             track={track}
             onNear={setNear}
             onArrive={(k) => { if (k === TV_KEY) setTvOpen(true); }}
@@ -207,7 +208,7 @@ export function VillageWalkPage() {
         </div>
 
         {back && (
-          <p role="status" className={`${PANEL} reward-in absolute inset-x-10 top-[72px] px-3 py-2 text-center font-display text-[14.5px] font-bold text-[#ffe27a]`}>
+          <p role="status" className={`${PANEL} reward-in absolute inset-x-6 bottom-[124px] px-3 py-2 text-center font-display text-[14.5px] font-bold text-[#ffe27a]`}>
             {back.xp > 0 ? t(`Training gedaan! Je held kreeg +${back.xp} XP.`, `Workout done! Your hero earned +${back.xp} XP.`) : t('Training gedaan! Welkom terug in je dorp.', 'Workout done! Welcome back to your village.')}
           </p>
         )}
@@ -216,6 +217,10 @@ export function VillageWalkPage() {
         <div className="pointer-events-none absolute inset-x-2 bottom-[64px] flex justify-center">
           {near === TV_KEY ? (
             <Button size="lg" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<Tv className="h-5 w-5" />} onClick={() => setTvOpen(true)}>{t('Bekijk de tv', 'Watch the TV')}</Button>
+          ) : near === PRACTICE_KEY ? (
+            <Button size="lg" data-testid="enter-practice" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(PRACTICE_KEY)}>{t('Naar binnen: de oefenzaal', 'Go in: the exercise room')}</Button>
+          ) : near === EXIT_KEY ? (
+            <Button size="lg" variant="secondary" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(EXIT_KEY)}>{t('Naar buiten: het dorp', 'Go out: the village')}</Button>
           ) : nearBuilding ? (
             <Link to={nearBuilding.to} data-testid="enter-building" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">
               <DoorOpen className="h-5 w-5" aria-hidden />{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}
@@ -225,7 +230,7 @@ export function VillageWalkPage() {
 
         {/* Action bar. */}
         <nav aria-label={t('Snelbalk', 'Action bar')} className="absolute bottom-2 left-2 flex gap-1.5">
-          <button type="button" className={SLOT} aria-label={t('Naar de tv met je oefeningen', 'To the TV with your exercises')} onClick={() => (near === TV_KEY ? setTvOpen(true) : world.current?.goTo(TV_KEY))}><Tv className="h-5 w-5" aria-hidden /></button>
+          <button type="button" className={SLOT} aria-label={t('Naar de tv met je oefeningen', 'To the TV with your exercises')} onClick={() => (near === TV_KEY ? setTvOpen(true) : world.current?.goTo(TV_KEY))} data-testid="slot-tv"><Tv className="h-5 w-5" aria-hidden /></button>
           <Link to="/p/held/inventaris" className={SLOT} aria-label={t('Rugzak: je uitrusting', 'Backpack: your gear')}><Backpack className="h-5 w-5" aria-hidden /></Link>
           <Link to="/p/held" className={SLOT} aria-label={t('Skills en je held', 'Skills and your hero')}><Swords className="h-5 w-5" aria-hidden /></Link>
           <Link to="/p/wereld" className={SLOT} aria-label={t('Wereldkaart', 'World map')}><MapIcon className="h-5 w-5" aria-hidden /></Link>
@@ -233,7 +238,7 @@ export function VillageWalkPage() {
       </section>
 
       <p className="text-[13.5px] leading-relaxed text-ink-700">
-        {t('Tik op de grond om te lopen en sleep opzij om rond te kijken. De coach bij de tv heeft je oefeningen van vandaag.', 'Tap the ground to walk and drag sideways to look around. The coach by the TV has your exercises for today.')}
+        {t('Tik op de grond om te lopen en sleep opzij om rond te kijken. In de oefenzaal van je praktijk staan de coach en de tv met je oefeningen van vandaag.', 'Tap the ground to walk and drag sideways to look around. In the exercise room of your practice you find the coach and the TV with your exercises for today.')}
       </p>
 
       <Dialog open={tvOpen} onClose={() => { setTvOpen(false); setPlaying(null); }} title={t('Je oefeningen van vandaag', "Today's exercises")} size="md" sheet>

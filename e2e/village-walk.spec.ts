@@ -18,10 +18,12 @@ test('patient walks to the TV in the village, starts the workout there and retur
   await expect(village).toHaveAttribute('data-walking', '1');
   await expect(village).not.toHaveAttribute('data-walking', '1', { timeout: 20_000 });
 
-  // The TV button walks the hero to the gym and opens today's exercises.
-  await page.getByRole('button', { name: 'Loop naar Oefenzaal · tv' }).click();
+  // The daily quest sends the hero through the practice door to the TV in the exercise room.
+  await expect(village).toHaveAttribute('data-zone', 'village');
+  await page.getByTestId('quest-tracker').click();
   const tv = page.getByTestId('tv-panel');
-  await expect(tv).toBeVisible({ timeout: 30_000 });
+  await expect(tv).toBeVisible({ timeout: 60_000 });
+  await expect(village).toHaveAttribute('data-zone', 'practice');
   await expect(village).toHaveAttribute('data-near', 'tv');
   await expect(tv.getByRole('button', { name: /Spaanse squat/ })).toBeVisible();
   await expectAccessible(page, 'village TV');
@@ -39,5 +41,12 @@ test('patient walks to the TV in the village, starts the workout there and retur
   await expect(page.getByRole('status').filter({ hasText: '+45 XP' })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId('walk-village')).toHaveAttribute('data-near', 'tv', { timeout: 30_000 });
   expect(await page.evaluate(() => history.state?.usr ?? null)).toBeNull();
+
+  // Out through the door: back in the village, in front of the practice.
+  await expect(page.getByTestId('walk-village')).toHaveAttribute('data-zone', 'practice');
+  // The exit is out of view here; its button is still there for the keyboard.
+  await page.getByRole('button', { name: 'Loop naar de uitgang' }).press('Enter');
+  await expect(page.getByTestId('walk-village')).toHaveAttribute('data-zone', 'village', { timeout: 30_000 });
+  await expect(page.getByTestId('enter-practice')).toBeVisible();
   await context.close();
 });

@@ -8,7 +8,8 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import { GAIT_SPEED, hero3dScene, isToggleNode, type HeroMotion } from '@/components/hero/hero3d';
 import { loadModel } from '@/components/hero/Hero3D';
 import { PALETTE, mat, rng, webglOk } from './Village3D';
-import { VILLAGE_LAYOUT, nearestSpot, reachable, slotPosition, stepToward, type Obstacle, type Vec } from './walk';
+import { VILLAGE_LAYOUT, clampRect, nearestSpot, reachable, slotPosition, stepToward, type Obstacle, type Vec } from './walk';
+import { ROOM, ROOM_AT, practiceBuilding, practiceRoom } from './practice3d';
 
 /**
  * The village as a place to walk around in (three.js). Tap the ground and the hero walks there;
@@ -17,6 +18,9 @@ import { VILLAGE_LAYOUT, nearestSpot, reachable, slotPosition, stepToward, type 
  */
 
 export const TV_KEY = 'tv';
+export const PRACTICE_KEY = 'practice';
+export const EXIT_KEY = 'exit';
+export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void };
 type Props = {
   buildings: { key: string; label: string }[];
   tvLabel: string;
@@ -37,7 +41,9 @@ type Props = {
   questOpen?: boolean;
   coachLabel?: string;
   /** Filled by the scene: send the hero to a spot from outside (HUD buttons). */
-  api?: MutableRefObject<{ goTo: (key: string) => void } | null>;
+  api?: MutableRefObject<WorldApi | null>;
+  /** Name on the practice building. */
+  practiceLabel?: string;
   /** Kept up to date by the scene, for the minimap. */
   track?: MutableRefObject<{ x: number; z: number; facing: number }>;
   className?: string;
@@ -46,9 +52,11 @@ type Props = {
 const SPEED = 3.3;
 const HERO_HEIGHT = 1.3;
 const GYM = VILLAGE_LAYOUT.gym;
-const TV_SPOT: Vec = { x: GYM.x, z: GYM.z + 0.7 };
+const TV_SPOT: Vec = ROOM.tv;
+/** In front of the practice's door in the village. */
+const PRACTICE_DOOR: Vec = { x: GYM.x - 1.9, z: GYM.z + 0.55 };
 const COACH_KEY = 'coach';
-const COACH_AT: Vec = { x: GYM.x + 2.05, z: GYM.z + 1.0 };
+const COACH_AT: Vec = ROOM.coach;
 /** What the coach wears: the same model as the hero, in the practice colours. */
 const COACH_WEAR = new Set(['hair_short', 'outfit_tracksuit', 'gear_cap', 'base_shoes']);
 const COACH_TINT: Record<string, string> = { kit_main: '#29483c', kit_dark: '#1d362d', kit_soft: '#e4bc63', hair: '#3b2a1a', skin: '#c99670' };
@@ -346,48 +354,6 @@ function tvTexture(title: string, lines: string[]) {
   return tex;
 }
 
-/** Open-air gym: a wooden floor, a wall with the TV, a mat and some weights. */
-function gym(title: string, lines: string[]) {
-  const g = new THREE.Group();
-  const floor = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.12, 3.8), mat(0xc9a877));
-  floor.position.set(0, 0.06, -0.2);
-  floor.receiveShadow = true;
-  const wall = new THREE.Mesh(new THREE.BoxGeometry(5.4, 2.7, 0.28), mat(PALETTE.wall));
-  wall.position.set(0, 1.35, -1.95);
-  const cap = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.18, 0.9), mat(PALETTE.roof.guild));
-  cap.position.set(0, 2.78, -1.7);
-  cap.rotation.x = 0.18;
-  const postL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 2.7, 0.22), mat(PALETTE.wood));
-  postL.position.set(-2.6, 1.35, -1.6);
-  const postR = postL.clone();
-  postR.position.x = 2.6;
-  const frame = new THREE.Mesh(new THREE.BoxGeometry(2.86, 1.68, 0.12), mat(0x1c2420, { roughness: 0.5 }));
-  frame.position.set(0, 1.55, -1.76);
-  const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.64, 1.485), new THREE.MeshBasicMaterial({ map: tvTexture(title, lines), toneMapped: false }));
-  screen.position.set(0, 1.55, -1.69);
-  const yoga = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.04, 2.1), mat(0x3f8f7a));
-  yoga.position.set(0, 0.14, 0.45);
-  yoga.receiveShadow = true;
-  const dumbbell = (x: number, z: number) => {
-    const d = new THREE.Group();
-    const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.34, 6), mat(0x8c8f8a, { metalness: 0.6, roughness: 0.4 }));
-    bar.rotation.z = Math.PI / 2;
-    const w1 = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.1, 8), mat(0x2b2f2c));
-    w1.rotation.z = Math.PI / 2;
-    w1.position.x = -0.17;
-    const w2 = w1.clone();
-    w2.position.x = 0.17;
-    d.add(bar, w1, w2);
-    d.position.set(x, 0.23, z);
-    return d;
-  };
-  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.34, 14, 10), mat(0xb5532c, { flatShading: false }));
-  ball.position.set(2.0, 0.46, -1.0);
-  g.add(floor, wall, cap, postL, postR, frame, screen, yoga, dumbbell(-1.7, -0.9), dumbbell(-2.1, -0.5), ball);
-  g.traverse((o) => { if (o !== screen && o !== floor && o !== yoga) o.castShadow = true; });
-  return g;
-}
-
 /** Simple figure shown until the hero model has loaded (or when it cannot load). */
 function standIn(color: string) {
   const g = new THREE.Group();
@@ -400,13 +366,16 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, heroName, questOpen = false, coachLabel = 'Coach', api, track, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, heroName, questOpen = false, coachLabel = 'Coach', api, track, practiceLabel = 'Praktijk', className }: Props) {
   const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null);
   const labels = useRef<Map<string, HTMLElement>>(new Map());
   const xpLabel = useRef<HTMLDivElement>(null);
   const nameLabel = useRef<HTMLDivElement>(null);
-  const walkTo = useRef<(p: Vec, key: string | null) => void>(() => {});
+  const walkTo = useRef<(p: Vec, key: string | null, then?: string) => void>(() => {});
+  const goTo = useRef<(key: string) => void>(() => {});
+  const fade = useRef<HTMLDivElement>(null);
+  const zone = useRef<'village' | 'practice'>(startAtTv ? 'practice' : 'village');
   const turn = useRef<(deg: number) => void>(() => {});
   const pos = useRef<Vec>(startAtTv ? { ...TV_SPOT } : { ...VILLAGE_LAYOUT.spawn });
   const facing = useRef(startAtTv ? Math.PI : 0);
@@ -448,7 +417,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const scene = new THREE.Scene();
     scene.fog = new THREE.Fog(HORIZON, 28, 140);
     const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 420);
-    scene.add(new THREE.HemisphereLight(0xd6e6ff, 0x7d8c46, 1.55));
+    const skyLight = new THREE.HemisphereLight(0xd6e6ff, 0x7d8c46, 1.55);
+    scene.add(skyLight);
     const sun = new THREE.DirectionalLight(0xffdca8, 3.1);
     sun.position.set(-15, 17, 10);
     sun.castShadow = true;
@@ -531,13 +501,27 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       roads.push({ a: { x: p.door.x * k, z: p.door.z * k }, b: p.door, w: 1.3 });
     });
 
-    const hall = gym(tvTitle, tvLines);
-    hall.position.set(GYM.x, 0, GYM.z);
+    // The practice: a building in the village, and behind its door the exercise room with the TV.
+    const hall = practiceBuilding();
+    hall.position.set(GYM.x, 0, GYM.z - 1.6);
     scene.add(hall);
     [-1.9, 0, 1.9].forEach((dx) => obstacles.push({ x: GYM.x + dx, z: GYM.z - 1.95, r: 1.0 }));
     occluder(hall, GYM.x, GYM.z - 1.6, 2.9);
-    anchors.push({ id: TV_KEY, obj: hall, y: 3.5 });
-    spots.push({ key: TV_KEY, door: TV_SPOT });
+    anchors.push({ id: PRACTICE_KEY, obj: hall, y: 4.15 });
+    spots.push({ key: PRACTICE_KEY, door: PRACTICE_DOOR });
+    const room = practiceRoom(tvTexture(tvTitle, tvLines));
+    scene.add(room.group);
+    const inObstacles: Obstacle[] = [...ROOM.obstacles];
+    const inSpots = [{ key: TV_KEY, door: TV_SPOT }, { key: EXIT_KEY, door: ROOM.exit as Vec }];
+    const mark = (id: string, v: Vec, y: number) => {
+      const o = new THREE.Object3D();
+      o.position.set(v.x, 0, v.z);
+      scene.add(o);
+      anchors.push({ id, obj: o, y });
+    };
+    mark(TV_KEY, ROOM.tvWall, 2.75);
+    mark(EXIT_KEY, { x: ROOM.exit.x + 0.7, z: ROOM.exit.z }, 2.45);
+    const inside = () => zone.current === 'practice';
     roads.push({ a: { x: 0, z: -2.6 }, b: { x: GYM.x, z: GYM.z + 1.9 }, w: 1.6 });
     let coachMixer: THREE.AnimationMixer | null = null;
     if (heroScene) {
@@ -545,7 +529,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       stand.position.set(COACH_AT.x, 0, COACH_AT.z);
       scene.add(stand);
       anchors.push({ id: COACH_KEY, obj: stand, y: HERO_HEIGHT + 0.55 });
-      obstacles.push({ x: COACH_AT.x, z: COACH_AT.z, r: 0.42 });
+      inObstacles.push({ x: COACH_AT.x, z: COACH_AT.z, r: 0.42 });
     }
     roads.push({ a: { x: 0, z: 2.6 }, b: { x: 0, z: GROUND / 2 }, w: 2.3 });
 
@@ -839,7 +823,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           coach.add(cm);
           coach.scale.setScalar(k * 1.05);
           coach.position.set(COACH_AT.x, -box.min.y * k * 1.05, COACH_AT.z);
-          coach.rotation.y = Math.atan2(TV_SPOT.x - COACH_AT.x, TV_SPOT.z + 1.2 - COACH_AT.z);
+          coach.rotation.y = Math.atan2(TV_SPOT.x - COACH_AT.x, TV_SPOT.z + 1.6 - COACH_AT.z);
           scene.add(coach);
           const breathe = gltf.animations.find((c) => c.name === 'idle');
           if (breathe) {
@@ -857,27 +841,64 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     marker.position.y = 0.06;
     scene.add(marker);
 
-    let goal: { target: Vec; key: string | null; run: boolean } | null = null;
+    let goal: { target: Vec; key: string | null; run: boolean; then?: string } | null = null;
     let stuck = 0;
-    walkTo.current = (p, k) => {
-      const target = reachable(p, obstacles, B);
+    walkTo.current = (p, k, then) => {
+      const target = inside() ? clampRect(reachable(p, inObstacles, 1e6), ROOM.rect) : reachable(p, obstacles, B);
       // A few steps are walked; anything further is a run.
-      goal = { target, key: k, run: Math.hypot(target.x - pos.current.x, target.z - pos.current.z) > 4.5 };
+      goal = { target, key: k, then, run: !inside() && Math.hypot(target.x - pos.current.x, target.z - pos.current.z) > 4.5 };
       stuck = 0;
       marker.position.set(goal.target.x, 0.06, goal.target.z);
       (marker.material as THREE.MeshBasicMaterial).opacity = k ? 0 : 0.9;
       el.dataset.walking = '1';
     };
     turn.current = (deg) => { camAngle.current += THREE.MathUtils.degToRad(deg); };
+    // Through the practice door: a short fade, then the hero stands in the other place.
+    let switching = 0;
+    const travel = (to: 'village' | 'practice', then?: string) => {
+      const veil = fade.current;
+      if (veil) veil.style.opacity = '1';
+      goal = null;
+      delete el.dataset.walking;
+      (marker.material as THREE.MeshBasicMaterial).opacity = 0;
+      window.clearTimeout(switching);
+      switching = window.setTimeout(() => {
+        const spot = to === 'practice' ? ROOM.entry : { x: PRACTICE_DOOR.x, z: PRACTICE_DOOR.z + 0.9 };
+        zone.current = to;
+        pos.current.x = spot.x;
+        pos.current.z = spot.z;
+        facing.current = to === 'practice' ? -Math.PI / 2 : 0;
+        hero.rotation.y = facing.current;
+        camAngle.current = 0;
+        first = true;
+        el.dataset.zone = to;
+        if (veil) veil.style.opacity = '0';
+        if (then) goTo.current(then);
+      }, reduce ? 0 : 260);
+    };
+    goTo.current = (k) => {
+      if (inside()) {
+        if (k === TV_KEY) walkTo.current(TV_SPOT, TV_KEY);
+        else walkTo.current(ROOM.exit, EXIT_KEY, k === EXIT_KEY || k === PRACTICE_KEY ? undefined : k);
+        return;
+      }
+      const i = buildings.findIndex((b) => b.key === k);
+      if (k === TV_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY, TV_KEY);
+      else if (k === PRACTICE_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY);
+      else if (i >= 0) walkTo.current(slotPosition(i).door, k);
+    };
     if (api) {
       api.current = {
-        goTo: (k) => {
-          const i = buildings.findIndex((b) => b.key === k);
-          if (k === TV_KEY) walkTo.current(TV_SPOT, k);
-          else if (i >= 0) walkTo.current(slotPosition(i).door, k);
+        goTo: (k) => goTo.current(k),
+        use: (k) => {
+          if (k === PRACTICE_KEY && !inside()) travel('practice');
+          if (k === EXIT_KEY && inside()) travel('village');
         },
       };
     }
+    el.dataset.zone = zone.current;
+    const sunBase = sun.position.clone();
+    scene.add(sun.target);
 
     // Tap = walk there; sideways drag = turn the view.
     const ray = new THREE.Raycaster();
@@ -930,7 +951,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const h = el.clientHeight;
       const half = node.offsetWidth / 2 + 4;
       const px = Math.min(w - half, Math.max(half, ((v.x + 1) / 2) * w));
-      const py = Math.min(h - 8, Math.max(node.offsetHeight + 4, ((1 - v.y) / 2) * h)) - lift;
+      // Names stay below the frame with the hero's level at the top of the view.
+      // ...and below the minimap and the daily quest on the right, so every name can be tapped.
+      const top = px + half > w - 170 ? 206 : 62;
+      const py = Math.min(h - 8, Math.max(node.offsetHeight + top, ((1 - v.y) / 2) * h)) - lift;
       node.style.transform = `translate(-50%, -100%) translate(${px}px, ${py}px)`;
       return v.z <= 1;
     };
@@ -961,7 +985,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           play(goal.run ? 'run' : 'walk');
           mixer.timeScale = pace;
         }
-        const n = stepToward(p, goal.target, speed * dt, obstacles, B);
+        const indoors = inside();
+        const n = indoors ? { ...stepToward(p, goal.target, speed * dt, inObstacles, 1e6) } : stepToward(p, goal.target, speed * dt, obstacles, B);
+        if (indoors) Object.assign(n, clampRect({ x: n.x, z: n.z }, ROOM.rect));
         const moved = Math.hypot(n.x - p.x, n.z - p.z);
         if (moved > 1e-4) facing.current = Math.atan2(n.x - p.x, n.z - p.z);
         stuck = moved < speed * dt * 0.2 ? stuck + 1 : 0;
@@ -970,12 +996,15 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         walking = true;
         if (n.arrived || stuck > 40) {
           const k = goal.key;
+          const next = goal.then;
           goal = null;
           walking = false;
           delete el.dataset.walking;
           (marker.material as THREE.MeshBasicMaterial).opacity = 0;
           if (k === TV_KEY) facing.current = Math.PI;
-          if (k && n.arrived) cb.current.onArrive(k);
+          if (k === PRACTICE_KEY && n.arrived) travel('practice', next);
+          else if (k === EXIT_KEY && n.arrived) travel('village', next);
+          else if (k && n.arrived) cb.current.onArrive(k);
         }
       }
       hero.position.set(p.x, 0, p.z);
@@ -1003,17 +1032,26 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
 
       // The camera follows from behind and above.
       const zoom = narrow ? 1.08 : 1;
-      camPos.set(p.x + Math.sin(camAngle.current) * 6.6 * zoom, 3.5 * zoom, p.z + Math.cos(camAngle.current) * 6.6 * zoom);
+      // In the room the camera looks down from higher up, over the wall that is left out.
+      const indoor = inside();
+      const far2 = (indoor ? 6.6 : 6.6) * zoom;
+      camPos.set(p.x + Math.sin(camAngle.current) * far2, (indoor ? 5.6 : 3.5) * zoom, p.z + Math.cos(camAngle.current) * far2);
       if (first || reduce) camera.position.copy(camPos);
       else camera.position.lerp(camPos, Math.min(1, dt * 6));
       first = false;
-      camera.lookAt(p.x, 1.5, p.z);
+      camera.lookAt(p.x, indoor ? 1.0 : 1.5, p.z);
+      for (const wl of room.walls) wl.group.visible = (camera.position.x - wl.point.x) * wl.normal.x + (camera.position.z - wl.point.z) * wl.normal.z < 0.1;
+      // White walls and ceiling spots: the room is brighter and more even than the evening outside.
+      skyLight.intensity = indoor ? 2.5 : 1.55;
+      sun.intensity = indoor ? 1.6 : 3.1;
+      sun.target.position.set(indoor ? ROOM_AT.x : 0, 0, indoor ? ROOM_AT.z : 0);
+      sun.position.copy(sunBase).add(sun.target.position);
       sky.position.copy(camera.position);
       glow.position.copy(camera.position).addScaledVector(sunDir, 250);
       disc.position.copy(glow.position);
       if (track) {
-        track.current.x = p.x;
-        track.current.z = p.z;
+        track.current.x = indoor ? GYM.x : p.x;
+        track.current.z = indoor ? GYM.z - 1.6 : p.z;
         track.current.facing = hero.rotation.y;
       }
       if (!reduce) {
@@ -1077,7 +1115,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         } else xp.style.opacity = '0';
       }
 
-      const spot = nearestSpot(p, spots, 1.6)?.key ?? null;
+      const spot = nearestSpot(p, indoor ? inSpots : spots, indoor ? 1.25 : 1.6)?.key ?? null;
       if (spot !== near) {
         near = spot;
         if (spot) el.dataset.near = spot;
@@ -1099,6 +1137,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       canvas.removeEventListener('pointercancel', onCancel);
       canvas.removeEventListener('pointerleave', onCancel);
       walkTo.current = () => {};
+      goTo.current = () => {};
+      window.clearTimeout(switching);
       if (api) api.current = null;
       scene.traverse((o) => {
         const m = o as THREE.Mesh;
@@ -1123,7 +1163,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     if (node) labels.current.set(id, node);
     else labels.current.delete(id);
   };
-  const go = (k: string, i: number) => walkTo.current(k === TV_KEY ? TV_SPOT : slotPosition(i).door, k);
+  const go = (k: string) => goTo.current(k);
   // Nameplates as in an online world: bright letters with a dark outline, straight over the scene.
   const plate = 'absolute left-0 top-0 inline-flex min-h-[32px] items-center whitespace-nowrap rounded-md px-1.5 font-display text-[13.5px] font-extrabold tracking-wide transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a] [text-shadow:0_1px_0_#000,0_-1px_0_#000,1px_0_0_#000,-1px_0_0_#000,0_2px_6px_rgba(0,0,0,.75)]';
   return (
@@ -1131,18 +1171,27 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       <div ref={host} data-testid="walk-village" className="absolute inset-0 cursor-pointer">
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(10,14,8,.38)_100%)]" />
         <div className="pointer-events-none absolute inset-0">
-          {buildings.map((b, i) => (
-            <button key={b.key} ref={setLabel(b.key)} type="button" data-spot={b.key} onClick={() => go(b.key, i)} aria-label={t(`Loop naar ${b.label}`, `Walk to ${b.label}`)}
+          {buildings.map((b) => (
+            <button key={b.key} ref={setLabel(b.key)} type="button" data-spot={b.key} onClick={() => go(b.key)} aria-label={t(`Loop naar ${b.label}`, `Walk to ${b.label}`)}
               className={cn(plate, 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
               {b.label}
             </button>
           ))}
-          <button ref={setLabel(TV_KEY)} type="button" data-spot={TV_KEY} onClick={() => go(TV_KEY, 0)} aria-label={t(`Loop naar ${tvLabel}`, `Walk to ${tvLabel}`)}
+          <button ref={setLabel(TV_KEY)} type="button" data-spot={TV_KEY} onClick={() => go(TV_KEY)} aria-label={t(`Loop naar ${tvLabel}`, `Walk to ${tvLabel}`)}
             className={cn(plate, 'text-white')} style={{ transform: 'translate(-9999px,0)' }}>
             {tvLabel}
           </button>
+          <button ref={setLabel(PRACTICE_KEY)} type="button" data-spot={PRACTICE_KEY} onClick={() => go(PRACTICE_KEY)} aria-label={t(`Loop naar ${practiceLabel}`, `Walk to ${practiceLabel}`)}
+            className={cn(plate, 'flex-col !items-center leading-none text-white')} style={{ transform: 'translate(-9999px,0)' }}>
+            {questOpen && <span aria-hidden className="quest-mark text-[26px] leading-none text-[#ffd21f]">!</span>}
+            <span>{practiceLabel}</span>
+          </button>
+          <button ref={setLabel(EXIT_KEY)} type="button" data-spot={EXIT_KEY} onClick={() => go(EXIT_KEY)} aria-label={t('Loop naar de uitgang', 'Walk to the exit')}
+            className={cn(plate, 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
+            {t('Uitgang', 'Exit')}
+          </button>
           {heroKey && (
-            <button ref={setLabel(COACH_KEY)} type="button" data-spot={COACH_KEY} onClick={() => go(TV_KEY, 0)}
+            <button ref={setLabel(COACH_KEY)} type="button" data-spot={COACH_KEY} onClick={() => go(TV_KEY)}
               aria-label={questOpen ? t(`${coachLabel}: je training van vandaag wacht`, `${coachLabel}: today's workout is waiting`) : t(`Loop naar ${coachLabel}`, `Walk to ${coachLabel}`)}
               className={cn(plate, 'flex-col !items-center leading-none text-[#b8f0a8]')} style={{ transform: 'translate(-9999px,0)' }}>
               {questOpen && <span aria-hidden className="quest-mark text-[26px] leading-none text-[#ffd21f]">!</span>}
@@ -1150,6 +1199,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             </button>
           )}
           {heroName && <div ref={nameLabel} aria-hidden className={cn(plate, '!min-h-0 text-[12.5px] text-[#9dff9a]')} style={{ transform: 'translate(-9999px,0)' }}>{heroName}</div>}
+          <div ref={fade} aria-hidden className="absolute inset-0 bg-black transition-opacity duration-200" style={{ opacity: 0 }} />
           <div ref={xpLabel} aria-hidden className="absolute left-0 top-0 whitespace-nowrap font-display text-[22px] font-extrabold text-[#ffe27a] [text-shadow:0_2px_0_#000,0_-1px_0_#000,1px_0_0_#000,-1px_0_0_#000,0_0_12px_rgba(255,200,60,.8)]" style={{ opacity: 0, transform: 'translate(-9999px,0)' }} />
         </div>
       </div>
