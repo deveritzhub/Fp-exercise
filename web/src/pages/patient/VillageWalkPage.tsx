@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Backpack, ChevronRight, DoorOpen, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
+import { Backpack, ChevronRight, ClipboardList, DoorOpen, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
 import { api, mediaUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -11,7 +11,7 @@ import { useHero } from '@/pages/patient/HeroPages';
 import { MODULE_PATH, moduleOf, openToday, type PatientHomeData } from '@/pages/patient/PatientHome';
 import { bodyShape, levelTier } from '@shared/hero';
 import { villageBuildings } from '@shared/worldMap';
-import { EXIT_KEY, PRACTICE_KEY, TV_KEY, type WorldApi } from '@/components/patient/WalkVillage3D';
+import { EXIT_KEY, PRACTICE_KEY, TV_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
 import { MODULE_SITES, VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 // three.js only loads on the 3D pages.
 const WalkVillage3D = lazy(() => import('@/components/patient/WalkVillage3D'));
@@ -156,6 +156,7 @@ export function VillageWalkPage() {
   if (home.isError) return <ErrorState error={home.error} onRetry={() => home.refetch()} />;
   const L = d?.level;
   const nearBuilding = buildings.find((b) => b.key === near) ?? null;
+  const boardOf = buildings.find((b) => 'kind' in b && boardKey(b.key) === near) ?? null;
   const exercise = todo.flatMap((p) => p.today.items).find((i) => i.id === playing) ?? null;
 
   const quests = todo.flatMap((p) => p.today.items.map((i) => (nl ? i.exercise.nameNl : i.exercise.nameEn)));
@@ -234,6 +235,12 @@ export function VillageWalkPage() {
             <Button size="lg" data-testid="enter-practice" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(PRACTICE_KEY)}>{t('Naar binnen: de oefenzaal', 'Go in: the exercise room')}</Button>
           ) : near === EXIT_KEY ? (
             <Button size="lg" variant="secondary" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(EXIT_KEY)}>{t('Naar buiten: het dorp', 'Go out: the village')}</Button>
+          ) : nearBuilding && 'kind' in nearBuilding ? (
+            <Button size="lg" data-testid="enter-house" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(nearBuilding.key)}>{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}</Button>
+          ) : boardOf ? (
+            <Link to={boardOf.to} data-testid="open-programme" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">
+              <ClipboardList className="h-5 w-5" aria-hidden />{boardOf.key === 'kracht' ? t('Bekijk je krachtprogramma', 'See your strength programme') : t('Bekijk je mobiliteitsprogramma', 'See your mobility programme')}
+            </Link>
           ) : nearBuilding ? (
             <Link to={nearBuilding.to} data-testid="enter-building" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">
               <DoorOpen className="h-5 w-5" aria-hidden />{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}

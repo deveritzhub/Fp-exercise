@@ -31,8 +31,8 @@ const YELLOW = 0xd9e021;
 const GLASS = 0xa8d2e0;
 const LEAF = 0x2f6b3a;
 
-type Opts = Partial<THREE.MeshStandardMaterialParameters>;
-function kit(parent: THREE.Object3D, shadow = true) {
+export type Opts = Partial<THREE.MeshStandardMaterialParameters>;
+export function kit(parent: THREE.Object3D, shadow = true) {
   const add = <T extends THREE.Mesh>(m: T, x: number, y: number, z: number) => {
     m.position.set(x, y, z);
     m.castShadow = shadow;
@@ -54,7 +54,7 @@ const glass = (opacity = 0.3): Opts => ({ transparent: true, opacity, roughness:
 const mirror: Opts = { roughness: 0.08, metalness: 0.85 };
 
 /** Leaves on a stem: flat green ovals turned every way. */
-function plant(parent: THREE.Object3D, x: number, y: number, z: number, leaves: number, spread: number, height: number, size = 0.3) {
+export function plant(parent: THREE.Object3D, x: number, y: number, z: number, leaves: number, spread: number, height: number, size = 0.3) {
   const k = kit(parent);
   for (let i = 0; i < leaves; i++) {
     const a = i * 2.4;
