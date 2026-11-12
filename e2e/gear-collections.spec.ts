@@ -18,6 +18,10 @@ test('all five collections fit on the actual 2D hero and show in the shop on mob
       memberships: [], patient: { id: 'synthetic', kind: 'personal', practiceName: 'Test' },
     } } });
     if (pathname === '/api/patient/hero') return route.fulfill({ json: state });
+    if (pathname === '/api/patient/hero/gear' && route.request().method() === 'PUT') {
+      state.gear.equipped = (route.request().postDataJSON() as { equipped: string[] }).equipped;
+      return route.fulfill({ json: { ok: true } });
+    }
     return route.fulfill({ json: {} });
   });
   await page.addInitScript(() => {
@@ -28,7 +32,7 @@ test('all five collections fit on the actual 2D hero and show in the shop on mob
   const stage = page.getByRole('img', { name: 'Je geïllustreerde held met je gedragen uitrusting' });
 
   for (const c of GEAR_COLLECTIONS) {
-    state.gear.equipped = c.items.map(g => g.key);
+    state.gear.equipped = [];
     await page.goto('/p/held/inventaris');
     await expect(stage).toBeVisible();
     const button = page.locator('[data-collection="' + c.key + '"]');
@@ -36,6 +40,10 @@ test('all five collections fit on the actual 2D hero and show in the shop on mob
     await button.click();
     await expect(button).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.gear-tile[data-item]')).toHaveCount(c.items.length);
+    const put = page.waitForRequest(request => request.url().endsWith('/api/patient/hero/gear') && request.method() === 'PUT');
+    await page.getByRole('button', { name: 'Complete set aantrekken' }).click();
+    const body = (await put).postDataJSON() as { equipped: string[] };
+    for (const part of c.items) expect(body.equipped, part.key).toContain(part.key);
 
     for (const gear of c.items) {
       const rendered = stage.locator('[data-rpg-item="' + gear.key + '"]');
