@@ -1,4 +1,5 @@
 import { GEAR_SLOT, onePerSlot } from '@shared/hero';
+import { COLLECTION_ITEM_KEYS } from '@shared/gearCollections';
 import { EYE_COLOURS, HAIR_COLOURS, KIT, SKIN_TONES, type FigureLook } from './HumanFigure';
 
 /**
@@ -49,7 +50,8 @@ export type Hero3dScene = {
 
 export function hero3dScene(look: FigureLook): Hero3dScene {
   const all = look.gear ?? [];
-  const worn = onePerSlot(all.filter((k) => GEAR_SLOT[k]));
+  // 3D is a parked prototype: do not reference newly-added 2D-only models that do not exist in its GLB assets.
+  const worn = onePerSlot(all.filter((k) => GEAR_SLOT[k] && !COLLECTION_ITEM_KEYS.has(k)));
   const visible = new Set<string>();
   const head = worn.find((k) => GEAR_SLOT[k] === 'head');
   let hair = look.hair;
