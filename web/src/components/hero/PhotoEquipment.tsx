@@ -1,4 +1,5 @@
 import { gearTier, heroPhotoKey } from '@shared/hero';
+import { COLLECTION_ITEM_KEYS } from '@shared/gearCollections';
 import { useId, useState, type ReactNode } from 'react';
 import type { FigureLook } from './HumanFigure';
 import bounds from './photoGearBounds.json';
@@ -55,7 +56,8 @@ export function PhotoGearThumbnail({ item, className, fallback }: { item: string
   const [failed, setFailed] = useState(false);
   const thumbId=useId().replace(/:/g,'');
   const asset = bounds[item as keyof typeof bounds];
-  if (failed) return <>{fallback}</>;
+  // No photographic cut-outs exist for these new hand-drawn cosmetics yet.
+  if (failed || COLLECTION_ITEM_KEYS.has(item)) return <>{fallback}</>;
   if(item==='headphones')return <svg aria-hidden viewBox="390 10 220 210" className={className}><PhotoHeadphones source="f_s5_average" originalKey="f_s5_average" onError={()=>setFailed(true)}/></svg>;
   if (!asset) return <img src={`/api/hero-assets/shop/${item}`} alt="" className={className} onError={() => setFailed(true)} />;
   return <svg aria-hidden viewBox={(FRONT_BOX[item] ?? asset.box).join(' ')} className={className}>
