@@ -25,7 +25,7 @@ export const EXIT_KEY = 'exit';
 export const boardKey = (house: string) => `in:${house}`;
 /** A room behind a door in the village. */
 type Place = { group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[] };
-export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void };
+export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void };
 type Props = {
   /** Buildings round the square take the next free slot; one with a `site` stands there instead. */
   buildings: { key: string; label: string; site?: Site; roof?: number; kind?: 'kracht' | 'mobiliteit'; alert?: boolean }[];
@@ -41,6 +41,8 @@ type Props = {
   startAtTv?: boolean;
   onNear: (key: string | null) => void;
   onArrive: (key: string) => void;
+  /** Where the hero is walking to by itself (a place key), or null when standing or steered by hand. */
+  onDestination?: (key: string | null) => void;
   /** Name shown above the hero's head. */
   heroName?: string;
   /** A workout waits today: the coach at the gym shows a quest marker. */
@@ -53,7 +55,7 @@ type Props = {
   /** Name on the practice building. */
   practiceLabel?: string;
   /** Kept up to date by the scene, for the minimap. */
-  track?: MutableRefObject<{ x: number; z: number; facing: number }>;
+  track?: MutableRefObject<{ x: number; z: number; facing: number; target?: Vec | null }>;
   className?: string;
 };
 
@@ -414,7 +416,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, heroName, questOpen = false, coachLabel = 'Coach', api, track, stick, practiceLabel = 'Praktijk', className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onDestination, heroName, questOpen = false, coachLabel = 'Coach', api, track, stick, practiceLabel = 'Praktijk', className }: Props) {
   const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null);
   const labels = useRef<Map<string, HTMLElement>>(new Map());
@@ -428,8 +430,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const pos = useRef<Vec>(startAtTv ? { ...TV_SPOT } : { ...VILLAGE_LAYOUT.spawn });
   const facing = useRef(startAtTv ? Math.PI : 0);
   const camAngle = useRef(0);
-  const cb = useRef({ onNear, onArrive });
-  cb.current = { onNear, onArrive };
+  const cb = useRef<{ onNear: Props["onNear"]; onArrive: Props["onArrive"]; onDestination?: Props["onDestination"] }>({ onNear, onArrive, onDestination });
+  cb.current = { onNear, onArrive, onDestination };
   const cheerRef = useRef<{ xp: number; at: number | null } | null>(null);
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
   const heroScene = look ? hero3dScene(look) : null;
@@ -915,6 +917,43 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     // Where the hero is going: a ring on the ground.
     const marker = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.32, 24), new THREE.MeshBasicMaterial({ color: new THREE.Color(heroColor), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
     marker.rotation.x = -Math.PI / 2;
+    // The route to a chosen place: a trail of gold dots on the ground and a beam of light at the end.
+    const TRAIL = 90;
+    const trail = new THREE.InstancedMesh(new THREE.CircleGeometry(0.11, 10), new THREE.MeshBasicMaterial({ color: 0xffd76a, transparent: true, opacity: 0.95, depthWrite: false }), TRAIL);
+    trail.count = 0;
+    trail.frustumCulled = false;
+    scene.add(trail);
+    const trailAt: (Vec | null)[] = [];
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.5, 5, 14, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd76a, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
+    scene.add(beam);
+    const flat = new THREE.Matrix4().makeRotationX(-Math.PI / 2);
+    const dotM = new THREE.Matrix4();
+    const layTrail = (points: Vec[]) => {
+      trailAt.length = 0;
+      for (let i = 1; i < points.length && trailAt.length < TRAIL; i++) {
+        const a = points[i - 1];
+        const b = points[i];
+        const n = Math.max(1, Math.round(Math.hypot(b.x - a.x, b.z - a.z) / 0.7));
+        for (let k = 1; k <= n && trailAt.length < TRAIL; k++) trailAt.push({ x: a.x + ((b.x - a.x) * k) / n, z: a.z + ((b.z - a.z) * k) / n });
+      }
+      trailAt.forEach((d, i) => trail.setMatrixAt(i, dotM.copy(flat).setPosition(d!.x, 0.07, d!.z)));
+      trail.count = trailAt.length;
+      trail.instanceMatrix.needsUpdate = true;
+    };
+    const clearTrail = () => {
+      trail.count = 0;
+      trailAt.length = 0;
+      (beam.material as THREE.MeshBasicMaterial).opacity = 0;
+      if (track) track.current.target = null;
+    };
+    let destination: string | null = null;
+    const announce = (k: string | null) => {
+      if (k === destination) return;
+      destination = k;
+      if (k) el.dataset.destination = k;
+      else delete el.dataset.destination;
+      cb.current.onDestination?.(k);
+    };
     marker.position.y = 0.06;
     scene.add(marker);
 
@@ -930,11 +969,21 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       marker.position.set(target.x, 0.06, target.z);
       (marker.material as THREE.MeshBasicMaterial).opacity = k ? 0 : 0.9;
       el.dataset.walking = '1';
+      // A walk to a place shows its route; a tap on the ground is just a tap.
+      if (k) {
+        layTrail([pos.current, goal.target, ...path]);
+        beam.position.set(target.x, 2.5, target.z);
+        (beam.material as THREE.MeshBasicMaterial).opacity = 0.32;
+        if (track) track.current.target = inside() ? null : target;
+      } else clearTrail();
+      announce(k ? then ?? k : null);
     };
     turn.current = (deg) => { camAngle.current += THREE.MathUtils.degToRad(deg); };
     // Through the practice door: a short fade, then the hero stands in the other place.
     let switching = 0;
     const travel = (to: string, then?: string) => {
+      clearTrail();
+      if (!then) announce(null);
       const veil = fade.current;
       if (veil) veil.style.opacity = '1';
       goal = null;
@@ -963,6 +1012,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         else walkTo.current(here().exit, EXIT_KEY, k === zone.current ? undefined : k);
         return;
       }
+      // The board inside a house, asked for from the village: to the door, in, and on to the board.
+      if (k.startsWith('in:') && places[k.slice(3)]) {
+        const j = buildings.findIndex((b) => b.key === k.slice(3));
+        if (j >= 0) walkTo.current(sites[j].door, k.slice(3), k);
+        return;
+      }
       const i = buildings.findIndex((b) => b.key === k);
       if (k === TV_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY, TV_KEY);
       else if (k === PRACTICE_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY);
@@ -971,6 +1026,13 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     if (api) {
       api.current = {
         goTo: (k) => goTo.current(k),
+        stop: () => {
+          goal = null;
+          clearTrail();
+          announce(null);
+          (marker.material as THREE.MeshBasicMaterial).opacity = 0;
+          delete el.dataset.walking;
+        },
         use: (k) => {
           if (!inside() && places[k]) travel(k);
           if (k === EXIT_KEY && inside()) travel('village');
@@ -1065,6 +1127,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         if (goal) {
           goal = null;
           (marker.material as THREE.MeshBasicMaterial).opacity = 0;
+          clearTrail();
+          announce(null);
         }
         el.dataset.walking = '1';
         const run = force > 0.8;
@@ -1109,16 +1173,43 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           const k = goal.key;
           const next = goal.then;
           goal = null;
+          clearTrail();
+          if (!next) announce(null);
           walking = false;
           delete el.dataset.walking;
           (marker.material as THREE.MeshBasicMaterial).opacity = 0;
           if (k === TV_KEY) facing.current = Math.PI;
           if (k === PRACTICE_KEY && n.arrived) travel(PRACTICE_KEY, next);
           else if (k === EXIT_KEY && n.arrived) travel('village', next);
+          else if (k && next && places[k] && n.arrived) travel(k, next);
           else if (k && n.arrived) cb.current.onArrive(k);
         }
       }
       if (!walking && !goal && el.dataset.walking) delete el.dataset.walking;
+      if (goal?.key && trail.count) {
+        // Dots the hero has passed disappear; the beam breathes.
+        let changed = false;
+        for (let i = 0; i < trailAt.length; i++) {
+          const d = trailAt[i];
+          if (d && Math.hypot(d.x - p.x, d.z - p.z) < 0.75) {
+            for (let j = 0; j <= i; j++) {
+              if (trailAt[j]) {
+                trailAt[j] = null;
+                trail.setMatrixAt(j, dotM.makeScale(0, 0, 0));
+                changed = true;
+              }
+            }
+          }
+        }
+        if (changed) trail.instanceMatrix.needsUpdate = true;
+        if (!reduce) (beam.material as THREE.MeshBasicMaterial).opacity = 0.26 + Math.sin(tt * 3) * 0.08;
+        // On the way to a place the view swings in behind the hero, unless a finger is turning it.
+        if (!down && !reduce) {
+          const want = facing.current + Math.PI;
+          const turnBy = Math.atan2(Math.sin(want - camAngle.current), Math.cos(want - camAngle.current));
+          camAngle.current += turnBy * Math.min(1, dt * 1.4);
+        }
+      }
       hero.position.set(p.x, 0, p.z);
       // Turn the short way round toward where the hero walks.
       const diff = Math.atan2(Math.sin(facing.current - hero.rotation.y), Math.cos(facing.current - hero.rotation.y));
@@ -1336,7 +1427,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           <div ref={xpLabel} aria-hidden className="absolute left-0 top-0 whitespace-nowrap font-display text-[22px] font-extrabold text-[#ffe27a] [text-shadow:0_2px_0_#000,0_-1px_0_#000,1px_0_0_#000,-1px_0_0_#000,0_0_12px_rgba(255,200,60,.8)]" style={{ opacity: 0, transform: 'translate(-9999px,0)' }} />
         </div>
       </div>
-      <div className="absolute bottom-2 right-2 flex gap-1.5">
+      {/* Stacked on the right edge, clear of the action bar. */}
+      <div className="absolute bottom-2 right-2 flex flex-col gap-1.5">
         <button type="button" onClick={() => turn.current(-45)} aria-label={t('Draai naar links', 'Turn left')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[#f6e2a6]"><RotateCcw size={18} aria-hidden /></button>
         <button type="button" onClick={() => turn.current(45)} aria-label={t('Draai naar rechts', 'Turn right')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[#f6e2a6]"><RotateCw size={18} aria-hidden /></button>
       </div>

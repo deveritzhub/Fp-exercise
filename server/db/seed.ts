@@ -260,8 +260,9 @@ export async function seed(connectionString = process.env.DATABASE_OWNER_URL!, o
         [emma],
       );
       await db.query(
-        `INSERT INTO notifications(user_id, practice_id, kind, title, body, link) VALUES ($1,$2,'program_assigned','Nieuw oefenprogramma',$3,'/p')`,
-        [ids.patientA, pA, 'Je fysiotherapeut heeft "Knie — patellapees belastingsopbouw" voor je klaargezet.'],
+        `INSERT INTO notifications(user_id, practice_id, kind, title, body, link) VALUES ($1,$2,'program_assigned','Nieuw oefenprogramma',$3,
+                   '/p/programma/' || (SELECT id FROM programs WHERE patient_id = $4 AND title = 'Knie — patellapees belastingsopbouw' AND NOT is_template LIMIT 1))`,
+        [ids.patientA, pA, 'Je fysiotherapeut heeft "Knie — patellapees belastingsopbouw" voor je klaargezet.', emma],
       );
     }
     void daan;

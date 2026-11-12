@@ -3,7 +3,7 @@ import { expectAccessible, login } from './helpers';
 
 /** The walkable 3D village: walk to the gym TV, see today's exercises, start there, come back with XP. */
 test('patient walks to the TV in the village, starts the workout there and returns with XP', async ({ browser }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(300_000);
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'nl-NL' });
   const page = await context.newPage();
   await login(page, 'patient@praktijk-a.test');
@@ -33,6 +33,8 @@ test('patient walks to the TV in the village, starts the workout there and retur
   // The daily quest sends the hero through the practice door to the TV in the exercise room.
   await expect(village).toHaveAttribute('data-zone', 'village');
   await page.getByTestId('quest-tracker').click();
+  // While the hero walks by itself, the screen says where to and offers a way to stop.
+  await expect(page.getByTestId('on-the-way')).toContainText('Onderweg naar de tv in de praktijk');
   const tv = page.getByTestId('tv-panel');
   await expect(tv).toBeVisible({ timeout: 60_000 });
   await expect(village).toHaveAttribute('data-zone', 'practice');
@@ -60,6 +62,19 @@ test('patient walks to the TV in the village, starts the workout there and retur
   await page.getByRole('button', { name: 'Loop naar de uitgang' }).press('Enter');
   await expect(page.getByTestId('walk-village')).toHaveAttribute('data-zone', 'village', { timeout: 30_000 });
   await expect(page.getByTestId('enter-practice')).toBeVisible();
+
+  // "Where do you want to go?": pick a place and the hero walks there; Stop ends the walk.
+  await page.getByTestId('slot-places').click();
+  const places = page.getByTestId('places');
+  await expect(places.getByRole('button')).toHaveCount(8);
+  await places.getByRole('button', { name: /Bibliotheek/ }).click();
+  await expect(village).toHaveAttribute('data-destination', 'library');
+  await page.getByTestId('on-the-way').getByRole('button', { name: 'Stop' }).click();
+  await expect(page.getByTestId('on-the-way')).toHaveCount(0);
+  await expect(village).not.toHaveAttribute('data-walking', '1', { timeout: 10_000 });
+  await page.getByTestId('slot-places').click();
+  await places.getByRole('button', { name: /Bibliotheek/ }).click();
+  await expect(page.getByTestId('enter-building')).toHaveAttribute('href', '/p/spieren', { timeout: 60_000 });
 
   // A house can be entered too: the strength house has its own room with the programme board.
   await page.getByRole('button', { name: 'Loop naar Krachthonk' }).press('Enter');
