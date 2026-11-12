@@ -18,6 +18,18 @@ test('patient walks to the TV in the village, starts the workout there and retur
   await expect(village).toHaveAttribute('data-walking', '1');
   await expect(village).not.toHaveAttribute('data-walking', '1', { timeout: 20_000 });
 
+  // The joystick is an option: on, push the knob and the hero walks; let go and the hero stands.
+  await page.getByTestId('slot-joystick').click();
+  const stick = (await page.getByTestId('joystick').boundingBox())!;
+  await page.mouse.move(stick.x + stick.width / 2, stick.y + stick.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(stick.x + stick.width / 2 + 30, stick.y + stick.height / 2, { steps: 4 });
+  await expect(village).toHaveAttribute('data-walking', '1');
+  await page.mouse.up();
+  await expect(village).not.toHaveAttribute('data-walking', '1', { timeout: 10_000 });
+  await page.getByTestId('slot-joystick').click();
+  await expect(page.getByTestId('joystick')).toHaveCount(0);
+
   // The daily quest sends the hero through the practice door to the TV in the exercise room.
   await expect(village).toHaveAttribute('data-zone', 'village');
   await page.getByTestId('quest-tracker').click();
