@@ -11,6 +11,9 @@ import { PALETTE, mat, rng, webglOk } from './Village3D';
 import { VILLAGE_LAYOUT, clampRect, findPath, nearestSpot, reachable, slotPosition, stepToward, type Obstacle, type Rect, type Site, type Vec } from './walk';
 import { PRACTICE_DOOR_X, ROOM, ROOM_AT, practiceBuilding, practiceRoom, type RoomWall } from './practice3d';
 import { houseRoom } from './house3d';
+import { furniture } from './home3d';
+import { DWELLING_TOP, dwelling } from '@/components/app/dwellings3d';
+import { decorItem, type Placed } from '@shared/homeDecor';
 import { VILLAGERS, routePoint } from './villagers';
 import type { MapTrack } from './VillageMap';
 
@@ -25,6 +28,11 @@ export const PRACTICE_KEY = 'practice';
 export const EXIT_KEY = 'exit';
 /** Inside a house: the board with that house's programme (`in:kracht`, `in:mobiliteit`). */
 export const boardKey = (house: string) => `in:${house}`;
+/** The patient's own home: outside in the village, and the room inside (`in:home` is its furnishing table). */
+export const HOME_KEY = 'home';
+/** Where the own home stands: south-east of the square, with room to grow into a villa. */
+const HOME_AT = { x: Math.cos((52 * Math.PI) / 180) * 8.7, z: Math.sin((52 * Math.PI) / 180) * 8.7 };
+const HOME_REACH = [1.3, 1.5, 1.8, 2.2, 2.8, 3.1];
 /** A room behind a door in the village. */
 type Place = { group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[] };
 export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void };
@@ -56,6 +64,13 @@ type Props = {
   stick?: MutableRefObject<{ x: number; y: number }>;
   /** Name on the practice building. */
   practiceLabel?: string;
+  /** The own home: which of the six homes it is by now (0 = camp … 5 = villa) and its name. */
+  home?: { stage: number; label: string; alert?: boolean };
+  /** Furniture in the own home, in the room's own coordinates. */
+  homeItems?: Placed[];
+  /** While a piece is being placed: a tap on the floor of the home reports the spot instead of walking there. */
+  placing?: boolean;
+  onFloor?: (spot: Vec) => void;
   /** Kept up to date by the scene, for the minimap. */
   track?: MutableRefObject<MapTrack>;
   className?: string;
@@ -433,7 +448,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onDestination, heroName, questOpen = false, coachLabel = 'Coach', api, track, stick, practiceLabel = 'Praktijk', className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onDestination, heroName, questOpen = false, coachLabel = 'Coach', api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, className }: Props) {
   const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null);
   const labels = useRef<Map<string, HTMLElement>>(new Map());
@@ -453,7 +468,15 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
   const heroScene = look ? hero3dScene(look) : null;
   const heroKey = heroScene ? JSON.stringify([heroScene.url, [...heroScene.visible].sort(), heroScene.tints, heroScene.width]) : '';
-  const key = JSON.stringify([buildings.map((b) => b.key), tvTitle, tvLines, heroColor, heroKey, practiceLabel]);
+  const key = JSON.stringify([buildings.map((b) => b.key), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1]);
+  // Read at the moment of use, so new furniture or a new mode never rebuilds the whole village.
+  const live = useRef({ homeItems: homeItems ?? [], placing, onFloor });
+  live.current = { homeItems: homeItems ?? [], placing, onFloor };
+  const furnish = useRef<(items: Placed[]) => void>(() => {});
+  const itemsKey = JSON.stringify(homeItems ?? []);
+  useEffect(() => {
+    furnish.current(live.current.homeItems);
+  }, [itemsKey]);
   let slot = 0;
   const sites = buildings.map((b) => b.site ?? slotPosition(slot++));
 
@@ -611,6 +634,59 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       mark(boardKey(b.key), h.boardMark, 2.55, b.key);
       mark(EXIT_KEY, h.exitMark, 2.45, b.key);
     });
+    // The patient's own home: outside it is the home that fits the level, inside a room to furnish.
+    let homeDoor: Vec | null = null;
+    if (home) {
+      const stage = Math.max(0, Math.min(5, home.stage));
+      const len = Math.hypot(HOME_AT.x, HOME_AT.z);
+      const reach = HOME_REACH[stage];
+      const outside = dwelling(stage, 3);
+      outside.position.set(HOME_AT.x, 0, HOME_AT.z);
+      outside.lookAt(0, 0, 0);
+      scene.add(outside);
+      obstacles.push({ x: HOME_AT.x, z: HOME_AT.z, r: reach });
+      occluder(outside, HOME_AT.x, HOME_AT.z, reach + 0.3);
+      homeDoor = { x: HOME_AT.x * (1 - (reach + 0.75) / len), z: HOME_AT.z * (1 - (reach + 0.75) / len) };
+      anchors.push({ id: HOME_KEY, obj: outside, y: DWELLING_TOP[stage] + 0.5 });
+      spots.push({ key: HOME_KEY, door: homeDoor });
+      const kk = 2.6 / Math.hypot(homeDoor.x, homeDoor.z);
+      roads.push({ a: { x: homeDoor.x * kk, z: homeDoor.z * kk }, b: homeDoor, w: 1.3 });
+      const origin = { x: 0, z: 560 + Object.keys(places).length * 160 };
+      const h = houseRoom('home', origin);
+      scene.add(h.group);
+      const base = [...h.obstacles];
+      const pieces = new THREE.Group();
+      h.group.add(pieces);
+      places[HOME_KEY] = {
+        group: h.group, walls: h.walls, at: origin, rect: h.rect, entry: h.entry, face: Math.PI / 2, exit: h.exit,
+        outside: { x: homeDoor.x * (1 - 0.85 / Math.hypot(homeDoor.x, homeDoor.z)), z: homeDoor.z * (1 - 0.85 / Math.hypot(homeDoor.x, homeDoor.z)) }, map: HOME_AT, obstacles: base,
+        spots: [{ key: boardKey(HOME_KEY), door: h.board }, { key: EXIT_KEY, door: h.exit }],
+      };
+      mark(boardKey(HOME_KEY), h.boardMark, 2.55, HOME_KEY);
+      mark(EXIT_KEY, h.exitMark, 2.45, HOME_KEY);
+      furnish.current = (items) => {
+        pieces.traverse((o) => {
+          const m = o as THREE.Mesh;
+          if (m.isMesh) {
+            m.geometry.dispose();
+            (m.material as THREE.Material).dispose();
+          }
+        });
+        pieces.clear();
+        const blocks: Obstacle[] = [];
+        for (const it of items) {
+          const piece = furniture(it.key);
+          piece.position.set(it.x, 0, it.z);
+          piece.rotation.y = (-it.rot * Math.PI) / 180;
+          pieces.add(piece);
+          const r = decorItem(it.key)?.r ?? 0;
+          if (r > 0) blocks.push({ x: origin.x + it.x, z: origin.z + it.z, r: r * 0.9 });
+        }
+        places[HOME_KEY].obstacles = [...base, ...blocks];
+        el.dataset.furniture = String(items.length);
+      };
+      furnish.current(live.current.homeItems);
+    }
     const inObstacles = places[PRACTICE_KEY].obstacles;
     const inside = () => zone.current !== 'village';
     const here = () => places[zone.current];
@@ -1133,6 +1209,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         return;
       }
       // The board inside a house, asked for from the village: to the door, in, and on to the board.
+      if (k === HOME_KEY && homeDoor) {
+        walkTo.current(homeDoor, HOME_KEY);
+        return;
+      }
+      if (k === boardKey(HOME_KEY) && homeDoor) {
+        walkTo.current(homeDoor, HOME_KEY, k);
+        return;
+      }
       if (k.startsWith('in:') && places[k.slice(3)]) {
         const j = buildings.findIndex((b) => b.key === k.slice(3));
         if (j >= 0) walkTo.current(sites[j].door, k.slice(3), k);
@@ -1186,6 +1270,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const d = down;
       down = null;
       if (!d || d.moved) return;
+      // Placing furniture: the tap is a spot on the floor of the home, not somewhere to walk to.
+      if (live.current.placing && zone.current === HOME_KEY) {
+        const rect = canvas.getBoundingClientRect();
+        ray.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), camera);
+        const floor = new THREE.Vector3();
+        if (ray.ray.intersectPlane(ground, floor)) live.current.onFloor?.({ x: floor.x - places[HOME_KEY].at.x, z: floor.z - places[HOME_KEY].at.z });
+        return;
+      }
       const rect = canvas.getBoundingClientRect();
       ray.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), camera);
       const hit = new THREE.Vector3();
@@ -1571,6 +1663,19 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               <span>{t('Programma', 'Programme')}</span>
             </button>
           ))}
+          {home && (
+            <>
+              <button ref={setLabel(HOME_KEY)} type="button" data-spot={HOME_KEY} onClick={() => go(HOME_KEY)} aria-label={t(`Loop naar ${home.label}`, `Walk to ${home.label}`)}
+                className={cn(plate, 'flex-col !items-center leading-none text-[#b8f0a8]')} style={{ transform: 'translate(-9999px,0)' }}>
+                {home.alert && <span aria-hidden className="quest-mark text-[26px] leading-none text-[#ffd21f]">!</span>}
+                <span>{home.label}</span>
+              </button>
+              <button ref={setLabel(boardKey(HOME_KEY))} type="button" data-spot={boardKey(HOME_KEY)} onClick={() => go(boardKey(HOME_KEY))} aria-label={t('Loop naar de inrichtingstafel', 'Walk to the furnishing table')}
+                className={cn(plate, 'text-white')} style={{ transform: 'translate(-9999px,0)' }}>
+                {t('Inrichten', 'Furnish')}
+              </button>
+            </>
+          )}
           <button ref={setLabel(EXIT_KEY)} type="button" data-spot={EXIT_KEY} onClick={() => go(EXIT_KEY)} aria-label={t('Loop naar de uitgang', 'Walk to the exit')}
             className={cn(plate, 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
             {t('Uitgang', 'Exit')}

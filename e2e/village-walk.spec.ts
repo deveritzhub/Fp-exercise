@@ -78,9 +78,10 @@ test('patient walks to the TV in the village, starts the workout there and retur
   // "Where do you want to go?": pick a place and the hero walks there; Stop ends the walk.
   await page.getByTestId('slot-places').click();
   const places = page.getByTestId('places');
-  await expect(places.getByRole('button')).toHaveCount(8);
-  await places.getByRole('button', { name: /Bibliotheek/ }).click();
-  await expect(village).toHaveAttribute('data-destination', 'library');
+  await expect(places.getByRole('button')).toHaveCount(9);
+  // A far place, so there is time to stop on the way.
+  await places.getByRole('button', { name: /Krachthonk/ }).click();
+  await expect(village).toHaveAttribute('data-destination', 'in:kracht');
   await page.getByTestId('on-the-way').getByRole('button', { name: 'Stop' }).click();
   await expect(page.getByTestId('on-the-way')).toHaveCount(0);
   await expect(village).not.toHaveAttribute('data-walking', '1', { timeout: 10_000 });
