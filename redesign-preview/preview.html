@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Proza+Libre:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600&display=swap">
 <style>
-/* Layout: split hero (copy on sand, arched photo), then calm full-width bands that alternate sand / linen / olive. One accent (terracotta) used only for small signals. */
+/* Layout: editorial split hero (copy on sand, arched photo with a hairline echo of the logo rings), a facts rule, then calm bands alternating sand / linen / dune / olive. Terracotta only for small signals. */
 :root{
   color-scheme: light;
   --sand:#EFE8DC;        /* page ground */
@@ -19,267 +19,344 @@
   --olive-deep:#2F3825;  /* dark band, footer */
   --olive-soft:#DCDDC8;  /* tints */
   --terra:#B5643E;       /* subtle accent */
+  --terra-text:#A2552F;  /* accent at small text sizes */
   --ink:#2B2721;         /* text */
   --ink-2:#5E574C;       /* secondary text */
   --line:#D6CAB6;        /* hairlines */
   --on-dark:#F2ECE1;
+  --on-dark-2:#CFC8BA;
   --display:"Proza Libre", Georgia, "Times New Roman", serif;
   --text:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --r-sm:10px; --r-md:18px; --r-lg:28px;
+  --r-sm:10px; --r-md:16px; --r-lg:24px;
   --wrap:1200px;
-  --step--1:clamp(.8rem,.78rem + .1vw,.86rem);
-  --step-0:clamp(1rem,.97rem + .15vw,1.06rem);
-  --step-1:clamp(1.15rem,1.08rem + .35vw,1.35rem);
-  --step-2:clamp(1.45rem,1.3rem + .8vw,1.95rem);
-  --step-3:clamp(1.9rem,1.6rem + 1.6vw,2.9rem);
-  --step-4:clamp(2.35rem,1.8rem + 2.9vw,4.2rem);
+  --gutter:20px;
+  --ease:cubic-bezier(.2,.7,.2,1);
+  --step--1:.8125rem;
+  --step-0:clamp(1rem,.97rem + .15vw,1.0625rem);
+  --step-1:clamp(1.15rem,1.1rem + .28vw,1.32rem);
+  --step-2:clamp(1.4rem,1.27rem + .65vw,1.8rem);
+  --step-3:clamp(1.95rem,1.55rem + 1.9vw,3.1rem);
+  --step-4:clamp(2.55rem,1.75rem + 3.6vw,4.4rem);
 }
 *,*::before,*::after{box-sizing:border-box}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
-body{margin:0;background:var(--sand);color:var(--ink);font:400 var(--step-0)/1.65 var(--text);-webkit-font-smoothing:antialiased}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--sand);color:var(--ink);font:400 var(--step-0)/1.7 var(--text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 img{max-width:100%;display:block}
 a{color:inherit}
-h1,h2,h3{font-family:var(--display);font-weight:500;line-height:1.12;letter-spacing:-.01em;margin:0;text-wrap:balance}
+h1,h2,h3{font-family:var(--display);font-weight:400;line-height:1.1;letter-spacing:-.018em;margin:0;text-wrap:balance}
+h3{font-weight:500;letter-spacing:-.008em;line-height:1.2}
 h1 em,h2 em{font-style:italic;font-weight:400;color:var(--olive)}
 p{margin:0}
+::selection{background:var(--olive-soft)}
 :focus-visible{outline:2px solid var(--terra);outline-offset:3px;border-radius:4px}
-.wrap{max-width:var(--wrap);margin-inline:auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
-.eyebrow{font:600 var(--step--1)/1.2 var(--text);letter-spacing:.14em;text-transform:uppercase;color:var(--terra)}
-.lede{color:var(--ink-2);max-width:60ch}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:.55em;min-height:48px;padding:.75em 1.4em;border-radius:999px;font:600 .95rem/1 var(--text);text-decoration:none;transition:background .2s,transform .2s,border-color .2s;white-space:nowrap}
-.btn svg{width:18px;height:18px;flex:none}
-.btn-primary{background:var(--olive);color:var(--on-dark)}
+[hidden]{display:none!important}
+.wrap{max-width:var(--wrap);margin-inline:auto;padding-left:max(var(--gutter),env(safe-area-inset-left,0px));padding-right:max(var(--gutter),env(safe-area-inset-right,0px))}
+.eyebrow{display:flex;align-items:center;gap:12px;font:600 .75rem/1.3 var(--text);letter-spacing:.16em;text-transform:uppercase;color:var(--terra-text)}
+.eyebrow::before{content:"";flex:none;width:28px;height:1px;background:currentColor;opacity:.7}
+.eyebrow + h2{margin-top:18px}
+.section-head > .eyebrow + h2{margin-top:-2px}
+.lede{color:var(--ink-2);max-width:56ch}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.6em;min-height:52px;padding:.8em 1.6em;border-radius:999px;font:600 .94rem/1 var(--text);letter-spacing:.005em;text-decoration:none;transition:background .25s var(--ease),color .25s var(--ease),border-color .25s var(--ease),box-shadow .25s var(--ease);white-space:nowrap}
+.btn svg{width:18px;height:18px;flex:none;transition:transform .3s var(--ease)}
+.btn:hover svg.go{transform:translateX(3px)}
+.btn-primary{background:var(--olive);color:var(--on-dark);box-shadow:0 10px 24px -14px rgba(47,56,37,.7)}
 .btn-primary:hover{background:var(--olive-deep)}
 .btn-ghost{border:1px solid var(--line);color:var(--ink);background:transparent}
-.btn-ghost:hover{border-color:var(--olive)}
+.btn-ghost:hover{border-color:var(--olive);background:rgba(247,243,236,.6)}
 .btn-light{background:var(--linen);color:var(--olive-deep)}
-.link{font-weight:600;color:var(--olive);text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:1px}
-.link:hover{color:var(--terra)}
-.section{padding-block:clamp(64px,9vw,120px)}
-.section-head{display:grid;gap:18px;margin-bottom:clamp(32px,5vw,56px)}
-@media(min-width:900px){.section-head.split{grid-template-columns:1fr 1fr;align-items:end;gap:64px}}
+.btn-light:hover{background:#fff}
+.link{font-weight:600;color:var(--olive);text-decoration:none;background:linear-gradient(currentColor,currentColor) 0 100%/100% 1px no-repeat;padding-bottom:3px;transition:color .2s,background-size .3s var(--ease)}
+.link:hover{color:var(--terra-text)}
+.circle{flex:none;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink);transition:background .25s var(--ease),color .25s var(--ease),border-color .25s var(--ease),transform .3s var(--ease)}
+.circle svg{width:16px;height:16px}
+a:hover > .circle{background:var(--olive);color:var(--on-dark);border-color:var(--olive);transform:translateX(3px)}
+.section{padding-block:clamp(72px,10vw,144px)}
+.section-head{display:grid;gap:20px;margin-bottom:clamp(36px,5vw,64px)}
+.section-head h2,.faq-grid h2{font-size:var(--step-3)}
+@media(min-width:900px){.section-head.split{grid-template-columns:1.1fr .9fr;align-items:end;gap:72px}.section-head.split > :last-child{padding-bottom:6px}}
+.band-linen{background:var(--linen)}
+.band-dune{background:var(--dune)}
 
 /* Utility bar + header */
-.util{background:var(--olive-deep);color:var(--on-dark);font-size:.82rem}
+.util{background:var(--olive-deep);color:var(--on-dark);font-size:.8rem;letter-spacing:.01em}
 .util .wrap{display:flex;gap:24px;justify-content:space-between;align-items:center;min-height:38px}
-.util span{opacity:.85}
-.util .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#9DB27A;margin-right:8px;vertical-align:1px}
+.util span{opacity:.86}
+.util a{text-underline-offset:3px}
+.util .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#9DB27A;margin-right:10px;vertical-align:2px}
 @media(max-width:899px){.util{display:none}}
-header.site{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--sand) 92%,transparent);backdrop-filter:saturate(1.2) blur(10px);border-bottom:1px solid transparent;transition:border-color .2s}
+header.site{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--sand) 90%,transparent);-webkit-backdrop-filter:saturate(1.2) blur(12px);backdrop-filter:saturate(1.2) blur(12px);border-bottom:1px solid transparent;transition:border-color .3s}
 header.site.scrolled{border-color:var(--line)}
-.nav{display:flex;align-items:center;gap:28px;min-height:76px}
+.nav{display:flex;align-items:center;gap:30px;min-height:80px}
 .brand{display:flex;align-items:center;gap:12px;text-decoration:none;margin-right:auto}
 .brand img{width:38px;height:auto}
-.brand b{font:500 1rem/1.05 var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--ink)}
-.menu{display:flex;gap:26px;list-style:none;margin:0;padding:0;font-size:.95rem}
-.menu a{text-decoration:none;color:var(--ink-2)}
-.menu a:hover{color:var(--ink)}
-.nav .call{font-weight:600;font-size:.95rem;text-decoration:none;display:flex;gap:8px;align-items:center;white-space:nowrap}
+.brand b{font:500 .95rem/1.1 var(--display);letter-spacing:.2em;text-transform:uppercase;color:var(--ink)}
+.menu{display:flex;gap:28px;list-style:none;margin:0;padding:0;font-size:.92rem}
+.menu a{text-decoration:none;color:var(--ink-2);padding-block:8px;background:linear-gradient(var(--terra),var(--terra)) 0 100%/0 1px no-repeat;transition:color .2s,background-size .3s var(--ease)}
+.menu a:hover{color:var(--ink);background-size:100% 1px}
+.nav .call{font-weight:600;font-size:.92rem;text-decoration:none;display:flex;gap:8px;align-items:center;white-space:nowrap}
+.nav .btn{min-height:46px;padding-inline:1.35em}
 @media(max-width:1280px){.nav .call{display:none}}
-.burger{display:none;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--linen);align-items:center;justify-content:center;cursor:pointer}
+.burger{display:none;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--linen);align-items:center;justify-content:center;cursor:pointer;padding:0}
 .burger span,.burger span::before,.burger span::after{display:block;width:18px;height:1.5px;background:var(--ink);position:relative;content:""}
-.burger span::before{position:absolute;top:-6px}.burger span::after{position:absolute;top:6px}
-.xbtn{display:inline-flex;font:300 1.8rem/1 var(--text);color:var(--ink)}
+.burger span{background:transparent}
+.burger span::before{position:absolute;top:-3.5px}.burger span::after{position:absolute;top:3.5px}
+.xbtn{display:inline-flex;font:300 1.7rem/1 var(--text);color:var(--ink)}
 @media(max-width:1060px){.menu,.nav .call{display:none}.burger{display:inline-flex}}
-@media(max-width:560px){.nav .btn-primary{display:none}.nav{min-height:64px}}
+@media(max-width:560px){.nav .btn-primary{display:none}.nav{min-height:68px}.brand b{font-size:.86rem}}
 
 /* Mobile drawer */
-.drawer{position:fixed;inset:0;z-index:60;background:var(--sand);display:flex;flex-direction:column;padding:calc(16px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));overflow:auto}
-[hidden]{display:none!important}
-.drawer-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.drawer{position:fixed;inset:0;z-index:60;background:var(--sand);display:flex;flex-direction:column;padding:calc(10px + env(safe-area-inset-top,0px)) max(var(--gutter),env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(var(--gutter),env(safe-area-inset-left,0px));overflow:auto;animation:drawer-in .28s var(--ease)}
+@keyframes drawer-in{from{opacity:0;transform:translateY(-8px)}}
+.drawer-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .drawer details{border-bottom:1px solid var(--line)}
-.drawer summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font:500 1.35rem/1 var(--display);padding:20px 0}
+.drawer summary,.drawer .solo{font:400 1.5rem/1.1 var(--display);letter-spacing:-.01em;padding:21px 0}
+.drawer summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
 .drawer summary::-webkit-details-marker{display:none}
-.drawer summary::after{content:"+";font:300 1.6rem/1 var(--text);color:var(--terra)}
-.drawer details[open] summary::after{content:"–"}
-.drawer .sub{display:grid;gap:2px;padding-bottom:16px}
-.drawer .sub a{text-decoration:none;padding:10px 0;color:var(--ink-2)}
-.drawer .solo{font:500 1.35rem/1 var(--display);padding:20px 0;border-bottom:1px solid var(--line);text-decoration:none;display:block}
+.drawer .sub{display:grid;gap:0;padding-bottom:14px}
+.drawer .sub a{text-decoration:none;padding:11px 0;color:var(--ink-2)}
+.drawer .solo{border-bottom:1px solid var(--line);text-decoration:none;display:block}
 .drawer-cta{margin-top:auto;display:grid;gap:10px;padding-top:28px}
 .drawer-cta .btn{width:100%}
-.drawer-hours{font-size:.85rem;color:var(--ink-2);text-align:center;margin-top:6px}
+.drawer-hours{font-size:.82rem;color:var(--ink-2);text-align:center;margin-top:8px}
+
+/* Plus / minus mark shared by drawer and FAQ */
+.drawer summary::after,.faq summary::after{content:"";flex:none;width:14px;height:14px;margin-left:20px;background:linear-gradient(var(--terra),var(--terra)) center/100% 1.5px no-repeat,linear-gradient(var(--terra),var(--terra)) center/1.5px 100% no-repeat;transition:transform .35s var(--ease)}
+.drawer details[open] > summary::after,.faq details[open] > summary::after{transform:rotate(135deg)}
 
 /* Hero */
-.hero{padding-block:clamp(28px,5vw,64px) clamp(56px,8vw,96px)}
-.hero-grid{display:grid;gap:clamp(32px,5vw,72px);align-items:center}
-@media(min-width:900px){.hero-grid{grid-template-columns:1.05fr .95fr}}
-.hero h1{font-size:var(--step-4);margin-block:18px 22px}
-.hero .lede{font-size:var(--step-1);line-height:1.55}
-.hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
-.hero-sub{margin-top:16px;font-size:.92rem;color:var(--ink-2)}
-.trust{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:36px;padding-top:24px;border-top:1px solid var(--line);font-size:.9rem;color:var(--ink-2);list-style:none;padding-left:0}
-.trust li{display:flex;gap:8px;align-items:center}
-.trust svg{width:16px;height:16px;color:var(--olive);flex:none}
-.hero-media{position:relative}
-.hero-media .arch{border-radius:clamp(140px,22vw,300px) clamp(140px,22vw,300px) var(--r-lg) var(--r-lg);overflow:hidden;aspect-ratio:4/4.6;max-width:100%;background:var(--dune)}
-.hero-media .arch img{width:100%;height:100%;object-fit:cover;object-position:42% center}
-.hero-note{position:absolute;left:clamp(-28px,-2vw,-8px);bottom:28px;background:var(--linen);border-radius:var(--r-md);padding:16px 18px;box-shadow:0 18px 40px -18px rgba(47,56,37,.35);display:grid;gap:4px;max-width:260px}
-.hero-note small{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--terra);font-weight:600}
-.hero-note strong{font:500 1.1rem/1.25 var(--display)}
-.hero-note span{font-size:.85rem;color:var(--ink-2)}
-@media(max-width:899px){.hero-media .arch{aspect-ratio:4/3.2;border-radius:var(--r-lg) var(--r-lg) var(--r-lg) var(--r-lg)}.hero-note{left:12px;bottom:12px;padding:12px 14px}.hero-note strong{font-size:1rem}}
+.hero{padding-block:clamp(28px,4vw,52px) 0}
+.hero-grid{display:grid;gap:clamp(36px,5vw,88px);align-items:center}
+@media(min-width:900px){.hero-grid{grid-template-columns:1.12fr .88fr}}
+.hero h1{font-size:var(--step-4);line-height:1.02;letter-spacing:-.028em;margin-block:26px 28px}
+.hero h1 em{display:block}
+.hero .lede{font-size:var(--step-1);line-height:1.6;max-width:44ch}
+.hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:36px}
+.hero-sub{margin-top:22px;font-size:.9rem;color:var(--ink-2)}
+.hero-media{position:relative;margin:0;justify-self:end;width:100%;max-width:500px}
+.hero-media::before{content:"";position:absolute;inset:-14px;border:1px solid var(--olive);opacity:.38;border-radius:999px 999px calc(var(--r-lg) + 12px) calc(var(--r-lg) + 12px);pointer-events:none}
+.hero-media .arch{border-radius:999px 999px var(--r-lg) var(--r-lg);overflow:hidden;aspect-ratio:4/5;background:var(--dune)}
+.hero-media .arch img{width:100%;height:100%;object-fit:cover;object-position:44% center}
+.facts{display:grid;margin:clamp(44px,5vw,64px) 0 0;border-top:1px solid var(--line)}
+.facts div{display:grid;gap:4px;padding:16px 0;border-bottom:1px solid var(--line)}
+.facts dt{font:600 .7rem/1.3 var(--text);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+.facts dd{margin:0;font:500 1.02rem/1.35 var(--display)}
+@media(max-width:899px){
+  .hero-cta .btn{flex:1 1 100%}
+  .hero-media{justify-self:center;max-width:420px;padding:10px}
+  .hero-media::before{inset:0}
+  .hide-s{display:none}
+  .facts div{grid-template-columns:8.5em 1fr;align-items:baseline;gap:12px}
+}
+@media(min-width:900px){
+  .facts{grid-template-columns:1.15fr 1fr .9fr 1.25fr 1fr;border-bottom:1px solid var(--line)}
+  .facts div{border-bottom:0;padding:22px 24px;align-content:start;gap:8px}
+  .facts div + div{border-left:1px solid var(--line)}
+  .facts div:first-child{padding-left:0}
+}
 
-/* Booking panel */
-.book{background:var(--linen);border-radius:var(--r-lg);padding:clamp(24px,4vw,44px);display:grid;gap:28px;border:1px solid var(--line)}
-@media(min-width:900px){.book{grid-template-columns:.9fr 1.6fr;align-items:center;gap:48px}}
-.book h2{font-size:var(--step-2)}
-.book p{color:var(--ink-2);margin-top:10px;font-size:.95rem}
+/* Booking module */
+.booking{scroll-margin-top:100px;margin-top:clamp(56px,7vw,96px)}
+.book{background:var(--linen);border-radius:var(--r-lg);padding:clamp(24px,4.5vw,56px);display:grid;gap:clamp(28px,4vw,64px);border:1px solid var(--line)}
+@media(min-width:900px){.book{grid-template-columns:1fr 1.1fr;grid-template-areas:"head options" "steps options";align-items:start;row-gap:36px}.book-head{grid-area:head}.book-steps{grid-area:steps}.book-options{grid-area:options}}
+.book h2{font-size:var(--step-3)}
+.book-head > p:not(.eyebrow){color:var(--ink-2);margin-top:16px;max-width:46ch}
+.book-steps{list-style:none;margin:0;padding:0;display:grid;counter-reset:b}
+.book-steps li:last-child{border-bottom:1px solid var(--line)}
+.book-steps li{counter-increment:b;display:grid;grid-template-columns:34px 1fr;gap:2px 14px;padding:14px 0;border-top:1px solid var(--line);font-size:.92rem}
+.book-steps li::before{content:counter(b);grid-row:1/3;font:italic 400 1.5rem/1.1 var(--display);color:var(--terra-text)}
+.book-steps b{font-weight:600}
+.book-steps span{grid-column:2;color:var(--ink-2)}
 .book-options{display:grid;gap:12px}
-@media(min-width:640px){.book-options{grid-template-columns:repeat(3,1fr)}}
-.opt{display:grid;gap:6px;padding:20px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--sand);text-decoration:none;transition:border-color .2s,transform .2s}
-.opt:hover{border-color:var(--olive);transform:translateY(-2px)}
-.opt b{font:500 1.12rem/1.2 var(--display)}
-.opt span{font-size:.85rem;color:var(--ink-2)}
-.opt i{font-style:normal;font-weight:600;font-size:.88rem;color:var(--olive);margin-top:6px}
-.opt.alt{background:transparent;border-style:dashed}
-.book-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px 24px;font-size:.88rem;color:var(--ink-2);border-top:1px solid var(--line);padding-top:18px}
+.opt{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 14px;padding:clamp(20px,2.4vw,28px);border-radius:var(--r-md);border:1px solid var(--line);background:var(--sand);text-decoration:none;transition:border-color .25s var(--ease),background .25s var(--ease),box-shadow .3s var(--ease)}
+.opt:hover{border-color:var(--olive);background:#F3EDE2;box-shadow:0 18px 36px -26px rgba(47,56,37,.55)}
+.opt small{font:600 .7rem/1.3 var(--text);letter-spacing:.14em;text-transform:uppercase;color:var(--terra-text)}
+.opt b{grid-column:1;text-wrap:pretty;font:400 var(--step-2)/1.15 var(--display);letter-spacing:-.012em}
+.opt span.sub{grid-column:1;font-size:.9rem;color:var(--ink-2)}
+.opt .circle{grid-column:2;grid-row:1/4;background:var(--olive);border-color:var(--olive);color:var(--on-dark)}
+.opt.alt{background:transparent;padding-block:18px}
+.opt.alt b{font-size:var(--step-1);font-weight:500}
+.opt.alt .circle{background:transparent;color:var(--ink);border-color:var(--line);grid-row:1/3}
+.opt.alt:hover .circle{background:var(--olive);color:var(--on-dark);border-color:var(--olive)}
+.book-foot{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:.86rem;color:var(--ink-2);padding-top:10px}
 
 /* Complaints */
-.intro-copy{display:grid;gap:14px;color:var(--ink-2);max-width:62ch}
-.intro-copy a{color:var(--olive);text-underline-offset:3px}
+.intro-copy{display:grid;gap:14px;color:var(--ink-2);max-width:60ch;font-size:.97rem}
+.intro-copy a{color:var(--olive);text-underline-offset:3px;text-decoration-thickness:1px}
+.intro-copy a:hover{color:var(--terra-text)}
 .klachten{display:grid;border-top:1px solid var(--line)}
-@media(min-width:760px){.klachten{grid-template-columns:1fr 1fr;column-gap:56px}}
-.k{display:grid;grid-template-columns:1fr auto;gap:6px 20px;padding:24px 0;border-bottom:1px solid var(--line);text-decoration:none;align-items:center}
-.k h3{font-size:var(--step-1)}
-.k p{grid-column:1;font-size:.92rem;color:var(--ink-2)}
-.k .arrow{grid-row:1/3;grid-column:2;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;transition:background .2s,color .2s,border-color .2s}
-.k:hover .arrow{background:var(--olive);color:var(--on-dark);border-color:var(--olive)}
+@media(min-width:760px){.klachten{grid-template-columns:1fr 1fr;column-gap:72px}}
+.k{display:grid;grid-template-columns:1fr auto;gap:4px 20px;padding:26px 0;border-bottom:1px solid var(--line);text-decoration:none;align-items:center;transition:padding .35s var(--ease)}
+.k h3{font-size:var(--step-1);transition:color .2s}
+.k p{grid-column:1;font-size:.9rem;color:var(--ink-2)}
+.k .arrow{grid-row:1/3;grid-column:2;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;transition:background .25s var(--ease),color .25s var(--ease),border-color .25s var(--ease),transform .3s var(--ease)}
+.k:hover h3{color:var(--olive)}
+.k:hover .arrow{background:var(--olive);color:var(--on-dark);border-color:var(--olive);transform:translateX(3px)}
 .k .arrow svg{width:16px;height:16px}
-.more-row{margin-top:28px;display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center}
+.more-row{margin-top:36px;display:flex;flex-wrap:wrap;gap:16px 30px;align-items:center}
 
 /* Approach */
 .band-olive{background:var(--olive-deep);color:var(--on-dark)}
-.band-olive .eyebrow{color:#D9A07F}
+.band-olive .eyebrow{color:#DDA683}
 .band-olive h2 em{color:#C9D3A8}
-.band-olive .lede{color:#CFC8BA}
-.steps{display:grid;gap:20px;list-style:none;margin:0;padding:0;counter-reset:s}
-@media(min-width:900px){.steps{grid-template-columns:repeat(3,1fr);gap:28px}}
-.steps li{border-top:1px solid rgba(242,236,225,.25);padding-top:22px;display:grid;gap:10px;counter-increment:s}
-.steps li::before{content:"Stap " counter(s);font:600 .78rem/1 var(--text);letter-spacing:.14em;text-transform:uppercase;color:#D9A07F}
-.steps h3{font-size:var(--step-2)}
-.steps p{color:#CFC8BA;font-size:.95rem}
-.steps .meta{font-size:.85rem;color:var(--on-dark);opacity:.8}
-.approach-media{display:grid;gap:16px;margin-top:48px}
-@media(min-width:760px){.approach-media{grid-template-columns:1.4fr 1fr}}
-.approach-media img{border-radius:var(--r-md);width:100%;height:100%;object-fit:cover;aspect-ratio:16/10}
+.band-olive .lede{color:var(--on-dark-2)}
+.steps{display:grid;gap:8px;list-style:none;margin:0;padding:0;counter-reset:s}
+@media(min-width:900px){.steps{grid-template-columns:repeat(3,1fr);gap:48px}}
+.steps li{border-top:1px solid rgba(242,236,225,.22);padding-block:24px 20px;display:grid;gap:10px;align-content:start;counter-increment:s}
+.steps li::before{content:"0" counter(s);font:italic 400 2.3rem/1 var(--display);color:#DDA683;margin-bottom:10px}
+.steps h3{font-size:var(--step-2);font-weight:400}
+.steps p{color:var(--on-dark-2);font-size:.95rem}
+.steps .meta{font-size:.82rem;color:var(--on-dark);opacity:.82;margin-top:4px}
+.approach-media{display:grid;gap:16px;margin-top:clamp(36px,5vw,64px)}
+.approach-media img{border-radius:var(--r-md);width:100%;height:100%;object-fit:cover;aspect-ratio:3/2}
+@media(min-width:760px){.approach-media{grid-template-columns:1.55fr 1fr;height:clamp(340px,36vw,460px)}.approach-media img{aspect-ratio:auto;min-height:0}}
 
 /* Services */
-.services{display:grid;gap:16px}
-@media(min-width:760px){.services{grid-template-columns:repeat(3,1fr)}}
-.svc{background:var(--linen);border-radius:var(--r-md);padding:28px;display:grid;gap:10px;align-content:start;text-decoration:none;border:1px solid transparent;transition:border-color .2s}
-.svc:hover{border-color:var(--line)}
-.svc h3{font-size:var(--step-1)}
-.svc p{font-size:.92rem;color:var(--ink-2)}
-.svc .tag{font-size:.75rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--olive)}
-.svc-links{margin-top:24px;display:flex;flex-wrap:wrap;gap:10px}
-.pill{display:inline-flex;min-height:44px;align-items:center;padding:0 18px;border-radius:999px;border:1px solid var(--line);text-decoration:none;font-size:.9rem;color:var(--ink-2)}
-.pill:hover{border-color:var(--olive);color:var(--ink)}
+.services{display:grid;gap:0}
+@media(min-width:760px){.services{grid-template-columns:repeat(3,1fr);gap:48px}}
+.svc{display:grid;gap:12px;align-content:start;text-decoration:none;border-top:1px solid var(--ink);padding-block:24px 30px}
+.svc .tag{font:600 .7rem/1.3 var(--text);letter-spacing:.14em;text-transform:uppercase;color:var(--terra-text)}
+.svc h3{font-size:var(--step-2);font-weight:400;transition:color .2s}
+.svc p{font-size:.93rem;color:var(--ink-2)}
+.svc .more{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:.9rem;color:var(--olive);margin-top:6px}
+.svc .more svg{width:16px;height:16px;transition:transform .3s var(--ease)}
+.svc:hover h3{color:var(--olive)}
+.svc:hover .more svg{transform:translateX(4px)}
+.also{margin-top:clamp(20px,3vw,36px);display:flex;flex-wrap:wrap;gap:10px 28px;align-items:baseline;font-size:.93rem;color:var(--ink-2)}
 
 /* Team */
-.team{display:grid;gap:20px}
-@media(min-width:760px){.team{grid-template-columns:repeat(3,1fr);gap:28px}}
-.person{display:grid;gap:14px}
-.portrait{aspect-ratio:4/5;border-radius:var(--r-md);overflow:hidden;background:linear-gradient(180deg,var(--dune),#D3C4AC)}
-.portrait img{width:100%;height:100%;object-fit:cover;object-position:center 30%;filter:saturate(.9)}
+.team{display:grid;gap:0}
+.person{display:grid;grid-template-columns:104px 1fr;gap:6px 20px;align-items:start;padding:24px 0;border-top:1px solid var(--line)}
+.portrait{position:relative;grid-row:1/3;border-radius:50%;aspect-ratio:1;background:#E3D6C3}
+.portrait::before{content:"";position:absolute;inset:-7px;border-radius:50%;border:1px solid var(--olive);opacity:.35}
+.portrait img{width:100%;height:100%;object-fit:cover;border-radius:50%;filter:saturate(.92)}
 .person h3{font-size:var(--step-1)}
-.person .role{font-size:.88rem;color:var(--ink-2)}
-.person .big{font-size:.78rem;color:var(--ink-2);font-variant-numeric:tabular-nums;letter-spacing:.02em}
-.person p{font-size:.92rem;color:var(--ink-2)}
-@media(max-width:759px){.team{grid-auto-flow:column;grid-auto-columns:78%;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:8px;margin-right:calc(-1 * max(20px,env(safe-area-inset-right,0px)))}.person{scroll-snap-align:start}}
+.person .role{font-size:.88rem;color:var(--ink-2);margin-top:4px}
+.person .big{font:500 .7rem/1.4 var(--text);color:var(--ink-2);font-variant-numeric:tabular-nums;letter-spacing:.12em;text-transform:uppercase;margin-top:6px}
+.person .bio{grid-column:2;font-size:.92rem;color:var(--ink-2)}
+@media(min-width:760px){
+  .team{grid-template-columns:repeat(3,1fr);gap:0 48px}
+  .person{grid-template-columns:1fr;gap:0;border-top:0;padding:0;grid-row:span 3;grid-template-rows:subgrid}
+  .portrait{grid-row:auto;width:min(100%,232px);margin:7px 7px 30px}
+  .person h3{font-size:var(--step-2);font-weight:400}
+  .person .bio{grid-column:1;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+}
 
-/* Practice gallery */
-.gallery{display:grid;gap:14px;grid-template-columns:1fr 1fr}
-.gallery figure{margin:0;position:relative;border-radius:var(--r-md);overflow:hidden}
-.gallery img{width:100%;height:100%;object-fit:cover}
-.gallery figcaption{position:absolute;left:14px;bottom:12px;background:rgba(247,243,236,.92);color:var(--ink);font-size:.78rem;font-weight:600;padding:6px 12px;border-radius:999px}
-.g1{grid-column:1/-1;aspect-ratio:16/8}
-.g2,.g3{aspect-ratio:4/4.4}
-@media(min-width:900px){.gallery{grid-template-columns:1.5fr 1fr 1fr;grid-template-rows:auto}.g1{grid-column:auto;aspect-ratio:auto}.g2,.g3{aspect-ratio:3/4}}
+/* Practice */
+.practice{display:grid;gap:14px}
+.practice figure{margin:0;display:grid;gap:12px;min-width:0}
+.practice .ph{border-radius:var(--r-md);overflow:hidden;aspect-ratio:4/3}
+.practice img{width:100%;height:100%;object-fit:cover;transition:transform 1.2s var(--ease)}
+.practice figure:hover img{transform:scale(1.025)}
+.practice figcaption{font-size:.82rem;color:var(--ink-2);display:flex;gap:10px;align-items:center}
+.practice figcaption::before{content:"";width:18px;height:1px;background:var(--terra)}
+@media(min-width:760px){.practice{grid-template-columns:1.72fr 1fr;gap:20px}.practice .ph{aspect-ratio:auto;height:clamp(360px,42vw,540px)}}
 
 /* Review */
-.review{display:grid;gap:28px;max-width:880px;margin-inline:auto;text-align:center}
-.stars{display:flex;gap:4px;justify-content:center;color:var(--terra)}
-.stars svg{width:18px;height:18px}
-.review blockquote{margin:0;font:400 var(--step-2)/1.4 var(--display);text-wrap:balance}
-.review cite{font-style:normal;font-size:.9rem;color:var(--ink-2)}
-.review-links{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.review{display:grid;gap:26px;max-width:900px;margin-inline:auto;text-align:center;justify-items:center}
+.review .eyebrow::after{content:"";flex:none;width:28px;height:1px;background:currentColor;opacity:.7}
+.stars{display:flex;gap:5px;justify-content:center;color:var(--terra)}
+.stars svg{width:15px;height:15px}
+.review blockquote{margin:0;font:400 clamp(1.45rem,1.15rem + 1.5vw,2.35rem)/1.34 var(--display);letter-spacing:-.014em;text-wrap:balance}
+.review cite{font-style:normal;font-size:.88rem;color:var(--ink-2)}
+.review-links{display:flex;flex-wrap:wrap;gap:14px 32px;justify-content:center;margin-top:8px;font-size:.93rem}
 
 /* Articles */
-.articles{display:grid;gap:0;border-top:1px solid var(--line)}
-@media(min-width:900px){.articles{grid-template-columns:repeat(3,1fr);gap:40px;border-top:0}}
-.art{display:grid;gap:10px;padding:22px 0;border-bottom:1px solid var(--line);text-decoration:none;align-content:start}
-@media(min-width:900px){.art{border-bottom:0;border-top:1px solid var(--ink);padding-top:22px}}
-.art .cat{font-size:.75rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--terra)}
-.art h3{font-size:var(--step-1)}
-.art p{font-size:.92rem;color:var(--ink-2)}
-.art time{font-size:.8rem;color:var(--ink-2)}
+.articles{display:grid;border-top:1px solid var(--ink)}
+.art{display:grid;gap:10px 40px;padding:26px 0;border-bottom:1px solid var(--line);text-decoration:none;align-items:start}
+.art-meta{display:grid;gap:6px;align-content:start}
+.art .cat{font:600 .7rem/1.3 var(--text);letter-spacing:.14em;text-transform:uppercase;color:var(--terra-text)}
+.art time{font-size:.82rem;color:var(--ink-2)}
+.art h3{font-size:var(--step-1);transition:color .2s}
+.art p{font-size:.92rem;color:var(--ink-2);margin-top:8px;max-width:60ch}
+.art .circle{display:none}
 .art:hover h3{color:var(--olive)}
+@media(min-width:760px){.art{grid-template-columns:220px 1fr auto;padding:32px 0;align-items:center}.art-meta{align-self:start;padding-top:4px}.art .circle{display:grid}.art h3{font-size:var(--step-2);font-weight:400}}
 
 /* Locations */
-.locs{display:grid;gap:20px}
-@media(min-width:900px){.locs{grid-template-columns:1fr 1fr;gap:28px}}
-.loc{background:var(--linen);border-radius:var(--r-lg);overflow:hidden;display:grid}
-.loc-img{aspect-ratio:16/8;overflow:hidden}
-.loc-img img{width:100%;height:100%;object-fit:cover}
-.loc-body{padding:clamp(22px,3vw,34px);display:grid;gap:18px}
-.loc-body h3{font-size:var(--step-2)}
-.loc-body address{font-style:normal;color:var(--ink-2)}
-.hours{width:100%;border-collapse:collapse;font-size:.92rem;font-variant-numeric:tabular-nums}
-.hours td{padding:8px 0;border-top:1px solid var(--line)}
-.hours td:last-child{text-align:right}
-.hours .closed td{color:var(--ink-2)}
+.locs{display:grid;gap:16px}
+@media(min-width:1000px){.locs{grid-template-columns:1fr 1fr .92fr;gap:20px}}
+.loc{background:var(--linen);border-radius:var(--r-lg);padding:clamp(24px,3vw,36px);display:grid;gap:22px;align-content:space-between}
+.loc small{font:600 .7rem/1.3 var(--text);letter-spacing:.14em;text-transform:uppercase;color:var(--terra-text)}
+.loc h3{font-size:var(--step-2);font-weight:400;margin-top:12px}
+.loc address{font-style:normal;color:var(--ink-2);margin-top:14px;font-size:.95rem}
+.loc address b{display:block;color:var(--ink);font-weight:500}
 .loc-actions{display:flex;flex-wrap:wrap;gap:10px}
-.loc-actions .btn{flex:1 1 auto}
-.contact-strip{margin-top:24px;display:flex;flex-wrap:wrap;gap:10px 28px;align-items:center;font-size:.95rem;color:var(--ink-2)}
-.contact-strip a{font-weight:600;color:var(--ink);text-decoration:none}
+.loc-actions .btn{flex:1 1 auto;padding-inline:1.2em}
+.loc-foot{display:grid;gap:20px;justify-items:start}
+.loc-foot .loc-actions{width:100%}
+.hours-card{background:var(--olive-deep);color:var(--on-dark);border-radius:var(--r-lg);padding:clamp(24px,3vw,36px);display:grid;gap:22px;align-content:space-between}
+.hours-card small{font:600 .7rem/1.3 var(--text);letter-spacing:.14em;text-transform:uppercase;color:#DDA683}
+.hours{width:100%;border-collapse:collapse;font-size:.93rem;font-variant-numeric:tabular-nums;margin-top:14px}
+.hours td{padding:11px 0;border-bottom:1px solid rgba(242,236,225,.18)}
+.hours td:last-child{text-align:right;white-space:nowrap}
+.hours .closed td{color:var(--on-dark-2)}
+.contact-strip{display:grid;gap:6px;font-size:.93rem;color:var(--on-dark-2)}
+.contact-strip a{font:400 var(--step-2)/1.2 var(--display);color:var(--on-dark);text-decoration:none;white-space:nowrap}
+.contact-strip a.wa{font:600 .93rem/1.4 var(--text);text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px}
 
 /* FAQ */
-.faq-grid{display:grid;gap:32px}
-@media(min-width:900px){.faq-grid{grid-template-columns:.8fr 1.4fr;gap:72px}}
+.faq-grid{display:grid;gap:36px}
+.faq-grid h2{margin-bottom:18px}
+@media(min-width:900px){.faq-grid{grid-template-columns:.8fr 1.3fr;gap:88px;align-items:start}.faq-intro{position:sticky;top:120px}}
+.faq{border-top:1px solid var(--ink)}
 .faq details{border-bottom:1px solid var(--line)}
-.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:20px;padding:20px 0;font:500 var(--step-1)/1.3 var(--display)}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:22px 0;font:500 var(--step-1)/1.3 var(--display);transition:color .2s}
+.faq summary:hover{color:var(--olive)}
 .faq summary::-webkit-details-marker{display:none}
-.faq summary::after{content:"+";font:300 1.5rem/1 var(--text);color:var(--terra);flex:none}
-.faq details[open] summary::after{content:"–"}
-.faq details p{padding-bottom:22px;color:var(--ink-2);max-width:62ch}
-.faq details a{color:var(--olive)}
+.faq details p{padding:0 34px 26px 0;color:var(--ink-2);max-width:62ch}
+.faq details[open] p{animation:faq-in .4s var(--ease)}
+@keyframes faq-in{from{opacity:0;transform:translateY(-4px)}}
+.faq details a{color:var(--olive);text-underline-offset:3px}
 
 /* Final CTA */
-.final{background:var(--olive);color:var(--on-dark);border-radius:var(--r-lg);padding:clamp(32px,6vw,72px);display:grid;gap:24px;position:relative;overflow:hidden}
+.final{background:var(--olive);color:var(--on-dark);border-radius:var(--r-lg);padding:clamp(36px,7vw,88px);display:grid;gap:32px;position:relative;overflow:hidden}
+.final::before,.final::after{content:"";position:absolute;border:1px solid rgba(242,236,225,.16);border-radius:50%;pointer-events:none}
+.final::before{width:420px;height:420px;right:-190px;top:-270px}
+.final::after{width:240px;height:240px;right:-100px;top:-180px}
 @media(min-width:900px){.final{grid-template-columns:1.3fr 1fr;align-items:end}}
-.final h2{font-size:var(--step-3)}
-.final h2 em{color:#E7C3A8}
-.final p{color:#DAD6C6;max-width:52ch}
-.final .actions{display:grid;gap:12px;justify-items:start}
-@media(min-width:900px){.final .actions{justify-items:end}}
-.final .small{font-size:.88rem;color:#DAD6C6}
-.final .small a{color:var(--on-dark)}
+.final > *{position:relative}
+.final .eyebrow{color:#EBC9B0}
+.final h2{font-size:var(--step-3);margin-block:18px}
+.final h2 em{color:#EBC9B0}
+.final p{color:#DEDACA;max-width:48ch}
+.final .actions{display:grid;gap:14px;justify-items:start}
+@media(min-width:900px){.final .actions{justify-items:end;text-align:right}}
+.final .small{font-size:.88rem;color:#DEDACA}
+.final .small a{color:var(--on-dark);text-underline-offset:3px}
 
 /* Footer */
-footer{background:var(--olive-deep);color:#CFC8BA;margin-top:clamp(64px,9vw,120px);font-size:.92rem}
-.foot{display:grid;gap:36px;padding-block:64px 40px}
-@media(min-width:900px){.foot{grid-template-columns:1.2fr 1fr 1fr 1fr}}
-.foot h4{font:500 1.05rem/1 var(--display);color:var(--on-dark);margin:0 0 16px}
-.foot ul{list-style:none;margin:0;padding:0;display:grid;gap:9px}
-.foot a{text-decoration:none}
+footer{background:var(--olive-deep);color:var(--on-dark-2);margin-top:clamp(72px,10vw,144px);font-size:.9rem}
+.foot{display:grid;gap:36px;padding-block:clamp(48px,6vw,80px) 44px}
+@media(min-width:900px){.foot{grid-template-columns:1.3fr 1fr 1fr 1fr;gap:48px}}
+.foot h4{font:600 .7rem/1.3 var(--text);letter-spacing:.14em;text-transform:uppercase;color:var(--on-dark);margin:0 0 18px;opacity:.8}
+.foot ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.foot a{text-decoration:none;transition:color .2s}
 .foot a:hover{color:var(--on-dark)}
 .foot .brand b{color:var(--on-dark)}
 .foot .brand img{filter:invert(1) brightness(1.6)}
-.legal{border-top:1px solid rgba(242,236,225,.15);padding-block:22px 110px;display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;font-size:.8rem}
+.legal{border-top:1px solid rgba(242,236,225,.15);padding-block:22px 110px;display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;font-size:.78rem}
 @media(min-width:900px){.legal{padding-bottom:24px}}
 
 /* Mobile sticky action bar */
-.actionbar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:none;gap:8px;padding:10px max(12px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));background:color-mix(in srgb,var(--linen) 94%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--line);transform:translateY(110%);transition:transform .3s}
+.actionbar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:none;gap:8px;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:color-mix(in srgb,var(--linen) 94%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-top:1px solid var(--line);transform:translateY(110%);transition:transform .4s var(--ease)}
 .actionbar.show{transform:none}
 .actionbar .btn{min-height:50px;padding-inline:0}
-.actionbar .btn-primary{flex:1}
-.actionbar .sq{width:50px;border:1px solid var(--line);border-radius:999px;display:grid;place-items:center;color:var(--olive-deep)}
+.actionbar .btn-primary{flex:1;box-shadow:none}
+.actionbar .sq{width:50px;border:1px solid var(--line);border-radius:999px;display:grid;place-items:center;color:var(--olive-deep);background:var(--linen)}
 .actionbar .sq svg{width:20px;height:20px}
 @media(max-width:899px){.actionbar{display:flex}}
 
-.preview-flag{background:var(--terra);color:#fff;font:600 .7rem/1 var(--text);letter-spacing:.12em;text-transform:uppercase;padding:8px 16px;text-align:center}
+.preview-flag{background:var(--terra);color:#fff;font:600 .68rem/1 var(--text);letter-spacing:.14em;text-transform:uppercase;padding:8px 16px;text-align:center}
+
+/* Scroll reveal: only when JS runs and motion is allowed */
+.js .reveal{opacity:0;transform:translateY(16px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+.js .reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+  .js .reveal{opacity:1;transform:none}
+}
 </style>
+<script>document.documentElement.classList.add("js")</script>
 </head>
 <body>
 <div class="preview-flag">Ontwerppreview · niet live</div>
@@ -356,7 +433,7 @@ footer{background:var(--olive-deep);color:#CFC8BA;margin-top:clamp(64px,9vw,120p
 <section class="hero">
   <div class="wrap hero-grid">
     <div>
-      <p class="eyebrow">Fysiotherapie · Rotterdam Noord &amp; Centrum</p>
+      <p class="eyebrow"><span><span class="hide-s">Fysiotherapie · </span>Rotterdam Noord &amp; Centrum</span></p>
       <h1>Fysiotherapie in Rotterdam, <em>beweeg weer zonder pijn.</em></h1>
       <p class="lede">Voor klachten aan nek, schouder, rug of knie, en voor sporters die weer terug willen op hun niveau. Twee locaties, één vast team en een eigen gym voor actieve revalidatie.</p>
       <div class="hero-cta">
@@ -364,33 +441,41 @@ footer{background:var(--olive-deep);color:#CFC8BA;margin-top:clamp(64px,9vw,120p
         <a class="btn btn-ghost" href="tel:+31681700829"><svg><use href="#i-phone"/></svg>Bel +31 6 81 70 08 29</a>
       </div>
       <p class="hero-sub">Al onder behandeling? <a class="link" href="https://flux.healthcare/schedule/functional-performance/flex?appointment_type=vervolgafspraak&amp;location=&amp;user=" target="_blank" rel="noopener">Plan je vervolgafspraak</a></p>
-      <ul class="trust">
-        <li><svg><use href="#i-check"/></svg>Geen verwijzing nodig</li>
-        <li><svg><use href="#i-check"/></svg>Contracten met alle grote zorgverzekeraars</li>
-        <li><svg><use href="#i-check"/></svg>BIG-geregistreerd · KNGF</li>
-      </ul>
     </div>
-    <div class="hero-media">
-      <div class="arch"><img src="img/rehab.jpg" alt="Fysiotherapeut onderzoekt de schouder en nek van een patiënt in de behandelkamer" width="1600" height="901"></div>
-      <div class="hero-note"><small>Eerste afspraak</small><strong>Intake + onderzoek, 60 minuten</strong><span>Vaak binnen 24 uur terecht</span></div>
-    </div>
+    <figure class="hero-media">
+      <div class="arch"><img src="img/rehab.jpg" alt="Fysiotherapeut onderzoekt de schouder en nek van een patiënt in de behandelkamer" width="1600" height="900" fetchpriority="high"></div>
+    </figure>
+  </div>
+  <div class="wrap">
+    <dl class="facts">
+      <div><dt>Eerste afspraak</dt><dd>Intake + onderzoek, 60 minuten</dd></div>
+      <div><dt>Wachttijd</dt><dd>Vaak binnen 24 uur terecht</dd></div>
+      <div><dt>Verwijzing</dt><dd>Geen verwijzing nodig</dd></div>
+      <div><dt>Vergoeding</dt><dd>Contracten met alle grote zorgverzekeraars</dd></div>
+      <div><dt>Kwaliteit</dt><dd>BIG-geregistreerd · KNGF</dd></div>
+    </dl>
   </div>
 </section>
 
 <!-- BOOKING -->
-<section id="afspraak" class="wrap" style="scroll-margin-top:90px">
+<section id="afspraak" class="wrap booking">
   <div class="book">
-    <div>
+    <div class="book-head">
       <p class="eyebrow">Online afspraak</p>
-      <h2>Kies je locatie en plan direct.</h2>
+      <h2>Kies je locatie <em>en plan direct.</em></h2>
       <p>Je ziet meteen de vrije tijden. Twijfel je over je klacht of de vergoeding? Stuur een WhatsApp, dan bellen we je dezelfde dag terug.</p>
     </div>
     <div class="book-options">
-      <a class="opt" href="https://flux.healthcare/schedule/functional-performance/flex?appointment_type=nieuwe-klachtonderzoek-behandeling&amp;location=9ca9fc8d-157a-4930-8881-baf27a7dfa91&amp;user=" target="_blank" rel="noopener"><b>Rotterdam Noord</b><span>Noorderhavenkade 158C · Blijdorp</span><i>Plan intake →</i></a>
-      <a class="opt" href="https://flux.healthcare/schedule/functional-performance/flex?appointment_type=nieuwe-klachtonderzoek-behandeling&amp;location=9ca9fc8d-17a1-4576-bfac-e92a0ffe47f1&amp;user=" target="_blank" rel="noopener"><b>Rotterdam Centrum</b><span>Wijnhaven 66 · bij Blaak</span><i>Plan intake →</i></a>
-      <a class="opt alt" href="https://flux.healthcare/schedule/functional-performance/flex?appointment_type=vervolgafspraak&amp;location=&amp;user=" target="_blank" rel="noopener"><b>Vervolgafspraak</b><span>Al onder behandeling bij ons</span><i>Plan vervolg →</i></a>
+      <a class="opt" href="https://flux.healthcare/schedule/functional-performance/flex?appointment_type=nieuwe-klachtonderzoek-behandeling&amp;location=9ca9fc8d-157a-4930-8881-baf27a7dfa91&amp;user=" target="_blank" rel="noopener"><small>Intake · 60 minuten</small><b>Rotterdam Noord</b><span class="sub">Noorderhavenkade 158C · Blijdorp</span><span class="circle" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span></a>
+      <a class="opt" href="https://flux.healthcare/schedule/functional-performance/flex?appointment_type=nieuwe-klachtonderzoek-behandeling&amp;location=9ca9fc8d-17a1-4576-bfac-e92a0ffe47f1&amp;user=" target="_blank" rel="noopener"><small>Intake · 60 minuten</small><b>Rotterdam Centrum</b><span class="sub">Wijnhaven 66 · bij Blaak</span><span class="circle" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span></a>
+      <a class="opt alt" href="https://flux.healthcare/schedule/functional-performance/flex?appointment_type=vervolgafspraak&amp;location=&amp;user=" target="_blank" rel="noopener"><b>Vervolgafspraak plannen</b><span class="sub">Al onder behandeling bij ons</span><span class="circle" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span></a>
+      <div class="book-foot"><span>Intake 60 min · reguliere zitting 25 min</span><span>Zonder verzekering: intake € 60 · zitting € 49 (2026)</span><a class="link" href="https://functionalperformance.nl/tarieven" target="_blank" rel="noopener">Alle tarieven</a></div>
     </div>
-    <div class="book-foot"><span>Intake 60 min · reguliere zitting 25 min</span><span>Zonder verzekering: intake € 60 · zitting € 49 (2026)</span><a class="link" href="https://functionalperformance.nl/tarieven" target="_blank" rel="noopener">Alle tarieven</a></div>
+    <ol class="book-steps">
+      <li><b>Kies je locatie</b><span>Rotterdam Noord of Rotterdam Centrum.</span></li>
+      <li><b>Kies een dag en tijd</b><span>In de online agenda, zonder verwijzing.</span></li>
+      <li><b>Kom langs voor je intake</b><span>60 minuten. Neem je verzekeringspas en een ID-bewijs mee.</span></li>
+    </ol>
   </div>
 </section>
 
@@ -400,7 +485,7 @@ footer{background:var(--olive-deep);color:#CFC8BA;margin-top:clamp(64px,9vw,120p
     <div class="section-head split">
       <div>
         <p class="eyebrow">Waar heb je last van?</p>
-        <h2 style="font-size:var(--step-3);margin-top:14px">Voor sporters én voor iedereen <em>die pijn of beperkingen ervaart.</em></h2>
+        <h2>Voor sporters én voor iedereen <em>die pijn of beperkingen ervaart.</em></h2>
       </div>
       <div class="intro-copy">
         <p>Functional Performance is een fysiotherapiepraktijk in Rotterdam. We helpen mensen met alledaagse klachten aan nek, schouder, rug of knie, met sportblessures en met revalidatie na een operatie. Tijdens de behandeling wisselen we onderzoek, hands-on therapie en oefeningen af.</p>
@@ -418,7 +503,7 @@ footer{background:var(--olive-deep);color:#CFC8BA;margin-top:clamp(64px,9vw,120p
       <a class="k" href="https://functionalperformance.nl/klachten-revalidatie/return-to-sport-test-rotterdam" target="_blank" rel="noopener"><h3>Return to sport</h3><p>Objectieve tests voordat je weer volledig gaat trainen.</p><span class="arrow"><svg><use href="#i-arrow"/></svg></span></a>
     </div>
     <div class="more-row">
-      <a class="btn btn-ghost" href="https://functionalperformance.nl/behandelingen" target="_blank" rel="noopener">Alle behandelingen <svg><use href="#i-arrow"/></svg></a>
+      <a class="btn btn-ghost" href="https://functionalperformance.nl/behandelingen" target="_blank" rel="noopener">Alle behandelingen <svg class="go"><use href="#i-arrow"/></svg></a>
       <a class="link" href="https://functionalperformance.nl/klachten-revalidatie" target="_blank" rel="noopener">Klachten &amp; revalidatie</a>
       <a class="link" href="https://functionalperformance.nl/dry-needling-rotterdam" target="_blank" rel="noopener">Dry needling</a>
       <a class="link" href="https://functionalperformance.nl/fysiotherapie-aan-huis-rotterdam" target="_blank" rel="noopener">Fysiotherapie aan huis</a>
@@ -432,7 +517,7 @@ footer{background:var(--olive-deep);color:#CFC8BA;margin-top:clamp(64px,9vw,120p
     <div class="section-head split">
       <div>
         <p class="eyebrow">Zo werken we</p>
-        <h2 style="font-size:var(--step-3);margin-top:14px">Grondig onderzoek, eerlijk advies en <em>een plan dat bij je past.</em></h2>
+        <h2>Grondig onderzoek, eerlijk advies en <em>een plan dat bij je past.</em></h2>
       </div>
       <p class="lede">Je ziet zoveel mogelijk dezelfde behandelaar: iemand die jouw verhaal kent, van eerste afspraak tot laatste controle.</p>
     </div>
@@ -442,79 +527,78 @@ footer{background:var(--olive-deep);color:#CFC8BA;margin-top:clamp(64px,9vw,120p
       <li><h3>Opbouwen in onze gym</h3><p>Hands-on therapie gecombineerd met oefeningen in de eigen gym, tot je weer kunt wat je wilt.</p><span class="meta">Tot je sport, niet alleen tot pijnvrij</span></li>
     </ol>
     <div class="approach-media">
-      <img src="img/overhead.jpg" alt="Patiënt traint aan de optrekstang in de eigen revalidatiegym" width="1600" height="1067" loading="lazy">
-      <img src="img/treatment.jpg" alt="Hands-on behandeling van de knie op de behandelbank" width="1100" height="1467" loading="lazy" style="object-position:center 60%">
+      <img src="img/overhead.jpg" alt="Patiënt traint aan de optrekstang in de eigen revalidatiegym" width="1600" height="1066" loading="lazy">
+      <img src="img/treatment.jpg" alt="Hands-on behandeling van de knie op de behandelbank" width="1100" height="1466" loading="lazy" style="object-position:center 38%">
     </div>
   </div>
 </section>
 
 <!-- SERVICES -->
-<section class="section">
+<section class="section band-linen">
   <div class="wrap">
     <div class="section-head">
       <p class="eyebrow">Meer dan fysiotherapie</p>
-      <h2 style="font-size:var(--step-3)">Doortrainen <em>onder het oog van een fysiotherapeut.</em></h2>
+      <h2>Doortrainen <em>onder het oog van een fysiotherapeut.</em></h2>
     </div>
     <div class="services">
-      <a class="svc" href="https://functionalperformance.nl/behandelingen" target="_blank" rel="noopener"><span class="tag">Fysiotherapie</span><h3>Klachten, revalidatie en sportblessures</h3><p>Op beide locaties, vaak vergoed vanuit je aanvullende verzekering.</p></a>
-      <a class="svc" href="https://functionalperformance.nl/personal-training-rotterdam" target="_blank" rel="noopener"><span class="tag">Personal training</span><h3>Physio-led personal training</h3><p>Kracht en belastbaarheid opbouwen met een fysiotherapeut naast je.</p></a>
-      <a class="svc" href="https://functionalperformance.nl/massage-rotterdam" target="_blank" rel="noopener"><span class="tag">Massage</span><h3>Sport- en herstelmassage</h3><p>Bij stijve spieren en na het trainen.</p></a>
+      <a class="svc" href="https://functionalperformance.nl/behandelingen" target="_blank" rel="noopener"><span class="tag">Fysiotherapie</span><h3>Klachten, revalidatie en sportblessures</h3><p>Op beide locaties, vaak vergoed vanuit je aanvullende verzekering.</p><span class="more">Meer lezen <svg><use href="#i-arrow"/></svg></span></a>
+      <a class="svc" href="https://functionalperformance.nl/personal-training-rotterdam" target="_blank" rel="noopener"><span class="tag">Personal training</span><h3>Physio-led personal training</h3><p>Kracht en belastbaarheid opbouwen met een fysiotherapeut naast je.</p><span class="more">Meer lezen <svg><use href="#i-arrow"/></svg></span></a>
+      <a class="svc" href="https://functionalperformance.nl/massage-rotterdam" target="_blank" rel="noopener"><span class="tag">Massage</span><h3>Sport- en herstelmassage</h3><p>Bij stijve spieren en na het trainen.</p><span class="more">Meer lezen <svg><use href="#i-arrow"/></svg></span></a>
     </div>
-    <div class="svc-links">
-      <a class="pill" href="https://functionalperformance.nl/leefstijlcoaching" target="_blank" rel="noopener">Leefstijlcoaching</a>
-      <a class="pill" href="https://functionalperformance.nl/fysiotherapie-aan-huis-rotterdam" target="_blank" rel="noopener">Fysiotherapie aan huis</a>
-      <a class="pill" href="https://functionalperformance.nl/samenwerkingen" target="_blank" rel="noopener">Samenwerkingen</a>
-    </div>
+    <p class="also"><span>Ook bij ons:</span>
+      <a class="link" href="https://functionalperformance.nl/leefstijlcoaching" target="_blank" rel="noopener">Leefstijlcoaching</a>
+      <a class="link" href="https://functionalperformance.nl/fysiotherapie-aan-huis-rotterdam" target="_blank" rel="noopener">Fysiotherapie aan huis</a>
+      <a class="link" href="https://functionalperformance.nl/samenwerkingen" target="_blank" rel="noopener">Samenwerkingen</a>
+    </p>
   </div>
 </section>
 
 <!-- TEAM -->
-<section class="section" style="background:var(--dune)">
-  <div class="wrap">
-    <div class="section-head split">
-      <div>
-        <p class="eyebrow">Het team</p>
-        <h2 style="font-size:var(--step-3);margin-top:14px">Klein team, <em>grote betrokkenheid.</em></h2>
-      </div>
-      <p class="lede">We zijn een klein team, dus je ziet steeds dezelfde gezichten. Alle fysiotherapeuten zijn BIG-geregistreerd.</p>
-    </div>
-    <div class="team">
-      <div class="person"><div class="portrait"><img src="img/dinish.jpg" alt="Portret van Dinish Everitz" width="700" height="672" loading="lazy"></div><div><h3>Dinish Everitz</h3><p class="role">Fysiotherapeut · Oprichter</p><p class="big">BIG 99928054104</p></div><p>Achtergrond in karate, sport en fysiotherapie. Sportgerelateerde fysiotherapie, revalidatie en herstel.</p></div>
-      <div class="person"><div class="portrait"><img src="img/chelsea.jpg" alt="Portret van Chelsea Kerklaan Diaz Lopez" width="700" height="672" loading="lazy"></div><div><h3>Chelsea Kerklaan Diaz Lopez</h3><p class="role">Fysiotherapeut</p><p class="big">BIG 69926665004</p></div><p>Topsportachtergrond in karate en volleybal. Bewegingsleer en sportpsychologie in één behandeling.</p></div>
-      <div class="person"><div class="portrait"><img src="img/syabend.jpg" alt="Portret van Syabend Oruc" width="700" height="672" loading="lazy"></div><div><h3>Syabend Oruc</h3><p class="role">Fysiotherapeut</p><p class="big">BIG 69938890604</p></div><p>Karate, krachttraining en massagetherapie. Een scherp oog voor weefsel en herstel.</p></div>
-    </div>
-    <div class="more-row"><a class="btn btn-ghost" href="https://functionalperformance.nl/team" target="_blank" rel="noopener">Lees meer over het team <svg><use href="#i-arrow"/></svg></a></div>
-  </div>
-</section>
-
-<!-- PRACTICE -->
 <section class="section">
   <div class="wrap">
     <div class="section-head split">
       <div>
+        <p class="eyebrow">Het team</p>
+        <h2>Klein team, <em>grote betrokkenheid.</em></h2>
+      </div>
+      <p class="lede">We zijn een klein team, dus je ziet steeds dezelfde gezichten. Alle fysiotherapeuten zijn BIG-geregistreerd.</p>
+    </div>
+    <div class="team">
+      <article class="person"><div class="portrait"><img src="img/team-dinish.jpg" alt="Portret van Dinish Everitz" width="560" height="560" loading="lazy"></div><div><h3>Dinish Everitz</h3><p class="role">Fysiotherapeut · Oprichter</p><p class="big">BIG 99928054104</p></div><p class="bio">Achtergrond in karate, sport en fysiotherapie. Sportgerelateerde fysiotherapie, revalidatie en herstel.</p></article>
+      <article class="person"><div class="portrait"><img src="img/team-chelsea.jpg" alt="Portret van Chelsea Kerklaan Diaz Lopez" width="560" height="560" loading="lazy"></div><div><h3>Chelsea Kerklaan Diaz Lopez</h3><p class="role">Fysiotherapeut</p><p class="big">BIG 69926665004</p></div><p class="bio">Topsportachtergrond in karate en volleybal. Bewegingsleer en sportpsychologie in één behandeling.</p></article>
+      <article class="person"><div class="portrait"><img src="img/team-syabend.jpg" alt="Portret van Syabend Oruc" width="560" height="560" loading="lazy"></div><div><h3>Syabend Oruc</h3><p class="role">Fysiotherapeut</p><p class="big">BIG 69938890604</p></div><p class="bio">Karate, krachttraining en massagetherapie. Een scherp oog voor weefsel en herstel.</p></article>
+    </div>
+    <div class="more-row"><a class="btn btn-ghost" href="https://functionalperformance.nl/team" target="_blank" rel="noopener">Lees meer over het team <svg class="go"><use href="#i-arrow"/></svg></a></div>
+  </div>
+</section>
+
+<!-- PRACTICE -->
+<section class="section band-dune">
+  <div class="wrap">
+    <div class="section-head split">
+      <div>
         <p class="eyebrow">Onze praktijk</p>
-        <h2 style="font-size:var(--step-3);margin-top:14px">Een ruimte om <em>tot rust te komen.</em></h2>
+        <h2>Een ruimte om <em>tot rust te komen.</em></h2>
       </div>
       <p class="lede">Rustige behandelkamers en een eigen gym. Mensen komen hier voor een behandeling, maar net zo vaak om te oefenen en stap voor stap sterker te worden.</p>
     </div>
-    <div class="gallery">
-      <figure class="g1"><img src="img/waiting.jpg" alt="Lichte wachtruimte met trap en hanglamp" width="1400" height="788" loading="lazy"><figcaption>Wachtruimte</figcaption></figure>
-      <figure class="g2"><img src="img/hall.jpg" alt="Gang naar de revalidatiegym" width="1000" height="1333" loading="lazy"><figcaption>De praktijk</figcaption></figure>
-      <figure class="g3"><img src="img/treatment.jpg" alt="Behandelkamer met behandelbank" width="1100" height="1467" loading="lazy"><figcaption>Behandelkamer</figcaption></figure>
+    <div class="practice">
+      <figure><div class="ph"><img src="img/waiting.jpg" alt="Lichte wachtruimte met trap en hanglamp" width="1400" height="787" loading="lazy"></div><figcaption>Wachtruimte</figcaption></figure>
+      <figure><div class="ph"><img src="img/hall.jpg" alt="Gang naar de revalidatiegym" width="1000" height="1333" loading="lazy" style="object-position:center 42%"></div><figcaption>Doorkijk naar de gym</figcaption></figure>
     </div>
   </div>
 </section>
 
 <!-- REVIEW -->
-<section class="section" style="background:var(--linen)">
+<section class="section band-linen">
   <div class="wrap review">
     <p class="eyebrow">Ervaringen van onze patiënten</p>
-    <div class="stars" aria-label="5 van 5 sterren"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div>
     <blockquote>“Dinish neemt de tijd voor de intake en stelt de juiste vragen. Hij luistert niet alleen naar de klacht, maar ook naar de onderliggende oorzaak.”</blockquote>
+    <div class="stars" role="img" aria-label="5 van 5 sterren"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div>
     <cite>Giovanni Bozuwa · via Google</cite>
     <div class="review-links">
-      <a class="btn btn-ghost" href="https://maps.google.com/?cid=4883598332039444106" target="_blank" rel="noopener">Lees alle reviews op Google</a>
-      <a class="btn btn-ghost" href="https://www.zorgkaartnederland.nl/zorginstelling/fysiotherapiepraktijk-functional-performance-rotterdam-10017433" target="_blank" rel="noopener">ZorgkaartNederland</a>
+      <a class="link" href="https://maps.google.com/?cid=4883598332039444106" target="_blank" rel="noopener">Lees alle reviews op Google</a>
+      <a class="link" href="https://www.zorgkaartnederland.nl/zorginstelling/fysiotherapiepraktijk-functional-performance-rotterdam-10017433" target="_blank" rel="noopener">ZorgkaartNederland</a>
     </div>
   </div>
 </section>
@@ -523,30 +607,28 @@ footer{background:var(--olive-deep);color:#CFC8BA;margin-top:clamp(64px,9vw,120p
 <section class="section">
   <div class="wrap">
     <div class="section-head split">
-      <div><p class="eyebrow">Kennisbank</p><h2 style="font-size:var(--step-3);margin-top:14px">Wat zegt <em>het onderzoek?</em></h2></div>
+      <div><p class="eyebrow">Kennisbank</p><h2>Wat zegt <em>het onderzoek?</em></h2></div>
       <div><a class="link" href="https://functionalperformance.nl/kennisbank" target="_blank" rel="noopener">Bekijk alle artikelen</a></div>
     </div>
     <div class="articles">
-      <a class="art" href="https://functionalperformance.nl/kennisbank/beste-oefeningen-chronische-lage-rugpijn" target="_blank" rel="noopener"><span class="cat">Rug &amp; chronische pijn</span><h3>Beste oefeningen bij chronische lage rugpijn: wat werkt?</h3><p>Een review van 70 studies zocht uit of de ene oefenvorm beter werkt dan de andere.</p><time>6 november 2026 · 8 min</time></a>
-      <a class="art" href="https://functionalperformance.nl/kennisbank/injectie-achillespeesklachten-werkt-het" target="_blank" rel="noopener"><span class="cat">Pezen &amp; overbelasting</span><h3>Injectie bij achillespeesklachten: werkt het echt?</h3><p>Een grote trial in The BMJ vergeleek injecties met een nepbehandeling.</p><time>31 oktober 2026 · 7 min</time></a>
-      <a class="art" href="https://functionalperformance.nl/kennisbank/zwakke-quadriceps-na-kruisbandoperatie" target="_blank" rel="noopener"><span class="cat">Knie &amp; kruisband</span><h3>Waarom blijft je bovenbeenspier zwak na een kruisbandoperatie?</h3><p>Wat spierremming en spierverlies ermee te maken hebben, en wat NMES kan toevoegen.</p><time>23 oktober 2026 · 7 min</time></a>
+      <a class="art" href="https://functionalperformance.nl/kennisbank/beste-oefeningen-chronische-lage-rugpijn" target="_blank" rel="noopener"><div class="art-meta"><span class="cat">Rug &amp; chronische pijn</span><time>6 november 2026 · 8 min</time></div><div><h3>Beste oefeningen bij chronische lage rugpijn: wat werkt?</h3><p>Een review van 70 studies zocht uit of de ene oefenvorm beter werkt dan de andere.</p></div><span class="circle" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span></a>
+      <a class="art" href="https://functionalperformance.nl/kennisbank/injectie-achillespeesklachten-werkt-het" target="_blank" rel="noopener"><div class="art-meta"><span class="cat">Pezen &amp; overbelasting</span><time>31 oktober 2026 · 7 min</time></div><div><h3>Injectie bij achillespeesklachten: werkt het echt?</h3><p>Een grote trial in The BMJ vergeleek injecties met een nepbehandeling.</p></div><span class="circle" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span></a>
+      <a class="art" href="https://functionalperformance.nl/kennisbank/zwakke-quadriceps-na-kruisbandoperatie" target="_blank" rel="noopener"><div class="art-meta"><span class="cat">Knie &amp; kruisband</span><time>23 oktober 2026 · 7 min</time></div><div><h3>Waarom blijft je bovenbeenspier zwak na een kruisbandoperatie?</h3><p>Wat spierremming en spierverlies ermee te maken hebben, en wat NMES kan toevoegen.</p></div><span class="circle" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span></a>
     </div>
   </div>
 </section>
 
 <!-- LOCATIONS + HOURS (single section, replaces two) -->
-<section class="section" id="locaties" style="background:var(--dune);scroll-margin-top:70px">
+<section class="section band-dune" id="locaties" style="scroll-margin-top:70px">
   <div class="wrap">
     <div class="section-head split">
-      <div><p class="eyebrow">Locaties &amp; openingstijden</p><h2 style="font-size:var(--step-3);margin-top:14px">Twee adressen, <em>één team dat klaarstaat.</em></h2></div>
+      <div><p class="eyebrow">Locaties &amp; openingstijden</p><h2>Twee adressen, <em>één team dat klaarstaat.</em></h2></div>
       <p class="lede">Beide locaties zijn goed bereikbaar met OV, fiets en auto. Direct toegankelijk, geen verwijzing nodig.</p>
     </div>
     <div class="locs">
       <article class="loc">
-        <div class="loc-img"><img src="img/hall.jpg" alt="Interieur van de praktijk in Rotterdam Noord" width="1000" height="1333" loading="lazy" style="object-position:center 40%"></div>
-        <div class="loc-body">
-          <div><h3>Rotterdam Noord &amp; Blijdorp</h3><address>Noorderhavenkade 158C, 3038 XV Rotterdam<br>Op de grens van Bergpolder &amp; Blijdorp</address></div>
-          <table class="hours"><tbody><tr><td>Maandag – donderdag</td><td>07:30 – 21:00</td></tr><tr><td>Vrijdag</td><td>07:30 – 18:00</td></tr><tr class="closed"><td>Zaterdag &amp; zondag</td><td>Gesloten</td></tr></tbody></table>
+        <div><small>Locatie Noord</small><h3>Rotterdam Noord &amp; Blijdorp</h3><address><b>Noorderhavenkade 158C, 3038 XV Rotterdam</b>Op de grens van Bergpolder &amp; Blijdorp</address></div>
+        <div class="loc-foot">
           <div class="loc-actions">
             <a class="btn btn-primary" href="https://flux.healthcare/schedule/functional-performance/flex?appointment_type=nieuwe-klachtonderzoek-behandeling&amp;location=9ca9fc8d-157a-4930-8881-baf27a7dfa91&amp;user=" target="_blank" rel="noopener">Plan hier een afspraak</a>
             <a class="btn btn-ghost" href="https://www.google.com/maps/search/?api=1&amp;query=Functional+Performance+Noorderhavenkade+158C+Rotterdam" target="_blank" rel="noopener">Route</a>
@@ -555,10 +637,8 @@ footer{background:var(--olive-deep);color:#CFC8BA;margin-top:clamp(64px,9vw,120p
         </div>
       </article>
       <article class="loc">
-        <div class="loc-img"><img src="img/waiting.jpg" alt="Interieur van de praktijk in Rotterdam Centrum" width="1400" height="788" loading="lazy"></div>
-        <div class="loc-body">
-          <div><h3>Rotterdam Centrum (Wijnhaven)</h3><address>Wijnhaven 66, 3011 WT Rotterdam<br>Centrum, nabij Blaak</address></div>
-          <table class="hours"><tbody><tr><td>Maandag – donderdag</td><td>07:30 – 21:00</td></tr><tr><td>Vrijdag</td><td>07:30 – 18:00</td></tr><tr class="closed"><td>Zaterdag &amp; zondag</td><td>Gesloten</td></tr></tbody></table>
+        <div><small>Locatie Centrum</small><h3>Rotterdam Centrum (Wijnhaven)</h3><address><b>Wijnhaven 66, 3011 WT Rotterdam</b>Centrum, nabij Blaak</address></div>
+        <div class="loc-foot">
           <div class="loc-actions">
             <a class="btn btn-primary" href="https://flux.healthcare/schedule/functional-performance/flex?appointment_type=nieuwe-klachtonderzoek-behandeling&amp;location=9ca9fc8d-17a1-4576-bfac-e92a0ffe47f1&amp;user=" target="_blank" rel="noopener">Plan hier een afspraak</a>
             <a class="btn btn-ghost" href="https://www.google.com/maps/search/?api=1&amp;query=Functional+Performance+Wijnhaven+66+Rotterdam" target="_blank" rel="noopener">Route</a>
@@ -566,17 +646,22 @@ footer{background:var(--olive-deep);color:#CFC8BA;margin-top:clamp(64px,9vw,120p
           <a class="link" href="https://functionalperformance.nl/rotterdam-centrum" target="_blank" rel="noopener">Bekijk locatie Rotterdam Centrum</a>
         </div>
       </article>
+      <aside class="hours-card">
+        <div><small>Openingstijden · beide locaties</small>
+          <table class="hours"><tbody><tr><td>Maandag – donderdag</td><td>07:30 – 21:00</td></tr><tr><td>Vrijdag</td><td>07:30 – 18:00</td></tr><tr class="closed"><td>Zaterdag &amp; zondag</td><td>Gesloten</td></tr></tbody></table>
+        </div>
+        <div class="contact-strip"><span>Liever eerst contact?</span><a href="tel:+31681700829">+31 6 81 70 08 29</a><a class="wa" href="https://wa.me/31681700829" target="_blank" rel="noopener">WhatsApp ons</a><span>We bellen je dezelfde dag terug.</span></div>
+      </aside>
     </div>
-    <div class="contact-strip"><span>Liever eerst contact?</span><a href="tel:+31681700829">+31 6 81 70 08 29</a><a href="https://wa.me/31681700829" target="_blank" rel="noopener">WhatsApp ons</a><span>We bellen je dezelfde dag terug.</span></div>
   </div>
 </section>
 
 <!-- FAQ (all 12 kept for FAQPage schema) -->
 <section class="section">
   <div class="wrap faq-grid">
-    <div>
+    <div class="faq-intro">
       <p class="eyebrow">Veelgestelde vragen</p>
-      <h2 style="font-size:var(--step-3);margin-block:14px 16px">Antwoorden op <em>wat je je afvraagt.</em></h2>
+      <h2>Antwoorden op <em>wat je je afvraagt.</em></h2>
       <p class="lede">Staat je vraag er niet tussen? Bel ons direct of stuur een bericht via <a class="link" href="https://wa.me/31681700829" target="_blank" rel="noopener">WhatsApp</a>.</p>
     </div>
     <div class="faq">
@@ -600,8 +685,8 @@ footer{background:var(--olive-deep);color:#CFC8BA;margin-top:clamp(64px,9vw,120p
 <section class="wrap">
   <div class="final">
     <div>
-      <p class="eyebrow" style="color:#E7C3A8">Eerste stap</p>
-      <h2 style="margin-block:14px 16px">Klaar om <em>weer vrij te bewegen?</em></h2>
+      <p class="eyebrow">Eerste stap</p>
+      <h2>Klaar om <em>weer vrij te bewegen?</em></h2>
       <p>Plan een intake van 60 minuten. We luisteren, onderzoeken en bouwen samen een traject, geen standaard sjabloon.</p>
     </div>
     <div class="actions">
@@ -610,6 +695,7 @@ footer{background:var(--olive-deep);color:#CFC8BA;margin-top:clamp(64px,9vw,120p
     </div>
   </div>
 </section>
+
 </main>
 
 <footer>
@@ -658,6 +744,14 @@ footer{background:var(--olive-deep);color:#CFC8BA;margin-top:clamp(64px,9vw,120p
   drawer.addEventListener('click',function(e){if(e.target.closest('a'))setOpen(false)});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!drawer.hidden)setOpen(false)});
   if(location.hash==='#menu')setOpen(true);
+  var mq=window.matchMedia('(prefers-reduced-motion: reduce)');
+  document.addEventListener('click',function(e){var a=e.target.closest('a[href^="#"]');if(!a)return;var t=document.querySelector(a.getAttribute('href'));if(!t)return;e.preventDefault();t.scrollIntoView({behavior:mq.matches?'auto':'smooth',block:'start'});});
+  
+  if('IntersectionObserver' in window&&!mq.matches){
+    var els=document.querySelectorAll('.section-head,.book,.klachten,.more-row,.steps,.approach-media,.services,.also,.person,.practice figure,.review,.articles,.loc,.hours-card,.faq,.final');
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{rootMargin:'0px 0px -6% 0px'});
+    els.forEach(function(el){el.classList.add('reveal');io.observe(el)});
+  }
 })();
 </script>
 </body>
