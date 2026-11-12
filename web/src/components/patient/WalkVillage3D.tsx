@@ -12,6 +12,7 @@ import { VILLAGE_LAYOUT, clampRect, findPath, nearestSpot, reachable, slotPositi
 import { PRACTICE_DOOR_X, ROOM, ROOM_AT, practiceBuilding, practiceRoom, type RoomWall } from './practice3d';
 import { houseRoom } from './house3d';
 import { VILLAGERS, routePoint } from './villagers';
+import type { MapTrack } from './VillageMap';
 
 /**
  * The village as a place to walk around in (three.js). Tap the ground and the hero walks there;
@@ -26,7 +27,7 @@ export const EXIT_KEY = 'exit';
 export const boardKey = (house: string) => `in:${house}`;
 /** A room behind a door in the village. */
 type Place = { group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[] };
-export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void };
+export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void };
 type Props = {
   /** Buildings round the square take the next free slot; one with a `site` stands there instead. */
   buildings: { key: string; label: string; site?: Site; roof?: number; kind?: 'kracht' | 'mobiliteit'; alert?: boolean }[];
@@ -56,7 +57,7 @@ type Props = {
   /** Name on the practice building. */
   practiceLabel?: string;
   /** Kept up to date by the scene, for the minimap. */
-  track?: MutableRefObject<{ x: number; z: number; facing: number; target?: Vec | null }>;
+  track?: MutableRefObject<MapTrack>;
   className?: string;
 };
 
@@ -103,6 +104,21 @@ function groundTexture(roads: Road[], R: () => number) {
       g.beginPath();
       g.ellipse(R() * S, R() * S, 8 + R() * 46, 6 + R() * 30, R() * Math.PI, 0, Math.PI * 2);
       g.fill();
+    }
+    // Fine strokes all over, so the ground between the blades reads as grass too, not as a flat colour.
+    g.lineCap = 'round';
+    for (let i = 0; i < 26000; i++) {
+      const x = R() * S;
+      const y = R() * S;
+      const len = 3 + R() * 7;
+      const a = -Math.PI / 2 + (R() - 0.5) * 1.6;
+      g.globalAlpha = 0.12 + R() * 0.2;
+      g.strokeStyle = R() > 0.6 ? '#4f8a35' : R() > 0.3 ? '#93c75c' : '#77ad49';
+      g.lineWidth = 1 + R() * 1.2;
+      g.beginPath();
+      g.moveTo(x, y);
+      g.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len);
+      g.stroke();
     }
     g.globalAlpha = 1;
     g.lineCap = 'round';
@@ -351,9 +367,9 @@ export function leafTree(R: () => number, size = 1) {
   const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.17, 1.5, 6), mat(0x5d4027));
   trunk.position.y = 0.75;
   g.add(trunk);
-  const n = 4 + Math.floor(R() * 2);
+  const n = 6 + Math.floor(R() * 3);
   for (let i = 0; i < n; i++) {
-    const blob = new THREE.Mesh(shaded(new THREE.IcosahedronGeometry(0.62 + R() * 0.3, 1)), mat(LEAVES[Math.floor(R() * LEAVES.length)], { vertexColors: true }));
+    const blob = new THREE.Mesh(shaded(new THREE.IcosahedronGeometry(0.62 + R() * 0.3, 2)), mat(LEAVES[Math.floor(R() * LEAVES.length)], { vertexColors: true, flatShading: false }));
     const a = (i / n) * Math.PI * 2 + R();
     const r = i === 0 ? 0 : 0.5 + R() * 0.25;
     blob.position.set(Math.cos(a) * r, 1.9 + (i === 0 ? 0.55 : R() * 0.5), Math.sin(a) * r);
@@ -694,7 +710,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const onDirt = (x: number, z: number) =>
       Math.hypot(x, z) < 3.5 || roads.some((r) => segDist(x, z, r) < r.w / 2 + 0.3) || (Math.abs(x - GYM.x) < 3.1 && z > GYM.z - 2.6 && z < GYM.z + 1.9);
 
-    // Trees in the village: each one is something to walk around.
+    // Trees in the village: each one is something to walk around (and a dot on the map).
+    const villageTrees: Vec[] = [];
     for (let i = 0, placed = 0; i < 600 && placed < 22; i++) {
       const a = R() * Math.PI * 2;
       const r = 4.4 + R() * (B - 4.2);
@@ -706,6 +723,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       tr.rotation.y = R() * Math.PI;
       scene.add(tr);
       obstacles.push({ x, z, r: 0.5 });
+      villageTrees.push({ x, z });
       occluder(tr, x, z, 1.3);
       placed++;
     }
@@ -713,7 +731,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     // Woods on the hills: two instanced meshes for all of them.
     const far = phone ? 110 : 190;
     const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.2, 1.6, 5), mat(0x5d4027), far);
-    const crowns = new THREE.InstancedMesh(shaded(new THREE.IcosahedronGeometry(1, 1)), mat(0xffffff, { vertexColors: true }), far * 3);
+    const crowns = new THREE.InstancedMesh(shaded(new THREE.IcosahedronGeometry(1, 1)), mat(0xffffff, { vertexColors: true, flatShading: false }), far * 3);
     const M = new THREE.Matrix4();
     const Q = new THREE.Quaternion();
     const col = new THREE.Color();
@@ -750,15 +768,16 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       scene.add(m);
     }
 
-    // Grass: thousands of blades in one draw call, moving in the wind.
-    const bladeGeo = new THREE.PlaneGeometry(0.1, 1, 1, 3);
+    // Grass: tens of thousands of fine, curved blades in one draw call. Each blade is dark at the root
+    // and light at the tip, leans over, and moves with gusts that travel across the meadow.
+    const bladeGeo = new THREE.PlaneGeometry(0.075, 1, 1, 4);
     bladeGeo.translate(0, 0.5, 0);
     const bp = bladeGeo.attributes.position;
     const shade: number[] = [];
     for (let i = 0; i < bp.count; i++) {
       const y = bp.getY(i);
-      bp.setX(i, bp.getX(i) * (1 - y * 0.85));
-      shade.push(0.62 + y * 0.38, 0.62 + y * 0.38, 0.62 + y * 0.38);
+      bp.setX(i, bp.getX(i) * (1 - Math.pow(y, 1.6) * 0.94));
+      shade.push(0.6 + y * 0.62, 0.66 + y * 0.5, 0.5 + y * 0.22);
     }
     bladeGeo.setAttribute('color', new THREE.Float32BufferAttribute(shade, 3));
     bladeGeo.setAttribute('normal', new THREE.Float32BufferAttribute(new Array(bp.count).fill([0, 1, 0]).flat(), 3));
@@ -768,28 +787,73 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       sh.uniforms.uTime = wind;
       sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace(
         '#include <begin_vertex>',
-        '#include <begin_vertex>\n#ifdef USE_INSTANCING\n  vec4 root = instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);\n  transformed.x += sin(uTime * 1.6 + root.x * 0.8 + root.z * 0.6) * 0.32 * position.y * position.y;\n#endif',
+        [
+          '#include <begin_vertex>',
+          '#ifdef USE_INSTANCING',
+          '  vec4 root = instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);',
+          '  float lift = position.y * position.y;',
+          '  float gust = 0.5 + 0.5 * sin(uTime * 0.6 + root.x * 0.11 + root.z * 0.08);',
+          '  float sway = (sin(uTime * 1.9 + root.x * 1.3 + root.z * 0.9) * 0.35 + gust * 0.9) * lift;',
+          // z is scaled with the blade's height, x is not: the lean and the sway stay in proportion.
+          '  transformed.z += lift * 0.35 + sway * 0.45;',
+          '  transformed.x += sway * 0.07;',
+          '#endif',
+        ].join('\n'),
       );
     };
-    const blades = phone ? 14000 : 30000;
+    const blades = phone ? 20000 : 60000;
     const grass = new THREE.InstancedMesh(bladeGeo, bladeMat, blades);
-    const greens = [0x6fae3f, 0x5c9a36, 0x86bd4c, 0x4f8a30, 0x9cc75a];
+    grass.frustumCulled = false; // its bounds are those of one blade
+    const DEEP = new THREE.Color(0x4f9a3a);
+    const LUSH = new THREE.Color(0x6fb844);
+    const LIGHT = new THREE.Color(0xa0d45a);
+    const DRY = new THREE.Color(0xb9c05a);
     const E = new THREE.Euler();
+    const patch = (x: number, z: number) => 0.5 + 0.5 * Math.sin(x * 0.35 + 1.2) * Math.cos(z * 0.31 + 0.4);
+    const sunny = (x: number, z: number) => 0.5 + 0.5 * Math.sin(x * 0.12 - z * 0.17 + 2.1);
     let made = 0;
+    const blade = (x: number, z: number, tall: number) => {
+      const n = patch(x, z);
+      const edge = roads.some((rd) => segDist(x, z, rd) < rd.w / 2 + 1.1) || Math.hypot(x, z) < 4.4 ? 0.6 : 1;
+      // Ankle to shin high; the hero must stay in view from behind.
+      const hgt = (0.14 + R() * 0.17) * (0.7 + 0.6 * n) * edge * tall;
+      grass.setMatrixAt(made, M.compose(new THREE.Vector3(x, hillAt(x, z), z), Q.setFromEuler(E.set((R() - 0.5) * 0.5, R() * Math.PI * 2, 0)), new THREE.Vector3(1 + R() * 0.9, hgt, hgt)));
+      col.copy(DEEP).lerp(LUSH, Math.min(1, n * 1.6)).lerp(LIGHT, Math.max(0, n - 0.45) * 1.2 * R());
+      if (sunny(x, z) > 0.72) col.lerp(DRY, (sunny(x, z) - 0.72) * 2.4 * R());
+      grass.setColorAt(made, col);
+      made++;
+    };
     for (let i = 0; i < blades * 3 && made < blades; i++) {
       const a = R() * Math.PI * 2;
-      const r = Math.sqrt(R()) * 26;
+      const r = Math.sqrt(R()) * 27;
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
       if (onDirt(x, z) || obstacles.some((o) => o.r > 0.9 && Math.hypot(x - o.x, z - o.z) < o.r - 0.3)) continue;
-      const hgt = 0.16 + R() * 0.26;
-      grass.setMatrixAt(made, M.compose(new THREE.Vector3(x, hillAt(x, z), z), Q.setFromEuler(E.set((R() - 0.5) * 0.4, R() * Math.PI, 0)), new THREE.Vector3(1 + R(), hgt, 1)));
-      grass.setColorAt(made, col.setHex(greens[Math.floor(R() * greens.length)]));
-      made++;
+      blade(x, z, 1);
+      // Now and then a tuft: a handful of taller blades from one root.
+      if (R() < 0.03) for (let k = 0; k < 6 && made < blades; k++) blade(x + (R() - 0.5) * 0.22, z + (R() - 0.5) * 0.22, 1.5 + R() * 0.4);
     }
     grass.count = made;
     grass.receiveShadow = true;
     scene.add(grass);
+    // Bushes along the edges of the meadow and between the houses.
+    const bushes = new THREE.InstancedMesh(shaded(new THREE.IcosahedronGeometry(0.5, 2)), mat(0xffffff, { vertexColors: true, flatShading: false }), phone ? 46 : 80);
+    let bushN = 0;
+    for (let i = 0; i < 3000 && bushN < bushes.count; i++) {
+      const a = R() * Math.PI * 2;
+      const r = 5 + R() * 17;
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      if (onDirt(x, z) || roads.some((rd) => segDist(x, z, rd) < rd.w / 2 + 1.3) || obstacles.some((o) => Math.hypot(x - o.x, z - o.z) < o.r + 0.7) || spots.some((sp) => Math.hypot(x - sp.door.x, z - sp.door.z) < 2.6)) continue;
+      const w = 0.6 + R() * 0.6;
+      bushes.setMatrixAt(bushN, M.compose(new THREE.Vector3(x, hillAt(x, z) + 0.2 * w, z), Q.setFromEuler(E.set(0, R() * 6, 0)), new THREE.Vector3(w, w * (0.6 + R() * 0.25), w * (0.8 + R() * 0.4))));
+      bushes.setColorAt(bushN, col.setHex(LEAVES[Math.floor(R() * LEAVES.length)]));
+      bushN++;
+    }
+    bushes.count = bushN;
+    bushes.castShadow = true;
+    bushes.receiveShadow = true;
+    scene.add(bushes);
     // Flowers in the meadow and stones along the roads.
     const petals = [0xf2f0ea, 0xf4c542, 0xe8536b, 0xb07ae0, 0xff9a52];
     const flowers = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.07, 0), new THREE.MeshLambertMaterial(), phone ? 320 : 600);
@@ -1082,6 +1146,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     if (api) {
       api.current = {
         goTo: (k) => goTo.current(k),
+        walk: (pt) => {
+          // A tap on the map: only in the village itself, where the map is of.
+          if (!inside()) walkTo.current(pt, null);
+        },
         stop: () => {
           goal = null;
           clearTrail();
@@ -1096,6 +1164,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       };
     }
     el.dataset.zone = zone.current;
+    if (track) {
+      track.current.trees = villageTrees;
+      track.current.roads = roads;
+    }
     const sunBase = sun.position.clone();
     scene.add(sun.target);
 
@@ -1316,6 +1388,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         track.current.x = indoor ? here().map.x : p.x;
         track.current.z = indoor ? here().map.z : p.z;
         track.current.facing = hero.rotation.y;
+        track.current.cam = indoor ? 0 : camAngle.current;
+        track.current.people = npcs.map((n) => ({ x: n.g.position.x, z: n.g.position.z }));
       }
       if (!reduce) {
         coachMixer?.update(dt);

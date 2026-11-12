@@ -3,7 +3,7 @@ import { expectAccessible, login } from './helpers';
 
 /** The walkable 3D village: walk to the gym TV, see today's exercises, start there, come back with XP. */
 test('patient walks to the TV in the village, starts the workout there and returns with XP', async ({ browser }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(480_000);
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'nl-NL' });
   const page = await context.newPage();
   await login(page, 'patient@praktijk-a.test');
@@ -65,6 +65,15 @@ test('patient walks to the TV in the village, starts the workout there and retur
   await page.getByRole('button', { name: 'Loop naar de uitgang' }).press('Enter');
   await expect(page.getByTestId('walk-village')).toHaveAttribute('data-zone', 'village', { timeout: 30_000 });
   await expect(page.getByTestId('enter-practice')).toBeVisible();
+
+  // The minimap is a map to walk by: a tap on it sends the hero there. The world map names every landmark.
+  const mini = (await page.getByTestId('minimap').boundingBox())!;
+  await page.mouse.click(mini.x + mini.width * 0.5, mini.y + mini.height * 0.8);
+  await expect(village).toHaveAttribute('data-walking', '1');
+  await page.getByTestId('open-world-map').click();
+  await expect(page.getByTestId('world-map')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(village).not.toHaveAttribute('data-walking', '1', { timeout: 20_000 });
 
   // "Where do you want to go?": pick a place and the hero walks there; Stop ends the walk.
   await page.getByTestId('slot-places').click();

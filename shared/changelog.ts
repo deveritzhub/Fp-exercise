@@ -13,6 +13,8 @@ export const RELEASES: Release[] = [
     titleNl: 'Een dorp voor de praktijk',
     titleEn: 'A village for the practice',
     items: [
+      { for: 'patient', nl: 'Het dorp heeft een minikaart die met je meedraait, met een eigen teken per gebouw. Tik erop om ergens heen te lopen, of open de wereldkaart.', en: 'The village has a minimap that turns with you, with a sign of its own for every building. Tap it to walk somewhere, or open the world map.' },
+      { for: 'patient', nl: 'In het dorp lopen een smid, een bode en een bibliothecaris rond, en het gras, de struiken en de bomen zijn voller.', en: 'A smith, a messenger and a librarian walk around the village, and the grass, bushes and trees are fuller.' },
       { for: 'patient', nl: 'In je dorp: tik op een taak en je held loopt er vanzelf heen, met de route op de grond. Tik op de kaart voor “Waar wil je heen?”.', en: 'In your village: tap a task and your hero walks there by itself, with the route on the ground. Tap the map for “Where do you want to go?”.' },
       { for: 'patient', nl: '“Bekijken” bij een bericht over een programma opent nu dat programma.', en: '“View” on a message about a programme now opens that programme.' },
       { for: 'staff', nl: 'Nieuw in het menu: Dorp. Elke patiënt heeft er een huisje met een nummer; namen zet je zelf aan. Het groeit met het level van de held: kamp, hut, huisje, woonhuis, landhuis, villa.', en: 'New in the menu: Village. Every patient has a numbered home there; you switch names on yourself. It grows with the hero’s level: camp, hut, cottage, house, manor, villa.' },

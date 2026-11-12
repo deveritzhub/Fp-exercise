@@ -13,6 +13,7 @@ import { SKILLS, bodyShape, levelTier } from '@shared/hero';
 import { villageBuildings } from '@shared/worldMap';
 import { EXIT_KEY, PRACTICE_KEY, TV_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
 import { MODULE_SITES, VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
+import { Minimap, WorldMap, type Landmark, type MapTrack } from '@/components/patient/VillageMap';
 // three.js only loads on the 3D pages.
 const WalkVillage3D = lazy(() => import('@/components/patient/WalkVillage3D'));
 
@@ -22,6 +23,17 @@ const LABEL: Record<string, [string, string]> = {
   hall: ['Trofeeënhal', 'Trophy hall'],
   board: ['Prikbord', 'Notice board'],
   guild: ['Gildehal', 'Guild hall'],
+};
+
+/** The sign of each building on the maps: an icon and the colour of its roof. */
+const SIGN: Record<string, [string, string]> = {
+  smithy: ['⚒️', '#b5532c'],
+  library: ['📚', '#2759a0'],
+  hall: ['🏆', '#c9a14a'],
+  board: ['📜', '#8e3b5f'],
+  guild: ['🚩', '#29483c'],
+  kracht: ['🏋️', '#7a2f24'],
+  mobiliteit: ['🧘', '#2f7f8a'],
 };
 
 const PLACE_HINT: Record<string, [string, string]> = {
@@ -37,88 +49,10 @@ const PLACE_HINT: Record<string, [string, string]> = {
 const dose = (i: { sets: number | null; reps: number | null; holdS: number | null }) =>
   [i.sets && i.reps ? `${i.sets} × ${i.reps}` : i.sets ? `${i.sets} ×` : i.reps ? `${i.reps} ×` : null, i.holdS ? `${i.holdS} s` : null].filter(Boolean).join(' · ');
 
-type Track = { x: number; z: number; facing: number; target?: { x: number; z: number } | null };
+type Track = MapTrack;
 /** Something to do, and the place in the village where it is done. */
 type Task = { id: string; label: string; hint: string; dest: string; link?: string };
 const TIP_KEY = 'fp.village.tip';
-
-/** Round map of the village, north up: roads, buildings, the gym and an arrow for the hero. */
-function Minimap({ track, sites }: { track: RefObject<Track>; sites: Site[] }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const c = ref.current;
-    const g = c?.getContext('2d');
-    if (!c || !g) return;
-    const S = c.width;
-    const k = S / 2 / (VILLAGE_LAYOUT.bound + 2.5);
-    const at = (x: number, z: number) => [S / 2 + x * k, S / 2 + z * k] as const;
-    const draw = () => {
-      g.save();
-      g.clearRect(0, 0, S, S);
-      g.beginPath();
-      g.arc(S / 2, S / 2, S / 2, 0, 7);
-      g.clip();
-      g.fillStyle = '#4d7a36';
-      g.fillRect(0, 0, S, S);
-      g.strokeStyle = '#b4915f';
-      g.lineCap = 'round';
-      g.lineWidth = S * 0.045;
-      const line = (x1: number, z1: number, x2: number, z2: number) => {
-        g.beginPath();
-        g.moveTo(...at(x1, z1));
-        g.lineTo(...at(x2, z2));
-        g.stroke();
-      };
-      for (const st of sites) line(0, 0, st.door.x, st.door.z);
-      line(0, 0, VILLAGE_LAYOUT.gym.x, VILLAGE_LAYOUT.gym.z + 1.9);
-      line(0, 0, 0, 30);
-      g.fillStyle = '#b4915f';
-      g.beginPath();
-      g.arc(S / 2, S / 2, 3.2 * k, 0, 7);
-      g.fill();
-      g.fillStyle = '#e4bc63';
-      g.strokeStyle = '#1c2420';
-      g.lineWidth = 2;
-      for (const st of sites) {
-        const [x, y] = at(st.x, st.z);
-        g.fillRect(x - S * 0.045, y - S * 0.045, S * 0.09, S * 0.09);
-        g.strokeRect(x - S * 0.045, y - S * 0.045, S * 0.09, S * 0.09);
-      }
-      const [gx, gy] = at(VILLAGE_LAYOUT.gym.x, VILLAGE_LAYOUT.gym.z - 1);
-      g.fillStyle = '#ffffff';
-      g.fillRect(gx - S * 0.075, gy - S * 0.04, S * 0.15, S * 0.08);
-      g.strokeRect(gx - S * 0.075, gy - S * 0.04, S * 0.15, S * 0.08);
-      const h = track.current ?? { x: 0, z: 0, facing: 0 };
-      // Where the hero is heading: a gold dot that breathes.
-      if (h.target) {
-        const [tx, ty] = at(h.target.x, h.target.z);
-        g.fillStyle = '#ffd76a';
-        g.strokeStyle = '#1c2420';
-        g.beginPath();
-        g.arc(tx, ty, S * (0.05 + 0.015 * Math.sin(Date.now() / 220)), 0, 7);
-        g.fill();
-        g.stroke();
-      }
-      const [hx, hy] = at(h.x, h.z);
-      g.translate(hx, hy);
-      g.rotate(-h.facing);
-      g.fillStyle = '#9dff9a';
-      g.beginPath();
-      g.moveTo(0, S * 0.085);
-      g.lineTo(S * 0.055, -S * 0.055);
-      g.lineTo(0, -S * 0.025);
-      g.lineTo(-S * 0.055, -S * 0.055);
-      g.closePath();
-      g.fill();
-      g.stroke();
-      g.restore();
-    };
-    draw();
-    const id = window.setInterval(draw, 120);
-    return () => window.clearInterval(id);
-  }, [track, sites]);
-  return <canvas ref={ref} width={192} height={192} aria-hidden className="h-[88px] w-[88px] rounded-full border-2 border-[#e4bc63] shadow-lift" />;
-}
 
 const STICK_KEY = 'fp.village.joystick';
 
@@ -312,6 +246,24 @@ export function VillageWalkPage() {
       : k === EXIT_KEY ? t('de uitgang', 'the exit')
       : k.startsWith('in:') ? t('het programmabord', 'the programme board')
       : buildings.find((b) => b.key === k)?.label ?? k;
+  // Landmarks for the maps: every building with its own sign, and the practice.
+  const landmarks: Landmark[] = [
+      { key: TV_KEY, label: practiceName.replace(/\s*\(.*?\)\s*/g, ' ').trim(), x: VILLAGE_LAYOUT.gym.x, z: VILLAGE_LAYOUT.gym.z - 1.6, icon: '🏥', color: '#b4532f', wide: true, alert: todo.some((p) => moduleOf(p) === 'revalidatie') },
+      ...buildings.map((b, i) => ({ key: 'kind' in b ? boardKey(b.key) : b.key, label: b.label, x: sites[i].x, z: sites[i].z, icon: SIGN[b.key]?.[0] ?? '🏠', color: SIGN[b.key]?.[1] ?? '#8a6038', alert: 'alert' in b && !!b.alert })),
+    ];
+
+  const toPlace = (key: string) => {
+    setPlacesOpen(false);
+    hideTip();
+    setErrand(null);
+    world.current?.goTo(key);
+  };
+  const toPoint = (pt: { x: number; z: number }) => {
+    setPlacesOpen(false);
+    hideTip();
+    setErrand(null);
+    world.current?.walk(pt);
+  };
   const places = [
     { key: TV_KEY, label: practiceName, hint: t('Oefenzaal, coach en de tv met je oefeningen', 'Exercise room, coach and the TV with your exercises'), alert: todo.some((p) => moduleOf(p) === 'revalidatie') },
     ...buildings.map((b) => ({ key: 'kind' in b ? boardKey(b.key) : b.key, label: b.label, hint: PLACE_HINT[b.key] ? (nl ? PLACE_HINT[b.key][0] : PLACE_HINT[b.key][1]) : '', alert: 'alert' in b && !!b.alert })),
@@ -366,9 +318,10 @@ export function VillageWalkPage() {
 
         {/* Minimap (tap: pick a place) and what there is to do. Every task walks the hero to its place. */}
         <div className="absolute right-2 top-2 flex flex-col items-end gap-1.5">
-          <button type="button" onClick={() => setPlacesOpen(true)} aria-label={t('Kaart: kies waar je heen wilt', 'Map: pick where to go')} className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]">
-            <Minimap track={track} sites={sites} />
-          </button>
+          <div className="relative">
+            <Minimap track={track} landmarks={landmarks} onPlace={toPlace} onWalk={toPoint} label={t('Minikaart van het dorp. Tik op een plek of gebouw om erheen te lopen.', 'Minimap of the village. Tap a spot or a building to walk there.')} />
+            <button type="button" data-testid="open-world-map" onClick={() => setPlacesOpen(true)} aria-label={t('Wereldkaart openen', 'Open the world map')} className="absolute -bottom-1 -left-1 grid h-9 w-9 place-items-center rounded-full border border-[#e4bc63] bg-[#141c18] text-[#ffd76a] shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]"><MapIcon className="h-4 w-4" aria-hidden /></button>
+          </div>
           <div className={`${PANEL} w-[172px] px-1.5 py-1.5`} role="group" aria-label={t('Taken', 'Tasks')}>
             <p className="flex items-center gap-1 px-1 font-display text-[12.5px] font-bold text-[#ffd76a]"><ScrollText className="h-3.5 w-3.5" aria-hidden />{t('Taken', 'Tasks')}</p>
             {tasks.length > 0 ? (
@@ -457,11 +410,13 @@ export function VillageWalkPage() {
         {t('Tik op de grond om te lopen en sleep opzij om rond te kijken. Liever een joystick? Zet hem aan met de knop met de gamepad. In de oefenzaal van je praktijk staan de coach en de tv met je oefeningen van vandaag.', 'Tap the ground to walk and drag sideways to look around. Prefer a joystick? Switch it on with the gamepad button. In the exercise room of your practice you find the coach and the TV with your exercises for today.')}
       </p>
 
-      <Dialog open={placesOpen} onClose={() => setPlacesOpen(false)} title={t('Waar wil je heen?', 'Where do you want to go?')} description={t('Kies een plek: je held loopt er vanzelf heen.', 'Pick a place: your hero walks there by itself.')} size="sm" sheet>
+      <Dialog open={placesOpen} onClose={() => setPlacesOpen(false)} title={t('Wereldkaart', 'World map')} description={t('Kies een plek: je held loopt er vanzelf heen.', 'Pick a place: your hero walks there by itself.')} size="md" sheet>
+        <WorldMap track={track} landmarks={landmarks} onPlace={toPlace} onWalk={toPoint} label={t('Wereldkaart van het dorp, noorden boven. Tik op een gebouw of een plek om erheen te lopen.', 'World map of the village, north up. Tap a building or a spot to walk there.')} />
+        <p className="mb-2 mt-2 text-[13px] text-ink-600">{t('Tik op de kaart, of kies hieronder een plek.', 'Tap the map, or pick a place below.')}</p>
         <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line" data-testid="places">
           {places.map((pl) => (
             <li key={pl.key}>
-              <button type="button" className="flex min-h-[56px] w-full items-center gap-3 px-3 py-2 text-left hover:bg-[#F3F7F1]" onClick={() => { setPlacesOpen(false); hideTip(); setErrand(null); world.current?.goTo(pl.key); }}>
+              <button type="button" className="flex min-h-[56px] w-full items-center gap-3 px-3 py-2 text-left hover:bg-[#F3F7F1]" onClick={() => toPlace(pl.key)}>
                 <span aria-hidden className={`grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-[18px] font-black ${pl.alert ? 'bg-[#fbf0d9] text-[#b07a00]' : 'bg-[#E7EFE3] text-ink-600'}`}>{pl.alert ? '!' : <MapIcon className="h-4 w-4" />}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[15px] font-semibold text-ink-900">{pl.label}{pl.alert && <span className="sr-only">{t(' (hier wacht iets)', ' (something waits here)')}</span>}</span>
