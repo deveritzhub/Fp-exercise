@@ -10,6 +10,7 @@ import { config } from '../config';
 import { z } from 'zod';
 import { randomInt, randomUUID } from 'node:crypto';
 import { withUser, type Tx } from '../db';
+import { DECOR_KEYS, checkLayout, decorItem, freeSpot, type Placed } from '../../../shared/homeDecor';
 import { rateLimit, requirePatient, requireStaff, type AppEnv } from '../middleware';
 import { parse, uuidParam } from '../lib/validate';
 import { HttpError, badRequest, notFound } from '../lib/errors';
@@ -692,6 +693,75 @@ heroPatient.post('/hero/chest', async (c) => {
     return { coins, chest: after.chest, gear: after.gear };
   });
   return c.json(out, 201);
+});
+
+// ---- The patient's own home: furniture bought with the same coins, and where it stands. ----
+async function homeState(tx: Tx, patientId: string) {
+  const state = await heroState(tx, patientId);
+  const bought = (await tx.query('SELECT item FROM hero_purchases WHERE patient_id = $1', [patientId])).rows.map((r) => r.item as string);
+  const owned = bought.filter((k) => DECOR_KEYS.has(k));
+  const row = (await tx.query('SELECT layout FROM hero_homes WHERE patient_id = $1', [patientId])).rows[0];
+  // Only what is still valid is shown; a piece that no longer fits the rules simply is not placed.
+  const stored = (Array.isArray(row?.layout) ? row.layout : []) as Placed[];
+  const kept: Placed[] = [];
+  for (const it of stored) {
+    const next = checkLayout([...kept, it], new Set(owned));
+    if (next.ok) kept.push(next.items[next.items.length - 1]);
+  }
+  return { level: state.level.level, coins: state.gear.coins, owned, layout: kept };
+}
+
+heroPatient.get('/hero/home', async (c) => {
+  const { user, patient } = requirePatient(c);
+  return c.json(await withUser(user.id, (tx) => homeState(tx, patient.id)));
+});
+
+/** Buy a piece of furniture with coins; it is put down on the first free spot. */
+heroPatient.post('/hero/home/buy', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ item: z.string().max(32) }), await c.req.json());
+  const item = decorItem(b.item);
+  if (!item) throw badRequest('unknown_item');
+  const home = await withUser(user.id, async (tx) => {
+    // One purchase at a time per patient, so two taps cannot spend the same coins twice.
+    const row = (await tx.query('SELECT 1 FROM patient_heroes WHERE patient_id = $1 FOR UPDATE', [patient.id])).rows[0];
+    if (!row) throw badRequest('hero_required');
+    const now = await homeState(tx, patient.id);
+    if (now.owned.includes(item.key)) throw badRequest('item_owned');
+    if (now.level < item.level) throw badRequest('level_too_low');
+    if (now.coins < item.price) throw badRequest('not_enough_coins');
+    await tx.query('INSERT INTO hero_purchases (patient_id, item, price) VALUES ($1, $2, $3)', [patient.id, item.key, item.price]);
+    const owned = new Set([...now.owned, item.key]);
+    const spot = freeSpot(item.key, now.layout, owned);
+    if (spot) {
+      await tx.query(
+        `INSERT INTO hero_homes (patient_id, layout) VALUES ($1, $2::jsonb)
+         ON CONFLICT (patient_id) DO UPDATE SET layout = EXCLUDED.layout, updated_at = now()`,
+        [patient.id, JSON.stringify([...now.layout, spot])],
+      );
+    }
+    return homeState(tx, patient.id);
+  });
+  return c.json(home, 201);
+});
+
+/** Save where the furniture stands. Pieces left out go back into storage (they stay owned). */
+heroPatient.put('/hero/home/layout', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(z.object({ items: z.array(z.object({ key: z.string().max(32), x: z.number().min(-10).max(10), z: z.number().min(-10).max(10), rot: z.number().min(-720).max(720) })).max(40) }), await c.req.json());
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const now = await homeState(tx, patient.id);
+      const checked = checkLayout(b.items, new Set(now.owned));
+      if (!checked.ok) throw badRequest(`layout_${checked.reason}`);
+      await tx.query(
+        `INSERT INTO hero_homes (patient_id, layout) VALUES ($1, $2::jsonb)
+         ON CONFLICT (patient_id) DO UPDATE SET layout = EXCLUDED.layout, updated_at = now()`,
+        [patient.id, JSON.stringify(checked.items)],
+      );
+      return homeState(tx, patient.id);
+    }),
+  );
 });
 
 /** Buy a piece of gear with coins; it is worn right away (replacing what was in that slot). */
