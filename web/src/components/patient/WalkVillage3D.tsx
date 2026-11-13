@@ -251,7 +251,7 @@ function groundTexture(roads: Road[], R: () => number, S: number, bare = false) 
 }
 
 /** The five painted ground pictures (web/public/village/ground), in the order of GROUNDS. Loaded once. */
-const GROUND_FILES = ['gras', 'hoog-gras', 'droog-gras', 'klaver', 'aarde'] as const;
+const GROUND_FILES = ['gras', 'hoog-gras', 'droog-gras', 'klaver', 'aarde', 'zand', 'plein'] as const;
 /** Bump when the pictures change, so phones fetch the new ones. */
 const GROUND_VERSION = 1;
 /** How much ground one picture covers, in world units (about two metres). */
@@ -303,10 +303,12 @@ function paintedGround(tiles: THREE.Texture[], splat: THREE.Texture, roadsOver: 
     sh.uniforms.uSplat = { value: splat };
     tiles.forEach((t, i) => (sh.uniforms[`uG${i}`] = { value: t }));
     sh.uniforms.uTile = { value: GROUND / GROUND_TILE };
+    sh.uniforms.uSize = { value: GROUND };
     sh.fragmentShader = [
       'uniform sampler2D uSplat;',
       ...tiles.map((_, i) => `uniform sampler2D uG${i};`),
       'uniform float uTile;',
+      'uniform float uSize;',
       sh.fragmentShader.replace(
         '#include <map_fragment>',
         [
@@ -323,7 +325,12 @@ function paintedGround(tiles: THREE.Texture[], splat: THREE.Texture, roadsOver: 
           '  ground = pow(ground, vec3(1.45)) * 1.7;',
           '  float mid = dot(texture2D(uG0, tuv * 0.29 + 0.57).rgb, vec3(0.333));',
           '  ground *= (0.8 + wide * 1.0) * (0.72 + mid * 1.4);',
-          '  diffuseColor.rgb *= mix(ground, over.rgb, over.a);',
+          // Roads are painted sand, the square packed earth with pebbles; the sheet over the ground
+          // says where they lie and keeps its darker edges and tracks.
+          '  float square = 1.0 - smoothstep(3.0, 4.4, length((vMapUv - 0.5) * uSize));',
+          '  vec3 path = mix(texture2D(uG5, tuv * 1.3).rgb * vec3(0.92, 0.84, 0.74), texture2D(uG6, tuv * 1.6).rgb * vec3(0.9, 0.88, 0.84), square);',
+          '  path *= clamp(dot(over.rgb, vec3(0.333)) / 0.25, 0.5, 1.15) * (0.8 + wide * 0.8);',
+          '  diffuseColor.rgb *= mix(ground, path, over.a);',
           '#endif',
         ].join('\n'),
       ),
@@ -334,14 +341,18 @@ function paintedGround(tiles: THREE.Texture[], splat: THREE.Texture, roadsOver: 
 
 /** Hand-painted surface textures, in grey so each material can tint them. Made once, reused. */
 const TEX: Record<string, THREE.CanvasTexture> = {};
-export function painted(kind: 'plaster' | 'shingle' | 'stone' | 'wood', rx = 1, ry = 1) {
+/** Bump when the surface pictures change, so phones fetch the new ones. */
+const SURFACE_VERSION = 1;
+export function painted(kind: 'plaster' | 'shingle' | 'stone' | 'wood' | 'bark' | 'leaves', rx = 1, ry = 1) {
   const key = `${kind}:${rx}:${ry}`;
   if (TEX[key]) return TEX[key];
   const S = 256;
   const c = document.createElement('canvas');
-  c.width = S;
-  c.height = S;
+  // Drawn at 256 and stored twice as large, so the painted picture that replaces it keeps its detail.
+  c.width = S * 2;
+  c.height = S * 2;
   const g = c.getContext('2d');
+  g?.scale(2, 2);
   const R = rng(kind.length * 31 + 5);
   if (g) {
     g.fillStyle = '#e6e6e6';
@@ -410,7 +421,20 @@ export function painted(kind: 'plaster' | 'shingle' | 'stone' | 'wood', rx = 1, 
   t.colorSpace = THREE.SRGBColorSpace;
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.repeat.set(rx, ry);
+  t.anisotropy = 4;
   TEX[key] = t;
+  // The painted picture (web/public/village/surface) takes over once it has loaded; the drawing above
+  // stays when it does not come.
+  if (g && typeof Image !== 'undefined') {
+    const img = new Image();
+    img.onload = () => {
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.globalAlpha = 1;
+      g.drawImage(img, 0, 0, c.width, c.height);
+      t.needsUpdate = true;
+    };
+    img.src = `/village/surface/${kind}.webp?v=${SURFACE_VERSION}`;
+  }
   return t;
 }
 
@@ -531,12 +555,12 @@ function shaded<T extends THREE.BufferGeometry>(geo: T) {
 /** Round leafy tree, about 3–4 hero heights. */
 export function leafTree(R: () => number, size = 1) {
   const g = new THREE.Group();
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.17, 1.5, 6), mat(0x5d4027));
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.17, 1.5, 6), mat(0x8a6038, { map: painted('bark', 2, 1.5), flatShading: false }));
   trunk.position.y = 0.75;
   g.add(trunk);
   const n = 6 + Math.floor(R() * 3);
   for (let i = 0; i < n; i++) {
-    const blob = new THREE.Mesh(shaded(new THREE.IcosahedronGeometry(0.62 + R() * 0.3, 2)), mat(LEAVES[Math.floor(R() * LEAVES.length)], { vertexColors: true, flatShading: false }));
+    const blob = new THREE.Mesh(shaded(new THREE.IcosahedronGeometry(0.62 + R() * 0.3, 2)), mat(LEAVES[Math.floor(R() * LEAVES.length)], { vertexColors: true, flatShading: false, map: painted('leaves', 3, 2) }));
     const a = (i / n) * Math.PI * 2 + R();
     const r = i === 0 ? 0 : 0.5 + R() * 0.25;
     blob.position.set(Math.cos(a) * r, 1.9 + (i === 0 ? 0.55 : R() * 0.5), Math.sin(a) * r);
