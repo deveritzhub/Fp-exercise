@@ -37,7 +37,7 @@ HTTPS is set up automatically.
 
 ## Using the demo
 
-- On the login page, click one of the demo accounts (therapist, patient, owner, admin).
+- Log in with a demo account (therapist, patient, owner, admin); the hosted login page no longer lists them.
 - Open the patient account on your phone to see the patient app.
 - When you invite a new patient, the invite link is shown on screen (no e-mails are sent in the demo).
 
@@ -51,17 +51,17 @@ HTTPS is set up automatically.
 
 ## Always on, with a disk for uploads
 
-`render.yaml` asks for the Starter plan and a 1 GB disk (`STORAGE_DIR=/var/data/storage`), so the site
-does not sleep and uploaded videos and photos survive a restart. If the service was not made from the
-blueprint, add the disk by hand: service → **Disks** → mount path `/var/data`, 1 GB, and set
+The service runs on the Starter plan, so it does not sleep. Uploaded videos and photos survive a restart
+only with a disk: uncomment the `disk:` block and `STORAGE_DIR` in `render.yaml`, or add it by hand: service → **Disks** → mount path `/var/data`, 1 GB, and set
 `STORAGE_DIR=/var/data/storage` under **Environment**.
 
 ## Closing the demo accounts
 
-The demo accounts and their password are in the source code. Under **Environment** set one of:
+The hosted site does not list the demo accounts, but they and their password are in the source code,
+so hiding them closes nothing. Under **Environment** set one of:
 
 - `DEMO_PASSWORD` = an own password of 12 characters or more: the demo accounts keep working with that
-  password only, and the login page stops listing them;
+  password only;
 - `DEMO_ACCOUNTS` = `off`: no demo account can log in.
 
 ## Real e-mail (invitations, password reset, address check)

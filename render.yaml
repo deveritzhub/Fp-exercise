@@ -1,5 +1,5 @@
 # Render Blueprint for FP Exercise (currently: demo with synthetic data only).
-# Web service in Frankfurt (EU), on the Starter plan (always on) with a 1 GB disk for uploads (~$7.25/month).
+# Web service in Frankfurt (EU), on the Starter plan (always on). Uploads need the disk below (not switched on yet).
 # Set in the Render dashboard, never here: DEMO_PASSWORD or DEMO_ACCOUNTS, and for real mail
 # MAIL_TRANSPORT=smtp with SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM (see DEPLOY.md).
 # Database: Neon Postgres project in Frankfurt (see DEPLOY.md).
@@ -12,10 +12,10 @@ services:
     buildCommand: npm ci --include=dev && npx vite build   # typecheck runs in CI; keeps the free 512 MB build light
     startCommand: npm run start:hosted
     healthCheckPath: /api/health
-    disk:                  # uploads survive restarts (~$0.25/GB/month)
-      name: media
-      mountPath: /var/data
-      sizeGB: 1
+    # disk:                # uploads survive restarts (~$0.25/GB/month); switch on together with STORAGE_DIR below
+    #   name: media
+    #   mountPath: /var/data
+    #   sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: "22"
@@ -25,11 +25,9 @@ services:
         generateValue: true
       - key: DEMO_MODE
         value: "1"
-      - key: VITE_SHOW_DEMO_ACCOUNTS
-        value: "1"
       - key: TRUST_PROXY
         value: "1"
       # MAIL_TRANSPORT is left out on purpose: it defaults to the outbox (nothing is sent), and the
       # owner switches it to smtp in the dashboard once a mail provider is set up.
-      - key: STORAGE_DIR
-        value: /var/data/storage
+      # - key: STORAGE_DIR    # with the disk above
+      #   value: /var/data/storage
