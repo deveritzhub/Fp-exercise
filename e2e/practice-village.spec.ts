@@ -65,7 +65,8 @@ test('therapist walks from the practice to a patient home and looks inside', asy
   if (process.env.SHOTS) { await page.waitForTimeout(1500); await page.screenshot({ path: process.env.SHOTS + '/tw-1.png' }); }
 
   // To a home: numbered, no name; at the door the record and the way in.
-  await page.getByRole('button', { name: 'Loop naar Huisje 1', exact: true }).press('Enter');
+  // Picked in the list beside the scene: the therapist walks there.
+  await page.getByTestId('home-list').getByRole('button').first().click();
   const record = page.getByTestId('walk-record');
   await expect(record).toBeVisible({ timeout: 90_000 });
   await expect(record).toHaveAttribute('href', /\/app\/patienten\/[0-9a-f-]{36}$/);
@@ -80,4 +81,65 @@ test('therapist walks from the practice to a patient home and looks inside', asy
   await page.getByTestId('leave-home').click();
   await expect(village).toHaveAttribute('data-zone', 'village', { timeout: 60_000 });
   await expect(page.getByTestId('visit-note')).toHaveCount(0);
+});
+
+/** The therapist makes an own figure; the patient finds that figure in the practice, and the day's meters in the world. */
+test('therapist makes a figure and the patient meets it in the practice', async ({ browser }) => {
+  test.setTimeout(300_000);
+  const staffContext = await browser.newContext({ locale: 'nl-NL' });
+  const staff = await staffContext.newPage();
+  await login(staff, 'therapeut@praktijk-a.test');
+  await staff.goto('/app/dorp');
+  await staff.getByTestId('open-avatar').click();
+  const editor = staff.getByRole('dialog', { name: 'Mijn poppetje' });
+  await expect(editor.getByTestId('hero-3d')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
+  await editor.getByLabel('Figuur').selectOption('m');
+  await editor.getByLabel('Kleding').selectOption('ridder');
+  await editor.getByLabel('Baard').selectOption('beard');
+  await editor.getByRole('button', { name: 'Huidskleur 7' }).click();
+  await expectAccessible(staff, 'staff avatar editor');
+  if (process.env.SHOTS) await staff.screenshot({ path: process.env.SHOTS + '/av-0.png' });
+  await staff.getByTestId('save-avatar').click();
+  await expect(editor).toHaveCount(0);
+  await staffContext.close();
+
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'nl-NL' });
+  const page = await context.newPage();
+  await page.addInitScript(() => localStorage.setItem('fp.village.tip', '1'));
+  await login(page, 'patient@praktijk-a.test');
+  const coach = page.waitForResponse((r) => r.url().endsWith('/api/patient/hero/coach'));
+  await page.goto('/p/dorp');
+  expect((await (await coach).json()).look).toMatchObject({ frame: 'm', outfit: 'ridder', beard: 'beard', skin: 's7' });
+  const village = page.getByTestId('walk-village');
+  await expect(village).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
+  // The day's meters are in the world; a tap opens the quick log on that tab.
+  const meters = page.getByTestId('world-meters');
+  await expect(meters.locator('[data-meter]')).toHaveCount(3);
+  await meters.locator('[data-meter="steps"]').click();
+  await expect(page.getByRole('dialog', { name: 'Snel loggen' }).getByRole('tab', { name: 'Stappen' })).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('Escape');
+  // The well on the square: walk there and drink; the glass is logged and the water meter rises.
+  const water = meters.locator('[data-meter="water"]');
+  const before = await water.getAttribute('aria-label');
+  await page.getByRole('button', { name: 'Loop naar de waterput' }).press('Enter');
+  await page.getByTestId('drink-well').click({ timeout: 60_000 });
+  await expect(water).not.toHaveAttribute('aria-label', before!, { timeout: 15_000 });
+  if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/well.png' });
+  // An ailment as a creature: walk to it, strike until it is beaten; that gives adventure XP, apart from the hero's.
+  const adv = page.getByTestId('adventure-level');
+  await expect(adv).toContainText('Avonturier 1 · 0/60');
+  await page.getByRole('button', { name: 'Loop naar Stijfheidsslijm' }).last().press('Enter');
+  const strike = page.getByTestId('strike');
+  await expect(strike).toBeVisible({ timeout: 90_000 });
+  if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/mob.png' });
+  for (let i = 0; i < 4 && (await strike.count()); i++) await strike.click();
+  await expect(adv).toContainText('Avonturier 1 · 12/60', { timeout: 15_000 });
+  await expect(strike).toHaveCount(0);
+  if (process.env.SHOTS) {
+    await page.getByRole('button', { name: /^Loop naar Oefenzaal/ }).press('Enter');
+    await expect(village).toHaveAttribute('data-zone', 'practice', { timeout: 90_000 });
+    await page.waitForTimeout(9000);
+    await page.screenshot({ path: process.env.SHOTS + '/av-1.png' });
+  }
+  await context.close();
 });

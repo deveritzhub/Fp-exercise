@@ -1,5 +1,6 @@
-import { lazy, Suspense, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { DoorOpen, Gamepad2, LogOut, Users } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -61,7 +62,9 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
   ];
   const active = homes.filter((h) => h.week > 0).length;
   const atHome = near?.startsWith('p:') ? shown.find((h) => homeKey(h.id) === near) ?? null : null;
-  const look = useMemo(() => ({ ...DEFAULT_LOOK, hair: 'short', gear: ['tracksuit'] }), []);
+  // The therapist's own figure when they made one; else a plain one in the practice colours.
+  const mine = useQuery({ queryKey: ['staff-avatar'], queryFn: () => api.get<{ look: Record<string, string> | null }>('/dashboard/avatar'), staleTime: 10 * 60_000 });
+  const look = useMemo(() => (mine.data?.look ? { ...DEFAULT_LOOK, ...mine.data.look, gear: [] } : { ...DEFAULT_LOOK, hair: 'short', gear: ['tracksuit'] }), [mine.data]);
 
   const goIn = async (h: VillageHome) => {
     setBusy(true);
@@ -78,6 +81,23 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
       setBusy(false);
     }
   };
+  // A home picked outside the scene (the list beside it): go to its area and walk to its door.
+  const nearRef = useRef<string | null>(null);
+  nearRef.current = near;
+  useEffect(() => {
+    if (!picked || nearRef.current === homeKey(picked)) return;
+    const i = homes.findIndex((h) => h.id === picked);
+    if (i < 0) return;
+    const area = Math.floor(i / STREET_SIZE);
+    if (area !== hood) {
+      setHood(area);
+      setInside(null);
+      // The other area is built first; the walk starts once it stands.
+      const id = window.setTimeout(() => world.current?.goTo(homeKey(picked)), 1500);
+      return () => window.clearTimeout(id);
+    }
+    world.current?.goTo(homeKey(picked));
+  }, [picked, homes, hood]);
   const visited = inside ? homes.find((h) => h.id === inside) ?? null : null;
 
   return (

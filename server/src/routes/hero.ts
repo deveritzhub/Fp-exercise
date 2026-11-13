@@ -1,3 +1,5 @@
+import { ADVENTURE_DAILY_WINS, CREATURES, CREATURE_KINDS, adventureLevel, type CreatureKind } from '../../../shared/adventure';
+import { readStaffLook } from '../lib/staffLook';
 import { HEIRLOOM_KINDS } from '../../../shared/measurementBoss';
 import { wearableAclReward, ACL_SPORTS } from '../../../shared/aclRewards';
 import { heirloomView } from '../lib/boss';
@@ -710,6 +712,54 @@ async function homeState(tx: Tx, patientId: string) {
   }
   return { level: state.level.level, coins: state.gear.coins, owned, layout: kept };
 }
+
+/**
+ * The figure of the professional who treats this patient, for the village: the main therapist's when
+ * there is one, else the first with a figure. Appearance only.
+ */
+heroPatient.get('/hero/coach', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const row = await withUser(user.id, async (tx) =>
+    (await tx.query(
+      `SELECT s.look FROM patient_therapists a JOIN staff_avatars s ON s.user_id = a.therapist_id
+        WHERE a.patient_id = $1 ORDER BY a.is_primary DESC, a.created_at LIMIT 1`,
+      [patient.id],
+    )).rows[0]);
+  return c.json({ look: readStaffLook(row?.look) });
+});
+
+const adventureView = (r: { xp: number; wins: number; wins_today: number } | undefined) => {
+  const xp = Number(r?.xp ?? 0);
+  return { xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, ...adventureLevel(xp) };
+};
+const adventureRow = async (tx: Tx, patientId: string) =>
+  (await tx.query('SELECT xp, wins, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
+
+heroPatient.get('/hero/adventure', async (c) => {
+  const { user, patient } = requirePatient(c);
+  return c.json(adventureView(await withUser(user.id, (tx) => adventureRow(tx, patient.id))));
+});
+
+/** A creature beaten. The server decides what it is worth; past the day's count it is worth nothing. */
+heroPatient.post('/hero/adventure/win', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ kind: z.enum(CREATURE_KINDS as [CreatureKind, ...CreatureKind[]]) }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) throw badRequest('invalid_input');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const before = adventureRow(tx, patient.id);
+      const today = Number((await before)?.wins_today ?? 0);
+      const gained = today < ADVENTURE_DAILY_WINS ? CREATURES[body.data.kind].xp : 0;
+      await tx.query(
+        `INSERT INTO hero_adventure(patient_id, xp, wins, day, wins_today) VALUES ($1, $2, 1, CURRENT_DATE, 1)
+         ON CONFLICT (patient_id) DO UPDATE SET xp = hero_adventure.xp + $2, wins = hero_adventure.wins + 1,
+           wins_today = CASE WHEN hero_adventure.day = CURRENT_DATE THEN hero_adventure.wins_today + 1 ELSE 1 END, day = CURRENT_DATE, updated_at = now()`,
+        [patient.id, gained],
+      );
+      return { gained, ...adventureView(await adventureRow(tx, patient.id)) };
+    }),
+  );
+});
 
 heroPatient.get('/hero/home', async (c) => {
   const { user, patient } = requirePatient(c);

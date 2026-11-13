@@ -619,10 +619,13 @@ with part('body'):
     hole = NECK_R * 1.35
 
     def shirt(c, n, b, t, g):
-        return shirt0(c, n, b, t, g) and not (c.z > neck0.z - 0.004 and math.hypot(c.x - NECK_C.x, c.y - NECK_C.y) < hole)
+        return shirt0(c, n, b, t, g)
 
     # A T-shirt that hangs: over the waistband, with open sleeves.
-    shell('body_shirt', KIT, shirt, 0.006, thick=0.003, cuts=hems(ARMS_U, 0.5, 'head') + [((0, 0, BONE['pelvis'][0].z + 0.04), (0, 0, 1), lambda co: co.z < BONE['pelvis'][0].z + 0.1 and abs(co.x) < SHW * 1.2)],
+    shell('body_shirt', KIT, shirt, 0.006, thick=0.003, cuts=hems(ARMS_U, 0.5, 'head') + [((0, 0, BONE['pelvis'][0].z + 0.04), (0, 0, 1), lambda co: co.z < BONE['pelvis'][0].z + 0.1 and abs(co.x) < SHW * 1.2),
+                                              # A round collar: one clean cut across the base of the neck, lower in front.
+                                              ((NECK_C.x, NECK_C.y, neck0.z + 0.004), (0, 0.3, -1),
+                                               lambda co: co.z > neck0.z - 0.07 and math.hypot(co.x - NECK_C.x, co.y - NECK_C.y) < hole * 2.4)],
           loose=DRAPE)
     shorts = any_of(bone_in('pelvis'), bone_in('thigh_l', 'thigh_r', tmax=0.75),
                     lambda c, n, b, t, g: b == 'spine_01' and c.z < BONE['pelvis'][0].z + 0.11)
@@ -918,7 +921,11 @@ def high_socks(m=KIT_S):
 
 
 def number(z=None, m=KIT_S):
-    cube((0, CHEST_FRONT - 0.009 - DRAPE - FRONT, z or CHEST_Z - 0.01), (0.03, 0.003, 0.038), m, sub=1, name='number')
+    zc = z or CHEST_Z - 0.01
+    # In front of whatever the cloth bridges there, not only the hollow of the breastbone.
+    front = min(p.y for p in TORSO if abs(p.z - zc) < 0.05 and abs(p.x) < 0.09)
+    # A flat patch with square corners reads as a shirt number; a rounded one as a blob.
+    cube((0, front - 0.006 - DRAPE, zc + 0.02), (0.042, 0.002, 0.048), m, sub=0, bevel=0.15, name='number')
 
 
 with part('outfit_tracksuit'):

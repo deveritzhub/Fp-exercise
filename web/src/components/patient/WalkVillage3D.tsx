@@ -1,5 +1,7 @@
+import { creature } from './creatures3d';
+import type { CreatureKind } from '@shared/adventure';
 import { dress } from '@/components/hero/fabric3d';
-import { useEffect, useRef, useState, type MutableRefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { RotateCcw, RotateCw } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
@@ -27,6 +29,9 @@ import type { MapTrack } from './VillageMap';
 export const TV_KEY = 'tv';
 export const PRACTICE_KEY = 'practice';
 export const EXIT_KEY = 'exit';
+/** The well on the square: a place to drink. */
+export const WELL_KEY = 'well';
+const WELL_SPOT: Vec = { x: 1.3, z: 0.4 };
 /** Inside a house: the board with that house's programme (`in:kracht`, `in:mobiliteit`). */
 export const boardKey = (house: string) => `in:${house}`;
 /** The patient's own home: outside in the village, and the room inside (`in:home` is its furnishing table). */
@@ -75,6 +80,15 @@ type Props = {
   /** A workout waits today: the coach at the gym shows a quest marker. */
   questOpen?: boolean;
   coachLabel?: string;
+  /** Creatures to beat, at fixed spots. `creaturesGone` are the beaten ones: hidden until they come back. */
+  creatures?: { key: string; kind: CreatureKind; label: string; x: number; z: number }[];
+  creaturesGone?: string[];
+  /** The well can be walked to and used (the patient's village). */
+  well?: boolean;
+  /** How fast the hero moves, 1 = normal. Lower when thirsty or stiff. */
+  pace?: number;
+  /** How the figure by the TV looks: the patient's own therapist. Without it: the practice colours. */
+  coachLook?: FigureLook | null;
   /** Filled by the scene: send the hero to a spot from outside (HUD buttons). */
   api?: MutableRefObject<WorldApi | null>;
   /** Joystick: x to the right and y forward as seen on screen, each -1..1. Zero = not in use. */
@@ -657,7 +671,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onDestination, heroName, questOpen = false, coachLabel, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
   const { t } = useI18n();
   const coachName = coachLabel ?? t('Fysiotherapeut', 'Physiotherapist');
   const host = useRef<HTMLDivElement>(null);
@@ -678,10 +692,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
   const heroScene = look ? hero3dScene(look) : null;
   const heroKey = heroScene ? JSON.stringify([heroScene.url, [...heroScene.visible].sort(), heroScene.tints, heroScene.fabric]) : '';
-  const key = JSON.stringify([buildings.map((b) => [b.key, b.stage ?? -1]), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1, bound ?? 0, people, visitRoom]);
+  const key = JSON.stringify([buildings.map((b) => [b.key, b.stage ?? -1]), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1, bound ?? 0, people, visitRoom, coachLook ?? null, (creatures ?? []).map((c) => [c.key, c.kind, c.x, c.z])]);
   // Read at the moment of use, so new furniture or a new mode never rebuilds the whole village.
-  const live = useRef({ homeItems: homeItems ?? [], placing, onFloor });
-  live.current = { homeItems: homeItems ?? [], placing, onFloor };
+  const slow = Math.min(1, Math.max(0.5, paceProp));
+  const gone = useMemo(() => new Set(creaturesGone ?? []), [creaturesGone]);
+  const live = useRef({ homeItems: homeItems ?? [], placing, onFloor, slow, gone });
+  live.current = { homeItems: homeItems ?? [], placing, onFloor, slow, gone };
   const furnish = useRef<(items: Placed[]) => void>(() => {});
   const itemsKey = JSON.stringify(homeItems ?? []);
   useEffect(() => {
@@ -788,13 +804,31 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     };
 
     // Well on the square.
-    const well = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.6, 10), mat(0x8d8a82));
-    well.position.y = 0.3;
-    well.castShadow = true;
+    const well3d = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.6, 10), mat(0x8d8a82));
+    well3d.position.y = 0.3;
+    well3d.castShadow = true;
     const wellWater = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.02, 10), mat(PALETTE.water, { roughness: 0.2 }));
     wellWater.position.y = 0.6;
-    scene.add(well, wellWater);
+    scene.add(well3d, wellWater);
     obstacles.push({ x: 0, z: 0, r: 0.95 });
+    // Creatures: each at its spot, with a place beside it to stand and strike from.
+    const mobs: { key: string; g: THREE.Group; door: Vec }[] = [];
+    for (const c of creatures ?? []) {
+      const g = creature(c.kind);
+      g.position.set(c.x, 0, c.z);
+      g.lookAt(0, 0, 0);
+      scene.add(g);
+      const len = Math.hypot(c.x, c.z) || 1;
+      const door = { x: c.x * (1 - 0.85 / len), z: c.z * (1 - 0.85 / len) };
+      anchors.push({ id: c.key, obj: g, y: 1.0 });
+      spots.push({ key: c.key, door });
+      obstacles.push({ x: c.x, z: c.z, r: 0.38 });
+      mobs.push({ key: c.key, g, door });
+    }
+    if (well) {
+      anchors.push({ id: WELL_KEY, obj: well3d, y: 2.55 });
+      spots.push({ key: WELL_KEY, door: WELL_SPOT });
+    }
 
     buildings.forEach((b, i) => {
       const p = sites[i];
@@ -1278,8 +1312,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           play('idle');
           // The coach waits by the TV: the same model in the practice colours, breathing quietly.
           const breathe = gltf.animations.find((c) => c.name === 'idle');
-          const staff = (x: number, z: number, wear: Set<string>, tints: Record<string, string>, face: number, fabric: string | null = null) => {
-            const cm = cloneSkinned(gltf.scene);
+          const staff = (x: number, z: number, wear: Set<string>, tints: Record<string, string>, face: number, fabric: string | null = null, src = gltf) => {
+            const cm = cloneSkinned(src.scene);
             cm.traverse((o) => {
               if (isToggleNode(o.name)) o.visible = wear.has(o.name);
               const m = o as THREE.Mesh;
@@ -1292,21 +1326,35 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
                 m.frustumCulled = false;
               }
             });
+            // Another body has another height: every figure stands as tall as the hero, a touch more.
+            const own = src === gltf ? box : new THREE.Box3().setFromObject(cm.getObjectByName('body') ?? cm);
+            const kk = (src === gltf ? k : HERO_HEIGHT / Math.max(0.5, own.max.y - own.min.y)) * 1.05;
             const g = new THREE.Group();
             g.add(cm);
-            g.scale.setScalar(k * 1.05);
-            g.position.set(x, -box.min.y * k * 1.05, z);
+            g.scale.setScalar(kk);
+            g.position.set(x, -own.min.y * kk, z);
             g.rotation.y = face;
             scene.add(g);
-            if (breathe) {
+            const still = src.animations.find((c) => c.name === 'idle') ?? breathe;
+            if (still) {
               const mx = new THREE.AnimationMixer(cm);
-              mx.clipAction(breathe).play();
+              mx.clipAction(still).play();
               // Not all breathing in step.
               mx.setTime(staffMixers.length * 0.9);
               staffMixers.push(mx);
             }
           };
-          if (people) staff(COACH_AT.x, COACH_AT.z, COACH_WEAR, COACH_TINT, Math.atan2(TV_SPOT.x - COACH_AT.x, TV_SPOT.z + 1.6 - COACH_AT.z));
+          if (people) {
+            const face = Math.atan2(TV_SPOT.x - COACH_AT.x, TV_SPOT.z + 1.6 - COACH_AT.z);
+            const plain = () => staff(COACH_AT.x, COACH_AT.z, COACH_WEAR, COACH_TINT, face);
+            // The patient's own therapist, as they made themselves; else a figure in the practice colours.
+            const cs = coachLook ? hero3dScene(coachLook) : null;
+            if (cs) {
+              loadModel(cs.url)
+                .then((g2) => { if (!cancelled) staff(COACH_AT.x, COACH_AT.z, cs.visible, cs.tints, face, cs.fabric, g2); })
+                .catch(() => { if (!cancelled) plain(); });
+            } else plain();
+          }
           // And one by the programme board in each training house.
           for (const tr of trainers) staff(tr.at.x, tr.at.z, tr.wear, tr.tint, tr.face, tr.fabric);
           // Villagers. Their own model when they have one; until then this model in other clothes.
@@ -1480,7 +1528,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         return;
       }
       const i = buildings.findIndex((b) => b.key === k);
-      if (k === TV_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY, TV_KEY);
+      const mob = mobs.find((x) => x.key === k);
+      if (mob) walkTo.current(mob.door, k);
+      else if (k === WELL_KEY && well) walkTo.current(WELL_SPOT, WELL_KEY);
+      else if (k === TV_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY, TV_KEY);
       else if (k === PRACTICE_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY);
       else if (i >= 0) walkTo.current(sites[i].door, k);
     };
@@ -1621,8 +1672,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         }
         el.dataset.walking = '1';
         const run = force > 0.8;
-        const pace = run ? 1.12 : 1.1;
-        const speed = motions.walk && motions.run ? GAIT_SPEED[run ? 'run' : 'walk'] * HERO_HEIGHT * pace : SPEED * (run ? 1 : 0.5);
+        // Thirsty or stiff: the same gait, slower, so the feet still fit the ground.
+        const pace = (run ? 1.12 : 1.1) * live.current.slow;
+        const speed = motions.walk && motions.run ? GAIT_SPEED[run ? 'run' : 'walk'] * HERO_HEIGHT * pace : SPEED * (run ? 1 : 0.5) * live.current.slow;
         if (mixer) {
           play(run ? 'run' : 'walk');
           mixer.timeScale = pace;
@@ -1641,8 +1693,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         walking = true;
       } else if (goal) {
         // With the model the ground speed is the one its gait was made for, so the feet do not slide.
-        const pace = goal.run ? 1.12 : 1.1;
-        const speed = motions.walk && motions.run ? GAIT_SPEED[goal.run ? 'run' : 'walk'] * HERO_HEIGHT * pace : SPEED;
+        const pace = (goal.run ? 1.12 : 1.1) * live.current.slow;
+        const speed = motions.walk && motions.run ? GAIT_SPEED[goal.run ? 'run' : 'walk'] * HERO_HEIGHT * pace : SPEED * live.current.slow;
         if (mixer) {
           play(goal.run ? 'run' : 'walk');
           mixer.timeScale = pace;
@@ -1754,6 +1806,13 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       if (!reduce) {
         for (const mx of staffMixers) mx.update(dt);
+        // Creatures hop on the spot; a beaten one is away until it comes back.
+        mobs.forEach((mob, i) => {
+          mob.g.visible = !live.current.gone.has(mob.key);
+          const hop = Math.abs(Math.sin(performance.now() / 380 + i * 1.7));
+          mob.g.position.y = hop * 0.09;
+          mob.g.scale.set(1 + (1 - hop) * 0.06, 0.94 + hop * 0.1, 1 + (1 - hop) * 0.06);
+        });
         // Villagers only live while the hero is in the village: indoors nobody sees them.
         if (!indoor) {
           for (const npc of npcs) {
@@ -1918,6 +1977,18 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               <span className="inline-flex items-center gap-1">{b.flag && <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[#4ad06a] ring-1 ring-black/40" />}{b.label}</span>
             </button>
           ))}
+          {(creatures ?? []).map((c) => (
+            <button key={c.key} ref={setLabel(c.key)} type="button" data-spot={c.key} hidden={gone.has(c.key)} onClick={() => go(c.key)} aria-label={t(`Loop naar ${c.label}`, `Walk to ${c.label}`)}
+              className={cn(plate, '!min-h-[28px] text-[12.5px] text-[#ffb3a1]')} style={{ transform: 'translate(-9999px,0)' }}>
+              {c.label}
+            </button>
+          ))}
+          {well && (
+            <button ref={setLabel(WELL_KEY)} type="button" data-spot={WELL_KEY} onClick={() => go(WELL_KEY)} aria-label={t('Loop naar de waterput', 'Walk to the well')}
+              className={cn(plate, 'text-[#9fd8ff]')} style={{ transform: 'translate(-9999px,0)' }}>
+              {t('Waterput', 'Well')}
+            </button>
+          )}
           <button ref={setLabel(TV_KEY)} type="button" data-spot={TV_KEY} onClick={() => go(TV_KEY)} aria-label={t(`Loop naar ${tvLabel}`, `Walk to ${tvLabel}`)}
             className={cn(plate, 'text-white')} style={{ transform: 'translate(-9999px,0)' }}>
             {tvLabel}

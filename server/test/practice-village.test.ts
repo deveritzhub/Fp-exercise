@@ -60,3 +60,25 @@ describe('practice village (staff)', () => {
     expect((await A.get('/dashboard/village/not-an-id/home')).status).toBe(404);
   });
 });
+
+describe('the therapist’s own figure', () => {
+  const look = { frame: 'm', build: 'athletic', skin: 's6', hair: 'short', hairColor: 'black', eyeColor: 'brown', beard: 'stubble', glasses: 'none', outfit: 'ridder' };
+
+  it('is saved by the therapist and shown to the patients they treat, and to nobody else', async () => {
+    resetRateLimits();
+    const A = await login('therapistA');
+    expect((await A.get('/dashboard/avatar')).body).toEqual({ look: null });
+    expect((await A.put('/dashboard/avatar', { ...look, outfit: 'nope' })).status).toBe(400);
+    expect((await A.put('/dashboard/avatar', { ...look, heroName: 'x' })).status).toBe(400);
+    expect((await A.put('/dashboard/avatar', look)).status).toBe(200);
+    expect((await A.get('/dashboard/avatar')).body).toEqual({ look });
+
+    const P = await login('patientA');
+    expect((await P.get('/patient/hero/coach')).body).toEqual({ look });
+    // A patient of another practice has another therapist, without a figure yet.
+    const PB = await login('patientB');
+    expect((await PB.get('/patient/hero/coach')).body).toEqual({ look: null });
+    // A patient cannot make a figure for staff.
+    expect((await P.put('/dashboard/avatar', look)).status).toBe(403);
+  });
+});

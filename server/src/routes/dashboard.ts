@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { readStaffLook, staffLook } from '../lib/staffLook';
 import { areaPainRising, progressionSignal, painRising } from '../../../shared/progression';
 import { withUser } from '../db';
 import { requireStaff, type AppEnv } from '../middleware';
@@ -270,4 +271,20 @@ dashboard.get('/village/:patientId/home', async (c) => {
     return { layout: kept };
   });
   return out ? c.json(out) : c.json({ error: 'not_found' }, 404);
+});
+
+dashboard.get('/avatar', async (c) => {
+  const { user } = requireStaff(c);
+  const row = await withUser(user.id, async (tx) => (await tx.query('SELECT look FROM staff_avatars WHERE user_id = $1', [user.id])).rows[0]);
+  return c.json({ look: readStaffLook(row?.look) });
+});
+
+dashboard.put('/avatar', async (c) => {
+  const { user } = requireStaff(c);
+  const parsed = staffLook.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: 'invalid_input' }, 400);
+  await withUser(user.id, (tx) =>
+    tx.query('INSERT INTO staff_avatars(user_id, look) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET look = EXCLUDED.look, updated_at = now()', [user.id, JSON.stringify(parsed.data)]),
+  );
+  return c.json({ look: parsed.data });
 });
