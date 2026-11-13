@@ -67,7 +67,7 @@ const TIP_KEY = 'fp.village.tip';
 const STICK_KEY = 'fp.village.joystick';
 
 /** Thumb stick: drag the knob and the hero walks that way; push it to the rim to run. */
-function Joystick({ stick, label }: { stick: RefObject<{ x: number; y: number }>; label: string }) {
+export function Joystick({ stick, label }: { stick: RefObject<{ x: number; y: number }>; label: string }) {
   const knob = useRef<HTMLSpanElement>(null);
   const R = 34;
   const set = (x: number, y: number) => {
@@ -518,13 +518,14 @@ export function VillageWalkPage() {
       </section>
 
       <p className="text-[13.5px] leading-relaxed text-ink-700">
-        {t('Tik op de grond om te lopen en sleep opzij om rond te kijken. Liever een joystick? Zet hem aan met de knop met de gamepad. In de oefenzaal van je praktijk staan de coach en de tv met je oefeningen van vandaag.', 'Tap the ground to walk and drag sideways to look around. Prefer a joystick? Switch it on with the gamepad button. In the exercise room of your practice you find the coach and the TV with your exercises for today.')}
+        {t('Tik op de grond om te lopen en sleep opzij om rond te kijken. Liever een joystick? Zet hem aan met de knop met de gamepad. In de oefenzaal van je praktijk staan de fysiotherapeut en de tv met je oefeningen van vandaag.', 'Tap the ground to walk and drag sideways to look around. Prefer a joystick? Switch it on with the gamepad button. In the exercise room of your practice you find the physiotherapist and the TV with your exercises for today.')}
       </p>
 
       <Dialog open={decorOpen} onClose={() => setDecorOpen(false)} title={t('Jouw huis inrichten', 'Furnish your home')} size="md" sheet
         description={L ? t(`${HOME_STAGES[stage].nl}, level ${L.level}. ${levelsToNextHome(L.level) === null ? 'Dit is het grootste huis.' : `Nog ${levelsToNextHome(L.level)} level(s) tot een ${HOME_STAGES[stage + 1].nl.toLowerCase()}.`}`, `${HOME_STAGES[stage].en}, level ${L.level}. ${levelsToNextHome(L.level) === null ? 'This is the biggest home.' : `${levelsToNextHome(L.level)} more level(s) to a ${HOME_STAGES[stage + 1].en.toLowerCase()}.`}`) : undefined}>
         {own && (
           <div data-testid="decor-panel">
+            <p className="mb-2 text-[12.5px] text-ink-600">{t('Je fysiotherapeut kan in het dorp van de praktijk bij je binnen kijken en ziet dan je meubels, niet je muntjes.', 'Your physiotherapist can look into your home in the practice village and sees your furniture, not your coins.')}</p>
             <p className="flex items-center gap-2 rounded-xl bg-[#fbf0d9] px-3 py-2 text-[15px] font-semibold text-[#6b4705]"><Coins className="h-5 w-5" aria-hidden /><span data-testid="coins">{own.coins}</span> {t('muntjes', 'coins')}<span className="ml-auto text-[12.5px] font-normal">{t('Verdien ze met trainen en je dagkist.', 'Earn them by training and your day chest.')}</span></p>
             <div role="tablist" className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-[#E7EFE3] p-1">
               {(['mine', 'shop'] as const).map((tab) => (

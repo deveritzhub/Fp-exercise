@@ -1,6 +1,6 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Eye, EyeOff, Flag, Home, Users } from 'lucide-react';
+import { Eye, EyeOff, Flag, Footprints, Home, Map as MapIcon, Users } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
@@ -10,6 +10,7 @@ import { Button, ButtonLink, Card, CardHeader, EmptyState, ErrorState, PageHeade
 import { HOME_STAGES, homeStage, levelsToNextHome, type VillageHome } from '@shared/practiceVillage';
 // three.js only loads on the 3D pages.
 const PracticeVillage3D = lazy(() => import('@/components/app/PracticeVillage3D'));
+const PracticeWalk = lazy(() => import('@/components/app/PracticeWalk'));
 
 const SAMPLE: VillageHome[] = [1, 1, 2, 3, 4, 6, 7, 9, 11, 14, 16, 22].map((level, i) => ({ id: `sample-${i}`, no: i + 1, level, progress: ((i * 37) % 100) / 100, week: i % 3 === 0 ? 0 : (i % 4) + 1 }));
 
@@ -29,6 +30,8 @@ export function PracticeVillagePage() {
   const [picked, setPicked] = useState<string | null>(null);
   // A look ahead: twelve made-up homes, two of every kind. Clearly marked, and without a record behind them.
   const [sample, setSample] = useState(false);
+  // From above (the overview) or on foot through the street of homes.
+  const [walk, setWalk] = useState(false);
   const homes = useMemo(
     () => (sample ? SAMPLE : q.data?.homes ?? []),
     [q.data, sample],
@@ -44,6 +47,7 @@ export function PracticeVillagePage() {
       <PageHeader
         title={t('Dorp', 'Village')}
         actions={<>
+          <Button aria-pressed={walk} data-testid="toggle-walk" icon={walk ? <MapIcon className="h-4 w-4" /> : <Footprints className="h-4 w-4" />} onClick={() => setWalk((v) => !v)}>{walk ? t('Overzicht van boven', 'Overview from above') : t('Loop door het dorp', 'Walk through the village')}</Button>
           {!sample && <Button variant="secondary" aria-pressed={names} data-testid="toggle-names" icon={names ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />} onClick={() => setNames((v) => !v)}>{names ? t('Namen verbergen', 'Hide names') : t('Namen tonen', 'Show names')}</Button>}
           <Button variant="secondary" aria-pressed={sample} onClick={() => { setSample((v) => !v); setPicked(null); }}>{sample ? t('Terug naar mijn patiënten', 'Back to my patients') : t('Voorbeeld: alle soorten huisjes', 'Example: every kind of home')}</Button>
         </>}
@@ -74,8 +78,10 @@ export function PracticeVillagePage() {
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
             <section aria-label={t('Het dorp in 3D. Kies een huisje.', 'The village in 3D. Pick a home.')}>
               <Suspense fallback={<div className="h-[420px] animate-pulse rounded-2xl bg-[#E7EFE3] lg:h-[560px]" />}>
-                <PracticeVillage3D className="h-[420px] lg:h-[560px]" homes={homes} practiceName={practice?.practiceName ?? ''} selected={picked} onPick={setPicked} />
+                {walk ? <PracticeWalk className="h-[520px] lg:h-[620px]" homes={homes} practiceName={practice?.practiceName ?? t('De praktijk', 'The practice')} picked={picked} onPick={setPicked} sample={sample} /> :
+                <PracticeVillage3D className="h-[420px] lg:h-[560px]" homes={homes} practiceName={practice?.practiceName ?? ''} selected={picked} onPick={setPicked} />}
               </Suspense>
+              {walk && <p className="mt-2 text-[13.5px] text-ink-700">{t('Je start in de praktijk. Tik op Uitgang, loop de woonstraat in en tik op een huisje of op de minikaart. Bij een deur open je het dossier of kijk je binnen.', 'You start in the practice. Tap Exit, walk into the street and tap a home or the minimap. At a door you open the record or look inside.')}</p>}
             </section>
 
             <div className="space-y-4">

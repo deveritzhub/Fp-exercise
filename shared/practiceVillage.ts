@@ -55,3 +55,18 @@ export function plotPosition(i: number): { x: number; z: number } {
   const a = Math.PI * (0.62 + (1.76 * (left + 0.5)) / size) + (ring % 2 ? 0.08 : 0);
   return { x: Math.cos(a) * r, z: Math.sin(a) * r };
 }
+
+/**
+ * The street of homes in the village the therapist walks through: six homes round the square and
+ * twelve on a ring road behind them. More patients than that live in a next neighbourhood.
+ */
+export const STREET_SIZE = 18;
+export const STREET_BOUND = 21.5;
+const STREET_INNER = [18, 54, 126, 162, 206, 334];
+const STREET_OUTER = [304, 328, 352, 16, 40, 64, 116, 140, 164, 188, 212, 236];
+export const STREET_RING = { inner: 8.8, outer: 16.5, road: 12.4 } as const;
+/** Where home `i` of a neighbourhood stands: degrees round the square (0 = east, 270 = north) and distance from it. */
+export function streetPlot(i: number): { deg: number; ring: number } {
+  const k = ((i % STREET_SIZE) + STREET_SIZE) % STREET_SIZE;
+  return k < STREET_INNER.length ? { deg: STREET_INNER[k], ring: STREET_RING.inner } : { deg: STREET_OUTER[k - STREET_INNER.length], ring: STREET_RING.outer };
+}

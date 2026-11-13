@@ -47,3 +47,37 @@ test('therapist sees a home per patient without names and opens the record from 
   await panel.getByRole('link', { name: 'Open het dossier' }).click();
   await expect(page).toHaveURL(/\/app\/patienten\/[0-9a-f-]{36}/);
 });
+
+/** Staff on foot: from the practice into the street of homes, the record at a door and a look inside. */
+test('therapist walks from the practice to a patient home and looks inside', async ({ page }) => {
+  test.setTimeout(300_000);
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto('/app/dorp');
+  await page.getByTestId('toggle-walk').click();
+  const village = page.getByTestId('walk-village');
+  await expect(village).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
+  await expect(village).toHaveAttribute('data-zone', 'practice');
+  if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/tw-0.png' });
+
+  // Out of the practice: at the exit the door opens by itself.
+  await page.getByRole('button', { name: 'Loop naar de uitgang' }).press('Enter');
+  await expect(village).toHaveAttribute('data-zone', 'village', { timeout: 60_000 });
+  if (process.env.SHOTS) { await page.waitForTimeout(1500); await page.screenshot({ path: process.env.SHOTS + '/tw-1.png' }); }
+
+  // To a home: numbered, no name; at the door the record and the way in.
+  await page.getByRole('button', { name: 'Loop naar Huisje 1', exact: true }).press('Enter');
+  const record = page.getByTestId('walk-record');
+  await expect(record).toBeVisible({ timeout: 90_000 });
+  await expect(record).toHaveAttribute('href', /\/app\/patienten\/[0-9a-f-]{36}$/);
+  await expect(page.getByTestId('home-panel')).toContainText('Huisje 1');
+  for (const name of ['Emma', 'de Jong']) await expect(page.getByRole('main')).not.toContainText(name);
+  if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/tw-2.png' });
+
+  await page.getByTestId('enter-home').click();
+  await expect(village).toHaveAttribute('data-zone', 'home', { timeout: 30_000 });
+  await expect(page.getByTestId('visit-note')).toContainText('Binnen bij Huisje 1');
+  if (process.env.SHOTS) { await page.waitForTimeout(1500); await page.screenshot({ path: process.env.SHOTS + '/tw-3.png' }); }
+  await page.getByTestId('leave-home').click();
+  await expect(village).toHaveAttribute('data-zone', 'village', { timeout: 60_000 });
+  await expect(page.getByTestId('visit-note')).toHaveCount(0);
+});

@@ -45,4 +45,18 @@ describe('practice village (staff)', () => {
     const P = await login('patientA');
     expect((await P.get('/dashboard/village')).status).toBe(403);
   });
+
+  it('lets the treating member look into a home: the furniture, and nothing about coins', async () => {
+    const A = await login('therapistA');
+    const r = await A.get(`/dashboard/village/${s.patients.emma}/home`);
+    expect(r.status).toBe(200);
+    expect(Object.keys(r.body)).toEqual(['layout']);
+    expect(Array.isArray(r.body.layout)).toBe(true);
+    // Another practice, a patient and a made-up id get nothing.
+    const B = await login('therapistB');
+    expect((await B.get(`/dashboard/village/${s.patients.emma}/home`)).status).toBe(404);
+    const P = await login('patientA');
+    expect((await P.get(`/dashboard/village/${s.patients.emma}/home`)).status).toBe(403);
+    expect((await A.get('/dashboard/village/not-an-id/home')).status).toBe(404);
+  });
 });
