@@ -88,6 +88,20 @@ const COACH_AT: Vec = ROOM.coach;
 const COACH_WEAR = new Set(['hair_short', 'outfit_tracksuit', 'gear_cap', 'base_shoes']);
 const COACH_TINT: Record<string, string> = { kit_main: '#29483c', kit_dark: '#1d362d', kit_soft: '#e4bc63', hair: '#3b2a1a', skin: '#c99670' };
 
+/** Who waits by the programme board in the two training houses: a coach in the gym, a flow master in the studio. */
+const TRAINERS = {
+  kracht: {
+    nl: 'Coach', en: 'Coach', x: 0.85, z: -0.75,
+    wear: ['hair_buzz', 'outfit_tracksuit', 'gear_gloves', 'gear_belt', 'base_shoes'],
+    tint: { kit_main: '#7a2f24', kit_dark: '#4f1e17', kit_soft: '#f0d9a8', hair: '#1f1611', skin: '#a8754f' },
+  },
+  mobiliteit: {
+    nl: 'Flowmeester', en: 'Flow master', x: 0.8, z: -1.2,
+    wear: ['hair_bun', 'outfit_sport_running', 'gear_scarf', 'base_shoes'],
+    tint: { kit_main: '#2f7f8a', kit_dark: '#215c64', kit_soft: '#e6f6f4', hair: '#5a3a22', skin: '#e0b090' },
+  },
+} as const;
+const trainerKey = (house: string) => `trainer:${house}`;
 
 type Road = { a: Vec; b: Vec; w: number };
 const HORIZON = 0xf0dcbb;
@@ -624,8 +638,9 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onDestination, heroName, questOpen = false, coachLabel = 'Coach', api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onDestination, heroName, questOpen = false, coachLabel, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, className }: Props) {
   const { t } = useI18n();
+  const coachName = coachLabel ?? t('Fysiotherapeut', 'Physiotherapist');
   const host = useRef<HTMLDivElement>(null);
   const labels = useRef<Map<string, HTMLElement>>(new Map());
   const xpLabel = useRef<HTMLDivElement>(null);
@@ -796,6 +811,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     };
     mark(TV_KEY, ROOM.tvWall, 2.75, PRACTICE_KEY);
     mark(EXIT_KEY, { x: ROOM.exit.x + 0.7, z: ROOM.exit.z }, 2.45, PRACTICE_KEY);
+    const trainers: { at: THREE.Vector3; wear: Set<string>; tint: Record<string, string>; face: number }[] = [];
     buildings.forEach((b, i) => {
       if (!b.kind) return;
       const origin = { x: 0, z: 560 + Object.keys(places).length * 160 };
@@ -808,6 +824,15 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         spots: [{ key: boardKey(b.key), door: h.board }, { key: EXIT_KEY, door: h.exit }],
       };
       mark(boardKey(b.key), h.boardMark, 2.55, b.key);
+      if (heroScene) {
+        const tr = TRAINERS[b.kind];
+        const stand = new THREE.Object3D();
+        stand.position.set(origin.x + tr.x, 0, origin.z + tr.z);
+        scene.add(stand);
+        anchors.push({ id: trainerKey(b.key), obj: stand, y: HERO_HEIGHT + 0.55, zone: b.key });
+        h.obstacles.push({ x: origin.x + tr.x, z: origin.z + tr.z, r: 0.4 });
+        trainers.push({ at: stand.position, wear: new Set(tr.wear), tint: tr.tint, face: Math.atan2(h.board.x - stand.position.x, h.board.z + 1.4 - stand.position.z) });
+      }
       mark(EXIT_KEY, h.exitMark, 2.45, b.key);
     });
     // The patient's own home: outside it is the home that fits the level, inside a room to furnish.
@@ -867,7 +892,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const inside = () => zone.current !== 'village';
     const here = () => places[zone.current];
     roads.push({ a: { x: 0, z: -2.6 }, b: { x: GYM.x, z: GYM.z + 1.9 }, w: 1.6 });
-    let coachMixer: THREE.AnimationMixer | null = null;
+    const staffMixers: THREE.AnimationMixer[] = [];
     // The villagers: each walks its own round and rests at its stops.
     type Npc = { g: THREE.Group; mixer: THREE.AnimationMixer; walk: THREE.AnimationAction | null; idle: THREE.AnimationAction | null; path: Vec[]; at: number; rest: number; wait: number; moving: boolean };
     const npcs: Npc[] = [];
@@ -1218,30 +1243,38 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           for (const clip of gltf.animations) motions[clip.name as HeroMotion] = mixer.clipAction(clip);
           play('idle');
           // The coach waits by the TV: the same model in the practice colours, breathing quietly.
-          const cm = cloneSkinned(gltf.scene);
-          cm.traverse((o) => {
-            if (isToggleNode(o.name)) o.visible = COACH_WEAR.has(o.name);
-            const m = o as THREE.Mesh;
-            if (m.isMesh) {
-              const mm = (m.material as THREE.MeshStandardMaterial).clone();
-              const tint = COACH_TINT[mm.name.replace(/\.\d+$/, '')];
-              if (tint) mm.color.set(tint);
-              m.material = mm;
-              m.castShadow = true;
-              m.frustumCulled = false;
-            }
-          });
-          const coach = new THREE.Group();
-          coach.add(cm);
-          coach.scale.setScalar(k * 1.05);
-          coach.position.set(COACH_AT.x, -box.min.y * k * 1.05, COACH_AT.z);
-          coach.rotation.y = Math.atan2(TV_SPOT.x - COACH_AT.x, TV_SPOT.z + 1.6 - COACH_AT.z);
-          scene.add(coach);
           const breathe = gltf.animations.find((c) => c.name === 'idle');
-          if (breathe) {
-            coachMixer = new THREE.AnimationMixer(cm);
-            coachMixer.clipAction(breathe).play();
-          }
+          const staff = (x: number, z: number, wear: Set<string>, tints: Record<string, string>, face: number) => {
+            const cm = cloneSkinned(gltf.scene);
+            cm.traverse((o) => {
+              if (isToggleNode(o.name)) o.visible = wear.has(o.name);
+              const m = o as THREE.Mesh;
+              if (m.isMesh) {
+                const mm = (m.material as THREE.MeshStandardMaterial).clone();
+                const tint = tints[mm.name.replace(/\.\d+$/, '')];
+                if (tint) mm.color.set(tint);
+                m.material = mm;
+                m.castShadow = true;
+                m.frustumCulled = false;
+              }
+            });
+            const g = new THREE.Group();
+            g.add(cm);
+            g.scale.setScalar(k * 1.05);
+            g.position.set(x, -box.min.y * k * 1.05, z);
+            g.rotation.y = face;
+            scene.add(g);
+            if (breathe) {
+              const mx = new THREE.AnimationMixer(cm);
+              mx.clipAction(breathe).play();
+              // Not all breathing in step.
+              mx.setTime(staffMixers.length * 0.9);
+              staffMixers.push(mx);
+            }
+          };
+          staff(COACH_AT.x, COACH_AT.z, COACH_WEAR, COACH_TINT, Math.atan2(TV_SPOT.x - COACH_AT.x, TV_SPOT.z + 1.6 - COACH_AT.z));
+          // And one by the programme board in each training house.
+          for (const tr of trainers) staff(tr.at.x, tr.at.z, tr.wear, tr.tint, tr.face);
           // Villagers. Their own model when they have one; until then this model in other clothes.
           VILLAGERS.forEach((v, n) => {
             const doorOf = (key: string) => {
@@ -1673,7 +1706,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         track.current.people = npcs.map((n) => ({ x: n.g.position.x, z: n.g.position.z }));
       }
       if (!reduce) {
-        coachMixer?.update(dt);
+        for (const mx of staffMixers) mx.update(dt);
         // Villagers only live while the hero is in the village: indoors nobody sees them.
         if (!indoor) {
           for (const npc of npcs) {
@@ -1873,12 +1906,22 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           </button>
           {heroKey && (
             <button ref={setLabel(COACH_KEY)} type="button" data-spot={COACH_KEY} onClick={() => go(TV_KEY)}
-              aria-label={questOpen ? t(`${coachLabel}: je training van vandaag wacht`, `${coachLabel}: today's workout is waiting`) : t(`Loop naar ${coachLabel}`, `Walk to ${coachLabel}`)}
+              aria-label={questOpen ? t(`${coachName}: je training van vandaag wacht`, `${coachName}: today's workout is waiting`) : t(`Loop naar ${coachName}`, `Walk to ${coachName}`)}
               className={cn(plate, 'flex-col !items-center leading-none text-[#b8f0a8]')} style={{ transform: 'translate(-9999px,0)' }}>
               {questOpen && <span aria-hidden className="quest-mark text-[26px] leading-none text-[#ffd21f]">!</span>}
-              <span>{coachLabel}</span>
+              <span>{coachName}</span>
             </button>
           )}
+          {heroKey && buildings.filter((b) => b.kind).map((b) => {
+            const tr = TRAINERS[b.kind!];
+            return (
+              <button key={trainerKey(b.key)} ref={setLabel(trainerKey(b.key))} type="button" data-spot={trainerKey(b.key)} onClick={() => go(boardKey(b.key))}
+                aria-label={t(`Loop naar ${tr.nl}`, `Walk to ${tr.en}`)}
+                className={cn(plate, 'text-[#b8f0a8]')} style={{ transform: 'translate(-9999px,0)' }}>
+                {t(tr.nl, tr.en)}
+              </button>
+            );
+          })}
           {heroKey && VILLAGERS.map((v) => (
             <div key={v.key} ref={setLabel(`npc:${v.key}`)} aria-hidden data-npc={v.key} className={cn(plate, '!min-h-0 text-[12px] text-[#cfe8ff]')} style={{ transform: 'translate(-9999px,0)' }}>{t(v.nl, v.en)}</div>
           ))}
