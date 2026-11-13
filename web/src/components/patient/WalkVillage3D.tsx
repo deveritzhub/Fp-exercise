@@ -11,7 +11,11 @@ import { PALETTE, mat, rng, webglOk } from './Village3D';
 import { VILLAGE_LAYOUT, clampRect, findPath, nearestSpot, reachable, slotPosition, stepToward, type Obstacle, type Rect, type Site, type Vec } from './walk';
 import { PRACTICE_DOOR_X, ROOM, ROOM_AT, practiceBuilding, practiceRoom, type RoomWall } from './practice3d';
 import { houseRoom } from './house3d';
+import { furniture } from './home3d';
+import { DWELLING_TOP, dwelling } from '@/components/app/dwellings3d';
+import { decorItem, type Placed } from '@shared/homeDecor';
 import { VILLAGERS, routePoint } from './villagers';
+import type { MapTrack } from './VillageMap';
 
 /**
  * The village as a place to walk around in (three.js). Tap the ground and the hero walks there;
@@ -24,9 +28,14 @@ export const PRACTICE_KEY = 'practice';
 export const EXIT_KEY = 'exit';
 /** Inside a house: the board with that house's programme (`in:kracht`, `in:mobiliteit`). */
 export const boardKey = (house: string) => `in:${house}`;
+/** The patient's own home: outside in the village, and the room inside (`in:home` is its furnishing table). */
+export const HOME_KEY = 'home';
+/** Where the own home stands: south-east of the square, with room to grow into a villa. */
+export const HOME_AT = { x: Math.cos((60 * Math.PI) / 180) * 9, z: Math.sin((60 * Math.PI) / 180) * 9 };
+const HOME_REACH = [1.3, 1.5, 1.8, 2.2, 2.8, 3.1];
 /** A room behind a door in the village. */
 type Place = { group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[] };
-export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void };
+export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void };
 type Props = {
   /** Buildings round the square take the next free slot; one with a `site` stands there instead. */
   buildings: { key: string; label: string; site?: Site; roof?: number; kind?: 'kracht' | 'mobiliteit'; alert?: boolean }[];
@@ -55,8 +64,15 @@ type Props = {
   stick?: MutableRefObject<{ x: number; y: number }>;
   /** Name on the practice building. */
   practiceLabel?: string;
+  /** The own home: which of the six homes it is by now (0 = camp … 5 = villa) and its name. */
+  home?: { stage: number; label: string; alert?: boolean };
+  /** Furniture in the own home, in the room's own coordinates. */
+  homeItems?: Placed[];
+  /** While a piece is being placed: a tap on the floor of the home reports the spot instead of walking there. */
+  placing?: boolean;
+  onFloor?: (spot: Vec) => void;
   /** Kept up to date by the scene, for the minimap. */
-  track?: MutableRefObject<{ x: number; z: number; facing: number; target?: Vec | null }>;
+  track?: MutableRefObject<MapTrack>;
   className?: string;
 };
 
@@ -84,9 +100,44 @@ const segDist = (x: number, z: number, r: Road) => {
   return Math.hypot(x - (r.a.x + dx * t), z - (r.a.z + dz * t));
 };
 
-/** The ground picture: meadow with lighter and darker patches, dirt roads and the village square. */
-function groundTexture(roads: Road[], R: () => number) {
-  const S = 2048;
+// ---- Ground: patches of different kinds of ground instead of a field of loose blades. ----
+const hash2 = (x: number, y: number) => {
+  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return s - Math.floor(s);
+};
+function vnoise(x: number, y: number) {
+  const xi = Math.floor(x);
+  const yi = Math.floor(y);
+  const xf = x - xi;
+  const yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf);
+  const v = yf * yf * (3 - 2 * yf);
+  const a = hash2(xi, yi);
+  const b = hash2(xi + 1, yi);
+  const c = hash2(xi, yi + 1);
+  const d = hash2(xi + 1, yi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+const fbm = (x: number, y: number) => vnoise(x, y) * 0.6 + vnoise(x * 2.1 + 5.2, y * 2.1 + 1.3) * 0.3 + vnoise(x * 4.3 + 9.1, y * 4.3 + 3.7) * 0.1;
+const step = (lo: number, hi: number, v: number) => {
+  const t = Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
+  return t * t * (3 - 2 * t);
+};
+/** The kinds of ground and their colours: lush meadow, tall dark grass, dry grass, clover, bare earth. */
+const GROUNDS = [[104, 164, 64], [54, 106, 44], [196, 182, 98], [66, 152, 92], [152, 120, 80]] as const;
+/** How much of each kind of ground there is at a spot in the village (the five weights add up to 1). */
+export function terrainAt(x: number, z: number): [number, number, number, number, number] {
+  const dry = step(0.5, 0.62, fbm(x * 0.09 + 3.1, z * 0.09 - 7.4));
+  const dark = step(0.55, 0.68, fbm(x * 0.15 + 40.2, z * 0.15 - 17.3)) * (1 - dry);
+  const clover = step(0.6, 0.72, fbm(x * 0.2 - 30.5, z * 0.2 + 60.8)) * (1 - dry) * (1 - dark);
+  const earth = step(0.63, 0.72, fbm(x * 0.33 + 90.4, z * 0.33 + 12.9)) * (1 - dark);
+  const rest = Math.max(0, 1 - dry - dark - clover);
+  const lush = rest * (1 - earth);
+  return [lush, dark, dry * (1 - earth), clover * (1 - earth), earth * (rest + dry + clover)];
+}
+
+/** The ground picture: patches of meadow, tall grass, dry grass, clover and bare earth; dirt roads and the square on top. */
+function groundTexture(roads: Road[], R: () => number, S: number, bare = false) {
   const c = document.createElement('canvas');
   c.width = S;
   c.height = S;
@@ -94,15 +145,65 @@ function groundTexture(roads: Road[], R: () => number) {
   const px = (v: number) => (v / GROUND + 0.5) * S;
   const u = S / GROUND;
   if (g) {
-    g.fillStyle = '#5f8f3e';
-    g.fillRect(0, 0, S, S);
-    const greens = ['#6fa046', '#557f37', '#7aa84e', '#4c7632', '#689a42'];
-    for (let i = 0; i < 2600; i++) {
-      g.globalAlpha = 0.1 + R() * 0.16;
-      g.fillStyle = greens[Math.floor(R() * greens.length)];
+    // `bare`: only the roads and the square, on a see-through sheet that lies over the painted ground.
+    if (!bare) {
+    // The kinds of ground on a coarse grid; every pixel takes its mix from there and gets its own grain.
+    const N = 192;
+    const grid = new Float32Array(N * N * 5);
+    for (let j = 0; j < N; j++) {
+      for (let i = 0; i < N; i++) {
+        const w = terrainAt((i / (N - 1) - 0.5) * GROUND, (j / (N - 1) - 0.5) * GROUND);
+        grid.set(w, (j * N + i) * 5);
+      }
+    }
+    const img = g.createImageData(S, S);
+    const d = img.data;
+    for (let y = 0; y < S; y++) {
+      const gy = (y / (S - 1)) * (N - 1);
+      const j0 = Math.min(N - 2, Math.floor(gy));
+      const fy = gy - j0;
+      for (let x = 0; x < S; x++) {
+        const gx = (x / (S - 1)) * (N - 1);
+        const i0 = Math.min(N - 2, Math.floor(gx));
+        const fx = gx - i0;
+        const a = (j0 * N + i0) * 5;
+        const b = a + 5;
+        const e = a + N * 5;
+        const f = e + 5;
+        let r = 0;
+        let gr = 0;
+        let bl = 0;
+        let earth = 0;
+        let clover = 0;
+        for (let k = 0; k < 5; k++) {
+          const w = (grid[a + k] * (1 - fx) + grid[b + k] * fx) * (1 - fy) + (grid[e + k] * (1 - fx) + grid[f + k] * fx) * fy;
+          r += GROUNDS[k][0] * w;
+          gr += GROUNDS[k][1] * w;
+          bl += GROUNDS[k][2] * w;
+          if (k === 4) earth = w;
+          if (k === 3) clover = w;
+        }
+        // Grain: fine speckle everywhere, light dots in the clover, pebbles on bare earth.
+        const h = hash2(x, y);
+        let shade = 0.86 + h * 0.26;
+        if (clover > 0.5 && h > 0.955) shade = 1.45;
+        if (earth > 0.5 && h > 0.965) shade = h > 0.985 ? 1.35 : 0.6;
+        const o = (y * S + x) * 4;
+        d[o] = Math.min(255, r * shade);
+        d[o + 1] = Math.min(255, gr * shade);
+        d[o + 2] = Math.min(255, bl * shade);
+        d[o + 3] = 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
+    // Soft lighter and darker sweeps over it, so no patch is one flat tone.
+    for (let i = 0; i < 700; i++) {
+      g.globalAlpha = 0.05 + R() * 0.07;
+      g.fillStyle = R() > 0.5 ? '#f4ffd0' : '#1f3a14';
       g.beginPath();
-      g.ellipse(R() * S, R() * S, 8 + R() * 46, 6 + R() * 30, R() * Math.PI, 0, Math.PI * 2);
+      g.ellipse(R() * S, R() * S, (10 + R() * 60) * (S / 2048), (8 + R() * 36) * (S / 2048), R() * Math.PI, 0, Math.PI * 2);
       g.fill();
+    }
     }
     g.globalAlpha = 1;
     g.lineCap = 'round';
@@ -149,16 +250,109 @@ function groundTexture(roads: Road[], R: () => number) {
   return tex;
 }
 
+/** The five painted ground pictures (web/public/village/ground), in the order of GROUNDS. Loaded once. */
+const GROUND_FILES = ['gras', 'hoog-gras', 'droog-gras', 'klaver', 'aarde', 'zand', 'plein'] as const;
+/** Bump when the pictures change, so phones fetch the new ones. */
+const GROUND_VERSION = 1;
+/** How much ground one picture covers, in world units (about two metres). */
+const GROUND_TILE = 4.4;
+let groundTiles: Promise<THREE.Texture[]> | null = null;
+function loadGroundTiles() {
+  groundTiles ??= Promise.all(
+    GROUND_FILES.map((name) =>
+      new THREE.TextureLoader().loadAsync(`/village/ground/${name}.webp?v=${GROUND_VERSION}`).then((t) => {
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        t.anisotropy = 8;
+        return t;
+      }),
+    ),
+  );
+  groundTiles.catch(() => (groundTiles = null));
+  return groundTiles;
+}
+
+/** Where which ground lies, as a small map the shader reads: tall, dry, clover, earth (the rest is meadow). */
+function splatMap() {
+  const N = 256;
+  const data = new Uint8Array(N * N * 4);
+  for (let j = 0; j < N; j++) {
+    for (let i = 0; i < N; i++) {
+      // Row 0 is the south edge: the picture is not flipped, the ground's v runs from south to north.
+      const w = terrainAt((i / (N - 1) - 0.5) * GROUND, (0.5 - j / (N - 1)) * GROUND);
+      const o = (j * N + i) * 4;
+      data[o] = w[1] * 255;
+      data[o + 1] = w[2] * 255;
+      data[o + 2] = w[3] * 255;
+      data[o + 3] = w[4] * 255;
+    }
+  }
+  const t = new THREE.DataTexture(data, N, N, THREE.RGBAFormat);
+  t.magFilter = t.minFilter = THREE.LinearFilter;
+  t.needsUpdate = true;
+  return t;
+}
+
+/**
+ * The ground with the painted pictures: each kind of ground repeats its own picture, mixed where the
+ * map says so, with the roads laid over it. Standard lighting and shadows stay as they are.
+ */
+function paintedGround(tiles: THREE.Texture[], splat: THREE.Texture, roadsOver: THREE.Texture) {
+  const m = new THREE.MeshStandardMaterial({ map: roadsOver, roughness: 1 });
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uSplat = { value: splat };
+    tiles.forEach((t, i) => (sh.uniforms[`uG${i}`] = { value: t }));
+    sh.uniforms.uTile = { value: GROUND / GROUND_TILE };
+    sh.uniforms.uSize = { value: GROUND };
+    sh.fragmentShader = [
+      'uniform sampler2D uSplat;',
+      ...tiles.map((_, i) => `uniform sampler2D uG${i};`),
+      'uniform float uTile;',
+      'uniform float uSize;',
+      sh.fragmentShader.replace(
+        '#include <map_fragment>',
+        [
+          '#ifdef USE_MAP',
+          '  vec4 over = texture2D(map, vMapUv);',
+          '  vec4 kind = texture2D(uSplat, vMapUv);',
+          '  vec2 tuv = vMapUv * uTile;',
+          '  float meadow = clamp(1.0 - kind.r - kind.g - kind.b - kind.a, 0.0, 1.0);',
+          '  vec3 ground = texture2D(uG0, tuv).rgb * meadow + texture2D(uG1, tuv).rgb * kind.r + texture2D(uG2, tuv).rgb * kind.g + texture2D(uG3, tuv).rgb * kind.b + texture2D(uG4, tuv).rgb * kind.a;',
+          '  ground /= max(0.001, meadow + kind.r + kind.g + kind.b + kind.a);',
+          // The same picture again, much larger: slow light and dark that hides the repeat.
+          '  float wide = dot(texture2D(uG0, tuv * 0.083 + 0.31).rgb, vec3(0.333));',
+          // Daylight flattens fine paint: deepen the dark strokes so blades and crumbs stay readable.
+          '  ground = pow(ground, vec3(1.45)) * 1.7;',
+          '  float mid = dot(texture2D(uG0, tuv * 0.29 + 0.57).rgb, vec3(0.333));',
+          '  ground *= (0.8 + wide * 1.0) * (0.72 + mid * 1.4);',
+          // Roads are painted sand, the square packed earth with pebbles; the sheet over the ground
+          // says where they lie and keeps its darker edges and tracks.
+          '  float square = 1.0 - smoothstep(3.0, 4.4, length((vMapUv - 0.5) * uSize));',
+          '  vec3 path = mix(texture2D(uG5, tuv * 1.3).rgb * vec3(0.92, 0.84, 0.74), texture2D(uG6, tuv * 1.6).rgb * vec3(0.9, 0.88, 0.84), square);',
+          '  path *= clamp(dot(over.rgb, vec3(0.333)) / 0.25, 0.5, 1.15) * (0.8 + wide * 0.8);',
+          '  diffuseColor.rgb *= mix(ground, path, over.a);',
+          '#endif',
+        ].join('\n'),
+      ),
+    ].join('\n');
+  };
+  return m;
+}
+
 /** Hand-painted surface textures, in grey so each material can tint them. Made once, reused. */
 const TEX: Record<string, THREE.CanvasTexture> = {};
-export function painted(kind: 'plaster' | 'shingle' | 'stone' | 'wood', rx = 1, ry = 1) {
+/** Bump when the surface pictures change, so phones fetch the new ones. */
+const SURFACE_VERSION = 1;
+export function painted(kind: 'plaster' | 'shingle' | 'stone' | 'wood' | 'bark' | 'leaves', rx = 1, ry = 1) {
   const key = `${kind}:${rx}:${ry}`;
   if (TEX[key]) return TEX[key];
   const S = 256;
   const c = document.createElement('canvas');
-  c.width = S;
-  c.height = S;
+  // Drawn at 256 and stored twice as large, so the painted picture that replaces it keeps its detail.
+  c.width = S * 2;
+  c.height = S * 2;
   const g = c.getContext('2d');
+  g?.scale(2, 2);
   const R = rng(kind.length * 31 + 5);
   if (g) {
     g.fillStyle = '#e6e6e6';
@@ -227,7 +421,20 @@ export function painted(kind: 'plaster' | 'shingle' | 'stone' | 'wood', rx = 1, 
   t.colorSpace = THREE.SRGBColorSpace;
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.repeat.set(rx, ry);
+  t.anisotropy = 4;
   TEX[key] = t;
+  // The painted picture (web/public/village/surface) takes over once it has loaded; the drawing above
+  // stays when it does not come.
+  if (g && typeof Image !== 'undefined') {
+    const img = new Image();
+    img.onload = () => {
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.globalAlpha = 1;
+      g.drawImage(img, 0, 0, c.width, c.height);
+      t.needsUpdate = true;
+    };
+    img.src = `/village/surface/${kind}.webp?v=${SURFACE_VERSION}`;
+  }
   return t;
 }
 
@@ -348,12 +555,12 @@ function shaded<T extends THREE.BufferGeometry>(geo: T) {
 /** Round leafy tree, about 3–4 hero heights. */
 export function leafTree(R: () => number, size = 1) {
   const g = new THREE.Group();
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.17, 1.5, 6), mat(0x5d4027));
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.17, 1.5, 6), mat(0x8a6038, { map: painted('bark', 2, 1.5), flatShading: false }));
   trunk.position.y = 0.75;
   g.add(trunk);
-  const n = 4 + Math.floor(R() * 2);
+  const n = 6 + Math.floor(R() * 3);
   for (let i = 0; i < n; i++) {
-    const blob = new THREE.Mesh(shaded(new THREE.IcosahedronGeometry(0.62 + R() * 0.3, 1)), mat(LEAVES[Math.floor(R() * LEAVES.length)], { vertexColors: true }));
+    const blob = new THREE.Mesh(shaded(new THREE.IcosahedronGeometry(0.62 + R() * 0.3, 2)), mat(LEAVES[Math.floor(R() * LEAVES.length)], { vertexColors: true, flatShading: false, map: painted('leaves', 3, 2) }));
     const a = (i / n) * Math.PI * 2 + R();
     const r = i === 0 ? 0 : 0.5 + R() * 0.25;
     blob.position.set(Math.cos(a) * r, 1.9 + (i === 0 ? 0.55 : R() * 0.5), Math.sin(a) * r);
@@ -417,7 +624,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onDestination, heroName, questOpen = false, coachLabel = 'Coach', api, track, stick, practiceLabel = 'Praktijk', className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onDestination, heroName, questOpen = false, coachLabel = 'Coach', api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, className }: Props) {
   const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null);
   const labels = useRef<Map<string, HTMLElement>>(new Map());
@@ -437,7 +644,15 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
   const heroScene = look ? hero3dScene(look) : null;
   const heroKey = heroScene ? JSON.stringify([heroScene.url, [...heroScene.visible].sort(), heroScene.tints]) : '';
-  const key = JSON.stringify([buildings.map((b) => b.key), tvTitle, tvLines, heroColor, heroKey, practiceLabel]);
+  const key = JSON.stringify([buildings.map((b) => b.key), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1]);
+  // Read at the moment of use, so new furniture or a new mode never rebuilds the whole village.
+  const live = useRef({ homeItems: homeItems ?? [], placing, onFloor });
+  live.current = { homeItems: homeItems ?? [], placing, onFloor };
+  const furnish = useRef<(items: Placed[]) => void>(() => {});
+  const itemsKey = JSON.stringify(homeItems ?? []);
+  useEffect(() => {
+    furnish.current(live.current.homeItems);
+  }, [itemsKey]);
   let slot = 0;
   const sites = buildings.map((b) => b.site ?? slotPosition(slot++));
 
@@ -595,6 +810,59 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       mark(boardKey(b.key), h.boardMark, 2.55, b.key);
       mark(EXIT_KEY, h.exitMark, 2.45, b.key);
     });
+    // The patient's own home: outside it is the home that fits the level, inside a room to furnish.
+    let homeDoor: Vec | null = null;
+    if (home) {
+      const stage = Math.max(0, Math.min(5, home.stage));
+      const len = Math.hypot(HOME_AT.x, HOME_AT.z);
+      const reach = HOME_REACH[stage];
+      const outside = dwelling(stage, 3);
+      outside.position.set(HOME_AT.x, 0, HOME_AT.z);
+      outside.lookAt(0, 0, 0);
+      scene.add(outside);
+      obstacles.push({ x: HOME_AT.x, z: HOME_AT.z, r: reach });
+      occluder(outside, HOME_AT.x, HOME_AT.z, reach + 0.3);
+      homeDoor = { x: HOME_AT.x * (1 - (reach + 0.75) / len), z: HOME_AT.z * (1 - (reach + 0.75) / len) };
+      anchors.push({ id: HOME_KEY, obj: outside, y: DWELLING_TOP[stage] + 0.5 });
+      spots.push({ key: HOME_KEY, door: homeDoor });
+      const kk = 2.6 / Math.hypot(homeDoor.x, homeDoor.z);
+      roads.push({ a: { x: homeDoor.x * kk, z: homeDoor.z * kk }, b: homeDoor, w: 1.3 });
+      const origin = { x: 0, z: 560 + Object.keys(places).length * 160 };
+      const h = houseRoom('home', origin);
+      scene.add(h.group);
+      const base = [...h.obstacles];
+      const pieces = new THREE.Group();
+      h.group.add(pieces);
+      places[HOME_KEY] = {
+        group: h.group, walls: h.walls, at: origin, rect: h.rect, entry: h.entry, face: Math.PI / 2, exit: h.exit,
+        outside: { x: homeDoor.x * (1 - 0.85 / Math.hypot(homeDoor.x, homeDoor.z)), z: homeDoor.z * (1 - 0.85 / Math.hypot(homeDoor.x, homeDoor.z)) }, map: HOME_AT, obstacles: base,
+        spots: [{ key: boardKey(HOME_KEY), door: h.board }, { key: EXIT_KEY, door: h.exit }],
+      };
+      mark(boardKey(HOME_KEY), h.boardMark, 2.55, HOME_KEY);
+      mark(EXIT_KEY, h.exitMark, 2.45, HOME_KEY);
+      furnish.current = (items) => {
+        pieces.traverse((o) => {
+          const m = o as THREE.Mesh;
+          if (m.isMesh) {
+            m.geometry.dispose();
+            (m.material as THREE.Material).dispose();
+          }
+        });
+        pieces.clear();
+        const blocks: Obstacle[] = [];
+        for (const it of items) {
+          const piece = furniture(it.key);
+          piece.position.set(it.x, 0, it.z);
+          piece.rotation.y = (-it.rot * Math.PI) / 180;
+          pieces.add(piece);
+          const r = decorItem(it.key)?.r ?? 0;
+          if (r > 0) blocks.push({ x: origin.x + it.x, z: origin.z + it.z, r: r * 0.9 });
+        }
+        places[HOME_KEY].obstacles = [...base, ...blocks];
+        el.dataset.furniture = String(items.length);
+      };
+      furnish.current(live.current.homeItems);
+    }
     const inObstacles = places[PRACTICE_KEY].obstacles;
     const inside = () => zone.current !== 'village';
     const here = () => places[zone.current];
@@ -687,14 +955,32 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const gp = groundGeo.attributes.position;
     for (let i = 0; i < gp.count; i++) gp.setY(i, hillAt(gp.getX(i), gp.getZ(i)));
     groundGeo.computeVertexNormals();
-    const ground3d = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ map: groundTexture(roads, R), roughness: 1 }));
+    const ground3d = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ map: groundTexture(roads, R, phone ? 1024 : 2048), roughness: 1 }));
+    // The painted ground pictures take over as soon as they have loaded; until then (or without them)
+    // the ground drawn in code stays.
+    const groundExtras: THREE.Texture[] = [];
+    let groundGone = false;
+    loadGroundTiles()
+      .then((tiles) => {
+        if (groundGone) return;
+        const splat = splatMap();
+        const roadsOver = groundTexture(roads, rng(5), phone ? 1024 : 2048, true);
+        groundExtras.push(splat);
+        const old = ground3d.material as THREE.MeshStandardMaterial;
+        ground3d.material = paintedGround(tiles, splat, roadsOver);
+        old.map?.dispose();
+        old.dispose();
+        el.dataset.ground = 'painted';
+      })
+      .catch(() => undefined);
     ground3d.receiveShadow = true;
     scene.add(ground3d);
 
     const onDirt = (x: number, z: number) =>
       Math.hypot(x, z) < 3.5 || roads.some((r) => segDist(x, z, r) < r.w / 2 + 0.3) || (Math.abs(x - GYM.x) < 3.1 && z > GYM.z - 2.6 && z < GYM.z + 1.9);
 
-    // Trees in the village: each one is something to walk around.
+    // Trees in the village: each one is something to walk around (and a dot on the map).
+    const villageTrees: Vec[] = [];
     for (let i = 0, placed = 0; i < 600 && placed < 22; i++) {
       const a = R() * Math.PI * 2;
       const r = 4.4 + R() * (B - 4.2);
@@ -706,6 +992,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       tr.rotation.y = R() * Math.PI;
       scene.add(tr);
       obstacles.push({ x, z, r: 0.5 });
+      villageTrees.push({ x, z });
       occluder(tr, x, z, 1.3);
       placed++;
     }
@@ -713,7 +1000,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     // Woods on the hills: two instanced meshes for all of them.
     const far = phone ? 110 : 190;
     const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.2, 1.6, 5), mat(0x5d4027), far);
-    const crowns = new THREE.InstancedMesh(shaded(new THREE.IcosahedronGeometry(1, 1)), mat(0xffffff, { vertexColors: true }), far * 3);
+    const crowns = new THREE.InstancedMesh(shaded(new THREE.IcosahedronGeometry(1, 1)), mat(0xffffff, { vertexColors: true, flatShading: false }), far * 3);
     const M = new THREE.Matrix4();
     const Q = new THREE.Quaternion();
     const col = new THREE.Color();
@@ -750,15 +1037,16 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       scene.add(m);
     }
 
-    // Grass: thousands of blades in one draw call, moving in the wind.
-    const bladeGeo = new THREE.PlaneGeometry(0.1, 1, 1, 3);
+    // Grass: tens of thousands of fine, curved blades in one draw call. Each blade is dark at the root
+    // and light at the tip, leans over, and moves with gusts that travel across the meadow.
+    const bladeGeo = new THREE.PlaneGeometry(0.075, 1, 1, 4);
     bladeGeo.translate(0, 0.5, 0);
     const bp = bladeGeo.attributes.position;
     const shade: number[] = [];
     for (let i = 0; i < bp.count; i++) {
       const y = bp.getY(i);
-      bp.setX(i, bp.getX(i) * (1 - y * 0.85));
-      shade.push(0.62 + y * 0.38, 0.62 + y * 0.38, 0.62 + y * 0.38);
+      bp.setX(i, bp.getX(i) * (1 - Math.pow(y, 1.6) * 0.94));
+      shade.push(0.6 + y * 0.62, 0.66 + y * 0.5, 0.5 + y * 0.22);
     }
     bladeGeo.setAttribute('color', new THREE.Float32BufferAttribute(shade, 3));
     bladeGeo.setAttribute('normal', new THREE.Float32BufferAttribute(new Array(bp.count).fill([0, 1, 0]).flat(), 3));
@@ -768,28 +1056,70 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       sh.uniforms.uTime = wind;
       sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace(
         '#include <begin_vertex>',
-        '#include <begin_vertex>\n#ifdef USE_INSTANCING\n  vec4 root = instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);\n  transformed.x += sin(uTime * 1.6 + root.x * 0.8 + root.z * 0.6) * 0.32 * position.y * position.y;\n#endif',
+        [
+          '#include <begin_vertex>',
+          '#ifdef USE_INSTANCING',
+          '  vec4 root = instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);',
+          '  float lift = position.y * position.y;',
+          '  float gust = 0.5 + 0.5 * sin(uTime * 0.6 + root.x * 0.11 + root.z * 0.08);',
+          '  float sway = (sin(uTime * 1.9 + root.x * 1.3 + root.z * 0.9) * 0.35 + gust * 0.9) * lift;',
+          // z is scaled with the blade's height, x is not: the lean and the sway stay in proportion.
+          '  transformed.z += lift * 0.35 + sway * 0.45;',
+          '  transformed.x += sway * 0.07;',
+          '#endif',
+        ].join('\n'),
       );
     };
-    const blades = phone ? 14000 : 30000;
+    // Only tufts: clumps of taller grass where the ground picture shows tall or lush grass. A whole
+    // field of loose blades cost a lot of drawing for little; the patches on the ground do that work now.
+    const blades = phone ? 5000 : 12000;
     const grass = new THREE.InstancedMesh(bladeGeo, bladeMat, blades);
-    const greens = [0x6fae3f, 0x5c9a36, 0x86bd4c, 0x4f8a30, 0x9cc75a];
+    grass.frustumCulled = false; // its bounds are those of one blade
+    const TALL = new THREE.Color(0x4f9a3a);
+    const LUSH = new THREE.Color(0x76bd48);
+    const DRY = new THREE.Color(0xb9c05a);
     const E = new THREE.Euler();
     let made = 0;
-    for (let i = 0; i < blades * 3 && made < blades; i++) {
+    const blade = (x: number, z: number, tall: number, w: readonly number[]) => {
+      const hgt = (0.16 + R() * 0.16) * tall;
+      grass.setMatrixAt(made, M.compose(new THREE.Vector3(x, hillAt(x, z), z), Q.setFromEuler(E.set((R() - 0.5) * 0.5, R() * Math.PI * 2, 0)), new THREE.Vector3(1.2 + R() * 0.9, hgt, hgt)));
+      col.copy(LUSH).lerp(TALL, Math.min(1, w[1] * 1.4)).lerp(DRY, Math.min(1, w[2]) * 0.8);
+      grass.setColorAt(made, col);
+      made++;
+    };
+    for (let i = 0; i < blades * 6 && made < blades - 6; i++) {
       const a = R() * Math.PI * 2;
       const r = Math.sqrt(R()) * 26;
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
       if (onDirt(x, z) || obstacles.some((o) => o.r > 0.9 && Math.hypot(x - o.x, z - o.z) < o.r - 0.3)) continue;
-      const hgt = 0.16 + R() * 0.26;
-      grass.setMatrixAt(made, M.compose(new THREE.Vector3(x, hillAt(x, z), z), Q.setFromEuler(E.set((R() - 0.5) * 0.4, R() * Math.PI, 0)), new THREE.Vector3(1 + R(), hgt, 1)));
-      grass.setColorAt(made, col.setHex(greens[Math.floor(R() * greens.length)]));
-      made++;
+      const w = terrainAt(x, z);
+      // Many in tall grass, some in the meadow and the dry grass, none on clover or bare earth.
+      if (R() > w[1] * 0.9 + w[0] * 0.16 + w[2] * 0.22) continue;
+      const tall = 1 + w[1] * 0.9 + R() * 0.4;
+      for (let k = 0; k < 6; k++) blade(x + (R() - 0.5) * 0.24, z + (R() - 0.5) * 0.24, tall, w);
     }
     grass.count = made;
     grass.receiveShadow = true;
     scene.add(grass);
+    // Bushes along the edges of the meadow and between the houses.
+    const bushes = new THREE.InstancedMesh(shaded(new THREE.IcosahedronGeometry(0.5, 2)), mat(0xffffff, { vertexColors: true, flatShading: false }), phone ? 46 : 80);
+    let bushN = 0;
+    for (let i = 0; i < 3000 && bushN < bushes.count; i++) {
+      const a = R() * Math.PI * 2;
+      const r = 5 + R() * 17;
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      if (onDirt(x, z) || roads.some((rd) => segDist(x, z, rd) < rd.w / 2 + 1.3) || obstacles.some((o) => Math.hypot(x - o.x, z - o.z) < o.r + 0.7) || spots.some((sp) => Math.hypot(x - sp.door.x, z - sp.door.z) < 2.6)) continue;
+      const w = 0.6 + R() * 0.6;
+      bushes.setMatrixAt(bushN, M.compose(new THREE.Vector3(x, hillAt(x, z) + 0.2 * w, z), Q.setFromEuler(E.set(0, R() * 6, 0)), new THREE.Vector3(w, w * (0.6 + R() * 0.25), w * (0.8 + R() * 0.4))));
+      bushes.setColorAt(bushN, col.setHex(LEAVES[Math.floor(R() * LEAVES.length)]));
+      bushN++;
+    }
+    bushes.count = bushN;
+    bushes.castShadow = true;
+    bushes.receiveShadow = true;
+    scene.add(bushes);
     // Flowers in the meadow and stones along the roads.
     const petals = [0xf2f0ea, 0xf4c542, 0xe8536b, 0xb07ae0, 0xff9a52];
     const flowers = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.07, 0), new THREE.MeshLambertMaterial(), phone ? 320 : 600);
@@ -1068,6 +1398,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         return;
       }
       // The board inside a house, asked for from the village: to the door, in, and on to the board.
+      if (k === HOME_KEY && homeDoor) {
+        walkTo.current(homeDoor, HOME_KEY);
+        return;
+      }
+      if (k === boardKey(HOME_KEY) && homeDoor) {
+        walkTo.current(homeDoor, HOME_KEY, k);
+        return;
+      }
       if (k.startsWith('in:') && places[k.slice(3)]) {
         const j = buildings.findIndex((b) => b.key === k.slice(3));
         if (j >= 0) walkTo.current(sites[j].door, k.slice(3), k);
@@ -1081,6 +1419,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     if (api) {
       api.current = {
         goTo: (k) => goTo.current(k),
+        walk: (pt) => {
+          // A tap on the map: only in the village itself, where the map is of.
+          if (!inside()) walkTo.current(pt, null);
+        },
         stop: () => {
           goal = null;
           clearTrail();
@@ -1095,6 +1437,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       };
     }
     el.dataset.zone = zone.current;
+    if (track) {
+      track.current.trees = villageTrees;
+      track.current.roads = roads;
+    }
     const sunBase = sun.position.clone();
     scene.add(sun.target);
 
@@ -1113,6 +1459,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const d = down;
       down = null;
       if (!d || d.moved) return;
+      // Placing furniture: the tap is a spot on the floor of the home, not somewhere to walk to.
+      if (live.current.placing && zone.current === HOME_KEY) {
+        const rect = canvas.getBoundingClientRect();
+        ray.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), camera);
+        const floor = new THREE.Vector3();
+        if (ray.ray.intersectPlane(ground, floor)) live.current.onFloor?.({ x: floor.x - places[HOME_KEY].at.x, z: floor.z - places[HOME_KEY].at.z });
+        return;
+      }
       const rect = canvas.getBoundingClientRect();
       ray.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), camera);
       const hit = new THREE.Vector3();
@@ -1315,6 +1669,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         track.current.x = indoor ? here().map.x : p.x;
         track.current.z = indoor ? here().map.z : p.z;
         track.current.facing = hero.rotation.y;
+        track.current.cam = indoor ? 0 : camAngle.current;
+        track.current.people = npcs.map((n) => ({ x: n.g.position.x, z: n.g.position.z }));
       }
       if (!reduce) {
         coachMixer?.update(dt);
@@ -1438,6 +1794,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       canvas.removeEventListener('pointerup', onUp);
       canvas.removeEventListener('pointercancel', onCancel);
       canvas.removeEventListener('pointerleave', onCancel);
+      groundGone = true;
+      groundExtras.forEach((t) => t.dispose());
       walkTo.current = () => {};
       goTo.current = () => {};
       window.clearTimeout(switching);
@@ -1496,6 +1854,19 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               <span>{t('Programma', 'Programme')}</span>
             </button>
           ))}
+          {home && (
+            <>
+              <button ref={setLabel(HOME_KEY)} type="button" data-spot={HOME_KEY} onClick={() => go(HOME_KEY)} aria-label={t(`Loop naar ${home.label}`, `Walk to ${home.label}`)}
+                className={cn(plate, 'flex-col !items-center leading-none text-[#b8f0a8]')} style={{ transform: 'translate(-9999px,0)' }}>
+                {home.alert && <span aria-hidden className="quest-mark text-[26px] leading-none text-[#ffd21f]">!</span>}
+                <span>{home.label}</span>
+              </button>
+              <button ref={setLabel(boardKey(HOME_KEY))} type="button" data-spot={boardKey(HOME_KEY)} onClick={() => go(boardKey(HOME_KEY))} aria-label={t('Loop naar de inrichtingstafel', 'Walk to the furnishing table')}
+                className={cn(plate, 'text-white')} style={{ transform: 'translate(-9999px,0)' }}>
+                {t('Inrichten', 'Furnish')}
+              </button>
+            </>
+          )}
           <button ref={setLabel(EXIT_KEY)} type="button" data-spot={EXIT_KEY} onClick={() => go(EXIT_KEY)} aria-label={t('Loop naar de uitgang', 'Walk to the exit')}
             className={cn(plate, 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
             {t('Uitgang', 'Exit')}

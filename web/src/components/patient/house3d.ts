@@ -7,7 +7,8 @@ import type { Obstacle, Rect, Vec } from './walk';
  * happens there. Like the practice room, the walls are separate so the one between the camera and
  * the room can be left out.
  */
-export type HouseKind = 'kracht' | 'mobiliteit';
+/** 'home' is the patient's own house: the bare room, which the patient furnishes. */
+export type HouseKind = 'kracht' | 'mobiliteit' | 'home';
 export type HouseRoom = {
   group: THREE.Group;
   walls: RoomWall[];
@@ -40,7 +41,7 @@ export function houseRoom(kind: HouseKind, origin: Vec): HouseRoom {
   const at = (x: number, z: number): Vec => ({ x: origin.x + x, z: origin.z + z });
   const obstacles: Obstacle[] = [];
   const block = (x: number, z: number, r: number) => obstacles.push({ ...at(x, z), r });
-  const accent = kind === 'kracht' ? 0x7a2f24 : 0x2f7f8a;
+  const accent = kind === 'kracht' ? 0x7a2f24 : kind === 'mobiliteit' ? 0x2f7f8a : 0x29483c;
 
   // Plank floor and a rug.
   room.box(6.7, 0.1, 5.3, WOOD, 0, -0.05, 0).castShadow = false;
@@ -74,7 +75,8 @@ export function houseRoom(kind: HouseKind, origin: Vec): HouseRoom {
   s.k.box(6.7, 2.7, 0.15, PLASTER, 0, 1.35, 2.575);
   for (const x of [-3.2, -1.6, 0, 1.6, 3.2]) s.k.box(0.14, 2.7, 0.06, BEAM, x, 1.35, 2.48);
 
-  // A plant by the door.
+  // A plant by the door (the own home starts empty: what stands there is the patient's choice).
+  if (kind !== 'home') {
   // Lanterns on the wall, not from the ceiling: nothing may hang between the camera and the hero.
   for (const x of [-0.95, 0.95]) {
     n.k.box(0.06, 0.06, 0.2, BLACK, x, 2.25, -2.4);
@@ -83,6 +85,7 @@ export function houseRoom(kind: HouseKind, origin: Vec): HouseRoom {
   room.cyl(0.18, 0.3, 0x9c5a40, -2.75, 0.15, 0.55, {}, 0.22);
   plant(group, -2.75, 0.35, 0.55, 7, 0.2, 0.9, 0.22);
   block(-2.75, 0.55, 0.4);
+  }
 
   if (kind === 'kracht') {
     // Rubber floor with the rack and the bar.
@@ -125,7 +128,7 @@ export function houseRoom(kind: HouseKind, origin: Vec): HouseRoom {
     block(-1.5, -0.4, 0.42);
     room.cyl(0.2, 0.34, 0x8c8f8a, -0.6, 0.17, -2.0, {}, 0.24);
     room.cyl(0.2, 0.04, 0xfafafa, -0.6, 0.33, -2.0);
-  } else {
+  } else if (kind === 'mobiliteit') {
     // Mats on the floor, wall bars, balls, rollers, a tall mirror and a lot of green.
     [[0x3f8f7a, -0.9], [0x8e6fb0, 0.25], [0xe0a25a, 1.4]].forEach(([c, x]) => {
       room.box(0.85, 0.03, 2.1, c, x, 0.015, 0.45).castShadow = false;
