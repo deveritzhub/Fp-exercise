@@ -137,7 +137,7 @@ export function terrainAt(x: number, z: number): [number, number, number, number
 }
 
 /** The ground picture: patches of meadow, tall grass, dry grass, clover and bare earth; dirt roads and the square on top. */
-function groundTexture(roads: Road[], R: () => number, S: number) {
+function groundTexture(roads: Road[], R: () => number, S: number, bare = false) {
   const c = document.createElement('canvas');
   c.width = S;
   c.height = S;
@@ -145,6 +145,8 @@ function groundTexture(roads: Road[], R: () => number, S: number) {
   const px = (v: number) => (v / GROUND + 0.5) * S;
   const u = S / GROUND;
   if (g) {
+    // `bare`: only the roads and the square, on a see-through sheet that lies over the painted ground.
+    if (!bare) {
     // The kinds of ground on a coarse grid; every pixel takes its mix from there and gets its own grain.
     const N = 192;
     const grid = new Float32Array(N * N * 5);
@@ -202,6 +204,7 @@ function groundTexture(roads: Road[], R: () => number, S: number) {
       g.ellipse(R() * S, R() * S, (10 + R() * 60) * (S / 2048), (8 + R() * 36) * (S / 2048), R() * Math.PI, 0, Math.PI * 2);
       g.fill();
     }
+    }
     g.globalAlpha = 1;
     g.lineCap = 'round';
     const stroke = (color: string, grow: number, blur: number) => {
@@ -245,6 +248,88 @@ function groundTexture(roads: Road[], R: () => number, S: number) {
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;
   return tex;
+}
+
+/** The five painted ground pictures (web/public/village/ground), in the order of GROUNDS. Loaded once. */
+const GROUND_FILES = ['gras', 'hoog-gras', 'droog-gras', 'klaver', 'aarde'] as const;
+/** Bump when the pictures change, so phones fetch the new ones. */
+const GROUND_VERSION = 1;
+/** How much ground one picture covers, in world units (about two metres). */
+const GROUND_TILE = 4.4;
+let groundTiles: Promise<THREE.Texture[]> | null = null;
+function loadGroundTiles() {
+  groundTiles ??= Promise.all(
+    GROUND_FILES.map((name) =>
+      new THREE.TextureLoader().loadAsync(`/village/ground/${name}.webp?v=${GROUND_VERSION}`).then((t) => {
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        t.anisotropy = 8;
+        return t;
+      }),
+    ),
+  );
+  groundTiles.catch(() => (groundTiles = null));
+  return groundTiles;
+}
+
+/** Where which ground lies, as a small map the shader reads: tall, dry, clover, earth (the rest is meadow). */
+function splatMap() {
+  const N = 256;
+  const data = new Uint8Array(N * N * 4);
+  for (let j = 0; j < N; j++) {
+    for (let i = 0; i < N; i++) {
+      // Row 0 is the south edge: the picture is not flipped, the ground's v runs from south to north.
+      const w = terrainAt((i / (N - 1) - 0.5) * GROUND, (0.5 - j / (N - 1)) * GROUND);
+      const o = (j * N + i) * 4;
+      data[o] = w[1] * 255;
+      data[o + 1] = w[2] * 255;
+      data[o + 2] = w[3] * 255;
+      data[o + 3] = w[4] * 255;
+    }
+  }
+  const t = new THREE.DataTexture(data, N, N, THREE.RGBAFormat);
+  t.magFilter = t.minFilter = THREE.LinearFilter;
+  t.needsUpdate = true;
+  return t;
+}
+
+/**
+ * The ground with the painted pictures: each kind of ground repeats its own picture, mixed where the
+ * map says so, with the roads laid over it. Standard lighting and shadows stay as they are.
+ */
+function paintedGround(tiles: THREE.Texture[], splat: THREE.Texture, roadsOver: THREE.Texture) {
+  const m = new THREE.MeshStandardMaterial({ map: roadsOver, roughness: 1 });
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uSplat = { value: splat };
+    tiles.forEach((t, i) => (sh.uniforms[`uG${i}`] = { value: t }));
+    sh.uniforms.uTile = { value: GROUND / GROUND_TILE };
+    sh.fragmentShader = [
+      'uniform sampler2D uSplat;',
+      ...tiles.map((_, i) => `uniform sampler2D uG${i};`),
+      'uniform float uTile;',
+      sh.fragmentShader.replace(
+        '#include <map_fragment>',
+        [
+          '#ifdef USE_MAP',
+          '  vec4 over = texture2D(map, vMapUv);',
+          '  vec4 kind = texture2D(uSplat, vMapUv);',
+          '  vec2 tuv = vMapUv * uTile;',
+          '  float meadow = clamp(1.0 - kind.r - kind.g - kind.b - kind.a, 0.0, 1.0);',
+          '  vec3 ground = texture2D(uG0, tuv).rgb * meadow + texture2D(uG1, tuv).rgb * kind.r + texture2D(uG2, tuv).rgb * kind.g + texture2D(uG3, tuv).rgb * kind.b + texture2D(uG4, tuv).rgb * kind.a;',
+          '  ground /= max(0.001, meadow + kind.r + kind.g + kind.b + kind.a);',
+          // The same picture again, much larger: slow light and dark that hides the repeat.
+          '  float wide = dot(texture2D(uG0, tuv * 0.083 + 0.31).rgb, vec3(0.333));',
+          // Daylight flattens fine paint: deepen the dark strokes so blades and crumbs stay readable.
+          '  ground = pow(ground, vec3(1.45)) * 1.7;',
+          '  float mid = dot(texture2D(uG0, tuv * 0.29 + 0.57).rgb, vec3(0.333));',
+          '  ground *= (0.8 + wide * 1.0) * (0.72 + mid * 1.4);',
+          '  diffuseColor.rgb *= mix(ground, over.rgb, over.a);',
+          '#endif',
+        ].join('\n'),
+      ),
+    ].join('\n');
+  };
+  return m;
 }
 
 /** Hand-painted surface textures, in grey so each material can tint them. Made once, reused. */
@@ -847,6 +932,23 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     for (let i = 0; i < gp.count; i++) gp.setY(i, hillAt(gp.getX(i), gp.getZ(i)));
     groundGeo.computeVertexNormals();
     const ground3d = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ map: groundTexture(roads, R, phone ? 1024 : 2048), roughness: 1 }));
+    // The painted ground pictures take over as soon as they have loaded; until then (or without them)
+    // the ground drawn in code stays.
+    const groundExtras: THREE.Texture[] = [];
+    let groundGone = false;
+    loadGroundTiles()
+      .then((tiles) => {
+        if (groundGone) return;
+        const splat = splatMap();
+        const roadsOver = groundTexture(roads, rng(5), phone ? 1024 : 2048, true);
+        groundExtras.push(splat);
+        const old = ground3d.material as THREE.MeshStandardMaterial;
+        ground3d.material = paintedGround(tiles, splat, roadsOver);
+        old.map?.dispose();
+        old.dispose();
+        el.dataset.ground = 'painted';
+      })
+      .catch(() => undefined);
     ground3d.receiveShadow = true;
     scene.add(ground3d);
 
@@ -1669,6 +1771,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       canvas.removeEventListener('pointerup', onUp);
       canvas.removeEventListener('pointercancel', onCancel);
       canvas.removeEventListener('pointerleave', onCancel);
+      groundGone = true;
+      groundExtras.forEach((t) => t.dispose());
       walkTo.current = () => {};
       goTo.current = () => {};
       window.clearTimeout(switching);
