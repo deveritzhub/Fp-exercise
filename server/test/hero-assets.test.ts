@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import fs from 'node:fs/promises';
 import { Client } from './helpers';
 import { heroAssetFile } from '../src/lib/heroAssets';
@@ -41,19 +41,66 @@ describe('hero art', () => {
             expect(HERO_AVATAR_FILES[key], key).toMatch(/^hf_20261101_\d{6}_[0-9a-f-]{36}\.png$/);
           }
   });
-  it('serves only known files from storage, with a long cache', async () => {
+  it('downloads missing approved avatar photos once, caches them and rejects unknown keys', async () => {
     const c = new Client();
-    expect((await c.raw('GET', '/hero-assets/avatar/m_s3_muscular')).status).toBe(404); // not synced yet
-    expect((await c.raw('GET', '/hero-assets/avatar/..%2F..%2Fetc')).status).toBe(404);
-    expect((await c.raw('GET', '/hero-assets/secret/x')).status).toBe(404);
+    const avatar = heroAssetFile(config.storageDir, 'avatar', 'm_s3_muscular');
+    await fs.rm(avatar, { force: true });
+    let downloads = 0;
+    const mock = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      downloads++;
+      return new Response(Buffer.from('89504e470d0a1a0a00', 'hex'), {
+        status: 200, headers: { 'content-type': 'image/png' },
+      });
+    });
+    try {
+      const [first, second] = await Promise.all([
+        c.raw('GET', '/hero-assets/avatar/m_s3_muscular'),
+        c.raw('GET', '/hero-assets/avatar/m_s3_muscular'),
+      ]);
+      expect(first.status).toBe(200);
+      expect(second.status).toBe(200);
+      expect(first.headers.get('content-type')).toBe('image/png');
+      expect(first.headers.get('cache-control')).toContain('max-age');
+      expect(downloads).toBe(1);
+      expect((await c.raw('GET', '/hero-assets/avatar/m_s3_muscular')).status).toBe(200);
+      expect(downloads).toBe(1);
+      expect((await c.raw('GET', '/hero-assets/avatar/..%2F..%2Fetc')).status).toBe(404);
+      expect((await c.raw('GET', '/hero-assets/secret/x')).status).toBe(404);
+      expect((await c.raw('GET', '/hero-assets/avatar/__proto__')).status).toBe(404);
+      expect(downloads).toBe(1);
+    } finally {
+      mock.mockRestore();
+      await fs.rm(avatar, { force: true });
+    }
+  });
+
+  it('shows 404 instead of returning invalid remote bytes', async () => {
+    const c = new Client();
+    const avatar = heroAssetFile(config.storageDir, 'avatar', 'm_s3_muscular');
+    await fs.rm(avatar, { force: true });
+    const mock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('not a PNG', { status: 200 }));
+    try {
+      expect((await c.raw('GET', '/hero-assets/avatar/m_s3_muscular')).status).toBe(404);
+      expect(await fs.stat(avatar).then(() => true).catch(() => false)).toBe(false);
+    } finally {
+      mock.mockRestore();
+    }
+  });
+
+  it('serves existing local product art without redownloading', async () => {
+    const c = new Client();
     const file = heroAssetFile(config.storageDir, 'item', 'medal');
     await fs.mkdir(file.replace(/[^/]+$/, ''), { recursive: true });
     await fs.writeFile(file, Buffer.from('89504e470d0a1a0a00', 'hex'));
-    const r = await c.raw('GET', '/hero-assets/item/medal');
-    expect(r.status).toBe(200);
-    expect(r.headers.get('content-type')).toBe('image/png');
-    expect(r.headers.get('cache-control')).toContain('max-age');
-    await fs.rm(file);
+    const mock = vi.spyOn(globalThis, 'fetch');
+    try {
+      const r = await c.raw('GET', '/hero-assets/item/medal');
+      expect(r.status).toBe(200);
+      expect(mock).not.toHaveBeenCalled();
+    } finally {
+      mock.mockRestore();
+      await fs.rm(file);
+    }
   });
 });
 
