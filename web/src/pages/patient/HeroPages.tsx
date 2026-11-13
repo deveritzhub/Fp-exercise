@@ -976,6 +976,13 @@ function GearCard({ d }: { d: HeroState }) {
   const [preview, setPreview] = useState<string | null>(null);
   const [loot, setLoot] = useState<string | null>(null);
   const [cape, setCape] = useState(false);
+  const [capeIllustrated, setCapeIllustrated] = useState(false);
+  const openCape = () => {
+    let illustrated = !!d.customPhoto;
+    try { illustrated ||= sessionStorage.getItem('fp.inventory.illustrated') === 'true'; } catch { /* optional display preference */ }
+    setCapeIllustrated(illustrated);
+    setCape(true);
+  };
   const [filter, setFilter] = useState<'all' | 'open' | 'shop'>('all');
   const save = async (next: string[], key: string) => {
     setBusy(key);
@@ -1045,14 +1052,14 @@ function GearCard({ d }: { d: HeroState }) {
 
       <Dialog open={cape} onClose={()=>setCape(false)} title={t('Meestercape — ontwerpvoorproefje','Master cape — design preview')} footer={<Button onClick={()=>setCape(false)}>{t('Sluiten','Close')}</Button>}>
         <p>{t('Toekomstige cosmetische beloning. Nog niet te verdienen of uit te rusten.','Future cosmetic reward. Not yet available to earn or equip.')}</p>
-        <div className="rpg-stage rounded-xl mt-3"><HumanFigure rpg look={{...d.hero!,gear:['master_cape']}} viewBox="0 -10 200 440" className="mx-auto h-[400px]"/></div>
+        <div role="img" aria-label={t('Meestercape op een standaardavatar — ontwerpvoorproefje','Master cape on a standard avatar — design preview')} className="rpg-stage rounded-xl mt-3">{capeIllustrated ? <HumanFigure rpg look={{...d.hero!,gear:['master_cape']}} viewBox="0 -10 200 440" className="mx-auto h-[400px]"/> : <HeroPhoto fittedGear look={{...d.hero!,gear:['master_cape'],body:d.metrics?bodyShape(d.metrics,d.hero!.frame):null,photo:null}} className="mx-auto h-[480px] w-full max-w-[360px]"/>}</div>
       </Dialog>
       <h3 className="mt-5 text-[14.5px] font-semibold text-ink-900">{t('Komt eraan', 'Coming up')}</h3>
       <ul className="mt-2 grid grid-cols-2 gap-2 min-[520px]:grid-cols-4">
         {FUTURE_REWARDS.map((r) => (
           <li key={r.key} className="flex items-center gap-2 rounded-xl border border-dashed border-line bg-canvas p-2.5 text-[12.5px] text-ink-600">
             <Lock className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
-            <span className="min-w-0"><span className="block font-semibold text-ink-700">{nl ? r.nl : r.en}</span>{t(`Skill level ${r.level}`, `Skill level ${r.level}`)}{r.key === 'master_cape' && <button type="button" onClick={()=>setCape(true)} className="block min-h-[44px] underline text-accent">{t('Ontwerp bekijken','View design')}</button>}</span>
+            <span className="min-w-0"><span className="block font-semibold text-ink-700">{nl ? r.nl : r.en}</span>{t(`Skill level ${r.level}`, `Skill level ${r.level}`)}{r.key === 'master_cape' && <button type="button" onClick={openCape} className="block min-h-[44px] underline text-accent">{t('Ontwerp bekijken','View design')}</button>}</span>
           </li>
         ))}
       </ul>

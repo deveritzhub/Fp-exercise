@@ -37,6 +37,9 @@ export function limbSpan(fit:PhotoFit,y:number,x:number){
  return spans.sort((a,b)=>Math.abs(a.x-x)-Math.abs(b.x-x))[0];
 }
 
+/** SVG angles account for the portrait coordinate system (1000 × 1333). */
+export const limbAngle=(a:number[],b:number[])=>Math.atan2(-(b[0]-a[0])*1000,(b[1]-a[1])*1333.33)*180/Math.PI;
+
 /** Measured anchors in each generated image. x is the item's centre, y its top. */
 export function measuredPlacement(source:string,key:string,mirror:boolean,originalKey?:string):PhotoPlacement|null {
   const fit=photoFit(source);
@@ -60,8 +63,15 @@ export function measuredPlacement(source:string,key:string,mirror:boolean,origin
   const ankle=p[mirror?27:28];
   const knee=p[mirror?25:26], hip=p[mirror?23:24];
   switch(key){
-    case 'gloves': return {x:(wrist[0]+fingers[0])*.5,y:wrist[1]-.007*size,width:.055*size,height:(fingers[1]-wrist[1])+.027*size};
-    case 'watch': case 'wristbands': return {x:wrist[0],y:wrist[1]-.023*size,width:(key==='watch'?.041:.047)*size,height:(key==='watch'?.036:.027)*size};
+    case 'gloves': return {x:(wrist[0]+fingers[0])*.5,y:wrist[1]-.007*size,width:.055*size,height:(fingers[1]-wrist[1])+.027*size,angle:clamp(limbAngle(wrist,fingers),-25,25)};
+    case 'watch': case 'wristbands': {
+      const elbow=p[mirror?13:14], centre=mix(elbow,wrist,.91);
+      const span=limbSpan(fit,centre[1],centre[0]);
+      const isolated=span && span.width<.065 && Math.abs(span.x-centre[0])<.02;
+      const width=clamp(isolated?span.width:.04*size,.025,.055);
+      const height=(key==='watch'?.036:.027)*size;
+      return {x:centre[0],y:centre[1]-height/2,width:width*(key==='watch'?.9:1.07),height,angle:clamp(limbAngle(elbow,wrist),-25,25)};
+    }
     case 'gold_shoes': case 'balance_shoes': case 'spikes': {const [x,y,width,height]=fit.feet[mirror?1:0];return {x,y,width,height};}
     case 'crew_socks': {
       const y=ankle[1]-.075*size, height=.09*size;
@@ -70,7 +80,7 @@ export function measuredPlacement(source:string,key:string,mirror:boolean,origin
       const top=limbSpan(fit,y+.006,axis[0]);
       return {x:span?.x ?? axis[0],y,width:clamp(Math.max(span?.width ?? .052,top?.width ?? .052)*1.08,.045,.115),height};
     }
-    case 'shin_guards': {const mid=mix(knee,ankle,.44);return {x:mid[0],y:knee[1]+.018*size,width:.066*size,height:(ankle[1]-knee[1])*.66};}
+    case 'shin_guards': {const mid=mix(knee,ankle,.44);return {x:mid[0],y:knee[1]+.018*size,width:.066*size,height:(ankle[1]-knee[1])*.66,angle:clamp(limbAngle(knee,ankle),-25,25)};}
     case 'sleeve': {
       const height=(knee[1]-hip[1])*.66, y=knee[1]-height*.55;
       const span=limbSpan(fit,knee[1],knee[0]), top=limbSpan(fit,y+.008,knee[0]);
@@ -78,7 +88,12 @@ export function measuredPlacement(source:string,key:string,mirror:boolean,origin
     }
     case 'belt': return {x:hips[0],y:hips[1]-.04*size,width:Math.abs(p[23][0]-p[24][0])*1.85,height:.033*size};
     case 'hr_band': return {x:shoulders[0],y:shoulders[1]+.065*size,width:shoulderWidth*.93,height:.027*size};
-    case 'captain': {const mid=mix(p[11],p[13],.42);return {x:mid[0],y:mid[1]-.01,width:.061*size,height:.034*size};}
+    case 'captain': {
+      const mid=mix(p[11],p[13],.60), span=limbSpan(fit,mid[1],mid[0]);
+      const isolated=span && span.width<.10 && Math.abs(span.x-mid[0])<.025;
+      const width=clamp(isolated?span.width:.055*size*clamp(shoulderWidth/.24,.8,1.5),.04,.095);
+      return {x:mid[0],y:mid[1]-.017*size,width:width*1.02,height:.034*size,angle:clamp(limbAngle(p[11],p[13]),-25,25)};
+    }
     case 'pin': return {x:shoulders[0]+shoulderWidth*.25,y:shoulders[1]+.01,width:.035*size,height:.025*size};
     case 'scarf': case 'towel': case 'medal': return {x:shoulders[0],y:shoulders[1]-.044*size,width:({scarf:.15,towel:.18,medal:.12}[key]!)*size,height:({scarf:.14,towel:.19,medal:.12}[key]!)*size};
     case 'sport_item': return {x:p[19][0]+.024*size,y:p[19][1]-.012*size,width:.09*size,height:.075*size};

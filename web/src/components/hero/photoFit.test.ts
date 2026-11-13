@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {GEAR} from '@shared/hero';
-import {photoFitProfiles,measuredPlacement,identityAlignment} from './photoFit';
+import {photoFitProfiles,measuredPlacement,identityAlignment,limbAngle} from './photoFit';
 describe('generated photographic fittings',()=>{
  it('covers every standard catalog body/skin/hair and outfit with valid geometry',()=>{
   expect(Object.keys(photoFitProfiles)).toHaveLength(420);
@@ -48,6 +48,18 @@ describe('generated photographic fittings',()=>{
      expect(eyes-placement.y-placement.height).toBeLessThan(.03);
     }
    }
+  }
+ });
+ it('turns garments with the limb and bounds widths when a wrist touches the torso',()=>{
+  expect(limbAngle([.5,.2],[.5,.4])).toBeCloseTo(0);
+  expect(limbAngle([.4,.2],[.5,.4])).toBeLessThan(0);
+  expect(limbAngle([.6,.2],[.5,.4])).toBeGreaterThan(0);
+  for(const key of Object.keys(photoFitProfiles))for(const mirrored of [false,true]){
+   const wrist=measuredPlacement(key,'wristbands',mirrored)!;
+   expect(wrist.width).toBeLessThanOrEqual(.059);
+   expect(Math.abs(wrist.angle!)).toBeLessThanOrEqual(25);
+   const captain=measuredPlacement(key,'captain',mirrored)!;
+   expect(captain.width).toBeLessThan(.1);
   }
  });
  it('does not invent geometry for personal or unknown photographs',()=>{
