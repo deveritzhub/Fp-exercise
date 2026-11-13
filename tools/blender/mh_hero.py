@@ -1,20 +1,7 @@
-"""FP Flow 3D sports hero on a MakeHuman body (MPFB, CC0 assets), with every piece of hero gear as
-its own node. Clothes, shoes, braces and hair are shells of the body itself, so they fit exactly.
-
-Setup (once; see tools/blender/README.md):
-  python3 -m venv .bpy && .bpy/bin/pip install bpy==5.2.3        # Blender 5.2 as a Python module
-  git clone --depth 1 https://github.com/makehumancommunity/mpfb2  # MPFB (code GPL, assets CC0)
-  (cd mpfb2/src/mpfb && zip -qr ../../../mpfb.zip .)
-  .bpy/bin/python -c "import bpy; bpy.ops.extensions.package_install_files(filepath='mpfb.zip', repo='user_default', enable_on_install=True); bpy.ops.wm.save_userpref()"
-  git clone --depth 1 --filter=blob:none --sparse https://github.com/makehumancommunity/makehuman mh && (cd mh && git sparse-checkout set makehuman/data/eyes)
-
-Run:
-  .bpy/bin/python tools/blender/mh_hero.py --frame m --eyes mh/makehuman/data/eyes --glb web/public/hero3d/hero_m.glb
-  .bpy/bin/python tools/blender/mh_hero.py --frame f --eyes ... --render out.png --show hair_long,gear_crown
-
-Node names the web viewer relies on (web/src/components/hero/hero3d.ts) are the same as in hero.py:
-body*, base_shoes, hair_<style>, beard_<kind>, glasses_<kind>, gear_<key>, outfit_<key>, aid_crutches.
-Materials the viewer tints: skin, hair, iris, kit_main, kit_dark, kit_soft.
+"""Build eight naturally proportioned FP Flow characters from MakeHuman/MPFB.
+Each frame/build gets fitted clothing, CC0 hair and every equipment node.
+See README.md for Python 3.13 / Blender 5.2.3 setup and reproducible build commands.
+Existing idle, walk, run and cheer animations are retained.
 """
 import argparse
 import math
@@ -30,6 +17,8 @@ from mathutils.kdtree import KDTree
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
 ap = argparse.ArgumentParser()
 ap.add_argument('--frame', choices=['m', 'f'], default='m')
+ap.add_argument('--build', choices=['slim', 'average', 'athletic', 'full'], default='average')
+ap.add_argument('--assets', default=os.path.join(os.path.dirname(__file__), 'assets'))
 ap.add_argument('--eyes', required=True, help='MakeHuman data/eyes folder')
 ap.add_argument('--glb', default='')
 ap.add_argument('--render', default='')
@@ -46,7 +35,6 @@ EXPORT = bool(args.glb)
 
 addon_utils.enable('bl_ext.user_default.mpfb', default_set=True)
 from bl_ext.user_default.mpfb.services.humanservice import HumanService  # noqa: E402
-from bl_ext.user_default.mpfb.services.locationservice import LocationService  # noqa: E402
 from bl_ext.user_default.mpfb.services.targetservice import TargetService  # noqa: E402
 
 scene = bpy.context.scene
@@ -80,7 +68,9 @@ def mat(name, color, rough=0.75, metal=0.0, emit=0.0):
     return m
 
 
-SKIN = mat('skin', '#d9a77f', 0.55)
+SKIN = mat('skin', '#d9a77f', 0.5)
+SKIN.node_tree.nodes['Principled BSDF'].inputs['Subsurface Weight'].default_value = 0.06
+SKIN.node_tree.nodes['Principled BSDF'].inputs['Subsurface Radius'].default_value = (1.0, 0.45, 0.25)
 LIPS = mat('lips', '#c27e6e', 0.5)
 HAIR = mat('hair', '#3b2a20', 0.8)
 IRIS = mat('iris', '#5a3a22', 0.3)
@@ -113,29 +103,12 @@ STONE = mat('stone', '#46554e', 0.9)
 
 # ---------------------------------------------------------------- MakeHuman body
 macro = TargetService.get_default_macro_info_dict()
-macro.update(gender=1.0 if M else 0.0, age=0.45, muscle=0.9 if M else 0.72, weight=0.55, proportions=1.0, height=0.6,
+BUILD_MACROS = {'slim': (0.3, 0.25), 'average': (0.5, 0.5), 'athletic': (0.8, 0.45), 'full': (0.4, 0.85)}
+muscle, weight = BUILD_MACROS[args.build]
+macro.update(gender=1.0 if M else 0.0, age=0.45, muscle=muscle, weight=weight, proportions=0.5, height=0.6,
              cupsize=0.45, firmness=0.7)
 macro['race'] = {'asian': 0.33, 'caucasian': 0.34, 'african': 0.33}
 human = HumanService.create_human(macro_detail_dict=macro, feet_on_ground=True, scale=0.1)
-TDIR = LocationService.get_mpfb_data('targets')
-
-
-def target(rel, w):
-    TargetService.load_target(human, os.path.join(TDIR, rel + '.target.gz'), weight=w)
-
-
-# Heroic figurine proportions: a slightly bigger head, hands and feet, broad shoulders.
-for a in ('horiz', 'vert', 'depth'):
-    target(f'head/head-scale-{a}-incr', 0.35)
-for s in 'lr':
-    target(f'hands/{s}-hand-scale-incr', 0.55)
-    target(f'feet/{s}-foot-scale-incr', 0.3)
-    target(f'arms/{s}-upperarm-shoulder-muscle-incr', 0.9 if M else 0.45)
-target('torso/torso-muscle-pectoral-incr', 0.6 if M else 0.1)
-target('torso/torso-muscle-dorsi-incr', 0.8 if M else 0.35)
-if M:
-    target('torso/torso-scale-horiz-incr', 0.3)
-
 rig = HumanService.add_builtin_rig(human, 'game_engine')
 bpy.context.view_layer.objects.active = rig
 bpy.ops.object.mode_set(mode='POSE')
@@ -170,7 +143,52 @@ bpy.ops.object.mode_set(mode='OBJECT')
 
 eyes = HumanService.add_mhclo_asset(os.path.join(args.eyes, 'high-poly', 'high-poly.mhclo'), human, asset_type='Eyes',
                                     subdiv_levels=0, material_type='MAKESKIN', set_up_rigging=True)
-for ob in (human, eyes):
+# Fit official CC0 MHCLO meshes before applying the pose/removing helper geometry.
+ASSETS = {
+    'hair_short': 'system/hair/short01/short01.mhclo',
+    'hair_buzz': 'system/hair/short01/short01.mhclo',
+    'hair_long': 'system/hair/long01/long01.mhclo',
+    'hair_ponytail': 'system/hair/ponytail01/ponytail01.mhclo',
+    'hair_bun': 'hair/hair/rehmanpolanski_hair_bun_brown/rehmanpolanski_hair_bun_brown.mhclo',
+    'hair_curly': 'hair/hair/cortu_strawberry_cloud_hair/cortu_strawberry_cloud_hair.mhclo',
+    'hair_afro': 'system/hair/afro01/afro01.mhclo',
+    'body_eyebrows': 'system/eyebrows/eyebrow001/eyebrow001.mhclo',
+    'body_eyelashes': 'system/eyelashes/eyelashes01/eyelashes01.mhclo',
+}
+asset_objects = []
+for node_name, relative in ASSETS.items():
+    ob = HumanService.add_mhclo_asset(os.path.join(args.assets, relative), human,
+         asset_type='Hair' if node_name.startswith('hair_') else 'Eyebrows' if node_name == 'body_eyebrows' else 'Eyelashes',
+         subdiv_levels=0, material_type='MAKESKIN', set_up_rigging=True)
+    ob.name = node_name
+    # Preserve strand transparency, but remove baked hair colour so all choices tint correctly.
+    images = [n.image for m in ob.data.materials if m and m.use_nodes for n in m.node_tree.nodes if n.type == 'TEX_IMAGE' and n.image]
+    material = HAIR.copy()
+    material.name = 'hair'
+    material.use_fake_user = True
+    if images:
+        import numpy as np
+        image = images[0].copy()
+        image.scale(160, 160)
+        pixels = np.array(image.pixels[:], dtype=np.float32).reshape(-1, 4)
+        shade = 0.55 + 0.45 * pixels[:, :3].mean(axis=1)
+        pixels[:, :3] = shade[:, None]
+        image.pixels.foreach_set(pixels.ravel())
+        image.pack()
+        texture = material.node_tree.nodes.new('ShaderNodeTexImage')
+        texture.image = image
+        bsdf = material.node_tree.nodes['Principled BSDF']
+        material.node_tree.links.new(texture.outputs['Color'], bsdf.inputs['Base Color'])
+        material.node_tree.links.new(texture.outputs['Alpha'], bsdf.inputs['Alpha'])
+        material.surface_render_method = 'DITHERED'
+    ob.data.materials.clear()
+    ob.data.materials.append(material)
+    for poly in ob.data.polygons:
+        poly.material_index = 0
+        poly.use_smooth = True
+    asset_objects.append(ob)
+
+for ob in (human, eyes, *asset_objects):
     bpy.ops.object.select_all(action='DESELECT')
     bpy.context.view_layer.objects.active = ob
     ob.select_set(True)
@@ -181,6 +199,19 @@ for ob in (human, eyes):
             bpy.ops.object.modifier_apply(modifier=mod.name)
     ob.parent = None
     ob.matrix_world = ob.matrix_world.copy()
+
+for ob in asset_objects:
+    if ob.name == 'hair_buzz':
+        # A close-cropped derivative of the official short mesh, fitted to this head.
+        shrink = ob.modifiers.new('close_crop', 'SHRINKWRAP')
+        shrink.target = human
+        shrink.wrap_method = 'NEAREST_SURFACEPOINT'
+        shrink.offset = 0.002
+        bpy.context.view_layer.objects.active = ob
+        bpy.ops.object.modifier_apply(modifier=shrink.name)
+    ob.data.transform(ob.matrix_world)
+    ob.matrix_world = Matrix()
+    ob.vertex_groups.clear()
 
 BONE = {b.name: (rig.matrix_world @ rig.pose.bones[b.name].head, rig.matrix_world @ rig.pose.bones[b.name].tail) for b in rig.data.bones}
 mw = human.matrix_world.copy()
@@ -195,7 +226,7 @@ def joint(n):
 
 J = {n: joint(n) for n in ('head', 'neck', 'mouth', 'l-eye', 'r-eye', 'pelvis', 'l-knee', 'r-knee', 'l-ankle', 'r-ankle')}
 
-# Remove helper geometry (tights, skirt, hair helper, joint cubes) and the rig.
+# Remove helper geometry; retain the rig for the existing motions.
 bm = bmesh.new()
 bm.from_mesh(human.data)
 dl = bm.verts.layers.deform.active
@@ -557,10 +588,6 @@ with part('body'):
             p.material_index = 2 if fwd > 0.965 else 1 if fwd > 0.84 else 0
             p.use_smooth = True
     adopt(eyes)
-    for s in (L, R):
-        e = J['l-eye' if s == L else 'r-eye']
-        cube((e.x + 0.004 * s, FRONT_Y + 0.012, EYE_Z + 0.022 * U / 0.45), (0.022, 0.004, 0.0035 if M else 0.0025), HAIR, sub=1,
-             rot=(0, 0.15 * s, 0), name='brow')
     # Base kit: T-shirt and shorts that follow the body.
     shirt0 = any_of(bone_in('spine_01', 'spine_02', 'spine_03', 'clavicle_l', 'clavicle_r'),
                     bone_in('upperarm_l', 'upperarm_r', tmax=0.52),
@@ -582,10 +609,32 @@ with part('body_socks'):
 
 
 def shoes(m, sole=RUBBER, extra=None, name='shoe'):
-    shell(name, m, any_of(bone_in('foot_l', 'foot_r', 'ball_l', 'ball_r'), bone_in('calf_l', 'calf_r', tmin=0.85)), 0.009, thick=0.003,
-          cuts=hems(CALVES, 0.93, 'tail'))
     for s in (L, R):
         lo, hi = FOOT[s]
+        # A smooth shoe last encloses the toes rather than copying each toe's skin.
+        cx = (lo.x + hi.x) / 2
+        half = (hi.x - lo.x) / 2 + 0.012
+        length = hi.y - lo.y + 0.035
+        height = max(0.10, hi.z - lo.z)
+        rings = [(0, .10, .28), (.07, .75, .48), (.23, 1, .55), (.5, 1, .72), (.74, .9, 1), (.93, .75, .95), (1, .15, .65)]
+        vertices, faces = [], []
+        sides = 16
+        for t, width, rise in rings:
+            for i in range(sides):
+                angle = math.tau * i / sides
+                vertices.append((cx + math.cos(angle) * half * width,
+                                 lo.y - .02 + t * length,
+                                 .015 + (math.sin(angle) + 1) / 2 * height * rise))
+        for j in range(len(rings) - 1):
+            for i in range(sides):
+                faces.append((j*sides+i, j*sides+(i+1)%sides, (j+1)*sides+(i+1)%sides, (j+1)*sides+i))
+        faces.extend([tuple(reversed(range(sides))), tuple((len(rings)-1)*sides+i for i in range(sides))])
+        mesh = bpy.data.meshes.new(name)
+        mesh.from_pydata(vertices, [], [tuple(reversed(face)) for face in faces])
+        mesh.update()
+        shoe = bpy.data.objects.new(name, mesh)
+        scene.collection.objects.link(shoe)
+        finish(shoe, m, sub=1)
         cube(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, 0.008), ((hi.x - lo.x) / 2 + 0.012, (hi.y - lo.y) / 2 + 0.014, 0.012), sole,
              sub=1, bevel=0.3, name='sole')
 
@@ -597,33 +646,6 @@ with part('base_shoes'):
         cube((hi.x + 0.006 if s == L else lo.x - 0.006, (lo.y + hi.y) / 2, 0.04), (0.002, (hi.y - lo.y) / 3, 0.012), KIT, sub=0, name='stripe')
 
 # ---------------------------------------------------------------- hair, beard, glasses
-scalp = lambda c, n, b, t, g: 'scalp' in g  # noqa: E731
-upper_head = lambda c, n, b, t, g: b == 'head' and c.z > EYE_Z - 0.06 and 'ears' not in g  # noqa: E731
-HAIRLINE = ((0, FRONT_Y, EYE_Z + 0.05), (0, 0.6, 1))
-with part('hair_short'):
-    shell('cap', HAIR, upper_head, 0.01, thick=0.006, cuts=[HAIRLINE])
-with part('hair_buzz'):
-    shell('cap', HAIR, upper_head, 0.003, thick=0.002, cuts=[((0, FRONT_Y, EYE_Z + 0.055), (0, 0.6, 1))])
-with part('hair_long'):
-    shell('cap', HAIR, upper_head, 0.011, thick=0.006, cuts=[HAIRLINE])
-    cube((HC.x, HC.y + HR.y * 0.75, HC.z - HR.z * 0.9), (HR.x * 0.95, HR.y * 0.35, HR.z * 0.95), HAIR, sub=2, taper=(1.15, 1.0), name='back')
-    for s in (L, R):
-        cube((HC.x + HR.x * 0.95 * s, HC.y - HR.y * 0.1, HC.z - HR.z * 0.55), (HR.x * 0.18, HR.y * 0.45, HR.z * 0.7), HAIR, sub=2, name='lock')
-with part('hair_ponytail'):
-    shell('cap', HAIR, upper_head, 0.008, thick=0.004, cuts=[HAIRLINE])
-    limb((HC.x, HHI.y + 0.005, HC.z + HR.z * 0.4), (HC.x, HHI.y + 0.05, HC.z - HR.z * 1.4), HR.x * 0.3, HR.x * 0.12, HAIR, name='tail')
-    ring((HC.x, HHI.y + 0.008, HC.z + HR.z * 0.3), HR.x * 0.22, HR.x * 0.06, KIT, rot=(1.2, 0, 0), name='tie')
-with part('hair_bun'):
-    shell('cap', HAIR, upper_head, 0.008, thick=0.004, cuts=[HAIRLINE])
-    sphere((HC.x, HC.y + HR.y * 0.55, TOP + HR.z * 0.05), HR.x * 0.42, HAIR, name='bun')
-with part('hair_curly'):
-    shell('cap', HAIR, upper_head, 0.012, thick=0.006, cuts=[HAIRLINE])
-    scalp_pts = [c + n * 0.01 for c, n, b, t, g in VX if 'scalp' in g]
-    for i, p in enumerate(scalp_pts[:: max(1, len(scalp_pts) // 60)]):
-        sphere(p, HR.x * 0.2, HAIR, sub=0, seg=10, name='curl')
-with part('hair_afro'):
-    sphere((HC.x, HC.y + HR.y * 0.2, HC.z + HR.z * 0.35), HR.x * 1.55, HAIR, scale=(1.0, 1.0, 0.9), name='afro')
-
 jaw = lambda c, n, b, t, g: b == 'head' and c.z < J['mouth'].z + 0.012 and c.y < HC.y - HR.y * 0.05 and 'lips' not in g  # noqa: E731
 with part('beard_stubble'):
     shell('stubble', HAIR, jaw, 0.0015, thick=0.0)
@@ -773,7 +795,8 @@ with part('gear_sleeve'):
     shell('sleeve', RUBBER, knee('l'), 0.007, thick=0.004, cuts=knee_cuts('l'))
     ring_on(KNEE[L] - Vector((0, 0, 0.0)), KNEE[L] - Vector((0, 0, 0.1)), limb_r('calf_l', 0.02) + 0.012, 0.004, ACCENT, name='strap')
 with part('gear_shin_guards'):
-    shell('guard', KIT, lambda c, n, b, t, g: b in ('calf_l', 'calf_r') and 0.2 < t < 0.75 and n.y < -0.35, 0.012, thick=0.006)
+    shell('guard', KIT, lambda c, n, b, t, g: b in ('calf_l', 'calf_r') and 0.15 < t < 0.8 and n.y < -0.35, 0.012, thick=0.006, sub=1,
+          cuts=hems(CALVES, 0.25, 'tail') + hems(CALVES, 0.72, 'head'))
 with part('gear_iron_brace'):
     shell('wrap', IRON, knee('l'), 0.008, thick=0.005, cuts=knee_cuts('l'))
     kr = limb_r('calf_l', 0.02) + 0.014
@@ -878,11 +901,12 @@ with part('outfit_team_kit'):
     high_socks()
 with part('outfit_champion'):
     for s in (L, R):
-        p = SH[s] + Vector((0.02 * s, 0, 0.03))
+        shoulder_scale = limb_r(f'upperarm_{SIDE[s]}', 0.15) / 0.075
+        p = SH[s] + Vector((0.012 * s, 0, 0.02))
         for i, (r, dz, sc) in enumerate(((0.11, 0.0, 0.5), (0.085, 0.035, 0.55))):
-            o = sphere(p + Vector((0, 0, dz)), r * (1 if M else 0.85), KIT if i == 0 else KIT_D, scale=(1.1, 1.05, sc), name='plate')
+            o = sphere(p + Vector((0, 0, dz)), r * shoulder_scale, KIT if i == 0 else KIT_D, scale=(1.1, 1.05, sc), name='plate')
             o.rotation_euler = (0, math.radians(-22 * s), 0)
-        ring(p - Vector((0, 0, 0.012)), 0.11 * (1 if M else 0.85), 0.012, GOLD, rot=(0, math.radians(-22 * s), 0), scale=(1.1, 1.05, 1), name='trim')
+        ring(p - Vector((0, 0, 0.012)), 0.11 * shoulder_scale, 0.012, GOLD, rot=(0, math.radians(-22 * s), 0), scale=(1.1, 1.05, 1), name='trim')
         cone(p + Vector((0.035 * s, 0, 0.09)), 0.024, 0.09, GOLD, rot=(0, math.radians(-30 * s), 0), name='horn')
     shell('sash', GOLD, waist, 0.012, thick=0.004)
     sphere((0, CHEST_FRONT - 0.008, CHEST_Z), 0.03, GOLD, scale=(1, 0.25, 1.25), name='emblem')
@@ -1168,6 +1192,8 @@ if EXPORT:
                               export_lights=False, export_extras=False, export_animations=True, export_skins=True,
                               export_morph=False, export_animation_mode='NLA_TRACKS', export_force_sampling=True,
                               export_def_bones=True, export_optimize_animation_size=True, export_anim_slide_to_zero=True)
+    from compact_glb import compact_glb
+    compact_glb(args.glb)
 
 if args.render:
     show = set(x for x in args.show.split(',') if x)

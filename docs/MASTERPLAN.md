@@ -309,6 +309,18 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     de eerste, met datum" naar `/p/versies` of `/app/versies`: elke versie vanaf 22 oktober 2026 met
     datum en wat er verbeterd is, per doelgroep (`shared/changelog.ts`).
 
+97. [x] **Natuurlijke 3D-held per frame en lichaamsbouw** (13 nov): acht MakeHuman-modellen
+    (`hero_<m/f>_<slim/average/athletic/full>.glb`) met afzonderlijke muscle/weight-macro’s.
+    Vergrote hoofden, handen, voeten en schouders verwijderd; geen horizontale uitrekking meer.
+    Eigen metingen kiezen de best passende van vier representatieve vormen. CC0 MakeHuman-haar,
+    wenkbrauwen en wimpers via MHCLO, met behoud van haar- en huidkleuren. Uitrusting opnieuw
+    passend opgebouwd, schoenneuzen en randen van scheenbeschermers verbeterd. Modelversie 4;
+    idle/walk/run/cheer behouden voor het dorp; inventoryknop blijft verwijderd.
+    Ieder model onder 2,5 MB gzip. Synthetische browsercontrole van acht modellen, voor/zijaanzicht,
+    mobiel, toetsenbord en bestaande RPG-interacties; bewijs in `docs/hero3d-review/`.
+    Visueel nog een technische basis: huid, gezichtsdetails en kledingplooien verdienen verdere
+    verfijning. Geen claim van een exacte lichaamsscan of afgeronde fotorealistische kwaliteit.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.

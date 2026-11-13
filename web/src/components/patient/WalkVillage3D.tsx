@@ -643,7 +643,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const cheerRef = useRef<{ xp: number; at: number | null } | null>(null);
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
   const heroScene = look ? hero3dScene(look) : null;
-  const heroKey = heroScene ? JSON.stringify([heroScene.url, [...heroScene.visible].sort(), heroScene.tints, heroScene.width]) : '';
+  const heroKey = heroScene ? JSON.stringify([heroScene.url, [...heroScene.visible].sort(), heroScene.tints]) : '';
   const key = JSON.stringify([buildings.map((b) => b.key), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1]);
   // Read at the moment of use, so new furniture or a new mode never rebuilds the whole village.
   const live = useRef({ homeItems: homeItems ?? [], placing, onFloor });
@@ -1206,7 +1206,6 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               m.frustumCulled = false; // the bounds are those of the rest pose
             }
           });
-          model.scale.set(heroScene.width, 1, (1 + heroScene.width) / 2);
           const box = new THREE.Box3().setFromObject(model.getObjectByName('body') ?? model);
           const k = HERO_HEIGHT / Math.max(0.5, box.max.y - box.min.y);
           const holder = new THREE.Group();
