@@ -11,11 +11,12 @@ import { useHero } from '@/pages/patient/HeroPages';
 import { MODULE_PATH, moduleOf, openToday, type PatientHomeData } from '@/pages/patient/PatientHome';
 import { SKILLS, bodyShape, levelTier } from '@shared/hero';
 import { villageBuildings } from '@shared/worldMap';
-import { EXIT_KEY, HOME_AT, HOME_KEY, PRACTICE_KEY, TV_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
+import { EXIT_KEY, HOME_AT, HOME_KEY, PRACTICE_KEY, TV_KEY, WELL_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
 import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@shared/homeDecor';
 import { HOME_STAGES, homeStage, levelsToNextHome } from '@shared/practiceVillage';
 import { MODULE_SITES, VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { openQuickLog } from '@/components/patient/Survival';
+import { WATER } from '@shared/survival';
 import type { FigureLook } from '@/components/hero/HumanFigure';
 import { Minimap, WorldMap, type Landmark, type MapTrack } from '@/components/patient/VillageMap';
 // three.js only loads on the 3D pages.
@@ -325,6 +326,26 @@ export function VillageWalkPage() {
     if (ok) setPlacing(null);
   };
 
+  // The well: one real glass of water, logged where the hero stands.
+  const [drinking, setDrinking] = useState(false);
+  const drink = async () => {
+    setDrinking(true);
+    try {
+      await api.post('/patient/logs/water', { ml: WATER.glassMl });
+      await qc.invalidateQueries({ queryKey: ['patient-hero'] });
+      toast(t('Glas water gelogd. Drink het ook echt op!', 'Glass of water logged. Do drink it!'));
+    } catch (e) {
+      say(e);
+    } finally {
+      setDrinking(false);
+    }
+  };
+  // Thirsty or stiff, as the day's log says: the hero walks slower until that is put right.
+  const states = d?.logs?.survival.status ?? [];
+  const thirsty = states.some((x) => x.key === 'thirsty');
+  const stiff = states.some((x) => x.key === 'stiff');
+  const pace = (thirsty ? 0.8 : 1) * (stiff ? 0.8 : 1);
+
   const run = (task: Task) => {
     hideTip();
     setErrand(task);
@@ -387,6 +408,8 @@ export function VillageWalkPage() {
             heroName={d?.hero?.heroName}
             questOpen={todo.length > 0}
             coachLook={coach.data?.look ?? null}
+            well={!!d?.hero}
+            pace={pace}
             api={world}
             practiceLabel={home.data?.patient.practiceName ?? t('De praktijk', 'The practice')}
             home={own ? { stage, label: homeLabel } : undefined}
@@ -484,6 +507,8 @@ export function VillageWalkPage() {
               <span>{t(`Tik op de vloer waar je ${decorItem(placing)?.nl.toLowerCase() ?? 'meubel'} moet staan.`, `Tap the floor where your ${decorItem(placing)?.en.toLowerCase() ?? 'piece'} should go.`)}</span>
               <button type="button" onClick={() => setPlacing(null)} className="min-h-[36px] rounded-md px-2 font-semibold text-[#ffd76a] hover:bg-white/10">{t('Annuleer', 'Cancel')}</button>
             </p>
+          ) : near === WELL_KEY ? (
+            <Button size="lg" data-testid="drink-well" loading={drinking} className="pointer-events-auto border border-[#9fd8ff] shadow-lift" icon={<Droplets className="h-5 w-5" />} onClick={() => void drink()}>{t(`Drink een glas water (+${WATER.glassMl} ml)`, `Drink a glass of water (+${WATER.glassMl} ml)`)}</Button>
           ) : near === HOME_KEY ? (
             <Button size="lg" data-testid="enter-home" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(HOME_KEY)}>{t('Naar binnen: jouw huis', 'Go in: your home')}</Button>
           ) : near === boardKey(HOME_KEY) ? (
@@ -526,6 +551,17 @@ export function VillageWalkPage() {
               </button>
             ))}
           </div>
+        )}
+
+        {(thirsty || stiff) && (
+          <ul className="absolute left-2 top-[142px] flex max-w-[190px] flex-col gap-1" data-testid="world-states" aria-label={t('Hoe je held zich voelt', 'How your hero feels')}>
+            {thirsty && (
+              <li><button type="button" onClick={() => world.current?.goTo(WELL_KEY)} className="rounded-md border border-[#9fd8ff]/70 bg-[#141c18]/85 px-2 py-1 text-left text-[11.5px] font-semibold leading-tight text-[#cfeaff] shadow-lift">{t('Dorst: je loopt trager. Tik om naar de waterput te lopen.', 'Thirsty: you walk slower. Tap to walk to the well.')}</button></li>
+            )}
+            {stiff && (
+              <li><button type="button" onClick={() => world.current?.goTo('in:mobiliteit')} className="rounded-md border border-[#f0c36a]/70 bg-[#141c18]/85 px-2 py-1 text-left text-[11.5px] font-semibold leading-tight text-[#ffe9b8] shadow-lift">{t('Stijf: je loopt trager. Even bewegen helpt; tik voor de Mobiliteitsstudio.', 'Stiff: you walk slower. Moving helps; tap for the mobility studio.')}</button></li>
+            )}
+          </ul>
         )}
 
         {/* Action bar. */}

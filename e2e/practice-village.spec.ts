@@ -118,6 +118,13 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   await meters.locator('[data-meter="steps"]').click();
   await expect(page.getByRole('dialog', { name: 'Snel loggen' }).getByRole('tab', { name: 'Stappen' })).toHaveAttribute('aria-selected', 'true');
   await page.keyboard.press('Escape');
+  // The well on the square: walk there and drink; the glass is logged and the water meter rises.
+  const water = meters.locator('[data-meter="water"]');
+  const before = await water.getAttribute('aria-label');
+  await page.getByRole('button', { name: 'Loop naar de waterput' }).press('Enter');
+  await page.getByTestId('drink-well').click({ timeout: 60_000 });
+  await expect(water).not.toHaveAttribute('aria-label', before!, { timeout: 15_000 });
+  if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/well.png' });
   if (process.env.SHOTS) {
     await page.getByRole('button', { name: /^Loop naar Oefenzaal/ }).press('Enter');
     await expect(village).toHaveAttribute('data-zone', 'practice', { timeout: 90_000 });

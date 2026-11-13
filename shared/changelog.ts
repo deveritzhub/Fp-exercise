@@ -13,6 +13,7 @@ export const RELEASES: Release[] = [
     titleNl: 'Een dorp voor de praktijk',
     titleEn: 'A village for the practice',
     items: [
+      { for: 'patient', nl: 'De waterput op het plein werkt: loop erheen en log een glas water. Heeft je held dorst of is hij stijf, dan loopt hij trager tot je drinkt of even beweegt.', en: 'The well on the square works: walk there and log a glass of water. When your hero is thirsty or stiff it walks slower until you drink or move a little.' },
       { for: 'staff', nl: 'Dorp → “Mijn poppetje”: stel je eigen figuur samen. Zo loop je door het dorp, en zo sta je in de praktijk bij je eigen patiënten.', en: 'Village → “My figure”: put your own figure together. This is how you walk through the village, and how you stand in the practice for your own patients.' },
       { for: 'patient', nl: 'In het dorp zie je je eiwit, beweging en water van vandaag als meters. Tik erop om te loggen. In de praktijk staat je eigen fysiotherapeut, als die een poppetje heeft gemaakt.', en: 'In the village you see today’s protein, movement and water as meters. Tap one to log. In the practice stands your own physiotherapist, once they have made a figure.' },
       { for: 'patient', nl: 'Het Krachthonk is van binnen een echte sportschool: bakstenen muur, rubbervloer, een groene sprintbaan, een rek met klimtouw, springboxen en een leren bank.', en: 'Inside, the gym is a real gym now: a brick wall, a rubber floor, a green sprint lane, a rig with a climbing rope, jump boxes and a leather sofa.' },
