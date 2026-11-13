@@ -55,6 +55,12 @@ test('world map and guild raid fit a 360 px phone and do not unlock phases', asy
     await login(patient, 'patient@praktijk-a.test');
     await patient.goto('/p/wereld');
     await expect(patient.getByRole('heading', { name: 'Wereldkaart' })).toBeVisible();
+    // The 3D village: buildings and zones are real links/buttons on top of the scene.
+    await expect(patient.getByTestId('village-3d')).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
+    await expect(patient.getByTestId('village-3d').getByRole('link', { name: 'Smederij' })).toBeAttached();
+    await expect(patient.getByTestId('village-growth')).toContainText('Je dorp groeit');
+    await patient.waitForTimeout(800);
+    await patient.getByTestId('village-3d').screenshot({ path: `${SHOTS}/village-3d-360.png` });
     await expect(patient.getByRole('button', { name: /Dorp/ })).toBeVisible();
     await expect(patient.getByText('Knievallei').first()).toBeVisible();
     await expect(patient.getByText('Rustbuff:')).toBeVisible();

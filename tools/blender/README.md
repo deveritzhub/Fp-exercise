@@ -1,9 +1,9 @@
 # 3D hero models
 
-`mh_hero.py` builds eight static, turnable MakeHuman characters via MPFB: male/female × slim,
+`mh_hero.py` builds eight animated, turnable MakeHuman characters via MPFB: male/female × slim,
 average, athletic and full. Each model contains all equipment and hair nodes. The viewer selects
 one model and switches nodes/tints (`web/src/components/hero/hero3d.ts`); it does not stretch bodies.
-These exports retain the existing static-pose architecture, not an animation rig.
+These exports retain the existing rig and idle/walk/run/cheer animations.
 
 ## Setup
 
@@ -41,6 +41,23 @@ Macro presets `(muscle, weight)`: slim `(0.30, 0.25)`, average `(0.50, 0.50)`, a
 full `(0.40, 0.85)`. Proportions use the neutral macro value; no enlarged head, hand, foot or shoulder
 targets. Clothes and equipment are recalculated from each resulting body. Measured body categories
 select the nearest supported build; these are four representative shapes, not individual body scans.
+
+Then bump `HERO3D_VERSION` in `hero3d.ts` so phones fetch the new files.
+
+## Skeleton and motions
+
+The model keeps the MakeHuman game rig (53 bones); the hero stance is its rest pose. Clothes, shoes and
+braces are shells of the body and move with the same weights. Other gear takes its weights from the
+nearest skin; hard things (helmet, glasses, buckles, crutches) follow one bone.
+
+Four motions are exported as glTF animations: `idle`, `walk`, `run`, `cheer`. Walking and running use
+joint angles from normal gait analysis (hip, knee, ankle and toe curves over one gait cycle; pelvis
+rotation and list, trunk counter-rotation, arm swing opposite to the legs). The height of the body is
+computed per frame so that a sole rests on the ground. The build prints the ground speed that fits each
+gait (`MOTION speeds ...`); `GAIT_SPEED` in `hero3d.ts` holds them per body height.
+
+Judge a gait from the side: `--render out.png --pose walk:8 --side` (motion:frame, 30 frames per second). A preview render:
+`--render out.png --show hair_short,gear_crown,outfit_champion` (add `--face` for a close-up).
 
 Skin retains the tintable material name `skin`, roughness 0.5 and mild subsurface weight 0.06 in
 Blender. Standard glTF does not preserve Blender's subsurface shader; the web viewer uses the

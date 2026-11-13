@@ -266,13 +266,57 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     gecomprimeerd. Volgende stappen: haar uit MakeHuman-pakketten (download geblokkeerd in de
     bouwomgeving), lichte animatie.
 
-89. [x] **Natuurlijke 3D-held per frame en lichaamsbouw** (8 nov): acht MakeHuman-modellen
+89. [geparkeerd] **3D-held uit de app gehaald** (9 nov, op verzoek: "erg lelijk"). Code en modellen blijven
+    staan (`tools/blender/mh_hero.py`, `web/src/components/hero/Hero3D.tsx`, `hero3d.ts`,
+    `web/public/hero3d/`); alleen de knop "3D-weergave" en het nieuws-item zijn weg. Terugzetten: de
+    knop en `e2e/hero-3d.spec.ts` uit commit 1025a1b. Later opnieuw: realistisch, 1-op-1 met de avatar,
+    echt haar uit MakeHuman-pakketten.
+
+90. [x] **Gamification, deel 1** (11 nov): rangen per level (Brons 1, Zilver 5, Goud 10, Smaragd 20,
+    Diamant 35, Meester 50) met schild; levend podium voor de held; glanzende XP-balk; beloningsscherm
+    na de training (juichende held, level-up met stralen, tellende XP en muntjes). Wereldkaart: 3D-eiland
+    met dorp, pad, zonevlaggen, mist over vergrendelde zones en een baken bij je held; namen zijn echte
+    knoppen (toetsenbord, schermlezer). Animaties stoppen bij "beweging beperken".
+
+91. [x] **Dorp groeit mee** (11 nov): per 5 afgeronde trainingen een huisje (max 10), per verslagen
+    baas een vlaggetje (max 8), molen bij 15 en akkers bij 30 trainingen, standbeeld van je held vanaf
+    level 10 en een vuurtoren vanaf level 20. Onder het dorp staat wat er al staat en wat de volgende
+    stap is. Alleen cosmetisch; krimpt nooit (`shared/villageGrowth.ts`).
+
+92. [x] **Beginscherm als lobby** (11 nov): bovenaan je held op zijn podium voor je eigen dorp (in code
+    getekend, dezelfde groei als de wereldkaart), lucht per dagdeel (ochtend, dag, avond, nacht met
+    sterren en verlichte ramen), rang en XP-balk; "Missie van vandaag" boven de training; dorpstegels
+    (Prikbord, Smederij, Arena, Bibliotheek, Gildehal, Wereldkaart) met een stip als er iets wacht.
+    De drie falende tests zijn opgelost (11 nov, stap 94).
+
+93. [x] **Lobby leeft** (11 nov): na de training "Terug naar je dorp": je held juicht in de lobby met
+    "Welkom terug in je dorp! +XP verdiend"; Smederij-tegel met stuiterend kistje als de dagkist klaarstaat,
+    Arena-tegel met de HP-balk van de baas, Prikbord met quests x/3. Heldfoto's ook in de testomgeving
+    (fotoserver toegestaan), zodat screenshots gelijk zijn aan live.
+
+94. [x] **Falende tests opgelost** (11 nov): (1) "onlangs gebruikte sjablonen" faalde vóór 17:00 UTC:
+    de demo-seed gaf een concept dat vandaag start een aanmaaktijd van vandaag 18:00 (toekomst), dus dat
+    sjabloon leek altijd het laatst gebruikt; aanmaaktijd is nu nooit later dan nu. (2+3) ACL-route en
+    metingsbaas: in het 3D-dorp overlapten gebouw- en zonelabels bij veel zones (te kleine raakvlakken);
+    labels wijken nu voor elkaar uit. "Je dorp is gegroeid!" op het beloningsscherm.
+
+95. [x] **Donkere modus** (11 nov): Licht, Donker of Automatisch (volgt de telefoon), in Instellingen
+    (patiënt) en Account (therapeut). Kleuren als CSS-variabelen, praktijkkleur krijgt een donkere
+    variant; alle schermen getest op contrast (axe). Alleen een weergavevoorkeur op het apparaat.
+
+96. [x] **Wat is er nieuw + versiegeschiedenis** (11 nov): na een update één keer een melding
+    "FP Flow is bijgewerkt" met de nieuwe punten; vanuit "Wat is er nieuw?" de link "Alle versies sinds
+    de eerste, met datum" naar `/p/versies` of `/app/versies`: elke versie vanaf 22 oktober 2026 met
+    datum en wat er verbeterd is, per doelgroep (`shared/changelog.ts`).
+
+97. [x] **Natuurlijke 3D-held per frame en lichaamsbouw** (13 nov): acht MakeHuman-modellen
     (`hero_<m/f>_<slim/average/athletic/full>.glb`) met afzonderlijke muscle/weight-macro’s.
     Vergrote hoofden, handen, voeten en schouders verwijderd; geen horizontale uitrekking meer.
     Eigen metingen kiezen de best passende van vier representatieve vormen. CC0 MakeHuman-haar,
     wenkbrauwen en wimpers via MHCLO, met behoud van haar- en huidkleuren. Uitrusting opnieuw
-    passend opgebouwd, schoenneuzen en randen van scheenbeschermers verbeterd. Modelversie 3;
-    ieder model onder 2,5 MB gzip. Synthetische browsercontrole van acht modellen, voor/zijaanzicht,
+    passend opgebouwd, schoenneuzen en randen van scheenbeschermers verbeterd. Modelversie 4;
+    idle/walk/run/cheer behouden voor het dorp; inventoryknop blijft verwijderd.
+    Ieder model onder 2,5 MB gzip. Synthetische browsercontrole van acht modellen, voor/zijaanzicht,
     mobiel, toetsenbord en bestaande RPG-interacties; bewijs in `docs/hero3d-review/`.
     Visueel nog een technische basis: huid, gezichtsdetails en kledingplooien verdienen verdere
     verfijning. Geen claim van een exacte lichaamsscan of afgeronde fotorealistische kwaliteit.

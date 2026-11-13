@@ -9,4 +9,4 @@ Downloaded 8 November 2026. The pack pages explicitly list these assets as CC0. 
 
 Licence: https://creativecommons.org/publicdomain/zero/1.0/
 
-The generator fits these source meshes through `HumanService.add_mhclo_asset`, bakes the static pose, and creates colour-neutral strand textures. Buzz hair is a close-cropped derivative of short01 fitted to the head with a shrinkwrap modifier. Exported textures are 192px to keep each complete model below 2.5 MB gzip. The original high-resolution source files remain here for reproducibility.
+The generator fits these source meshes through `HumanService.add_mhclo_asset`, bakes the static pose, and creates colour-neutral strand textures. Buzz hair is a close-cropped derivative of short01 fitted to the head with a shrinkwrap modifier. Exported textures are 160px to keep each complete model below 2.5 MB gzip. The original high-resolution source files remain here for reproducibility.

@@ -4,7 +4,7 @@ import { ACL_REWARDS, ACL_SPORTS } from '@shared/aclRewards';
 import { GearArtwork } from '@/components/hero/RpgGear';
 import { HEIRLOOM_KINDS } from '@shared/measurementBoss';
 import '../../components/hero/rpg.css';
-import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Award, BookOpen, Brain, CalendarCheck, Check, ChevronRight, CircleCheck, Coins, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Utensils, Droplets, Zap, Swords, type LucideIcon } from 'lucide-react';
@@ -16,13 +16,12 @@ import { cn } from '@/lib/cn';
 import { Button, Card, Dialog, ErrorState, Input, Notice, ProgressBar, ScaleInput, Segmented, Spinner, useToast } from '@/components/ui';
 import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
-// three.js is only downloaded when someone opens the 3D view.
-const Hero3D = lazy(() => import('@/components/hero/Hero3D'));
+import { HeroStage, LevelBadge, XpBar } from '@/components/hero/GameFx';
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
 import { HumanFigure, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
 import { MOBILITY_MEASURE_XP } from '@shared/mobilityTests';
-import { BADGES, BOSSES, SEASONS, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, WALL_BADGES_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
+import { BADGES, BOSSES, SEASONS, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, WALL_BADGES_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, levelTier, nextLevelTier, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
 import { LOG_XP } from '@shared/patientLogs';
 import { quizQuestions } from '@shared/muscleAtlas';
 import type { HeroState } from '@/lib/types';
@@ -330,8 +329,8 @@ function HeroPhotoLink({ look, level }: { look: FigureLook; level: number }) {
       aria-label={t(`Uiterlijk en maten aanpassen, level ${level}`, `Edit look and measurements, level ${level}`)}
       className="tap relative block shrink-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
     >
-      <HeroPhoto look={look} className="h-[184px] w-[123px] shadow-card" />
-      <span className="absolute -left-1.5 -top-1.5 flex min-w-[28px] items-center justify-center rounded-full border-2 border-white bg-sand px-1.5 font-display text-[13px] font-bold leading-[24px] text-sand-ink" aria-hidden>{level}</span>
+      <HeroStage level={level} className="block"><HeroPhoto look={look} className="h-[184px] w-[123px] shadow-card" /></HeroStage>
+      <LevelBadge level={level} size={38} className="absolute -left-3 -top-3" />
       <span className="absolute -bottom-1.5 -right-1.5 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-white text-accent shadow-sm" aria-hidden>
         <Pencil className="h-4 w-4" />
       </span>
@@ -886,17 +885,17 @@ function HeroTotals({ d }: { d: HeroState }) {
   const trophies = d.trophies.filter((x) => x.earned).length;
   const badges = d.badges.filter((b) => b.earned).length;
   const tiles = [
-    { to: '/p/held/inventaris', icon: Coins, value: d.gear.coins, label: t('muntjes', 'coins') },
-    { to: '/p/held/inventaris#trophies-title', icon: Trophy, value: `${trophies}/${d.trophies.length}`, label: t('prijzen', 'trophies') },
-    { to: '/p/held#fold-hero-badges', icon: Award, value: `${badges}/${d.badges.length}`, label: t('badges', 'badges') },
-    { to: '/p/held#boss', icon: Swords, value: d.weekly.bossesDefeated ?? 0, label: t('bazen', 'bosses') },
+    { to: '/p/held/inventaris', icon: Coins, value: d.gear.coins, label: t('muntjes', 'coins'), bg: '#fbf0d9', fg: '#855806' },
+    { to: '/p/held/inventaris#trophies-title', icon: Trophy, value: `${trophies}/${d.trophies.length}`, label: t('prijzen', 'trophies'), bg: '#e7f0f9', fg: '#1d5f99' },
+    { to: '/p/held#fold-hero-badges', icon: Award, value: `${badges}/${d.badges.length}`, label: t('badges', 'badges'), bg: '#e6eee8', fg: '#29483c' },
+    { to: '/p/held#boss', icon: Swords, value: d.weekly.bossesDefeated ?? 0, label: t('bazen', 'bosses'), bg: '#fde8dc', fg: '#9a3412' },
   ];
   return (
     <ul className="mt-3 grid grid-cols-4 gap-1.5" aria-label={t('Verzameld', 'Collected')}>
       {tiles.map((x) => (
         <li key={x.label}>
-          <Link to={x.to} className="tap flex min-h-[64px] flex-col items-center justify-center rounded-xl bg-canvas px-1 py-2 text-center hover:bg-ink-100">
-            <x.icon className="h-4 w-4 text-sand-ink" aria-hidden />
+          <Link to={x.to} className="tap flex min-h-[72px] flex-col items-center justify-center rounded-xl border border-line bg-white px-1 py-2 text-center shadow-xs hover:border-ink-300">
+            <span className="grid h-7 w-7 place-items-center rounded-full" style={{ background: x.bg, color: x.fg }}><x.icon className="h-4 w-4" aria-hidden /></span>
             <span className="mt-0.5 font-display text-[16px] font-bold leading-none tabular-nums text-ink-950">{x.value}</span>
             <span className="mt-0.5 text-[11.5px] text-ink-600"><span className="sr-only"> </span>{x.label}</span>
           </Link>
@@ -1017,7 +1016,7 @@ function GearCard({ d }: { d: HeroState }) {
       <p className="mt-2 text-[13.5px] text-ink-600">{t('Verzamel je eigen uitrusting. Tier toont de zeldzaamheid; itemlevel is de cosmetische waarde die meetelt voor je gearscore. Je hoeft geen hoger heldlevel te halen om een item te dragen.', 'Collect your own equipment. Tier shows rarity; item level is the cosmetic value contributing to your gear score. No hero-level requirement applies to wearing items.')}</p>
 
       <ul className="my-3 flex flex-wrap gap-2" aria-label={t('Uitrustingstiers', 'Equipment tiers')}>
-        {GEAR_TIERS.map(tier => <li key={tier.key} className="rounded-lg border bg-white px-2 py-1 text-xs" style={{borderColor:tier.glow,color:tier.color}}>
+        {GEAR_TIERS.map(tier => <li key={tier.key} className="rounded-lg border bg-white px-2 py-1 text-xs text-[color:var(--c)] dark:text-[color:var(--cd)]" style={{ borderColor: tier.glow, '--c': tier.color, '--cd': tier.glow } as React.CSSProperties}>
           <span className="font-semibold">{tier.tier} · {nl ? tier.nl : tier.en}</span>
           <span className="ml-1">{(tier.tier-1)*20+1}–{tier.tier*20}</span>
         </li>)}
@@ -1085,7 +1084,7 @@ function TierTag({ g }: { g: GearItem }) {
   const tier = GEAR_TIERS[g.tier - 1];
   return (
     <span className="gear-labels">
-      <span className="gear-rarity" style={{color:tier.color}}>Tier {g.tier} · {locale === 'nl' ? tier.nl : tier.en}</span>
+      <span className="gear-rarity text-[color:var(--c)] dark:text-[color:var(--cd)]" style={{ '--c': tier.color, '--cd': tier.glow } as React.CSSProperties}>Tier {g.tier} · {locale === 'nl' ? tier.nl : tier.en}</span>
       <span className="gear-level">{locale === 'nl' ? 'Itemlevel' : 'Item level'} {g.itemLevel}</span>
     </span>
   );
@@ -1142,8 +1141,6 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
   const [open, setOpen] = useState<GearSlot | null>(null);
   const [illustrated, setIllustrated] = useState(() => { try { return sessionStorage.getItem('fp.inventory.illustrated') === 'true'; } catch { return false; } });
   useEffect(() => { try { sessionStorage.setItem('fp.inventory.illustrated', String(illustrated)); } catch { /* storage optional */ } }, [illustrated]);
-  const [view3d, setView3d] = useState(() => { try { return sessionStorage.getItem('fp.inventory.3d') === 'true'; } catch { return false; } });
-  useEffect(() => { try { sessionStorage.setItem('fp.inventory.3d', String(view3d)); } catch { /* storage optional */ } }, [view3d]);
   const look = { ...d.hero!, gear: [...(preview ? onePerSlot([...d.gear.equipped, preview]) : d.gear.equipped), ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero!.frame) : null, photo: d.customPhoto ?? null };
   const inSlot = (k: GearSlot) => d.gear.equipped.find((g) => GEAR_SLOT[g] === k) ?? null;
   const slotBtn = (k: GearSlot) => {
@@ -1168,18 +1165,13 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
       <TrophyWall d={d} compact className="mb-2" />
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-[12.5px] text-ink-700">{t('Verander je outfit zonder je behandelschema te veranderen.', 'Change your outfit without changing your treatment.')}</p>
-        <span className="flex gap-2">
-          <button type="button" onClick={() => setView3d(x => !x)} aria-pressed={view3d} className={cn('tap inline-flex min-h-[44px] items-center rounded-full border border-accent px-3 text-[13px] font-semibold', view3d ? 'bg-accent text-white' : 'bg-white text-accent hover:bg-accent-soft')}>
-            {t('3D-weergave', '3D view')}
-          </button>
-          {!view3d && <button type="button" onClick={() => setIllustrated(x => !x)} aria-pressed={illustrated} className="tap inline-flex min-h-[44px] items-center rounded-full border border-accent bg-white px-3 text-[13px] font-semibold text-accent hover:bg-accent-soft">
-            {illustrated ? t('Fotoweergave', 'Photo view') : t('RPG-weergave', 'RPG view')}
-          </button>}
-        </span>
+        <button type="button" onClick={() => setIllustrated(x => !x)} aria-pressed={illustrated} className="tap inline-flex min-h-[44px] items-center rounded-full border border-accent bg-white px-3 text-[13px] font-semibold text-accent hover:bg-accent-soft">
+          {illustrated ? t('Fotoweergave', 'Photo view') : t('RPG-weergave', 'RPG view')}
+        </button>
       </div>
       <div className="grid grid-cols-[44px_1fr_44px] sm:grid-cols-[64px_1fr_64px] items-start gap-2">
         <div className="grid gap-2">{side('left')}</div>
-        {view3d ? <Suspense fallback={<p role="status" className="grid h-[420px] place-items-center text-[13px] font-semibold text-ink-700">{t('3D-held laden…', 'Loading 3D hero…')}</p>}><Hero3D look={look} className="h-[420px] sm:h-[520px] w-full" /></Suspense> : illustrated ? <span className="flex h-full min-h-[300px] min-w-0 items-center justify-center overflow-hidden rounded-2xl rpg-podium" role="img" aria-label={t('Je geïllustreerde held met je gedragen uitrusting', 'Your illustrated hero wearing equipped items')}><HumanFigure rpg look={look} viewBox="0 -10 200 440" className="h-[420px] sm:h-[520px] w-full max-w-[260px]" /></span> : <span role="img" aria-label={t('Je fotorealistische held met je gedragen uitrusting', 'Your photographic hero wearing equipped items')} className="min-w-0"><HeroPhoto fittedGear look={look} className="h-[420px] sm:h-[520px] w-full" /></span>}
+        {illustrated ? <span className="flex h-full min-h-[300px] min-w-0 items-center justify-center overflow-hidden rounded-2xl rpg-podium" role="img" aria-label={t('Je geïllustreerde held met je gedragen uitrusting', 'Your illustrated hero wearing equipped items')}><HumanFigure rpg look={look} viewBox="0 -10 200 440" className="h-[420px] sm:h-[520px] w-full max-w-[260px]" /></span> : <span role="img" aria-label={t('Je fotorealistische held met je gedragen uitrusting', 'Your photographic hero wearing equipped items')} className="min-w-0"><HeroPhoto fittedGear look={look} className="h-[420px] sm:h-[520px] w-full" /></span>}
         <div className="grid gap-2">{side('right')}</div>
       </div>
       <div className="mx-auto mt-2 grid w-[136px] grid-cols-2 gap-2">{GEAR_SLOTS.filter((x) => x.side === 'bottom').map((x) => slotBtn(x.key))}</div>
@@ -1503,6 +1495,8 @@ export function HeroPage() {
     );
   }
   const L = d.level;
+  const tier = levelTier(L.level);
+  const nextTier = nextLevelTier(L.level);
   const look = { ...d.hero, gear: [...d.gear.equipped, ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null, photo: d.customPhoto ?? null };
   const scene = sceneForTotal(d.totalLevel);
   const emblems = d.skills.filter((s) => !s.locked && s.level >= SKILL_EMBLEM_LEVEL);
@@ -1524,6 +1518,7 @@ export function HeroPage() {
           <HeroPhotoLink look={look} level={L.level} />
           <div className="min-w-0">
             <p className="t-label">{t(`Level ${L.level}`, `Level ${L.level}`)} · {titleFor(L.level, nl)}</p>
+            <p className="mb-0.5 inline-flex items-center rounded-full border bg-white px-2 py-0.5 text-[12px] font-bold text-[color:var(--c)] dark:text-[color:var(--cd)]" style={{ borderColor: tier.glow, '--c': tier.color, '--cd': tier.light } as React.CSSProperties}>{t(`Rang ${tier.nl}`, `${tier.en} rank`)}</p>
             <h1 id="hero-name" className={cn('t-page [overflow-wrap:anywhere]', scene?.key === 'stadium' && 'text-white')}>{d.hero.heroName}</h1>
             {scene && <p className={cn('text-[12.5px] font-semibold', scene.key === 'stadium' ? 'text-sand' : 'text-ink-600')}>{nl ? scene.nl : scene.en}</p>}
             {(emblems.length > 0 || ownTitles.length > 0 || combos.length > 0) && (
@@ -1534,7 +1529,7 @@ export function HeroPage() {
             )}
             <div className="flex flex-wrap items-center gap-x-3">
               <Link to="/p/held/uiterlijk" className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-accent">{t('Uiterlijk en maten', 'Look and measurements')}</Link>
-              <Link to="/p/held/inventaris" className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-sand-soft px-3 text-[14px] font-semibold text-sand-ink"><Crown className="h-4 w-4" aria-hidden />{t(`Inventaris & winkel · ${d.gear.coins}`, `Inventory & shop · ${d.gear.coins}`)}</Link>
+              <Link to="/p/held/inventaris" className="inline-flex min-h-[44px] max-w-full items-center gap-1.5 rounded-full bg-sand-soft px-3 py-1 text-left text-[14px] font-semibold text-sand-ink"><Crown className="h-4 w-4 shrink-0" aria-hidden />{t(`Inventaris & winkel · ${d.gear.coins}`, `Inventory & shop · ${d.gear.coins}`)}</Link>
             </div>
           </div>
         </div>
@@ -1548,7 +1543,8 @@ export function HeroPage() {
             <span className="font-semibold text-ink-900">{L.xp} XP</span>
             <span className="text-ink-600">{t(`nog ${L.to - L.xp} XP tot level ${L.level + 1}`, `${L.to - L.xp} XP to level ${L.level + 1}`)}</span>
           </div>
-          <ProgressBar value={L.progress} className="mt-1.5 h-3" label={t(`Voortgang naar level ${L.level + 1}`, `Progress to level ${L.level + 1}`)} />
+          <XpBar xp={L.xp} className="mt-1.5" label={t(`Voortgang naar level ${L.level + 1}`, `Progress to level ${L.level + 1}`)} />
+          {nextTier && <p className="mt-1.5 text-[12.5px] text-ink-600">{t(`Nog ${nextTier.levels} ${nextTier.levels === 1 ? 'level' : 'levels'} tot rang `, `${nextTier.levels} ${nextTier.levels === 1 ? 'level' : 'levels'} to `)}<strong className="text-[color:var(--c)] dark:text-[color:var(--cd)]" style={{ '--c': nextTier.tier.color, '--cd': nextTier.tier.light } as React.CSSProperties}>{nl ? nextTier.tier.nl : `${nextTier.tier.en} rank`}</strong></p>}
         </div>
         <HeroTotals d={d} />
         <details className="mt-3 text-[14px] text-ink-700">
@@ -1855,7 +1851,7 @@ export function HeroHomeCard() {
           <span className="block text-[13px] font-medium text-accent">
             {!d.checkin.today ? t('Dagcheck nog te doen', 'Daily check-in to do') : t(`Weekquests: ${d.weekly.quests.filter((q) => q.done).length}/3`, `Weekly quests: ${d.weekly.quests.filter((q) => q.done).length}/3`)}
           </span>
-          <ProgressBar value={d.level.progress} className="mt-1.5 h-2" label={t(`Voortgang naar level ${d.level.level + 1}`, `Progress to level ${d.level.level + 1}`)} />
+          <XpBar compact xp={d.level.xp} className="mt-1.5" label={t(`Voortgang naar level ${d.level.level + 1}`, `Progress to level ${d.level.level + 1}`)} />
         </span>
         <ChevronRight className="h-5 w-5 shrink-0 text-ink-400" aria-hidden />
       </Link>

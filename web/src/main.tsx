@@ -8,8 +8,13 @@ import { ToastProvider } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { router } from './router';
 import { installErrorReporting } from '@/lib/reportError';
+import { applyTheme, readTheme } from '@/lib/theme';
 
 installErrorReporting();
+// Light or dark before the first paint (no inline script: the CSP allows only our own files).
+applyTheme(readTheme());
+window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', () => applyTheme(readTheme()));
+window.addEventListener('fp-theme', () => applyTheme(readTheme()));
 
 const queryClient = new QueryClient({
   defaultOptions: {

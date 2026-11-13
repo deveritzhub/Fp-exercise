@@ -2,7 +2,7 @@ import { isClinical } from '@shared/accountKind';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { TestBanner } from '@/components/app/TestBanner';
 import { useEffect, useState } from 'react';
-import { BookOpen, Brain, Building2, ChevronsUpDown, LayoutDashboard, LogOut, Menu, Plus, Search, Settings, Users, Layers, X, UserRound, Check, Compass, Keyboard } from 'lucide-react';
+import { BookOpen, Brain, Building2, ChevronsUpDown, LayoutDashboard, LogOut, Menu, Plus, Search, Settings, Users, Layers, X, UserRound, Check, Compass, Keyboard, Tent } from 'lucide-react';
 import { Logo, LocaleSwitch } from '@/components/app/Brand';
 import { Avatar, Popover, MenuItem, Button, Dialog } from '@/components/ui';
 import { useI18n, useAccountKind } from '@/lib/i18n';
@@ -14,7 +14,7 @@ import { NotificationBell } from './Notifications';
 import { CommandPalette } from '@/components/app/CommandPalette';
 import { IdleGuard } from '@/components/app/IdleGuard';
 import { FeedbackButton } from '@/components/app/Feedback';
-import { WhatsNew } from '@/components/app/WhatsNew';
+import { UpdateNotice, WhatsNew } from '@/components/app/WhatsNew';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function TherapistLayout() {
@@ -54,6 +54,7 @@ export function TherapistLayout() {
   const links = [
     { to: '/app', end: true, icon: LayoutDashboard, label: t('Dashboard', 'Dashboard') },
     { to: '/app/patienten', icon: Users, label: t('Patiënten', 'Patients') },
+    { to: '/app/dorp', icon: Tent, label: t('Dorp', 'Village') },
     { to: '/app/oefeningen', icon: BookOpen, label: t('Oefeningen', 'Exercises') },
     // The complaint guide is clinical: only for physiotherapy practices.
     ...(isClinical(practice.kind) ? [{ to: '/app/klachtwijzer', icon: Compass, label: t('Klachtwijzer', 'Complaint guide') }] : []),
@@ -199,6 +200,7 @@ export function TherapistLayout() {
       </header>
       <TestBanner />
       <main className="mx-auto w-full max-w-[1320px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 print:max-w-none print:p-0">
+        <UpdateNotice audience="staff" clinical={isClinical(practice.kind)} />
         <Outlet />
       </main>
       <CommandPalette open={palette} onClose={() => setPalette(false)} />

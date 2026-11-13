@@ -16,7 +16,9 @@ import type { Adherence, Notification, Program } from '@/lib/types';
 import type { DayState } from '@shared/adherence';
 import { isActionableToday, summarizePatientDay } from '@shared/todayView';
 import { cn } from '@/lib/cn';
-import { BossHomeCard, DayChestHomeCard, HeroHomeCard } from '@/pages/patient/HeroPages';
+import { BossHomeCard, DayChestHomeCard } from '@/pages/patient/HeroPages';
+import { HomeLobby, VillageTiles } from '@/components/patient/HomeLobby';
+import { XP } from '@shared/hero';
 import { LogbookHomeCard } from '@/pages/patient/LogbookPage';
 import { MobilityDueCard } from '@/components/MobilityTests';
 import { FirstSteps } from '@/components/patient/FirstSteps';
@@ -72,19 +74,17 @@ export function PatientHome() {
   const startable = (['mobiliteit', 'kracht'] as const).filter((m) => modes.data?.templates.some((x) => x.module === m) && !d.programs.some((p) => moduleOf(p) === m));
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-[15px] text-ink-500">{new Intl.DateTimeFormat(nl ? 'nl-NL' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</p>
-        <h1 className="mt-0.5 text-[28px] font-bold leading-tight">{greeting(locale)}, {d.patient.firstName}</h1>
-        {todo.length > 0 && (
-          <p className="mt-1 text-[15px] text-ink-600">
-            {left > 0
-              ? t(`Vandaag nog ${left} ${left === 1 ? 'training' : 'trainingen'} te doen.`, `${left} ${left === 1 ? 'workout' : 'workouts'} left today.`)
-              : pausedToday > 0
-                ? t('Je programma staat tijdelijk stil. Volg het advies van je fysiotherapeut.', 'Your programme is temporarily paused. Follow your physiotherapist’s advice.')
-                : t('Alles voor vandaag is gedaan. Lekker bezig!', 'Everything for today is done. Well done!')}
-          </p>
-        )}
-      </div>
+      <HomeLobby
+        date={new Intl.DateTimeFormat(nl ? 'nl-NL' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}
+        greeting={`${greeting(locale)}, ${d.patient.firstName}`}
+        subtitle={todo.length > 0
+          ? left > 0
+            ? t(`Vandaag nog ${left} ${left === 1 ? 'training' : 'trainingen'} te doen.`, `${left} ${left === 1 ? 'workout' : 'workouts'} left today.`)
+            : pausedToday > 0
+              ? t('Je programma staat tijdelijk stil. Volg het advies van je fysiotherapeut.', 'Your programme is temporarily paused. Follow your physiotherapist’s advice.')
+              : t('Alles voor vandaag is gedaan. Lekker bezig!', 'Everything for today is done. Well done!')
+          : undefined}
+      />
 
       {d.notifications.length > 0 && (
         <div className="space-y-2">
@@ -150,8 +150,14 @@ export function PatientHome() {
           nextSession={d.programs.map((p) => p.nextSession).filter(Boolean).sort()[0] ?? null}
         />
       ) : (
-        todo.map((p) => (
+        todo.map((p, i) => (
           <div key={p.id}>
+            {i === 0 && left > 0 && pausedToday === 0 && (
+              <p className="mb-1.5 flex items-center gap-2 font-display text-[15px] font-bold text-ink-900">
+                <span className="rounded-full bg-[#fbf0d9] px-2.5 py-0.5 text-[12.5px] text-[#855806]">{t('Missie van vandaag', 'Today’s mission')}</span>
+                <span className="text-[13px] font-semibold text-ink-600">{t(`+${XP.session} XP per training`, `+${XP.session} XP per workout`)}</span>
+              </p>
+            )}
             <ModuleTag module={moduleOf(p)} />
             <TodayProgramCard
               id={p.id}
@@ -191,11 +197,7 @@ export function PatientHome() {
       )}
 
       <FirstSteps hasProgram={d.programs.length > 0} />
-      <HeroHomeCard />
-      <Link to="/p/wereld" className="flex min-h-[48px] items-center justify-between gap-3 rounded-2xl border border-line bg-white px-4 py-3 font-semibold text-ink-900 shadow-card">
-        <span>{t('Wereldkaart', 'World map')}</span>
-        <ChevronRight className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />
-      </Link>
+      <VillageTiles />
       <DayChestHomeCard />
       <BossHomeCard />
       <DailyQuizCard />

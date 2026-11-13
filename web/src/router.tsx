@@ -24,6 +24,7 @@ const DemoPage = named(() => import('@/pages/marketing/DemoPage'), 'DemoPage');
 const TherapistLayout = named(() => import('@/layouts/TherapistLayout'), 'TherapistLayout');
 const PatientLayout = named(() => import('@/layouts/PatientLayout'), 'PatientLayout');
 const DashboardPage = named(() => import('@/pages/therapist/DashboardPage'), 'DashboardPage');
+const PracticeVillagePage = named(() => import('@/pages/therapist/PracticeVillagePage'), 'PracticeVillagePage');
 const PatientsPage = named(() => import('@/pages/therapist/PatientsPage'), 'PatientsPage');
 const PatientDetailPage = named(() => import('@/pages/therapist/PatientDetailPage'), 'PatientDetailPage');
 const ExercisesPage = named(() => import('@/pages/therapist/ExercisesPage'), 'ExercisesPage');
@@ -47,6 +48,7 @@ const PatientProgramPrintPage = named(() => import('@/pages/PrintPages'), 'Patie
 const ProgressReportPage = named(() => import('@/pages/therapist/ProgressReportPage'), 'ProgressReportPage');
 const HeroPage = named(() => import('@/pages/patient/HeroPages'), 'HeroPage');
 const WorldMapPage = named(() => import('@/pages/patient/WorldMapPage'), 'WorldMapPage');
+const VillageWalkPage = named(() => import('@/pages/patient/VillageWalkPage'), 'VillageWalkPage');
 const HeroSetupPage = named(() => import('@/pages/patient/HeroPages'), 'HeroSetupPage');
 const HeroProfilePage = named(() => import('@/pages/patient/HeroPages'), 'HeroProfilePage');
 const InventoryPage = named(() => import('@/pages/patient/HeroPages'), 'InventoryPage');
@@ -60,6 +62,7 @@ const MobilityTestsPage = named(() => import('@/pages/patient/MobilityTestsPage'
 const ModulePage = named(() => import('@/pages/patient/ModulePage'), 'ModulePage');
 const AtlasPage = named(() => import('@/pages/patient/AtlasPage'), 'AtlasPage');
 const SettingsPage = named(() => import('@/pages/patient/SettingsPage'), 'SettingsPage');
+const VersionsPage = named(() => import('@/pages/VersionsPage'), 'VersionsPage');
 const AdminPage = named(() => import('@/pages/admin/AdminPage'), 'AdminPage');
 const AdminAccountPage = named(() => import('@/pages/admin/AdminPage'), 'AdminAccountPage');
 
@@ -152,6 +155,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <S><DashboardPage /></S> },
           { path: 'patienten', element: <S><PatientsPage /></S> },
+          { path: 'dorp', element: <S><PracticeVillagePage /></S> },
           { path: 'patienten/:id', element: <S><PatientDetailPage /></S> },
           { path: 'patienten/:id/rapport', element: <S><ProgressReportPage /></S> },
           { path: 'oefeningen', element: <S><ExercisesPage /></S> },
@@ -168,6 +172,7 @@ export const router = createBrowserRouter([
           { path: 'programmas/:id/afdrukken', element: <S><ProgramPrintPage /></S> },
           { path: 'praktijk', element: <S><PracticePage /></S> },
           { path: 'account', element: <S><AccountPage /></S> },
+          { path: 'versies', element: <S><VersionsPage audience="staff" /></S> },
         ],
       },
       {
@@ -182,6 +187,7 @@ export const router = createBrowserRouter([
           { path: 'voortgang', element: <S><PatientProgress /></S> },
           { path: 'held', element: <S><HeroPage /></S> },
           { path: 'wereld', element: <S><WorldMapPage /></S> },
+          { path: 'dorp', element: <S><VillageWalkPage /></S> },
           { path: 'held/nieuw', element: <S><HeroSetupPage /></S> },
           { path: 'held/uiterlijk', element: <S><HeroProfilePage /></S> },
           { path: 'held/inventaris', element: <S><InventoryPage /></S> },
@@ -198,6 +204,7 @@ export const router = createBrowserRouter([
           { path: 'spieren', element: <S><AtlasPage /></S> },
           { path: 'instellingen', element: <S><SettingsPage /></S> },
           { path: 'account', element: <S><AccountPage patient /></S> },
+          { path: 'versies', element: <S><VersionsPage audience="patient" /></S> },
         ],
       },
       { path: '/admin', element: <RequireAuth kind="admin"><S><AdminPage /></S></RequireAuth> },

@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { MfaCard } from '@/components/app/Mfa';
 import { LoginMethodsCard } from '@/pages/auth/SocialLogin';
 import { useTextSize, type TextSize } from '@/lib/textSize';
+import { useTheme, type ThemeChoice } from '@/lib/theme';
 
 export function AccountPage({ patient }: { patient?: boolean }) {
   const { t, locale, setLocale } = useI18n();
@@ -62,6 +63,7 @@ export function AccountPage({ patient }: { patient?: boolean }) {
           <div className="flex justify-end"><Button type="submit" variant="secondary" size={patient ? 'lg' : 'md'}>{t('Wachtwoord wijzigen', 'Change password')}</Button></div>
         </form>
       </Card>
+      {!patient && <ThemeCard />}
       <LoginMethodsCard />
       {!patient && <MfaCard />}
     </div>
@@ -85,6 +87,31 @@ export function TextSizeCard() {
             { value: 'normal', label: t('Normaal', 'Normal') },
             { value: 'large', label: t('Groot', 'Large') },
             { value: 'xlarge', label: t('Extra groot', 'Extra large') },
+          ]}
+        />
+      </div>
+    </Card>
+  );
+}
+
+/** Light, dark or follow the phone/computer. A display preference on this device only. */
+export function ThemeCard() {
+  const { t } = useI18n();
+  const { choice, setChoice } = useTheme();
+  return (
+    <Card className="p-5">
+      <h2 className="font-bold text-ink-900">{t('Weergave', 'Appearance')}</h2>
+      <p className="mb-3 mt-0.5 text-[14px] text-ink-600">{t('Licht, donker of zoals je telefoon of computer staat. Alleen op dit apparaat.', 'Light, dark or like your phone or computer. On this device only.')}</p>
+      <div className="flex [&>div]:w-full [&>div]:flex">
+        <Segmented<ThemeChoice>
+          size="lg"
+          label={t('Weergave', 'Appearance')}
+          value={choice}
+          onChange={setChoice}
+          options={[
+            { value: 'light', label: t('Licht', 'Light') },
+            { value: 'dark', label: t('Donker', 'Dark') },
+            { value: 'system', label: t('Automatisch', 'Automatic') },
           ]}
         />
       </div>

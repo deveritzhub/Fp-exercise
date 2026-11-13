@@ -1,7 +1,7 @@
 """Build eight naturally proportioned FP Flow characters from MakeHuman/MPFB.
 Each frame/build gets fitted clothing, CC0 hair and every equipment node.
 See README.md for Python 3.13 / Blender 5.2.3 setup and reproducible build commands.
-The existing static-pose GLB architecture is retained.
+Existing idle, walk, run and cheer animations are retained.
 """
 import argparse
 import math
@@ -11,7 +11,8 @@ import sys
 import bpy  # noqa: I001  (must come first: it makes addon_utils importable)
 import addon_utils
 import bmesh
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Quaternion, Vector
+from mathutils.kdtree import KDTree
 
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
 ap = argparse.ArgumentParser()
@@ -26,6 +27,8 @@ ap.add_argument('--angle', type=float, default=-25)
 ap.add_argument('--samples', type=int, default=48)
 ap.add_argument('--size', default='900x1200')
 ap.add_argument('--face', action='store_true', help='close-up of the head')
+ap.add_argument('--pose', default='', help='render a frame of a motion, e.g. walk:8 (motion:frame)')
+ap.add_argument('--side', action='store_true', help='render from the side (to judge a gait)')
 args = ap.parse_args(argv)
 M = args.frame == 'm'
 EXPORT = bool(args.glb)
@@ -166,7 +169,7 @@ for node_name, relative in ASSETS.items():
     if images:
         import numpy as np
         image = images[0].copy()
-        image.scale(192, 192)
+        image.scale(160, 160)
         pixels = np.array(image.pixels[:], dtype=np.float32).reshape(-1, 4)
         shade = 0.55 + 0.45 * pixels[:, :3].mean(axis=1)
         pixels[:, :3] = shade[:, None]
@@ -223,7 +226,7 @@ def joint(n):
 
 J = {n: joint(n) for n in ('head', 'neck', 'mouth', 'l-eye', 'r-eye', 'pelvis', 'l-knee', 'r-knee', 'l-ankle', 'r-ankle')}
 
-# Remove helper geometry (tights, skirt, hair helper, joint cubes) and the rig.
+# Remove helper geometry; retain the rig for the existing motions.
 bm = bmesh.new()
 bm.from_mesh(human.data)
 dl = bm.verts.layers.deform.active
@@ -235,7 +238,16 @@ human.data.transform(mw)
 human.matrix_world = Matrix()
 for m in list(human.modifiers):
     human.modifiers.remove(m)
-bpy.data.objects.remove(rig)
+# The rig stays, for the motions: the hero stance becomes its rest pose, in metres at the origin.
+bpy.ops.object.select_all(action='DESELECT')
+bpy.context.view_layer.objects.active = rig
+rig.select_set(True)
+bpy.ops.object.mode_set(mode='POSE')
+bpy.ops.pose.armature_apply(selected=False)
+bpy.ops.object.mode_set(mode='OBJECT')
+bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+rig.name = 'rig'
+rig.select_set(False)
 eyes.data.transform(eyes.matrix_world)
 eyes.matrix_world = Matrix()
 
@@ -510,13 +522,14 @@ def shell(name, m, pick, off, thick=0.002, sub=0, src=None, cuts=()):
     b2.normal_update()
     for v in b2.verts:
         v.co += v.normal * off
-    for lay in list(b2.verts.layers.deform.values()):
-        b2.verts.layers.deform.remove(lay)
     me = bpy.data.meshes.new(name)
     b2.to_mesh(me)
     b2.free()
     o = bpy.data.objects.new(name, me)
     scene.collection.objects.link(o)
+    # Same vertex groups as the source, in the same order: the shell moves exactly like the body under it.
+    for g in src.vertex_groups:
+        o.vertex_groups.new(name=g.name)
     if thick and not EXPORT:  # in the app a single-sided shell is enough and half the size
         so = o.modifiers.new('thick', 'SOLIDIFY')
         so.thickness = thick
@@ -921,16 +934,264 @@ with part('outfit_sport_padel'):
     ring((BC.x, BC.y, BAND_Z), 1, 0.007, WHITE, scale=(BR.x + 0.006, BR.y + 0.006, 1), name='band')
     cyl((HC.x, FRONT_Y - HR.x * 0.4, BAND_Z), HR.x * 0.6, 0.005, KIT, rot=(0.2, 0, 0), scale=(1.1, 0.9, 1), name='brim')
 
-# Body vertex groups are no longer needed (smaller file, no skin export).
-human.vertex_groups.clear()
-eyes.vertex_groups.clear()
+# ---------------------------------------------------------------- skin: every part follows the skeleton
+DEF = {b.name for b in rig.data.bones}
+HEAD_PARTS = ('hair_', 'beard_', 'glasses_', 'gear_cap', 'gear_visor', 'gear_headband', 'gear_crown', 'gear_champion_helm', 'gear_headphones')
+CHEST_PARTS = ('gear_deswell_mantle', 'gear_wind_cape', 'gear_yoga_mat', 'gear_medal', 'gear_pin', 'gear_frog_badge', 'gear_golden_hinge', 'gear_scarf', 'gear_towel')
+HAND_PARTS = ('gear_sport_item', 'gear_crutch_staff', 'gear_smith_hammer', 'aid_crutches')
+BODY_W = [{GNAME[x.group]: x.weight for x in v.groups if GNAME.get(x.group) in DEF and x.weight > 0.01} for v in human.data.vertices]
+kd = KDTree(len(human.data.vertices))
+for i, v in enumerate(human.data.vertices):
+    kd.insert(v.co, i)
+kd.balance()
+
+
+def top_name(o):
+    while o.parent:
+        o = o.parent
+    return o.name
+
+
+def skin(o):
+    """Shells already carry the body's weights. Other parts get them from the nearest skin; small and
+    hard things (helmet, glasses, buckles, crutches) follow one bone, so they never bend."""
+    for g in [g for g in o.vertex_groups if g.name not in DEF]:
+        o.vertex_groups.remove(g)
+    used = {x.group for v in o.data.vertices for x in v.groups if x.weight > 0}
+    if not used:
+        for g in list(o.vertex_groups):
+            o.vertex_groups.remove(g)
+        mwo = o.matrix_world
+        cos = [mwo @ v.co for v in o.data.vertices]
+        lo = Vector((min(c.x for c in cos), min(c.y for c in cos), min(c.z for c in cos)))
+        hi = Vector((max(c.x for c in cos), max(c.y for c in cos), max(c.z for c in cos)))
+        name = top_name(o)
+        one = None
+        if name.startswith(HEAD_PARTS) or lo.z > J['neck'].z:
+            one = 'head'
+        elif name.startswith(CHEST_PARTS):
+            one = 'spine_03'
+        elif name.startswith(HAND_PARTS):
+            one = 'hand_l' if (lo.x + hi.x) > 0 else 'hand_r'
+        if one is None:
+            near = [BODY_W[kd.find(c)[1]] for c in cos]
+            if (hi - lo).length < 0.12:
+                total = {}
+                for w in near:
+                    for b, x in w.items():
+                        total[b] = total.get(b, 0.0) + x
+                one = max(total, key=total.get) if total else 'spine_03'
+            else:
+                groups = {}
+                for i, w in enumerate(near):
+                    for b, x in (w or {'spine_03': 1.0}).items():
+                        (groups.get(b) or groups.setdefault(b, o.vertex_groups.new(name=b))).add([i], x, 'REPLACE')
+        if one is not None:
+            o.vertex_groups.new(name=one).add(list(range(len(cos))), 1.0, 'REPLACE')
+    o.modifiers.new('rig', 'ARMATURE').object = rig
+
+
+for o in [o for o in scene.objects if o.type == 'MESH']:
+    skin(o)
+
+# ---------------------------------------------------------------- motions
+# Joint angles follow normal gait analysis (sagittal curves after Perry and Winter for walking, after
+# Novacheck for running), in degrees over one cycle of the right leg; the left leg is half a cycle
+# later. Flexion and dorsiflexion are positive. The pelvis turns, lists and shifts over the stance leg,
+# the trunk turns against it and the arms swing opposite to the legs. The body's height is not drawn
+# by hand: each frame it is set so that the lowest part of a sole rests on the ground.
+scene.render.fps = 30
+REST = {b.name: b.matrix_local.copy() for b in rig.data.bones}
+AX, AY, AZ = Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1))
+ANIMATED = ['pelvis', 'spine_01', 'spine_02', 'spine_03', 'neck_01', 'head'] + [f'{b}_{s}' for s in 'lr' for b in ('thigh', 'calf', 'foot', 'ball', 'upperarm', 'lowerarm', 'hand')]
+ANIMATED = [b for b in ANIMATED if b in DEF]
+GROUND_Z = min(v.co.z for v in human.data.vertices)
+SOLE = []
+for s in 'lr':
+    a, b0, b1 = REST[f'foot_{s}'].translation, REST[f'ball_{s}'].translation, rig.data.bones[f'ball_{s}'].tail_local
+    SOLE += [(f'foot_{s}', Vector((a.x, a.y + 0.055, GROUND_Z))), (f'foot_{s}', Vector((b0.x, b0.y, GROUND_Z))), (f'ball_{s}', Vector((b1.x, b1.y, GROUND_Z)))]
+
+
+def curve(keys):
+    """Smooth periodic curve through (percent of the cycle, value) points."""
+    xs = [k[0] / 100 for k in keys if k[0] < 100]
+    ys = [k[1] for k in keys if k[0] < 100]
+    n = len(xs)
+
+    def slope(i):
+        x0, x1, x2 = xs[(i - 1) % n] - (1 if i == 0 else 0), xs[i], xs[(i + 1) % n] + (1 if i == n - 1 else 0)
+        return ((ys[(i + 1) % n] - ys[i]) / (x2 - x1) + (ys[i] - ys[(i - 1) % n]) / (x1 - x0)) / 2
+
+    def f(t):
+        t %= 1.0
+        i = max(k for k in range(n) if xs[k] <= t) if t >= xs[0] else n - 1
+        x1 = xs[i] - (1 if t < xs[0] else 0)
+        x2 = xs[(i + 1) % n] + (1 if i == n - 1 and t >= xs[0] else 0)
+        h = x2 - x1
+        u = (t - x1) / h
+        y1, y2 = ys[i], ys[(i + 1) % n]
+        return ((2 * u ** 3 - 3 * u ** 2 + 1) * y1 + (u ** 3 - 2 * u ** 2 + u) * h * slope(i)
+                + (-2 * u ** 3 + 3 * u ** 2) * y2 + (u ** 3 - u ** 2) * h * slope((i + 1) % n))
+    return f
+
+
+def wave(t, shift=0.0):
+    return math.cos(2 * math.pi * (t - shift))
+
+
+def set_pose(pose):
+    for n in ANIMATED:
+        pb = rig.pose.bones[n]
+        pb.rotation_mode = 'QUATERNION'
+        inv = REST[n].to_3x3().inverted()
+        q = Quaternion()
+        for axis, deg in pose.get(n, ()):
+            q = q @ Quaternion(inv @ axis, math.radians(deg))
+        pb.rotation_quaternion = q
+        pb.location = (0, 0, 0)
+    bpy.context.view_layer.update()
+
+
+def sole_points():
+    return [rig.pose.bones[b].matrix @ REST[b].inverted() @ p for b, p in SOLE]
+
+
+def legs_and_arms(pose, t, hip, knee, ankle, toe, shoulder, elbow, arms_in):
+    for s, ph, sg in (('r', t, -1), ('l', t + 0.5, 1)):
+        pose[f'thigh_{s}'] = [(AX, -hip(ph))]
+        pose[f'calf_{s}'] = [(AX, knee(ph))]
+        pose[f'foot_{s}'] = [(AX, -ankle(ph))]
+        pose[f'ball_{s}'] = [(AX, -toe(ph))]
+        pose[f'upperarm_{s}'] = [(AY, arms_in * sg), (AX, -shoulder(ph))]
+        pose[f'lowerarm_{s}'] = [(AX, -(elbow(ph) - 15))]
+
+
+W_HIP = curve([(0, 30), (10, 25), (20, 12), (30, 2), (40, -6), (50, -10), (55, -8), (60, 0), (70, 15), (80, 28), (87, 33), (95, 31)])
+W_KNEE = curve([(0, 5), (5, 10), (13, 18), (20, 14), (30, 8), (40, 5), (50, 12), (60, 38), (67, 55), (73, 62), (80, 52), (90, 22), (96, 5)])
+W_ANKLE = curve([(0, 0), (7, -6), (15, 1), (30, 6), (45, 10), (50, 8), (56, -4), (62, -17), (70, -8), (80, 0), (90, 2)])
+W_TOE = curve([(0, 0), (40, 5), (50, 25), (58, 40), (65, 10), (75, 0), (90, 0)])
+
+
+def walk(t):
+    pose = {}
+    legs_and_arms(pose, t, W_HIP, W_KNEE, W_ANKLE, W_TOE,
+                  shoulder=lambda ph: -6 - 14 * wave(ph), elbow=lambda ph: 30 - 12 * wave(ph, 0.05), arms_in=7)
+    turn, drop = 4 * wave(t), 4 * wave(t, 0.13)
+    pose['pelvis'] = [(AZ, turn), (AY, drop)]
+    pose['spine_01'] = [(AY, -drop * 0.9), (AZ, -turn * 0.6), (AX, 3)]
+    pose['spine_02'] = [(AZ, -turn * 0.6)]
+    pose['spine_03'] = [(AZ, -turn * 0.55)]
+    pose['neck_01'] = [(AZ, turn * 0.75)]
+    return pose, Vector((-0.018 * math.sin(2 * math.pi * (t - 0.05)), 0, 0)), False
+
+
+R_HIP = curve([(0, 30), (10, 23), (20, 10), (30, -2), (38, -10), (45, -8), (55, 10), (65, 30), (75, 41), (85, 43), (93, 37)])
+R_KNEE = curve([(0, 18), (8, 32), (16, 42), (25, 36), (33, 22), (38, 18), (45, 35), (55, 70), (65, 95), (72, 92), (82, 60), (92, 25)])
+R_ANKLE = curve([(0, 4), (8, 14), (18, 24), (28, 12), (35, -10), (40, -22), (48, -14), (60, -2), (75, 4)])
+R_TOE = curve([(0, 0), (25, 10), (34, 35), (40, 30), (48, 5), (60, 0), (85, 0)])
+RUN_STANCE = 0.38
+
+
+def run(t):
+    pose = {}
+    legs_and_arms(pose, t, R_HIP, R_KNEE, R_ANKLE, R_TOE,
+                  shoulder=lambda ph: -10 - 30 * wave(ph), elbow=lambda ph: 95 - 15 * wave(ph, 0.05), arms_in=9)
+    turn, drop = 5 * wave(t), 5 * wave(t, 0.1)
+    pose['pelvis'] = [(AZ, turn), (AY, drop), (AX, 4)]
+    pose['spine_01'] = [(AY, -drop * 0.9), (AZ, -turn * 1.1), (AX, 5)]
+    pose['spine_02'] = [(AZ, -turn * 1.1)]
+    pose['spine_03'] = [(AZ, -turn * 1.1)]
+    pose['neck_01'] = [(AZ, turn * 1.3), (AX, -6)]
+    air = (t % 0.5) >= RUN_STANCE
+    return pose, Vector((-0.008 * math.sin(2 * math.pi * (t - 0.05)), 0, 0)), air
+
+
+def idle(t):
+    b = math.sin(2 * math.pi * t)
+    pose = {'spine_02': [(AX, -0.7 * b)], 'spine_03': [(AX, -0.9 * b)], 'neck_01': [(AX, 0.8 * b)]}
+    for s, sg in (('l', 1), ('r', -1)):
+        pose[f'upperarm_{s}'] = [(AY, -0.8 * b * sg)]
+    return pose, Vector(), False
+
+
+def cheer(t):
+    up = 0.5 - 0.5 * math.cos(2 * math.pi * t)
+    dip = max(0.0, math.sin(2 * math.pi * t)) ** 2
+    pose = {'spine_03': [(AX, -6 * up)], 'neck_01': [(AX, -8 * up)]}
+    for s, sg in (('l', 1), ('r', -1)):
+        pose[f'thigh_{s}'] = [(AX, -22 * dip)]
+        pose[f'calf_{s}'] = [(AX, 40 * dip)]
+        pose[f'foot_{s}'] = [(AX, -18 * dip)]
+        pose[f'upperarm_{s}'] = [(AY, -14 * up * sg), (AX, -150 * up)]
+        pose[f'lowerarm_{s}'] = [(AX, -18 * up)]
+    return pose, Vector(), False
+
+
+SPEEDS = {}
+
+
+def bake(name, frames, fn, grounded=True, stance=0.6):
+    """Keyframe one loop of `fn` on the rig and park it on its own NLA track (one glTF animation)."""
+    rows = []
+    for f in range(frames):
+        pose, shift, air = fn(f / frames)
+        set_pose(pose)
+        pts = sole_points()
+        rows.append([pose, shift, air, (GROUND_Z - min(p.z for p in pts)) if grounded else 0.0, pts[4].y])
+    # In the air nothing touches the ground: a small arc between the last and the next contact.
+    for f, row in enumerate(rows):
+        if row[2]:
+            a = b = f
+            while rows[a % frames][2]:
+                a -= 1
+            while rows[b % frames][2]:
+                b += 1
+            u = (f - a) / (b - a)
+            row[3] = rows[a % frames][3] * (1 - u) + rows[b % frames][3] * u + 0.16 * u * (1 - u)
+    # Walking speed that fits the cycle: how far the right forefoot travels back under the body in stance.
+    n = max(1, round(stance * frames))
+    SPEEDS[name] = (rows[n - 1][4] - rows[0][4]) / ((n - 1) / scene.render.fps) if grounded and n > 1 else 0.0
+    act = bpy.data.actions.new(name)
+    rig.animation_data_create()
+    rig.animation_data.action = act
+    pinv = REST['pelvis'].to_3x3().inverted()
+    for f in range(frames + 1):
+        pose, shift, _air, dz, _y = rows[f % frames]
+        set_pose(pose)
+        rig.pose.bones['pelvis'].location = pinv @ (shift + Vector((0, 0, dz)))
+        for n2 in ANIMATED:
+            rig.pose.bones[n2].keyframe_insert('rotation_quaternion', frame=f)
+        rig.pose.bones['pelvis'].keyframe_insert('location', frame=f)
+    slot = getattr(rig.animation_data, 'action_slot', None)
+    rig.animation_data.action = None
+    track = rig.animation_data.nla_tracks.new()
+    track.name = name
+    strip = track.strips.new(name, 0, act)
+    if slot is not None and hasattr(strip, 'action_slot'):
+        strip.action_slot = slot
+    track.mute = True
+    return act
+
+
+ACTIONS = {
+    'idle': bake('idle', 90, idle, grounded=False),
+    'walk': bake('walk', 32, walk),
+    'run': bake('run', 21, run, stance=RUN_STANCE),
+    'cheer': bake('cheer', 40, cheer),
+}
+set_pose({})
+print('MOTION speeds m/s (walk, run):', round(SPEEDS['walk'], 3), round(SPEEDS['run'], 3), '| height', round(max(v.co.z for v in human.data.vertices) - GROUND_Z, 3))
+if EXPORT:
+    for tr in rig.animation_data.nla_tracks:
+        tr.mute = False
 
 # ---------------------------------------------------------------- export / render
 if EXPORT:
     os.makedirs(os.path.dirname(os.path.abspath(args.glb)), exist_ok=True)
     bpy.ops.export_scene.gltf(filepath=args.glb, export_apply=True, export_yup=True, export_cameras=False,
-                              export_lights=False, export_extras=False, export_animations=False, export_skins=False,
-                              export_morph=False)
+                              export_lights=False, export_extras=False, export_animations=True, export_skins=True,
+                              export_morph=False, export_animation_mode='NLA_TRACKS', export_force_sampling=True,
+                              export_def_bones=True, export_optimize_animation_size=True, export_anim_slide_to_zero=True)
     from compact_glb import compact_glb
     compact_glb(args.glb)
 
@@ -971,7 +1232,11 @@ if args.render:
     cam.data.lens = 60
     scene.collection.objects.link(cam)
     scene.camera = cam
-    a = math.radians(args.angle)
+    a = math.radians(-90 if args.side else args.angle)
+    if args.pose:
+        motion, _, frame = args.pose.partition(':')
+        rig.animation_data.action = ACTIONS[motion]
+        scene.frame_set(int(frame or 0))
     tgt, dist = (HC, 0.9) if args.face else (Vector((0, 0, 0.92)), 5.0)
     cam.location = (tgt.x + dist * math.sin(a), tgt.y - dist * math.cos(a), tgt.z + (0.05 if args.face else 0.33))
     cam.rotation_euler = (tgt - cam.location).to_track_quat('-Z', 'Y').to_euler()

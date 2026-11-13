@@ -17,17 +17,18 @@ export async function notifyPatientUser(
   patientId: string,
   practiceId: string,
   kind: keyof typeof TEXT,
-  programTitle: string,
+  /** The programme the message is about: "View" opens exactly that one, not the home page. */
+  program: { id: string; title: string },
   /** A short personal message from the therapist ("Goed bezig, we gaan zwaarder!"), shown under the text. */
   message = '',
 ) {
   const { rows } = await tx.query('SELECT user_id, locale FROM patients WHERE id = $1', [patientId]);
   if (!rows[0]?.user_id) return;
-  const msg = TEXT[kind][rows[0].locale as 'nl' | 'en'](programTitle);
+  const msg = TEXT[kind][rows[0].locale as 'nl' | 'en'](program.title);
   const body = message ? `${msg.body}\n\n“${message}”` : msg.body;
   await tx.query(
     'INSERT INTO notifications(user_id, practice_id, kind, title, body, link) VALUES ($1,$2,$3,$4,$5,$6)',
-    [rows[0].user_id, practiceId, kind, msg.title, body, '/p'],
+    [rows[0].user_id, practiceId, kind, msg.title, body, `/p/programma/${program.id}`],
   );
 }
 
@@ -124,7 +125,8 @@ export async function notifyTherapists(tx: Tx, patientId: string, practiceId: st
         'feedback_received',
         highPain ? `Hoge pijnscore gemeld door ${patientName}` : `Nieuwe feedback van ${patientName}`,
         '',
-        `/app/patienten/${patientId}`,
+        // Straight to the workouts, where the feedback and the pain score are.
+        `/app/patienten/${patientId}?tab=sessies`,
       ],
     );
   }

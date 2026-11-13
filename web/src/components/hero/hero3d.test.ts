@@ -30,6 +30,10 @@ describe('3D hero', () => {
       expect(want.filter((n) => !names.has(n))).toEqual([]);
       const bytes = fs.readFileSync(path.resolve(import.meta.dirname, `../../../public/hero3d/hero_${frame}_${build}.glb`));
       expect(gzipSync(bytes).byteLength).toBeLessThan(2_500_000);
+      const doc = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString());
+      expect(doc.animations.map((a: { name: string }) => a.name).sort()).toEqual(['cheer', 'idle', 'run', 'walk']);
+      expect(doc.skins.length).toBeGreaterThan(0);
+      expect(doc.materials.find((m: {name: string}) => m.name === 'skin').pbrMetallicRoughness.roughnessFactor).toBe(.5);
     });
   }
 

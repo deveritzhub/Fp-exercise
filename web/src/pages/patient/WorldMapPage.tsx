@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { BookOpen, CloudFog, Flag, Hammer, LockKeyhole, Map as MapIcon, Pin, ShieldCheck, Swords, Trophy } from 'lucide-react';
@@ -15,6 +15,10 @@ import { prizesForZones, villageBuildings, worldCopy, zoneTheme, type WorldZone,
 import type { HeroState } from '@/lib/types';
 import { GuildRaidCard } from '@/components/patient/GuildRaid';
 import { useHero } from '@/pages/patient/HeroPages';
+import { levelTier } from '@shared/hero';
+import { villageGrowth } from '@shared/villageGrowth';
+// three.js only loads on this page.
+const Village3D = lazy(() => import('@/components/patient/Village3D'));
 
 type BossLine = {
   labelNl: string;
@@ -79,6 +83,11 @@ export function WorldMapPage() {
     });
   }, [data, heroQ.data]);
   const buildings = villageBuildings({ hero: true, atlas: true, mission: true, guild: true });
+  // The village grows with completed workouts, defeated bosses and the hero level (cosmetic only).
+  const growth = useMemo(() => {
+    if (!data || !heroQ.data?.level) return null;
+    return villageGrowth({ workouts: data.zones.reduce((n, z) => n + z.nodes, 0), bossesDefeated: heroQ.data.weekly?.bossesDefeated ?? 0, level: heroQ.data.level.level });
+  }, [data, heroQ.data]);
 
   if (world.isError) return <ErrorState error={world.error} onRetry={() => world.refetch()} />;
   if (!data) {
@@ -111,6 +120,26 @@ export function WorldMapPage() {
           <span>{line(data.rest.reason === 'pain' ? copy.pain : copy.rest)}</span>
         </p>
       )}
+
+      <Link to="/p/dorp" className="tap flex min-h-[52px] items-center justify-between gap-3 rounded-2xl border border-[#C9D3BC] bg-[#F3F7F1] px-4 py-2.5 text-[15px] font-semibold text-ink-900">
+        <span>{t('Loop zelf door je dorp', 'Walk through your village')}<span className="block text-[13px] font-normal text-ink-700">{t('Met de tv waarop je oefeningen staan.', 'With the TV that shows your exercises.')}</span></span>
+        <span aria-hidden className="text-accent">→</span>
+      </Link>
+
+      <section aria-label={t('Je dorp en je route in 3D. Tik op een gebouw of zone.', 'Your village and route in 3D. Tap a building or zone.')}>
+        <Suspense fallback={<div className="h-[340px] animate-pulse rounded-2xl bg-[#E7EFE3]" />}>
+          <Village3D
+            className="h-[340px] sm:h-[420px]"
+            zones={data.zones.map((z) => ({ no: z.no, name: z.name ?? '', status: z.status === 'done' ? 'done' : z.status === 'current' && !z.locked ? 'current' : 'locked' }))}
+            heroZoneNo={data.heroZoneNo}
+            buildings={buildings.map((b) => ({ key: b.key, to: b.to, label: t(VILLAGE_LABEL[b.key][0], VILLAGE_LABEL[b.key][1]) }))}
+            onZone={(no) => setZoneNo(no)}
+            heroColor={heroQ.data?.level ? levelTier(heroQ.data.level.level).glow : undefined}
+            growth={growth ?? undefined}
+          />
+        </Suspense>
+        {growth && <VillageGrowthLine g={growth} />}
+      </section>
 
       <section aria-labelledby="village-heading" className="overflow-hidden rounded-2xl border border-[#C9D3BC] bg-[#E7EFE3]">
         <h2 id="village-heading" className="sr-only">{t('Dorp', 'Village')}</h2>
@@ -413,4 +442,30 @@ function heroLook(d: HeroState) {
     body: d.metrics ? bodyShape(d.metrics, d.hero!.frame) : null,
     photo: d.customPhoto ?? null,
   };
+}
+
+/** One line under the 3D village: what has been built and the next step. */
+function VillageGrowthLine({ g }: { g: ReturnType<typeof villageGrowth> }) {
+  const { t } = useI18n();
+  const built = [
+    g.houses > 0 && t(`${g.houses} ${g.houses === 1 ? 'huisje' : 'huisjes'}`, `${g.houses} ${g.houses === 1 ? 'cottage' : 'cottages'}`),
+    g.pennants > 0 && t(`${g.pennants} ${g.pennants === 1 ? 'bazenvlag' : 'bazenvlaggen'}`, `${g.pennants} boss ${g.pennants === 1 ? 'pennant' : 'pennants'}`),
+    g.windmill && t('molen', 'windmill'),
+    g.fields && t('akkers', 'fields'),
+    g.statue && t('standbeeld', 'statue'),
+    g.lighthouse && t('vuurtoren', 'lighthouse'),
+  ].filter(Boolean) as string[];
+  const name = (k: NonNullable<typeof g.next>['kind']) => ({ house: t('een huisje', 'a cottage'), windmill: t('de molen', 'the windmill'), fields: t('akkers', 'fields'), statue: t('een standbeeld van je held', 'a statue of your hero'), lighthouse: t('de vuurtoren', 'the lighthouse') })[k];
+  const next = g.next
+    ? g.next.workouts !== undefined
+      ? t(`Nog ${g.next.workouts} ${g.next.workouts === 1 ? 'training' : 'trainingen'} tot ${name(g.next.kind)}.`, `${g.next.workouts} more ${g.next.workouts === 1 ? 'workout' : 'workouts'} to ${name(g.next.kind)}.`)
+      : t(`Nog ${g.next.levels} ${g.next.levels === 1 ? 'level' : 'levels'} tot ${name(g.next.kind)}.`, `${g.next.levels} more ${g.next.levels === 1 ? 'level' : 'levels'} to ${name(g.next.kind)}.`)
+    : t('Je dorp is helemaal af!', 'Your village is complete!');
+  return (
+    <p className="mt-2 rounded-xl bg-[#F3F7F1] px-3 py-2 text-[13.5px] leading-snug text-ink-800" data-testid="village-growth">
+      <strong>{t('Je dorp groeit', 'Your village grows')}</strong>
+      {built.length > 0 ? `: ${built.join(', ')}. ` : t(': nog leeg. ', ': still empty. ')}
+      {next}
+    </p>
+  );
 }
