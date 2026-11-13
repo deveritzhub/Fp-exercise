@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DoorOpen, Gamepad2, LogOut, Users } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -78,6 +78,23 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
       setBusy(false);
     }
   };
+  // A home picked outside the scene (the list beside it): go to its area and walk to its door.
+  const nearRef = useRef<string | null>(null);
+  nearRef.current = near;
+  useEffect(() => {
+    if (!picked || nearRef.current === homeKey(picked)) return;
+    const i = homes.findIndex((h) => h.id === picked);
+    if (i < 0) return;
+    const area = Math.floor(i / STREET_SIZE);
+    if (area !== hood) {
+      setHood(area);
+      setInside(null);
+      // The other area is built first; the walk starts once it stands.
+      const id = window.setTimeout(() => world.current?.goTo(homeKey(picked)), 1500);
+      return () => window.clearTimeout(id);
+    }
+    world.current?.goTo(homeKey(picked));
+  }, [picked, homes, hood]);
   const visited = inside ? homes.find((h) => h.id === inside) ?? null : null;
 
   return (

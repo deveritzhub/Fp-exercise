@@ -65,7 +65,8 @@ test('therapist walks from the practice to a patient home and looks inside', asy
   if (process.env.SHOTS) { await page.waitForTimeout(1500); await page.screenshot({ path: process.env.SHOTS + '/tw-1.png' }); }
 
   // To a home: numbered, no name; at the door the record and the way in.
-  await page.getByRole('button', { name: 'Loop naar Huisje 1', exact: true }).press('Enter');
+  // Picked in the list beside the scene: the therapist walks there.
+  await page.getByTestId('home-list').getByRole('button').first().click();
   const record = page.getByTestId('walk-record');
   await expect(record).toBeVisible({ timeout: 90_000 });
   await expect(record).toHaveAttribute('href', /\/app\/patienten\/[0-9a-f-]{36}$/);
