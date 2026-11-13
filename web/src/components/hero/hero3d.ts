@@ -7,8 +7,23 @@ import { EYE_COLOURS, HAIR_COLOURS, KIT, SKIN_TONES, type FigureLook } from './H
  */
 
 /** Bump when the .glb files change, so phones fetch the new model. */
-export const HERO3D_VERSION = 2;
-export const hero3dUrl = (frame?: string) => `/hero3d/hero_${frame === 'm' ? 'm' : 'f'}.glb?v=${HERO3D_VERSION}`;
+export const HERO3D_VERSION = 3;
+export const HERO3D_BUILDS = ['slim', 'average', 'athletic', 'full'] as const;
+export type Hero3dBuild = typeof HERO3D_BUILDS[number];
+export const hero3dUrl = (frame?: string, build: string = 'average') =>
+  `/hero3d/hero_${frame === 'm' ? 'm' : 'f'}_${HERO3D_BUILDS.includes(build as Hero3dBuild) ? build : 'average'}.glb?v=${HERO3D_VERSION}`;
+
+/** Match the existing measured-body categories; never stretch the mesh. */
+export function hero3dBuild(look: FigureLook): Hero3dBuild {
+  const body = look.body;
+  if (body) {
+    if (body.kind === 'full' || body.kind === 'soft' || body.fat >= 0.5) return 'full';
+    if (body.kind === 'muscular' || body.kind === 'athletic' || (body.muscle >= 0.45 && body.fat < 0.4)) return 'athletic';
+    if (body.kind === 'lean' || (body.fat < 0.2 && body.muscle < 0.4)) return 'slim';
+    return 'average';
+  }
+  return HERO3D_BUILDS.includes(look.build as Hero3dBuild) ? look.build as Hero3dBuild : 'average';
+}
 
 /** Node name prefixes the viewer switches on and off; everything else is always shown. */
 export const TOGGLE_PREFIXES = ['hair_', 'beard_', 'glasses_', 'gear_', 'outfit_', 'aid_', 'base_shoes'] as const;
@@ -31,15 +46,11 @@ export const SPORT_KIT: Record<string, { main: string; dark: string; soft: strin
   champion: { main: '#29483c', dark: '#1d362d', soft: '#e4bc63' },
 };
 
-const BUILD_WIDTH: Record<string, number> = { slim: 0.92, average: 1, athletic: 1.05, full: 1.13 };
-const BODY_WIDTH: Record<string, number> = { lean: 0.94, athletic: 1.04, muscular: 1.08, average: 1, soft: 1.08, full: 1.13 };
-
 export type Hero3dScene = {
   url: string;
   visible: Set<string>;
   tints: Record<'skin' | 'hair' | 'iris' | 'kit_main' | 'kit_dark' | 'kit_soft', string>;
-  /** Horizontal scale for the body build (1 = average). */
-  width: number;
+  build: Hero3dBuild;
 };
 
 export function hero3dScene(look: FigureLook): Hero3dScene {
@@ -62,9 +73,9 @@ export function hero3dScene(look: FigureLook): Hero3dScene {
   if (all.includes('crutches')) visible.add('aid_crutches');
   if (!worn.some((k) => SHOE_ITEMS.has(k))) visible.add('base_shoes');
   const kit = (outfit && SPORT_KIT[outfit]) || KIT[look.outfit] || KIT.forest;
-  const width = look.body?.kind ? BODY_WIDTH[look.body.kind] ?? 1 : BUILD_WIDTH[look.build ?? 'average'] ?? 1;
+  const build = hero3dBuild(look);
   return {
-    url: hero3dUrl(look.frame),
+    url: hero3dUrl(look.frame, build),
     visible,
     tints: {
       skin: SKIN_TONES[look.skin] ?? SKIN_TONES.s4,
@@ -74,6 +85,6 @@ export function hero3dScene(look: FigureLook): Hero3dScene {
       kit_dark: kit.dark,
       kit_soft: kit.soft,
     },
-    width,
+    build,
   };
 }

@@ -266,6 +266,17 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     gecomprimeerd. Volgende stappen: haar uit MakeHuman-pakketten (download geblokkeerd in de
     bouwomgeving), lichte animatie.
 
+89. [x] **Natuurlijke 3D-held per frame en lichaamsbouw** (8 nov): acht MakeHuman-modellen
+    (`hero_<m/f>_<slim/average/athletic/full>.glb`) met afzonderlijke muscle/weight-macro’s.
+    Vergrote hoofden, handen, voeten en schouders verwijderd; geen horizontale uitrekking meer.
+    Eigen metingen kiezen de best passende van vier representatieve vormen. CC0 MakeHuman-haar,
+    wenkbrauwen en wimpers via MHCLO, met behoud van haar- en huidkleuren. Uitrusting opnieuw
+    passend opgebouwd, schoenneuzen en randen van scheenbeschermers verbeterd. Modelversie 3;
+    ieder model onder 2,5 MB gzip. Synthetische browsercontrole van acht modellen, voor/zijaanzicht,
+    mobiel, toetsenbord en bestaande RPG-interacties; bewijs in `docs/hero3d-review/`.
+    Visueel nog een technische basis: huid, gezichtsdetails en kledingplooien verdienen verdere
+    verfijning. Geen claim van een exacte lichaamsscan of afgeronde fotorealistische kwaliteit.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.

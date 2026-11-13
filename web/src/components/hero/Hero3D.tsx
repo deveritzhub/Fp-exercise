@@ -32,7 +32,7 @@ const webglOk = () => {
 type Stage = { root: THREE.Group; base: THREE.Group; model: THREE.Object3D | null; url: string | null; controls: OrbitControls };
 
 /**
- * Turnable 3D figurine of the hero with the worn gear (model: tools/blender/hero.py). Drag to turn,
+ * Turnable 3D figurine of the hero with the worn gear (model: tools/blender/mh_hero.py). Drag to turn,
  * or use the buttons; it turns slowly by itself unless the person prefers reduced motion.
  */
 export default function Hero3D({ look, className }: { look: FigureLook; className?: string }) {
@@ -41,7 +41,7 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
   const stage = useRef<Stage | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error' | 'nogl'>(() => (webglOk() ? 'loading' : 'nogl'));
   const scene3d = hero3dScene(look);
-  const key = JSON.stringify([scene3d.url, [...scene3d.visible].sort(), scene3d.tints, scene3d.width]);
+  const key = JSON.stringify([scene3d.url, [...scene3d.visible].sort(), scene3d.tints]);
 
   // Renderer, camera, lights and the render loop: once per mount.
   useEffect(() => {
@@ -140,7 +140,14 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
           setState('loading');
           const gltf = await loadModel(scene3d.url);
           if (cancelled) return;
-          if (st.model) st.root.remove(st.model);
+          if (st.model) {
+            // Geometry/textures belong to the shared GLTF cache; only cloned materials are local.
+            st.model.traverse(o => {
+              const mesh = o as THREE.Mesh;
+              if (mesh.isMesh) (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach(material => material.dispose());
+            });
+            st.root.remove(st.model);
+          }
           const model = gltf.scene.clone(true);
           model.traverse((o) => {
             const m = o as THREE.Mesh;
@@ -167,7 +174,6 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
             if (scene3d.tints[base]) mat.color.set(scene3d.tints[base]);
           }
         });
-        model.scale.set(scene3d.width, 1, (1 + scene3d.width) / 2);
         setState('ready');
       } catch {
         if (!cancelled) setState('error');

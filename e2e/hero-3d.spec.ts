@@ -20,7 +20,7 @@ test('character screen: 3D view shows the hero with worn gear, turns, and is rem
     if (path === '/api/patient/hero') return route.fulfill({ json: state });
     return route.fulfill({ json: {} });
   });
-  const model = page.waitForResponse((r) => r.url().includes('/hero3d/hero_m.glb'));
+  const model = page.waitForResponse((r) => r.url().includes('/hero3d/hero_m_average.glb'));
   await page.goto('/p/held/inventaris');
   await page.getByRole('button', { name: '3D-weergave', exact: true }).click();
   await expect(page.getByRole('button', { name: '3D-weergave', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -49,5 +49,46 @@ test('character screen: 3D view shows the hero with worn gear, turns, and is rem
   await expect(page.getByTestId('hero-3d')).toHaveAttribute('data-state', 'ready', { timeout: 30000 });
   await page.getByRole('button', { name: '3D-weergave', exact: true }).click();
   await expect(page.getByRole('button', { name: 'RPG-weergave', exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('all eight body models render with representative hair, colours and fitted equipment', async ({ page }) => {
+  test.setTimeout(180000);
+  const { mkdirSync } = await import('node:fs');
+  mkdirSync('docs/hero3d-review', { recursive: true });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const errors: string[] = [];
+  page.on('pageerror', e => errors.push(e.message));
+  const state = {
+    hero: { ...DEFAULT_LOOK, heroName: 'Synthetische modelcontrole', sports: [], createdAt: '2026-01-01' },
+    gear: { owned: GEAR.map(g => g.key), equipped: ['watch', 'gloves', 'shin_guards', 'balance_shoes', 'belt'], coins: 9999, score: 0 },
+    showcase: [], trophies: [], skills: [], badges: [], level: { level: 1, xp: 0 }, totalLevel: 1, metrics: null,
+    logs: { protein: {}, weight: {}, survival: { water: {} }, steps: {}, trainings: [] }, checkin: {},
+  };
+  await page.route('**/api/**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === '/api/auth/me') return route.fulfill({ json: { user: { id: 'synthetic', fullName: 'Testheld', locale: 'nl', emailVerified: true, memberships: [], patient: { id: 'synthetic', kind: 'personal', practiceName: 'Test' } } } });
+    return route.fulfill({ json: path === '/api/patient/hero' ? state : {} });
+  });
+  await page.addInitScript(() => sessionStorage.setItem('fp.inventory.3d', 'true'));
+  let index = 0;
+  for (const frame of ['m', 'f']) for (const build of ['slim', 'average', 'athletic', 'full']) {
+    Object.assign(state.hero, { frame, build, hair: ['buzz', 'short', 'afro', 'curly', 'long', 'ponytail', 'bun', 'none'][index], skin: index % 2 ? 's7' : 's3', hairColor: index % 2 ? 'black' : 'brown', beard: 'none' });
+    const response = page.waitForResponse(r => r.url().includes(`/hero3d/hero_${frame}_${build}.glb`));
+    await page.goto('/p/held/inventaris');
+    expect((await response).status()).toBe(200);
+    await expect(page.getByTestId('hero-3d')).toHaveAttribute('data-state', 'ready', { timeout: 30000 });
+    // Wait for a rendered frame after the asynchronous model/tint update.
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.getByTestId('hero-3d').screenshot({ path: `docs/hero3d-review/${frame}-${build}.png` });
+    await page.getByRole('button', { name: 'Draai naar rechts' }).click();
+    await page.getByRole('button', { name: 'Draai naar rechts' }).click();
+    await page.getByTestId('hero-3d').screenshot({ path: `docs/hero3d-review/${frame}-${build}-side.png` });
+    index++;
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByTestId('hero-3d')).toHaveAttribute('data-state', 'ready');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.getByTestId('hero-3d').screenshot({ path: 'docs/hero3d-review/mobile.png' });
   expect(errors).toEqual([]);
 });
