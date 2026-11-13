@@ -91,6 +91,8 @@ type Props = {
   well?: boolean;
   /** The boxing school: a ring with a bag to walk to. */
   boxing?: boolean;
+  /** Colour of the karate belt round the hero's waist, if any. */
+  belt?: string | null;
   /** The adventure weapon in the hero's hand (weapons3d.ts), if any. */
   weapon?: string | null;
   /** How fast the hero moves, 1 = normal. Lower when thirsty or stiff. */
@@ -679,7 +681,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, boxing = false, weapon = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, boxing = false, weapon = null, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
   const { t } = useI18n();
   const coachName = coachLabel ?? t('Fysiotherapeut', 'Physiotherapist');
   const host = useRef<HTMLDivElement>(null);
@@ -700,12 +702,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
   const heroScene = look ? hero3dScene(look) : null;
   const heroKey = heroScene ? JSON.stringify([heroScene.url, [...heroScene.visible].sort(), heroScene.tints, heroScene.fabric]) : '';
-  const key = JSON.stringify([buildings.map((b) => [b.key, b.stage ?? -1]), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1, bound ?? 0, people, visitRoom, coachLook ?? null, (creatures ?? []).map((c) => [c.key, c.kind, c.x, c.z]), boxing, weapon]);
+  const key = JSON.stringify([buildings.map((b) => [b.key, b.stage ?? -1]), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1, bound ?? 0, people, visitRoom, coachLook ?? null, (creatures ?? []).map((c) => [c.key, c.kind, c.x, c.z]), boxing]);
   // Read at the moment of use, so new furniture or a new mode never rebuilds the whole village.
   const slow = Math.min(1, Math.max(0.5, paceProp));
   const gone = useMemo(() => new Set(creaturesGone ?? []), [creaturesGone]);
-  const live = useRef({ homeItems: homeItems ?? [], placing, onFloor, slow, gone });
-  live.current = { homeItems: homeItems ?? [], placing, onFloor, slow, gone };
+  const live = useRef({ homeItems: homeItems ?? [], placing, onFloor, slow, gone, weapon, belt });
+  live.current = { homeItems: homeItems ?? [], placing, onFloor, slow, gone, weapon, belt };
   const furnish = useRef<(items: Placed[]) => void>(() => {});
   const itemsKey = JSON.stringify(homeItems ?? []);
   useEffect(() => {
@@ -823,6 +825,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const mobs: { key: string; g: THREE.Group; door: Vec; hurtAt: number }[] = [];
     let swing = 0;
     let armR: THREE.Object3D | null = null;
+    let equip: () => void = () => {};
     for (const c of creatures ?? []) {
       const g = creature(c.kind);
       g.position.set(c.x, 0, c.z);
@@ -1357,19 +1360,40 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           mixer = new THREE.AnimationMixer(model);
           for (const clip of gltf.animations) motions[clip.name as HeroMotion] = mixer.clipAction(clip);
           play('idle');
-          // The adventure weapon in the right hand, and the arm that swings it.
+          // The karate belt and the adventure weapon change while playing (an exam, a new level):
+          // they are put on here and again whenever they change, without building the village anew.
           armR = model.getObjectByName('upperarm_r') ?? null;
-          const hand = model.getObjectByName('hand_r');
-          const held = weapon ? weaponMesh(weapon) : null;
-          if (hand && held) {
-            // Out of the fist, forward and a little up, whatever way the hand bone itself lies.
-            model.updateWorldMatrix(true, true);
-            const inModel = model.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(hand.getWorldQuaternion(new THREE.Quaternion()));
-            const want = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0.12, 0.55, 0.83).normalize());
-            held.quaternion.copy(inModel.invert().multiply(want));
-            held.position.set(0, 0.08, 0);
-            hand.add(held);
-          }
+          const waist = model.getObjectByName('gear_belt') ?? null;
+          const hand = model.getObjectByName('hand_r') ?? null;
+          const leather = new Map<THREE.MeshStandardMaterial, number>();
+          waist?.traverse((o) => {
+            const bm = o as THREE.Mesh;
+            if (bm.isMesh) leather.set(bm.material as THREE.MeshStandardMaterial, (bm.material as THREE.MeshStandardMaterial).color.getHex());
+          });
+          const worn = waist?.visible ?? false;
+          let held: THREE.Group | null = null;
+          let wearing: { weapon: string | null; belt: string | null } | null = null;
+          equip = () => {
+            const want = { weapon: live.current.weapon, belt: live.current.belt };
+            if (wearing && wearing.weapon === want.weapon && wearing.belt === want.belt) return;
+            wearing = want;
+            if (waist) {
+              waist.visible = worn || !!want.belt;
+              for (const [m2, own] of leather) m2.color.set(want.belt ?? own);
+            }
+            if (held) hand?.remove(held);
+            held = want.weapon ? weaponMesh(want.weapon) : null;
+            if (hand && held) {
+              // Out of the fist, forward and a little up, whatever way the hand bone itself lies.
+              model.updateWorldMatrix(true, true);
+              const inModel = model.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(hand.getWorldQuaternion(new THREE.Quaternion()));
+              const up = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0.12, 0.55, 0.83).normalize());
+              held.quaternion.copy(inModel.invert().multiply(up));
+              held.position.set(0, 0.08, 0);
+              hand.add(held);
+            }
+          };
+          equip();
           // The coach waits by the TV: the same model in the practice colours, breathing quietly.
           const breathe = gltf.animations.find((c) => c.name === 'idle');
           const staff = (x: number, z: number, wear: Set<string>, tints: Record<string, string>, face: number, fabric: string | null = null, src = gltf) => {
@@ -1836,6 +1860,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           play(since < 2.6 ? 'cheer' : 'idle');
         }
         if (!reduce || walking) mixer.update(dt);
+        equip();
         // A blow: the arm swings up and down over the motion that plays.
         if (swing > 0 && armR) {
           swing = Math.max(0, swing - dt);

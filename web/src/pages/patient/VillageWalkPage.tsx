@@ -19,6 +19,9 @@ import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
 import { BOXING, CREATURES, blow, weaponAt, type CreatureKind } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
+import { BeltMark, KarateSheet, useKarate } from '@/components/patient/Karate';
+import { BELTS } from '@shared/karate';
+import { siteAt } from '@/components/patient/walk';
 import type { FigureLook } from '@/components/hero/HumanFigure';
 import { Minimap, WorldMap, type Landmark, type MapTrack } from '@/components/patient/VillageMap';
 // three.js only loads on the 3D pages.
@@ -227,6 +230,8 @@ export function VillageWalkPage() {
       ...villageBuildings({ hero: true, atlas: true, mission: true, guild: true }).map((b) => ({ key: b.key as string, to: b.to as string, label: nl ? LABEL[b.key][0] : LABEL[b.key][1] })),
       { key: 'kracht', to: MODULE_PATH.kracht, label: nl ? 'Krachthonk' : 'Strength house', site: MODULE_SITES.kracht as Site, roof: 0x7a2f24, kind: 'kracht' as const, alert: waiting.kracht },
       { key: 'mobiliteit', to: MODULE_PATH.mobiliteit, label: nl ? 'Mobiliteitsstudio' : 'Mobility studio', site: MODULE_SITES.mobiliteit as Site, roof: 0x2f7f8a, kind: 'mobiliteit' as const, alert: waiting.mobiliteit },
+      // The Kyokushin dojo, behind the houses in the north-west: its door opens the belt list.
+      { key: 'dojo', to: '/p/held', label: 'Dojo', site: siteAt(213, 10.5) as Site, roof: 0x1d1f1e },
     ],
     [nl, waiting.kracht, waiting.mobiliteit],
   );
@@ -288,6 +293,9 @@ export function VillageWalkPage() {
   ];
   // ---- The own home ----
   const own = homeQ.data ?? null;
+  // The village is built once, when everything it is made from has arrived: built earlier it would be
+  // built again a moment later, and a walk just started would be lost.
+  const settled = !home.isLoading && !heroQ.isLoading && !coach.isLoading && !(d?.hero && (homeQ.isLoading || adventure.isLoading));
   const stage = L ? homeStage(L.level) : 0;
   const homeLabel = t('Jouw huis', 'Your home');
   const say = (e: unknown) => {
@@ -368,6 +376,9 @@ export function VillageWalkPage() {
     setFlask(flask - 1);
     await drink();
   };
+  // The dojo: karate belts with a list to tick off.
+  const karate = useKarate(!!d?.hero);
+  const [dojoOpen, setDojoOpen] = useState(false);
   // The boxing school: a round on the bag, for adventure XP.
   const [boxingOpen, setBoxingOpen] = useState(false);
   const [roundNo, setRoundNo] = useState(0);
@@ -390,7 +401,7 @@ export function VillageWalkPage() {
 
   // The adventure: little ailments round the village to beat, for XP of its own (never the hero's).
   const creatures = useMemo(
-    () => ([['slime', 120, 10.5], ['imp', 215, 10.8], ['couch', 325, 10.8], ['slime', 105, 8.4], ['giant_slime', 140, 11.3], ['couch_king', 295, 11.4]] as [CreatureKind, number, number][])
+    () => ([['slime', 120, 10.5], ['imp', 248, 10.9], ['couch', 325, 10.8], ['slime', 105, 8.4], ['giant_slime', 140, 11.3], ['couch_king', 295, 11.4]] as [CreatureKind, number, number][])
       .map(([kind, deg, r], i) => ({ key: `mob:${i}`, kind, label: nl ? CREATURES[kind].nl : CREATURES[kind].en, x: Math.cos((deg * Math.PI) / 180) * r, z: Math.sin((deg * Math.PI) / 180) * r }))
       // The big ones only show themselves to an adventurer of their level.
       .filter((c) => (adventure.data?.level ?? 1) >= CREATURES[c.kind].level),
@@ -475,6 +486,7 @@ export function VillageWalkPage() {
         className={full ? 'fixed inset-0 z-50 bg-[#1b2a22] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pt-[env(safe-area-inset-top)]' : 'relative'}>
         <div className={full ? 'relative h-full' : 'relative'}>
         <Suspense fallback={<div className="h-[calc(100dvh-13.5rem)] min-h-[440px] animate-pulse rounded-2xl bg-[#26342c]" />}>
+          {!settled ? <div className="h-[calc(100dvh-13.5rem)] min-h-[440px] animate-pulse rounded-2xl bg-[#26342c]" /> :
           <WalkVillage3D
             className={full ? 'h-full !rounded-none !border-0' : 'h-[calc(100dvh-13.5rem)] min-h-[440px]'}
             buildings={buildings}
@@ -492,6 +504,7 @@ export function VillageWalkPage() {
             creatures={d?.hero ? creatures : undefined}
             creaturesGone={beaten}
             boxing={!!d?.hero}
+            belt={karate.data && karate.data.belt > 0 ? BELTS[karate.data.belt].color : null}
             weapon={weapon.key === 'fists' ? null : weapon.key}
             pace={pace}
             api={world}
@@ -505,7 +518,7 @@ export function VillageWalkPage() {
             onNear={setNear}
             onDestination={(k) => { setDest(k); if (!k) return; hideTip(); }}
             onArrive={(k) => { if (k === TV_KEY) setTvOpen(true); }}
-          />
+          />}
         </Suspense>
 
         {/* Unit frame: who you are, your level and the way to the next one. */}
@@ -618,6 +631,10 @@ export function VillageWalkPage() {
             <Link to={boardOf.to} data-testid="open-programme" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">
               <ClipboardList className="h-5 w-5" aria-hidden />{boardOf.key === 'kracht' ? t('Bekijk je krachtprogramma', 'See your strength programme') : t('Bekijk je mobiliteitsprogramma', 'See your mobility programme')}
             </Link>
+          ) : nearBuilding?.key === 'dojo' ? (
+            <Button size="lg" data-testid="enter-dojo" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => setDojoOpen(true)}>
+              {t('Naar binnen: de dojo', 'Go in: the dojo')}{karate.data && <BeltMark belt={karate.data.belt} className="ml-1 h-3 w-7" />}
+            </Button>
           ) : nearBuilding ? (
             <Link to={nearBuilding.to} data-testid="enter-building" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">
               <DoorOpen className="h-5 w-5" aria-hidden />{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}
@@ -664,7 +681,7 @@ export function VillageWalkPage() {
               <li><button type="button" onClick={() => world.current?.goTo(WELL_KEY)} className="rounded-md border border-[#9fd8ff]/70 bg-[#141c18]/85 px-2 py-1 text-left text-[11.5px] font-semibold leading-tight text-[#cfeaff] shadow-lift">{t('Dorst: je loopt trager. Tik om naar de waterput te lopen.', 'Thirsty: you walk slower. Tap to walk to the well.')}</button></li>
             )}
             {stiff && (
-              <li><button type="button" onClick={() => world.current?.goTo('in:mobiliteit')} className="rounded-md border border-[#f0c36a]/70 bg-[#141c18]/85 px-2 py-1 text-left text-[11.5px] font-semibold leading-tight text-[#ffe9b8] shadow-lift">{t('Stijf: je loopt trager. Even bewegen helpt; tik voor de Mobiliteitsstudio.', 'Stiff: you walk slower. Moving helps; tap for the mobility studio.')}</button></li>
+              <li><button type="button" onClick={() => world.current?.goTo('in:mobiliteit')} className="rounded-md border border-[#f0c36a]/70 bg-[#141c18]/85 px-2 py-1 text-left text-[11.5px] font-semibold leading-tight text-[#ffe9b8] shadow-lift">{t(`Stijf: je loopt trager. ${d!.logs.steps.today.toLocaleString('nl-NL')} van ${d!.logs.steps.goal.toLocaleString('nl-NL')} stappen vandaag; lopen of even bewegen helpt. Tik voor de Mobiliteitsstudio.`, `Stiff: you walk slower. ${d!.logs.steps.today.toLocaleString('en-GB')} of ${d!.logs.steps.goal.toLocaleString('en-GB')} steps today; walking or moving helps. Tap for the mobility studio.`)}</button></li>
             )}
           </ul>
         )}
@@ -746,6 +763,7 @@ export function VillageWalkPage() {
         )}
       </Dialog>
 
+      <KarateSheet open={dojoOpen} onClose={() => setDojoOpen(false)} />
       <Dialog open={boxingOpen} onClose={() => setBoxingOpen(false)} size="md" sheet title={t('Boksschool', 'Boxing school')}
         description={adventure.data ? t(`Ronde ${Math.min(adventure.data.roundsToday + 1, BOXING.roundsPerDay)} van ${BOXING.roundsPerDay} die vandaag XP geeft.`, `Round ${Math.min(adventure.data.roundsToday + 1, BOXING.roundsPerDay)} of ${BOXING.roundsPerDay} that gives XP today.`) : undefined}
         footer={<Button variant="secondary" onClick={() => setRoundNo((n) => n + 1)} data-testid="next-round">{t('Nog een ronde', 'Another round')}</Button>}>
