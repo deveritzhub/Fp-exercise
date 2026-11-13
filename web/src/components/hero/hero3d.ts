@@ -7,7 +7,7 @@ import { EYE_COLOURS, HAIR_COLOURS, KIT, SKIN_TONES, type FigureLook } from './H
  */
 
 /** Bump when the .glb files change, so phones fetch the new model. */
-export const HERO3D_VERSION = 4;
+export const HERO3D_VERSION = 5;
 export const HERO3D_BUILDS = ['slim', 'average', 'athletic', 'full'] as const;
 export type Hero3dBuild = typeof HERO3D_BUILDS[number];
 export const hero3dUrl = (frame?: string, build: string = 'average') =>
