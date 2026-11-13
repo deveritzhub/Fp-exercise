@@ -76,6 +76,7 @@ const ERRORS: Record<string, [string, string]> = {
   password_too_short: ['Kies een wachtwoord van minimaal 10 tekens.', 'Choose a password of at least 10 characters.'],
   password_too_weak: ['Gebruik letters én cijfers of leestekens.', 'Use letters and numbers or symbols.'],
   invalid_token: ['Deze link is ongeldig of verlopen.', 'This link is invalid or has expired.'],
+  mail_failed: ['De e-mail kon niet worden verstuurd. Probeer het zo nog eens; blijft het misgaan, meld het dan bij de beheerder.', 'The email could not be sent. Try again in a moment; if it keeps failing, tell the administrator.'],
   validation_failed: ['Controleer de gemarkeerde velden.', 'Please check the highlighted fields.'],
   network_error: ['Geen verbinding. Controleer je internet en probeer opnieuw.', 'No connection. Check your internet and try again.'],
   forbidden: ['Je hebt geen toegang tot deze gegevens.', 'You do not have access to this data.'],
