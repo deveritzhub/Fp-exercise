@@ -1,3 +1,5 @@
+import { BELTS, itemKey } from '@shared/karate';
+import { BeltMark, KarateSheet, useKarate } from '@/components/patient/Karate';
 import { weaponAt } from '@shared/adventure';
 import { PhotoGearThumbnail } from '../../components/hero/PhotoEquipment';
 import { HeirloomMark } from '@/components/hero/HeirloomMark';
@@ -99,6 +101,34 @@ function AdventureSkill() {
       </span>
       <ChevronRight className="h-5 w-5 shrink-0 text-ink-600" aria-hidden />
     </Link>
+  );
+}
+
+/** Karate as a skill of its own: the belt worn, and the way to the list for the next one. */
+function KarateSkill() {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const q = useKarate();
+  const [open, setOpen] = useState(false);
+  if (!q.data) return null;
+  const k = q.data;
+  const next = BELTS[k.belt + 1];
+  const left = next ? next.items.filter((_, i) => !k.done.includes(itemKey(k.belt + 1, i))).length : 0;
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} data-testid="karate-skill" className="tap mt-2 flex w-full items-center gap-3 rounded-xl border border-line bg-canvas p-3 text-left hover:border-ink-300">
+        <BeltMark belt={k.belt} className="h-4 w-10" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-[14.5px] font-semibold text-ink-950">{t('Karate', 'Karate')} · {nl ? BELTS[k.belt].nl.toLowerCase() : BELTS[k.belt].en.toLowerCase()}</span>
+          <span className="mt-0.5 block text-[12.5px] text-ink-700">
+            {next ? (left ? t(`Nog ${left} eisen af te vinken voor de ${next.nl.toLowerCase()}.`, `${left} requirements left to tick for the ${next.en.toLowerCase()}.`) : t(`Klaar voor het examen: ${next.nl.toLowerCase()}.`, `Ready for the exam: ${next.en.toLowerCase()}.`)) : t('Shodan: de zwarte band.', 'Shodan: the black belt.')}
+            {' '}{t('Telt niet mee voor je totaal level.', 'Does not count towards your total level.')}
+          </span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-ink-600" aria-hidden />
+      </button>
+      <KarateSheet open={open} onClose={() => setOpen(false)} />
+    </>
   );
 }
 
@@ -570,6 +600,7 @@ function Skills({ d }: { d: HeroState }) {
         })}
       </ul>
       <AdventureSkill />
+      <KarateSkill />
       <Dialog open={!!sel} onClose={() => setOpen(null)} size="sm" title={sel && info ? (sel.locked ? `${nl ? info.nl : info.en} · ${skillLockLabel(sel.reason, sel.phase, nl)}` : `${nl ? info.nl : info.en} · level ${sel.level}`) : ''}
         footer={<Button onClick={() => setOpen(null)}>{t('Sluiten', 'Close')}</Button>}>
         {sel && info && (

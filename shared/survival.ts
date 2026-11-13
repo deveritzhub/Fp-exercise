@@ -44,6 +44,15 @@ export function stiffnessLevel(hoursSinceMove: number): number {
   return Math.round(Math.min(100, Math.max(0, (hoursSinceMove - 1) * 14)));
 }
 
+/**
+ * Steps loosen what sitting stiffens: at the day's step goal seven tenths of the stiffness is gone.
+ * The rest only goes with real movement of the joints (an exercise, a workout).
+ */
+export function stiffnessWithSteps(base: number, steps: number, goal: number): number {
+  const part = goal > 0 ? Math.min(1, Math.max(0, steps / goal)) : 0;
+  return Math.round(base * (1 - 0.7 * part));
+}
+
 export type SurvivalStatus = { key: string; kind: 'buff' | 'tip'; nl: string; en: string };
 
 export function survivalStatus(m: { waterRatio: number; sleepScore: number | null; sleepHours: number | null; energy: number; stiffness: number; movedToday: boolean; hour: number }): SurvivalStatus[] {

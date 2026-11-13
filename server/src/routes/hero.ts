@@ -1,3 +1,4 @@
+import { BELTS, examReady, nextItems, validItem } from '../../../shared/karate';
 import { ADVENTURE_DAILY_WINS, BOXING, CREATURES, CREATURE_KINDS, adventureLevel, boxingXp, type CreatureKind } from '../../../shared/adventure';
 import { readStaffLook } from '../lib/staffLook';
 import { HEIRLOOM_KINDS } from '../../../shared/measurementBoss';
@@ -781,6 +782,52 @@ heroPatient.post('/hero/adventure/round', async (c) => {
         [patient.id, gained],
       );
       return { gained, ...adventureView(await adventureRow(tx, patient.id)) };
+    }),
+  );
+});
+
+const karateState = async (tx: Tx, patientId: string) => {
+  const r = (await tx.query('SELECT belt, done FROM hero_karate WHERE patient_id = $1', [patientId])).rows[0];
+  const done = (Array.isArray(r?.done) ? (r.done as unknown[]) : []).filter((k): k is string => typeof k === 'string' && validItem(k));
+  const belt = Math.max(0, Math.min(BELTS.length - 1, Number(r?.belt ?? 0)));
+  return { belt, done, examReady: examReady(belt, new Set(done)) };
+};
+const saveKarate = (tx: Tx, patientId: string, belt: number, done: string[]) =>
+  tx.query('INSERT INTO hero_karate(patient_id, belt, done) VALUES ($1, $2, $3) ON CONFLICT (patient_id) DO UPDATE SET belt = EXCLUDED.belt, done = EXCLUDED.done, updated_at = now()', [patientId, belt, JSON.stringify(done)]);
+
+heroPatient.get('/hero/karate', async (c) => {
+  const { user, patient } = requirePatient(c);
+  return c.json(await withUser(user.id, (tx) => karateState(tx, patient.id)));
+});
+
+/** Tick or untick one item of the list for the next belt. */
+heroPatient.put('/hero/karate/item', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ key: z.string().max(8), done: z.boolean() }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success || !validItem(body.data.key)) throw badRequest('invalid_input');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const now = await karateState(tx, patient.id);
+      // Only the list of the belt being worked for can change; earned belts stay as they are.
+      if (!nextItems(now.belt).includes(body.data.key)) throw badRequest('invalid_input');
+      const set = new Set(now.done);
+      if (body.data.done) set.add(body.data.key);
+      else set.delete(body.data.key);
+      await saveKarate(tx, patient.id, now.belt, [...set]);
+      return karateState(tx, patient.id);
+    }),
+  );
+});
+
+/** The exam: with the whole list ticked, the next belt is earned. */
+heroPatient.post('/hero/karate/exam', async (c) => {
+  const { user, patient } = requirePatient(c);
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const now = await karateState(tx, patient.id);
+      if (!now.examReady) throw badRequest('karate_list_open');
+      await saveKarate(tx, patient.id, now.belt + 1, now.done);
+      return karateState(tx, patient.id);
     }),
   );
 });
