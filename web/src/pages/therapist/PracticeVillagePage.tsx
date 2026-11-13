@@ -1,6 +1,6 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Eye, EyeOff, Flag, Footprints, Home, Map as MapIcon, Users } from 'lucide-react';
+import { Eye, EyeOff, Flag, Footprints, UserRound, Home, Map as MapIcon, Users } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
@@ -11,6 +11,7 @@ import { HOME_STAGES, homeStage, levelsToNextHome, type VillageHome } from '@sha
 // three.js only loads on the 3D pages.
 const PracticeVillage3D = lazy(() => import('@/components/app/PracticeVillage3D'));
 const PracticeWalk = lazy(() => import('@/components/app/PracticeWalk'));
+const StaffAvatar = lazy(() => import('@/components/app/StaffAvatar'));
 
 const SAMPLE: VillageHome[] = [1, 1, 2, 3, 4, 6, 7, 9, 11, 14, 16, 22].map((level, i) => ({ id: `sample-${i}`, no: i + 1, level, progress: ((i * 37) % 100) / 100, week: i % 3 === 0 ? 0 : (i % 4) + 1 }));
 
@@ -32,6 +33,7 @@ export function PracticeVillagePage() {
   const [sample, setSample] = useState(false);
   // From above (the overview) or on foot through the street of homes.
   const [walk, setWalk] = useState(false);
+  const [avatar, setAvatar] = useState(false);
   const homes = useMemo(
     () => (sample ? SAMPLE : q.data?.homes ?? []),
     [q.data, sample],
@@ -44,10 +46,12 @@ export function PracticeVillagePage() {
 
   return (
     <>
+      {avatar && <Suspense fallback={null}><StaffAvatar open onClose={() => setAvatar(false)} /></Suspense>}
       <PageHeader
         title={t('Dorp', 'Village')}
         actions={<>
           <Button aria-pressed={walk} data-testid="toggle-walk" icon={walk ? <MapIcon className="h-4 w-4" /> : <Footprints className="h-4 w-4" />} onClick={() => setWalk((v) => !v)}>{walk ? t('Overzicht van boven', 'Overview from above') : t('Loop door het dorp', 'Walk through the village')}</Button>
+          <Button variant="secondary" data-testid="open-avatar" icon={<UserRound className="h-4 w-4" />} onClick={() => setAvatar(true)}>{t('Mijn poppetje', 'My figure')}</Button>
           {!sample && <Button variant="secondary" aria-pressed={names} data-testid="toggle-names" icon={names ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />} onClick={() => setNames((v) => !v)}>{names ? t('Namen verbergen', 'Hide names') : t('Namen tonen', 'Show names')}</Button>}
           <Button variant="secondary" aria-pressed={sample} onClick={() => { setSample((v) => !v); setPicked(null); }}>{sample ? t('Terug naar mijn patiënten', 'Back to my patients') : t('Voorbeeld: alle soorten huisjes', 'Example: every kind of home')}</Button>
         </>}

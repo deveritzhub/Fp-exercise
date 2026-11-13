@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { DoorOpen, Gamepad2, LogOut, Users } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -61,7 +62,9 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
   ];
   const active = homes.filter((h) => h.week > 0).length;
   const atHome = near?.startsWith('p:') ? shown.find((h) => homeKey(h.id) === near) ?? null : null;
-  const look = useMemo(() => ({ ...DEFAULT_LOOK, hair: 'short', gear: ['tracksuit'] }), []);
+  // The therapist's own figure when they made one; else a plain one in the practice colours.
+  const mine = useQuery({ queryKey: ['staff-avatar'], queryFn: () => api.get<{ look: Record<string, string> | null }>('/dashboard/avatar'), staleTime: 10 * 60_000 });
+  const look = useMemo(() => (mine.data?.look ? { ...DEFAULT_LOOK, ...mine.data.look, gear: [] } : { ...DEFAULT_LOOK, hair: 'short', gear: ['tracksuit'] }), [mine.data]);
 
   const goIn = async (h: VillageHome) => {
     setBusy(true);

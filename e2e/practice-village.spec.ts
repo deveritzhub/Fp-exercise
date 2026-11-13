@@ -82,3 +82,47 @@ test('therapist walks from the practice to a patient home and looks inside', asy
   await expect(village).toHaveAttribute('data-zone', 'village', { timeout: 60_000 });
   await expect(page.getByTestId('visit-note')).toHaveCount(0);
 });
+
+/** The therapist makes an own figure; the patient finds that figure in the practice, and the day's meters in the world. */
+test('therapist makes a figure and the patient meets it in the practice', async ({ browser }) => {
+  test.setTimeout(300_000);
+  const staffContext = await browser.newContext({ locale: 'nl-NL' });
+  const staff = await staffContext.newPage();
+  await login(staff, 'therapeut@praktijk-a.test');
+  await staff.goto('/app/dorp');
+  await staff.getByTestId('open-avatar').click();
+  const editor = staff.getByRole('dialog', { name: 'Mijn poppetje' });
+  await expect(editor.getByTestId('hero-3d')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
+  await editor.getByLabel('Figuur').selectOption('m');
+  await editor.getByLabel('Kleding').selectOption('ridder');
+  await editor.getByLabel('Baard').selectOption('beard');
+  await editor.getByRole('button', { name: 'Huidskleur 7' }).click();
+  await expectAccessible(staff, 'staff avatar editor');
+  if (process.env.SHOTS) await staff.screenshot({ path: process.env.SHOTS + '/av-0.png' });
+  await staff.getByTestId('save-avatar').click();
+  await expect(editor).toHaveCount(0);
+  await staffContext.close();
+
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'nl-NL' });
+  const page = await context.newPage();
+  await page.addInitScript(() => localStorage.setItem('fp.village.tip', '1'));
+  await login(page, 'patient@praktijk-a.test');
+  const coach = page.waitForResponse((r) => r.url().endsWith('/api/patient/hero/coach'));
+  await page.goto('/p/dorp');
+  expect((await (await coach).json()).look).toMatchObject({ frame: 'm', outfit: 'ridder', beard: 'beard', skin: 's7' });
+  const village = page.getByTestId('walk-village');
+  await expect(village).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
+  // The day's meters are in the world; a tap opens the quick log on that tab.
+  const meters = page.getByTestId('world-meters');
+  await expect(meters.locator('[data-meter]')).toHaveCount(3);
+  await meters.locator('[data-meter="steps"]').click();
+  await expect(page.getByRole('dialog', { name: 'Snel loggen' }).getByRole('tab', { name: 'Stappen' })).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('Escape');
+  if (process.env.SHOTS) {
+    await page.getByRole('button', { name: /^Loop naar Oefenzaal/ }).press('Enter');
+    await expect(village).toHaveAttribute('data-zone', 'practice', { timeout: 90_000 });
+    await page.waitForTimeout(9000);
+    await page.screenshot({ path: process.env.SHOTS + '/av-1.png' });
+  }
+  await context.close();
+});

@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Armchair, Backpack, ChevronRight, ClipboardList, Coins, DoorOpen, Footprints, Gamepad2, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
+import { Armchair, Backpack, Beef, Droplets, ChevronRight, ClipboardList, Coins, DoorOpen, Footprints, Gamepad2, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
 import { ApiError, api, mediaUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -15,6 +15,8 @@ import { EXIT_KEY, HOME_AT, HOME_KEY, PRACTICE_KEY, TV_KEY, boardKey, type World
 import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@shared/homeDecor';
 import { HOME_STAGES, homeStage, levelsToNextHome } from '@shared/practiceVillage';
 import { MODULE_SITES, VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
+import { openQuickLog } from '@/components/patient/Survival';
+import type { FigureLook } from '@/components/hero/HumanFigure';
 import { Minimap, WorldMap, type Landmark, type MapTrack } from '@/components/patient/VillageMap';
 // three.js only loads on the 3D pages.
 const WalkVillage3D = lazy(() => import('@/components/patient/WalkVillage3D'));
@@ -179,6 +181,8 @@ export function VillageWalkPage() {
   };
   const [tvOpen, setTvOpen] = useState(false);
   const [playing, setPlaying] = useState<string | null>(null);
+  // The patient's own therapist as a figure, when they made one.
+  const coach = useQuery({ queryKey: ['patient-coach'], queryFn: () => api.get<{ look: FigureLook | null }>('/patient/hero/coach'), staleTime: 10 * 60_000 });
   const track = useRef<Track>({ x: 0, z: 0, facing: 0 });
   const world = useRef<WorldApi | null>(null);
   const stick = useRef({ x: 0, y: 0 });
@@ -382,6 +386,7 @@ export function VillageWalkPage() {
             startAtTv={!!back}
             heroName={d?.hero?.heroName}
             questOpen={todo.length > 0}
+            coachLook={coach.data?.look ?? null}
             api={world}
             practiceLabel={home.data?.patient.practiceName ?? t('De praktijk', 'The practice')}
             home={own ? { stage, label: homeLabel } : undefined}
@@ -501,6 +506,27 @@ export function VillageWalkPage() {
             </Link>
           ) : null}
         </div>
+
+        {/* Meters of the day, as in a game: protein, steps and water. A tap opens the quick log on that tab. */}
+        {d?.hero && d.logs && (
+          <div className="absolute left-[58px] top-[62px] flex flex-col gap-[3px]" data-testid="world-meters">
+            {([
+              ['protein', Beef, t('Eiwit', 'Protein'), d.logs.protein.goal ? d.logs.protein.grams / d.logs.protein.goal : null, d.logs.protein.goal ? `${Math.round(d.logs.protein.grams)}/${d.logs.protein.goal} g` : t('kies doel', 'set goal'), '#e2674a'],
+              ['steps', Footprints, t('Beweging', 'Movement'), d.logs.steps.goal ? d.logs.steps.today / d.logs.steps.goal : null, `${d.logs.steps.today.toLocaleString(nl ? 'nl-NL' : 'en-GB')}/${d.logs.steps.goal.toLocaleString(nl ? 'nl-NL' : 'en-GB')}`, '#5fc46a'],
+              ['water', Droplets, t('Water', 'Water'), d.logs.survival.water.ratio, `${Math.round(d.logs.survival.water.ratio * 100)}%`, '#58a8e8'],
+            ] as const).map(([tab, Icon, label, ratio, text, color]) => (
+              <button key={tab} type="button" data-meter={tab} onClick={() => openQuickLog(tab)}
+                aria-label={t(`${label}: ${text}. Tik om te loggen.`, `${label}: ${text}. Tap to log.`)}
+                className="flex h-[22px] w-[128px] items-center gap-1 rounded-md border border-black/60 bg-[#141c18]/85 pl-1 pr-1.5 text-white shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]">
+                <Icon className="h-3.5 w-3.5 shrink-0" style={{ color }} aria-hidden />
+                <span className="relative h-[9px] min-w-0 flex-1 overflow-hidden rounded-sm bg-black/60">
+                  <span className="absolute inset-y-0 left-0" style={{ width: `${Math.round(Math.min(1, Math.max(0, ratio ?? 0)) * 100)}%`, background: color }} />
+                </span>
+                <span className="shrink-0 text-[9.5px] font-semibold leading-none tabular-nums">{text}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Action bar. */}
         <button type="button" data-testid="toggle-full" aria-pressed={full} onClick={() => setFull((v) => !v)} aria-label={full ? t('Volledig scherm sluiten', 'Leave full screen') : t('Volledig scherm', 'Full screen')}

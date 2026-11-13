@@ -1,3 +1,4 @@
+import { readStaffLook } from '../lib/staffLook';
 import { HEIRLOOM_KINDS } from '../../../shared/measurementBoss';
 import { wearableAclReward, ACL_SPORTS } from '../../../shared/aclRewards';
 import { heirloomView } from '../lib/boss';
@@ -710,6 +711,21 @@ async function homeState(tx: Tx, patientId: string) {
   }
   return { level: state.level.level, coins: state.gear.coins, owned, layout: kept };
 }
+
+/**
+ * The figure of the professional who treats this patient, for the village: the main therapist's when
+ * there is one, else the first with a figure. Appearance only.
+ */
+heroPatient.get('/hero/coach', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const row = await withUser(user.id, async (tx) =>
+    (await tx.query(
+      `SELECT s.look FROM patient_therapists a JOIN staff_avatars s ON s.user_id = a.therapist_id
+        WHERE a.patient_id = $1 ORDER BY a.is_primary DESC, a.created_at LIMIT 1`,
+      [patient.id],
+    )).rows[0]);
+  return c.json({ look: readStaffLook(row?.look) });
+});
 
 heroPatient.get('/hero/home', async (c) => {
   const { user, patient } = requirePatient(c);

@@ -75,6 +75,8 @@ type Props = {
   /** A workout waits today: the coach at the gym shows a quest marker. */
   questOpen?: boolean;
   coachLabel?: string;
+  /** How the figure by the TV looks: the patient's own therapist. Without it: the practice colours. */
+  coachLook?: FigureLook | null;
   /** Filled by the scene: send the hero to a spot from outside (HUD buttons). */
   api?: MutableRefObject<WorldApi | null>;
   /** Joystick: x to the right and y forward as seen on screen, each -1..1. Zero = not in use. */
@@ -657,7 +659,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onDestination, heroName, questOpen = false, coachLabel, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onDestination, heroName, questOpen = false, coachLabel, coachLook, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
   const { t } = useI18n();
   const coachName = coachLabel ?? t('Fysiotherapeut', 'Physiotherapist');
   const host = useRef<HTMLDivElement>(null);
@@ -678,7 +680,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
   const heroScene = look ? hero3dScene(look) : null;
   const heroKey = heroScene ? JSON.stringify([heroScene.url, [...heroScene.visible].sort(), heroScene.tints, heroScene.fabric]) : '';
-  const key = JSON.stringify([buildings.map((b) => [b.key, b.stage ?? -1]), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1, bound ?? 0, people, visitRoom]);
+  const key = JSON.stringify([buildings.map((b) => [b.key, b.stage ?? -1]), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1, bound ?? 0, people, visitRoom, coachLook ?? null]);
   // Read at the moment of use, so new furniture or a new mode never rebuilds the whole village.
   const live = useRef({ homeItems: homeItems ?? [], placing, onFloor });
   live.current = { homeItems: homeItems ?? [], placing, onFloor };
@@ -1278,8 +1280,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           play('idle');
           // The coach waits by the TV: the same model in the practice colours, breathing quietly.
           const breathe = gltf.animations.find((c) => c.name === 'idle');
-          const staff = (x: number, z: number, wear: Set<string>, tints: Record<string, string>, face: number, fabric: string | null = null) => {
-            const cm = cloneSkinned(gltf.scene);
+          const staff = (x: number, z: number, wear: Set<string>, tints: Record<string, string>, face: number, fabric: string | null = null, src = gltf) => {
+            const cm = cloneSkinned(src.scene);
             cm.traverse((o) => {
               if (isToggleNode(o.name)) o.visible = wear.has(o.name);
               const m = o as THREE.Mesh;
@@ -1292,21 +1294,35 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
                 m.frustumCulled = false;
               }
             });
+            // Another body has another height: every figure stands as tall as the hero, a touch more.
+            const own = src === gltf ? box : new THREE.Box3().setFromObject(cm.getObjectByName('body') ?? cm);
+            const kk = (src === gltf ? k : HERO_HEIGHT / Math.max(0.5, own.max.y - own.min.y)) * 1.05;
             const g = new THREE.Group();
             g.add(cm);
-            g.scale.setScalar(k * 1.05);
-            g.position.set(x, -box.min.y * k * 1.05, z);
+            g.scale.setScalar(kk);
+            g.position.set(x, -own.min.y * kk, z);
             g.rotation.y = face;
             scene.add(g);
-            if (breathe) {
+            const still = src.animations.find((c) => c.name === 'idle') ?? breathe;
+            if (still) {
               const mx = new THREE.AnimationMixer(cm);
-              mx.clipAction(breathe).play();
+              mx.clipAction(still).play();
               // Not all breathing in step.
               mx.setTime(staffMixers.length * 0.9);
               staffMixers.push(mx);
             }
           };
-          if (people) staff(COACH_AT.x, COACH_AT.z, COACH_WEAR, COACH_TINT, Math.atan2(TV_SPOT.x - COACH_AT.x, TV_SPOT.z + 1.6 - COACH_AT.z));
+          if (people) {
+            const face = Math.atan2(TV_SPOT.x - COACH_AT.x, TV_SPOT.z + 1.6 - COACH_AT.z);
+            const plain = () => staff(COACH_AT.x, COACH_AT.z, COACH_WEAR, COACH_TINT, face);
+            // The patient's own therapist, as they made themselves; else a figure in the practice colours.
+            const cs = coachLook ? hero3dScene(coachLook) : null;
+            if (cs) {
+              loadModel(cs.url)
+                .then((g2) => { if (!cancelled) staff(COACH_AT.x, COACH_AT.z, cs.visible, cs.tints, face, cs.fabric, g2); })
+                .catch(() => { if (!cancelled) plain(); });
+            } else plain();
+          }
           // And one by the programme board in each training house.
           for (const tr of trainers) staff(tr.at.x, tr.at.z, tr.wear, tr.tint, tr.face, tr.fabric);
           // Villagers. Their own model when they have one; until then this model in other clothes.
