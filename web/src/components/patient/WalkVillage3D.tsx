@@ -1,5 +1,7 @@
+import { creature } from './creatures3d';
+import type { CreatureKind } from '@shared/adventure';
 import { dress } from '@/components/hero/fabric3d';
-import { useEffect, useRef, useState, type MutableRefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { RotateCcw, RotateCw } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
@@ -78,6 +80,9 @@ type Props = {
   /** A workout waits today: the coach at the gym shows a quest marker. */
   questOpen?: boolean;
   coachLabel?: string;
+  /** Creatures to beat, at fixed spots. `creaturesGone` are the beaten ones: hidden until they come back. */
+  creatures?: { key: string; kind: CreatureKind; label: string; x: number; z: number }[];
+  creaturesGone?: string[];
   /** The well can be walked to and used (the patient's village). */
   well?: boolean;
   /** How fast the hero moves, 1 = normal. Lower when thirsty or stiff. */
@@ -666,7 +671,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
   const { t } = useI18n();
   const coachName = coachLabel ?? t('Fysiotherapeut', 'Physiotherapist');
   const host = useRef<HTMLDivElement>(null);
@@ -687,11 +692,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
   const heroScene = look ? hero3dScene(look) : null;
   const heroKey = heroScene ? JSON.stringify([heroScene.url, [...heroScene.visible].sort(), heroScene.tints, heroScene.fabric]) : '';
-  const key = JSON.stringify([buildings.map((b) => [b.key, b.stage ?? -1]), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1, bound ?? 0, people, visitRoom, coachLook ?? null]);
+  const key = JSON.stringify([buildings.map((b) => [b.key, b.stage ?? -1]), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1, bound ?? 0, people, visitRoom, coachLook ?? null, (creatures ?? []).map((c) => [c.key, c.kind, c.x, c.z])]);
   // Read at the moment of use, so new furniture or a new mode never rebuilds the whole village.
   const slow = Math.min(1, Math.max(0.5, paceProp));
-  const live = useRef({ homeItems: homeItems ?? [], placing, onFloor, slow });
-  live.current = { homeItems: homeItems ?? [], placing, onFloor, slow };
+  const gone = useMemo(() => new Set(creaturesGone ?? []), [creaturesGone]);
+  const live = useRef({ homeItems: homeItems ?? [], placing, onFloor, slow, gone });
+  live.current = { homeItems: homeItems ?? [], placing, onFloor, slow, gone };
   const furnish = useRef<(items: Placed[]) => void>(() => {});
   const itemsKey = JSON.stringify(homeItems ?? []);
   useEffect(() => {
@@ -805,6 +811,20 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     wellWater.position.y = 0.6;
     scene.add(well3d, wellWater);
     obstacles.push({ x: 0, z: 0, r: 0.95 });
+    // Creatures: each at its spot, with a place beside it to stand and strike from.
+    const mobs: { key: string; g: THREE.Group; door: Vec }[] = [];
+    for (const c of creatures ?? []) {
+      const g = creature(c.kind);
+      g.position.set(c.x, 0, c.z);
+      g.lookAt(0, 0, 0);
+      scene.add(g);
+      const len = Math.hypot(c.x, c.z) || 1;
+      const door = { x: c.x * (1 - 0.85 / len), z: c.z * (1 - 0.85 / len) };
+      anchors.push({ id: c.key, obj: g, y: 1.0 });
+      spots.push({ key: c.key, door });
+      obstacles.push({ x: c.x, z: c.z, r: 0.38 });
+      mobs.push({ key: c.key, g, door });
+    }
     if (well) {
       anchors.push({ id: WELL_KEY, obj: well3d, y: 2.55 });
       spots.push({ key: WELL_KEY, door: WELL_SPOT });
@@ -1508,7 +1528,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         return;
       }
       const i = buildings.findIndex((b) => b.key === k);
-      if (k === WELL_KEY && well) walkTo.current(WELL_SPOT, WELL_KEY);
+      const mob = mobs.find((x) => x.key === k);
+      if (mob) walkTo.current(mob.door, k);
+      else if (k === WELL_KEY && well) walkTo.current(WELL_SPOT, WELL_KEY);
       else if (k === TV_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY, TV_KEY);
       else if (k === PRACTICE_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY);
       else if (i >= 0) walkTo.current(sites[i].door, k);
@@ -1784,6 +1806,13 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       if (!reduce) {
         for (const mx of staffMixers) mx.update(dt);
+        // Creatures hop on the spot; a beaten one is away until it comes back.
+        mobs.forEach((mob, i) => {
+          mob.g.visible = !live.current.gone.has(mob.key);
+          const hop = Math.abs(Math.sin(performance.now() / 380 + i * 1.7));
+          mob.g.position.y = hop * 0.09;
+          mob.g.scale.set(1 + (1 - hop) * 0.06, 0.94 + hop * 0.1, 1 + (1 - hop) * 0.06);
+        });
         // Villagers only live while the hero is in the village: indoors nobody sees them.
         if (!indoor) {
           for (const npc of npcs) {
@@ -1946,6 +1975,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               className={cn(plate, 'flex-col !items-center leading-none', b.kind ? 'text-white' : 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
               {b.alert && <span aria-hidden className="quest-mark text-[26px] leading-none text-[#ffd21f]">!</span>}
               <span className="inline-flex items-center gap-1">{b.flag && <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[#4ad06a] ring-1 ring-black/40" />}{b.label}</span>
+            </button>
+          ))}
+          {(creatures ?? []).map((c) => (
+            <button key={c.key} ref={setLabel(c.key)} type="button" data-spot={c.key} hidden={gone.has(c.key)} onClick={() => go(c.key)} aria-label={t(`Loop naar ${c.label}`, `Walk to ${c.label}`)}
+              className={cn(plate, '!min-h-[28px] text-[12.5px] text-[#ffb3a1]')} style={{ transform: 'translate(-9999px,0)' }}>
+              {c.label}
             </button>
           ))}
           {well && (

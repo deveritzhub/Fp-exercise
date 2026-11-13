@@ -125,6 +125,16 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   await page.getByTestId('drink-well').click({ timeout: 60_000 });
   await expect(water).not.toHaveAttribute('aria-label', before!, { timeout: 15_000 });
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/well.png' });
+  // An ailment as a creature: walk to it, strike until it is beaten; that gives adventure XP, apart from the hero's.
+  const adv = page.getByTestId('adventure-level');
+  await expect(adv).toContainText('Avonturier 1 · 0/60');
+  await page.getByRole('button', { name: 'Loop naar Stijfheidsslijm' }).last().press('Enter');
+  const strike = page.getByTestId('strike');
+  await expect(strike).toBeVisible({ timeout: 90_000 });
+  if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/mob.png' });
+  for (let i = 0; i < 4 && (await strike.count()); i++) await strike.click();
+  await expect(adv).toContainText('Avonturier 1 · 12/60', { timeout: 15_000 });
+  await expect(strike).toHaveCount(0);
   if (process.env.SHOTS) {
     await page.getByRole('button', { name: /^Loop naar Oefenzaal/ }).press('Enter');
     await expect(village).toHaveAttribute('data-zone', 'practice', { timeout: 90_000 });
