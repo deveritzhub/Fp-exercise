@@ -1,3 +1,4 @@
+import { dress } from '@/components/hero/fabric3d';
 import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { RotateCcw, RotateCw } from 'lucide-react';
@@ -93,12 +94,14 @@ const TRAINERS = {
   kracht: {
     nl: 'Coach', en: 'Coach', x: 0.85, z: -0.75,
     wear: ['hair_buzz', 'outfit_tracksuit', 'gear_gloves', 'gear_belt', 'base_shoes'],
-    tint: { kit_main: '#7a2f24', kit_dark: '#4f1e17', kit_soft: '#f0d9a8', hair: '#1f1611', skin: '#a8754f' },
+    tint: { kit_main: '#7a2f24', kit_dark: '#2f3442', kit_soft: '#f0d9a8', hair: '#1f1611', skin: '#a8754f' },
+    fabric: 'honing' as string | null,
   },
   mobiliteit: {
     nl: 'Flowmeester', en: 'Flow master', x: 0.8, z: -1.2,
     wear: ['hair_bun', 'outfit_sport_running', 'gear_scarf', 'base_shoes'],
     tint: { kit_main: '#2f7f8a', kit_dark: '#215c64', kit_soft: '#e6f6f4', hair: '#5a3a22', skin: '#e0b090' },
+    fabric: null as string | null,
   },
 } as const;
 const trainerKey = (house: string) => `trainer:${house}`;
@@ -658,7 +661,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const cheerRef = useRef<{ xp: number; at: number | null } | null>(null);
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
   const heroScene = look ? hero3dScene(look) : null;
-  const heroKey = heroScene ? JSON.stringify([heroScene.url, [...heroScene.visible].sort(), heroScene.tints]) : '';
+  const heroKey = heroScene ? JSON.stringify([heroScene.url, [...heroScene.visible].sort(), heroScene.tints, heroScene.fabric]) : '';
   const key = JSON.stringify([buildings.map((b) => b.key), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1]);
   // Read at the moment of use, so new furniture or a new mode never rebuilds the whole village.
   const live = useRef({ homeItems: homeItems ?? [], placing, onFloor });
@@ -811,7 +814,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     };
     mark(TV_KEY, ROOM.tvWall, 2.75, PRACTICE_KEY);
     mark(EXIT_KEY, { x: ROOM.exit.x + 0.7, z: ROOM.exit.z }, 2.45, PRACTICE_KEY);
-    const trainers: { at: THREE.Vector3; wear: Set<string>; tint: Record<string, string>; face: number }[] = [];
+    const trainers: { at: THREE.Vector3; wear: Set<string>; tint: Record<string, string>; face: number; fabric: string | null }[] = [];
     buildings.forEach((b, i) => {
       if (!b.kind) return;
       const origin = { x: 0, z: 560 + Object.keys(places).length * 160 };
@@ -831,7 +834,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         scene.add(stand);
         anchors.push({ id: trainerKey(b.key), obj: stand, y: HERO_HEIGHT + 0.55, zone: b.key });
         h.obstacles.push({ x: origin.x + tr.x, z: origin.z + tr.z, r: 0.4 });
-        trainers.push({ at: stand.position, wear: new Set(tr.wear), tint: tr.tint, face: Math.atan2(h.board.x - stand.position.x, h.board.z + 1.4 - stand.position.z) });
+        trainers.push({ at: stand.position, wear: new Set(tr.wear), tint: tr.tint, fabric: tr.fabric, face: Math.atan2(h.board.x - stand.position.x, h.board.z + 1.4 - stand.position.z) });
       }
       mark(EXIT_KEY, h.exitMark, 2.45, b.key);
     });
@@ -1224,8 +1227,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             const m = o as THREE.Mesh;
             if (m.isMesh) {
               const mm = (m.material as THREE.MeshStandardMaterial).clone();
-              const tint = heroScene.tints[mm.name.replace(/\.\d+$/, '') as keyof typeof heroScene.tints];
-              if (tint) mm.color.set(tint);
+              const base = mm.name.replace(/\.\d+$/, '');
+              dress(mm, base, heroScene.tints[base as keyof typeof heroScene.tints], heroScene.fabric);
               m.material = mm;
               m.castShadow = true;
               m.frustumCulled = false; // the bounds are those of the rest pose
@@ -1244,15 +1247,15 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           play('idle');
           // The coach waits by the TV: the same model in the practice colours, breathing quietly.
           const breathe = gltf.animations.find((c) => c.name === 'idle');
-          const staff = (x: number, z: number, wear: Set<string>, tints: Record<string, string>, face: number) => {
+          const staff = (x: number, z: number, wear: Set<string>, tints: Record<string, string>, face: number, fabric: string | null = null) => {
             const cm = cloneSkinned(gltf.scene);
             cm.traverse((o) => {
               if (isToggleNode(o.name)) o.visible = wear.has(o.name);
               const m = o as THREE.Mesh;
               if (m.isMesh) {
                 const mm = (m.material as THREE.MeshStandardMaterial).clone();
-                const tint = tints[mm.name.replace(/\.\d+$/, '')];
-                if (tint) mm.color.set(tint);
+                const base = mm.name.replace(/\.\d+$/, '');
+                dress(mm, base, tints[base], fabric);
                 m.material = mm;
                 m.castShadow = true;
                 m.frustumCulled = false;
@@ -1274,7 +1277,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           };
           staff(COACH_AT.x, COACH_AT.z, COACH_WEAR, COACH_TINT, Math.atan2(TV_SPOT.x - COACH_AT.x, TV_SPOT.z + 1.6 - COACH_AT.z));
           // And one by the programme board in each training house.
-          for (const tr of trainers) staff(tr.at.x, tr.at.z, tr.wear, tr.tint, tr.face);
+          for (const tr of trainers) staff(tr.at.x, tr.at.z, tr.wear, tr.tint, tr.face, tr.fabric);
           // Villagers. Their own model when they have one; until then this model in other clothes.
           VILLAGERS.forEach((v, n) => {
             const doorOf = (key: string) => {
@@ -1297,8 +1300,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
                 if (m.isMesh) {
                   if (!own) {
                     const mm = (m.material as THREE.MeshStandardMaterial).clone();
-                    const tint = v.tint[mm.name.replace(/\.\d+$/, '')];
-                    if (tint) mm.color.set(tint);
+                    const base = mm.name.replace(/\.\d+$/, '');
+                    dress(mm, base, v.tint[base], v.fabric ?? null);
                     m.material = mm;
                   }
                   m.castShadow = true;

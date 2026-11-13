@@ -94,6 +94,12 @@ describe('3D hero', () => {
     expect(s.visible.has('hair_afro')).toBe(false);
   });
 
+  it('a patterned kit puts its cloth on the shirt, unless a sport outfit brings club colours', () => {
+    expect(hero3dScene({ ...base, outfit: 'forest' }).fabric).toBeNull();
+    expect(hero3dScene({ ...base, outfit: 'ridder' }).fabric).toBe('ridder');
+    expect(hero3dScene({ ...base, outfit: 'ridder', gear: ['sport_football'] }).fabric).toBeNull();
+  });
+
   it('only known prefixes are switched', () => {
     expect(isToggleNode('gear_cap')).toBe(true);
     expect(isToggleNode('body_skin')).toBe(false);

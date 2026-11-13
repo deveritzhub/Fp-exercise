@@ -15,6 +15,8 @@ export type Villager = {
   model?: string;
   wear: string[];
   tint: Record<string, string>;
+  /** Patterned cloth on the shirt (web/public/hero3d/fabric); without it a plain knit in the kit colour. */
+  fabric?: string;
   /** Where this villager walks: a building's door ('door:<key>') or a point on the ring road round the square (degrees). */
   route: (`door:${string}` | number)[];
   /** Seconds standing at each stop. */
@@ -26,6 +28,7 @@ export const VILLAGERS: Villager[] = [
     key: 'smith', nl: 'Smid', en: 'Smith',
     wear: ['hair_buzz', 'beard_beard', 'outfit_tracksuit', 'gear_gloves', 'gear_belt', 'base_shoes'],
     tint: { kit_main: '#5d4027', kit_dark: '#3a2a1c', kit_soft: '#c9a14a', hair: '#2a1d14', skin: '#b98566' },
+    fabric: 'leer',
     route: ['door:smithy', 202.5, 'door:smithy', 157.5],
     rest: 7,
   },
@@ -33,6 +36,7 @@ export const VILLAGERS: Villager[] = [
     key: 'messenger', nl: 'Bode', en: 'Messenger',
     wear: ['hair_ponytail', 'outfit_sport_running', 'gear_cap', 'gear_wind_cape', 'base_shoes'],
     tint: { kit_main: '#2759a0', kit_dark: '#1d4378', kit_soft: '#e7f0f9', hair: '#8a5a2b', skin: '#e3b08e' },
+    fabric: 'flits',
     route: [22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5],
     rest: 2.5,
   },
@@ -40,6 +44,7 @@ export const VILLAGERS: Villager[] = [
     key: 'librarian', nl: 'Bibliothecaris', en: 'Librarian',
     wear: ['hair_bun', 'glasses_round', 'outfit_tracksuit', 'gear_scarf', 'base_shoes'],
     tint: { kit_main: '#8e3b5f', kit_dark: '#6d2d49', kit_soft: '#f6e7ee', hair: '#6f6f6f', skin: '#d9a98a' },
+    fabric: 'tovenaar',
     route: ['door:library', 337.5, 'door:library', 22.5],
     rest: 9,
   },

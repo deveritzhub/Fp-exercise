@@ -54,7 +54,8 @@ export const HERO_OPTIONS = {
   eyeColor: ['brown', 'darkbrown', 'blue', 'green', 'hazel', 'grey'],
   beard: ['none', 'stubble', 'moustache', 'beard'],
   glasses: ['none', 'round', 'square'],
-  outfit: ['forest', 'sand', 'ocean', 'berry', 'slate', 'sun'],
+  // Six plain colours, then the patterned cloths (web/public/hero3d/fabric).
+  outfit: ['forest', 'sand', 'ocean', 'berry', 'slate', 'sun', 'flits', 'honing', 'camo', 'ridder', 'ruit', 'tovenaar', 'leer', 'malien'],
   sport: ['running', 'football', 'fitness', 'cycling', 'tennis', 'swimming', 'hockey', 'dance', 'walking', 'other'],
 } as const;
 
