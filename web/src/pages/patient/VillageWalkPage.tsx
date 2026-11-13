@@ -9,7 +9,7 @@ import { Button, Dialog, ErrorState, useToast } from '@/components/ui';
 import { LevelBadge } from '@/components/hero/GameFx';
 import { useHero } from '@/pages/patient/HeroPages';
 import { MODULE_PATH, moduleOf, openToday, type PatientHomeData } from '@/pages/patient/PatientHome';
-import { SKILLS, bodyShape, levelTier } from '@shared/hero';
+import { GEAR_SLOT, SKILLS, bodyShape, levelTier } from '@shared/hero';
 import { villageBuildings } from '@shared/worldMap';
 import { EXIT_KEY, HOME_AT, HOME_KEY, PRACTICE_KEY, TV_KEY, WELL_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
 import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@shared/homeDecor';
@@ -17,7 +17,7 @@ import { HOME_STAGES, homeStage, levelsToNextHome } from '@shared/practiceVillag
 import { MODULE_SITES, VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
-import { CREATURES, blow, type CreatureKind } from '@shared/adventure';
+import { CREATURES, blow, weaponAt, type CreatureKind } from '@shared/adventure';
 import type { FigureLook } from '@/components/hero/HumanFigure';
 import { Minimap, WorldMap, type Landmark, type MapTrack } from '@/components/patient/VillageMap';
 // three.js only loads on the 3D pages.
@@ -210,9 +210,14 @@ export function VillageWalkPage() {
   };
 
   const d = heroQ.data;
+  // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
+  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; level: number; from: number; to: number };
+  const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
+  const { weapon } = weaponAt(adventure.data?.level ?? 1);
+  const weaponGear: string | null = weapon.gear;
   const look = useMemo(
-    () => (d?.hero ? { ...d.hero, gear: [...d.gear.equipped, ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null } : null),
-    [d],
+    () => (d?.hero ? { ...d.hero, gear: [...d.gear.equipped.filter((g) => !weaponGear || GEAR_SLOT[g] !== 'held'), ...(weaponGear ? [weaponGear] : []), ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null } : null),
+    [d, weaponGear],
   );
   const todo = useMemo(() => (home.data?.programs ?? []).filter(openToday), [home.data]);
   const waiting = { kracht: todo.some((p) => moduleOf(p) === 'kracht'), mobiliteit: todo.some((p) => moduleOf(p) === 'mobiliteit') };
@@ -348,13 +353,12 @@ export function VillageWalkPage() {
   const pace = (thirsty ? 0.8 : 1) * (stiff ? 0.8 : 1);
 
   // The adventure: little ailments round the village to beat, for XP of its own (never the hero's).
-  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; level: number; from: number; to: number };
-  const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
   const creatures = useMemo(
-    () => ([['slime', 120, 10.5], ['imp', 215, 10.8], ['couch', 325, 10.8], ['slime', 105, 8.4]] as [CreatureKind, number, number][]).map(([kind, deg, r], i) => ({
-      key: `mob:${i}`, kind, label: nl ? CREATURES[kind].nl : CREATURES[kind].en, x: Math.cos((deg * Math.PI) / 180) * r, z: Math.sin((deg * Math.PI) / 180) * r,
-    })),
-    [nl],
+    () => ([['slime', 120, 10.5], ['imp', 215, 10.8], ['couch', 325, 10.8], ['slime', 105, 8.4], ['giant_slime', 140, 11.3], ['couch_king', 295, 11.4]] as [CreatureKind, number, number][])
+      .map(([kind, deg, r], i) => ({ key: `mob:${i}`, kind, label: nl ? CREATURES[kind].nl : CREATURES[kind].en, x: Math.cos((deg * Math.PI) / 180) * r, z: Math.sin((deg * Math.PI) / 180) * r }))
+      // The big ones only show themselves to an adventurer of their level.
+      .filter((c) => (adventure.data?.level ?? 1) >= CREATURES[c.kind].level),
+    [nl, adventure.data?.level],
   );
   const [hurt, setHurt] = useState<Record<string, number>>({});
   const [beaten, setBeaten] = useState<string[]>([]);
@@ -363,7 +367,7 @@ export function VillageWalkPage() {
   const strong = useMemo(() => new Set([...states.filter((x) => x.kind === 'buff').map((x) => x.key), ...(doneToday ? ['trained'] : [])]), [states, doneToday]);
   const strike = async () => {
     if (!mob) return;
-    const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong);
+    const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, weapon.power);
     if (left > 0) {
       setHurt((h) => ({ ...h, [mob.key]: CREATURES[mob.kind].hp - left }));
       return;
@@ -375,7 +379,10 @@ export function VillageWalkPage() {
     window.setTimeout(() => setBeaten((b) => b.filter((k) => k !== key)), 45_000);
     try {
       const r = await api.post<Adventure & { gained: number }>('/patient/hero/adventure/win', { kind: mob.kind });
+      const was = adventure.data?.level ?? 1;
       qc.setQueryData(['patient-adventure'], r);
+      const won = weaponAt(r.level).weapon;
+      if (r.level > was) toast(won.level > was ? t(`Avonturier ${r.level}! Nieuw wapen: ${won.nl}.`, `Adventurer ${r.level}! New weapon: ${won.en}.`) : t(`Avonturier ${r.level}!`, `Adventurer ${r.level}!`));
       toast(r.gained > 0 ? t(`${mob.label} verslagen! +${r.gained} avonturen-XP`, `${mob.label} beaten! +${r.gained} adventure XP`) : t(`${mob.label} verslagen! Voor vandaag heb je alle avonturen-XP al binnen.`, `${mob.label} beaten! You already have all of today's adventure XP.`));
     } catch (e) {
       say(e);
@@ -547,7 +554,7 @@ export function VillageWalkPage() {
             </p>
           ) : mob ? (
             <Button size="lg" data-testid="strike" className="pointer-events-auto border border-[#ffb3a1] shadow-lift" icon={<Swords className="h-5 w-5" />} onClick={() => void strike()}>
-              {t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · {'♥'.repeat(Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0)))}{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : ''}
+              {t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : ''}
             </Button>
           ) : near === WELL_KEY ? (
             <Button size="lg" data-testid="drink-well" loading={drinking} className="pointer-events-auto border border-[#9fd8ff] shadow-lift" icon={<Droplets className="h-5 w-5" />} onClick={() => void drink()}>{t(`Drink een glas water (+${WATER.glassMl} ml)`, `Drink a glass of water (+${WATER.glassMl} ml)`)}</Button>
@@ -576,7 +583,7 @@ export function VillageWalkPage() {
 
         {adventure.data && (
           <p className="absolute left-[58px] top-[132px] flex items-center gap-1 rounded-md border border-black/60 bg-[#141c18]/85 px-1.5 py-[3px] text-[10.5px] font-semibold leading-none text-[#ffd9a8] shadow-lift" data-testid="adventure-level">
-            <Sparkles className="h-3 w-3" aria-hidden />{t(`Avonturier ${adventure.data.level}`, `Adventurer ${adventure.data.level}`)} · {adventure.data.xp - adventure.data.from}/{adventure.data.to - adventure.data.from}
+            <Sparkles className="h-3 w-3" aria-hidden />{t(`Avonturier ${adventure.data.level}`, `Adventurer ${adventure.data.level}`)} · {adventure.data.xp - adventure.data.from}/{adventure.data.to - adventure.data.from} · {nl ? weapon.nl : weapon.en}
           </p>
         )}
         {/* Meters of the day, as in a game: protein, steps and water. A tap opens the quick log on that tab. */}

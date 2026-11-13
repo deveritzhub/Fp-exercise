@@ -1,3 +1,4 @@
+import { weaponAt } from '@shared/adventure';
 import { PhotoGearThumbnail } from '../../components/hero/PhotoEquipment';
 import { HeirloomMark } from '@/components/hero/HeirloomMark';
 import { ACL_REWARDS, ACL_SPORTS } from '@shared/aclRewards';
@@ -72,6 +73,34 @@ function Choice<T extends string>({ legend, name, value, options, onChange, rend
 }
 
 const swatch = (bg: string) => <span className="h-7 w-7 shrink-0 rounded-full border border-ink-200 shadow-xs" style={{ background: bg }} aria-hidden />;
+
+/**
+ * Adventure as a skill of its own: earned by beating the creatures in the village, shown with the
+ * weapon that level brings. It stands beside the skills and is not part of the total level, which
+ * is about real exercise.
+ */
+function AdventureSkill() {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const q = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<{ xp: number; level: number; from: number; to: number; wins: number }>('/patient/hero/adventure') });
+  if (!q.data) return null;
+  const a = q.data;
+  const { weapon, next } = weaponAt(a.level);
+  return (
+    <Link to="/p/dorp" data-testid="adventure-skill" className="tap mt-3 flex items-center gap-3 rounded-xl border border-[#e4bc63] bg-[#fbf0d9] p-3 hover:border-[#b8892a]">
+      <Swords className="h-6 w-6 shrink-0 text-[#6b4705]" aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[14.5px] font-semibold text-ink-950">{t('Avontuur', 'Adventure')} · level {a.level} <span className="font-normal text-ink-700">· {nl ? weapon.nl : weapon.en}</span></span>
+        <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-white" aria-hidden><span className="block h-full rounded-full bg-[#c9912a]" style={{ width: `${Math.round(((a.xp - a.from) / Math.max(1, a.to - a.from)) * 100)}%` }} /></span>
+        <span className="mt-1 block text-[12.5px] text-ink-700">
+          {next ? t(`Versla kwaaltjes in je dorp. Level ${next.level}: ${next.nl}.`, `Beat ailments in your village. Level ${next.level}: ${next.en}.`) : t('Versla kwaaltjes in je dorp. Je hebt het sterkste wapen.', 'Beat ailments in your village. You hold the strongest weapon.')}
+          {' '}{t('Telt niet mee voor je totaal level.', 'Does not count towards your total level.')}
+        </span>
+      </span>
+      <ChevronRight className="h-5 w-5 shrink-0 text-ink-600" aria-hidden />
+    </Link>
+  );
+}
 
 /** Strength level ceiling: real lifts relative to body weight decide how far the level can go. */
 function StrengthCeiling({ c }: { c: NonNullable<HeroState['skills'][number]['ceiling']> }) {
@@ -540,6 +569,7 @@ function Skills({ d }: { d: HeroState }) {
           );
         })}
       </ul>
+      <AdventureSkill />
       <Dialog open={!!sel} onClose={() => setOpen(null)} size="sm" title={sel && info ? (sel.locked ? `${nl ? info.nl : info.en} · ${skillLockLabel(sel.reason, sel.phase, nl)}` : `${nl ? info.nl : info.en} · level ${sel.level}`) : ''}
         footer={<Button onClick={() => setOpen(null)}>{t('Sluiten', 'Close')}</Button>}>
         {sel && info && (

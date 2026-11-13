@@ -748,6 +748,8 @@ heroPatient.post('/hero/adventure/win', async (c) => {
   return c.json(
     await withUser(user.id, async (tx) => {
       const before = adventureRow(tx, patient.id);
+      // The big ones only show themselves at their level; a win over one that is not there counts for nothing.
+      if (adventureLevel(Number((await before)?.xp ?? 0)).level < CREATURES[body.data.kind].level) throw badRequest('invalid_input');
       const today = Number((await before)?.wins_today ?? 0);
       const gained = today < ADVENTURE_DAILY_WINS ? CREATURES[body.data.kind].xp : 0;
       await tx.query(

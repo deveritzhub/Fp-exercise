@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { adventureLevel, blow } from './adventure';
+import { adventureLevel, blow, weaponAt } from './adventure';
 
 describe('adventure', () => {
   it('levels: 60 XP for the first, 30 more for each next', () => {
@@ -13,5 +13,12 @@ describe('adventure', () => {
     expect(blow('imp', new Set())).toBe(1);
     expect(blow('imp', new Set(['hydrated']))).toBe(2);
     expect(blow('slime', new Set(['hydrated']))).toBe(1);
+  });
+  it('weapons come with the level and add to every blow', () => {
+    expect(weaponAt(1)).toMatchObject({ weapon: { key: 'fists' }, next: { key: 'staff' } });
+    expect(weaponAt(3).weapon.key).toBe('staff');
+    expect(weaponAt(9)).toMatchObject({ weapon: { key: 'hammer' }, next: null });
+    expect(blow('slime', new Set(), 2)).toBe(3);
+    expect(blow('slime', new Set(['moving']), 2)).toBe(6);
   });
 });
