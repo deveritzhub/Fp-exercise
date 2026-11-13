@@ -5,6 +5,7 @@ import { heroAssetFile } from '../src/lib/heroAssets';
 import { config } from '../src/config';
 import { HERO_AVATAR_FILES, HERO_AWARD_FILES, HERO_ITEM_FILES, HERO_OUTFIT_FILES, HERO_SHOP_FILES } from '../db/seed-data/hero-assets';
 import { BADGES, BOSSES, GEAR, OUTFITS, HAIR_PRESETS, HAIR_PRESET_KEYS, SKILLS, SKIN_GROUPS, TROPHY_TIERS, heroPhotoKey } from '../../shared/hero';
+import { COLLECTION_GEAR, COLLECTION_ITEM_KEYS } from '../../shared/gearCollections';
 
 describe('hero art', () => {
   it('has 240 avatars (2 figures × 5 skin groups × 6 builds × 4 hairstyles) and a photo per gear item', () => {
@@ -17,8 +18,15 @@ describe('hero art', () => {
     for (const b of BADGES) expect(HERO_AWARD_FILES[`badge_${b.key}`], b.key).toMatch(/\.png$/);
     for (const b of BOSSES) expect(HERO_AWARD_FILES[`boss_${b.key}`], b.key).toMatch(/\.png$/);
   });
-  it('has a shop icon for every item in the shop', () => {
-    for (const g of GEAR) expect(HERO_SHOP_FILES[g.key], g.key).toMatch(/^hf_\d{8}_\d{6}_[0-9a-f-]{36}\.png$/);
+  it('has photographic shop thumbnails for all photo-ready items, and original vector art for new collections', () => {
+    // New original 2D items intentionally have NO fabricated Higgsfield photo or cut-out.
+    // Their shared SVG artwork and anatomy fit are tested in CollectionGear.test.ts.
+    for (const g of GEAR.filter(g => !COLLECTION_ITEM_KEYS.has(g.key)))
+      expect(HERO_SHOP_FILES[g.key], g.key).toMatch(/^hf_\d{8}_\d{6}_[0-9a-f-]{36}\.png$/);
+    for (const g of COLLECTION_GEAR) {
+      expect(GEAR.some(entry => entry.key === g.key), g.key).toBe(true);
+      expect(HERO_SHOP_FILES[g.key], g.key).toBeUndefined();
+    }
     expect(new Set(Object.values(HERO_SHOP_FILES)).size).toBe(Object.keys(HERO_SHOP_FILES).length);
   });
   it('has an outfit photo for every base avatar and the personal photo, per outfit', () => {

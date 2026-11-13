@@ -1,0 +1,38 @@
+name: FP Flow gear collections review
+on:
+  pull_request:
+    paths:
+      - 'shared/hero.ts'
+      - 'shared/gearCollections.ts'
+      - 'web/src/components/hero/CollectionGear.tsx'
+      - 'web/src/components/hero/CollectionGear.test.ts'
+      - 'web/src/components/hero/HumanFigure.tsx'
+      - 'web/src/components/hero/RpgGear.tsx'
+      - 'web/src/components/hero/HeroPhoto.tsx'
+      - 'web/src/components/hero/PhotoEquipment.tsx'
+      - 'web/src/pages/patient/HeroPages.tsx'
+      - 'playwright.collections.config.ts'
+      - 'e2e/gear-collections.spec.ts'
+      - '.github/workflows/fp-gear-collections.yml'
+jobs:
+  original-art-review:
+    runs-on: ubuntu-24.04
+    env:
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx vite build
+      - run: npx vitest run -c vitest.rpg.config.ts
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test -c playwright.collections.config.ts
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: gear-collection-failures
+          path: test-results/

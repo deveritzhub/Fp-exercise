@@ -1,5 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {GEAR} from '@shared/hero';
+import { COLLECTION_ITEM_KEYS } from '@shared/gearCollections';
 import {photoFitProfiles,measuredPlacement,identityAlignment} from './photoFit';
 describe('generated photographic fittings',()=>{
  it('covers every standard catalog body/skin/hair and outfit with valid geometry',()=>{
@@ -7,7 +8,7 @@ describe('generated photographic fittings',()=>{
   for(const [key,profile] of Object.entries(photoFitProfiles)){
    expect(profile.points,key).toHaveLength(33);
    expect(profile.silhouette,key).toMatch(/^M/);
-   for(const item of GEAR.filter(g=>!['tracksuit','team_kit','champion'].includes(g.key))){
+   for(const item of GEAR.filter(g=>!['tracksuit','team_kit','champion'].includes(g.key) && !COLLECTION_ITEM_KEYS.has(g.key))){
     for(const mirror of [false,true]){
      const fit=measuredPlacement(key,item.key,mirror)!;
      expect(fit,key+' '+item.key).not.toBeNull();

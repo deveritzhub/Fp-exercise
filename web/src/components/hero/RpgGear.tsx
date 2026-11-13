@@ -2,6 +2,8 @@ import { useId } from 'react';
 import type { FigureLook } from './HumanFigure';
 import { figureGeometry } from './figureGeometry';
 import { GEAR_SLOT, gearTier } from '@shared/hero';
+import { COLLECTION_ITEM_KEYS } from '@shared/gearCollections';
+import { CollectionGear } from './CollectionGear';
 
 // Original vector artwork. The inventory and character use exactly these same shapes.
 export function RpgGear({ item, look, shapes }: { item: string; look: FigureLook; shapes?: { torso: string; arm: (s: -1 | 1) => string; leg: (s: -1 | 1) => string } }) {
@@ -12,6 +14,7 @@ export function RpgGear({ item, look, shapes }: { item: string; look: FigureLook
   const jewel = (x: number, y: number, r = 4) => <path d={`M${x},${y-r} l${r},${r} -${r},${r} -${r},-${r}Z`} fill="#8affdc" stroke="#e9ffe7" strokeWidth=".7" />;
   const shoe = ['gold_shoes', 'balance_shoes', 'spikes'].includes(item);
   const outfit = ['tracksuit', 'team_kit', 'champion'].includes(item);
+  if (COLLECTION_ITEM_KEYS.has(item)) return <CollectionGear item={item} look={look} shapes={shapes} />;
   return <g data-rpg-item={item} className="rpg-item" style={{filter:`drop-shadow(0 0 ${gearTier(item).tier * .25}px ${gearTier(item).glow})`}} strokeLinejoin="round" strokeLinecap="round">
     <defs>
       <linearGradient id={`gold${id}`} x2="90%" y2="100%"><stop stopColor="#fff1b8"/><stop offset=".35" stopColor="#dbaa4e"/><stop offset=".6" stopColor="#8e591d"/><stop offset=".8" stopColor="#f6d887"/><stop offset="1" stopColor="#a47332"/></linearGradient>
@@ -69,10 +72,24 @@ export function RpgGear({ item, look, shapes }: { item: string; look: FigureLook
   </g>;
 }
 
+/** Crop to the actual wearable rather than an uninformative corner of the 200x420 doll. */
+const collectionThumbViews: Record<string, string> = {
+  phoenix_wings: '0 40 200 150',
+  hydration_pack: '105 80 85 128',
+  foam_roller: '115 185 80 115',
+  kettlebell: '120 196 75 91',
+  star_staff: '118 78 80 332',
+  kyokushin_gi: '46 74 108 318',
+  karate_obi: '63 178 74 74',
+  karate_wraps: '22 196 160 50',
+  aurora_halo: '61 -10 78 58',
+  dojo_headband: '65 6 78 58',
+  compression_knee: '58 255 58 96',
+};
 const crops: Record<string,string> = { head:'62 -4 80 65', neck:'67 62 66 78', arm:'124 100 40 40', wrist:'36 178 36 38', hands:'30 199 140 38', waist:'62 178 76 35', feet:'60 371 80 45', legs:'60 310 80 80', chest:'65 93 70 50', back:'115 65 65 140', outfit:'28 68 144 330' };
 export function GearArtwork({ item, className }: { item:string; className?:string }) {
   const look:FigureLook={skin:'s4',hair:'short',outfit:'forest',frame:'m',build:'average'};
   // Outfit thumbnails use a miniature garment silhouette; its panels share the worn renderer.
   const shapes={torso:'M66,80 L89,72 111,72 134,80 129,195 71,195Z',arm:(s:-1|1)=>`M${100+s*34},82 l${s*10},5 ${s*15},114 -12,3 ${-s*13},-86Z`,leg:(s:-1|1)=>`M${100+s*3},194 h${s*28} l${-s*4},185 h${-s*18}Z`};
-  return <svg aria-hidden viewBox={({sleeve:'65 257 40 70',gloves:'141 202 26 29',pin:'103 94 25 27',headphones:'63 0 75 60',crew_socks:'60 338 80 60',sport_item:'135 194 40 65'}[item] ?? crops[GEAR_SLOT[item]]) ?? '25 0 150 420'} className={className}><RpgGear item={item} look={look} shapes={shapes}/></svg>;
+  return <svg aria-hidden viewBox={(collectionThumbViews[item] ?? {sleeve:'65 257 40 70',gloves:'141 202 26 29',pin:'103 94 25 27',headphones:'63 0 75 60',crew_socks:'60 338 80 60',sport_item:'135 194 40 65'}[item] ?? crops[GEAR_SLOT[item]]) ?? '25 0 150 420'} className={className}><RpgGear item={item} look={look} shapes={shapes}/></svg>;
 }
