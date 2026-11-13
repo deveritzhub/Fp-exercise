@@ -1,4 +1,4 @@
-import { ADVENTURE_DAILY_WINS, CREATURES, CREATURE_KINDS, adventureLevel, type CreatureKind } from '../../../shared/adventure';
+import { ADVENTURE_DAILY_WINS, BOXING, CREATURES, CREATURE_KINDS, adventureLevel, boxingXp, type CreatureKind } from '../../../shared/adventure';
 import { readStaffLook } from '../lib/staffLook';
 import { HEIRLOOM_KINDS } from '../../../shared/measurementBoss';
 import { wearableAclReward, ACL_SPORTS } from '../../../shared/aclRewards';
@@ -728,12 +728,12 @@ heroPatient.get('/hero/coach', async (c) => {
   return c.json({ look: readStaffLook(row?.look) });
 });
 
-const adventureView = (r: { xp: number; wins: number; wins_today: number } | undefined) => {
+const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number } | undefined) => {
   const xp = Number(r?.xp ?? 0);
-  return { xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, ...adventureLevel(xp) };
+  return { xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...adventureLevel(xp) };
 };
 const adventureRow = async (tx: Tx, patientId: string) =>
-  (await tx.query('SELECT xp, wins, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
+  (await tx.query('SELECT xp, wins, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today, CASE WHEN day = CURRENT_DATE THEN rounds_today ELSE 0 END AS rounds_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
 
 heroPatient.get('/hero/adventure', async (c) => {
   const { user, patient } = requirePatient(c);
@@ -755,7 +755,29 @@ heroPatient.post('/hero/adventure/win', async (c) => {
       await tx.query(
         `INSERT INTO hero_adventure(patient_id, xp, wins, day, wins_today) VALUES ($1, $2, 1, CURRENT_DATE, 1)
          ON CONFLICT (patient_id) DO UPDATE SET xp = hero_adventure.xp + $2, wins = hero_adventure.wins + 1,
-           wins_today = CASE WHEN hero_adventure.day = CURRENT_DATE THEN hero_adventure.wins_today + 1 ELSE 1 END, day = CURRENT_DATE, updated_at = now()`,
+           wins_today = CASE WHEN hero_adventure.day = CURRENT_DATE THEN hero_adventure.wins_today + 1 ELSE 1 END,
+           rounds_today = CASE WHEN hero_adventure.day = CURRENT_DATE THEN hero_adventure.rounds_today ELSE 0 END, day = CURRENT_DATE, updated_at = now()`,
+        [patient.id, gained],
+      );
+      return { gained, ...adventureView(await adventureRow(tx, patient.id)) };
+    }),
+  );
+});
+
+/** A round on the bag in the boxing school. The first few rounds of a day give XP for the hits made. */
+heroPatient.post('/hero/adventure/round', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ hits: z.number().int().min(0).max(BOXING.beats) }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) throw badRequest('invalid_input');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const today = Number((await adventureRow(tx, patient.id))?.rounds_today ?? 0);
+      const gained = today < BOXING.roundsPerDay ? boxingXp(body.data.hits) : 0;
+      await tx.query(
+        `INSERT INTO hero_adventure(patient_id, xp, day, rounds_today) VALUES ($1, $2, CURRENT_DATE, 1)
+         ON CONFLICT (patient_id) DO UPDATE SET xp = hero_adventure.xp + $2,
+           rounds_today = CASE WHEN hero_adventure.day = CURRENT_DATE THEN hero_adventure.rounds_today + 1 ELSE 1 END,
+           wins_today = CASE WHEN hero_adventure.day = CURRENT_DATE THEN hero_adventure.wins_today ELSE 0 END, day = CURRENT_DATE, updated_at = now()`,
         [patient.id, gained],
       );
       return { gained, ...adventureView(await adventureRow(tx, patient.id)) };

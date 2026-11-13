@@ -1,3 +1,4 @@
+import { weaponMesh } from './weapons3d';
 import { creature } from './creatures3d';
 import type { CreatureKind } from '@shared/adventure';
 import { dress } from '@/components/hero/fabric3d';
@@ -43,7 +44,10 @@ const HOME_REACH = [1.3, 1.5, 1.8, 2.2, 2.8, 3.1];
 const STREET_HOME = 0.85;
 /** A room behind a door in the village. */
 type Place = { group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[] };
-export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void };
+export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key`: the hero turns to it and it flinches. */ strike: (key: string) => void };
+/** The bag of the boxing school in the village. */
+export const BOXING_KEY = 'boxing';
+const BOXING_AT: Vec = { x: -3.1, z: 5.4 };
 type Props = {
   /** Buildings round the square take the next free slot; one with a `site` stands there instead. */
   buildings: {
@@ -85,6 +89,10 @@ type Props = {
   creaturesGone?: string[];
   /** The well can be walked to and used (the patient's village). */
   well?: boolean;
+  /** The boxing school: a ring with a bag to walk to. */
+  boxing?: boolean;
+  /** The adventure weapon in the hero's hand (weapons3d.ts), if any. */
+  weapon?: string | null;
   /** How fast the hero moves, 1 = normal. Lower when thirsty or stiff. */
   pace?: number;
   /** How the figure by the TV looks: the patient's own therapist. Without it: the practice colours. */
@@ -671,7 +679,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, boxing = false, weapon = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
   const { t } = useI18n();
   const coachName = coachLabel ?? t('Fysiotherapeut', 'Physiotherapist');
   const host = useRef<HTMLDivElement>(null);
@@ -692,7 +700,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
   const heroScene = look ? hero3dScene(look) : null;
   const heroKey = heroScene ? JSON.stringify([heroScene.url, [...heroScene.visible].sort(), heroScene.tints, heroScene.fabric]) : '';
-  const key = JSON.stringify([buildings.map((b) => [b.key, b.stage ?? -1]), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1, bound ?? 0, people, visitRoom, coachLook ?? null, (creatures ?? []).map((c) => [c.key, c.kind, c.x, c.z])]);
+  const key = JSON.stringify([buildings.map((b) => [b.key, b.stage ?? -1]), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1, bound ?? 0, people, visitRoom, coachLook ?? null, (creatures ?? []).map((c) => [c.key, c.kind, c.x, c.z]), boxing, weapon]);
   // Read at the moment of use, so new furniture or a new mode never rebuilds the whole village.
   const slow = Math.min(1, Math.max(0.5, paceProp));
   const gone = useMemo(() => new Set(creaturesGone ?? []), [creaturesGone]);
@@ -812,7 +820,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     scene.add(well3d, wellWater);
     obstacles.push({ x: 0, z: 0, r: 0.95 });
     // Creatures: each at its spot, with a place beside it to stand and strike from.
-    const mobs: { key: string; g: THREE.Group; door: Vec }[] = [];
+    const mobs: { key: string; g: THREE.Group; door: Vec; hurtAt: number }[] = [];
+    let swing = 0;
+    let armR: THREE.Object3D | null = null;
     for (const c of creatures ?? []) {
       const g = creature(c.kind);
       g.position.set(c.x, 0, c.z);
@@ -823,7 +833,44 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       anchors.push({ id: c.key, obj: g, y: 1.0 });
       spots.push({ key: c.key, door });
       obstacles.push({ x: c.x, z: c.z, r: 0.38 });
-      mobs.push({ key: c.key, g, door });
+      mobs.push({ key: c.key, g, door, hurtAt: 0 });
+    }
+    if (boxing) {
+      // The boxing school: four posts with ropes, a mat and the heavy bag on its stand.
+      const ring = new THREE.Group();
+      ring.position.set(BOXING_AT.x, 0, BOXING_AT.z);
+      const mm = (c: number, o: THREE.MeshStandardMaterialParameters = {}) => mat(c, { flatShading: false, ...o });
+      const floor = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.08, 2.6), mm(0x2f4a8a));
+      floor.position.y = 0.04;
+      floor.receiveShadow = true;
+      ring.add(floor);
+      for (const [x, z] of [[-1.2, -1.2], [1.2, -1.2], [-1.2, 1.2], [1.2, 1.2]]) {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.1, 8), mm(x * z > 0 ? 0xc2201f : 0xf4f2ec));
+        post.position.set(x, 0.55, z);
+        post.castShadow = true;
+        ring.add(post);
+      }
+      for (const y of [0.55, 0.9]) {
+        for (const [x, z, w, d] of [[0, -1.2, 2.4, 0.03], [-1.2, 0, 0.03, 2.4], [1.2, 0, 0.03, 2.4]]) {
+          const rope = new THREE.Mesh(new THREE.BoxGeometry(w, 0.03, d), mm(0xf4f2ec));
+          rope.position.set(x, y, z);
+          ring.add(rope);
+        }
+      }
+      const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 2.0, 8), mm(0x1d1f1e));
+      stand.position.set(0, 1.0, -0.5);
+      const armB = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.6), mm(0x1d1f1e));
+      armB.position.set(0, 1.95, -0.22);
+      const bag = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.95, 14), mm(0xc2201f));
+      bag.position.set(0, 1.25, 0.05);
+      bag.castShadow = true;
+      ring.add(stand, armB, bag);
+      ring.lookAt(0, 0, 0);
+      scene.add(ring);
+      obstacles.push({ x: BOXING_AT.x, z: BOXING_AT.z, r: 0.55 });
+      const len = Math.hypot(BOXING_AT.x, BOXING_AT.z);
+      anchors.push({ id: BOXING_KEY, obj: ring, y: 2.35 });
+      spots.push({ key: BOXING_KEY, door: { x: BOXING_AT.x * (1 - 1.0 / len), z: BOXING_AT.z * (1 - 1.0 / len) } });
     }
     if (well) {
       anchors.push({ id: WELL_KEY, obj: well3d, y: 2.55 });
@@ -1310,6 +1357,19 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           mixer = new THREE.AnimationMixer(model);
           for (const clip of gltf.animations) motions[clip.name as HeroMotion] = mixer.clipAction(clip);
           play('idle');
+          // The adventure weapon in the right hand, and the arm that swings it.
+          armR = model.getObjectByName('upperarm_r') ?? null;
+          const hand = model.getObjectByName('hand_r');
+          const held = weapon ? weaponMesh(weapon) : null;
+          if (hand && held) {
+            // Out of the fist, forward and a little up, whatever way the hand bone itself lies.
+            model.updateWorldMatrix(true, true);
+            const inModel = model.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(hand.getWorldQuaternion(new THREE.Quaternion()));
+            const want = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0.12, 0.55, 0.83).normalize());
+            held.quaternion.copy(inModel.invert().multiply(want));
+            held.position.set(0, 0.08, 0);
+            hand.add(held);
+          }
           // The coach waits by the TV: the same model in the practice colours, breathing quietly.
           const breathe = gltf.animations.find((c) => c.name === 'idle');
           const staff = (x: number, z: number, wear: Set<string>, tints: Record<string, string>, face: number, fabric: string | null = null, src = gltf) => {
@@ -1530,6 +1590,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const i = buildings.findIndex((b) => b.key === k);
       const mob = mobs.find((x) => x.key === k);
       if (mob) walkTo.current(mob.door, k);
+      else if (k === BOXING_KEY && boxing) walkTo.current(spots.find((sp) => sp.key === BOXING_KEY)!.door, BOXING_KEY);
       else if (k === WELL_KEY && well) walkTo.current(WELL_SPOT, WELL_KEY);
       else if (k === TV_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY, TV_KEY);
       else if (k === PRACTICE_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY);
@@ -1541,6 +1602,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         walk: (pt) => {
           // A tap on the map: only in the village itself, where the map is of.
           if (!inside()) walkTo.current(pt, null);
+        },
+        strike: (k) => {
+          const mob = mobs.find((x) => x.key === k);
+          if (!mob) return;
+          facing.current = Math.atan2(mob.g.position.x - pos.current.x, mob.g.position.z - pos.current.z);
+          hero.rotation.y = facing.current;
+          swing = 0.32;
+          mob.hurtAt = performance.now() + 140;
         },
         stop: () => {
           goal = null;
@@ -1767,6 +1836,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           play(since < 2.6 ? 'cheer' : 'idle');
         }
         if (!reduce || walking) mixer.update(dt);
+        // A blow: the arm swings up and down over the motion that plays.
+        if (swing > 0 && armR) {
+          swing = Math.max(0, swing - dt);
+          armR.rotateX(-Math.sin((1 - swing / 0.32) * Math.PI) * 1.5);
+        }
         figure.position.y = jump * 0.6;
       } else {
         figure.position.y = jump + (walking && !reduce ? Math.abs(Math.sin(tt * 11)) * 0.07 : 0);
@@ -1811,7 +1885,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           mob.g.visible = !live.current.gone.has(mob.key);
           const hop = Math.abs(Math.sin(performance.now() / 380 + i * 1.7));
           mob.g.position.y = hop * 0.09;
-          mob.g.scale.set(1 + (1 - hop) * 0.06, 0.94 + hop * 0.1, 1 + (1 - hop) * 0.06);
+          // Hit: it flattens for a moment.
+          const since = performance.now() - mob.hurtAt;
+          const flat = since >= 0 && since < 260 ? Math.sin((since / 260) * Math.PI) * 0.45 : 0;
+          mob.g.scale.set(1 + (1 - hop) * 0.06 + flat * 0.5, (0.94 + hop * 0.1) * (1 - flat), 1 + (1 - hop) * 0.06 + flat * 0.5);
         });
         // Villagers only live while the hero is in the village: indoors nobody sees them.
         if (!indoor) {
@@ -1983,6 +2060,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               {c.label}
             </button>
           ))}
+          {boxing && (
+            <button ref={setLabel(BOXING_KEY)} type="button" data-spot={BOXING_KEY} onClick={() => go(BOXING_KEY)} aria-label={t('Loop naar de boksschool', 'Walk to the boxing school')}
+              className={cn(plate, 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
+              {t('Boksschool', 'Boxing school')}
+            </button>
+          )}
           {well && (
             <button ref={setLabel(WELL_KEY)} type="button" data-spot={WELL_KEY} onClick={() => go(WELL_KEY)} aria-label={t('Loop naar de waterput', 'Walk to the well')}
               className={cn(plate, 'text-[#9fd8ff]')} style={{ transform: 'translate(-9999px,0)' }}>

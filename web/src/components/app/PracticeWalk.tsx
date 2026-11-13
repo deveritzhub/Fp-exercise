@@ -155,7 +155,7 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
       </button>
 
       <div className="pointer-events-none absolute inset-x-2 bottom-3 flex flex-col items-center gap-2 px-14" aria-live="polite">
-        {visited && near !== EXIT_KEY && (
+        {visited && (
           <p className="rounded-xl bg-black/60 px-3 py-1.5 text-center text-[14px] font-medium text-white" data-testid="visit-note">
             {t(`Binnen bij ${label(visited)} · ${items.length} ${items.length === 1 ? 'meubel' : 'meubels'}`, `Inside ${label(visited)} · ${items.length} ${items.length === 1 ? 'piece' : 'pieces'}`)}
           </p>

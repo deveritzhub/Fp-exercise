@@ -21,6 +21,11 @@ describe('adventure in the village', () => {
     expect((await P.post('/patient/hero/adventure/win', { kind: 'couch_king' })).status).toBe(400);
     // The real level is about real exercise: nothing here moves it.
     expect((await P.get('/patient/hero')).body.level.xp).toBe(hero);
+    // A round on the bag: two XP a hit, for the first six rounds of a day.
+    expect((await P.post('/patient/hero/adventure/round', { hits: 10 })).body).toMatchObject({ gained: 20, xp: 50, roundsToday: 1, winsToday: 2 });
+    expect((await P.post('/patient/hero/adventure/round', { hits: 99 })).status).toBe(400);
+    for (let i = 0; i < 5; i++) await P.post('/patient/hero/adventure/round', { hits: 1 });
+    expect((await P.post('/patient/hero/adventure/round', { hits: 14 })).body).toMatchObject({ gained: 0, xp: 60, roundsToday: 7, level: 2 });
     // Staff have no adventure.
     const T = await login('therapistA');
     expect((await T.get('/patient/hero/adventure')).status).toBe(403);
