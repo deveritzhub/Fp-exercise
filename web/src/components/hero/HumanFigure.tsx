@@ -1,6 +1,7 @@
 import { figureGeometry } from './figureGeometry';
 export { figureGeometry } from './figureGeometry';
 import { RpgGear } from './RpgGear';
+import { wearableAclReward } from '@shared/aclRewards';
 import { useId } from 'react';
 import type { HeroLook } from '@shared/hero';
 
@@ -144,6 +145,7 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
   const L = g.limbW;
   const gear = new Set(rpg ? (look.gear ?? []).filter(k => k === 'crutches') : look.gear ?? []);
   const worn = look.gear ?? [];
+  const aclWorn = rpg ? worn.filter(wearableAclReward) : [];
   const gold = gear.has('gold_shoes');
 
   // A fuller body gets a belly between chest and waist; a muscular one a V-shape (wide shoulders, narrow waist).
@@ -194,6 +196,7 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
       <ellipse cx="100" cy="410" rx={46 * g.b} ry="5" fill="#202b26" opacity=".08" />
       {rpg && worn.includes('master_cape') && <RpgGear item="master_cape" look={look} />}
       {rpg && worn.includes('yoga_mat') && <RpgGear item="yoga_mat" look={look} />}
+      {aclWorn.filter(k => k === 'deswell_mantle' || k === 'wind_cape').map(item => <RpgGear key={item} item={item} look={look} />)}
       <Hair style={rpg && worn.includes('cap') && look.hair === 'afro' ? 'short' : look.hair} colour={hair} back />
 
       {/* Skin: arms, legs, neck, torso */}
@@ -274,7 +277,7 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
         <path d={`M${100-g.hip},182 Q100,194 ${100+g.hip},182 L${100+g.hip+2},222 100,239 ${100-g.hip-2},222Z`} fill={`url(#kt${uid})`} stroke="#a99a70" strokeWidth="1.2"/>
         <path d={`M${100-g.shoulder+4},91 Q100,115 ${100+g.shoulder-4},91`} fill="none" stroke="#c2b17e" strokeWidth="2"/>
         <path d={`M${100-g.chest+3},124 L${100-g.waist+4},180 M${100+g.chest-3},124 L${100+g.waist-4},180`} fill="none" stroke="#85ada0" strokeWidth="1.5"/>
-        {worn.filter(k => ['tracksuit','team_kit','champion'].includes(k)).map(item => <RpgGear key={item} item={item} look={look} shapes={{torso,arm,leg}}/>)}
+        {worn.filter(k => ['tracksuit','team_kit','champion'].includes(k) || (k.startsWith('sport_') && wearableAclReward(k))).map(item => <RpgGear key={item} item={item} look={look} shapes={{torso,arm,leg}}/>)}
       </g>}
       {/* Head */}
       <ellipse cx="79.5" cy="41" rx="3.6" ry="6" fill={skin} stroke={skinDark} strokeWidth=".6" />
@@ -338,6 +341,7 @@ export function HumanFigure({ look, side = 'front', className, viewBox = '0 0 20
       {!front && look.hair === 'bun' && <circle cx="100" cy="14" r="9" fill={hair} />}
       {!front && look.hair === 'long' && <path d="M78,40 C76,70 80,92 84,98 L116,98 C120,92 124,70 122,40 Z" fill={hair} />}
       {rpg && ['crew_socks','shin_guards','balance_shoes','spikes','gold_shoes','sleeve','captain','wristbands','watch','gloves','belt','hr_band','sport_item','pin','scarf','towel','medal','headphones','headband','visor','cap','crown'].filter(k => worn.includes(k)).map(item => <RpgGear key={item} item={item} look={look}/>)}
+      {aclWorn.filter(k => !['deswell_mantle','wind_cape'].includes(k) && !k.startsWith('sport_')).map(item => <RpgGear key={item} item={item} look={look} />)}
       {/* Gear unlocked by progress */}
       {gear.has('wristbands') && [-1, 1].map((sd) => (
         <rect key={sd} x={g.armX(sd as -1 | 1, 200) - 5 * L} y="196" width={10 * L} height="6" rx="2" fill={kit.main} stroke="#fff" strokeWidth=".8" />
