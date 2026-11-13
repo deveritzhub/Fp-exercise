@@ -13,6 +13,7 @@ export const RELEASES: Release[] = [
     titleNl: 'Een dorp voor de praktijk',
     titleEn: 'A village for the practice',
     items: [
+      { for: 'patient', nl: 'Het Krachthonk is van binnen een echte sportschool: bakstenen muur, rubbervloer, een groene sprintbaan, een rek met klimtouw, springboxen en een leren bank.', en: 'Inside, the gym is a real gym now: a brick wall, a rubber floor, a green sprint lane, a rig with a climbing rope, jump boxes and a leather sofa.' },
       { for: 'staff', nl: 'Dorp: kies “Loop door het dorp”. Je start in de praktijk en loopt langs de huisjes van je patiënten. Bij een deur open je het dossier of kijk je binnen hoe het huis is ingericht.', en: 'Village: choose “Walk through the village”. You start in the practice and walk along your patients’ homes. At a door you open the record or look inside at how the home is furnished.' },
       { for: 'patient', nl: 'Je fysiotherapeut kan in het dorp van de praktijk bij je binnen kijken en ziet dan je meubels, niet je muntjes.', en: 'Your physiotherapist can look into your home in the practice village and sees your furniture, not your coins.' },
       { for: 'patient', nl: 'Nieuwe kleding voor je held: kies onder Uiterlijk een stof met patroon, zoals Ridder, Tovenaar, Flits of Maliën.', en: 'New clothing for your hero: under Look, pick a patterned cloth such as Knight, Wizard, Flash or Chain mail.' },
