@@ -15,6 +15,8 @@ export type MapTrack = {
   cam?: number;
   trees?: Vec[];
   roads?: { a: Vec; b: Vec; w: number }[];
+  /** How far the village reaches from the square; the patient's village when left out. */
+  bound?: number;
   people?: Vec[];
 };
 export type Landmark = { key: string; label: string; x: number; z: number; icon: string; color: string; alert?: boolean; wide?: boolean };
@@ -57,7 +59,7 @@ export function drawVillageMap(g: CanvasRenderingContext2D, v: View, track: MapT
   g.rotate(v.rot);
   g.scale(v.scale, v.scale);
   g.translate(-v.center.x, -v.center.z);
-  const B = VILLAGE_LAYOUT.bound;
+  const B = track.bound ?? VILLAGE_LAYOUT.bound;
   g.fillStyle = '#5f9440';
   g.beginPath();
   g.arc(0, 0, B + 1.2, 0, TAU);
@@ -247,7 +249,7 @@ function useMap(kind: 'mini' | 'world', { track, landmarks }: Pick<Props, 'track
       const S = c.width;
       const v: View = kind === 'mini'
         ? { size: S, center: { x: t.x, z: t.z }, scale: S / 2 / 10.5, rot: t.cam ?? 0, round: true, labels: false }
-        : { size: S, center: { x: 0, z: -1.2 }, scale: S / 2 / (VILLAGE_LAYOUT.bound + 2.6), rot: 0, round: false, labels: true };
+        : { size: S, center: { x: 0, z: -1.2 }, scale: S / 2 / ((t.bound ?? VILLAGE_LAYOUT.bound) + 2.6), rot: 0, round: false, labels: true };
       view.current = v;
       drawVillageMap(g, v, t, marks.current, Date.now());
     };
@@ -311,7 +313,7 @@ export function WorldMap(props: Props) {
       onClick={(e) => {
         const hit = pick(e);
         if (hit.place) props.onPlace(hit.place);
-        else if (hit.point && Math.hypot(hit.point.x, hit.point.z) <= VILLAGE_LAYOUT.bound) props.onWalk(hit.point);
+        else if (hit.point && Math.hypot(hit.point.x, hit.point.z) <= (props.track.current.bound ?? VILLAGE_LAYOUT.bound)) props.onWalk(hit.point);
       }}
     />
   );

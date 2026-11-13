@@ -34,12 +34,26 @@ export const HOME_KEY = 'home';
 /** Where the own home stands: south-east of the square, with room to grow into a villa. */
 export const HOME_AT = { x: Math.cos((60 * Math.PI) / 180) * 9, z: Math.sin((60 * Math.PI) / 180) * 9 };
 const HOME_REACH = [1.3, 1.5, 1.8, 2.2, 2.8, 3.1];
+/** Homes along the street stand a little smaller than the patient's own, so neighbours fit side by side. */
+const STREET_HOME = 0.85;
 /** A room behind a door in the village. */
 type Place = { group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[] };
 export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void };
 type Props = {
   /** Buildings round the square take the next free slot; one with a `site` stands there instead. */
-  buildings: { key: string; label: string; site?: Site; roof?: number; kind?: 'kracht' | 'mobiliteit'; alert?: boolean }[];
+  buildings: {
+    key: string; label: string; site?: Site; roof?: number; kind?: 'kracht' | 'mobiliteit'; alert?: boolean;
+    /** A home instead of a cottage: which of the six (0 = camp … 5 = villa). `no` varies its roof, `flag` shows a green mark. */
+    stage?: number; no?: number; flag?: boolean;
+  }[];
+  /** How far the walkable ground reaches from the square. Wider for the practice's village with its street of homes. */
+  bound?: number;
+  /** Roads besides the ones to the doors on the square. */
+  extraRoads?: { a: Vec; b: Vec; w: number }[];
+  /** The figure by the TV and the villagers; off where the walker is the therapist. */
+  people?: boolean;
+  /** A room to look into another home: `use('visit:<building key>')` goes in, furnished with `homeItems`. */
+  visitRoom?: boolean;
   tvLabel: string;
   /** What the TV in the gym shows: a heading and today's exercises. */
   tvTitle: string;
@@ -52,6 +66,8 @@ type Props = {
   startAtTv?: boolean;
   onNear: (key: string | null) => void;
   onArrive: (key: string) => void;
+  /** The hero went through a door: 'village', or the key of the room now in. */
+  onZone?: (zone: string) => void;
   /** Where the hero is walking to by itself (a place key), or null when standing or steered by hand. */
   onDestination?: (key: string | null) => void;
   /** Name shown above the hero's head. */
@@ -641,7 +657,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onDestination, heroName, questOpen = false, coachLabel, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onDestination, heroName, questOpen = false, coachLabel, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
   const { t } = useI18n();
   const coachName = coachLabel ?? t('Fysiotherapeut', 'Physiotherapist');
   const host = useRef<HTMLDivElement>(null);
@@ -656,13 +672,13 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const pos = useRef<Vec>(startAtTv ? { ...TV_SPOT } : { ...VILLAGE_LAYOUT.spawn });
   const facing = useRef(startAtTv ? Math.PI : 0);
   const camAngle = useRef(0);
-  const cb = useRef<{ onNear: Props["onNear"]; onArrive: Props["onArrive"]; onDestination?: Props["onDestination"] }>({ onNear, onArrive, onDestination });
-  cb.current = { onNear, onArrive, onDestination };
+  const cb = useRef<{ onNear: Props["onNear"]; onArrive: Props["onArrive"]; onZone?: Props["onZone"]; onDestination?: Props["onDestination"] }>({ onNear, onArrive, onZone, onDestination });
+  cb.current = { onNear, onArrive, onZone, onDestination };
   const cheerRef = useRef<{ xp: number; at: number | null } | null>(null);
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
   const heroScene = look ? hero3dScene(look) : null;
   const heroKey = heroScene ? JSON.stringify([heroScene.url, [...heroScene.visible].sort(), heroScene.tints, heroScene.fabric]) : '';
-  const key = JSON.stringify([buildings.map((b) => b.key), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1]);
+  const key = JSON.stringify([buildings.map((b) => [b.key, b.stage ?? -1]), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1, bound ?? 0, people, visitRoom]);
   // Read at the moment of use, so new furniture or a new mode never rebuilds the whole village.
   const live = useRef({ homeItems: homeItems ?? [], placing, onFloor });
   live.current = { homeItems: homeItems ?? [], placing, onFloor };
@@ -672,7 +688,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     furnish.current(live.current.homeItems);
   }, [itemsKey]);
   let slot = 0;
-  const sites = buildings.map((b) => b.site ?? slotPosition(slot++));
+  const sites = buildings.map((b) => {
+    const s = b.site ?? slotPosition(slot++);
+    if (b.stage == null) return s;
+    // A home's door lies as far out as the home is deep.
+    const len = Math.hypot(s.x, s.z) || 1;
+    const k = 1 - (HOME_REACH[Math.max(0, Math.min(5, b.stage))] * STREET_HOME + 0.75) / len;
+    return { ...s, door: { x: s.x * k, z: s.z * k } };
+  });
 
   useEffect(() => {
     if (cheer !== null) cheerRef.current = { xp: cheer, at: null };
@@ -715,7 +738,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     scene.add(sun);
 
     const R = rng(11);
-    const B = VILLAGE_LAYOUT.bound;
+    const B = bound ?? VILLAGE_LAYOUT.bound;
     const phone = (el.clientWidth || 400) < 520;
 
     // Sky: blue above, hazy at the horizon. It travels with the camera.
@@ -742,7 +765,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const obstacles: Obstacle[] = [];
     const anchors: { id: string; obj: THREE.Object3D; y: number; zone?: string }[] = [];
     const spots: { key: string; door: Vec }[] = [];
-    const roads: Road[] = [];
+    const roads: Road[] = [...(extraRoads ?? [])];
     /** Things that can stand between the camera and the hero; they turn see-through then. */
     const occluders: { obj: THREE.Object3D; x: number; z: number; r: number; mats: THREE.Material[]; a: number }[] = [];
     const occluder = (obj: THREE.Object3D, x: number, z: number, r: number) => {
@@ -775,16 +798,20 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
 
     buildings.forEach((b, i) => {
       const p = sites[i];
-      const h = cottage(b.roof ?? PALETTE.roof[b.key] ?? 0x8a6038, b.key === 'hall' || b.kind ? 1.12 : 1);
+      const stage = b.stage == null ? -1 : Math.max(0, Math.min(5, b.stage));
+      const h = stage >= 0 ? dwelling(stage, b.no ?? i) : cottage(b.roof ?? PALETTE.roof[b.key] ?? 0x8a6038, b.key === 'hall' || b.kind ? 1.12 : 1);
+      if (stage >= 0) h.scale.setScalar(STREET_HOME);
       h.position.set(p.x, 0, p.z);
       h.lookAt(0, 0, 0);
       scene.add(h);
-      obstacles.push({ x: p.x, z: p.z, r: 1.9 });
-      occluder(h, p.x, p.z, 2.1);
-      anchors.push({ id: b.key, obj: h, y: 3.9 });
+      const reach = stage >= 0 ? HOME_REACH[stage] * STREET_HOME : 1.9;
+      obstacles.push({ x: p.x, z: p.z, r: reach });
+      occluder(h, p.x, p.z, reach + 0.2);
+      anchors.push({ id: b.key, obj: h, y: stage >= 0 ? DWELLING_TOP[stage] * STREET_HOME + 0.5 : 3.9 });
       spots.push({ key: b.key, door: p.door });
+      // Homes stand along the street the page lays out; the others get their own path from the square.
       const k = 2.6 / Math.hypot(p.door.x, p.door.z);
-      roads.push({ a: { x: p.door.x * k, z: p.door.z * k }, b: p.door, w: 1.3 });
+      if (stage < 0) roads.push({ a: { x: p.door.x * k, z: p.door.z * k }, b: p.door, w: 1.3 });
       if (b.kind) yard(scene, b.kind, p, obstacles);
     });
 
@@ -855,6 +882,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       spots.push({ key: HOME_KEY, door: homeDoor });
       const kk = 2.6 / Math.hypot(homeDoor.x, homeDoor.z);
       roads.push({ a: { x: homeDoor.x * kk, z: homeDoor.z * kk }, b: homeDoor, w: 1.3 });
+    }
+    // The room behind the door: the patient's own, or the one a visitor looks into.
+    if (home || visitRoom) {
+      const hd: Vec = homeDoor ?? { x: 0, z: 3 };
       const origin = { x: 0, z: 560 + Object.keys(places).length * 160 };
       const h = houseRoom('home', origin);
       scene.add(h.group);
@@ -863,7 +894,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       h.group.add(pieces);
       places[HOME_KEY] = {
         group: h.group, walls: h.walls, at: origin, rect: h.rect, entry: h.entry, face: Math.PI / 2, exit: h.exit,
-        outside: { x: homeDoor.x * (1 - 0.85 / Math.hypot(homeDoor.x, homeDoor.z)), z: homeDoor.z * (1 - 0.85 / Math.hypot(homeDoor.x, homeDoor.z)) }, map: HOME_AT, obstacles: base,
+        outside: { x: hd.x * (1 - 0.85 / Math.hypot(hd.x, hd.z)), z: hd.z * (1 - 0.85 / Math.hypot(hd.x, hd.z)) }, map: home ? HOME_AT : hd, obstacles: base,
         spots: [{ key: boardKey(HOME_KEY), door: h.board }, { key: EXIT_KEY, door: h.exit }],
       };
       mark(boardKey(HOME_KEY), h.boardMark, 2.55, HOME_KEY);
@@ -899,7 +930,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     // The villagers: each walks its own round and rests at its stops.
     type Npc = { g: THREE.Group; mixer: THREE.AnimationMixer; walk: THREE.AnimationAction | null; idle: THREE.AnimationAction | null; path: Vec[]; at: number; rest: number; wait: number; moving: boolean };
     const npcs: Npc[] = [];
-    if (heroScene) {
+    if (heroScene && people) {
       const stand = new THREE.Object3D();
       stand.position.set(COACH_AT.x, 0, COACH_AT.z);
       scene.add(stand);
@@ -1275,11 +1306,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               staffMixers.push(mx);
             }
           };
-          staff(COACH_AT.x, COACH_AT.z, COACH_WEAR, COACH_TINT, Math.atan2(TV_SPOT.x - COACH_AT.x, TV_SPOT.z + 1.6 - COACH_AT.z));
+          if (people) staff(COACH_AT.x, COACH_AT.z, COACH_WEAR, COACH_TINT, Math.atan2(TV_SPOT.x - COACH_AT.x, TV_SPOT.z + 1.6 - COACH_AT.z));
           // And one by the programme board in each training house.
           for (const tr of trainers) staff(tr.at.x, tr.at.z, tr.wear, tr.tint, tr.face, tr.fabric);
           // Villagers. Their own model when they have one; until then this model in other clothes.
-          VILLAGERS.forEach((v, n) => {
+          (people ? VILLAGERS : []).forEach((v, n) => {
             const doorOf = (key: string) => {
               const i = buildings.findIndex((b) => b.key === key);
               if (i < 0) return null;
@@ -1422,6 +1453,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         camAngle.current = 0;
         first = true;
         el.dataset.zone = to;
+        cb.current.onZone?.(to);
         if (veil) veil.style.opacity = '0';
         if (then) goTo.current(then);
       }, reduce ? 0 : 260);
@@ -1467,6 +1499,17 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           delete el.dataset.walking;
         },
         use: (k) => {
+          // Looking into a home on the street: the one room, with that home's door to come back out of.
+          if (k.startsWith('visit:')) {
+            const j = buildings.findIndex((b) => b.key === k.slice(6));
+            if (j < 0 || inside() || !places[HOME_KEY]) return;
+            const d = sites[j].door;
+            const len = Math.hypot(d.x, d.z) || 1;
+            places[HOME_KEY].outside = { x: d.x * (1 - 0.85 / len), z: d.z * (1 - 0.85 / len) };
+            places[HOME_KEY].map = sites[j];
+            travel(HOME_KEY);
+            return;
+          }
           if (!inside() && places[k]) travel(k);
           if (k === EXIT_KEY && inside()) travel('village');
         },
@@ -1476,6 +1519,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     if (track) {
       track.current.trees = villageTrees;
       track.current.roads = roads;
+      track.current.bound = B;
     }
     const sunBase = sun.position.clone();
     scene.add(sun.target);
@@ -1871,7 +1915,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             <button key={b.key} ref={setLabel(b.key)} type="button" data-spot={b.key} onClick={() => go(b.key)} aria-label={t(`Loop naar ${b.label}`, `Walk to ${b.label}`)}
               className={cn(plate, 'flex-col !items-center leading-none', b.kind ? 'text-white' : 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
               {b.alert && <span aria-hidden className="quest-mark text-[26px] leading-none text-[#ffd21f]">!</span>}
-              <span>{b.label}</span>
+              <span className="inline-flex items-center gap-1">{b.flag && <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[#4ad06a] ring-1 ring-black/40" />}{b.label}</span>
             </button>
           ))}
           <button ref={setLabel(TV_KEY)} type="button" data-spot={TV_KEY} onClick={() => go(TV_KEY)} aria-label={t(`Loop naar ${tvLabel}`, `Walk to ${tvLabel}`)}
@@ -1907,7 +1951,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             className={cn(plate, 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
             {t('Uitgang', 'Exit')}
           </button>
-          {heroKey && (
+          {heroKey && people && (
             <button ref={setLabel(COACH_KEY)} type="button" data-spot={COACH_KEY} onClick={() => go(TV_KEY)}
               aria-label={questOpen ? t(`${coachName}: je training van vandaag wacht`, `${coachName}: today's workout is waiting`) : t(`Loop naar ${coachName}`, `Walk to ${coachName}`)}
               className={cn(plate, 'flex-col !items-center leading-none text-[#b8f0a8]')} style={{ transform: 'translate(-9999px,0)' }}>
@@ -1925,7 +1969,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               </button>
             );
           })}
-          {heroKey && VILLAGERS.map((v) => (
+          {heroKey && people && VILLAGERS.map((v) => (
             <div key={v.key} ref={setLabel(`npc:${v.key}`)} aria-hidden data-npc={v.key} className={cn(plate, '!min-h-0 text-[12px] text-[#cfe8ff]')} style={{ transform: 'translate(-9999px,0)' }}>{t(v.nl, v.en)}</div>
           ))}
           {heroName && <div ref={nameLabel} aria-hidden className={cn(plate, '!min-h-0 text-[12.5px] text-[#9dff9a]')} style={{ transform: 'translate(-9999px,0)' }}>{heroName}</div>}
