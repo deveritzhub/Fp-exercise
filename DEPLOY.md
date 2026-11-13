@@ -51,8 +51,9 @@ HTTPS is set up automatically.
 
 ## Always on, with a disk for uploads
 
-The service runs on the Starter plan, so it does not sleep. Uploaded videos and photos survive a restart
-only with a disk: uncomment the `disk:` block and `STORAGE_DIR` in `render.yaml`, or add it by hand: service → **Disks** → mount path `/var/data`, 1 GB, and set
+`render.yaml` asks for the Starter plan and a 1 GB disk (`STORAGE_DIR=/var/data/storage`), so the site
+does not sleep and uploaded videos and photos survive a restart. With a disk a deploy takes the site
+offline for a few seconds. If the service was not made from the blueprint, add the disk by hand: service → **Disks** → mount path `/var/data`, 1 GB, and set
 `STORAGE_DIR=/var/data/storage` under **Environment**.
 
 ## Closing the demo accounts
