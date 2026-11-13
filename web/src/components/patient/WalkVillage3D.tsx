@@ -610,19 +610,54 @@ function shaded<T extends THREE.BufferGeometry>(geo: T) {
   return geo;
 }
 /** Round leafy tree, about 3–4 hero heights. */
+/** A ball of leaves that is not a ball: the surface swells and dips, so a crown reads as foliage. */
+function leafBall(r: number, R: () => number) {
+  const geo = new THREE.IcosahedronGeometry(r, 2);
+  const pos = geo.attributes.position;
+  const [a, b, c] = [R() * 6, R() * 6, R() * 6];
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    // By position, not by index: the corners of the faces that share a spot move together.
+    const k = 1 + 0.13 * Math.sin(v.x * 5.1 / r + a) * Math.cos(v.y * 4.3 / r + b) + 0.08 * Math.sin(v.z * 7.7 / r + c);
+    pos.setXYZ(i, v.x * k, v.y * k, v.z * k);
+  }
+  geo.computeVertexNormals();
+  return shaded(geo);
+}
+/** Round leafy tree, about 3–4 hero heights: a trunk with two boughs and a full, lumpy crown. */
 export function leafTree(R: () => number, size = 1) {
   const g = new THREE.Group();
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.17, 1.5, 6), mat(0x8a6038, { map: painted('bark', 2, 1.5), flatShading: false }));
-  trunk.position.y = 0.75;
+  const bark = mat(0x8a6038, { map: painted('bark', 2, 1.5), flatShading: false });
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.19, 1.7, 8), bark);
+  trunk.position.y = 0.85;
   g.add(trunk);
-  const n = 6 + Math.floor(R() * 3);
-  for (let i = 0; i < n; i++) {
-    const blob = new THREE.Mesh(shaded(new THREE.IcosahedronGeometry(0.62 + R() * 0.3, 2)), mat(LEAVES[Math.floor(R() * LEAVES.length)], { vertexColors: true, flatShading: false, map: painted('leaves', 3, 2) }));
-    const a = (i / n) * Math.PI * 2 + R();
-    const r = i === 0 ? 0 : 0.5 + R() * 0.25;
-    blob.position.set(Math.cos(a) * r, 1.9 + (i === 0 ? 0.55 : R() * 0.5), Math.sin(a) * r);
-    blob.scale.y = 0.85;
+  for (const s of [-1, 1]) {
+    const bough = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.08, 0.8, 6), bark);
+    bough.position.set(s * 0.22, 1.75, s * 0.08);
+    bough.rotation.z = -s * 0.75;
+    g.add(bough);
+  }
+  // One big heart, a ring of large balls round it and small ones on top and at the rim.
+  const n = 6 + Math.floor(R() * 2);
+  const leaf = () => mat(LEAVES[Math.floor(R() * LEAVES.length)], { vertexColors: true, flatShading: false, map: painted('leaves', 3, 2) });
+  const add = (r: number, x: number, y: number, z: number) => {
+    const blob = new THREE.Mesh(leafBall(r, R), leaf());
+    blob.position.set(x, y, z);
+    blob.scale.y = 0.88;
+    blob.rotation.y = R() * 6;
     g.add(blob);
+  };
+  add(0.95, 0, 2.5, 0);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + R() * 0.5;
+    const r = 0.62 + R() * 0.2;
+    add(0.55 + R() * 0.22, Math.cos(a) * r, 2.05 + R() * 0.45, Math.sin(a) * r);
+  }
+  for (let i = 0; i < 4; i++) {
+    const a = R() * Math.PI * 2;
+    const r = 0.25 + R() * 0.75;
+    add(0.3 + R() * 0.16, Math.cos(a) * r, 2.85 + R() * 0.4 - r * 0.5, Math.sin(a) * r);
   }
   g.scale.setScalar(size);
   g.traverse((o) => { o.castShadow = true; });
@@ -1143,7 +1178,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     // Woods on the hills: two instanced meshes for all of them.
     const far = phone ? 110 : 190;
     const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.2, 1.6, 5), mat(0x5d4027), far);
-    const crowns = new THREE.InstancedMesh(shaded(new THREE.IcosahedronGeometry(1, 1)), mat(0xffffff, { vertexColors: true, flatShading: false }), far * 3);
+    const crowns = new THREE.InstancedMesh(leafBall(1, rng(31)), mat(0xffffff, { vertexColors: true, flatShading: false, map: painted('leaves', 2, 1.5) }), far * 3);
     const M = new THREE.Matrix4();
     const Q = new THREE.Quaternion();
     const col = new THREE.Color();
@@ -1246,7 +1281,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     grass.receiveShadow = true;
     scene.add(grass);
     // Bushes along the edges of the meadow and between the houses.
-    const bushes = new THREE.InstancedMesh(shaded(new THREE.IcosahedronGeometry(0.5, 2)), mat(0xffffff, { vertexColors: true, flatShading: false }), phone ? 46 : 80);
+    const bushes = new THREE.InstancedMesh(leafBall(0.5, rng(37)), mat(0xffffff, { vertexColors: true, flatShading: false, map: painted('leaves', 2, 1.5) }), phone ? 46 : 80);
     let bushN = 0;
     for (let i = 0; i < 3000 && bushN < bushes.count; i++) {
       const a = R() * Math.PI * 2;

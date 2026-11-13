@@ -35,6 +35,8 @@ test('patient walks to the TV in the village, starts the workout there and retur
 
   // The daily quest sends the hero through the practice door to the TV in the exercise room.
   await expect(village).toHaveAttribute('data-zone', 'village');
+  // The task list is folded until asked for.
+  await page.getByTestId('toggle-tasks').click();
   await page.getByTestId('quest-tracker').click();
   // While the hero walks by itself, the screen says where to and offers a way to stop.
   await expect(page.getByTestId('on-the-way')).toContainText('Onderweg naar de tv in de praktijk');

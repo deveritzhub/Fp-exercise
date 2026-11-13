@@ -376,6 +376,21 @@ export function VillageWalkPage() {
     setFlask(flask - 1);
     await drink();
   };
+  // One folding part of the HUD open at a time (meters or tasks), so the world stays in view. Kept in this browser.
+  const [panel, setPanel] = useState<'meters' | 'tasks' | null>(() => {
+    try {
+      const v = localStorage.getItem('fp.village.panel');
+      return v === 'meters' || v === 'tasks' ? v : null;
+    } catch {
+      return null;
+    }
+  });
+  const openPanel = (v: 'meters' | 'tasks' | null) => {
+    setPanel(v);
+    try {
+      localStorage.setItem('fp.village.panel', v ?? '');
+    } catch { /* not kept: fine */ }
+  };
   // The dojo: karate belts with a list to tick off.
   const karate = useKarate(!!d?.hero);
   const [dojoOpen, setDojoOpen] = useState(false);
@@ -544,9 +559,13 @@ export function VillageWalkPage() {
             <Minimap track={track} landmarks={landmarks} onPlace={toPlace} onWalk={toPoint} label={t('Minikaart van het dorp. Tik op een plek of gebouw om erheen te lopen.', 'Minimap of the village. Tap a spot or a building to walk there.')} />
             <button type="button" data-testid="open-world-map" onClick={() => setPlacesOpen(true)} aria-label={t('Wereldkaart openen', 'Open the world map')} className="absolute -bottom-1 -left-1 grid h-9 w-9 place-items-center rounded-full border border-[#e4bc63] bg-[#141c18] text-[#ffd76a] shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]"><MapIcon className="h-4 w-4" aria-hidden /></button>
           </div>
-          <div className={`${PANEL} w-[172px] px-1.5 py-1.5`} role="group" aria-label={t('Taken', 'Tasks')}>
-            <p className="flex items-center gap-1 px-1 font-display text-[12.5px] font-bold text-[#ffd76a]"><ScrollText className="h-3.5 w-3.5" aria-hidden />{t('Taken', 'Tasks')}</p>
-            {tasks.length > 0 ? (
+          <div className={`${PANEL} ${panel === 'tasks' ? 'w-[172px]' : ''} px-1.5 py-1`} role="group" aria-label={t('Taken', 'Tasks')}>
+            <button type="button" data-testid="toggle-tasks" aria-expanded={panel === 'tasks'} onClick={() => openPanel(panel === 'tasks' ? null : 'tasks')}
+              className="flex min-h-[32px] w-full items-center gap-1 px-1 font-display text-[12.5px] font-bold text-[#ffd76a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]">
+              <ScrollText className="h-3.5 w-3.5" aria-hidden />{t('Taken', 'Tasks')}{tasks.length > 0 && <span className="rounded-full bg-[#ffd21f] px-1.5 text-[11px] font-black leading-[16px] text-[#1b2a22]">{tasks.length}</span>}
+              <ChevronRight className={`ml-auto h-3.5 w-3.5 transition-transform motion-reduce:transition-none ${panel === 'tasks' ? 'rotate-90' : ''}`} aria-hidden />
+            </button>
+            {panel !== 'tasks' ? null : tasks.length > 0 ? (
               <ul>
                 {tasks.slice(0, 4).map((task, i) => (
                   <li key={task.id}>
@@ -564,13 +583,13 @@ export function VillageWalkPage() {
             ) : (
               <p className="px-1 pt-0.5 text-[11.5px] leading-snug text-white/90">{doneToday ? t('Alles gedaan voor vandaag', 'All done for today') : t('Vandaag niets te doen', 'Nothing to do today')}</p>
             )}
-            {tasks.length > 4 && <p className="px-1 text-[10.5px] text-white/70">{t(`+ ${tasks.length - 4} meer`, `+ ${tasks.length - 4} more`)}</p>}
+            {panel === 'tasks' && tasks.length > 4 && <p className="px-1 text-[10.5px] text-white/70">{t(`+ ${tasks.length - 4} meer`, `+ ${tasks.length - 4} more`)}</p>}
           </div>
         </div>
 
         {/* On the way: where to, and a way to stop. */}
         {dest ? (
-          <p role="status" data-testid="on-the-way" className={`${PANEL} absolute left-[56px] top-[62px] flex max-w-[176px] items-center gap-2 py-1 pl-2.5 pr-1 text-[12.5px]`}>
+          <p role="status" data-testid="on-the-way" className={`${PANEL} absolute left-2 flex max-w-[172px] items-center gap-2 py-1 pl-2.5 pr-1 text-[12.5px] ${panel === 'meters' ? 'top-[232px]' : 'top-[108px]'}`}>
             <Footprints className="h-4 w-4 shrink-0 text-[#ffd76a]" aria-hidden />
             <span className="min-w-0 flex-1 leading-tight">{t(`Onderweg naar ${placeName(dest)}`, `On the way to ${placeName(dest)}`)}</span>
             <button type="button" onClick={() => world.current?.stop()} className="min-h-[32px] rounded-md px-2 font-semibold text-[#ffd76a] hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]">{t('Stop', 'Stop')}</button>
@@ -642,14 +661,22 @@ export function VillageWalkPage() {
           ) : null}
         </div>
 
-        {adventure.data && (
-          <p className="absolute left-[58px] top-[162px] flex items-center gap-1 rounded-md border border-black/60 bg-[#141c18]/85 px-1.5 py-[3px] text-[10.5px] font-semibold leading-none text-[#ffd9a8] shadow-lift" data-testid="adventure-level">
-            <Sparkles className="h-3 w-3" aria-hidden />{t(`Avonturier ${adventure.data.level}`, `Adventurer ${adventure.data.level}`)} · {adventure.data.xp - adventure.data.from}/{adventure.data.to - adventure.data.from}<span className="sr-only"> · {nl ? weapon.nl : weapon.en}</span>
-          </p>
-        )}
         {/* Meters of the day, as in a game: protein, steps and water. A tap opens the quick log on that tab. */}
         {d?.hero && d.logs && (
-          <div className="absolute left-[58px] top-[62px] flex flex-col gap-[3px]" data-testid="world-meters">
+          <div className="absolute left-[58px] top-[62px] flex flex-col items-start gap-[3px]" data-testid="world-meters">
+            {/* Folded: three small gauges in one button. Open: the full meters, the flask and the adventurer level. */}
+            <button type="button" data-testid="toggle-meters" aria-expanded={panel === 'meters'} onClick={() => openPanel(panel === 'meters' ? null : 'meters')}
+              aria-label={t('Meters van vandaag: eiwit, beweging en water', 'Today’s meters: protein, movement and water')}
+              className="flex h-10 items-center gap-2 rounded-lg border border-[#e4bc63]/70 bg-[#141c18]/85 px-2 text-white shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]">
+              {([[Beef, d.logs.protein.goal ? d.logs.protein.grams / d.logs.protein.goal : 0, '#e2674a'], [Footprints, d.logs.steps.goal ? d.logs.steps.today / d.logs.steps.goal : 0, '#5fc46a'], [Droplets, d.logs.survival.water.ratio, '#58a8e8']] as const).map(([Icon, ratio, color], i) => (
+                <span key={i} className="flex flex-col items-center gap-[3px]" aria-hidden>
+                  <Icon className="h-3.5 w-3.5" style={{ color }} />
+                  <span className="block h-[3px] w-5 overflow-hidden rounded-full bg-black/60"><span className="block h-full" style={{ width: `${Math.round(Math.min(1, Math.max(0, ratio)) * 100)}%`, background: color }} /></span>
+                </span>
+              ))}
+              <ChevronRight className={`h-3.5 w-3.5 transition-transform motion-reduce:transition-none ${panel === 'meters' ? 'rotate-90' : ''}`} aria-hidden />
+            </button>
+            {panel === 'meters' && (<>
             {([
               ['protein', Beef, t('Eiwit', 'Protein'), d.logs.protein.goal ? d.logs.protein.grams / d.logs.protein.goal : null, d.logs.protein.goal ? `${Math.round(d.logs.protein.grams)}/${d.logs.protein.goal} g` : t('kies doel', 'set goal'), '#e2674a'],
               ['steps', Footprints, t('Beweging', 'Movement'), d.logs.steps.goal ? d.logs.steps.today / d.logs.steps.goal : null, `${d.logs.steps.today.toLocaleString(nl ? 'nl-NL' : 'en-GB')}/${d.logs.steps.goal.toLocaleString(nl ? 'nl-NL' : 'en-GB')}`, '#5fc46a'],
@@ -672,16 +699,26 @@ export function VillageWalkPage() {
               <span className="flex flex-1 gap-1" aria-hidden>{[0, 1].map((i) => <span key={i} className={`h-[9px] flex-1 rounded-sm ${i < flask ? 'bg-[#58a8e8]' : 'bg-black/60'}`} />)}</span>
               <span className="shrink-0 text-[9.5px] font-semibold leading-none">{flask > 0 ? t('drink', 'drink') : t('leeg', 'empty')}</span>
             </button>
+            {adventure.data && (
+              <p className="flex w-max items-center gap-1 rounded-md border border-black/60 bg-[#141c18]/85 px-1.5 py-[3px] text-[10.5px] font-semibold leading-none text-[#ffd9a8] shadow-lift" data-testid="adventure-level">
+                <Sparkles className="h-3 w-3" aria-hidden />{t(`Avonturier ${adventure.data.level}`, `Adventurer ${adventure.data.level}`)} · {adventure.data.xp - adventure.data.from}/{adventure.data.to - adventure.data.from}<span className="sr-only"> · {nl ? weapon.nl : weapon.en}</span>
+              </p>
+            )}
+            </>)}
           </div>
         )}
 
-        {(thirsty || stiff) && (
-          <ul className="absolute left-2 top-[186px] flex max-w-[190px] flex-col gap-1" data-testid="world-states" aria-label={t('Hoe je held zich voelt', 'How your hero feels')}>
+        {(thirsty || stiff) && !dest && (
+          <ul className={`absolute left-2 flex max-w-[190px] flex-wrap gap-1 ${panel === 'meters' ? 'top-[232px]' : 'top-[108px]'}`} data-testid="world-states" aria-label={t('Hoe je held zich voelt', 'How your hero feels')}>
             {thirsty && (
-              <li><button type="button" onClick={() => world.current?.goTo(WELL_KEY)} className="rounded-md border border-[#9fd8ff]/70 bg-[#141c18]/85 px-2 py-1 text-left text-[11.5px] font-semibold leading-tight text-[#cfeaff] shadow-lift">{t('Dorst: je loopt trager. Tik om naar de waterput te lopen.', 'Thirsty: you walk slower. Tap to walk to the well.')}</button></li>
+              <li><button type="button" onClick={() => world.current?.goTo(WELL_KEY)}
+                aria-label={t('Dorst: je loopt trager. Tik om naar de waterput te lopen.', 'Thirsty: you walk slower. Tap to walk to the well.')}
+                className="flex min-h-[28px] items-center gap-1 rounded-full border border-[#9fd8ff]/70 bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none text-[#cfeaff] shadow-lift"><Droplets className="h-3.5 w-3.5" aria-hidden />{t('Dorst · trager', 'Thirsty · slower')}</button></li>
             )}
             {stiff && (
-              <li><button type="button" onClick={() => world.current?.goTo('in:mobiliteit')} className="rounded-md border border-[#f0c36a]/70 bg-[#141c18]/85 px-2 py-1 text-left text-[11.5px] font-semibold leading-tight text-[#ffe9b8] shadow-lift">{t(`Stijf: je loopt trager. ${d!.logs.steps.today.toLocaleString('nl-NL')} van ${d!.logs.steps.goal.toLocaleString('nl-NL')} stappen vandaag; lopen of even bewegen helpt. Tik voor de Mobiliteitsstudio.`, `Stiff: you walk slower. ${d!.logs.steps.today.toLocaleString('en-GB')} of ${d!.logs.steps.goal.toLocaleString('en-GB')} steps today; walking or moving helps. Tap for the mobility studio.`)}</button></li>
+              <li><button type="button" onClick={() => world.current?.goTo('in:mobiliteit')}
+                aria-label={t(`Stijf: je loopt trager. ${d!.logs.steps.today.toLocaleString('nl-NL')} van ${d!.logs.steps.goal.toLocaleString('nl-NL')} stappen vandaag; lopen of even bewegen helpt. Tik voor de Mobiliteitsstudio.`, `Stiff: you walk slower. ${d!.logs.steps.today.toLocaleString('en-GB')} of ${d!.logs.steps.goal.toLocaleString('en-GB')} steps today; walking or moving helps. Tap for the mobility studio.`)}
+                className="flex min-h-[28px] items-center gap-1 rounded-full border border-[#f0c36a]/70 bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none text-[#ffe9b8] shadow-lift"><Footprints className="h-3.5 w-3.5" aria-hidden />{t('Stijf · trager', 'Stiff · slower')}</button></li>
             )}
           </ul>
         )}

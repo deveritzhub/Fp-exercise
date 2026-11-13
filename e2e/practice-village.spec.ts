@@ -114,6 +114,7 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   await expect(village).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
   // The day's meters are in the world; a tap opens the quick log on that tab.
   const meters = page.getByTestId('world-meters');
+  await page.getByTestId('toggle-meters').click();
   await expect(meters.locator('[data-meter]')).toHaveCount(3);
   await meters.locator('[data-meter="steps"]').click();
   await expect(page.getByRole('dialog', { name: 'Snel loggen' }).getByRole('tab', { name: 'Stappen' })).toHaveAttribute('aria-selected', 'true');
