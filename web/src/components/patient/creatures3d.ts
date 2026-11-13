@@ -14,7 +14,20 @@ const eye = (g: THREE.Group, x: number, y: number, z: number, r = 0.055) => {
   g.add(white, pupil);
 };
 
-export function creature(kind: CreatureKind) {
+export function creature(kind: CreatureKind): THREE.Group {
+  // The big ones are the small ones grown: the same shape, larger, with a crown for the king.
+  if (kind === 'giant_slime' || kind === 'couch_king') {
+    const g = new THREE.Group();
+    const inner = creature(kind === 'giant_slime' ? 'slime' : 'couch');
+    inner.scale.setScalar(kind === 'giant_slime' ? 1.9 : 1.7);
+    g.add(inner);
+    if (kind === 'couch_king') {
+      const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.16, 0.14, 8, 1, true), m(0xe4bc63, { metalness: 0.6, roughness: 0.3, side: THREE.DoubleSide }));
+      crown.position.set(0, 1.05, -0.2);
+      g.add(crown);
+    }
+    return g;
+  }
   const g = new THREE.Group();
   if (kind === 'slime') {
     const body = new THREE.Mesh(new THREE.SphereGeometry(0.32, 20, 14), m(0x8fb2c9, { transparent: true, opacity: 0.9, roughness: 0.25 }));

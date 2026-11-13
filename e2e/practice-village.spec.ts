@@ -85,7 +85,7 @@ test('therapist walks from the practice to a patient home and looks inside', asy
 
 /** The therapist makes an own figure; the patient finds that figure in the practice, and the day's meters in the world. */
 test('therapist makes a figure and the patient meets it in the practice', async ({ browser }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(560_000);
   const staffContext = await browser.newContext({ locale: 'nl-NL' });
   const staff = await staffContext.newPage();
   await login(staff, 'therapeut@praktijk-a.test');
@@ -135,6 +135,25 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   for (let i = 0; i < 4 && (await strike.count()); i++) await strike.click();
   await expect(adv).toContainText('Avonturier 1 · 12/60', { timeout: 15_000 });
   await expect(strike).toHaveCount(0);
+  // The boxing school: a round on the bag; hits give adventure XP.
+  await page.getByRole('button', { name: 'Loop naar de boksschool' }).press('Enter');
+  await page.getByTestId('open-boxing').click({ timeout: 90_000 });
+  const round = page.getByTestId('boxing-round');
+  await page.getByTestId('start-round').click();
+  for (let i = 0; i < 40 && (await round.getAttribute('data-state')) === 'on'; i++) {
+    const lit = round.locator('[data-lit="true"]');
+    if (await lit.count()) await lit.first().dispatchEvent('pointerdown');
+    await page.waitForTimeout(300);
+  }
+  await expect(round).toHaveAttribute('data-state', 'done', { timeout: 20_000 });
+  await expect(adv).not.toContainText('· 12/60', { timeout: 15_000 });
+  await page.keyboard.press('Escape');
+  // The flask: filled at the well, a glass to drink on the way.
+  await page.getByRole('button', { name: 'Loop naar de waterput' }).press('Enter');
+  await page.getByTestId('fill-flask').click({ timeout: 90_000 });
+  await expect(page.getByTestId('flask')).toHaveAttribute('aria-label', /2 van 2 glazen/);
+  await page.getByTestId('flask').click();
+  await expect(page.getByTestId('flask')).toHaveAttribute('aria-label', /1 van 2 glazen/, { timeout: 15_000 });
   if (process.env.SHOTS) {
     await page.getByRole('button', { name: /^Loop naar Oefenzaal/ }).press('Enter');
     await expect(village).toHaveAttribute('data-zone', 'practice', { timeout: 90_000 });
