@@ -18,7 +18,8 @@ import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { HeroStage, LevelBadge, XpBar } from '@/components/hero/GameFx';
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
-import { HumanFigure, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
+import { HumanFigure, KIT, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
+import { FABRICS, fabricUrl } from '@/components/hero/hero3d';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
 import { MOBILITY_MEASURE_XP } from '@shared/mobilityTests';
 import { BADGES, BOSSES, SEASONS, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, WALL_BADGES_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, levelTier, nextLevelTier, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
@@ -47,7 +48,7 @@ const LABELS: Record<string, Record<string, [string, string]>> = {
   eyeColor: { brown: ['Bruin', 'Brown'], darkbrown: ['Donkerbruin', 'Dark brown'], blue: ['Blauw', 'Blue'], green: ['Groen', 'Green'], hazel: ['Hazelaar', 'Hazel'], grey: ['Grijs', 'Grey'] },
   beard: { none: ['Geen', 'None'], stubble: ['Stoppels', 'Stubble'], moustache: ['Snor', 'Moustache'], beard: ['Baard', 'Beard'] },
   glasses: { none: ['Geen bril', 'No glasses'], round: ['Ronde bril', 'Round glasses'], square: ['Rechthoekige bril', 'Square glasses'] },
-  outfit: { forest: ['Bosgroen', 'Forest'], sand: ['Zand', 'Sand'], ocean: ['Oceaan', 'Ocean'], berry: ['Bes', 'Berry'], slate: ['Leisteen', 'Slate'], sun: ['Zon', 'Sun'] },
+  outfit: { forest: ['Bosgroen', 'Forest'], sand: ['Zand', 'Sand'], ocean: ['Oceaan', 'Ocean'], berry: ['Bes', 'Berry'], slate: ['Leisteen', 'Slate'], sun: ['Zon', 'Sun'], flits: ['Flits', 'Flash'], honing: ['Honingraat', 'Honeycomb'], camo: ['Camouflage', 'Camo'], ridder: ['Ridder', 'Knight'], ruit: ['Houthakker', 'Lumberjack'], tovenaar: ['Tovenaar', 'Wizard'], leer: ['Leer', 'Leather'], malien: ['Maliën', 'Chain mail'] },
 };
 type Opt<K extends keyof typeof HERO_OPTIONS> = (typeof HERO_OPTIONS)[K][number];
 
@@ -464,6 +465,14 @@ export function HeroProfilePage() {
         <SkinChoice look={look} onChange={(skin) => set('skin', skin)} />
         <GuestHeroChoice guests={q.data.heroGuests ?? []} value={look.photoKey ?? null} onChange={(photoKey) => setLook({ ...look, photoKey })} />
         <HairChoice look={look} onChange={(fields) => setLook({ ...look, ...fields })} />
+        <Choice legend={t('Kleding', 'Clothing')} name="outfit" value={look.outfit as Opt<'outfit'>} options={HERO_OPTIONS.outfit} onChange={(v) => set('outfit', v)}
+          render={(v) => (
+            <span className="flex flex-col items-center gap-1">
+              <span className="h-9 w-9 shrink-0 rounded-lg border border-ink-200 shadow-xs" aria-hidden
+                style={FABRICS.has(v) ? { backgroundImage: `url(${fabricUrl(v)})`, backgroundSize: '200%' } : { background: KIT[v].main }} />
+              <span className="text-[12.5px] leading-tight">{L('outfit', v)}</span>
+            </span>
+          )} />
       </Card>
       <Card className="space-y-4 p-5">
         <h2 className="t-section">{t('Lichaamsmaten', 'Body measurements')}</h2>

@@ -27,6 +27,15 @@ export const KIT: Record<string, { main: string; dark: string; soft: string }> =
   berry: { main: '#8e3b5f', dark: '#6d2d49', soft: '#f6e7ee' },
   slate: { main: '#46554e', dark: '#34433c', soft: '#e8eee9' },
   sun: { main: '#b5781a', dark: '#8a5b12', soft: '#fbf0d9' },
+  // The patterned cloths: their main tone here, the pattern itself on the 3D hero.
+  flits: { main: '#1fb8c9', dark: '#0b3f9a', soft: '#e3f7fb' },
+  honing: { main: '#f07d1a', dark: '#2f3442', soft: '#fdeedd' },
+  camo: { main: '#5fae2a', dark: '#2f6f22', soft: '#eef8df' },
+  ridder: { main: '#1f3fae', dark: '#152a78', soft: '#f1d98a' },
+  ruit: { main: '#c2201f', dark: '#1e1a18', soft: '#f6e3e1' },
+  tovenaar: { main: '#4a1a8a', dark: '#2f1160', soft: '#f1d98a' },
+  leer: { main: '#a5512c', dark: '#6b3319', soft: '#f0d9c4' },
+  malien: { main: '#8d8983', dark: '#4f4b46', soft: '#e9e7e3' },
 };
 
 export type FigureLook = Pick<HeroLook, 'skin' | 'hair' | 'outfit'> & Partial<Pick<HeroLook, 'hairColor' | 'eyeColor' | 'frame' | 'build' | 'beard' | 'glasses' | 'sport'>> & {

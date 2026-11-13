@@ -13,6 +13,9 @@ export const RELEASES: Release[] = [
     titleNl: 'Een dorp voor de praktijk',
     titleEn: 'A village for the practice',
     items: [
+      { for: 'patient', nl: 'Nieuwe kleding voor je held: kies onder Uiterlijk een stof met patroon, zoals Ridder, Tovenaar, Flits of Maliën.', en: 'New clothing for your hero: under Look, pick a patterned cloth such as Knight, Wizard, Flash or Chain mail.' },
+      { for: 'patient', nl: 'In de praktijk staat nu de fysiotherapeut, in het Krachthonk een coach en in de Mobiliteitsstudio de flowmeester.', en: 'The practice now has the physiotherapist, the gym a coach and the mobility studio the flow master.' },
+      { for: 'patient', nl: 'Het dorp heeft een geschilderde bodem: gras, klaver, zandpaden en een kiezelplein, en geschilderde daken, muren en bomen.', en: 'The village has painted ground: grass, clover, sand paths and a pebbled square, and painted roofs, walls and trees.' },
       { for: 'patient', nl: 'Je hebt een eigen huis in het dorp. Het groeit met je level, van een kamp tot een villa, en je richt het in met meubels die je met muntjes koopt.', en: 'You have a home of your own in the village. It grows with your level, from a camp to a villa, and you furnish it with pieces bought with coins.' },
       { for: 'patient', nl: 'Het dorp kan op volledig scherm.', en: 'The village can go full screen.' },
       { for: 'patient', nl: 'Het dorp heeft een minikaart die met je meedraait, met een eigen teken per gebouw. Tik erop om ergens heen te lopen, of open de wereldkaart.', en: 'The village has a minimap that turns with you, with a sign of its own for every building. Tap it to walk somewhere, or open the world map.' },

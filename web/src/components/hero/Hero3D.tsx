@@ -1,3 +1,4 @@
+import { dress } from './fabric3d';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -172,7 +173,7 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
           if (m.isMesh) {
             const mat = m.material as THREE.MeshStandardMaterial;
             const base = mat.name.replace(/\.\d+$/, '') as keyof typeof scene3d.tints;
-            if (scene3d.tints[base]) mat.color.set(scene3d.tints[base]);
+            dress(mat, base, scene3d.tints[base], scene3d.fabric);
           }
         });
         setState('ready');
