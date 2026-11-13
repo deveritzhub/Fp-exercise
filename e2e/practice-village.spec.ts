@@ -143,7 +143,8 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   await page.getByTestId('start-round').click();
   for (let i = 0; i < 40 && (await round.getAttribute('data-state')) === 'on'; i++) {
     const lit = round.locator('[data-lit="true"]');
-    if (await lit.count()) await lit.first().dispatchEvent('pointerdown');
+    // The pad may go dark between looking and hitting: a miss, not a reason to wait.
+    if (await lit.count()) await lit.first().dispatchEvent('pointerdown', undefined, { timeout: 400 }).catch(() => undefined);
     await page.waitForTimeout(300);
   }
   await expect(round).toHaveAttribute('data-state', 'done', { timeout: 20_000 });

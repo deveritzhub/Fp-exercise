@@ -611,8 +611,8 @@ function shaded<T extends THREE.BufferGeometry>(geo: T) {
 }
 /** Round leafy tree, about 3–4 hero heights. */
 /** A ball of leaves that is not a ball: the surface swells and dips, so a crown reads as foliage. */
-function leafBall(r: number, R: () => number) {
-  const geo = new THREE.IcosahedronGeometry(r, 2);
+function leafBall(r: number, R: () => number, detail = 2) {
+  const geo = new THREE.IcosahedronGeometry(r, detail);
   const pos = geo.attributes.position;
   const [a, b, c] = [R() * 6, R() * 6, R() * 6];
   const v = new THREE.Vector3();
@@ -1178,7 +1178,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     // Woods on the hills: two instanced meshes for all of them.
     const far = phone ? 110 : 190;
     const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.2, 1.6, 5), mat(0x5d4027), far);
-    const crowns = new THREE.InstancedMesh(leafBall(1, rng(31)), mat(0xffffff, { vertexColors: true, flatShading: false, map: painted('leaves', 2, 1.5) }), far * 3);
+    const crowns = new THREE.InstancedMesh(leafBall(1, rng(31), 1), mat(0xffffff, { vertexColors: true, flatShading: false, map: painted('leaves', 2, 1.5) }), far * 3);
     const M = new THREE.Matrix4();
     const Q = new THREE.Quaternion();
     const col = new THREE.Color();
