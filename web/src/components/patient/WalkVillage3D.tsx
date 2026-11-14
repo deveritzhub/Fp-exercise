@@ -155,6 +155,8 @@ const KEEPERS: Record<string, { wear: string[]; tint: Record<string, string>; fa
   library: { wear: ['hair_bun', 'glasses_round', 'outfit_tracksuit', 'gear_scarf', 'base_shoes'], tint: { kit_main: '#8e3b5f', kit_dark: '#6d2d49', kit_soft: '#f6e7ee', hair: '#6f6f6f', skin: '#d9a98a' }, fabric: 'tovenaar' },
   hall: { wear: ['hair_short', 'glasses_square', 'outfit_tracksuit', 'base_shoes'], tint: { kit_main: '#b5781a', kit_dark: '#6b4705', kit_soft: '#fbf0d9', hair: '#8a8a8a', skin: '#e3b08e' }, fabric: 'ridder' },
   board: { wear: ['hair_ponytail', 'outfit_sport_running', 'gear_cap', 'base_shoes'], tint: { kit_main: '#2759a0', kit_dark: '#1d4378', kit_soft: '#e7f0f9', hair: '#8a5a2b', skin: '#c99670' }, fabric: 'flits' },
+  // The sensei: a white gi with a black belt, barefoot.
+  dojo: { wear: ['hair_short', 'outfit_tracksuit', 'gear_belt'], tint: { kit_main: '#f4f2ec', kit_dark: '#ecebe4', kit_soft: '#f4f2ec', leather: '#1d1f1e', hair: '#8a8a8a', skin: '#d9a98a' }, fabric: null },
   guild: { wear: ['hair_curly', 'beard_moustache', 'outfit_tracksuit', 'gear_belt', 'base_shoes'], tint: { kit_main: '#29483c', kit_dark: '#1d362d', kit_soft: '#e4bc63', hair: '#3b2a1a', skin: '#a8754f' }, fabric: 'ruit' },
 };
 const KEEPER_AT = { x: 0.95, z: -1.45 };
@@ -1013,7 +1015,31 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const origin = { x: 0, z: 560 + Object.keys(places).length * 160 };
       const h = houseRoom(b.kind ?? 'home', origin);
       scene.add(h.group);
-      if (!b.kind) {
+      if (b.key === 'dojo') {
+        // The dojo: mats on the floor, and on the north wall the banner and the sign of the school.
+        const k2 = kit(h.group);
+        for (const [x, z] of [[-1.5, -0.6], [0.3, -0.6], [2.1, -0.6], [-1.5, 0.9], [0.3, 0.9], [2.1, 0.9]]) k2.box(1.74, 0.03, 1.44, (x + z) % 2 ? 0x9bb37a : 0x8aa56b, x, 0.016, z).castShadow = false;
+        const hang = (url: string, x: number, y: number, scale: number) =>
+          loadModel(url)
+            .then((gltf) => {
+              if (cancelled) return;
+              const model = gltf.scene.clone(true);
+              model.scale.setScalar(scale);
+              model.position.set(x, y, -2.42);
+              model.traverse((o) => {
+                const bm = o as THREE.Mesh;
+                if (!bm.isMesh) return;
+                const mm = (bm.material as THREE.MeshStandardMaterial).clone();
+                mm.metalness = 0;
+                mm.roughness = 0.9;
+                bm.material = mm;
+              });
+              h.group.add(model);
+            })
+            .catch(() => undefined);
+        void hang('/village/dojo/banner.glb?v=1', 1.3, 0.75, 0.95);
+        void hang('/village/dojo/teken.glb?v=1', -1.2, 1.0, 1.25);
+      } else if (!b.kind) {
         // A shop: a counter across the room with a few wares on it, and a rug to stand on.
         const k2 = kit(h.group);
         k2.box(2.6, 0.9, 0.5, 0x7a5232, 0.4, 0.45, -0.75, { map: painted('wood') });

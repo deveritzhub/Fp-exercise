@@ -33,6 +33,7 @@ const KEEPER: Record<string, { name: [string, string]; says: [string, string]; o
   library: { name: ['Bibliothecaris', 'Librarian'], says: ['Stil in de bibliotheek… maar vraag gerust. Hier vind je alle spieren en wat ze doen.', 'Quiet in the library… but do ask. Here you find every muscle and what it does.'], open: ['Open de spierenatlas', 'Open the muscle atlas'] },
   hall: { name: ['Hofmeester', 'Steward'], says: ['Dit is de trofeeënhal. Alles wat je hebt verdiend hangt hier aan de muur.', 'This is the trophy hall. Everything you have earned hangs on the wall here.'], open: ['Bekijk je prijzen', 'See your trophies'] },
   board: { name: ['Bode', 'Messenger'], says: ['Nieuws van het prikbord: hier staan je missies van deze week.', 'News from the notice board: here are your missions for this week.'], open: ['Bekijk je missies', 'See your missions'] },
+  dojo: { name: ['Sensei', 'Sensei'], says: ['Osu! Welkom in de dojo.', 'Osu! Welcome to the dojo.'], open: ['Bekijk je banden', 'See your belts'] },
   guild: { name: ['Gildemeester', 'Guild master'], says: ['Welkom in de gildehal. Samen met de rest van de praktijk werk je hier aan één doel.', 'Welcome to the guild hall. Together with the rest of the practice you work on one goal here.'], open: ['Bekijk het gilde', 'See the guild'] },
 };
 
@@ -240,7 +241,7 @@ export function VillageWalkPage() {
       { key: 'kracht', to: MODULE_PATH.kracht, label: nl ? 'Krachthonk' : 'Strength house', site: MODULE_SITES.kracht as Site, roof: 0x7a2f24, kind: 'kracht' as const, alert: waiting.kracht },
       { key: 'mobiliteit', to: MODULE_PATH.mobiliteit, label: nl ? 'Mobiliteitsstudio' : 'Mobility studio', site: MODULE_SITES.mobiliteit as Site, roof: 0x2f7f8a, kind: 'mobiliteit' as const, alert: waiting.mobiliteit },
       // The Kyokushin dojo, behind the houses in the north-west: its door opens the belt list.
-      { key: 'dojo', to: '/p/held', label: 'Dojo', site: siteAt(213, 10.5) as Site, roof: 0x1d1f1e, model: { url: '/village/buildings/dojo.glb?v=1', scale: 0.8 } },
+      { key: 'dojo', to: '/p/held', label: 'Dojo', site: siteAt(213, 10.5) as Site, roof: 0x1d1f1e, keeper: 'Sensei', model: { url: '/village/buildings/dojo.glb?v=1', scale: 0.8 } },
     ],
     [nl, waiting.kracht, waiting.mobiliteit],
   );
@@ -662,7 +663,7 @@ export function VillageWalkPage() {
               <DoorOpen className="h-5 w-5 shrink-0" aria-hidden /><span className="truncate">{errandHere.label}</span>
             </Link>
           ) : keeperOf ? (
-            <Button size="lg" data-testid="talk-keeper" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<ScrollText className="h-5 w-5" />} onClick={() => setTalk(keeperOf.key)}>{t(`Praat met de ${('keeper' in keeperOf && keeperOf.keeper ? keeperOf.keeper : '').toLowerCase()}`, `Talk to the ${('keeper' in keeperOf && keeperOf.keeper ? keeperOf.keeper : '').toLowerCase()}`)}</Button>
+            <Button size="lg" data-testid="talk-keeper" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<ScrollText className="h-5 w-5" />} onClick={() => (keeperOf.key === 'dojo' ? setDojoOpen(true) : setTalk(keeperOf.key))}>{t(`Praat met de ${('keeper' in keeperOf && keeperOf.keeper ? keeperOf.keeper : '').toLowerCase()}`, `Talk to the ${('keeper' in keeperOf && keeperOf.keeper ? keeperOf.keeper : '').toLowerCase()}`)}{keeperOf.key === 'dojo' && karate.data && <BeltMark belt={karate.data.belt} className="ml-1 h-3 w-7" />}</Button>
           ) : nearBuilding && 'keeper' in nearBuilding && nearBuilding.keeper ? (
             <Button size="lg" data-testid="enter-shop" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(nearBuilding.key)}>{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}</Button>
           ) : nearBuilding && 'kind' in nearBuilding ? (
@@ -671,10 +672,6 @@ export function VillageWalkPage() {
             <Link to={boardOf.to} data-testid="open-programme" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">
               <ClipboardList className="h-5 w-5" aria-hidden />{boardOf.key === 'kracht' ? t('Bekijk je krachtprogramma', 'See your strength programme') : t('Bekijk je mobiliteitsprogramma', 'See your mobility programme')}
             </Link>
-          ) : nearBuilding?.key === 'dojo' ? (
-            <Button size="lg" data-testid="enter-dojo" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => setDojoOpen(true)}>
-              {t('Naar binnen: de dojo', 'Go in: the dojo')}{karate.data && <BeltMark belt={karate.data.belt} className="ml-1 h-3 w-7" />}
-            </Button>
           ) : nearBuilding ? (
             <Link to={nearBuilding.to} data-testid="enter-building" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">
               <DoorOpen className="h-5 w-5" aria-hidden />{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}
