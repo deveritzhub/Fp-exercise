@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { CreatureKind } from '@shared/adventure';
+import { loadModel } from '@/components/hero/Hero3D';
 
 /**
  * The little ailments of the village as creatures: a stiffness slime, a thirst imp and a couch
@@ -14,11 +15,42 @@ const eye = (g: THREE.Group, x: number, y: number, z: number, r = 0.055) => {
   g.add(white, pupil);
 };
 
+/** The sculpted models (web/public/village/creatures). Bump the version when a file changes. */
+const MODEL: Record<CreatureKind, { file: string; scale: number }> = {
+  slime: { file: 'stijfheidsslijm', scale: 0.9 },
+  imp: { file: 'dorstduiveltje', scale: 0.95 },
+  couch: { file: 'bankhanger', scale: 1 },
+  giant_slime: { file: 'stijfheidsslijm', scale: 1.9 },
+  couch_king: { file: 'bankkoning', scale: 1 },
+};
+const CREATURES_VERSION = 1;
+
+/**
+ * A creature for the village: the sculpted model, with the simple one made here standing in until
+ * the file has loaded, and staying when it does not come.
+ */
 export function creature(kind: CreatureKind): THREE.Group {
+  const g = new THREE.Group();
+  const simple = simpleCreature(kind);
+  g.add(simple);
+  const m3 = MODEL[kind];
+  loadModel(`/village/creatures/${m3.file}.glb?v=${CREATURES_VERSION}`)
+    .then((gltf) => {
+      const model = gltf.scene.clone(true);
+      model.scale.setScalar(m3.scale);
+      model.traverse((o) => { o.castShadow = true; });
+      g.remove(simple);
+      g.add(model);
+    })
+    .catch(() => undefined);
+  return g;
+}
+
+function simpleCreature(kind: CreatureKind): THREE.Group {
   // The big ones are the small ones grown: the same shape, larger, with a crown for the king.
   if (kind === 'giant_slime' || kind === 'couch_king') {
     const g = new THREE.Group();
-    const inner = creature(kind === 'giant_slime' ? 'slime' : 'couch');
+    const inner = simpleCreature(kind === 'giant_slime' ? 'slime' : 'couch');
     inner.scale.setScalar(kind === 'giant_slime' ? 1.9 : 1.7);
     g.add(inner);
     if (kind === 'couch_king') {
