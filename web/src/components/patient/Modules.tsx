@@ -82,9 +82,15 @@ export function ConsentToggle({ module, since }: { module: 'kracht' | 'mobilitei
           </p>
         </div>
       </div>
-      <Button size="lg" variant={since ? 'secondary' : 'primary'} className="mt-3 w-full" loading={busy} onClick={toggle}>
-        {since ? t('Stoppen met delen', 'Stop sharing') : t('Delen met mijn fysiotherapeut', 'Share with my physiotherapist')}
-      </Button>
+      {/* A switch: on means shared. The same calls and the same permission as before. */}
+      <label className="mt-3 flex min-h-[48px] cursor-pointer items-center justify-between gap-3 rounded-xl bg-canvas px-3">
+        <span className="text-[15.5px] font-semibold text-ink-950">{t('Delen met mijn fysiotherapeut', 'Share with my physiotherapist')}</span>
+        <span className="relative inline-flex shrink-0">
+          <input type="checkbox" role="switch" className="peer sr-only" checked={!!since} disabled={busy} onChange={toggle} aria-label={t(`${label}: delen met mijn fysiotherapeut`, `${label}: share with my physiotherapist`)} />
+          <span aria-hidden className="h-8 w-14 rounded-full bg-ink-300 transition-colors peer-checked:bg-accent peer-focus-visible:ring-2 peer-focus-visible:ring-accent peer-focus-visible:ring-offset-2 peer-disabled:opacity-60 motion-reduce:transition-none" />
+          <span aria-hidden className="absolute left-1 top-1 h-6 w-6 rounded-full bg-white shadow transition-transform peer-checked:translate-x-6 motion-reduce:transition-none" />
+        </span>
+      </label>
     </div>
   );
 }

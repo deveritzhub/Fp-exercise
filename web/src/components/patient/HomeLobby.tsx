@@ -231,7 +231,7 @@ export function HomeLobby({ greeting, subtitle, date }: { greeting: string; subt
   const tier = L ? levelTier(L.level) : null;
   return (
     <section aria-labelledby="lobby-greeting" className="relative overflow-hidden rounded-3xl border border-line shadow-card" data-daypart={daypart}>
-      <div className="relative min-h-[300px]">
+      <div className="relative min-h-[232px]">
         <VillageScene daypart={daypart} growth={growth} ownStage={L ? homeStage(L.level) : null} />
         {/* The whole picture is the way into the village; the hero and the greeting keep their own links on top. */}
         <Link to="/p/dorp" data-testid="lobby-to-village" aria-label={t('Naar je dorp in 3D', 'To your village in 3D')} className="absolute inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent" />
@@ -245,7 +245,7 @@ export function HomeLobby({ greeting, subtitle, date }: { greeting: string; subt
             <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
           </Link>
         )}
-        <div className="pointer-events-none relative flex min-h-[300px] items-end gap-2.5 p-3 pb-3 pt-10 [&_a]:pointer-events-auto">
+        <div className="pointer-events-none relative flex min-h-[232px] items-end gap-2.5 p-3 pb-3 pt-10 [&_a]:pointer-events-auto">
           {look && L ? (
             <Link
               to="/p/held/uiterlijk"
@@ -293,6 +293,129 @@ export function HomeLobby({ greeting, subtitle, date }: { greeting: string; subt
         ) : null}
       </div>
     </section>
+  );
+}
+
+/**
+ * The top of "Vandaag", calm: the day, the greeting, and one line of level with its bar. The hero's
+ * photo is small beside it and still leads to look and measurements. The village picture lives at
+ * the top of the world map now (VillageBanner).
+ */
+export function TodayHeader({ greeting, date }: { greeting: string; date: string }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const d = useHero().data;
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Coming back from a workout: what was earned is named once.
+  const [welcome] = useState<{ xp: number } | null>(() => (location.state as { fromWorkout?: { xp: number } } | null)?.fromWorkout ?? null);
+  useEffect(() => {
+    if (welcome) navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const L = d?.level;
+  const look = d?.hero ? { ...d.hero, gear: [...d.gear.equipped, ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null, photo: d.customPhoto ?? null } : null;
+  return (
+    <header aria-labelledby="lobby-greeting" data-testid="today-header">
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[13.5px] font-medium text-ink-600">{date.charAt(0).toUpperCase() + date.slice(1)}</p>
+          <h1 id="lobby-greeting" className="font-display text-[28px] font-bold leading-tight tracking-[-0.01em] text-ink-950 [overflow-wrap:anywhere]">{greeting}</h1>
+        </div>
+        {look && L && (
+          <Link to="/p/held/uiterlijk" aria-label={t(`Uiterlijk en maten aanpassen, level ${L.level}`, `Edit look and measurements, level ${L.level}`)}
+            className="tap relative shrink-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2">
+            <HeroPhoto look={look} className="h-[60px] w-[48px] rounded-2xl shadow-card" />
+          </Link>
+        )}
+      </div>
+      {welcome && (
+        <p role="status" className="reward-in mt-2 text-[14.5px] font-semibold text-[#855806]">{t(`Welkom terug in je dorp! +${welcome.xp} XP verdiend.`, `Welcome back to your village! +${welcome.xp} XP earned.`)}</p>
+      )}
+      {d?.hero && L ? (
+        <Link to="/p/held" className="mt-3 block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" data-testid="level-line">
+          <span className="flex items-baseline justify-between gap-3 text-[13.5px]">
+            <span className="min-w-0 truncate font-semibold text-ink-950">{d.hero.heroName} · {t(`Level ${L.level}`, `Level ${L.level}`)} · {titleFor(L.level, nl)}</span>
+            <span className="shrink-0 text-ink-600">{t(`nog ${L.to - L.xp} XP tot level ${L.level + 1}`, `${L.to - L.xp} XP to level ${L.level + 1}`)}</span>
+          </span>
+          <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-line" role="img" aria-label={t(`Voortgang naar level ${L.level + 1}`, `Progress to level ${L.level + 1}`)}>
+            <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.round(Math.min(1, Math.max(0, (L.xp - L.from) / Math.max(1, L.to - L.from))) * 100)}%` }} />
+          </span>
+        </Link>
+      ) : d && !d.hero ? (
+        <Link to="/p/held/nieuw" className="mt-2 flex min-h-[44px] items-center gap-2 text-[15px] font-semibold text-accent">
+          <Sparkles className="h-5 w-5" aria-hidden />{t('Maak je sportheld en laat je dorp groeien', 'Create your sports hero and grow your village')}
+        </Link>
+      ) : null}
+    </header>
+  );
+}
+
+/** The village with the own home in front, as a banner that leads into the 3D village. */
+export function VillageBanner() {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const d = useHero().data;
+  const growth = useGrowth(d);
+  const daypart = daypartOf(new Date().getHours());
+  const light = SKY[daypart].text === 'light';
+  const L = d?.level;
+  if (!d?.hero || !L) return null;
+  return (
+    <section aria-label={t('Je dorp', 'Your village')} className="relative h-[190px] overflow-hidden rounded-3xl shadow-card" data-daypart={daypart} data-testid="village-banner">
+      <VillageScene daypart={daypart} growth={growth} ownStage={homeStage(L.level)} />
+      <Link to="/p/dorp" data-testid="lobby-to-village" aria-label={t('Naar je dorp in 3D', 'To your village in 3D')} className="absolute inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent" />
+      <Link to="/p/dorp" data-testid="lobby-home" className={cn('tap absolute right-2 top-2 flex min-h-[40px] items-center gap-1.5 rounded-full border px-2.5 text-[12.5px] font-semibold shadow-card backdrop-blur-[2px]', light ? 'border-white/30 bg-[#17233f]/75 text-white' : 'border-white/70 bg-white/85 text-ink-950')}>
+        <Home className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+        <span className="leading-tight">
+          <span className="block">{t('Jouw huis', 'Your home')} · {nl ? HOME_STAGES[homeStage(L.level)].nl : HOME_STAGES[homeStage(L.level)].en} · {t(`level ${L.level}`, `level ${L.level}`)}</span>
+          {levelsToNextHome(L.level) !== null && <span className={cn('block text-[11px] font-normal', light ? 'text-white/85' : 'text-ink-700')}>{t(`nog ${levelsToNextHome(L.level)} tot een ${HOME_STAGES[homeStage(L.level) + 1].nl.toLowerCase()}`, `${levelsToNextHome(L.level)} to a ${HOME_STAGES[homeStage(L.level) + 1].en.toLowerCase()}`)}</span>}
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+      </Link>
+      <span className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-[#1E3A30] px-3 py-1.5 text-[13.5px] font-semibold text-white shadow-card">{t('Loop rond in je dorp', 'Walk around your village')} →</span>
+    </section>
+  );
+}
+
+/** Two small tiles under the training: this week in a number, and how the own home is doing. */
+export function TodayTiles({ rate, done, planned }: { rate: number; done: number; planned: number }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const d = useHero().data;
+  const L = d?.level;
+  const pct = Math.round(Math.min(1, Math.max(0, rate)) * 100);
+  const tile = 'tap flex min-h-[104px] flex-col justify-between rounded-2xl bg-white p-4 shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent';
+  return (
+    <div className="grid grid-cols-2 gap-3" data-testid="today-tiles">
+      <Link to="/p/voortgang" className={tile}>
+        <span className="text-[13px] text-ink-600">{t('Deze week', 'This week')}</span>
+        <span>
+          <span className="block font-display text-[24px] font-bold leading-none tabular-nums text-ink-950">{pct}%</span>
+          <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-line"><span className="block h-full rounded-full bg-accent" style={{ width: `${pct}%` }} /></span>
+          <span className="mt-1.5 block text-[12.5px] text-ink-600">{t(`${done} van ${planned} trainingen`, `${done} of ${planned} workouts`)}</span>
+        </span>
+      </Link>
+      {d?.hero && L ? (
+        <Link to="/p/wereld" className={tile}>
+          <span className="flex items-start justify-between gap-1">
+            <span className="text-[13px] text-ink-600">{t('Je dorp', 'Your village')}</span>
+            <img src={`/village/homes/${HOME_STAGES[homeStage(L.level)].key}.webp?v=1`} alt="" width={56} height={52} className="-mr-1 -mt-1 h-12 w-auto" />
+          </span>
+          <span className="text-[14px] font-semibold leading-snug text-ink-950">
+            {levelsToNextHome(L.level) === null
+              ? t('Je woont in een villa.', 'You live in a villa.')
+              : t(`Nog ${levelsToNextHome(L.level)} ${levelsToNextHome(L.level) === 1 ? 'level' : 'levels'} tot een ${HOME_STAGES[homeStage(L.level) + 1].nl.toLowerCase()}`, `${levelsToNextHome(L.level)} more ${levelsToNextHome(L.level) === 1 ? 'level' : 'levels'} to a ${HOME_STAGES[homeStage(L.level) + 1].en.toLowerCase()}`)}
+          </span>
+          <span className="sr-only">{nl ? HOME_STAGES[homeStage(L.level)].nl : HOME_STAGES[homeStage(L.level)].en}</span>
+        </Link>
+      ) : (
+        <Link to="/p/held/nieuw" className={tile}>
+          <span className="text-[13px] text-ink-600">{t('Je dorp', 'Your village')}</span>
+          <span className="text-[14px] font-semibold leading-snug text-ink-950">{t('Maak je sportheld en je dorp begint.', 'Create your sports hero and your village begins.')}</span>
+        </Link>
+      )}
+    </div>
   );
 }
 

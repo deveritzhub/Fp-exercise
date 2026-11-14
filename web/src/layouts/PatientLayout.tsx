@@ -137,7 +137,7 @@ export function PatientLayout() {
             <Logo to="/p" compact className="min-h-[44px] min-w-[44px] justify-center min-[430px]:hidden" />
             <Logo to="/p" className="hidden min-h-[44px] min-[430px]:inline-flex" />
             <div className="flex min-w-0 items-center gap-1">
-              <span className="min-w-0 text-right text-[13.5px] font-medium leading-tight text-ink-600">{user.patient.kind === 'personal' ? t('Persoonlijk account', 'Personal account') : user.patient.practiceName}</span>
+              <span className="line-clamp-2 min-w-0 text-right text-[12.5px] font-medium leading-[1.15] text-ink-600 min-[400px]:text-[13px]" title={user.patient.kind === 'personal' ? undefined : user.patient.practiceName}>{user.patient.kind === 'personal' ? t('Persoonlijk account', 'Personal account') : user.patient.practiceName}</span>
               <MessagesButton />
               <FeedbackButton big />
               <Link to="/p/instellingen" aria-label={t('Instellingen', 'Settings')} title={t('Instellingen', 'Settings')} className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100', (loc.pathname.startsWith('/p/instellingen') || loc.pathname.startsWith('/p/account')) && 'bg-accent-soft text-accent')}>
@@ -162,12 +162,12 @@ export function PatientLayout() {
       {loc.pathname === '/p' && <WelcomeTour />}
       {/* A released rehabilitation phase: celebrate once (not during a workout or hero setup). */}
       {!inPlayer && !inSetup && <PhaseCelebration />}
-      <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : 'px-4 pb-28 pt-5')}>
+      <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : 'px-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-5')}>
         {!inPlayer && <UpdateNotice audience="patient" clinical={isClinical(user?.patient?.kind)} />}
         <Outlet />
       </main>
       {!inPlayer && !inSetup && (
-        <nav className="fixed inset-x-0 bottom-0 z-30 print:hidden border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label={t('Navigatie', 'Navigation')}>
+        <nav className="fixed inset-x-0 bottom-0 z-30 print:hidden border-t border-line bg-white pb-[env(safe-area-inset-bottom)]" aria-label={t('Navigatie', 'Navigation')}>
           {/* The + (quick log) sits exactly in the middle: two tabs on the left, the rest on the right. */}
           {simple ? (
             // Plain view: a few large tabs of equal width, and no quick-log button between them.

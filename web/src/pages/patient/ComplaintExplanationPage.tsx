@@ -21,7 +21,16 @@ export function ComplaintExplanationPage() {
         <Link to="/p/berichten" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" aria-hidden />{t('Berichten', 'Messages')}</Link>
         {c && <button type="button" onClick={() => window.print()} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-3 text-[14.5px] font-medium text-accent hover:bg-accent-soft"><Printer className="h-4 w-4" aria-hidden />{t('Printen of PDF', 'Print or PDF')}</button>}
       </div>
-      {c ? <ComplaintExplanation complaint={c} practiceName={user?.patient?.practiceName} /> : <p className="text-ink-600">{t('Deze uitleg bestaat niet (meer).', 'This explanation does not exist (any more).')}</p>}
+      {c ? <ComplaintExplanation complaint={c} practiceName={user?.patient?.practiceName} /> : (
+        <section className="rounded-2xl border border-line bg-white p-5 shadow-card" data-testid="no-explanation">
+          <h1 className="text-[20px] font-bold text-ink-950">{t('Deze uitleg is er niet (meer)', 'This explanation is not there (any more)')}</h1>
+          <p className="mt-2 text-[15.5px] text-ink-700">{t('De link die je opende hoort bij een uitleg die is aangepast of weggehaald. Je fysiotherapeut kan je een nieuwe sturen; die vind je dan bij je berichten.', 'The link you opened belongs to an explanation that was changed or removed. Your physiotherapist can send you a new one; you will find it in your messages.')}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link to="/p" className="tap inline-flex min-h-[48px] items-center rounded-xl bg-accent px-4 text-[15.5px] font-semibold text-accent-ink">{t('Terug naar Vandaag', 'Back to Today')}</Link>
+            <Link to="/p/berichten" className="tap inline-flex min-h-[48px] items-center rounded-xl border border-line bg-white px-4 text-[15.5px] font-semibold text-ink-900">{t('Naar mijn berichten', 'To my messages')}</Link>
+          </div>
+        </section>
+      )}
       {c && <MyExercises complaint={c.key} />}
     </div>
   );
