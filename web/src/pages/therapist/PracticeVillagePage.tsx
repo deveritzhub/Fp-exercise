@@ -92,6 +92,7 @@ export function PracticeVillagePage() {
               <Card aria-live="polite">
                 {home ? (
                   <div className="p-5" data-testid="home-panel">
+                    <img src={`/village/homes/${HOME_STAGES[homeStage(home.level)].key}.webp?v=1`} alt="" width={132} height={120} className="float-right -mr-1 -mt-1 ml-2 h-[104px] w-auto" />
                     <p className="t-label">{t(`Huisje ${home.no}`, `Home ${home.no}`)}</p>
                     {home.name && !sample && <p className="mt-1 text-[17px] font-semibold text-ink-950" data-testid="home-name">{home.name}</p>}
                     <h2 className="t-section mt-1">{stageName(home.level)} · {t(`level ${home.level}`, `level ${home.level}`)}</h2>
@@ -122,7 +123,7 @@ export function PracticeVillagePage() {
                   {homes.map((h) => (
                     <li key={h.id}>
                       <button type="button" onClick={() => setPicked(h.id)} aria-pressed={picked === h.id} className="flex min-h-[48px] w-full items-center justify-between gap-3 px-5 py-2 text-left hover:bg-[#F3F7F1] aria-pressed:bg-[#fbf0d9]">
-                        <span className="font-medium text-ink-900">{t(`Huisje ${h.no}`, `Home ${h.no}`)} <span className="font-normal text-ink-700">· {h.name ? `${h.name} · ` : ''}{stageName(h.level)}</span></span>
+                        <span className="flex items-center gap-2 font-medium text-ink-900"><img src={`/village/homes/${HOME_STAGES[homeStage(h.level)].key}.webp?v=1`} alt="" width={36} height={34} loading="lazy" className="h-8 w-9 shrink-0 object-contain" /><span>{t(`Huisje ${h.no}`, `Home ${h.no}`)} <span className="font-normal text-ink-700">· {h.name ? `${h.name} · ` : ''}{stageName(h.level)}</span></span></span>
                         <span className="flex items-center gap-2 text-[13px] text-ink-700">{h.week > 0 && <Flag className="h-3.5 w-3.5 text-[#2f9e44]" aria-label={t('deze week getraind', 'trained this week')} />}{t(`level ${h.level}`, `level ${h.level}`)}</span>
                       </button>
                     </li>
