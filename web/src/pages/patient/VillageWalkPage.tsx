@@ -138,6 +138,32 @@ const TIP_KEY = 'fp.village.tip';
 
 const STICK_KEY = 'fp.village.joystick';
 
+/**
+ * How smoothly the world runs on this device: frames per second, read from the scene once a second.
+ * Off until asked for; a help for tuning, not a part of the game.
+ */
+function FpsMeter() {
+  const { t } = useI18n();
+  const [on, setOn] = useState(false);
+  const [fps, setFps] = useState<number | null>(null);
+  useEffect(() => {
+    if (!on) return;
+    const id = window.setInterval(() => {
+      const v = Number(document.querySelector<HTMLElement>('[data-testid="walk-village"]')?.dataset.fps);
+      setFps(Number.isFinite(v) && v > 0 ? v : null);
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [on]);
+  return (
+    <p className="mt-2 text-[13px] text-ink-600">
+      <button type="button" data-testid="fps-toggle" aria-pressed={on} onClick={() => setOn((v) => !v)} className="min-h-[44px] font-medium text-accent underline underline-offset-2">
+        {on ? t('Verberg de snelheid', 'Hide the speed') : t('Toon hoe vloeiend het dorp loopt', 'Show how smoothly the village runs')}
+      </button>
+      {on && <span data-testid="fps" className="ml-2 tabular-nums">{fps === null ? t('meten…', 'measuring…') : t(`${fps} beelden per seconde (30 of meer is goed)`, `${fps} frames per second (30 or more is good)`)}</span>}
+    </p>
+  );
+}
+
 /** Thumb stick: drag the knob and the hero walks that way; push it to the rim to run. */
 export function Joystick({ stick, label }: { stick: RefObject<{ x: number; y: number }>; label: string }) {
   const knob = useRef<HTMLSpanElement>(null);
@@ -811,6 +837,8 @@ export function VillageWalkPage() {
       <p className="text-[13.5px] leading-relaxed text-ink-700">
         {t('Tik op de grond om te lopen. Sleep opzij om helemaal rond te draaien, omhoog of omlaag om te kantelen, en knijp met twee vingers (of gebruik + en −) om in en uit te zoomen. Tik op een poppetje om te praten. Liever een joystick? Zet hem aan met de knop met de gamepad. In de oefenzaal van je praktijk staan de fysiotherapeut en de tv met je oefeningen van vandaag.', 'Tap the ground to walk and drag sideways to look around. Prefer a joystick? Switch it on with the gamepad button. In the exercise room of your practice you find the physiotherapist and the TV with your exercises for today.')}
       </p>
+
+      <FpsMeter />
 
       <Dialog open={decorOpen} onClose={() => setDecorOpen(false)} title={t('Jouw huis inrichten', 'Furnish your home')} size="md" sheet
         description={L ? t(`${HOME_STAGES[stage].nl}, level ${L.level}. ${levelsToNextHome(L.level) === null ? 'Dit is het grootste huis.' : `Nog ${levelsToNextHome(L.level)} level(s) tot een ${HOME_STAGES[stage + 1].nl.toLowerCase()}.`}`, `${HOME_STAGES[stage].en}, level ${L.level}. ${levelsToNextHome(L.level) === null ? 'This is the biggest home.' : `${levelsToNextHome(L.level)} more level(s) to a ${HOME_STAGES[stage + 1].en.toLowerCase()}.`}`) : undefined}>

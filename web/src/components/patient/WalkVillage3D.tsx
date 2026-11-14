@@ -885,6 +885,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const mobs: { key: string; g: THREE.Group; door: Vec; hurtAt: number }[] = [];
     let swing = 0;
     let armR: THREE.Object3D | null = null;
+    let fpsFrames = 0;
+    let fpsSince = performance.now();
     let equip: () => void = () => {};
     for (const c of creatures ?? []) {
       const g = creature(c.kind);
@@ -1944,6 +1946,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const loop = () => {
       raf = requestAnimationFrame(loop);
       const dt = Math.min(clock.getDelta(), 0.2);
+      // Frames per second, averaged over a second, for whoever wants to see how the world runs on this device.
+      fpsFrames++;
+      const nowMs = performance.now();
+      if (nowMs - fpsSince >= 1000) {
+        el.dataset.fps = String(Math.round((fpsFrames * 1000) / (nowMs - fpsSince)));
+        fpsFrames = 0;
+        fpsSince = nowMs;
+      }
       if (!visible || document.hidden) return;
       tt += dt;
       const p = pos.current;
