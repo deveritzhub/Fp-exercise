@@ -27,6 +27,15 @@ import { Minimap, WorldMap, type Landmark, type MapTrack } from '@/components/pa
 // three.js only loads on the 3D pages.
 const WalkVillage3D = lazy(() => import('@/components/patient/WalkVillage3D'));
 
+/** Who keeps each building, and what they say when you step up to the counter. */
+const KEEPER: Record<string, { name: [string, string]; says: [string, string]; open: [string, string] }> = {
+  smithy: { name: ['Wapensmid', 'Armourer'], says: ['Welkom in de smederij! Hier ruil je muntjes voor uitrusting. Verdien ze met trainen en je dagkist.', 'Welcome to the smithy! Here you trade coins for gear. Earn them by training and your day chest.'], open: ['Bekijk de uitrusting', 'See the gear'] },
+  library: { name: ['Bibliothecaris', 'Librarian'], says: ['Stil in de bibliotheek… maar vraag gerust. Hier vind je alle spieren en wat ze doen.', 'Quiet in the library… but do ask. Here you find every muscle and what it does.'], open: ['Open de spierenatlas', 'Open the muscle atlas'] },
+  hall: { name: ['Hofmeester', 'Steward'], says: ['Dit is de trofeeënhal. Alles wat je hebt verdiend hangt hier aan de muur.', 'This is the trophy hall. Everything you have earned hangs on the wall here.'], open: ['Bekijk je prijzen', 'See your trophies'] },
+  board: { name: ['Bode', 'Messenger'], says: ['Nieuws van het prikbord: hier staan je missies van deze week.', 'News from the notice board: here are your missions for this week.'], open: ['Bekijk je missies', 'See your missions'] },
+  guild: { name: ['Gildemeester', 'Guild master'], says: ['Welkom in de gildehal. Samen met de rest van de praktijk werk je hier aan één doel.', 'Welcome to the guild hall. Together with the rest of the practice you work on one goal here.'], open: ['Bekijk het gilde', 'See the guild'] },
+};
+
 const LABEL: Record<string, [string, string]> = {
   smithy: ['Smederij', 'Smithy'],
   library: ['Bibliotheek', 'Library'],
@@ -227,7 +236,7 @@ export function VillageWalkPage() {
   // Round the square: the hero's buildings. Further out, west and east: the houses for strength and mobility.
   const buildings = useMemo(
     () => [
-      ...villageBuildings({ hero: true, atlas: true, mission: true, guild: true }).map((b) => ({ key: b.key as string, to: b.to as string, label: nl ? LABEL[b.key][0] : LABEL[b.key][1] })),
+      ...villageBuildings({ hero: true, atlas: true, mission: true, guild: true }).map((b) => ({ key: b.key as string, to: b.to as string, label: nl ? LABEL[b.key][0] : LABEL[b.key][1], keeper: KEEPER[b.key] ? KEEPER[b.key].name[nl ? 0 : 1] : undefined })),
       { key: 'kracht', to: MODULE_PATH.kracht, label: nl ? 'Krachthonk' : 'Strength house', site: MODULE_SITES.kracht as Site, roof: 0x7a2f24, kind: 'kracht' as const, alert: waiting.kracht },
       { key: 'mobiliteit', to: MODULE_PATH.mobiliteit, label: nl ? 'Mobiliteitsstudio' : 'Mobility studio', site: MODULE_SITES.mobiliteit as Site, roof: 0x2f7f8a, kind: 'mobiliteit' as const, alert: waiting.mobiliteit },
       // The Kyokushin dojo, behind the houses in the north-west: its door opens the belt list.
@@ -252,6 +261,10 @@ export function VillageWalkPage() {
   const L = d?.level;
   const nearBuilding = buildings.find((b) => b.key === near) ?? null;
   const boardOf = buildings.find((b) => 'kind' in b && boardKey(b.key) === near) ?? null;
+  // At the counter of a kept building: the keeper to talk to.
+  const keeperOf = buildings.find((b) => 'keeper' in b && b.keeper && boardKey(b.key) === near) ?? null;
+  const [talk, setTalk] = useState<string | null>(null);
+  const talking = buildings.find((b) => b.key === talk) ?? null;
   const exercise = todo.flatMap((p) => p.today.items).find((i) => i.id === playing) ?? null;
 
   // Everything there is to do, each with its place: today's workouts first, then the weekly quests and the day chest.
@@ -464,6 +477,7 @@ export function VillageWalkPage() {
       : k === EXIT_KEY ? t('de uitgang', 'the exit')
       : k === HOME_KEY ? homeLabel.toLowerCase()
       : k === boardKey(HOME_KEY) ? t('je inrichtingstafel', 'your furnishing table')
+      : k.startsWith('in:') && KEEPER[k.slice(3)] ? buildings.find((b) => b.key === k.slice(3))?.label ?? k
       : k.startsWith('in:') ? t('het programmabord', 'the programme board')
       : k === WELL_KEY ? t('de waterput', 'the well')
       : k === BOXING_KEY ? t('de boksschool', 'the boxing school')
@@ -647,6 +661,10 @@ export function VillageWalkPage() {
             <Link to={errandHere.link!} data-testid="errand-link" className="tap pointer-events-auto inline-flex min-h-[48px] max-w-full items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">
               <DoorOpen className="h-5 w-5 shrink-0" aria-hidden /><span className="truncate">{errandHere.label}</span>
             </Link>
+          ) : keeperOf ? (
+            <Button size="lg" data-testid="talk-keeper" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<ScrollText className="h-5 w-5" />} onClick={() => setTalk(keeperOf.key)}>{t(`Praat met de ${('keeper' in keeperOf && keeperOf.keeper ? keeperOf.keeper : '').toLowerCase()}`, `Talk to the ${('keeper' in keeperOf && keeperOf.keeper ? keeperOf.keeper : '').toLowerCase()}`)}</Button>
+          ) : nearBuilding && 'keeper' in nearBuilding && nearBuilding.keeper ? (
+            <Button size="lg" data-testid="enter-shop" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(nearBuilding.key)}>{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}</Button>
           ) : nearBuilding && 'kind' in nearBuilding ? (
             <Button size="lg" data-testid="enter-house" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(nearBuilding.key)}>{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}</Button>
           ) : boardOf ? (
@@ -803,6 +821,27 @@ export function VillageWalkPage() {
         )}
       </Dialog>
 
+      <Dialog open={!!talking} onClose={() => setTalk(null)} size="md" sheet title={talking && KEEPER[talking.key] ? `${KEEPER[talking.key].name[nl ? 0 : 1]} · ${talking.label}` : ''}>
+        {talking && KEEPER[talking.key] && (
+          <div className="space-y-4" data-testid="keeper-talk">
+            <p className="rounded-2xl rounded-tl-sm bg-[#fbf0d9] px-4 py-3 text-[15.5px] leading-snug text-[#3a2a12]">“{KEEPER[talking.key].says[nl ? 0 : 1]}”</p>
+            {d && (
+              <ul className="grid grid-cols-2 gap-2 text-[14px]">
+                {(talking.key === 'smithy' ? [[t('Muntjes', 'Coins'), d.gear.coins], [t('Uitrusting', 'Gear'), d.gear.owned.length]]
+                  : talking.key === 'hall' ? [[t('Prijzen', 'Trophies'), `${d.trophies.filter((x) => x.earned).length}/${d.trophies.length}`], [t('Badges', 'Badges'), `${d.badges.filter((x) => x.earned).length}/${d.badges.length}`]]
+                  : talking.key === 'board' ? [[t('Taken vandaag', 'Tasks today'), tasks.length], [t('Level', 'Level'), d.level.level]]
+                  : talking.key === 'library' ? [[t('Skills', 'Skills'), d.skills.length], [t('Totaal level', 'Total level'), d.totalLevel]]
+                  : [[t('Level', 'Level'), d.level.level], [t('Avonturier', 'Adventurer'), adventure.data?.level ?? 1]] as [string, string | number][]).map(([label, value]) => (
+                  <li key={String(label)} className="rounded-xl border border-line bg-white px-3 py-2"><span className="block text-[12.5px] text-ink-600">{label}</span><span className="font-display text-[20px] font-bold tabular-nums text-ink-950">{value}</span></li>
+                ))}
+              </ul>
+            )}
+            <Link to={talking.to} data-testid="enter-building" className="tap flex min-h-[52px] items-center justify-center gap-2 rounded-xl bg-accent px-4 text-[16px] font-semibold text-accent-ink">
+              {KEEPER[talking.key].open[nl ? 0 : 1]}<ChevronRight className="h-5 w-5" aria-hidden />
+            </Link>
+          </div>
+        )}
+      </Dialog>
       <KarateSheet open={dojoOpen} onClose={() => setDojoOpen(false)} />
       <Dialog open={boxingOpen} onClose={() => setBoxingOpen(false)} size="md" sheet title={t('Boksschool', 'Boxing school')}
         description={adventure.data ? t(`Ronde ${Math.min(adventure.data.roundsToday + 1, BOXING.roundsPerDay)} van ${BOXING.roundsPerDay} die vandaag XP geeft.`, `Round ${Math.min(adventure.data.roundsToday + 1, BOXING.roundsPerDay)} of ${BOXING.roundsPerDay} that gives XP today.`) : undefined}
