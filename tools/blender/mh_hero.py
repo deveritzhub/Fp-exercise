@@ -29,7 +29,10 @@ ap.add_argument('--size', default='900x1200')
 ap.add_argument('--face', action='store_true', help='close-up of the head')
 ap.add_argument('--pose', default='', help='render a frame of a motion, e.g. walk:8 (motion:frame)')
 ap.add_argument('--side', action='store_true', help='render from the side (to judge a gait)')
+ap.add_argument('--study', action='store_true', help='Build the single art-direction study; does not replace production models')
 args = ap.parse_args(argv)
+if args.study and (args.frame != 'f' or args.build != 'average'):
+    ap.error('--study is the single female/average style study; other builds use the normal generator')
 M = args.frame == 'm'
 EXPORT = bool(args.glb)
 
@@ -109,6 +112,9 @@ macro.update(gender=1.0 if M else 0.0, age=0.45, muscle=muscle, weight=weight, p
              cupsize=0.45, firmness=0.7)
 macro['race'] = {'asian': 0.33, 'caucasian': 0.34, 'african': 0.33}
 human = HumanService.create_human(macro_detail_dict=macro, feet_on_ground=True, scale=0.1)
+if args.study:
+    from hero_study import soften_face
+    soften_face(human, TargetService)
 rig = HumanService.add_builtin_rig(human, 'game_engine')
 bpy.context.view_layer.objects.active = rig
 bpy.ops.object.mode_set(mode='POSE')
@@ -131,11 +137,11 @@ def curl(name, deg):
 
 # A relaxed hero stance with loose fists.
 for s, sg in (('l', 1), ('r', -1)):
-    aim(f'upperarm_{s}', (0.3 * sg, 0.03, -1))
+    aim(f'upperarm_{s}', ((0.18 if args.study else 0.3) * sg, 0.03, -1))
     aim(f'lowerarm_{s}', (0.18 * sg, -0.28, -1))
     aim(f'hand_{s}', (0.08 * sg, -0.12, -1))
     for f in ('index', 'middle', 'ring', 'pinky'):
-        for i, d in ((1, 55), (2, 70), (3, 50)):
+        for i, d in (((1, 18), (2, 24), (3, 18)) if args.study else ((1, 55), (2, 70), (3, 50))):
             curl(f'{f}_0{i}_{s}', d)
     curl(f'thumb_02_{s}', 25)
     curl(f'thumb_03_{s}', 25)
@@ -169,7 +175,8 @@ for node_name, relative in ASSETS.items():
     if images:
         import numpy as np
         image = images[0].copy()
-        image.scale(160, 160)
+        resolution = 256 if args.study and node_name == 'hair_bun' else 160
+        image.scale(resolution, resolution)
         pixels = np.array(image.pixels[:], dtype=np.float32).reshape(-1, 4)
         shade = 0.55 + 0.45 * pixels[:, :3].mean(axis=1)
         pixels[:, :3] = shade[:, None]
@@ -933,6 +940,10 @@ with part('outfit_sport_padel'):
     number(CHEST_Z + 0.01)
     ring((BC.x, BC.y, BAND_Z), 1, 0.007, WHITE, scale=(BR.x + 0.006, BR.y + 0.006, 1), name='band')
     cyl((HC.x, FRONT_Y - HR.x * 0.4, BAND_Z), HR.x * 0.6, 0.005, KIT, rot=(0.2, 0, 0), scale=(1.1, 0.9, 1), name='brim')
+
+if args.study:
+    from hero_study import dress_study
+    dress_study(globals())
 
 # ---------------------------------------------------------------- skin: every part follows the skeleton
 DEF = {b.name for b in rig.data.bones}

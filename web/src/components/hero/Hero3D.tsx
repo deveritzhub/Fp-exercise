@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { RotateCcw, RotateCw } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
@@ -30,18 +31,23 @@ const webglOk = () => {
   }
 };
 
-type Stage = { root: THREE.Group; base: THREE.Group; model: THREE.Object3D | null; url: string | null; controls: OrbitControls };
+type Stage = { root: THREE.Group; base: THREE.Group; model: THREE.Object3D | null; url: string | null; controls: OrbitControls; mixer?: THREE.AnimationMixer };
 
 /**
  * Turnable 3D figurine of the hero with the worn gear (model: tools/blender/mh_hero.py). Drag to turn,
  * or use the buttons; it turns slowly by itself unless the person prefers reduced motion.
  */
-export default function Hero3D({ look, className }: { look: FigureLook; className?: string }) {
+export default function Hero3D({ look, className, modelUrl, studio = false, portrait = false, palette }: {
+  look: FigureLook; className?: string; modelUrl?: string; studio?: boolean; portrait?: boolean;
+  palette?: { main: string; dark: string; soft: string };
+}) {
   const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null);
   const stage = useRef<Stage | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error' | 'nogl'>(() => (webglOk() ? 'loading' : 'nogl'));
   const scene3d = hero3dScene(look);
+  if (modelUrl) scene3d.url = modelUrl;
+  if (palette) Object.assign(scene3d.tints, { kit_main: palette.main, kit_dark: palette.dark, kit_soft: palette.soft });
   const key = JSON.stringify([scene3d.url, [...scene3d.visible].sort(), scene3d.tints]);
 
   // Renderer, camera, lights and the render loop: once per mount.
@@ -51,25 +57,50 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = studio ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping;
+    renderer.toneMappingExposure = studio ? .85 : 1.2;
+    renderer.shadowMap.enabled = studio;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.domElement.setAttribute('aria-hidden', 'true');
     renderer.domElement.style.touchAction = 'pan-y';
     el.appendChild(renderer.domElement);
     const scene = new THREE.Scene();
+    let environment: THREE.WebGLRenderTarget | undefined;
+    if (studio) {
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      const room = new RoomEnvironment();
+      environment = pmrem.fromScene(room, .04);
+      scene.environment = environment.texture;
+      scene.environmentIntensity = .45;
+      room.dispose(); pmrem.dispose();
+    }
     const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 50);
     camera.position.set(0, 1.25, 5.4);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x7d8a82, 1.6));
-    const key = new THREE.DirectionalLight(0xfff4e6, 2.2);
+    scene.add(new THREE.HemisphereLight(studio ? 0xfff7e9 : 0xffffff, studio ? 0xa09985 : 0x7d8a82, studio ? .85 : 1.6));
+    const key = new THREE.DirectionalLight(studio ? 0xfff1df : 0xfff4e6, studio ? 3.4 : 2.2);
     key.position.set(-2.5, 3.5, 3);
     scene.add(key);
+    if (studio) {
+      key.castShadow = true;
+      key.shadow.mapSize.set(1024, 1024);
+      key.shadow.camera.left = key.shadow.camera.bottom = -1.4;
+      key.shadow.camera.right = key.shadow.camera.top = 1.4;
+      key.shadow.normalBias = .018;
+      key.shadow.bias = -.0002;
+      key.shadow.radius = 4;
+      const fill = new THREE.DirectionalLight(0xe8eef5, .7);
+      fill.position.set(3, 2, 3); scene.add(fill);
+    }
     const rim = new THREE.DirectionalLight(0xe6f0ff, 1.2);
     rim.position.set(1.5, 2.5, -3);
     scene.add(rim);
     const root = new THREE.Group();
     scene.add(root);
     // Pedestal in the brand colours.
-    const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.66, 0.12, 8), new THREE.MeshStandardMaterial({ color: 0x46554e, roughness: 0.9 }));
+    const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.66, 0.12, studio ? 96 : 8), new THREE.MeshStandardMaterial({ color: studio ? 0xd8c9ad : 0x46554e, roughness: 0.9 }));
     ped.position.y = -0.06;
-    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.56, 0.03, 8), new THREE.MeshStandardMaterial({ color: 0x29483c, roughness: 0.8 }));
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.56, 0.03, studio ? 96 : 8), new THREE.MeshStandardMaterial({ color: studio ? 0xe9dfcc : 0x29483c, roughness: 0.8 }));
+    top.receiveShadow = studio;
     top.position.y = 0.01;
     const base = new THREE.Group();
     base.add(ped, top);
@@ -82,7 +113,7 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
     controls.maxPolarAngle = Math.PI / 2 + 0.05;
     controls.enableDamping = true;
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    controls.autoRotate = !reduce;
+    controls.autoRotate = !reduce && !studio;
     controls.autoRotateSpeed = 1.2;
     controls.addEventListener('start', () => (controls.autoRotate = false));
     controls.update();
@@ -101,12 +132,17 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
     const ro = new ResizeObserver(resize);
     ro.observe(el);
     let raf = 0;
+    let lastTime = performance.now();
     let visible = true;
     const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting));
     io.observe(el);
     const loop = () => {
       raf = requestAnimationFrame(loop);
+      const now = performance.now();
+      const dt = Math.min((now - lastTime) / 1000, .05);
+      lastTime = now;
       if (!visible || document.hidden) return;
+      if (studio && !reduce) stage.current?.mixer?.update(dt);
       controls.update();
       renderer.render(scene, camera);
     };
@@ -116,6 +152,7 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
       ro.disconnect();
       io.disconnect();
       controls.dispose();
+      stage.current?.mixer?.stopAllAction();
       scene.traverse((o) => {
         const m = o as THREE.Mesh;
         if (m.isMesh) {
@@ -124,11 +161,12 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
         }
       });
       renderer.dispose();
+      environment?.dispose();
       renderer.domElement.remove();
       stage.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state === 'nogl']);
+  }, [state === 'nogl', studio, portrait]);
 
   // Model, gear and colours: whenever the look changes.
   useEffect(() => {
@@ -142,6 +180,8 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
           const gltf = await loadModel(scene3d.url);
           if (cancelled) return;
           if (st.model) {
+            st.mixer?.stopAllAction();
+            st.mixer?.uncacheRoot(st.model);
             // Geometry/textures belong to the shared GLTF cache; only cloned materials are local.
             st.model.traverse(o => {
               const mesh = o as THREE.Mesh;
@@ -152,16 +192,24 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
           const model = cloneSkinned(gltf.scene);
           model.traverse((o) => {
             const m = o as THREE.Mesh;
-            if (m.isMesh) m.material = (m.material as THREE.Material).clone();
+            if (m.isMesh) {
+              m.material = (m.material as THREE.Material).clone();
+              m.castShadow = studio; m.receiveShadow = studio;
+            }
           });
           st.root.add(model);
           st.model = model;
+          if (studio) {
+            st.mixer = new THREE.AnimationMixer(model);
+            const idle = gltf.animations.find(clip => clip.name === 'idle');
+            if (idle) st.mixer.clipAction(idle).play();
+          }
           st.url = scene3d.url;
           // Frame the figure, whatever the model's height.
           const box = new THREE.Box3().setFromObject(model.getObjectByName('body') ?? model);
           const h = Math.max(0.5, box.max.y - box.min.y);
-          st.controls.target.set(0, box.min.y + h * 0.5, 0);
-          st.controls.object.position.set(0, box.min.y + h * 0.6, h * 2.55);
+          st.controls.target.set(0, box.min.y + h * (portrait ? .87 : .5), 0);
+          st.controls.object.position.set(0, box.min.y + h * (portrait ? .88 : .6), h * (portrait ? .76 : 2.55));
           st.controls.update();
           st.base.scale.setScalar(h / 2.15);
         }
@@ -184,7 +232,7 @@ export default function Hero3D({ look, className }: { look: FigureLook; classNam
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, state === 'nogl']);
+  }, [key, state === 'nogl', studio, portrait]);
 
   const turn = (deg: number) => {
     const st = stage.current;

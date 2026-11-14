@@ -10,12 +10,13 @@ import './index.css';
 import './components/hero/rpg.css';
 if (!import.meta.env.DEV) throw new Error('Development visual review only');
 const params = new URLSearchParams(location.search);
-const look = { ...DEFAULT_LOOK, ...Object.fromEntries(params), gear: (params.get('gear') ?? 'watch,gloves,shin_guards,balance_shoes,belt').split(',') };
-createRoot(document.getElementById('root')!).render(<I18nProvider><main className="mx-auto max-w-[360px] p-4"><h1 className="mb-3 text-lg">3D-held: {look.frame} / {look.build}</h1>{params.has('village') ? <WalkVillage3D look={look} buildings={[]} tvLabel="Oefenzaal" tvTitle="Synthetische test" tvLines={[]} onNear={()=>{}} onArrive={()=>{}} className="h-[600px] w-full"/> : <Hero3D look={look} className="h-[520px] w-full"/>}</main></I18nProvider>);
+const study = params.has('study');
+const look = { ...DEFAULT_LOOK, ...(study ? { frame: 'f', build: 'average', hair: 'bun', skin: 's5', outfit: 'forest', hairColor: 'darkbrown' } : {}), ...Object.fromEntries(params), gear: (params.get('gear') ?? (study ? '' : 'watch,gloves,shin_guards,balance_shoes,belt')).split(',') };
+createRoot(document.getElementById('root')!).render(<I18nProvider><main className="mx-auto max-w-[480px] p-4"><h1 className="mb-3 text-lg">3D-held: {look.frame} / {look.build}</h1>{params.has('village') ? <WalkVillage3D look={look} buildings={[]} tvLabel="Oefenzaal" tvTitle="Synthetische test" tvLines={[]} onNear={()=>{}} onArrive={()=>{}} className="h-[600px] w-full"/> : <Hero3D look={look} studio={params.has('studio') || study} palette={study || params.has('studio') ? { main: '#606852', dark: '#343b35', soft: '#eee5d2' } : undefined} portrait={params.has('portrait')} modelUrl={study ? '/hero3d/study/hero_f_average.glb' : undefined} className="h-[640px] w-full"/>}</main></I18nProvider>);
 
 /** Exercise the exact exported clips and skeleton without changing the live inventory UI. */
 export async function checkMotions() {
-  const gltf = await loadModel(hero3dScene(look).url);
+  const gltf = await loadModel(study ? '/hero3d/study/hero_f_average.glb' : hero3dScene(look).url);
   return HERO_MOTIONS.map(name => {
     const model = clone(gltf.scene);
     const mixer = new THREE.AnimationMixer(model);

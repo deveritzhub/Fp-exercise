@@ -18,5 +18,8 @@ export default defineConfig({
   // Dependencies only loaded on demand (dynamic import) are prepared up front, so the dev server
   // does not reload the page the first time one is used.
   optimizeDeps: { include: ['qrcode'] },
-  build: { outDir: '../dist/web', emptyOutDir: true },
+  build: {
+    outDir: '../dist/web', emptyOutDir: true,
+    rollupOptions: { input: { app: path.resolve(__dirname, 'web/index.html'), heroStudy: path.resolve(__dirname, 'web/hero3d-study.html') } },
+  },
 });

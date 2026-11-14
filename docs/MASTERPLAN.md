@@ -321,6 +321,13 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     Visueel nog een technische basis: huid, gezichtsdetails en kledingplooien verdienen verdere
     verfijning. Geen claim van een exacte lichaamsscan of afgeronde fotorealistische kwaliteit.
 
+98. [x] **Eén beoordeelbare 3D-karakterstudie** (13 nov): aparte vergelijkingspagina
+    `/hero3d-study.html` met één vrouwelijke/average held, natuurlijkere handen, afzonderlijk
+    gemodelleerd shirt, kledingdetails, verfijnde huid en kapsel, warm studiolicht en close-up.
+    Oude en nieuwe versie onder hetzelfde licht te vergelijken; synthetische browserbeelden in
+    `docs/hero3d-study/`. Alle gear-nodes en vier animaties behouden. Visuele beoordeling van deze
+    richting gaat vooraf aan toepassing op de overige lichaamsbouwen en kapsels.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.
