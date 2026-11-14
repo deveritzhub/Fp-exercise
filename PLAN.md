@@ -112,7 +112,7 @@ testlijst en open vragen. Zie vraag 7.1 over hoe dat met live zetten samengaat.
 | --- | --- | --- |
 | 1. Vandaag met één hoofdtaak | Nieuwe volgorde: begroeting, één regel level + XP-balk, revalidatiekaart, krachtkaart, twee tegels. "Start training" boven de vouw op 390×844. | `PatientHome.tsx`, `HomeLobby.tsx` |
 | 2. Illustratie en dubbele avatar weg | Verhuist naar de bovenkant van Wereld (zie 6.1). | `HomeLobby.tsx`, `WorldMapPage.tsx` |
-| 3. Alleen XP, level en dorp zichtbaar | Eén bestand met flags; muntjes, gearscore, bazen, erfstuk en metgezellen naar één verzamelscherm onder Wereld. Geen data weg. | nieuw `shared/flags.ts`, `HeroPages.tsx`, `VillageWalkPage.tsx`, `PatientHome.tsx` |
+| 3. XP, level, dorp en muntjes zichtbaar | Eén bestand met flags; gearscore, bazen, erfstuk en metgezellen naar één verzamelscherm onder Wereld. **Muntjes blijven in beeld** (besluit eigenaar, 14 november). Geen data weg. | nieuw `shared/flags.ts`, `HeroPages.tsx`, `VillageWalkPage.tsx`, `PatientHome.tsx` |
 | 4. Uitleg: één zin + info-knop | Nieuw onderdeel `Uitleg`; veiligheidszinnen blijven zichtbaar (zie 6.6). | nieuw `components/ui/Uitleg.tsx`, alle patiëntpagina's |
 | 5. Plusknop weg, tab Wereld | Tabs: Vandaag, Revalidatie, Kracht, Mobiliteit, Wereld. Snel loggen krijgt een andere ingang (zie 6.2). | `PatientLayout.tsx`, `QuickLog.tsx`, `router.tsx` |
 | 6. Drie fouten | Lege klachtuitleg krijgt tekst en terugknop; ondermarge + safe areas; praktijknaam op één regel. | `ComplaintExplanationPage.tsx`, `PatientLayout.tsx`, `index.css` |
@@ -224,4 +224,7 @@ niets zonder jouw keuze.
 
 ## 8. Vastgelegde keuzes
 
-Hier noteer ik per fase de ontwerpkeuzes waar ik de rustigste optie heb genomen. Nog leeg.
+Hier noteer ik per fase de ontwerpkeuzes en besluiten.
+
+- **14 november, eigenaar:** muntjes blijven voorlopig in beeld. Fase 1 punt 3 stopt alleen gearscore, bazen,
+  erfstuk en metgezellen weg. De winkels in het dorp (wapensmid, meubels) blijven dus bruikbaar.
