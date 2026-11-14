@@ -1,4 +1,4 @@
-"""Original FP Flow art study. Opt in with mh_hero.py --study; keep production builds intact.
+"""Shared FP Flow avatar finish for --polished, --portrait-finish and isolated art studies.
 Garment details and vertex paint are authored here. Fitted hair and neutralised skin shading use
 the documented CC0 MakeHuman sources; see assets/README.md.
 """
@@ -108,7 +108,8 @@ def dress_study(ctx):
     import numpy as np
     source='young_caucasian_male/young_lightskinned_male_diffuse.png' if g['M'] else 'young_caucasian_female/young_lightskinned_female_diffuse.png'
     skin_image=bpy.data.images.load(str(Path(g['args'].assets)/'system/skins'/source))
-    skin_image.scale(448,448)
+    skin_resolution=768 if g['PORTRAIT'] else 448
+    skin_image.scale(skin_resolution,skin_resolution)
     pix=np.array(skin_image.pixels[:],dtype=np.float32).reshape(-1,4)
     grey=pix[:,:3].mean(axis=1)
     ref=float(np.percentile(grey,80))

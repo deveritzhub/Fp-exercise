@@ -1,5 +1,5 @@
 """Round exported float attributes below visible precision to improve HTTP gzip size.
-No compression extensions or extra browser decoders are needed.
+Packed attributes need no decoder. Optional lossless WebP uses the browser and built-in glTF support.
 """
 import json
 import struct
@@ -117,7 +117,106 @@ def close_shirt_holes(doc, payloads):
                 print('Closed shirt side openings:',len(added)//3,'triangles')
 
 
-def pack_core_attributes(filename):
+def encode_webp_images(doc, payloads):
+    """Losslessly encode embedded maps; verify decoded RGBA pixels before replacing them.
+    EXT_texture_webp is handled by the existing Three.js loader and browser, without a new decoder.
+    """
+    from io import BytesIO
+    from PIL import Image
+    converted=set()
+    for index,image in enumerate(doc.get('images', [])):
+        if 'bufferView' not in image or image.get('mimeType') not in ('image/png','image/jpeg'): continue
+        original=Image.open(BytesIO(payloads[image['bufferView']])).convert('RGBA')
+        stream=BytesIO()
+        original.save(stream,format='WEBP',lossless=True,quality=100,method=6,exact=True)
+        encoded=stream.getvalue()
+        decoded=Image.open(BytesIO(encoded)).convert('RGBA')
+        if decoded.size!=original.size or decoded.tobytes()!=original.tobytes():
+            raise ValueError('WebP must preserve every decoded texture pixel')
+        if len(encoded)>=len(payloads[image['bufferView']]): continue
+        payloads[image['bufferView']]=encoded
+        image['mimeType']='image/webp'
+        converted.add(index)
+    if not converted: return
+    for texture in doc.get('textures', []):
+        if texture.get('source') in converted:
+            texture.setdefault('extensions', {})['EXT_texture_webp']={'source':texture.pop('source')}
+    for key in ('extensionsUsed','extensionsRequired'):
+        if 'EXT_texture_webp' not in doc.setdefault(key,[]): doc[key].append('EXT_texture_webp')
+    print('Lossless WebP maps:',len(converted),'(decoded pixels verified)')
+
+
+def quantize_skin_positions(doc, payloads):
+    """Store skinned positions as normalised shorts, dequantised by inverse bind matrices.
+
+    KHR_mesh_quantization supports this representation directly. A shared uniform scale is
+    right-multiplied into every inverse bind matrix, so bones, animation and world sizes stay
+    in metres. At a 2 m scale the extra position error is at most 0.031 mm.
+    """
+    import math
+    extras=doc.setdefault('asset',{}).setdefault('extras',{})
+    if 'fpFlowPositionScale' in extras: return
+    if any('mesh' in n and 'skin' not in n for n in doc['nodes']):
+        raise ValueError('Position packing requires all meshes to be skinned')
+    indices={p['attributes']['POSITION'] for m in doc['meshes'] for p in m['primitives']}
+    uses={}
+    for accessor in doc['accessors']:
+        if 'bufferView' in accessor: uses[accessor['bufferView']]=uses.get(accessor['bufferView'],0)+1
+    rows={}
+    for index in indices:
+        a=doc['accessors'][index];view=doc['bufferViews'][a['bufferView']]
+        if a['componentType']!=5126 or uses[a['bufferView']]!=1:
+            raise ValueError('Position packing expects separate float accessors')
+        data=payloads[a['bufferView']]
+        rows[index]=[struct.unpack_from('<fff',data,a.get('byteOffset',0)+i*view.get('byteStride',12)) for i in range(a['count'])]
+    scale=max(1,math.ceil(max(abs(x) for values in rows.values() for row in values for x in row)))
+    for index,values in rows.items():
+        a=doc['accessors'][index];view=doc['bufferViews'][a['bufferView']]
+        packed=[tuple(round(x/scale*32767) for x in row) for row in values]
+        payloads[a['bufferView']]=b''.join(struct.pack('<hhh',*row) for row in packed)
+        view.pop('byteStride',None)
+        a.update(componentType=5122,normalized=True,byteOffset=0)
+        a['min']=[min(row[j] for row in packed) for j in range(3)]
+        a['max']=[max(row[j] for row in packed) for j in range(3)]
+    for index in {skin['inverseBindMatrices'] for skin in doc['skins']}:
+        a=doc['accessors'][index];view=doc['bufferViews'][a['bufferView']]
+        if a['componentType']!=5126 or a['type']!='MAT4': raise ValueError('Expected float inverse bind matrices')
+        data=bytearray(payloads[a['bufferView']])
+        for i in range(a['count']):
+            offset=a.get('byteOffset',0)+i*view.get('byteStride',64)
+            matrix=list(struct.unpack_from('<16f',data,offset))
+            # glTF matrices are column-major: the first three columns are right-multiplied.
+            for j in range(12): matrix[j]*=scale
+            struct.pack_into('<16f',data,offset,*matrix)
+        payloads[a['bufferView']]=data
+    extras['fpFlowPositionScale']=scale
+    for key in ('extensionsUsed','extensionsRequired'):
+        if 'KHR_mesh_quantization' not in doc.setdefault(key,[]): doc[key].append('KHR_mesh_quantization')
+    print('Position step in metres:',scale/32767)
+
+
+def quantize_normal_attributes(doc, payloads):
+    """KHR_mesh_quantization normal vectors: < 0.000016 component error, no image loss."""
+    indices={p['attributes']['NORMAL'] for m in doc['meshes'] for p in m['primitives'] if 'NORMAL' in p['attributes']}
+    uses={}
+    for a in doc['accessors']:
+        if 'bufferView' in a: uses[a['bufferView']]=uses.get(a['bufferView'],0)+1
+    for index in indices:
+        a=doc['accessors'][index]
+        if a['componentType']==5122: continue
+        view=doc['bufferViews'][a['bufferView']]
+        if a['componentType']!=5126 or uses[a['bufferView']]!=1: raise ValueError('Expected separate float normals')
+        data=payloads[a['bufferView']]
+        values=[struct.unpack_from('<fff',data,a.get('byteOffset',0)+i*view.get('byteStride',12)) for i in range(a['count'])]
+        packed=[tuple(max(-32767,min(32767,round(x*32767))) for x in row) for row in values]
+        payloads[a['bufferView']]=b''.join(struct.pack('<hhh',*row) for row in packed)
+        view.pop('byteStride',None)
+        a.update(componentType=5122,normalized=True,byteOffset=0)
+        if 'min' in a: a['min']=[min(row[j] for row in packed) for j in range(3)]
+        if 'max' in a: a['max']=[max(row[j] for row in packed) for j in range(3)]
+
+
+def pack_core_attributes(filename, webp=False, quantize_positions=False):
     """Use glTF 2.0's native normalised UV/weight encodings. No extension or decoder.
 
     UV error is < 1/65535; joint weights are distributed to sum to 255 exactly.
@@ -129,7 +228,9 @@ def pack_core_attributes(filename):
     doc = json.loads(raw[20:20 + json_size])
     binary = raw[28 + json_size:]
     payloads = [binary[v.get('byteOffset', 0):v.get('byteOffset', 0) + v['byteLength']] for v in doc['bufferViews']]
-    close_shirt_holes(doc, payloads)
+    if 'fpFlowPositionScale' not in doc.get('asset',{}).get('extras',{}):
+        close_shirt_holes(doc, payloads)
+    if webp: encode_webp_images(doc, payloads)
     # Older study sources bound every mesh opening. Omit the two narrow underarm trims;
     # neckline/cuffs/hem remain. The exporter stores these skinned meshes in world units.
     omitted=set()
@@ -175,6 +276,9 @@ def pack_core_attributes(filename):
         view.pop('byteStride', None)
         a.update(componentType=5123 if index in uv else 5121, normalized=True, byteOffset=0)
         a.pop('min', None); a.pop('max', None)
+    if quantize_positions:
+        quantize_skin_positions(doc, payloads)
+        quantize_normal_attributes(doc, payloads)
     blob = bytearray()
     for view, payload in zip(doc['bufferViews'], payloads):
         blob += b'\0'*(-len(blob)%4)

@@ -1,45 +1,45 @@
 {
-  "version": 7,
+  "version": 8,
   "models": {
     "hero_m_slim.glb": {
-      "bytes": 5571864,
-      "gzipBytes": 2430160,
-      "sha256": "81aea280b9b4a822c7d3f92fdc8acf84d262809807beb884dc9ef615a56d8c56"
+      "bytes": 4586968,
+      "gzipBytes": 2461246,
+      "sha256": "35e092ca015a63585db4327d7e7852e27874fbf2004282c83b20d58a3fcf9450"
     },
     "hero_m_average.glb": {
-      "bytes": 5576652,
-      "gzipBytes": 2436953,
-      "sha256": "ccfb3e8a43cc9ae95ffdb9bf582b7faadb1568c24aae5d92ec95b268bbba8876"
+      "bytes": 4588300,
+      "gzipBytes": 2468783,
+      "sha256": "23218395409d99ea1d7e9542a635c32331e2d6b0cb75c784df5c48f02a6db1f4"
     },
     "hero_m_athletic.glb": {
-      "bytes": 5538720,
-      "gzipBytes": 2403538,
-      "sha256": "90b5d8b498b9e4eadc924913f3c4403ba79719b83781967b66ef73e87faecdcb"
+      "bytes": 4549456,
+      "gzipBytes": 2432625,
+      "sha256": "9d822c78443edf8d7ce700aaef9fb5f7500ba9bcf822a3a5b78f8c98ef198025"
     },
     "hero_m_full.glb": {
-      "bytes": 5663852,
-      "gzipBytes": 2465424,
-      "sha256": "56ea2bcc37e12dac68e98aed4620b409c5be03d7849ca84c7625772f443e3fd5"
+      "bytes": 4574188,
+      "gzipBytes": 2448456,
+      "sha256": "d3a33352e06928fb421f6ab7f598307219eba858ef33c6569475b2810e6914ab"
     },
     "hero_f_slim.glb": {
-      "bytes": 5614012,
-      "gzipBytes": 2440738,
-      "sha256": "79a764b54640c59898b2ce39799312c90e7b357512ad9113bfb3728cfbe7728c"
+      "bytes": 4618032,
+      "gzipBytes": 2471222,
+      "sha256": "eaa1a058806138087af86defe2d141cb07c792eab16a0882aa2933af346f686c"
     },
     "hero_f_average.glb": {
-      "bytes": 5610300,
-      "gzipBytes": 2447939,
-      "sha256": "943e62190c10ddd692f63430b30882dfb36fe1414afc171ef70e44f794fcdb7b"
+      "bytes": 4618940,
+      "gzipBytes": 2476374,
+      "sha256": "18d511a9c10ef43c0019d332743b0edf4312dbbcf342350df0bc0d74da5fd87f"
     },
     "hero_f_athletic.glb": {
-      "bytes": 5623236,
-      "gzipBytes": 2453856,
-      "sha256": "418c24410d917a327fca2438774932500e1ec56df578ad680f00d2b61d884b8e"
+      "bytes": 4631004,
+      "gzipBytes": 2486008,
+      "sha256": "a2df0a2a1d1a8664098b8b763d611a1c09625e58322fe9f49da09e4b9dc682ea"
     },
     "hero_f_full.glb": {
-      "bytes": 5719056,
-      "gzipBytes": 2491917,
-      "sha256": "d6fadec11dfd6e20c905c88b032c97b5a2297edbb7892fa78540c4a042d93692"
+      "bytes": 4638996,
+      "gzipBytes": 2487212,
+      "sha256": "4930b960fab82bbc0eea7b8da52307e39ced54e1fa0d9ebabf0bacc8f0b71fd8"
     }
   }
 }

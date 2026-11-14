@@ -35,3 +35,34 @@ export async function checkMotions() {
     return { name, changed, finite };
   });
 }
+
+/** Real browser decoding: a missing WebP map must not pass as an untextured fallback. */
+export async function checkDecodedMaps() {
+  const { scene } = await loadModel(hero3dScene(look).url);
+  const result = { skin: false, iris: false, hair: false };
+  const loaded = (texture: THREE.Texture | null) => {
+    const image = texture?.image as { width?: number; height?: number } | undefined;
+    return (image?.width ?? 0) > 0 && (image?.height ?? 0) > 0;
+  };
+  scene.traverse(o => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const raw of materials) {
+      const material = raw as THREE.MeshStandardMaterial;
+      if (material.name === 'skin') result.skin ||= loaded(material.map) && loaded(material.normalMap);
+      if (material.name === 'iris') result.iris ||= loaded(material.map);
+      if (mesh.name === 'hair_bun') result.hair ||= loaded(material.map) && loaded(material.normalMap);
+    }
+  });
+  return result;
+}
+
+/** Packed geometry must retain the original metre-based body size after skinning. */
+export async function checkBodyHeight() {
+  const gltf = await loadModel(hero3dScene(look).url);
+  const model = clone(gltf.scene);
+  model.updateMatrixWorld(true);
+  const body = model.getObjectByName('body') ?? model;
+  return new THREE.Box3().setFromObject(body).getSize(new THREE.Vector3()).y;
+}

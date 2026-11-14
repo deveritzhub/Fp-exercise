@@ -1,4 +1,4 @@
-import { dress } from './fabric3d';
+import { dress, waitForFabric } from './fabric3d';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -9,7 +9,7 @@ import { RotateCcw, RotateCw } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import type { FigureLook } from './HumanFigure';
-import { hero3dScene, isToggleNode } from './hero3d';
+import { hero3dScene, isToggleNode, FABRIC_PLAIN } from './hero3d';
 
 /** One download per model per app session; every viewer clones it. */
 const models = new Map<string, Promise<GLTF>>();
@@ -182,8 +182,8 @@ export default function Hero3D({ look, className, modelUrl, studio = true, portr
     let cancelled = false;
     (async () => {
       try {
+        setState('loading');
         if (st.url !== scene3d.url) {
-          setState('loading');
           const gltf = await loadModel(scene3d.url);
           if (cancelled) return;
           if (st.model) {
@@ -221,6 +221,8 @@ export default function Hero3D({ look, className, modelUrl, studio = true, portr
           st.base.scale.setScalar(h / 2.15);
         }
         const model = st.model!;
+        await waitForFabric(scene3d.fabric ?? FABRIC_PLAIN);
+        if (cancelled) return;
         model.traverse((o) => {
           if (isToggleNode(o.name)) o.visible = scene3d.visible.has(o.name);
           const m = o as THREE.Mesh;

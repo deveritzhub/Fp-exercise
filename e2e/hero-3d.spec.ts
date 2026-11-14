@@ -26,6 +26,17 @@ test('eight body models render, turn and retain all four animations', async ({ p
       const path = '/src/hero3d-review.tsx';
       return (await import(path)).checkMotions() as Promise<{ name: string; changed: number; finite: boolean }[]>;
     });
+    const decodedMaps = await page.evaluate(async () => {
+      const path = '/src/hero3d-review.tsx';
+      return (await import(path)).checkDecodedMaps();
+    });
+    expect(decodedMaps).toEqual({ skin: true, iris: true, hair: true });
+    const physicalHeight = await page.evaluate(async () => {
+      const path = '/src/hero3d-review.tsx';
+      return (await import(path)).checkBodyHeight();
+    });
+    expect(physicalHeight).toBeGreaterThan(frame === 'm' ? 1.7 : 1.55);
+    expect(physicalHeight).toBeLessThan(frame === 'm' ? 1.95 : 1.8);
     expect(motions.map(m => m.name)).toEqual(['idle', 'walk', 'run', 'cheer']);
     for (const motion of motions) { expect(motion.changed, `${frame}/${build}/${motion.name}`).toBeGreaterThan(0); expect(motion.finite).toBe(true); }
     index++;

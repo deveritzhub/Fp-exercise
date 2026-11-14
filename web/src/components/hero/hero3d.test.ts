@@ -17,6 +17,31 @@ function glbNodeNames(file: string): Set<string> {
 const base = { skin: 's4', hair: 'short', outfit: 'forest', hairColor: 'blond', eyeColor: 'blue', frame: 'm', beard: 'none', glasses: 'none' };
 
 describe('3D hero', () => {
+  it('the face study keeps its irises on the eyeballs and exports tintable detailed eyes', () => {
+    const bytes = fs.readFileSync(path.resolve(import.meta.dirname, '../../../public/hero3d/study/hero_f_portrait.glb'));
+    const size = bytes.readUInt32LE(12);
+    const doc = JSON.parse(bytes.subarray(20, 20 + size).toString());
+    const positions = (name: string): number[][] => {
+      const node = doc.nodes.find((n: { name: string }) => n.name === name);
+      const primitive = doc.meshes[node.mesh].primitives[0];
+      const accessor = doc.accessors[primitive.attributes.POSITION];
+      const view = doc.bufferViews[accessor.bufferView];
+      const start = 28 + size + (view.byteOffset ?? 0) + (accessor.byteOffset ?? 0);
+      return Array.from({ length: accessor.count }, (_, i) => [0, 4, 8].map(j => bytes.readFloatLE(start + i * (view.byteStride ?? 12) + j)));
+    };
+    const eyeballs = positions('body_eyes');
+    for (const name of ['body_iris_l', 'body_iris_r']) {
+      const distances = positions(name).map(p => Math.sqrt(Math.min(...eyeballs.map(q => q.reduce((sum, x, j) => sum + (x - p[j]) ** 2, 0)))));
+      expect(Math.max(...distances), name).toBeLessThan(.0025);
+    }
+    const iris = doc.materials.find((m: { name: string }) => m.name === 'iris');
+    expect(iris.pbrMetallicRoughness.baseColorTexture).toBeDefined();
+    expect(iris.extensions.KHR_materials_clearcoat).toBeDefined();
+    expect(gzipSync(bytes).byteLength).toBeLessThan(3_000_000);
+    expect(doc.animations.map((a: { name: string }) => a.name).sort()).toEqual(['cheer', 'idle', 'run', 'walk']);
+    const names = new Set(doc.nodes.map((n: { name: string }) => n.name));
+    for (const [key, slot] of Object.entries(GEAR_SLOT)) expect(names.has(`${slot === 'outfit' ? 'outfit' : 'gear'}_${key}`), key).toBe(true);
+  });
   it('the separate art study retains every gear key and animation within its mobile download budget', () => {
     const file = path.resolve(import.meta.dirname, '../../../public/hero3d/study/hero_f_average.glb');
     const names = glbNodeNames(file);
@@ -36,7 +61,7 @@ describe('3D hero', () => {
         ...HERO_OPTIONS.hair.filter((h) => h !== 'none').map((h) => `hair_${h}`),
         ...HERO_OPTIONS.beard.filter((b) => b !== 'none').map((b) => `beard_${b}`),
         ...HERO_OPTIONS.glasses.filter((g) => g !== 'none').map((g) => `glasses_${g}`),
-        'aid_crutches', 'base_shoes', 'body', 'body_eyebrows', 'body_eyelashes',
+        'aid_crutches', 'base_shoes', 'body', 'body_eyebrows', 'body_eyelashes', 'body_iris_l', 'body_iris_r',
       ];
       expect(want.filter((n) => !names.has(n))).toEqual([]);
       const bytes = fs.readFileSync(path.resolve(import.meta.dirname, `../../../public/hero3d/hero_${frame}_${build}.glb`));
@@ -48,6 +73,13 @@ describe('3D hero', () => {
       const skin = doc.materials.find((m: { name: string }) => m.name === 'skin');
       expect(skin.pbrMetallicRoughness.baseColorTexture).toBeDefined();
       expect(skin.normalTexture).toBeDefined();
+      expect(doc.extensionsRequired).toContain('EXT_texture_webp');
+      expect(doc.extensionsRequired).toContain('KHR_mesh_quantization');
+      expect(doc.asset.extras.fpFlowPositionScale / 32767).toBeLessThan(.0001);
+      expect(doc.images.some((image: { mimeType: string }) => image.mimeType === 'image/webp')).toBe(true);
+      const iris = doc.materials.find((m: { name: string }) => m.name === 'iris');
+      expect(iris.pbrMetallicRoughness.baseColorTexture).toBeDefined();
+      expect(iris.extensions.KHR_materials_clearcoat).toBeDefined();
       // Native glTF packed skin weights must still sum to exactly one at every vertex.
       const weightIndices = new Set<number>(doc.meshes.flatMap((m: { primitives: { attributes: Record<string, number> }[] }) => m.primitives.map(p => p.attributes.WEIGHTS_0)).filter((i: number | undefined) => i !== undefined));
       let invalidWeights = 0;
@@ -77,7 +109,9 @@ describe('3D hero', () => {
         const accessor = doc.accessors[primitive.attributes.POSITION];
         const view = doc.bufferViews[accessor.bufferView];
         const offset = 28 + jsonSize + (view.byteOffset ?? 0) + (accessor.byteOffset ?? 0);
-        return createHash('sha256').update(bytes.subarray(offset, offset + accessor.count * 12)).digest('hex');
+        expect(accessor.componentType).toBe(5122);
+        expect(accessor.normalized).toBe(true);
+        return createHash('sha256').update(bytes.subarray(offset, offset + accessor.count * 6)).digest('hex');
       });
       expect(new Set(hashes).size).toBe(4);
     }

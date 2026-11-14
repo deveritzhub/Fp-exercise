@@ -11,7 +11,7 @@ Blender 5.2.3's `bpy` wheel requires **Python 3.13**.
 
 ```sh
 python3.13 -m venv .bpy
-.bpy/bin/pip install bpy==5.2.3
+.bpy/bin/pip install bpy==5.2.3 Pillow==12.3.0
 git clone https://github.com/makehumancommunity/mpfb2
 (cd mpfb2 && git checkout 6ff1eb358f6c1959ced77e79e6dd2406d9a71f49)
 (cd mpfb2/src/mpfb && zip -qr ../../../mpfb.zip . -x '*__pycache__*')
@@ -31,7 +31,7 @@ They are fitted through `HumanService.add_mhclo_asset` before applying the pose 
 ```sh
 for frame in m f; do
   for build in slim average athletic full; do
-    .bpy/bin/python tools/blender/mh_hero.py --polished --frame "$frame" --build "$build" \
+    .bpy/bin/python tools/blender/mh_hero.py --portrait-finish --frame "$frame" --build "$build" \
       --eyes mh/makehuman/data/eyes --glb "web/public/hero3d/hero_${frame}_${build}.glb"
   done
 done
@@ -62,8 +62,9 @@ Judge a gait from the side: `--render out.png --pose walk:8 --side` (motion:fram
 Skin retains the tintable material name `skin`, roughness 0.5 and mild subsurface weight 0.06 in
 Blender. Standard glTF does not preserve Blender's subsurface shader; the web viewer uses the
 exported PBR surface. Hair retains strand alpha and a neutral texture multiplied by the user's tint.
-`compact_glb.py` rounds exported float attributes to 0.0001 units to improve gzip without a decoder
-extension. Unit tests enforce a maximum of 2,500,000 gzip bytes per complete model.
+`compact_glb.py` preserves the 0.1 mm source positions and uses standard glTF packed geometry
+with less than 0.031 mm additional position error for these models. Unit tests enforce a maximum
+of 2,500,000 gzip bytes per complete model.
 
 Bump `HERO3D_VERSION` when regenerating models. The old two files are retained for cached older
 clients. For a Blender preview add `--render out.png --show hair_short,gear_crown,outfit_champion`
@@ -104,3 +105,27 @@ side openings on full builds without changing their skin weights, neck or sleeve
 surface and animations. The comparison page preserves its original 'before' model separately.
 
 Further visual work and acceptance criteria: `docs/HERO-ART-DIRECTION.md`.
+
+## Face and hair reference study 02
+
+`--portrait-study --frame f --build average` builds the separate reference in
+`web/public/hero3d/study/hero_f_portrait.glb`. It includes original fitted iris domes, procedural
+iris art, restrained expression targets and temple baby hairs. Review at `/hero3d-face-study.html`.
+Run `npx playwright test e2e/hero-portrait.spec.ts -c playwright.hero3d.config.ts` and inspect all
+angles. This does not regenerate or select a new model for the eight normal avatars.
+
+## Approved face/hair finish for all variants (version 8)
+
+Use `--portrait-finish` for every m/f × build combination. It keeps every hair and gear choice,
+adds the approved fitted irises and expression, and refines the bun. The isolated study pages
+keep their frozen reference files. Pillow 12.3.0 is a build-time dependency only.
+
+Maps use lossless `EXT_texture_webp` when smaller; the builder verifies exact decoded RGBA
+equality before replacing each PNG. `KHR_mesh_quantization` stores positions and normals as
+normalised shorts. A uniform position scale is applied through inverse bind matrices (not
+avatar width/height scaling), preserving physical sizes and animation. The step at scale 2 m
+is 0.061 mm, maximum additional position error 0.031 mm; normal error is below 0.000016 per
+component relative to the existing rounded normals. Both extensions are handled by the existing
+Three.js loader and browser without an extra decoder library. WebP is already used by the app.
+Browser tests verify actual decoded skin/iris/hair maps and physical body heights for all eight
+models, in addition to animations, gear, screenshots and accessibility.
