@@ -1,3 +1,4 @@
+import { useView } from '@/components/patient/ViewChoice';
 import { useEffect } from 'react';
 import { TestBanner } from '@/components/app/TestBanner';
 import { WelcomeTour } from '@/components/patient/WelcomeTour';
@@ -95,6 +96,8 @@ export function PatientLayout() {
   // Creating the hero is a focused flow: no tab bar.
   const inSetup = loc.pathname === '/p/held/nieuw';
   const home = useQuery({ queryKey: ['patient-home'], queryFn: () => api.get<PatientHomeData>('/patient/home'), enabled: !!user?.patient });
+  const { simple: simpleView } = useView();
+  const simple = simpleView === true;
   if (!user?.patient) return null;
   // Today always opens on today's training. Someone without a hero gets an invitation there, not the
   // character creator in the way (a new account still starts with it, straight after signing up).
@@ -102,13 +105,15 @@ export function PatientLayout() {
   // (logbook inside). A dot marks a part that still has a workout open today. Account is in the header.
   const clinical = isClinical(user.patient.kind);
   const openIn = (m: string) => (home.data?.programs ?? []).some((p) => (p.module === m || (m === 'revalidatie' && p.module !== 'kracht' && p.module !== 'mobiliteit')) && !p.paused && ((p.today.scheduled > 0 && !p.today.done) || !!p.openSession));
+  const hasPart = (m: string) => (home.data?.programs ?? []).some((p) => p.module === m);
   const tabs = [
     { to: '/p', end: true, icon: CalendarCheck2, label: t('Vandaag', 'Today'), dot: false },
     ...(clinical ? [{ to: '/p/revalidatie', end: false, icon: HeartPulse, label: t('Revalidatie', 'Rehab'), dot: openIn('revalidatie') }] : []),
     { to: '/p/kracht', end: false, icon: Dumbbell, label: t('Kracht', 'Strength'), dot: openIn('kracht') },
     { to: '/p/mobiliteit', end: false, icon: Move, label: t('Mobiliteit', 'Mobility'), dot: openIn('mobiliteit') },
-    { to: '/p/held', end: false, icon: Trophy, label: t('Held', 'Hero'), dot: false },
-  ];
+    // Plain view: no hero, and only the parts that have a programme; progress takes the hero's place.
+    ...(simple ? [{ to: '/p/voortgang', end: false, icon: Trophy, label: t('Voortgang', 'Progress'), dot: false }] : [{ to: '/p/held', end: false, icon: Trophy, label: t('Held', 'Hero'), dot: false }]),
+  ].filter((tab) => !simple || !['/p/kracht', '/p/mobiliteit'].includes(tab.to) || hasPart(tab.to.slice(3)));
   const renderTab = (tab: (typeof tabs)[number]) => (
     <NavLink key={tab.to} to={tab.to} end={tab.end} aria-label={tab.dot ? t(`${tab.label} (nog open)`, `${tab.label} (still open)`) : undefined} className={({ isActive }) => cn('tap group flex min-h-[60px] min-w-0 flex-col items-center justify-center gap-1 py-2', tabs.length === 5 ? 'text-[10.5px] tracking-[-0.01em]' : 'text-[12.5px]', isActive ? 'font-semibold text-accent' : 'font-medium text-ink-500 hover:text-ink-800')}>
       {({ isActive }) => (
@@ -164,11 +169,16 @@ export function PatientLayout() {
       {!inPlayer && !inSetup && (
         <nav className="fixed inset-x-0 bottom-0 z-30 print:hidden border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label={t('Navigatie', 'Navigation')}>
           {/* The + (quick log) sits exactly in the middle: two tabs on the left, the rest on the right. */}
+          {simple ? (
+            // Plain view: a few large tabs of equal width, and no quick-log button between them.
+            <div className="mx-auto grid max-w-xl" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>{tabs.map(renderTab)}</div>
+          ) : (
           <div className="mx-auto flex max-w-xl">
             <div className="grid min-w-0 flex-1 grid-cols-2">{tabs.slice(0, 2).map(renderTab)}</div>
             <div className="flex w-[60px] shrink-0 items-start justify-center">{!inSetup && <QuickLogButton />}</div>
             <div className={cn('grid min-w-0 flex-1', tabs.length - 2 === 3 ? 'grid-cols-3' : 'grid-cols-2')}>{tabs.slice(2).map(renderTab)}</div>
           </div>
+          )}
         </nav>
       )}
     </div>

@@ -832,6 +832,23 @@ heroPatient.post('/hero/karate/exam', async (c) => {
   );
 });
 
+const SAVE_VIEW = 'INSERT INTO patient_views(patient_id, simple) VALUES ($1, $2) ON CONFLICT (patient_id) DO UPDATE SET simple = EXCLUDED.simple, updated_at = now()';
+
+/** Game or plain: `simple` is null until the patient (or their therapist) has chosen. */
+heroPatient.get('/view', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const row = await withUser(user.id, async (tx) => (await tx.query('SELECT simple FROM patient_views WHERE patient_id = $1', [patient.id])).rows[0]);
+  return c.json({ simple: row ? !!row.simple : null });
+});
+
+heroPatient.put('/view', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ simple: z.boolean() }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) throw badRequest('invalid_input');
+  await withUser(user.id, (tx) => tx.query(SAVE_VIEW, [patient.id, body.data.simple]));
+  return c.json({ simple: body.data.simple });
+});
+
 heroPatient.get('/hero/home', async (c) => {
   const { user, patient } = requirePatient(c);
   return c.json(await withUser(user.id, (tx) => homeState(tx, patient.id)));
