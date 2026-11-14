@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { loadModel } from '@/components/hero/Hero3D';
 
 /**
  * The weapons of the adventure, made of simple shapes and put in the hero's right hand. Each is
@@ -16,7 +17,39 @@ const part = (g: THREE.Group, geo: THREE.BufferGeometry, mat: THREE.Material, y:
   return o;
 };
 
+/** The sculpted weapons (web/public/village/weapons): grip at the origin, standing up. */
+const FILE: Record<string, string> = { staff: 'wandelstaf', gloves: 'bokshandschoen', club: 'knots', hammer: 'smidshamer', sword: 'zwaard', axe: 'strijdbijl', spear: 'speer', hero_sword: 'heldenzwaard' };
+const WEAPONS_VERSION = 1;
+
+/** The weapon for the hand: the sculpted model, with the simple one made here until it has loaded. */
 export function weaponMesh(key: string): THREE.Group | null {
+  const simple = simpleWeapon(key);
+  if (!simple) return null;
+  const g = new THREE.Group();
+  g.add(simple);
+  if (FILE[key]) {
+    loadModel(`/village/weapons/${FILE[key]}.glb?v=${WEAPONS_VERSION}`)
+      .then((gltf) => {
+        const model = gltf.scene.clone(true);
+        model.traverse((o) => {
+          const wm = o as THREE.Mesh;
+          if (!wm.isMesh) return;
+          const mm = (wm.material as THREE.MeshStandardMaterial).clone();
+          mm.flatShading = true;
+          mm.roughness = 0.55;
+          mm.metalness = 0.15;
+          wm.material = mm;
+          wm.castShadow = true;
+        });
+        g.remove(simple);
+        g.add(model);
+      })
+      .catch(() => undefined);
+  }
+  return g;
+}
+
+function simpleWeapon(key: string): THREE.Group | null {
   const g = new THREE.Group();
   if (key === 'staff') {
     part(g, new THREE.CylinderGeometry(0.016, 0.02, 1.25, 8), m(WOOD), 0.3);

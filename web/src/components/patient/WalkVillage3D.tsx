@@ -54,6 +54,8 @@ type Props = {
     key: string; label: string; site?: Site; roof?: number; kind?: 'kracht' | 'mobiliteit'; alert?: boolean;
     /** A home instead of a cottage: which of the six (0 = camp … 5 = villa). `no` varies its roof, `flag` shows a green mark. */
     stage?: number; no?: number; flag?: boolean;
+    /** A sculpted model in place of the cottage (a .glb under /village/buildings), with its scale. */
+    model?: { url: string; scale: number };
   }[];
   /** How far the walkable ground reaches from the square. Wider for the practice's village with its street of homes. */
   bound?: number;
@@ -838,7 +840,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           mats.push(m.material as THREE.Material);
         }
       });
-      occluders.push({ obj, x, z, r, mats, a: 1 });
+      const entry = { obj, x, z, r, mats, a: 1 };
+      occluders.push(entry);
+      return entry;
     };
 
     // The village is flat; around it the land rolls up into hills, with a valley for the road south.
@@ -925,7 +929,39 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       scene.add(h);
       const reach = stage >= 0 ? HOME_REACH[stage] * STREET_HOME : 1.9;
       obstacles.push({ x: p.x, z: p.z, r: reach });
-      occluder(h, p.x, p.z, reach + 0.2);
+      const fade = occluder(h, p.x, p.z, reach + 0.2);
+      if (b.model) {
+        // The sculpted building takes the cottage's place once it has loaded; the cottage stays when it does not.
+        const want = b.model;
+        loadModel(want.url)
+          .then((gltf) => {
+            if (cancelled) return;
+            const model = gltf.scene.clone(true);
+            model.scale.setScalar(want.scale);
+            const mats: THREE.Material[] = [];
+            model.traverse((o) => {
+              const bm = o as THREE.Mesh;
+              if (!bm.isMesh) return;
+              bm.geometry = bm.geometry.clone();
+              bm.geometry.computeVertexNormals();
+              const mm = (bm.material as THREE.MeshStandardMaterial).clone();
+              mm.flatShading = true;
+              mm.roughness = 0.9;
+              // A file without a material loads as metal, which is black without a sky to mirror.
+              mm.metalness = 0;
+              mm.transparent = true;
+              bm.material = mm;
+              bm.castShadow = true;
+              // No shadow of itself on itself: faded, the inside would show as a black box.
+              bm.receiveShadow = false;
+              mats.push(mm);
+            });
+            h.clear();
+            h.add(model);
+            fade.mats = mats;
+          })
+          .catch(() => undefined);
+      }
       anchors.push({ id: b.key, obj: h, y: stage >= 0 ? DWELLING_TOP[stage] * STREET_HOME + 0.5 : 3.9 });
       spots.push({ key: b.key, door: p.door });
       // Homes stand along the street the page lays out; the others get their own path from the square.
