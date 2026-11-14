@@ -18,6 +18,7 @@ import { InviteShare } from '@/components/app/InviteShare';
 import { progressionSignal } from '@shared/progression';
 import type { Member, PatientDetail, Progress } from '@/lib/types';
 import { PainMapCard } from '@/components/hero/PainMapCard';
+import { PatientViewCard } from '@/components/app/PatientViewCard';
 import { ClinicalTimeline } from '@/components/therapist/ClinicalTimeline';
 import { AclCriteriaPanel } from '@/components/therapist/AclWorkflow';
 
@@ -185,6 +186,7 @@ function Overview({ patientId, progress, programs }: { patientId: string; progre
       </div>
       <ProgressionNotice sessions={progress.sessions} />
       <PainMapCard patientId={patientId} />
+      <PatientViewCard patientId={patientId} />
       {/* Self-measured mobility, only when the patient shares the mobility part. */}
       <MobilitySummary base={`/patients/${patientId}`} link="?tab=mobiliteit" />
       <ClinicalTimeline patientId={patientId} sessions={progress.sessions} outcomes={progress.outcomes ?? []} />

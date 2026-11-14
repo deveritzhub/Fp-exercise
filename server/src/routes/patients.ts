@@ -218,6 +218,32 @@ for (const [action, value] of [
   });
 }
 
+/** Game or plain view for this patient; the patient can change it again. */
+patients.get('/:id/view', async (c) => {
+  const { user } = requireStaff(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      if (!(await loadPatient(tx, id))) throw notFound();
+      const row = (await tx.query('SELECT simple FROM patient_views WHERE patient_id = $1', [id])).rows[0];
+      return { simple: row ? !!row.simple : null };
+    }),
+  );
+});
+
+patients.put('/:id/view', async (c) => {
+  const { user } = requireStaff(c);
+  const id = parse(uuidParam, c.req.param('id'));
+  const b = parse(z.object({ simple: z.boolean() }), await c.req.json());
+  await withUser(user.id, async (tx) => {
+    const p = await loadPatient(tx, id);
+    if (!p) throw notFound();
+    await tx.query('INSERT INTO patient_views(patient_id, simple) VALUES ($1, $2) ON CONFLICT (patient_id) DO UPDATE SET simple = EXCLUDED.simple, updated_at = now()', [id, b.simple]);
+    await audit(tx, user.id, p.practice_id, 'update', 'patient', id, { view: b.simple ? 'simple' : 'game' });
+  });
+  return c.json({ simple: b.simple });
+});
+
 patients.put('/:id/therapists', async (c) => {
   const { user } = requireStaff(c);
   const id = parse(uuidParam, c.req.param('id'));

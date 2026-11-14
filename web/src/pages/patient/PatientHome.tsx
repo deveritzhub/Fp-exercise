@@ -22,6 +22,7 @@ import { XP } from '@shared/hero';
 import { LogbookHomeCard } from '@/pages/patient/LogbookPage';
 import { MobilityDueCard } from '@/components/MobilityTests';
 import { FirstSteps } from '@/components/patient/FirstSteps';
+import { ViewChoiceCard, useView } from '@/components/patient/ViewChoice';
 import { FeedbackNudge } from '@/components/patient/FeedbackNudge';
 import { Check, Flame } from 'lucide-react';
 
@@ -67,13 +68,24 @@ export function PatientHome() {
   const q = useQuery({ queryKey: ['patient-home'], queryFn: () => api.get<PatientHomeData>('/patient/home'), refetchOnMount: 'always' });
   const modes = useModes();
   const qc = useQueryClient();
+  const { simple } = useView();
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
   if (!q.data) return <div className="space-y-4"><Skeleton className="h-8 w-2/3" /><Skeleton className="h-56 rounded-2xl" /><Skeleton className="h-28 rounded-2xl" /></div>;
   const d = q.data;
   const { scheduled: todo, resumeOther, remaining: left, pausedToday, showRestCard } = summarizePatientDay(d.programs);
   const startable = (['mobiliteit', 'kracht'] as const).filter((m) => modes.data?.templates.some((x) => x.module === m) && !d.programs.some((p) => moduleOf(p) === m));
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-view={simple ? 'simple' : 'game'}>
+      {simple ? (
+        // Plain view: the day and what there is to do, large, and nothing of the game.
+        <header>
+          <p className="text-[15px] font-medium text-ink-700">{new Intl.DateTimeFormat(nl ? 'nl-NL' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</p>
+          <h1 className="font-display text-[28px] font-bold leading-tight text-ink-950">{`${greeting(locale)}, ${d.patient.firstName}`}</h1>
+          <p className="mt-1 text-[17px] text-ink-800" data-testid="simple-today">
+            {todo.length > 0 ? (left > 0 ? t(`Vandaag nog ${left} ${left === 1 ? 'training' : 'trainingen'} te doen.`, `${left} ${left === 1 ? 'workout' : 'workouts'} left today.`) : t('Alles voor vandaag is gedaan.', 'Everything for today is done.')) : t('Vandaag staan er geen oefeningen gepland.', 'No exercises are planned for today.')}
+          </p>
+        </header>
+      ) : (
       <HomeLobby
         date={new Intl.DateTimeFormat(nl ? 'nl-NL' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}
         greeting={`${greeting(locale)}, ${d.patient.firstName}`}
@@ -85,6 +97,8 @@ export function PatientHome() {
               : t('Alles voor vandaag is gedaan. Lekker bezig!', 'Everything for today is done. Well done!')
           : undefined}
       />
+      )}
+      <ViewChoiceCard />
 
       {d.notifications.length > 0 && (
         <div className="space-y-2">
@@ -152,7 +166,7 @@ export function PatientHome() {
       ) : (
         todo.map((p, i) => (
           <div key={p.id}>
-            {i === 0 && left > 0 && pausedToday === 0 && (
+            {i === 0 && left > 0 && pausedToday === 0 && !simple && (
               <p className="mb-1.5 flex items-center gap-2 font-display text-[15px] font-bold text-ink-900">
                 <span className="rounded-full bg-[#fbf0d9] px-2.5 py-0.5 text-[12.5px] text-[#855806]">{t('Missie van vandaag', 'Today’s mission')}</span>
                 <span className="text-[13px] font-semibold text-ink-600">{t(`+${XP.session} XP per training`, `+${XP.session} XP per workout`)}</span>
@@ -196,11 +210,11 @@ export function PatientHome() {
         </section>
       )}
 
-      <FirstSteps hasProgram={d.programs.length > 0} />
-      <VillageTiles />
-      <DayChestHomeCard />
-      <BossHomeCard />
-      <DailyQuizCard />
+      {!simple && <FirstSteps hasProgram={d.programs.length > 0} />}
+      {!simple && <VillageTiles />}
+      {!simple && <DayChestHomeCard />}
+      {!simple && <BossHomeCard />}
+      {!simple && <DailyQuizCard />}
       <MobilityDueCard />
       <LogbookHomeCard />
 

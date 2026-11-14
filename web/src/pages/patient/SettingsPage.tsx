@@ -6,6 +6,7 @@ import { useLogout, useSession } from '@/lib/session';
 import { useDocumentMeta } from '@/lib/meta';
 import { Button, Card } from '@/components/ui';
 import { ReminderCard } from '@/components/app/Reminders';
+import { ViewCard } from '@/components/patient/ViewChoice';
 import { ConsentToggle, MyDataCard, useModes } from '@/components/patient/Modules';
 import { TextSizeCard, ThemeCard } from '@/pages/AccountPage';
 import { WhatsNew } from '@/components/app/WhatsNew';
@@ -47,6 +48,7 @@ export function SettingsPage() {
 
       <section aria-labelledby="set-app" className="space-y-3">
         <h2 id="set-app" className="text-[13px] font-semibold uppercase tracking-wide text-ink-600">{t('App', 'App')}</h2>
+        <ViewCard />
         <ReminderCard />
         <TextSizeCard />
         <ThemeCard />
