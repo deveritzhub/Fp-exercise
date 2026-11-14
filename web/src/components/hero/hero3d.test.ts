@@ -24,7 +24,7 @@ describe('3D hero', () => {
     const bytes = fs.readFileSync(file);
     const doc = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString());
     expect(doc.animations.map((a: { name: string }) => a.name).sort()).toEqual(['cheer', 'idle', 'run', 'walk']);
-    expect(gzipSync(bytes).byteLength).toBeLessThan(2_550_000);
+    expect(gzipSync(bytes).byteLength).toBeLessThan(2_500_000);
     expect(names.has('hair_bun')).toBe(true);
     expect(doc.materials.find((m: { name: string }) => m.name === 'skin').normalTexture).toBeDefined();
   });

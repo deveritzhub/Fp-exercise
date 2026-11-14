@@ -1,12 +1,12 @@
-# Character style study 01 — 13 November 2026
+# Character style study 01 — 14 November 2026
 
 Open `/hero3d-study.html` to compare one female/average character with the existing model.
 Both are rendered with the same studio lighting, camera, olive kit palette and synthetic avatar.
 The default eight models and the village still use their existing art. This is one reviewable
 style study, not a rollout of all builds and hairstyles.
 
-The study includes a separately modelled shirt with regular topology, rounded neckline and sleeve
-bindings, eased shorts, drawstrings, side seams and laced trainers. Arms and hands rest more naturally.
+The study uses the current fitted loose sport kit, preserving its UVs and skin weights, with
+neckline/cuff bindings, a small FP mark and laced trainers. Arms and hands rest more naturally.
 The fitted CC0 bun uses a smoother silhouette; neutralised CC0 skin shading and original vertex paint
 add restrained facial detail while preserving skin tint. Studio rendering adds environment reflections,
 a warm key light, contact shadows, filmic tone mapping and a round sand-coloured podium.
@@ -21,8 +21,8 @@ These are actual software-WebGL browser captures of the GLB, not generated conce
 Only the bun hairstyle is included in this fixed study. All gear nodes and four animation clips
 are retained. Clothing physics, detailed strands, individual facial customisation and adapting the
 new garment geometry to every outfit/build remain future work after art direction review.
-The visible shirt is regular geometry rather than anatomical skin topology; the covered inner skin
-is removed to avoid body/cloth intersections. This method must be reviewed in motion before rollout.
+The study retains the fitted garment topology from the current app. Shoulder fit and clothing in
+motion need further art review before applying this direction to all avatars.
 
 Build with the existing Blender/MPFB setup:
 
@@ -33,3 +33,11 @@ python tools/blender/mh_hero.py --study --frame f --build average \
 
 Validation uses synthetic fixtures only. Run the commands in `tools/blender/README.md`, plus
 `npx playwright test e2e/hero-study.spec.ts -c playwright.hero3d.config.ts`.
+
+The separate study currently downloads at less than 2.5 MB gzip; the eight
+production-model limits remain 2.5 MB. Visual approval and further fitting review are needed before a wider rollout.
+
+Validation on 14 November: 70 unit tests, typecheck and production build passed. The full
+five-test browser run passed, followed by a fresh run of both study tests for the final GLB.
+Front, portrait, side, equipped and mobile page captures were visually inspected. Skin and hair
+remain simplified; this is not a claim of completed premium visual quality.

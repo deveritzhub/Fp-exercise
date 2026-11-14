@@ -15,7 +15,7 @@ function Study() {
     <a href="/" className="text-sm font-semibold underline underline-offset-4">FP Flow</a>
     <p className="mt-8 text-xs font-bold uppercase tracking-[.2em] text-[#62684f]">Karakterstudie · 01</p>
     <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Een natuurlijkere sportheld</h1>
-    <p className="mt-4 max-w-xl leading-relaxed text-[#5c6257]">Eén proefpersonage met zachtere gezichtsdetails, ontspannen handen en losser vallende sportkleding. Sleep om het van alle kanten te bekijken.</p>
+    <p className="mt-4 max-w-xl leading-relaxed text-[#5c6257]">Eén proefpersonage met zachtere gezichtsdetails, ontspannen handen en afgewerkte sportkleding. Sleep om het van alle kanten te bekijken.</p>
     <div className="mt-7 flex flex-wrap gap-2" role="group" aria-label="Vergelijk de modellen">
       {([[false, 'Nieuw personage'], [true, 'Vorige versie']] as const).map(([value, label]) => <button key={String(value)} type="button" aria-pressed={before === value} onClick={() => setBefore(value)} className={`min-h-11 rounded-full border px-5 text-sm font-semibold ${before === value ? 'border-[#45523c] bg-[#45523c] text-white' : 'border-[#b7b4a4] bg-[#fffdf8] text-[#353d32]'}`}>{label}</button>)}
       <button type="button" aria-pressed={portrait} onClick={() => setPortrait(!portrait)} className="min-h-11 rounded-full border border-[#b7b4a4] bg-[#fffdf8] px-5 text-sm font-semibold">{portrait ? 'Hele personage' : 'Gezicht van dichtbij'}</button>

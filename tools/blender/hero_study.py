@@ -25,7 +25,7 @@ def dress_study(ctx):
     hr = g['HR']
     part, mat = g['part'], g['mat']
     neck, waist = g['NECK_H'].z, g['WAIST_Z']
-    hem_z = g['BONE']['pelvis'][0].z + .05
+    hem_z = g['BONE']['pelvis'][0].z + .005
     # A muted olive shirt, charcoal shorts, ivory detailing; the normal colour controls still tint these.
     ivory = mat('study_ivory', '#eee5d2', .76)
     piping = mat('study_piping', '#b1a17a', .68)
@@ -59,57 +59,12 @@ def dress_study(ctx):
             bmesh.ops.smooth_vert(bm, verts=movable, factor=factor, use_axis_x=True, use_axis_y=True, use_axis_z=True)
         bm.to_mesh(ob.data); bm.free()
 
-    # A separate, regular garment surface. Copying anatomical topology leaves nipple-shaped folds
-    # even after smoothing, so the shirt uses measured elliptical sections instead.
-    old=bpy.data.objects['body_shirt'];body_root=old.parent
-    bpy.data.objects.remove(old,do_unlink=True)
-    torso = g['pts'](lambda c,n,b,t,groups: abs(c.x)<g['SHW'] and hem_z-.02<c.z<neck)
-    rings=[]
-    for i in range(13):
-        z=hem_z+(neck-.065-hem_z)*i/12
-        points=[p for p in torso if abs(p.z-z)<.025]
-        lo,hi=g['bbox'](points)
-        center=(lo+hi)/2
-        rings.append((z,center.y,(hi.x-lo.x)/2+.019,(hi.y-lo.y)/2+.024))
-    rings.extend([(neck-.025,g['NECK_C'].y,g['SHW']+.025,.095),
-                  (neck+.009,g['NECK_C'].y,g['SHW']*.80,.068),
-                  (neck+.026,g['NECK_C'].y,g['NECK_R']*1.48,g['NECK_R']*1.25)])
-    verts=[];faces=[];sides=64
-    for z,cy,rx,ry in rings:
-        for i in range(sides):
-            t=math.tau*i/sides
-            # Broad, very subtle folds near the hem; no anatomical ridges.
-            fold=.002*math.sin(t*7+z*9)*max(0,1-(z-hem_z)/.18)
-            verts.append((math.cos(t)*(rx+fold),cy+math.sin(t)*(ry+fold),z))
-    for j in range(len(rings)-1):
-        for i in range(sides):
-            faces.append((j*sides+i,j*sides+(i+1)%sides,(j+1)*sides+(i+1)%sides,(j+1)*sides+i))
-    mesh=bpy.data.meshes.new('tailored_shirt');mesh.from_pydata(verts,[],faces);mesh.update()
-    shirt=bpy.data.objects.new('body_shirt',mesh);g['scene'].collection.objects.link(shirt);shirt.parent=body_root
-    g['finish'](shirt,g['KIT'],sub=1)
-    with part('body_study_sleeves'):
-        for side in ('l','r'):
-            a,b=g['along']('upperarm_'+side,-.08),g['along']('upperarm_'+side,.44)
-            radius=g['limb_r']('upperarm_'+side,.25)+.022
-            # Open sleeve ends sit inside the torso; cloth shares a single matte material.
-            d=(b-a).normalized();u=d.cross(Vector((0,1,0))).normalized();v=d.cross(u)
-            vv=[];ff=[]
-            for j in range(5):
-                center=a.lerp(b,j/4);r=radius*(1-.1*j/4)
-                for i in range(32):
-                    t=math.tau*i/32;vv.append(center+r*(u*math.cos(t)+v*math.sin(t)))
-            for j in range(4):
-                for i in range(32):ff.append((j*32+i,j*32+(i+1)%32,(j+1)*32+(i+1)%32,(j+1)*32+i))
-            me=bpy.data.meshes.new('sleeve');me.from_pydata(vv,[],ff);me.update()
-            ob=bpy.data.objects.new('sleeve',me);g['scene'].collection.objects.link(ob);g['finish'](ob,g['KIT'],sub=1)
-            g['ring_on'](b,b+d,radius*.9,.0035,ivory,name='sleeve_binding')
-    # Smooth each open garment edge and bind the actual neckline/cuffs, rather than a floating circle.
+    # Use the app's newly improved loose MakeHuman kit, retaining its fitted skin weights and UVs.
+    # Bind the actual neckline/cuffs and add a small original mark without replacing the garment mesh.
+    shirt=bpy.data.objects['body_shirt']
     bm=bmesh.new();bm.from_mesh(shirt.data)
     boundary=[v for v in bm.verts if any(e.is_boundary for e in v.link_edges)]
-    for _ in range(5):
-        coordinates={v:sum((e.other_vert(v).co for e in v.link_edges if e.is_boundary),Vector())/2 for v in boundary}
-        for v,co in coordinates.items(): v.co=v.co.lerp(co,.45)
-    edge_loops=[];seen=set()
+    loops=[];seen=set()
     for first in boundary:
         if first in seen: continue
         loop=[];v=first;previous=None
@@ -118,46 +73,17 @@ def dress_study(ctx):
             candidates=[e.other_vert(v) for e in v.link_edges if e.is_boundary and e.other_vert(v)!=previous]
             if not candidates: break
             previous,v=v,candidates[0]
-        if len(loop)>5: edge_loops.append(loop+[loop[0]])
-    bm.to_mesh(shirt.data);bm.free()
+        if len(loop)>5: loops.append(loop[::2]+[loop[0]])
+    bm.free()
     with part('body_study_details'):
-        for loop in edge_loops:
+        for loop in loops:
             low=sum(p.z for p in loop)/len(loop)<waist+.05
-            tube('folded_hem' if low else 'garment_binding',loop,.0035,g['KIT'] if low else ivory)
-        # Small original FP mark, flush with the front panel.
-        z = g['CHEST_Z'] + .025
-        y = min(v.co.y for v in shirt.data.vertices if abs(v.co.z-z)<.025) - .003
-        x = .075
+            tube('folded_hem' if low else 'garment_binding',loop,.0025,g['KIT'] if low else ivory)
+        z=g['CHEST_Z']+.025
+        y=min(v.co.y for v in shirt.data.vertices if abs(v.co.z-z)<.025)-.004
+        x=.075
         for points in [[(x,y,z-.012),(x,y,z+.014),(x+.018,y,z+.014)],[(x,y,z+.002),(x+.012,y,z+.002)]]:
             tube('fp_mark',points,.002,ivory)
-        # Two short diagonal shoulder seams.
-        for sg in (-1,1):
-            tube('shoulder_seam',[(sg*.06,y+.015,neck-.042),(sg*.12,y+.024,neck-.065),(sg*.17,y+.026,neck-.10)],.0017,piping)
-
-    shorts = bpy.data.objects['body_shorts']
-    fair(shorts, 8, .35)
-    for v in shorts.data.vertices:
-        # Ease around each thigh, retaining the skin weights of the original mesh.
-        sg = 1 if v.co.x > 0 else -1
-        hip = g['HIP'][sg]
-        v.co.x = hip.x + (v.co.x-hip.x)*1.08
-        v.co.y += -.016 if v.co.y < hip.y else .012
-    shorts.data.update()
-    wrap = shorts.modifiers.new('shorts_clearance','SHRINKWRAP')
-    wrap.target=human;wrap.wrap_method='NEAREST_SURFACEPOINT';wrap.wrap_mode='OUTSIDE_SURFACE';wrap.offset=.022
-    bpy.context.view_layer.objects.active=shorts
-    bpy.ops.object.modifier_apply(modifier=wrap.name)
-    with part('body_study_shorts_detail'):
-        for sg in (-1,1):
-            s = g['SIDE'][sg]
-            hip = g['HIP'][sg]
-            z1, z2 = hem_z-.025, g['along']('thigh_'+s,.52).z
-            x = max(abs(v.co.x) for v in shorts.data.vertices if abs(v.co.z-z2)<.025)*sg
-            tube('shorts_side_seam',[(x*.94,hip.y-.004,z1),(x,hip.y-.012,(z1+z2)/2),(x*.99,hip.y-.015,z2)],.002,piping)
-        # Drawstrings sit below the shirt hem.
-        y = min(v.co.y for v in shorts.data.vertices if abs(v.co.z-(hem_z-.012))<.035)-.005
-        for sg in (-1,1):
-            tube('drawstring',[(sg*.009,y,hem_z-.012),(sg*.015,y-.006,hem_z-.048),(sg*.012,y,hem_z-.075)],.002,ivory)
 
     # White shoes get distinct soles, heel tabs and crossed laces.
     with part('base_shoes') as shoe_root:
@@ -183,18 +109,6 @@ def dress_study(ctx):
     for name in list(g['ASSETS']):
         if name.startswith('hair_') and name!='hair_bun':
             bpy.data.objects.remove(bpy.data.objects[name],do_unlink=True)
-
-    # Remove only fully covered body faces; retain all vertices/weights so the skeleton and source indices stay stable.
-    # This also prevents internal breasts/torso from casting shadows through thin clothing.
-    covered_low=min(g['along']('thigh_'+s,.46).z for s in ('l','r'))
-    def covered(v):
-        c,n,b,t,groups=g['VX'][v.index]
-        if covered_low<c.z<neck-.02 and abs(c.x)<g['SHW']*.97: return True
-        if b in ('upperarm_l','upperarm_r'): return t<.32
-        return False
-    bm=bmesh.new();bm.from_mesh(human.data);bm.verts.ensure_lookup_table()
-    bmesh.ops.delete(bm,geom=[f for f in bm.faces if all(covered(v) for v in f.verts)],context='FACES_ONLY')
-    bm.to_mesh(human.data);bm.free()
 
     # The CC0 source skin contributes facial shading while a neutralised texture preserves selectable skin tones.
     import numpy as np
