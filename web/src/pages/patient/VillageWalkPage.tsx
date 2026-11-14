@@ -416,7 +416,7 @@ export function VillageWalkPage() {
 
   // The adventure: little ailments round the village to beat, for XP of its own (never the hero's).
   const creatures = useMemo(
-    () => ([['slime', 120, 10.5], ['imp', 248, 10.9], ['couch', 325, 10.8], ['slime', 105, 8.4], ['giant_slime', 140, 11.3], ['couch_king', 295, 11.4]] as [CreatureKind, number, number][])
+    () => ([['slime', 120, 10.5], ['imp', 80, 11.2], ['couch', 325, 10.8], ['slime', 105, 8.4], ['giant_slime', 140, 11.3], ['couch_king', 295, 11.4]] as [CreatureKind, number, number][])
       .map(([kind, deg, r], i) => ({ key: `mob:${i}`, kind, label: nl ? CREATURES[kind].nl : CREATURES[kind].en, x: Math.cos((deg * Math.PI) / 180) * r, z: Math.sin((deg * Math.PI) / 180) * r }))
       // The big ones only show themselves to an adventurer of their level.
       .filter((c) => (adventure.data?.level ?? 1) >= CREATURES[c.kind].level),
@@ -465,6 +465,9 @@ export function VillageWalkPage() {
       : k === HOME_KEY ? homeLabel.toLowerCase()
       : k === boardKey(HOME_KEY) ? t('je inrichtingstafel', 'your furnishing table')
       : k.startsWith('in:') ? t('het programmabord', 'the programme board')
+      : k === WELL_KEY ? t('de waterput', 'the well')
+      : k === BOXING_KEY ? t('de boksschool', 'the boxing school')
+      : k.startsWith('mob:') ? creatures.find((c) => c.key === k)?.label ?? t('het kwaaltje', 'the ailment')
       : buildings.find((b) => b.key === k)?.label ?? k;
   // Landmarks for the maps: every building with its own sign, and the practice.
   const landmarks: Landmark[] = [
