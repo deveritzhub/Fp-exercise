@@ -109,6 +109,7 @@ function OwnHome({ stage, lit }: { stage: number; lit: boolean }) {
 function VillageScene({ daypart, growth, ownStage }: { daypart: Daypart; growth: VillageGrowth | null; ownStage: number | null }) {
   const sky = SKY[daypart];
   const lit = daypart === 'evening' || daypart === 'night';
+  const [painted, setPainted] = useState(true);
   const roofs = ['#b5532c', '#2759a0', '#c9a14a', '#8e3b5f', '#29483c'];
   // Five village buildings plus the cottages that were earned.
   const count = 5 + (growth?.houses ?? 0);
@@ -180,11 +181,14 @@ function VillageScene({ daypart, growth, ownStage }: { daypart: Daypart; growth:
         </g>
       ))}
       {ownStage !== null && (
-        <g transform="translate(152 76) scale(1.2)">
-          <ellipse cx="0" cy="7" rx="22" ry="3.4" fill="#000" opacity="0.14" />
-          <OwnHome stage={ownStage} lit={lit} />
+        <g transform="translate(150 82) scale(1.2)">
+          {!painted && <ellipse cx="0" cy="7" rx="22" ry="3.4" fill="#000" opacity="0.14" />}
+          {/* The painted home for this level; the drawn one takes its place when the picture does not come. */}
+          {painted ? (
+            <image href={`/village/homes/${HOME_STAGES[ownStage].key}.webp?v=1`} x="-31" y="-46" width="62" height="56" preserveAspectRatio="xMidYMax meet" onError={() => setPainted(false)} style={{ filter: daypart === 'night' ? 'brightness(0.72)' : undefined }} />
+          ) : <OwnHome stage={ownStage} lit={lit} />}
           {/* The gold marker says: this one is yours. */}
-          <path d="M-6 -47 H6 L0 -39Z" fill="#e4bc63" stroke="#6b4705" strokeWidth="1" strokeLinejoin="round" className="chest-bounce" />
+          <path d="M-5 -57 H5 L0 -50Z" fill="#e4bc63" stroke="#6b4705" strokeWidth="1" strokeLinejoin="round" className="chest-bounce" />
         </g>
       )}
       <path d="M0 140 Q120 112 230 128 T400 120 V170 H0Z" fill={sky.hill} />
