@@ -84,3 +84,10 @@ before publishing. Restore unrelated generated RPG screenshots after the run.
 
 Licences: MPFB code GPL-3 (build tool only); MakeHuman base mesh, targets, eyes and selected source
 assets CC0. See `assets/README.md` for sources and authors.
+
+## Single character art study
+
+`--study --frame f --build average` opts into `hero_study.py` and produces the separate file
+`web/public/hero3d/study/hero_f_average.glb`. See `docs/hero3d-study/README.md`.
+The public `/hero3d-study.html` page compares it with the existing character under the same light.
+This file intentionally includes only the bun hairstyle; it is not selected by `hero3dUrl` or the village.

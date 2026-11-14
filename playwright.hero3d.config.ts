@@ -4,7 +4,7 @@ import rpg from './playwright.rpg.config';
 // These two suites mock all API requests with synthetic fixtures and need no database.
 export default defineConfig({
   ...rpg,
-  testMatch: ['hero-3d.spec.ts', 'premium-rpg.spec.ts'],
+  testMatch: ['hero-3d.spec.ts', 'premium-rpg.spec.ts', 'hero-study.spec.ts'],
   use: {
     ...rpg.use,
     reducedMotion: 'reduce',

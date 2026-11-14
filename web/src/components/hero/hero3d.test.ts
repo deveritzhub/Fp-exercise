@@ -17,6 +17,17 @@ function glbNodeNames(file: string): Set<string> {
 const base = { skin: 's4', hair: 'short', outfit: 'forest', hairColor: 'blond', eyeColor: 'blue', frame: 'm', beard: 'none', glasses: 'none' };
 
 describe('3D hero', () => {
+  it('the separate art study retains every gear key and animation within its mobile download budget', () => {
+    const file = path.resolve(import.meta.dirname, '../../../public/hero3d/study/hero_f_average.glb');
+    const names = glbNodeNames(file);
+    for (const [key, slot] of Object.entries(GEAR_SLOT)) expect(names.has(`${slot === 'outfit' ? 'outfit' : 'gear'}_${key}`), key).toBe(true);
+    const bytes = fs.readFileSync(file);
+    const doc = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString());
+    expect(doc.animations.map((a: { name: string }) => a.name).sort()).toEqual(['cheer', 'idle', 'run', 'walk']);
+    expect(gzipSync(bytes).byteLength).toBeLessThan(2_500_000);
+    expect(names.has('hair_bun')).toBe(true);
+    expect(doc.materials.find((m: { name: string }) => m.name === 'skin').normalTexture).toBeDefined();
+  });
   for (const frame of ['m', 'f']) for (const build of HERO3D_BUILDS) {
     it(`model ${frame}/${build} has a node for every gear piece, hair style, beard and glasses`, () => {
       const names = glbNodeNames(path.resolve(import.meta.dirname, `../../../public/hero3d/hero_${frame}_${build}.glb`));

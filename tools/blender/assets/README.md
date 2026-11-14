@@ -10,3 +10,8 @@ Downloaded 8 November 2026. The pack pages explicitly list these assets as CC0. 
 Licence: https://creativecommons.org/publicdomain/zero/1.0/
 
 The generator fits these source meshes through `HumanService.add_mhclo_asset`, bakes the static pose, and creates colour-neutral strand textures. Buzz hair is a close-cropped derivative of short01 fitted to the head with a shrinkwrap modifier. Exported textures are 160px to keep each complete model below 2.5 MB gzip. The original high-resolution source files remain here for reproducibility.
+
+The style study additionally uses `system/skins/young_caucasian_female/` from the same official
+CC0 system archive, downloaded 13 November 2026. The original MHMAT includes the explicit September
+2020 CC0 release. The generator neutralises its diffuse shading for the selectable skin tint.
+The study's bun texture uses 256px; the skin shading uses 512px. Original source PNGs are preserved.
