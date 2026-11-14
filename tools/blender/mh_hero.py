@@ -31,7 +31,9 @@ ap.add_argument('--pose', default='', help='render a frame of a motion, e.g. wal
 ap.add_argument('--side', action='store_true', help='render from the side (to judge a gait)')
 ap.add_argument('--study', action='store_true', help='Build the single art-direction study; does not replace production models')
 ap.add_argument('--polished', action='store_true', help='Apply the approved art-study finish while preserving every hairstyle')
+ap.add_argument('--portrait-study', action='store_true', help='Single face/hair refinement study; retains the approved models')
 args = ap.parse_args(argv)
+if args.portrait_study: args.study = True
 POLISHED = args.study or args.polished
 if args.study and (args.frame != 'f' or args.build != 'average'):
     ap.error('--study is the single female/average style study; other builds use the normal generator')
@@ -117,6 +119,9 @@ human = HumanService.create_human(macro_detail_dict=macro, feet_on_ground=True, 
 if POLISHED:
     from hero_study import soften_face
     soften_face(human, TargetService)
+    if args.portrait_study:
+        from hero_portrait import refine_expression
+        refine_expression(human, TargetService)
 rig = HumanService.add_builtin_rig(human, 'game_engine')
 bpy.context.view_layer.objects.active = rig
 bpy.ops.object.mode_set(mode='POSE')
@@ -177,7 +182,7 @@ for node_name, relative in ASSETS.items():
     if images:
         import numpy as np
         image = images[0].copy()
-        resolution = 256 if POLISHED and node_name == 'hair_bun' else 160
+        resolution = (512 if args.portrait_study else 256) if POLISHED and node_name == 'hair_bun' else 256 if args.portrait_study and node_name.startswith('body_eye') else 160
         image.scale(resolution, resolution)
         pixels = np.array(image.pixels[:], dtype=np.float32).reshape(-1, 4)
         shade = 0.55 + 0.45 * pixels[:, :3].mean(axis=1)
@@ -984,6 +989,9 @@ with part('outfit_sport_padel'):
 if POLISHED:
     from hero_study import dress_study
     dress_study(globals())
+    if args.portrait_study:
+        from hero_portrait import refine_portrait
+        refine_portrait(globals())
 
 # ---------------------------------------------------------------- skin: every part follows the skeleton
 DEF = {b.name for b in rig.data.bones}

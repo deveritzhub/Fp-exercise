@@ -20,6 +20,6 @@ export default defineConfig({
   optimizeDeps: { include: ['qrcode'] },
   build: {
     outDir: '../dist/web', emptyOutDir: true,
-    rollupOptions: { input: { app: path.resolve(__dirname, 'web/index.html'), heroStudy: path.resolve(__dirname, 'web/hero3d-study.html') } },
+    rollupOptions: { input: { app: path.resolve(__dirname, 'web/index.html'), heroStudy: path.resolve(__dirname, 'web/hero3d-study.html'), heroFaceStudy: path.resolve(__dirname, 'web/hero3d-face-study.html') } },
   },
 });

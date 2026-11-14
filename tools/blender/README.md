@@ -104,3 +104,11 @@ side openings on full builds without changing their skin weights, neck or sleeve
 surface and animations. The comparison page preserves its original 'before' model separately.
 
 Further visual work and acceptance criteria: `docs/HERO-ART-DIRECTION.md`.
+
+## Face and hair reference study 02
+
+`--portrait-study --frame f --build average` builds the separate reference in
+`web/public/hero3d/study/hero_f_portrait.glb`. It includes original fitted iris domes, procedural
+iris art, restrained expression targets and temple baby hairs. Review at `/hero3d-face-study.html`.
+Run `npx playwright test e2e/hero-portrait.spec.ts -c playwright.hero3d.config.ts` and inspect all
+angles. This does not regenerate or select a new model for the eight normal avatars.

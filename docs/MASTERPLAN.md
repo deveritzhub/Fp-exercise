@@ -335,6 +335,12 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     compact opgeslagen voor mobiel. Vervolgcriteria voor echte premium kwaliteit staan in
     `docs/HERO-ART-DIRECTION.md`; deze uitrol claimt die eindkwaliteit niet.
 
+100. [x] **Gezicht- en haarstudie 02** (14 nov): afzonderlijke 3D-referentie met originele
+    irisstructuur, op het oogoppervlak passende irissen, rustigere expressie, fijner haarmateriaal
+    en korte haarlokjes bij de slapen. Vergelijkingspagina `/hero3d-face-study.html` en echte
+    browserbeelden in `docs/hero3d-portrait/`. Gewone modellen blijven op versie 7. De preview
+    wacht nu ook op de kledingtextuur, zodat 'gereed' geen tijdelijk zwart shirt meer toont.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.

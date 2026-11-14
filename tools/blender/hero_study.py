@@ -108,7 +108,8 @@ def dress_study(ctx):
     import numpy as np
     source='young_caucasian_male/young_lightskinned_male_diffuse.png' if g['M'] else 'young_caucasian_female/young_lightskinned_female_diffuse.png'
     skin_image=bpy.data.images.load(str(Path(g['args'].assets)/'system/skins'/source))
-    skin_image.scale(448,448)
+    skin_resolution=768 if g['args'].portrait_study else 448
+    skin_image.scale(skin_resolution,skin_resolution)
     pix=np.array(skin_image.pixels[:],dtype=np.float32).reshape(-1,4)
     grey=pix[:,:3].mean(axis=1)
     ref=float(np.percentile(grey,80))
