@@ -1,7 +1,8 @@
+import { RegionFigure } from '@/components/patient/RegionFigure';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Brain, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, VideoOff, X, Printer, Trophy, Swords, Coins, Gift, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, Brain, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, X, Printer, Trophy, Swords, Coins, Gift, Volume2, VolumeX } from 'lucide-react';
 import { MUSCLES, musclesOf } from '@shared/muscleAtlas';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { useI18n, describeError } from '@/lib/i18n';
@@ -389,9 +390,10 @@ export function ExerciseInfo({ item }: { item: ProgramItem }) {
       ) : image ? (
         <img src={image} alt="" className="-mx-4 aspect-video w-[calc(100%+2rem)] max-w-none object-cover sm:mx-0 sm:w-full sm:rounded-2xl" />
       ) : (
-        <div className="flex items-center gap-3 rounded-2xl border border-dashed border-ink-300 px-4 py-3 text-[14.5px] text-ink-700">
-          <VideoOff className="h-5 w-5 shrink-0 text-ink-500" aria-hidden />
-          {t('Voor deze oefening is nog geen video. Volg de beschrijving hieronder.', 'There is no video for this exercise yet. Follow the description below.')}
+        // No video or photo yet: a calm figure with the body region marked, and one line that says so.
+        <div className="flex items-center gap-4 rounded-2xl bg-mist px-4 py-3 text-[14.5px] text-ink-700" data-testid="no-video">
+          <RegionFigure region={ex.bodyRegion} className="h-[84px] w-[72px] shrink-0 text-accent" />
+          <p>{t('Voor deze oefening is nog geen video. Volg de beschrijving hieronder.', 'There is no video for this exercise yet. Follow the description below.')}</p>
         </div>
       )}
 
