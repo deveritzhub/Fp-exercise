@@ -119,8 +119,11 @@ test('strength: transition check by the therapist, consent and self-start by the
   await pp.getByRole('link', { name: /Alleen voor jou/ }).click();
   await expect(pp).toHaveURL(/\/p\/instellingen#delen$/);
   await expect(pp.getByText('Je krachttraining is alleen voor jou')).toBeVisible();
-  await pp.getByRole('button', { name: 'Delen met mijn fysiotherapeut' }).first().click();
+  // A switch now, with the same permission behind it.
+  await expect(pp.getByRole('switch', { name: /krachttraining: delen met mijn fysiotherapeut/ })).not.toBeChecked();
+  await pp.getByText('Delen met mijn fysiotherapeut').first().click();
   await expect(pp.getByText('Je deelt krachttraining met je fysiotherapeut')).toBeVisible();
+  await expect(pp.getByRole('switch', { name: /krachttraining: delen met mijn fysiotherapeut/ })).toBeChecked();
   await expectAccessible(pp, 'patient settings sharing');
   await pp.goto('/p/kracht');
   await expect(pp.getByRole('link', { name: /Gedeeld met je fysiotherapeut/ })).toBeVisible();

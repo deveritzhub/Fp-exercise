@@ -13,16 +13,29 @@ import type { ProgramItem } from '@/lib/types';
  */
 type ThumbItem = { id?: string; exercise: Pick<ProgramItem['exercise'], 'thumbnailMediaId' | 'videoMediaId' | 'bodyRegion'> };
 
-export function TodayProgramCard({ id, title, items, done, action }: { id: string; title: string; items: ThumbItem[]; done: boolean; action: ReactNode }) {
+export function TodayProgramCard({ id, title, items, done, action, lead }: { id: string; title: string; items: ThumbItem[]; done: boolean; action: ReactNode; lead?: { label: string; reward?: string } }) {
   const { t } = useI18n();
+  const meta = `${items.length} ${items.length === 1 ? t('oefening', 'exercise') : t('oefeningen', 'exercises')} · ±${Math.max(5, Math.round(items.length * 4))} ${t('minuten', 'minutes')}`;
+  // The lead card: the one thing to do today, dark with the action inside it.
+  if (lead && !done) {
+    return (
+      <section className="overflow-hidden rounded-3xl bg-[#1E3A30] p-5 text-white shadow-lift" aria-labelledby={`today-${id}`} data-testid="lead-card">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-white/75">{lead.label} · {t('vandaag', 'today')}</p>
+          {lead.reward && <span className="rounded-full bg-[#E3B655] px-2.5 py-0.5 text-[12.5px] font-bold text-[#17251F]">{lead.reward}</span>}
+        </div>
+        <h2 id={`today-${id}`} className="mt-2 font-display text-[22px] font-bold leading-tight !text-white">{title}</h2>
+        <p className="mt-1 text-[15px] text-white/80">{meta}</p>
+        <div className="mt-4 [&_.text-ink-700]:text-white/85">{action}</div>
+      </section>
+    );
+  }
   return (
     <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-card" aria-labelledby={`today-${id}`}>
       <div className="p-5">
-        <div className="text-[13px] font-medium uppercase tracking-wide text-accent">{t('Vandaag', 'Today')}</div>
+        <div className="text-[13px] font-medium uppercase tracking-wide text-accent">{lead ? lead.label : t('Vandaag', 'Today')}</div>
         <h2 id={`today-${id}`} className="mt-1 text-xl font-bold">{title}</h2>
-        <p className="mt-1 text-[15px] text-ink-500">
-          {items.length} {items.length === 1 ? t('oefening', 'exercise') : t('oefeningen', 'exercises')} · ±{Math.max(5, Math.round(items.length * 4))} {t('minuten', 'minutes')}
-        </p>
+        <p className="mt-1 text-[15px] text-ink-500">{meta}</p>
         <div className="mt-4 flex -space-x-2">
           {items.slice(0, 5).map((i, n) => (
             <ExerciseThumb key={i.id ?? n} thumbnailId={i.exercise.thumbnailMediaId} videoId={i.exercise.videoMediaId} region={i.exercise.bodyRegion} className="h-12 w-12 border-2 border-white" rounded="rounded-xl" />

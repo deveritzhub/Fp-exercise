@@ -98,38 +98,6 @@ export function PatientHome() {
           : undefined}
       />
       )}
-      <ViewChoiceCard />
-
-      {d.notifications.length > 0 && (
-        <div className="space-y-2">
-          {d.notifications.slice(0, 2).map((n) => (
-            <div key={n.id} className="flex items-start gap-3 rounded-2xl border border-accent/15 bg-accent-soft px-4 py-3">
-              <Bell className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
-              <div className="min-w-0 flex-1">
-                <div className="font-semibold text-ink-900">{n.title}</div>
-                <div className="text-[14.5px] text-ink-600">{n.body}</div>
-                {n.link && n.link !== '/p' && n.link.startsWith('/p/') && (
-                  <Link to={n.link} onClick={() => { void api.post(`/me/notifications/${n.id}/read`).then(() => qc.invalidateQueries({ queryKey: ['patient-home'] })); }} className="mt-1 inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">
-                    {t('Bekijken', 'View')}<ChevronRight className="h-4 w-4" aria-hidden />
-                  </Link>
-                )}
-              </div>
-              <button
-                type="button"
-                aria-label={t('Melding sluiten', 'Dismiss notification')}
-                className="-mr-2 -mt-2 flex h-11 w-11 items-center justify-center rounded-lg text-ink-500 hover:bg-white/60"
-                onClick={async () => {
-                  await api.post(`/me/notifications/${n.id}/read`);
-                  qc.invalidateQueries({ queryKey: ['patient-home'] });
-                }}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Everything planned today is done: a short, calm wrap-up with what comes next. */}
       {todo.length > 0 && left === 0 && pausedToday === 0 && resumeOther.length === 0 && (() => {
         const next = d.programs.map((p) => p.nextSession).filter((x): x is string => !!x).sort()[0];
@@ -166,19 +134,16 @@ export function PatientHome() {
       ) : (
         todo.map((p, i) => (
           <div key={p.id}>
-            {i === 0 && left > 0 && pausedToday === 0 && !simple && (
-              <p className="mb-1.5 flex items-center gap-2 font-display text-[15px] font-bold text-ink-900">
-                <span className="rounded-full bg-[#fbf0d9] px-2.5 py-0.5 text-[12.5px] text-[#855806]">{t('Missie van vandaag', 'Today’s mission')}</span>
-                <span className="text-[13px] font-semibold text-ink-600">{t(`+${XP.session} XP per training`, `+${XP.session} XP per workout`)}</span>
-              </p>
-            )}
-            <ModuleTag module={moduleOf(p)} />
+            {(i > 0 || todo.length > 1) && <ModuleTag module={moduleOf(p)} />}
             <TodayProgramCard
               id={p.id}
               title={p.title}
               items={p.today.items}
               done={p.today.done && !p.openSession && !p.paused}
-              action={p.paused ? <PausedNotice /> : <StartOrResume programId={p.id} open={p.openSession} total={p.today.scheduled} />}
+              // One training today: it is the one thing to do, on the dark card with the gold button.
+              // With more than one, the mission card above is that card.
+              lead={i === 0 && todo.length === 1 ? { label: moduleLabel(moduleOf(p), nl), reward: !simple && left > 0 && pausedToday === 0 ? `+${XP.session} XP` : undefined } : undefined}
+              action={p.paused ? <PausedNotice /> : <StartOrResume programId={p.id} open={p.openSession} total={p.today.scheduled} gold={i === 0 && todo.length === 1} />}
             />
           </div>
         ))
@@ -192,6 +157,39 @@ export function PatientHome() {
           </div>
         </div>
       ))}
+
+      {/* Below the training of the day, so "Start training" is in view without scrolling. */}
+      <ViewChoiceCard />
+
+      {d.notifications.length > 0 && (
+        <div className="space-y-2">
+          {d.notifications.slice(0, 2).map((n) => (
+            <div key={n.id} className="flex items-start gap-3 rounded-2xl border border-accent/15 bg-accent-soft px-4 py-3">
+              <Bell className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-ink-900">{n.title}</div>
+                <div className="text-[14.5px] text-ink-600">{n.body}</div>
+                {n.link && n.link !== '/p' && n.link.startsWith('/p/') && (
+                  <Link to={n.link} onClick={() => { void api.post(`/me/notifications/${n.id}/read`).then(() => qc.invalidateQueries({ queryKey: ['patient-home'] })); }} className="mt-1 inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">
+                    {t('Bekijken', 'View')}<ChevronRight className="h-4 w-4" aria-hidden />
+                  </Link>
+                )}
+              </div>
+              <button
+                type="button"
+                aria-label={t('Melding sluiten', 'Dismiss notification')}
+                className="-mr-2 -mt-2 flex h-11 w-11 items-center justify-center rounded-lg text-ink-500 hover:bg-white/60"
+                onClick={async () => {
+                  await api.post(`/me/notifications/${n.id}/read`);
+                  qc.invalidateQueries({ queryKey: ['patient-home'] });
+                }}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {d.programs.some((p) => p.week?.length) && <WeekAhead programs={d.programs} />}
 
@@ -260,28 +258,39 @@ function ModuleTag({ module }: { module: PatientModule }) {
 }
 
 /** "Start training", or "Training hervatten" with how far the patient got. */
-export function StartOrResume({ programId, open, total }: { programId: string; open: { logged: number } | null; total: number }) {
+export function StartOrResume({ programId, open, total, gold = false }: { programId: string; open: { logged: number } | null; total: number; gold?: boolean }) {
   const { t } = useI18n();
+  // Gold on the dark card: the one main action of the day.
+  const goldCls = gold ? '!bg-[#E3B655] !text-[#17251F] hover:!bg-[#d9a93f]' : '';
   if (!open) {
     return (
-      <ButtonLink to={`/p/sessie/${programId}`} size="xl" className="w-full" icon={<Play className="h-5 w-5 fill-current" />}>
+      <ButtonLink to={`/p/sessie/${programId}`} size="xl" className={`w-full ${goldCls}`} icon={<Play className="h-5 w-5 fill-current" />}>
         {t('Start training', 'Start workout')}
       </ButtonLink>
     );
   }
   const done = Math.min(open.logged, total);
+  // On the dark card: one line of progress, so the button stays in view.
+  if (gold) {
+    return (
+      <div className="space-y-2">
+        <p className="text-[14px] text-white/85">{t(`Je was al begonnen: ${done} van ${total} oefeningen gedaan.`, `You already started: ${done} of ${total} exercises done.`)}</p>
+        <ButtonLink to={`/p/sessie/${programId}`} size="xl" className={`w-full ${goldCls}`} icon={<Play className="h-5 w-5 fill-current" />}>{t('Training hervatten', 'Resume workout')}</ButtonLink>
+      </div>
+    );
+  }
   return (
     <div className="space-y-3">
       <div>
         <div className="mb-1 flex justify-between text-[14px] text-ink-700">
-          <span>{t('Je was al begonnen', 'You already started')}</span>
+          <span className={gold ? 'text-white/85' : undefined}>{t('Je was al begonnen', 'You already started')}</span>
           <span className="tabular-nums">{t(`${done} van ${total} oefeningen`, `${done} of ${total} exercises`)}</span>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-ink-100" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label={t('Voortgang training', 'Workout progress')}>
           <div className="h-full rounded-full bg-accent" style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
         </div>
       </div>
-      <ButtonLink to={`/p/sessie/${programId}`} size="xl" className="w-full" icon={<Play className="h-5 w-5 fill-current" />}>
+      <ButtonLink to={`/p/sessie/${programId}`} size="xl" className={`w-full ${goldCls}`} icon={<Play className="h-5 w-5 fill-current" />}>
         {t('Training hervatten', 'Resume workout')}
       </ButtonLink>
     </div>

@@ -231,7 +231,7 @@ export function HomeLobby({ greeting, subtitle, date }: { greeting: string; subt
   const tier = L ? levelTier(L.level) : null;
   return (
     <section aria-labelledby="lobby-greeting" className="relative overflow-hidden rounded-3xl border border-line shadow-card" data-daypart={daypart}>
-      <div className="relative min-h-[300px]">
+      <div className="relative min-h-[232px]">
         <VillageScene daypart={daypart} growth={growth} ownStage={L ? homeStage(L.level) : null} />
         {/* The whole picture is the way into the village; the hero and the greeting keep their own links on top. */}
         <Link to="/p/dorp" data-testid="lobby-to-village" aria-label={t('Naar je dorp in 3D', 'To your village in 3D')} className="absolute inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent" />
@@ -245,7 +245,7 @@ export function HomeLobby({ greeting, subtitle, date }: { greeting: string; subt
             <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
           </Link>
         )}
-        <div className="pointer-events-none relative flex min-h-[300px] items-end gap-2.5 p-3 pb-3 pt-10 [&_a]:pointer-events-auto">
+        <div className="pointer-events-none relative flex min-h-[232px] items-end gap-2.5 p-3 pb-3 pt-10 [&_a]:pointer-events-auto">
           {look && L ? (
             <Link
               to="/p/held/uiterlijk"
