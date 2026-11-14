@@ -47,7 +47,6 @@ const TALK: Record<string, { name: [string, string]; says: [string, string]; opt
       { nl: 'Ik wil mijn pijn doorgeven', en: 'I want to report my pain', to: '/p/held/pijn' },
       { nl: 'Mijn revalidatieprogramma', en: 'My rehab programme', to: '/p/revalidatie' },
       { nl: 'Hoe gaat het met mijn voortgang?', en: 'How is my progress?', to: '/p/voortgang' },
-      { nl: 'Uitleg over mijn klacht', en: 'About my complaint', to: '/p/uitleg' },
       { nl: 'Een bericht sturen', en: 'Send a message', to: '/p/berichten' },
     ],
   },
@@ -72,7 +71,7 @@ const TALK: Record<string, { name: [string, string]; says: [string, string]; opt
   },
   library: {
     name: ['Bibliothecaris', 'Librarian'], says: ['Stil in de bibliotheek… maar vraag gerust.', 'Quiet in the library… but do ask.'],
-    options: [{ nl: 'De spierenatlas', en: 'The muscle atlas', to: '/p/spieren' }, { nl: 'Uitleg over mijn klacht', en: 'About my complaint', to: '/p/uitleg' }],
+    options: [{ nl: 'De spierenatlas', en: 'The muscle atlas', to: '/p/spieren' }],
   },
   hall: {
     name: ['Hofmeester', 'Steward'], says: ['Dit is de trofeeënhal. Alles wat je hebt verdiend hangt hier.', 'This is the trophy hall. Everything you have earned hangs here.'],
@@ -570,6 +569,7 @@ export function VillageWalkPage() {
   return (
     <div className="space-y-3">
       <h1 className="sr-only">{t('Je dorp', 'Your village')}</h1>
+      <Button size="md" variant="secondary" className="mb-2 w-full" data-testid="play-full" icon={<Maximize2 className="h-4 w-4" />} onClick={() => setFull(true)}>{t('Speel in volledig scherm', 'Play full screen')}</Button>
       <section aria-label={t('Je dorp in 3D. Tik op de grond om te lopen, of kies een gebouw.', 'Your village in 3D. Tap the ground to walk, or pick a building.')} data-full={full ? '1' : undefined}
         className={full ? 'fixed inset-0 z-50 bg-[#1b2a22] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pt-[env(safe-area-inset-top)]' : 'relative'}>
         <div className={full ? 'relative h-full' : 'relative'}>
@@ -809,7 +809,7 @@ export function VillageWalkPage() {
       </section>
 
       <p className="text-[13.5px] leading-relaxed text-ink-700">
-        {t('Tik op de grond om te lopen en sleep opzij om rond te kijken. Liever een joystick? Zet hem aan met de knop met de gamepad. In de oefenzaal van je praktijk staan de fysiotherapeut en de tv met je oefeningen van vandaag.', 'Tap the ground to walk and drag sideways to look around. Prefer a joystick? Switch it on with the gamepad button. In the exercise room of your practice you find the physiotherapist and the TV with your exercises for today.')}
+        {t('Tik op de grond om te lopen. Sleep opzij om helemaal rond te draaien, omhoog of omlaag om te kantelen, en knijp met twee vingers (of gebruik + en −) om in en uit te zoomen. Tik op een poppetje om te praten. Liever een joystick? Zet hem aan met de knop met de gamepad. In de oefenzaal van je praktijk staan de fysiotherapeut en de tv met je oefeningen van vandaag.', 'Tap the ground to walk and drag sideways to look around. Prefer a joystick? Switch it on with the gamepad button. In the exercise room of your practice you find the physiotherapist and the TV with your exercises for today.')}
       </p>
 
       <Dialog open={decorOpen} onClose={() => setDecorOpen(false)} title={t('Jouw huis inrichten', 'Furnish your home')} size="md" sheet
