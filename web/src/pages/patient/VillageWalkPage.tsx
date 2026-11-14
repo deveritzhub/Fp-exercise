@@ -47,7 +47,6 @@ const TALK: Record<string, { name: [string, string]; says: [string, string]; opt
       { nl: 'Ik wil mijn pijn doorgeven', en: 'I want to report my pain', to: '/p/held/pijn' },
       { nl: 'Mijn revalidatieprogramma', en: 'My rehab programme', to: '/p/revalidatie' },
       { nl: 'Hoe gaat het met mijn voortgang?', en: 'How is my progress?', to: '/p/voortgang' },
-      { nl: 'Uitleg over mijn klacht', en: 'About my complaint', to: '/p/uitleg' },
       { nl: 'Een bericht sturen', en: 'Send a message', to: '/p/berichten' },
     ],
   },
@@ -72,7 +71,7 @@ const TALK: Record<string, { name: [string, string]; says: [string, string]; opt
   },
   library: {
     name: ['Bibliothecaris', 'Librarian'], says: ['Stil in de bibliotheek… maar vraag gerust.', 'Quiet in the library… but do ask.'],
-    options: [{ nl: 'De spierenatlas', en: 'The muscle atlas', to: '/p/spieren' }, { nl: 'Uitleg over mijn klacht', en: 'About my complaint', to: '/p/uitleg' }],
+    options: [{ nl: 'De spierenatlas', en: 'The muscle atlas', to: '/p/spieren' }],
   },
   hall: {
     name: ['Hofmeester', 'Steward'], says: ['Dit is de trofeeënhal. Alles wat je hebt verdiend hangt hier.', 'This is the trophy hall. Everything you have earned hangs here.'],
