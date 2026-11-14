@@ -17,7 +17,7 @@ test('patient earns the orange belt and walks to the dojo', async ({ browser }) 
   await expect(exam).toBeDisabled();
   const boxes = sheet.getByRole('checkbox');
   const n = await boxes.count();
-  expect(n).toBeGreaterThanOrEqual(5);
+  expect(n).toBe(9);
   for (let i = 0; i < n; i++) {
     await boxes.nth(i).check();
     await expect(boxes.nth(i)).toBeChecked();
@@ -36,8 +36,13 @@ test('patient earns the orange belt and walks to the dojo', async ({ browser }) 
   const village = page.getByTestId('walk-village');
   await expect(village).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
   await page.getByRole('button', { name: 'Loop naar Dojo' }).press('Enter');
-  await page.getByTestId('enter-dojo').click({ timeout: 120_000 });
+  // The hero walks in; the sensei stands on the mats under the banner.
+  await expect(village).toHaveAttribute('data-zone', 'dojo', { timeout: 120_000 });
+  await page.getByRole('button', { name: 'Praat met Sensei' }).press('Enter');
+  await page.getByTestId('talk-first').click({ timeout: 60_000 });
   await expect(page.getByTestId('karate-belt')).toContainText('oranje band');
-  if (process.env.SHOTS) { await page.keyboard.press('Escape'); await page.getByTestId('toggle-full').click(); await page.waitForTimeout(1500); await page.screenshot({ path: process.env.SHOTS + '/dojo-1.png' }); }
+  await page.getByTestId('dojo-kun').locator('summary').click();
+  await expect(page.getByTestId('dojo-kun')).toContainText('onwankelbare geest');
+  if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + '/dojo-2.png' }); await page.getByRole('dialog').getByRole('button', { name: /Sluit/ }).first().click(); await page.getByTestId('toggle-full').click(); await page.waitForTimeout(2500); await page.screenshot({ path: process.env.SHOTS + '/dojo-1.png' }); }
   await context.close();
 });

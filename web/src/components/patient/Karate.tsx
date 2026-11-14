@@ -4,14 +4,16 @@ import { Award, Check } from 'lucide-react';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { Button, Dialog, useToast } from '@/components/ui';
-import { BELTS, itemKey } from '@shared/karate';
+import { BELTS, DOJO_KUN, KARATE_CATS, itemKey } from '@shared/karate';
 
 export type KarateState = { belt: number; done: string[]; examReady: boolean };
 export const useKarate = (enabled = true) => useQuery({ queryKey: ['patient-karate'], queryFn: () => api.get<KarateState>('/patient/hero/karate'), enabled });
 
-/** A belt as a small coloured bar, with a dark rim so white and black both show. */
+/** A belt as a small coloured bar, with a dark rim so white and black both show, and the black stripe of the second grade. */
 export const BeltMark = ({ belt, className = 'h-3 w-9' }: { belt: number; className?: string }) => (
-  <span aria-hidden className={`inline-block shrink-0 rounded-sm border border-black/50 ${className}`} style={{ background: BELTS[belt]?.color }} />
+  <span aria-hidden className={`relative inline-block shrink-0 overflow-hidden rounded-sm border border-black/50 ${className}`} style={{ background: BELTS[belt]?.color }}>
+    {BELTS[belt]?.stripe && <span className="absolute inset-y-0 right-[18%] w-[14%] bg-[#1d1f1e]" />}
+  </span>
 );
 
 /**
@@ -41,13 +43,13 @@ export function KarateSheet({ open, onClose }: { open: boolean; onClose: () => v
   };
   return (
     <Dialog open={open} onClose={onClose} sheet size="md" title={t('Kyokushin-dojo', 'Kyokushin dojo')}
-      description={t('Een oefenlijst in het spel, geen officieel examen: je sensei bepaalt je echte band. Doe alleen wat je fysiotherapeut goed vindt.', 'A practice list in the game, not an official grading: your sensei decides your real belt. Only do what your physiotherapist approves.')}>
+      description={t('De eisen volgen de NKKO/KWF-syllabus. Het blijft een oefenlijst: je sensei neemt het echte examen af. Doe alleen wat je fysiotherapeut goed vindt.', 'The requirements follow the NKKO/KWF syllabus. It stays a practice list: your sensei takes the real exam. Only do what your physiotherapist approves.')}>
       {!k ? null : (
         <div className="space-y-4" data-testid="karate-sheet">
           <ol className="flex flex-wrap gap-1.5" aria-label={t('De banden', 'The belts')}>
             {BELTS.map((b, i) => (
               <li key={b.key} className={`flex items-center gap-1.5 rounded-full border px-2 py-1 text-[12.5px] ${i === k.belt ? 'border-ink-900 bg-white font-semibold text-ink-950' : i < k.belt ? 'border-line bg-white text-ink-700' : 'border-line/60 text-ink-600'}`}>
-                <BeltMark belt={i} className="h-2.5 w-6" />{nl ? b.nl.replace(' band', '') : b.en.replace(' belt', '')}{i < k.belt && <Check className="h-3.5 w-3.5 text-[#2f9e44]" aria-label={t('gehaald', 'earned')} />}
+                <BeltMark belt={i} className="h-2.5 w-6" /><span className="sr-only">{nl ? b.nl : b.en} · </span>{b.grade.split(' · ')[0]}{i < k.belt && <Check className="h-3.5 w-3.5 text-[#2f9e44]" aria-label={t('gehaald', 'earned')} />}
               </li>
             ))}
           </ol>
@@ -68,7 +70,7 @@ export function KarateSheet({ open, onClose }: { open: boolean; onClose: () => v
                           qc.setQueryData(['patient-karate'], { ...k, done: want ? [...k.done, key] : k.done.filter((x) => x !== key), examReady: false });
                           void call(() => api.put<KarateState>('/patient/hero/karate/item', { key, done: want }).catch((err) => { qc.setQueryData(['patient-karate'], k); throw err; }));
                         }} />
-                        <span className="text-[14.5px] text-ink-900">{nl ? item.nl : item.en}</span>
+                        <span className="min-w-0"><span className="block text-[11.5px] font-semibold uppercase tracking-wide text-ink-600">{KARATE_CATS[item.cat][nl ? 'nl' : 'en']}</span><span className="block text-[14.5px] text-ink-900">{nl ? item.nl : item.en}</span></span>
                       </label>
                     </li>
                   );
@@ -82,6 +84,12 @@ export function KarateSheet({ open, onClose }: { open: boolean; onClose: () => v
           ) : (
             <p className="rounded-xl bg-[#fbf0d9] px-3 py-2.5 text-[15px] font-medium text-[#6b4705]">{t('Shodan: je hebt de zwarte band. Osu!', 'Shodan: you hold the black belt. Osu!')}</p>
           )}
+          <details className="rounded-xl border border-line bg-white px-3 py-2" data-testid="dojo-kun">
+            <summary className="min-h-[36px] cursor-pointer py-1.5 text-[14.5px] font-semibold text-ink-950">{t('Dojo kun · de eed van de dojo', 'Dojo kun · the oath of the dojo')}</summary>
+            <ol className="mt-1 list-decimal space-y-1.5 pb-2 pl-5 text-[14.5px] text-ink-800">
+              {DOJO_KUN.map((line) => <li key={line.en}>{nl ? line.nl : line.en}</li>)}
+            </ol>
+          </details>
         </div>
       )}
     </Dialog>
