@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Armchair, Backpack, Beef, Droplets, Sparkles, ChevronRight, ClipboardList, Coins, DoorOpen, Footprints, Gamepad2, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
+import { Armchair, Backpack, Beef, Droplets, Sparkles, ChevronRight, Coins, DoorOpen, Footprints, Gamepad2, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
 import { ApiError, api, mediaUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -19,7 +19,7 @@ import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
 import { BOXING, CREATURES, blow, weaponAt, type CreatureKind } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
-import { BeltMark, KarateSheet, useKarate } from '@/components/patient/Karate';
+import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
 import { siteAt } from '@/components/patient/walk';
 import type { FigureLook } from '@/components/hero/HumanFigure';
@@ -35,6 +35,61 @@ const KEEPER: Record<string, { name: [string, string]; says: [string, string]; o
   board: { name: ['Bode', 'Messenger'], says: ['Nieuws van het prikbord: hier staan je missies van deze week.', 'News from the notice board: here are your missions for this week.'], open: ['Bekijk je missies', 'See your missions'] },
   dojo: { name: ['Sensei', 'Sensei'], says: ['Osu! Welkom in de dojo.', 'Osu! Welcome to the dojo.'], open: ['Bekijk je banden', 'See your belts'] },
   guild: { name: ['Gildemeester', 'Guild master'], says: ['Welkom in de gildehal. Samen met de rest van de praktijk werk je hier aan één doel.', 'Welcome to the guild hall. Together with the rest of the practice you work on one goal here.'], open: ['Bekijk het gilde', 'See the guild'] },
+};
+
+/** What each figure can do for you: the functions of the app, as choices in the talk. `act` opens something in the world itself. */
+type TalkOption = { nl: string; en: string; to?: string; act?: 'tv' | 'karate' | 'boxing' };
+const TALK: Record<string, { name: [string, string]; says: [string, string]; options: TalkOption[] }> = {
+  practice: {
+    name: ['Fysiotherapeut', 'Physiotherapist'], says: ['Fijn dat je er bent. Waar kan ik je mee helpen?', 'Good to see you. What can I help you with?'],
+    options: [
+      { nl: 'Laat mijn oefeningen van vandaag zien', en: 'Show my exercises for today', act: 'tv' },
+      { nl: 'Ik wil mijn pijn doorgeven', en: 'I want to report my pain', to: '/p/held/pijn' },
+      { nl: 'Mijn revalidatieprogramma', en: 'My rehab programme', to: '/p/revalidatie' },
+      { nl: 'Hoe gaat het met mijn voortgang?', en: 'How is my progress?', to: '/p/voortgang' },
+      { nl: 'Uitleg over mijn klacht', en: 'About my complaint', to: '/p/uitleg' },
+      { nl: 'Een bericht sturen', en: 'Send a message', to: '/p/berichten' },
+    ],
+  },
+  kracht: {
+    name: ['Coach', 'Coach'], says: ['Klaar om sterker te worden? Zeg het maar.', 'Ready to get stronger? Tell me.'],
+    options: [
+      { nl: 'Mijn krachtprogramma', en: 'My strength programme', to: '/p/kracht' },
+      { nl: 'Mijn 1RM meten en krachtlog invullen', en: 'Measure my 1RM and fill in the strength log', to: '/p/krachtlog' },
+      { nl: 'Een eigen training loggen', en: 'Log a workout of my own', to: '/p/logboek' },
+    ],
+  },
+  mobiliteit: {
+    name: ['Flowmeester', 'Flow master'], says: ['Adem rustig in. Wat wil je vandaag losmaken?', 'Breathe in slowly. What would you like to loosen today?'],
+    options: [
+      { nl: 'Mijn mobiliteit meten', en: 'Measure my mobility', to: '/p/mobiliteit/meten' },
+      { nl: 'Mijn mobiliteitsprogramma', en: 'My mobility programme', to: '/p/mobiliteit' },
+    ],
+  },
+  smithy: {
+    name: ['Wapensmid', 'Armourer'], says: ['Welkom in de smederij! Hier ruil je muntjes voor uitrusting.', 'Welcome to the smithy! Here you trade coins for gear.'],
+    options: [{ nl: 'Laat de uitrusting zien', en: 'Show me the gear', to: '/p/held/inventaris#gear-title' }, { nl: 'Mijn uiterlijk aanpassen', en: 'Change my look', to: '/p/held/uiterlijk' }],
+  },
+  library: {
+    name: ['Bibliothecaris', 'Librarian'], says: ['Stil in de bibliotheek… maar vraag gerust.', 'Quiet in the library… but do ask.'],
+    options: [{ nl: 'De spierenatlas', en: 'The muscle atlas', to: '/p/spieren' }, { nl: 'Uitleg over mijn klacht', en: 'About my complaint', to: '/p/uitleg' }],
+  },
+  hall: {
+    name: ['Hofmeester', 'Steward'], says: ['Dit is de trofeeënhal. Alles wat je hebt verdiend hangt hier.', 'This is the trophy hall. Everything you have earned hangs here.'],
+    options: [{ nl: 'Mijn prijzen', en: 'My trophies', to: '/p/held/inventaris#trophies-title' }, { nl: 'Mijn badges', en: 'My badges', to: '/p/held#fold-hero-badges' }, { nl: 'Mijn voortgang', en: 'My progress', to: '/p/voortgang' }],
+  },
+  board: {
+    name: ['Bode', 'Messenger'], says: ['Nieuws van het prikbord!', 'News from the notice board!'],
+    options: [{ nl: 'Mijn missies van vandaag', en: 'My missions for today', to: '/p' }, { nl: 'De wereldkaart', en: 'The world map', to: '/p/wereld' }, { nl: 'Mijn berichten', en: 'My messages', to: '/p/berichten' }],
+  },
+  guild: {
+    name: ['Gildemeester', 'Guild master'], says: ['Welkom in de gildehal. Samen staan we sterker.', 'Welcome to the guild hall. Together we stand stronger.'],
+    options: [{ nl: 'Het gilde van de praktijk', en: 'The guild of the practice', to: '/p/wereld#gilde' }, { nl: 'Mijn vrienden', en: 'My friends', to: '/p/held/vrienden' }],
+  },
+  dojo: {
+    name: ['Sensei', 'Sensei'], says: ['Osu! Welkom in de dojo.', 'Osu! Welcome to the dojo.'],
+    options: [{ nl: 'Mijn band en de exameneisen', en: 'My belt and the exam requirements', act: 'karate' }],
+  },
 };
 
 const LABEL: Record<string, [string, string]> = {
@@ -549,6 +604,7 @@ export function VillageWalkPage() {
             track={track}
             stick={stick}
             onNear={setNear}
+            onTalk={setTalk}
             onDestination={(k) => { setDest(k); if (!k) return; hideTip(); }}
             onArrive={(k) => { if (k === TV_KEY) setTvOpen(true); }}
           />}
@@ -662,16 +718,12 @@ export function VillageWalkPage() {
             <Link to={errandHere.link!} data-testid="errand-link" className="tap pointer-events-auto inline-flex min-h-[48px] max-w-full items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">
               <DoorOpen className="h-5 w-5 shrink-0" aria-hidden /><span className="truncate">{errandHere.label}</span>
             </Link>
-          ) : keeperOf ? (
-            <Button size="lg" data-testid="talk-keeper" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<ScrollText className="h-5 w-5" />} onClick={() => (keeperOf.key === 'dojo' ? setDojoOpen(true) : setTalk(keeperOf.key))}>{t(`Praat met de ${('keeper' in keeperOf && keeperOf.keeper ? keeperOf.keeper : '').toLowerCase()}`, `Talk to the ${('keeper' in keeperOf && keeperOf.keeper ? keeperOf.keeper : '').toLowerCase()}`)}{keeperOf.key === 'dojo' && karate.data && <BeltMark belt={karate.data.belt} className="ml-1 h-3 w-7" />}</Button>
+          ) : keeperOf || boardOf ? (
+            <p role="status" data-testid="talk-hint" className={`${PANEL} px-3 py-2 text-[13.5px]`}>{t(`Tik op de ${(TALK[(keeperOf ?? boardOf)!.key]?.name[0] ?? '').toLowerCase()} om te praten.`, `Tap the ${(TALK[(keeperOf ?? boardOf)!.key]?.name[1] ?? '').toLowerCase()} to talk.`)}</p>
           ) : nearBuilding && 'keeper' in nearBuilding && nearBuilding.keeper ? (
             <Button size="lg" data-testid="enter-shop" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(nearBuilding.key)}>{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}</Button>
           ) : nearBuilding && 'kind' in nearBuilding ? (
             <Button size="lg" data-testid="enter-house" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(nearBuilding.key)}>{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}</Button>
-          ) : boardOf ? (
-            <Link to={boardOf.to} data-testid="open-programme" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">
-              <ClipboardList className="h-5 w-5" aria-hidden />{boardOf.key === 'kracht' ? t('Bekijk je krachtprogramma', 'See your strength programme') : t('Bekijk je mobiliteitsprogramma', 'See your mobility programme')}
-            </Link>
           ) : nearBuilding ? (
             <Link to={nearBuilding.to} data-testid="enter-building" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">
               <DoorOpen className="h-5 w-5" aria-hidden />{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}
@@ -818,24 +870,38 @@ export function VillageWalkPage() {
         )}
       </Dialog>
 
-      <Dialog open={!!talking} onClose={() => setTalk(null)} size="md" sheet title={talking && KEEPER[talking.key] ? `${KEEPER[talking.key].name[nl ? 0 : 1]} · ${talking.label}` : ''}>
-        {talking && KEEPER[talking.key] && (
-          <div className="space-y-4" data-testid="keeper-talk">
-            <p className="rounded-2xl rounded-tl-sm bg-[#fbf0d9] px-4 py-3 text-[15.5px] leading-snug text-[#3a2a12]">“{KEEPER[talking.key].says[nl ? 0 : 1]}”</p>
-            {d && (
+      <Dialog open={!!talk && !!TALK[talk]} onClose={() => setTalk(null)} size="md" sheet title={talk && TALK[talk] ? `${talk === 'practice' ? t('Fysiotherapeut', 'Physiotherapist') : TALK[talk].name[nl ? 0 : 1]}${talking ? ` · ${talking.label}` : talk === 'practice' ? ` · ${practiceName}` : ''}` : ''}>
+        {talk && TALK[talk] && (
+          <div className="space-y-3" data-testid="keeper-talk">
+            <p className="rounded-2xl rounded-tl-sm bg-[#fbf0d9] px-4 py-3 text-[15.5px] leading-snug text-[#3a2a12]">“{TALK[talk].says[nl ? 0 : 1]}”</p>
+            {d && talking && KEEPER[talk] && talk !== 'dojo' && (
               <ul className="grid grid-cols-2 gap-2 text-[14px]">
-                {(talking.key === 'smithy' ? [[t('Muntjes', 'Coins'), d.gear.coins], [t('Uitrusting', 'Gear'), d.gear.owned.length]]
-                  : talking.key === 'hall' ? [[t('Prijzen', 'Trophies'), `${d.trophies.filter((x) => x.earned).length}/${d.trophies.length}`], [t('Badges', 'Badges'), `${d.badges.filter((x) => x.earned).length}/${d.badges.length}`]]
-                  : talking.key === 'board' ? [[t('Taken vandaag', 'Tasks today'), tasks.length], [t('Level', 'Level'), d.level.level]]
-                  : talking.key === 'library' ? [[t('Skills', 'Skills'), d.skills.length], [t('Totaal level', 'Total level'), d.totalLevel]]
+                {(talk === 'smithy' ? [[t('Muntjes', 'Coins'), d.gear.coins], [t('Uitrusting', 'Gear'), d.gear.owned.length]]
+                  : talk === 'hall' ? [[t('Prijzen', 'Trophies'), `${d.trophies.filter((x) => x.earned).length}/${d.trophies.length}`], [t('Badges', 'Badges'), `${d.badges.filter((x) => x.earned).length}/${d.badges.length}`]]
+                  : talk === 'board' ? [[t('Taken vandaag', 'Tasks today'), tasks.length], [t('Level', 'Level'), d.level.level]]
+                  : talk === 'library' ? [[t('Skills', 'Skills'), d.skills.length], [t('Totaal level', 'Total level'), d.totalLevel]]
                   : [[t('Level', 'Level'), d.level.level], [t('Avonturier', 'Adventurer'), adventure.data?.level ?? 1]] as [string, string | number][]).map(([label, value]) => (
                   <li key={String(label)} className="rounded-xl border border-line bg-white px-3 py-2"><span className="block text-[12.5px] text-ink-600">{label}</span><span className="font-display text-[20px] font-bold tabular-nums text-ink-950">{value}</span></li>
                 ))}
               </ul>
             )}
-            <Link to={talking.to} data-testid="enter-building" className="tap flex min-h-[52px] items-center justify-center gap-2 rounded-xl bg-accent px-4 text-[16px] font-semibold text-accent-ink">
-              {KEEPER[talking.key].open[nl ? 0 : 1]}<ChevronRight className="h-5 w-5" aria-hidden />
-            </Link>
+            <ul className="space-y-2" aria-label={t('Wat wil je doen?', 'What would you like to do?')}>
+              {TALK[talk].options.map((o, i) => {
+                const cls = 'tap flex min-h-[52px] w-full items-center justify-between gap-2 rounded-xl border border-line bg-white px-4 text-left text-[15.5px] font-semibold text-ink-950 hover:border-accent';
+                const label = <><span>{nl ? o.nl : o.en}</span><ChevronRight className="h-5 w-5 shrink-0 text-accent" aria-hidden /></>;
+                return (
+                  <li key={o.nl}>
+                    {o.to ? <Link to={o.to} data-testid={i === 0 ? 'enter-building' : undefined} className={cls}>{label}</Link> : (
+                      <button type="button" data-testid={i === 0 ? 'talk-first' : undefined} className={cls} onClick={() => {
+                        setTalk(null);
+                        if (o.act === 'tv') setTvOpen(true);
+                        if (o.act === 'karate') setDojoOpen(true);
+                      }}>{label}</button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         )}
       </Dialog>

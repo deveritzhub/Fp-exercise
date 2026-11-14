@@ -38,7 +38,8 @@ test('patient earns the orange belt and walks to the dojo', async ({ browser }) 
   await page.getByRole('button', { name: 'Loop naar Dojo' }).press('Enter');
   // The hero walks in; the sensei stands on the mats under the banner.
   await expect(village).toHaveAttribute('data-zone', 'dojo', { timeout: 120_000 });
-  await page.getByTestId('talk-keeper').click({ timeout: 60_000 });
+  await page.getByRole('button', { name: 'Praat met Sensei' }).press('Enter');
+  await page.getByTestId('talk-first').click({ timeout: 60_000 });
   await expect(page.getByTestId('karate-belt')).toContainText('oranje band');
   await page.getByTestId('dojo-kun').locator('summary').click();
   await expect(page.getByTestId('dojo-kun')).toContainText('onwankelbare geest');

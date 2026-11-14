@@ -79,6 +79,8 @@ type Props = {
   startAtTv?: boolean;
   onNear: (key: string | null) => void;
   onArrive: (key: string) => void;
+  /** A figure was tapped and the hero stands with it: 'practice' for the therapist by the TV, else the building's key. */
+  onTalk?: (who: string) => void;
   /** The hero went through a door: 'village', or the key of the room now in. */
   onZone?: (zone: string) => void;
   /** Where the hero is walking to by itself (a place key), or null when standing or steered by hand. */
@@ -731,7 +733,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, boxing = false, weapon = null, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, boxing = false, weapon = null, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
   const { t } = useI18n();
   const coachName = coachLabel ?? t('Fysiotherapeut', 'Physiotherapist');
   const host = useRef<HTMLDivElement>(null);
@@ -746,8 +748,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const pos = useRef<Vec>(startAtTv ? { ...TV_SPOT } : { ...VILLAGE_LAYOUT.spawn });
   const facing = useRef(startAtTv ? Math.PI : 0);
   const camAngle = useRef(0);
-  const cb = useRef<{ onNear: Props["onNear"]; onArrive: Props["onArrive"]; onZone?: Props["onZone"]; onDestination?: Props["onDestination"] }>({ onNear, onArrive, onZone, onDestination });
-  cb.current = { onNear, onArrive, onZone, onDestination };
+  const cb = useRef<{ onNear: Props["onNear"]; onArrive: Props["onArrive"]; onZone?: Props["onZone"]; onTalk?: Props["onTalk"]; onDestination?: Props["onDestination"] }>({ onNear, onArrive, onZone, onTalk, onDestination });
+  cb.current = { onNear, onArrive, onZone, onTalk, onDestination };
+  // A tapped figure: the hero walks up to it first, and the talk starts on arriving.
+  const pendingTalk = useRef<{ who: string; spot: string } | null>(null);
   const cheerRef = useRef<{ xp: number; at: number | null } | null>(null);
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
   const heroScene = look ? hero3dScene(look) : null;
@@ -1938,7 +1942,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           if (k === PRACTICE_KEY && n.arrived) travel(PRACTICE_KEY, next);
           else if (k === EXIT_KEY && n.arrived) travel('village', next);
           else if (k && next && places[k] && n.arrived) travel(k, next);
-          else if (k && n.arrived) cb.current.onArrive(k);
+          else if (k && n.arrived && pendingTalk.current?.spot === k) {
+            const who = pendingTalk.current.who;
+            pendingTalk.current = null;
+            cb.current.onTalk?.(who);
+          } else if (k && n.arrived) cb.current.onArrive(k);
         }
       }
       if (!walking && !goal && el.dataset.walking) delete el.dataset.walking;
@@ -2186,7 +2194,19 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     if (node) labels.current.set(id, node);
     else labels.current.delete(id);
   };
-  const go = (k: string) => goTo.current(k);
+  const go = (k: string) => {
+    pendingTalk.current = null;
+    goTo.current(k);
+  };
+  /** Tap a figure: talk at once when the hero stands there, else walk up first. */
+  const talk = (who: string, spot: string) => {
+    if (host.current?.dataset.near === spot) {
+      cb.current.onTalk?.(who);
+      return;
+    }
+    pendingTalk.current = { who, spot };
+    goTo.current(spot);
+  };
   // Nameplates as in an online world: bright letters with a dark outline, straight over the scene.
   const plate = 'absolute left-0 top-0 inline-flex min-h-[32px] items-center whitespace-nowrap rounded-md px-1.5 font-display text-[13.5px] font-extrabold tracking-wide transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a] [text-shadow:0_1px_0_#000,0_-1px_0_#000,1px_0_0_#000,-1px_0_0_#000,0_2px_6px_rgba(0,0,0,.75)]';
   return (
@@ -2253,25 +2273,25 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             {t('Uitgang', 'Exit')}
           </button>
           {heroKey && people && (
-            <button ref={setLabel(COACH_KEY)} type="button" data-spot={COACH_KEY} onClick={() => go(TV_KEY)}
-              aria-label={questOpen ? t(`${coachName}: je training van vandaag wacht`, `${coachName}: today's workout is waiting`) : t(`Loop naar ${coachName}`, `Walk to ${coachName}`)}
+            <button ref={setLabel(COACH_KEY)} type="button" data-spot={COACH_KEY} data-talk="practice" onClick={() => talk('practice', TV_KEY)}
+              aria-label={questOpen ? t(`Praat met ${coachName}: je training van vandaag wacht`, `Talk to ${coachName}: today's workout is waiting`) : t(`Praat met ${coachName}`, `Talk to ${coachName}`)}
               className={cn(plate, 'flex-col !items-center leading-none text-[#b8f0a8]')} style={{ transform: 'translate(-9999px,0)' }}>
               {questOpen && <span aria-hidden className="quest-mark text-[26px] leading-none text-[#ffd21f]">!</span>}
               <span>{coachName}</span>
             </button>
           )}
           {heroKey && buildings.filter((b) => !b.kind && b.keeper).map((b) => (
-            <button key={trainerKey(b.key)} ref={setLabel(trainerKey(b.key))} type="button" data-spot={trainerKey(b.key)} onClick={() => go(boardKey(b.key))}
-              aria-label={t(`Loop naar ${b.keeper}`, `Walk to ${b.keeper}`)} className={cn(plate, 'text-[#b8f0a8]')} style={{ transform: 'translate(-9999px,0)' }}>
+            <button key={trainerKey(b.key)} ref={setLabel(trainerKey(b.key))} type="button" data-spot={trainerKey(b.key)} data-talk={b.key} onClick={() => talk(b.key, boardKey(b.key))}
+              aria-label={t(`Praat met ${b.keeper}`, `Talk to ${b.keeper}`)} className={cn(plate, 'text-[#b8f0a8] underline decoration-dotted underline-offset-4')} style={{ transform: 'translate(-9999px,0)' }}>
               {b.keeper}
             </button>
           ))}
           {heroKey && buildings.filter((b) => b.kind).map((b) => {
             const tr = TRAINERS[b.kind!];
             return (
-              <button key={trainerKey(b.key)} ref={setLabel(trainerKey(b.key))} type="button" data-spot={trainerKey(b.key)} onClick={() => go(boardKey(b.key))}
-                aria-label={t(`Loop naar ${tr.nl}`, `Walk to ${tr.en}`)}
-                className={cn(plate, 'text-[#b8f0a8]')} style={{ transform: 'translate(-9999px,0)' }}>
+              <button key={trainerKey(b.key)} ref={setLabel(trainerKey(b.key))} type="button" data-spot={trainerKey(b.key)} data-talk={b.key} onClick={() => talk(b.key, boardKey(b.key))}
+                aria-label={t(`Praat met ${tr.nl}`, `Talk to ${tr.en}`)}
+                className={cn(plate, 'text-[#b8f0a8] underline decoration-dotted underline-offset-4')} style={{ transform: 'translate(-9999px,0)' }}>
                 {t(tr.nl, tr.en)}
               </button>
             );
