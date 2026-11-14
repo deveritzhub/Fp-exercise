@@ -45,6 +45,24 @@ describe('3D hero', () => {
       expect(doc.animations.map((a: { name: string }) => a.name).sort()).toEqual(['cheer', 'idle', 'run', 'walk']);
       expect(doc.skins.length).toBeGreaterThan(0);
       expect(doc.materials.find((m: {name: string}) => m.name === 'skin').pbrMetallicRoughness.roughnessFactor).toBe(.5);
+      const skin = doc.materials.find((m: { name: string }) => m.name === 'skin');
+      expect(skin.pbrMetallicRoughness.baseColorTexture).toBeDefined();
+      expect(skin.normalTexture).toBeDefined();
+      // Native glTF packed skin weights must still sum to exactly one at every vertex.
+      const weightIndices = new Set<number>(doc.meshes.flatMap((m: { primitives: { attributes: Record<string, number> }[] }) => m.primitives.map(p => p.attributes.WEIGHTS_0)).filter((i: number | undefined) => i !== undefined));
+      let invalidWeights = 0;
+      for (const index of weightIndices) {
+        const accessor = doc.accessors[index];
+        expect(accessor.componentType).toBe(5121);
+        expect(accessor.normalized).toBe(true);
+        const view = doc.bufferViews[accessor.bufferView];
+        const start = 28 + bytes.readUInt32LE(12) + (view.byteOffset ?? 0) + (accessor.byteOffset ?? 0);
+        for (let i = 0; i < accessor.count; i++) {
+          const offset = start + i * (view.byteStride ?? 4);
+          if (bytes[offset] + bytes[offset + 1] + bytes[offset + 2] + bytes[offset + 3] !== 255) invalidWeights++;
+        }
+      }
+      expect(invalidWeights).toBe(0);
     });
   }
 

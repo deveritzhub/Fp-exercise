@@ -31,7 +31,7 @@ They are fitted through `HumanService.add_mhclo_asset` before applying the pose 
 ```sh
 for frame in m f; do
   for build in slim average athletic full; do
-    .bpy/bin/python tools/blender/mh_hero.py --frame "$frame" --build "$build" \
+    .bpy/bin/python tools/blender/mh_hero.py --polished --frame "$frame" --build "$build" \
       --eyes mh/makehuman/data/eyes --glb "web/public/hero3d/hero_${frame}_${build}.glb"
   done
 done
@@ -91,3 +91,16 @@ assets CC0. See `assets/README.md` for sources and authors.
 `web/public/hero3d/study/hero_f_average.glb`. See `docs/hero3d-study/README.md`.
 The public `/hero3d-study.html` page compares it with the existing character under the same light.
 This file intentionally includes only the bun hairstyle; it is not selected by `hero3dUrl` or the village.
+
+## Approved finish for the eight production models
+
+Build each frame/build with `--polished` to apply the approved study's face, hand posture, skin
+shading and clothing details while retaining every hairstyle, gear node and animation. Unlike
+`--study`, this never removes other hairstyles. The male/female CC0 skin shading is neutralised
+for the selected tint. `pack_core_attributes` uses core glTF normalised UVs and 8-bit weights
+whose components sum to 255; no decoding extension is needed. Position precision is unchanged;
+normal components round to 0.01 for the mobile size budget. The export closes the small shirt
+side openings on full builds without changing their skin weights, neck or sleeve openings. Browser renders verify the resulting
+surface and animations. The comparison page preserves its original 'before' model separately.
+
+Further visual work and acceptance criteria: `docs/HERO-ART-DIRECTION.md`.

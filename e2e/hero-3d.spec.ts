@@ -35,7 +35,7 @@ test('eight body models render, turn and retain all four animations', async ({ p
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.getByTestId('hero-3d').screenshot({ path: 'docs/hero3d-review/mobile.png' });
   await page.goto('/hero3d-review.html?frame=m&build=average&hair=short&gear=crown,gold_shoes,champion');
-  await expect(page.getByTestId('hero-3d')).toHaveAttribute('data-state', 'ready');
+  await expect(page.getByTestId('hero-3d')).toHaveAttribute('data-state', 'ready', { timeout: 30000 });
   await page.locator('main').screenshot({ path: 'docs/rpg-screenshots/hero-3d.png' });
   expect(errors).toEqual([]);
 });

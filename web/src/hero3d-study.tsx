@@ -21,9 +21,9 @@ function Study() {
       <button type="button" aria-pressed={portrait} onClick={() => setPortrait(!portrait)} className="min-h-11 rounded-full border border-[#b7b4a4] bg-[#fffdf8] px-5 text-sm font-semibold">{portrait ? 'Hele personage' : 'Gezicht van dichtbij'}</button>
     </div>
     <div className="mt-5 rounded-[2rem] border border-[#d8d1bf] bg-[radial-gradient(ellipse_at_50%_35%,#fffdf6_0%,#eee7d8_75%)] p-2 sm:p-5">
-      <Hero3D key={`${before}-${portrait}`} look={look} studio portrait={portrait} palette={palette} modelUrl={before ? undefined : '/hero3d/study/hero_f_average.glb?v=1'} className="h-[600px] w-full sm:h-[720px]"/>
+      <Hero3D key={`${before}-${portrait}`} look={look} studio portrait={portrait} palette={palette} modelUrl={before ? '/hero3d/study/before_f_average.glb?v=1' : '/hero3d/study/hero_f_average.glb?v=1'} className="h-[600px] w-full sm:h-[720px]"/>
     </div>
-    <p className="mt-4 text-sm leading-relaxed text-[#5c6257]">Dit is een stijlproef. De andere lichaamsbouwen en kapsels worden pas na de beoordeling in deze stijl uitgewerkt. Beide versies gebruiken hier hetzelfde licht en dezelfde kleuren.</p>
+    <p className="mt-4 text-sm leading-relaxed text-[#5c6257]">De goedgekeurde afwerking is ook beschikbaar voor de andere lichaamsbouwen en kapsels. Verdere verfijning van gezicht, haar en kleding volgt. Beide versies gebruiken hier hetzelfde licht en dezelfde kleuren.</p>
   </main>;
 }
 document.body.style.background = '#f5f1e7';

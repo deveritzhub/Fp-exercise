@@ -328,6 +328,13 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     `docs/hero3d-study/`. Alle gear-nodes en vier animaties behouden. Visuele beoordeling van deze
     richting gaat vooraf aan toepassing op de overige lichaamsbouwen en kapsels.
 
+99. [x] **Goedgekeurde 3D-afwerking naar de gewone avatars** (14 nov): modelversie 7,
+    alle acht frame/build-modellen met de goedgekeurde huid-, houding- en kledingafwerking.
+    Alle kapsels, gear-nodes, kleuren en animaties behouden; studiolicht voor de losse 3D-viewer.
+    De vergelijkingspagina bewaart een afzonderlijk origineel model. Native glTF UV/gewichten
+    compact opgeslagen voor mobiel. Vervolgcriteria voor echte premium kwaliteit staan in
+    `docs/HERO-ART-DIRECTION.md`; deze uitrol claimt die eindkwaliteit niet.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.

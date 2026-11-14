@@ -32,13 +32,13 @@ const webglOk = () => {
   }
 };
 
-type Stage = { root: THREE.Group; base: THREE.Group; model: THREE.Object3D | null; url: string | null; controls: OrbitControls; mixer?: THREE.AnimationMixer };
+type Stage = { root: THREE.Group; base: THREE.Group; model: THREE.Object3D | null; url: string | null; controls: OrbitControls; mixer?: THREE.AnimationMixer; dirty: boolean };
 
 /**
  * Turnable 3D figurine of the hero with the worn gear (model: tools/blender/mh_hero.py). Drag to turn,
  * or use the buttons; it turns slowly by itself unless the person prefers reduced motion.
  */
-export default function Hero3D({ look, className, modelUrl, studio = false, portrait = false, palette }: {
+export default function Hero3D({ look, className, modelUrl, studio = true, portrait = false, palette }: {
   look: FigureLook; className?: string; modelUrl?: string; studio?: boolean; portrait?: boolean;
   palette?: { main: string; dark: string; soft: string };
 }) {
@@ -118,7 +118,8 @@ export default function Hero3D({ look, className, modelUrl, studio = false, port
     controls.autoRotateSpeed = 1.2;
     controls.addEventListener('start', () => (controls.autoRotate = false));
     controls.update();
-    stage.current = { root, base, model: null, url: null, controls };
+    stage.current = { root, base, model: null, url: null, controls, dirty: true };
+    controls.addEventListener('change', () => { if (stage.current) stage.current.dirty = true; });
 
     const resize = () => {
       const w = el.clientWidth || 1;
@@ -128,6 +129,7 @@ export default function Hero3D({ look, className, modelUrl, studio = false, port
       renderer.domElement.style.height = '100%';
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
+      if (stage.current) stage.current.dirty = true;
     };
     resize();
     const ro = new ResizeObserver(resize);
@@ -145,7 +147,11 @@ export default function Hero3D({ look, className, modelUrl, studio = false, port
       if (!visible || document.hidden) return;
       if (studio && !reduce) stage.current?.mixer?.update(dt);
       controls.update();
-      renderer.render(scene, camera);
+      const st = stage.current;
+      if (st && (st.dirty || (studio && !reduce && st.mixer))) {
+        renderer.render(scene, camera);
+        st.dirty = false;
+      }
     };
     loop();
     return () => {
@@ -224,6 +230,7 @@ export default function Hero3D({ look, className, modelUrl, studio = false, port
             dress(mat, base, scene3d.tints[base], scene3d.fabric);
           }
         });
+        st.dirty = true;
         setState('ready');
       } catch {
         if (!cancelled) setState('error');

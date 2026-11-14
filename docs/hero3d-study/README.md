@@ -2,8 +2,9 @@
 
 Open `/hero3d-study.html` to compare one female/average character with the existing model.
 Both are rendered with the same studio lighting, camera, olive kit palette and synthetic avatar.
-The default eight models and the village still use their existing art. This is one reviewable
-style study, not a rollout of all builds and hairstyles.
+The approved finish is now also applied to the eight normal models. This page preserves the
+original model independently so comparison remains meaningful. The fixed study itself still uses
+one female/average character with a bun.
 
 The study uses the current fitted loose sport kit, preserving its UVs and skin weights, with
 neckline/cuff bindings, a small FP mark and laced trainers. Arms and hands rest more naturally.

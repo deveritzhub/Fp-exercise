@@ -1,26 +1,30 @@
-# 3D model review — 13 November 2026
+# Approved character finish — 14 November 2026
 
-Eight separately generated MakeHuman bodies, with real body geometry changes rather than viewer
-scaling. Each screenshot is a local Playwright render using synthetic avatars, real GLBs,
-software WebGL and reduced motion. The image filenames identify frame and build; `-side` is a
-90-degree rotation using the app's controls. All supported hairstyles are represented across the
-set; skin and hair colours also vary.
+Model version 7 applies the approved study's skin shading, softer expression, relaxed hands,
+cloth bindings, FP mark and trainer details to all eight frame/build combinations. All hairstyles,
+beards, glasses, gear nodes, outfit colours and idle/walk/run/cheer animations remain available.
+The studio presentation is the default for the standalone viewer; the village keeps its own lighting.
+The comparison page preserves an independent original model for the 'before' button.
 
-The first review exposed toe-shaped shoes and jagged shin-guard edges. The final generator uses
-smooth shoe forms fitted to the foot bounds and trimmed, smoothed guard edges. The eight models
-were regenerated after correcting these defects. See `../rpg-screenshots/hero-3d.png` for a champion
-outfit with crown and gold shoes in the development review page. The deliberately removed inventory 3D button remains removed. The village uses the updated model selection.
+Every image is an actual local Playwright render of the exported GLB with synthetic avatars,
+software WebGL and reduced motion. Files identify frame/build; `-side` uses the keyboard turning
+controls. All supported hairstyles are represented, with varied skin and hair colours. `mobile.png`
+and `village.png` exercise both viewports/renderers. `models.json` records final hashes and gzip sizes.
 
-This is a technical and fitting improvement, not a claim of finished photorealism. Faces and skin
-still have limited surface detail; clothing is fitted geometry without simulated fabric folds;
-CC0 hair has low-poly silhouettes. Four representative body builds cannot reproduce every person's
-exact anatomy. Blender's mild subsurface shading is not preserved by standard glTF; the browser
-uses the exported roughness-0.5 PBR skin surface.
+Positions retain 0.1 mm precision. glTF core normalised UVs and weights reduce the download without
+an extra decoder. Every vertex's packed skin weights sum to one; the browser exercises all four
+animation clips and verifies finite bone transforms. The complete eight models stay below 2.5 MB gzip. Small unintended shirt side openings on the
+full builds are triangulated using their existing vertices/UVs/skin weights. Only neckline, sleeve
+cuffs and hem get light bindings; small underarm openings do not get decorative trim.
 
-Validation commands are in `tools/blender/README.md`. All gear keys, all hair/beard/glasses options,
-size limits, distinct body geometry and body-selection logic are covered by the hero3d unit tests.
-The browser suites also exercise all four exported animations, the live village renderer, inventory persistence, keyboard controls, reduced motion,
-accessibility and the existing RPG view. No patient database is used by these fixture suites.
+The approved finish is a step toward premium art quality. Faces and hairstyles still have limited
+artistic detail; clothing needs further silhouette/fold work; four builds are representative shapes,
+not individual scans. Blender subsurface shading is not retained by standard glTF. See
+`../HERO-ART-DIRECTION.md` for the concrete next quality criteria.
 
-Final validation: 68 unit tests and all 3 browser tests passed; typecheck and production build passed.
-Animated models measure 2.40–2.44 MB with gzip level 6. Final front, side, mobile, champion and village renders were visually reviewed.
+Verification commands are in `tools/blender/README.md`. Only synthetic fixtures are used.
+
+Final verification: 70 unit tests, typecheck and production build passed. The inventory/shop
+fixture scenario passed; all four 3D/study browser scenarios passed after the rendering update,
+and both model/village scenarios were rerun for the final shirt fit. Front images across all builds, representative side views, mobile, the equipped champion
+and the village were visually reviewed.

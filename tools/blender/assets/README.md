@@ -15,3 +15,7 @@ The style study additionally uses `system/skins/young_caucasian_female/` from th
 CC0 system archive, downloaded 13 November 2026. The original MHMAT includes the explicit September
 2020 CC0 release. The generator neutralises its diffuse shading for the selectable skin tint.
 The study's bun texture uses 256px; the skin shading uses 512px. Original source PNGs are preserved.
+
+Approved-finish rollout (14 November 2026): the matching `young_caucasian_male` CC0 material and
+source diffuse PNG are also included from the official system archive. Production skin shading
+uses neutralised 448px maps; the original source files and release headers remain unmodified.

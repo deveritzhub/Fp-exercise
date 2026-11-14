@@ -24,8 +24,7 @@ def dress_study(ctx):
     human, skin = g['human'], g['SKIN']
     hr = g['HR']
     part, mat = g['part'], g['mat']
-    neck, waist = g['NECK_H'].z, g['WAIST_Z']
-    hem_z = g['BONE']['pelvis'][0].z + .005
+    waist = g['WAIST_Z']
     # A muted olive shirt, charcoal shorts, ivory detailing; the normal colour controls still tint these.
     ivory = mat('study_ivory', '#eee5d2', .76)
     piping = mat('study_piping', '#b1a17a', .68)
@@ -51,14 +50,6 @@ def dress_study(ctx):
         bpy.ops.object.convert(target='MESH')
         return bpy.context.object
 
-    def fair(ob, iterations=12, factor=.45):
-        bm = bmesh.new(); bm.from_mesh(ob.data)
-        boundary = {v for e in bm.edges if e.is_boundary for v in e.verts}
-        movable = [v for v in bm.verts if v not in boundary]
-        for _ in range(iterations):
-            bmesh.ops.smooth_vert(bm, verts=movable, factor=factor, use_axis_x=True, use_axis_y=True, use_axis_z=True)
-        bm.to_mesh(ob.data); bm.free()
-
     # Use the app's newly improved loose MakeHuman kit, retaining its fitted skin weights and UVs.
     # Bind the actual neckline/cuffs and add a small original mark without replacing the garment mesh.
     shirt=bpy.data.objects['body_shirt']
@@ -73,7 +64,10 @@ def dress_study(ctx):
             candidates=[e.other_vert(v) for e in v.link_edges if e.is_boundary and e.other_vert(v)!=previous]
             if not candidates: break
             previous,v=v,candidates[0]
-        if len(loop)>5: loops.append(loop[::2]+[loop[0]])
+        if len(loop)>5:
+            # Bind only the neckline, sleeve cuffs and hem, not small underarm mesh openings.
+            width=max(p.x for p in loop)-min(p.x for p in loop)
+            if width>=.05: loops.append(loop[::2]+[loop[0]])
     bm.free()
     with part('body_study_details'):
         for loop in loops:
@@ -107,13 +101,14 @@ def dress_study(ctx):
     sub=bun.modifiers.new('groomed_surface','SUBSURF');sub.levels=sub.render_levels=1
     dec=bun.modifiers.new('mobile_hair','DECIMATE');dec.ratio=.72
     for name in list(g['ASSETS']):
-        if name.startswith('hair_') and name!='hair_bun':
+        if g['args'].study and name.startswith('hair_') and name!='hair_bun':
             bpy.data.objects.remove(bpy.data.objects[name],do_unlink=True)
 
     # The CC0 source skin contributes facial shading while a neutralised texture preserves selectable skin tones.
     import numpy as np
-    skin_image=bpy.data.images.load(str(Path(g['args'].assets)/'system/skins/young_caucasian_female/young_lightskinned_female_diffuse.png'))
-    skin_image.scale(512,512)
+    source='young_caucasian_male/young_lightskinned_male_diffuse.png' if g['M'] else 'young_caucasian_female/young_lightskinned_female_diffuse.png'
+    skin_image=bpy.data.images.load(str(Path(g['args'].assets)/'system/skins'/source))
+    skin_image.scale(448,448)
     pix=np.array(skin_image.pixels[:],dtype=np.float32).reshape(-1,4)
     grey=pix[:,:3].mean(axis=1)
     ref=float(np.percentile(grey,80))
