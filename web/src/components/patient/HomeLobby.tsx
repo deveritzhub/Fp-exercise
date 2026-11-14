@@ -116,7 +116,7 @@ function VillageScene({ daypart, growth, ownStage }: { daypart: Daypart; growth:
   const houses = Array.from({ length: count }, (_, i) => {
     const big = i < 5;
     // To the right of the own home, on the slope above the greeting.
-    const x = 198 + ((i * 29) % 98) + (i >= 5 ? 7 : 0);
+    const x = 214 + ((i * 37) % 112) + (i >= 5 ? 9 : 0);
     const y = big ? 66 + (i % 2) * 5 : 57 + (i % 3) * 4;
     return { x, y, s: big ? 1 : 0.7, roof: roofs[i % roofs.length], key: i };
   }).sort((a, b) => a.y - b.y);
@@ -164,14 +164,21 @@ function VillageScene({ daypart, growth, ownStage }: { daypart: Daypart; growth:
       )}
       {houses.map((h) => (
         <g key={h.key} transform={`translate(${h.x} ${h.y}) scale(${h.s})`}>
-          <ellipse cx="0" cy="6.5" rx="15" ry="2.6" fill="#000" opacity="0.12" />
-          <rect x="5" y="-20" width="3.5" height="7" fill="#8d8a82" />
-          <rect x="-11" y="-10" width="22" height="16" fill="#f6eedd" />
-          <path d="M-14.5 -9 L0 -22 L14.5 -9Z" fill={h.roof} />
-          <path d="M0 -22 L14.5 -9 H7Z" fill="#000" opacity="0.14" />
-          <rect x="-3" y="-2" width="6" height="8" rx="3" fill="#8a6038" />
-          <rect x="5" y="-7" width="4" height="4" fill={lit ? '#ffd36b' : '#cfe3ef'} />
-          <rect x="-9" y="-7" width="4" height="4" fill={lit ? '#ffd36b' : '#cfe3ef'} />
+          {painted ? (
+            // The neighbours: the same painted homes, smaller and of mixed kinds, never grander than a house.
+            <image href={`/village/homes/${HOME_STAGES[[2, 1, 3, 2, 0, 1, 3][h.key % 7]].key}.webp?v=1`} x="-17" y="-26" width="34" height="34" preserveAspectRatio="xMidYMax meet" onError={() => setPainted(false)} style={{ filter: daypart === 'night' ? 'brightness(0.72)' : undefined }} />
+          ) : (
+            <>
+              <ellipse cx="0" cy="6.5" rx="15" ry="2.6" fill="#000" opacity="0.12" />
+              <rect x="5" y="-20" width="3.5" height="7" fill="#8d8a82" />
+              <rect x="-11" y="-10" width="22" height="16" fill="#f6eedd" />
+              <path d="M-14.5 -9 L0 -22 L14.5 -9Z" fill={h.roof} />
+              <path d="M0 -22 L14.5 -9 H7Z" fill="#000" opacity="0.14" />
+              <rect x="-3" y="-2" width="6" height="8" rx="3" fill="#8a6038" />
+              <rect x="5" y="-7" width="4" height="4" fill={lit ? '#ffd36b' : '#cfe3ef'} />
+              <rect x="-9" y="-7" width="4" height="4" fill={lit ? '#ffd36b' : '#cfe3ef'} />
+            </>
+          )}
         </g>
       ))}
       {Array.from({ length: growth?.pennants ?? 0 }, (_, i) => (
@@ -188,7 +195,7 @@ function VillageScene({ daypart, growth, ownStage }: { daypart: Daypart; growth:
             <image href={`/village/homes/${HOME_STAGES[ownStage].key}.webp?v=1`} x="-31" y="-46" width="62" height="56" preserveAspectRatio="xMidYMax meet" onError={() => setPainted(false)} style={{ filter: daypart === 'night' ? 'brightness(0.72)' : undefined }} />
           ) : <OwnHome stage={ownStage} lit={lit} />}
           {/* The gold marker says: this one is yours. */}
-          <path d="M-5 -57 H5 L0 -50Z" fill="#e4bc63" stroke="#6b4705" strokeWidth="1" strokeLinejoin="round" className="chest-bounce" />
+          <path d="M-5 -57 H5 L0 -50Z" fill="#e4bc63" stroke="#6b4705" strokeWidth="1" strokeLinejoin="round" />
         </g>
       )}
       <path d="M0 140 Q120 112 230 128 T400 120 V170 H0Z" fill={sky.hill} />
