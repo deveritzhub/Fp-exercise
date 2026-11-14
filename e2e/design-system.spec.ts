@@ -16,7 +16,7 @@ test('therapist shell uses the design tokens', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await login(page, 'therapeut@praktijk-a.test');
   await page.locator('h1').first().waitFor();
-  expect(await style(page, 'body', ['background-color', 'color'])).toEqual({ 'background-color': 'rgb(247, 249, 247)', color: 'rgb(32, 43, 38)' });
+  expect(await style(page, 'body', ['background-color', 'color'])).toEqual({ 'background-color': 'rgb(246, 244, 238)', color: 'rgb(32, 43, 38)' });
   expect((await style(page, 'body', ['font-family']))['font-family']).toMatch(/^"Inter Variable"/);
   expect((await style(page, 'h1', ['font-family']))['font-family']).toMatch(/^"Manrope Variable"/);
   // Fonts are self-hosted: no request ever leaves for Google Fonts.
@@ -27,16 +27,16 @@ test('therapist shell uses the design tokens', async ({ page }) => {
   expect(await page.evaluate(() => document.fonts.check('700 16px "Manrope Variable"') && document.fonts.check('400 16px "Inter Variable"'))).toBe(true);
 
   // Sidebar: light sage, active item white with a bold label and a green icon.
-  expect((await style(page, 'aside', ['background-color']))['background-color']).toBe('rgb(238, 243, 239)');
+  expect((await style(page, 'aside', ['background-color']))['background-color']).toBe('rgb(241, 239, 231)');
   const active = page.locator('aside nav a[aria-current="page"]');
   await expect(active).toHaveText('Dashboard');
   expect(await active.evaluate((el) => [getComputedStyle(el).backgroundColor, getComputedStyle(el).fontWeight])).toEqual(['rgb(255, 255, 255)', '600']);
-  expect(await active.locator('svg').evaluate((el) => getComputedStyle(el).color)).toBe('rgb(41, 72, 60)');
+  expect(await active.locator('svg').evaluate((el) => getComputedStyle(el).color)).toBe('rgb(30, 58, 48)');
 
   // Primary button: Deep Forest Green with white text; cards white with a soft sage border.
   const primary = page.getByRole('button', { name: 'Nieuw programma' }).first();
-  expect(await primary.evaluate((el) => [getComputedStyle(el).backgroundColor, getComputedStyle(el).color])).toEqual(['rgb(41, 72, 60)', 'rgb(255, 255, 255)']);
-  expect(await style(page, '.card', ['background-color', 'border-top-color'])).toEqual({ 'background-color': 'rgb(255, 255, 255)', 'border-top-color': 'rgb(225, 232, 226)' });
+  expect(await primary.evaluate((el) => [getComputedStyle(el).backgroundColor, getComputedStyle(el).color])).toEqual(['rgb(30, 58, 48)', 'rgb(255, 255, 255)']);
+  expect(await style(page, '.card', ['background-color', 'border-top-color'])).toEqual({ 'background-color': 'rgb(255, 255, 255)', 'border-top-color': 'rgba(227, 224, 214, 0.6)' });
 
   // Keyboard focus is clearly visible.
   await page.keyboard.press('Tab');
@@ -57,7 +57,7 @@ test('a practice accent replaces the base green, darkened to stay readable', asy
     await page.goto('/app');
     await page.locator('h1').first().waitFor();
     const rgb = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
-    expect(rgb).not.toBe('41 72 60');
+    expect(rgb).not.toBe('30 58 48');
     const ratio = await page.evaluate((v) => {
       const lum = (c: number[]) => c.map((x) => x / 255).map((s) => (s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4)).reduce((a, s, i) => a + s * [0.2126, 0.7152, 0.0722][i], 0);
       return 1.05 / (lum(v.split(' ').map(Number)) + 0.05);
@@ -69,7 +69,7 @@ test('a practice accent replaces the base green, darkened to stay readable', asy
   }
   await page.goto('/app');
   await page.locator('h1').first().waitFor();
-  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim())).toBe('41 72 60');
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim())).toBe('30 58 48');
 });
 
 test('patient app: same identity, large tab bar with a clear active state', async ({ browser }) => {

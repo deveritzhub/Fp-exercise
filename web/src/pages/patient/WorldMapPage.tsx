@@ -1,3 +1,4 @@
+import { VillageBanner } from '@/components/patient/HomeLobby';
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -113,6 +114,9 @@ export function WorldMapPage() {
         <p className="mt-1.5 text-[15px] leading-relaxed text-ink-700">{line(copy.intro)}</p>
         <p className="mt-1 text-[13.5px] leading-relaxed text-ink-600">{line(copy.unlock)}</p>
       </header>
+
+      {/* The village with the own home in front: the way into the 3D village. */}
+      <VillageBanner />
 
       {data.rest.active && (
         <p role="status" className="flex items-start gap-2 rounded-2xl border border-[#C9D7C2] bg-[#F3F7F1] px-3 py-3 text-[14.5px] leading-relaxed text-ink-900">

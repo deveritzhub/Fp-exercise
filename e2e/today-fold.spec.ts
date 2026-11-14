@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { login } from './helpers';
 
 /** Vandaag has one main thing to do: the training of the day, with its button in view without scrolling. */
-test('"Start training" is in view on a phone without scrolling, on one header line', async ({ browser }) => {
+test('"Start training" is in view on a phone without scrolling, under a compact header', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'nl-NL' });
   const page = await context.newPage();
   await login(page, 'patient@praktijk-a.test');
@@ -16,9 +16,9 @@ test('"Start training" is in view on a phone without scrolling, on one header li
   const box = (await start.boundingBox())!;
   const nav = (await page.getByRole('navigation', { name: 'Navigatie' }).boundingBox())!;
   expect(box.y + box.height).toBeLessThanOrEqual(nav.y);
-  // The practice name stays on one line in the header.
+  // The practice name is shown in full on at most two short lines, never three.
   const name = page.locator('header').getByText(/Functional Performance/);
-  expect((await name.boundingBox())!.height).toBeLessThan(26);
+  expect((await name.boundingBox())!.height).toBeLessThan(34);
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/vandaag-nieuw.png' });
 
   // A link to an explanation that is gone: a text and a way back, not an empty page.

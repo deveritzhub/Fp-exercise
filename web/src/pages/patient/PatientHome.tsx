@@ -1,3 +1,4 @@
+import { useHero } from '@/pages/patient/HeroPages';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -17,7 +18,7 @@ import type { DayState } from '@shared/adherence';
 import { isActionableToday, summarizePatientDay } from '@shared/todayView';
 import { cn } from '@/lib/cn';
 import { BossHomeCard, DayChestHomeCard } from '@/pages/patient/HeroPages';
-import { HomeLobby, VillageTiles } from '@/components/patient/HomeLobby';
+import { TodayHeader, TodayTiles, VillageTiles } from '@/components/patient/HomeLobby';
 import { XP } from '@shared/hero';
 import { LogbookHomeCard } from '@/pages/patient/LogbookPage';
 import { MobilityDueCard } from '@/components/MobilityTests';
@@ -86,16 +87,9 @@ export function PatientHome() {
           </p>
         </header>
       ) : (
-      <HomeLobby
+      <TodayHeader
         date={new Intl.DateTimeFormat(nl ? 'nl-NL' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}
         greeting={`${greeting(locale)}, ${d.patient.firstName}`}
-        subtitle={todo.length > 0
-          ? left > 0
-            ? t(`Vandaag nog ${left} ${left === 1 ? 'training' : 'trainingen'} te doen.`, `${left} ${left === 1 ? 'workout' : 'workouts'} left today.`)
-            : pausedToday > 0
-              ? t('Je programma staat tijdelijk stil. Volg het advies van je fysiotherapeut.', 'Your programme is temporarily paused. Follow your physiotherapist’s advice.')
-              : t('Alles voor vandaag is gedaan. Lekker bezig!', 'Everything for today is done. Well done!')
-          : undefined}
       />
       )}
       {/* Everything planned today is done: a short, calm wrap-up with what comes next. */}
@@ -158,6 +152,13 @@ export function PatientHome() {
         </div>
       ))}
 
+      {!simple && (
+        <>
+          {/* Strength keeps a fixed place: the own log, with the latest estimate when there is one. */}
+          <StrengthCard />
+          <TodayTiles rate={d.stats.adherence7d.rate ?? 0} done={d.stats.adherence7d.completed} planned={d.stats.adherence7d.planned} />
+        </>
+      )}
       {/* Below the training of the day, so "Start training" is in view without scrolling. */}
       <ViewChoiceCard />
 
@@ -254,6 +255,26 @@ function ModuleTag({ module }: { module: PatientModule }) {
     <Link to={MODULE_PATH[module]} className="mb-0.5 inline-flex min-h-[44px] items-center gap-1.5 text-[13px] font-semibold uppercase tracking-wide text-ink-600 hover:text-ink-900">
       <I className="h-4 w-4" aria-hidden />{moduleLabel(module, locale === 'nl')}
     </Link>
+  );
+}
+
+/** The strength log as a fixed card on Vandaag: one line and one button. */
+function StrengthCard() {
+  const { t, locale } = useI18n();
+  const hero = useHero().data;
+  if (!hero?.hero) return null;
+  const best = [...hero.strengthEstimates].filter((e) => e.latestKg !== null).sort((a, b) => (b.latestKg ?? 0) - (a.latestKg ?? 0))[0];
+  return (
+    <section aria-labelledby="strength-card" className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-card" data-testid="strength-card">
+      <div className="min-w-0 flex-1">
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ink-600">{t('Kracht · jouw schema', 'Strength · your plan')}</p>
+        <h2 id="strength-card" className="mt-0.5 text-[16.5px] font-bold text-ink-950">{t('Krachttraining loggen', 'Log strength training')}</h2>
+        <p className="mt-0.5 text-[13.5px] text-ink-600">
+          {best ? t(`Geschat 1RM ${locale === 'nl' ? best.nameNl : best.nameEn}: ${best.latestKg} kg`, `Estimated 1RM ${best.nameEn}: ${best.latestKg} kg`) : t('Sets in de sportschool, thuis of in de praktijk.', 'Sets at the gym, at home or in the practice.')}
+        </p>
+      </div>
+      <Link to="/p/krachtlog" className="tap inline-flex min-h-[48px] shrink-0 items-center rounded-xl border-2 border-accent px-4 text-[15px] font-semibold text-accent hover:bg-accent-soft">{t('Log set', 'Log set')}</Link>
+    </section>
   );
 }
 

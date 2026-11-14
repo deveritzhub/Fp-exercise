@@ -137,7 +137,7 @@ export function PatientLayout() {
             <Logo to="/p" compact className="min-h-[44px] min-w-[44px] justify-center min-[430px]:hidden" />
             <Logo to="/p" className="hidden min-h-[44px] min-[430px]:inline-flex" />
             <div className="flex min-w-0 items-center gap-1">
-              <span className="min-w-0 truncate text-right text-[12.5px] font-medium text-ink-600 min-[400px]:text-[13.5px]" title={user.patient.kind === 'personal' ? undefined : user.patient.practiceName}>{user.patient.kind === 'personal' ? t('Persoonlijk account', 'Personal account') : user.patient.practiceName}</span>
+              <span className="line-clamp-2 min-w-0 text-right text-[12.5px] font-medium leading-[1.15] text-ink-600 min-[400px]:text-[13px]" title={user.patient.kind === 'personal' ? undefined : user.patient.practiceName}>{user.patient.kind === 'personal' ? t('Persoonlijk account', 'Personal account') : user.patient.practiceName}</span>
               <MessagesButton />
               <FeedbackButton big />
               <Link to="/p/instellingen" aria-label={t('Instellingen', 'Settings')} title={t('Instellingen', 'Settings')} className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100', (loc.pathname.startsWith('/p/instellingen') || loc.pathname.startsWith('/p/account')) && 'bg-accent-soft text-accent')}>

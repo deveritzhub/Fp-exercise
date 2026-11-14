@@ -8,7 +8,7 @@
   /* Long words (and large system text on phones) wrap instead of running off the screen. */
   h1, h2, h3, h4, p, li, dd, dt, label, legend { overflow-wrap: break-word; }
   :root {
-    --ink-950: 20 28 24;
+    --ink-950: 23 37 31;
     --ink-900: 32 43 38;
     --ink-800: 42 55 49;
     --ink-700: 52 67 60;
@@ -19,10 +19,10 @@
     --ink-200: 211 220 214;
     --ink-100: 232 238 233;
     --ink-50: 241 245 242;
-    --canvas: 247 249 247;
-    --line: 225 232 226;
+    --canvas: 246 244 238;
+    --line: 227 224 214;
     --sage: 230 238 232;
-    --mist: 238 243 239;
+    --mist: 241 239 231;
     --surface: 255 255 255;
     --sand-soft: 243 239 231;
     --sand-ink: 91 74 46;
@@ -38,8 +38,8 @@
   :root {
     /* Primary interaction colour: Deep Forest Green, hover Dark Forest, soft Clinical Sage.
        Overridable per practice (branding.accent, see lib/accent.ts). RGB triplets for alpha support. */
-    --accent: 41 72 60;
-    --accent-strong: 29 54 45;
+    --accent: 30 58 48;
+    --accent-strong: 22 44 36;
     --accent-soft: 230 238 232;
     --accent-ink: 255 255 255;
     color-scheme: light;
@@ -131,7 +131,8 @@
 }
 
 @layer components {
-  .card { @apply rounded-xl border border-line bg-white shadow-card; }
+  /* Cards float on the paper ground: one soft shadow, a line so faint it only shows on white. */
+  .card { @apply rounded-2xl border border-line/60 bg-white shadow-card; }
   /* Clickable card: calm lift on hover, no movement. */
   .card-hover { @apply transition-[box-shadow,border-color] duration-150 hover:border-ink-200 hover:shadow-lift; }
   /* Type scale: page title, section heading, card title, body, small label, help text. */

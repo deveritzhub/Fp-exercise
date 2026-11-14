@@ -38,11 +38,12 @@ module.exports = {
       },
       boxShadow: {
         xs: '0 1px 2px rgba(20, 35, 28, 0.05)',
-        card: '0 1px 2px rgba(20, 35, 28, 0.04), 0 2px 6px -2px rgba(20, 35, 28, 0.05)',
+        card: '0 1px 2px rgba(23, 37, 31, 0.04), 0 10px 28px -16px rgba(23, 37, 31, 0.14)',
         lift: '0 2px 4px rgba(20, 35, 28, 0.04), 0 8px 20px -8px rgba(20, 35, 28, 0.12)',
         pop: '0 16px 40px -12px rgba(20, 35, 28, 0.22), 0 2px 6px rgba(20, 35, 28, 0.06)',
       },
-      borderRadius: { lg: '0.625rem', xl: '0.75rem', '2xl': '0.875rem' },
+      // Buttons and fields 14, cards 20, the lead card 24.
+      borderRadius: { lg: '0.625rem', xl: '0.875rem', '2xl': '1.25rem', '3xl': '1.5rem' },
       fontSize: { '2xs': ['0.75rem', { lineHeight: '1rem' }] },
       keyframes: {
         'fade-in': { from: { opacity: 0 }, to: { opacity: 1 } },
