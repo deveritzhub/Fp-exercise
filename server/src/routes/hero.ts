@@ -1,3 +1,6 @@
+import { BELTS, examReady, nextItems, validItem } from '../../../shared/karate';
+import { ADVENTURE_DAILY_WINS, BOXING, CREATURES, CREATURE_KINDS, adventureLevel, boxingXp, type CreatureKind } from '../../../shared/adventure';
+import { readStaffLook } from '../lib/staffLook';
 import { HEIRLOOM_KINDS } from '../../../shared/measurementBoss';
 import { wearableAclReward, ACL_SPORTS } from '../../../shared/aclRewards';
 import { heirloomView } from '../lib/boss';
@@ -710,6 +713,124 @@ async function homeState(tx: Tx, patientId: string) {
   }
   return { level: state.level.level, coins: state.gear.coins, owned, layout: kept };
 }
+
+/**
+ * The figure of the professional who treats this patient, for the village: the main therapist's when
+ * there is one, else the first with a figure. Appearance only.
+ */
+heroPatient.get('/hero/coach', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const row = await withUser(user.id, async (tx) =>
+    (await tx.query(
+      `SELECT s.look FROM patient_therapists a JOIN staff_avatars s ON s.user_id = a.therapist_id
+        WHERE a.patient_id = $1 ORDER BY a.is_primary DESC, a.created_at LIMIT 1`,
+      [patient.id],
+    )).rows[0]);
+  return c.json({ look: readStaffLook(row?.look) });
+});
+
+const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number } | undefined) => {
+  const xp = Number(r?.xp ?? 0);
+  return { xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...adventureLevel(xp) };
+};
+const adventureRow = async (tx: Tx, patientId: string) =>
+  (await tx.query('SELECT xp, wins, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today, CASE WHEN day = CURRENT_DATE THEN rounds_today ELSE 0 END AS rounds_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
+
+heroPatient.get('/hero/adventure', async (c) => {
+  const { user, patient } = requirePatient(c);
+  return c.json(adventureView(await withUser(user.id, (tx) => adventureRow(tx, patient.id))));
+});
+
+/** A creature beaten. The server decides what it is worth; past the day's count it is worth nothing. */
+heroPatient.post('/hero/adventure/win', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ kind: z.enum(CREATURE_KINDS as [CreatureKind, ...CreatureKind[]]) }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) throw badRequest('invalid_input');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const before = adventureRow(tx, patient.id);
+      // The big ones only show themselves at their level; a win over one that is not there counts for nothing.
+      if (adventureLevel(Number((await before)?.xp ?? 0)).level < CREATURES[body.data.kind].level) throw badRequest('invalid_input');
+      const today = Number((await before)?.wins_today ?? 0);
+      const gained = today < ADVENTURE_DAILY_WINS ? CREATURES[body.data.kind].xp : 0;
+      await tx.query(
+        `INSERT INTO hero_adventure(patient_id, xp, wins, day, wins_today) VALUES ($1, $2, 1, CURRENT_DATE, 1)
+         ON CONFLICT (patient_id) DO UPDATE SET xp = hero_adventure.xp + $2, wins = hero_adventure.wins + 1,
+           wins_today = CASE WHEN hero_adventure.day = CURRENT_DATE THEN hero_adventure.wins_today + 1 ELSE 1 END,
+           rounds_today = CASE WHEN hero_adventure.day = CURRENT_DATE THEN hero_adventure.rounds_today ELSE 0 END, day = CURRENT_DATE, updated_at = now()`,
+        [patient.id, gained],
+      );
+      return { gained, ...adventureView(await adventureRow(tx, patient.id)) };
+    }),
+  );
+});
+
+/** A round on the bag in the boxing school. The first few rounds of a day give XP for the hits made. */
+heroPatient.post('/hero/adventure/round', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ hits: z.number().int().min(0).max(BOXING.beats) }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) throw badRequest('invalid_input');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const today = Number((await adventureRow(tx, patient.id))?.rounds_today ?? 0);
+      const gained = today < BOXING.roundsPerDay ? boxingXp(body.data.hits) : 0;
+      await tx.query(
+        `INSERT INTO hero_adventure(patient_id, xp, day, rounds_today) VALUES ($1, $2, CURRENT_DATE, 1)
+         ON CONFLICT (patient_id) DO UPDATE SET xp = hero_adventure.xp + $2,
+           rounds_today = CASE WHEN hero_adventure.day = CURRENT_DATE THEN hero_adventure.rounds_today + 1 ELSE 1 END,
+           wins_today = CASE WHEN hero_adventure.day = CURRENT_DATE THEN hero_adventure.wins_today ELSE 0 END, day = CURRENT_DATE, updated_at = now()`,
+        [patient.id, gained],
+      );
+      return { gained, ...adventureView(await adventureRow(tx, patient.id)) };
+    }),
+  );
+});
+
+const karateState = async (tx: Tx, patientId: string) => {
+  const r = (await tx.query('SELECT belt, done FROM hero_karate WHERE patient_id = $1', [patientId])).rows[0];
+  const done = (Array.isArray(r?.done) ? (r.done as unknown[]) : []).filter((k): k is string => typeof k === 'string' && validItem(k));
+  const belt = Math.max(0, Math.min(BELTS.length - 1, Number(r?.belt ?? 0)));
+  return { belt, done, examReady: examReady(belt, new Set(done)) };
+};
+const saveKarate = (tx: Tx, patientId: string, belt: number, done: string[]) =>
+  tx.query('INSERT INTO hero_karate(patient_id, belt, done) VALUES ($1, $2, $3) ON CONFLICT (patient_id) DO UPDATE SET belt = EXCLUDED.belt, done = EXCLUDED.done, updated_at = now()', [patientId, belt, JSON.stringify(done)]);
+
+heroPatient.get('/hero/karate', async (c) => {
+  const { user, patient } = requirePatient(c);
+  return c.json(await withUser(user.id, (tx) => karateState(tx, patient.id)));
+});
+
+/** Tick or untick one item of the list for the next belt. */
+heroPatient.put('/hero/karate/item', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ key: z.string().max(8), done: z.boolean() }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success || !validItem(body.data.key)) throw badRequest('invalid_input');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const now = await karateState(tx, patient.id);
+      // Only the list of the belt being worked for can change; earned belts stay as they are.
+      if (!nextItems(now.belt).includes(body.data.key)) throw badRequest('invalid_input');
+      const set = new Set(now.done);
+      if (body.data.done) set.add(body.data.key);
+      else set.delete(body.data.key);
+      await saveKarate(tx, patient.id, now.belt, [...set]);
+      return karateState(tx, patient.id);
+    }),
+  );
+});
+
+/** The exam: with the whole list ticked, the next belt is earned. */
+heroPatient.post('/hero/karate/exam', async (c) => {
+  const { user, patient } = requirePatient(c);
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const now = await karateState(tx, patient.id);
+      if (!now.examReady) throw badRequest('karate_list_open');
+      await saveKarate(tx, patient.id, now.belt + 1, now.done);
+      return karateState(tx, patient.id);
+    }),
+  );
+});
 
 heroPatient.get('/hero/home', async (c) => {
   const { user, patient } = requirePatient(c);

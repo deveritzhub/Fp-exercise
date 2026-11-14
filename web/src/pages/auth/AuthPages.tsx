@@ -23,7 +23,8 @@ export const DEMO_ACCOUNTS = [
   { email: 'admin@fp-exercise.test', nl: 'Platformbeheerder', en: 'Platform administrator' },
 ];
 export const DEMO_PASSWORD = 'Demo-wachtwoord-1';
-export const showDemoAccounts = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEMO_ACCOUNTS === '1';
+// Only while developing: a hosted site never lists the demo accounts or their password.
+export const showDemoAccounts = import.meta.env.DEV;
 /**
  * The demo accounts and their password are shown only while the server still uses the public seed
  * password (the owner can set an own DEMO_PASSWORD or switch the accounts off).

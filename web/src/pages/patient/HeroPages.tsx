@@ -1,3 +1,6 @@
+import { BELTS, itemKey } from '@shared/karate';
+import { BeltMark, KarateSheet, useKarate } from '@/components/patient/Karate';
+import { weaponAt } from '@shared/adventure';
 import { PhotoGearThumbnail } from '../../components/hero/PhotoEquipment';
 import { HeirloomMark } from '@/components/hero/HeirloomMark';
 import { ACL_REWARDS, ACL_SPORTS } from '@shared/aclRewards';
@@ -18,7 +21,8 @@ import { HeroAvatar, SPORT_ICON } from '@/components/hero/HeroAvatar';
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { HeroStage, LevelBadge, XpBar } from '@/components/hero/GameFx';
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
-import { HumanFigure, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
+import { HumanFigure, KIT, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
+import { FABRICS, fabricUrl } from '@/components/hero/hero3d';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
 import { MOBILITY_MEASURE_XP } from '@shared/mobilityTests';
 import { BADGES, BOSSES, SEASONS, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, WALL_BADGES_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, levelTier, nextLevelTier, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
@@ -39,7 +43,7 @@ const SPORTS: Record<string, [string, string]> = {
   tennis: ['Tennis / padel', 'Tennis / padel'], swimming: ['Zwemmen', 'Swimming'], hockey: ['Hockey', 'Hockey'], dance: ['Dansen', 'Dance'],
   walking: ['Wandelen', 'Walking'], other: ['Iets anders', 'Something else'],
 };
-const LABELS: Record<string, Record<string, [string, string]>> = {
+export const LABELS: Record<string, Record<string, [string, string]>> = {
   frame: { f: ['Vrouwelijk figuur', 'Feminine figure'], m: ['Mannelijk figuur', 'Masculine figure'] },
   build: { slim: ['Slank', 'Slim'], average: ['Gemiddeld', 'Average'], athletic: ['Sportief', 'Athletic'], full: ['Vol', 'Full'] },
   hair: { short: ['Kort', 'Short'], long: ['Lang', 'Long'], ponytail: ['Staart', 'Ponytail'], bun: ['Knot', 'Bun'], curly: ['Krullen', 'Curly'], afro: ['Afro', 'Afro'], buzz: ['Heel kort', 'Buzz cut'], none: ['Kaal', 'Bald'] },
@@ -47,7 +51,7 @@ const LABELS: Record<string, Record<string, [string, string]>> = {
   eyeColor: { brown: ['Bruin', 'Brown'], darkbrown: ['Donkerbruin', 'Dark brown'], blue: ['Blauw', 'Blue'], green: ['Groen', 'Green'], hazel: ['Hazelaar', 'Hazel'], grey: ['Grijs', 'Grey'] },
   beard: { none: ['Geen', 'None'], stubble: ['Stoppels', 'Stubble'], moustache: ['Snor', 'Moustache'], beard: ['Baard', 'Beard'] },
   glasses: { none: ['Geen bril', 'No glasses'], round: ['Ronde bril', 'Round glasses'], square: ['Rechthoekige bril', 'Square glasses'] },
-  outfit: { forest: ['Bosgroen', 'Forest'], sand: ['Zand', 'Sand'], ocean: ['Oceaan', 'Ocean'], berry: ['Bes', 'Berry'], slate: ['Leisteen', 'Slate'], sun: ['Zon', 'Sun'] },
+  outfit: { forest: ['Bosgroen', 'Forest'], sand: ['Zand', 'Sand'], ocean: ['Oceaan', 'Ocean'], berry: ['Bes', 'Berry'], slate: ['Leisteen', 'Slate'], sun: ['Zon', 'Sun'], flits: ['Flits', 'Flash'], honing: ['Honingraat', 'Honeycomb'], camo: ['Camouflage', 'Camo'], ridder: ['Ridder', 'Knight'], ruit: ['Houthakker', 'Lumberjack'], tovenaar: ['Tovenaar', 'Wizard'], leer: ['Leer', 'Leather'], malien: ['Maliën', 'Chain mail'] },
 };
 type Opt<K extends keyof typeof HERO_OPTIONS> = (typeof HERO_OPTIONS)[K][number];
 
@@ -71,6 +75,62 @@ function Choice<T extends string>({ legend, name, value, options, onChange, rend
 }
 
 const swatch = (bg: string) => <span className="h-7 w-7 shrink-0 rounded-full border border-ink-200 shadow-xs" style={{ background: bg }} aria-hidden />;
+
+/**
+ * Adventure as a skill of its own: earned by beating the creatures in the village, shown with the
+ * weapon that level brings. It stands beside the skills and is not part of the total level, which
+ * is about real exercise.
+ */
+function AdventureSkill() {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const q = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<{ xp: number; level: number; from: number; to: number; wins: number }>('/patient/hero/adventure') });
+  if (!q.data) return null;
+  const a = q.data;
+  const { weapon, next } = weaponAt(a.level);
+  return (
+    <Link to="/p/dorp" data-testid="adventure-skill" className="tap mt-3 flex items-center gap-3 rounded-xl border border-[#e4bc63] bg-[#fbf0d9] p-3 hover:border-[#b8892a]">
+      <Swords className="h-6 w-6 shrink-0 text-[#6b4705]" aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[14.5px] font-semibold text-ink-950">{t('Avontuur', 'Adventure')} · level {a.level} <span className="font-normal text-ink-700">· {nl ? weapon.nl : weapon.en}</span></span>
+        <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-white" aria-hidden><span className="block h-full rounded-full bg-[#c9912a]" style={{ width: `${Math.round(((a.xp - a.from) / Math.max(1, a.to - a.from)) * 100)}%` }} /></span>
+        <span className="mt-1 block text-[12.5px] text-ink-700">
+          {next ? t(`Versla kwaaltjes in je dorp. Level ${next.level}: ${next.nl}.`, `Beat ailments in your village. Level ${next.level}: ${next.en}.`) : t('Versla kwaaltjes in je dorp. Je hebt het sterkste wapen.', 'Beat ailments in your village. You hold the strongest weapon.')}
+          {' '}{t('Telt niet mee voor je totaal level.', 'Does not count towards your total level.')}
+        </span>
+      </span>
+      <ChevronRight className="h-5 w-5 shrink-0 text-ink-600" aria-hidden />
+    </Link>
+  );
+}
+
+/** Karate as a skill of its own: the belt worn, and the way to the list for the next one. */
+function KarateSkill() {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const q = useKarate();
+  const [open, setOpen] = useState(false);
+  if (!q.data) return null;
+  const k = q.data;
+  const next = BELTS[k.belt + 1];
+  const left = next ? next.items.filter((_, i) => !k.done.includes(itemKey(k.belt + 1, i))).length : 0;
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} data-testid="karate-skill" className="tap mt-2 flex w-full items-center gap-3 rounded-xl border border-line bg-canvas p-3 text-left hover:border-ink-300">
+        <BeltMark belt={k.belt} className="h-4 w-10" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-[14.5px] font-semibold text-ink-950">{t('Karate', 'Karate')} · {nl ? BELTS[k.belt].nl.toLowerCase() : BELTS[k.belt].en.toLowerCase()}</span>
+          <span className="mt-0.5 block text-[12.5px] text-ink-700">
+            {next ? (left ? t(`Nog ${left} eisen af te vinken voor de ${next.nl.toLowerCase()}.`, `${left} requirements left to tick for the ${next.en.toLowerCase()}.`) : t(`Klaar voor het examen: ${next.nl.toLowerCase()}.`, `Ready for the exam: ${next.en.toLowerCase()}.`)) : t('Shodan: de zwarte band.', 'Shodan: the black belt.')}
+            {' '}{t('Telt niet mee voor je totaal level.', 'Does not count towards your total level.')}
+          </span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-ink-600" aria-hidden />
+      </button>
+      <KarateSheet open={open} onClose={() => setOpen(false)} />
+    </>
+  );
+}
 
 /** Strength level ceiling: real lifts relative to body weight decide how far the level can go. */
 function StrengthCeiling({ c }: { c: NonNullable<HeroState['skills'][number]['ceiling']> }) {
@@ -464,6 +524,14 @@ export function HeroProfilePage() {
         <SkinChoice look={look} onChange={(skin) => set('skin', skin)} />
         <GuestHeroChoice guests={q.data.heroGuests ?? []} value={look.photoKey ?? null} onChange={(photoKey) => setLook({ ...look, photoKey })} />
         <HairChoice look={look} onChange={(fields) => setLook({ ...look, ...fields })} />
+        <Choice legend={t('Kleding', 'Clothing')} name="outfit" value={look.outfit as Opt<'outfit'>} options={HERO_OPTIONS.outfit} onChange={(v) => set('outfit', v)}
+          render={(v) => (
+            <span className="flex flex-col items-center gap-1">
+              <span className="h-9 w-9 shrink-0 rounded-lg border border-ink-200 shadow-xs" aria-hidden
+                style={FABRICS.has(v) ? { backgroundImage: `url(${fabricUrl(v)})`, backgroundSize: '200%' } : { background: KIT[v].main }} />
+              <span className="text-[12.5px] leading-tight">{L('outfit', v)}</span>
+            </span>
+          )} />
       </Card>
       <Card className="space-y-4 p-5">
         <h2 className="t-section">{t('Lichaamsmaten', 'Body measurements')}</h2>
@@ -531,6 +599,8 @@ function Skills({ d }: { d: HeroState }) {
           );
         })}
       </ul>
+      <AdventureSkill />
+      <KarateSkill />
       <Dialog open={!!sel} onClose={() => setOpen(null)} size="sm" title={sel && info ? (sel.locked ? `${nl ? info.nl : info.en} · ${skillLockLabel(sel.reason, sel.phase, nl)}` : `${nl ? info.nl : info.en} · level ${sel.level}`) : ''}
         footer={<Button onClick={() => setOpen(null)}>{t('Sluiten', 'Close')}</Button>}>
         {sel && info && (

@@ -7,7 +7,7 @@ import { EYE_COLOURS, HAIR_COLOURS, KIT, SKIN_TONES, type FigureLook } from './H
  */
 
 /** Bump when the .glb files change, so phones fetch the new model. */
-export const HERO3D_VERSION = 4;
+export const HERO3D_VERSION = 6;
 export const HERO3D_BUILDS = ['slim', 'average', 'athletic', 'full'] as const;
 export type Hero3dBuild = typeof HERO3D_BUILDS[number];
 export const hero3dUrl = (frame?: string, build: string = 'average') =>
@@ -52,11 +52,20 @@ export const SPORT_KIT: Record<string, { main: string; dark: string; soft: strin
   champion: { main: '#29483c', dark: '#1d362d', soft: '#e4bc63' },
 };
 
+/** Kits that are a patterned cloth; the plain kits wear the grey knit in their own colour. */
+export const FABRICS = new Set(['flits', 'honing', 'camo', 'ridder', 'ruit', 'tovenaar', 'leer', 'malien']);
+export const FABRIC_PLAIN = 'effen';
+/** Bump when the cloth pictures change. */
+export const FABRIC_VERSION = 1;
+export const fabricUrl = (key: string) => `/hero3d/fabric/${key}.webp?v=${FABRIC_VERSION}`;
+
 export type Hero3dScene = {
   url: string;
   visible: Set<string>;
   tints: Record<'skin' | 'hair' | 'iris' | 'kit_main' | 'kit_dark' | 'kit_soft', string>;
   build: Hero3dBuild;
+  /** The patterned cloth on the shirt, or null for a plain kit colour. */
+  fabric: string | null;
 };
 
 export function hero3dScene(look: FigureLook): Hero3dScene {
@@ -92,5 +101,7 @@ export function hero3dScene(look: FigureLook): Hero3dScene {
       kit_soft: kit.soft,
     },
     build,
+    // A sport outfit brings its own club colours; the cloth belongs to the hero's own kit.
+    fabric: !(outfit && SPORT_KIT[outfit]) && FABRICS.has(look.outfit) ? look.outfit : null,
   };
 }

@@ -45,4 +45,40 @@ describe('practice village (staff)', () => {
     const P = await login('patientA');
     expect((await P.get('/dashboard/village')).status).toBe(403);
   });
+
+  it('lets the treating member look into a home: the furniture, and nothing about coins', async () => {
+    const A = await login('therapistA');
+    const r = await A.get(`/dashboard/village/${s.patients.emma}/home`);
+    expect(r.status).toBe(200);
+    expect(Object.keys(r.body)).toEqual(['layout']);
+    expect(Array.isArray(r.body.layout)).toBe(true);
+    // Another practice, a patient and a made-up id get nothing.
+    const B = await login('therapistB');
+    expect((await B.get(`/dashboard/village/${s.patients.emma}/home`)).status).toBe(404);
+    const P = await login('patientA');
+    expect((await P.get(`/dashboard/village/${s.patients.emma}/home`)).status).toBe(403);
+    expect((await A.get('/dashboard/village/not-an-id/home')).status).toBe(404);
+  });
+});
+
+describe('the therapist’s own figure', () => {
+  const look = { frame: 'm', build: 'athletic', skin: 's6', hair: 'short', hairColor: 'black', eyeColor: 'brown', beard: 'stubble', glasses: 'none', outfit: 'ridder' };
+
+  it('is saved by the therapist and shown to the patients they treat, and to nobody else', async () => {
+    resetRateLimits();
+    const A = await login('therapistA');
+    expect((await A.get('/dashboard/avatar')).body).toEqual({ look: null });
+    expect((await A.put('/dashboard/avatar', { ...look, outfit: 'nope' })).status).toBe(400);
+    expect((await A.put('/dashboard/avatar', { ...look, heroName: 'x' })).status).toBe(400);
+    expect((await A.put('/dashboard/avatar', look)).status).toBe(200);
+    expect((await A.get('/dashboard/avatar')).body).toEqual({ look });
+
+    const P = await login('patientA');
+    expect((await P.get('/patient/hero/coach')).body).toEqual({ look });
+    // A patient of another practice has another therapist, without a figure yet.
+    const PB = await login('patientB');
+    expect((await PB.get('/patient/hero/coach')).body).toEqual({ look: null });
+    // A patient cannot make a figure for staff.
+    expect((await P.put('/dashboard/avatar', look)).status).toBe(403);
+  });
 });

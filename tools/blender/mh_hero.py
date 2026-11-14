@@ -507,8 +507,14 @@ def cone(loc, r, depth, m, rot=(0, 0, 0), verts=12, name='cone'):
     return finish(o, m, 0)
 
 
-def shell(name, m, pick, off, thick=0.002, sub=0, src=None, cuts=()):
+FRONT = 0.006  # extra room in front of the chest, where the cloth bridges
+DRAPE = 0.010  # how far loose cloth hangs off the body, on top of a shell's own offset
+
+
+def shell(name, m, pick, off, thick=0.002, sub=0, src=None, cuts=(), loose=None):
     """A copy of the body faces whose vertices all pass `pick`, pushed `off` metres outward.
+    loose: cloth that hangs instead of clinging. A number, or a function of the position, of extra metres;
+    the shell is then smoothed so it bridges the hollows of the body, and its hems stand open.
     cuts: (point, normal) planes; only the side the normal points to is kept, for clean edges."""
     src = src or human
     keep = [pick(*VX[i]) for i in range(len(VX))]
@@ -527,8 +533,23 @@ def shell(name, m, pick, off, thick=0.002, sub=0, src=None, cuts=()):
             bmesh.ops.bisect_plane(b2, geom=geom, plane_co=pc, plane_no=pn, clear_inner=True)
         bmesh.ops.delete(b2, geom=[v for v in b2.verts if not v.link_faces], context='VERTS')
     b2.normal_update()
-    for v in b2.verts:
-        v.co += v.normal * off
+    if loose is None:
+        for v in b2.verts:
+            v.co += v.normal * off
+    else:
+        slack = loose if callable(loose) else (lambda co: loose)
+        tight = [(v.co + v.normal * off, v.normal.copy()) for v in b2.verts]
+        rim = {v for e in b2.edges if e.is_boundary for v in e.verts}
+        for v in b2.verts:
+            v.co += v.normal * (off + slack(v.co) * (1.25 if v in rim else 1.0))
+        inner = [v for v in b2.verts if v not in rim]
+        for _ in range(14):
+            bmesh.ops.smooth_vert(b2, verts=inner, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+        # Cloth lies on the body where it is pulled tight, never inside it.
+        for v, (p0, n0) in zip(b2.verts, tight):
+            d = (v.co - p0).dot(n0)
+            if d < 0:
+                v.co -= n0 * d
     me = bpy.data.meshes.new(name)
     b2.to_mesh(me)
     b2.free()
@@ -592,24 +613,37 @@ with part('body'):
                 continue
             d = (p.center - cen).normalized()
             fwd = d.dot(Vector((0, -1, 0)))
-            p.material_index = 2 if fwd > 0.965 else 1 if fwd > 0.84 else 0
+            # A large iris with little white round it: a calm look instead of a stare.
+            p.material_index = 2 if fwd > 0.955 else 1 if fwd > 0.74 else 0
             p.use_smooth = True
     adopt(eyes)
     # Base kit: T-shirt and shorts that follow the body.
     shirt0 = any_of(bone_in('spine_01', 'spine_02', 'spine_03', 'clavicle_l', 'clavicle_r'),
-                    bone_in('upperarm_l', 'upperarm_r', tmax=0.52),
+                    bone_in('upperarm_l', 'upperarm_r', tmax=0.6),
                     lambda c, n, b, t, g: b in ('neck_01', 'head') and c.z < BONE['neck_01'][0].z + 0.012,
-                    lambda c, n, b, t, g: b == 'pelvis' and c.z > BONE['pelvis'][0].z + 0.07)
+                    lambda c, n, b, t, g: b == 'pelvis' and c.z > BONE['pelvis'][0].z + 0.015)
     neck0 = BONE['neck_01'][0]
     hole = NECK_R * 1.35
 
     def shirt(c, n, b, t, g):
-        return shirt0(c, n, b, t, g) and not (c.z > neck0.z - 0.004 and math.hypot(c.x - NECK_C.x, c.y - NECK_C.y) < hole)
+        return shirt0(c, n, b, t, g)
 
-    shell('body_shirt', KIT, shirt, 0.006, thick=0.003, cuts=hems(ARMS_U, 0.42, 'head'))
-    shorts = any_of(bone_in('pelvis'), bone_in('thigh_l', 'thigh_r', tmax=0.65),
+    # A T-shirt that hangs: over the waistband, with open sleeves.
+    shell('body_shirt', KIT, shirt, 0.006, thick=0.003, cuts=hems(ARMS_U, 0.5, 'head') + [((0, 0, BONE['pelvis'][0].z + 0.04), (0, 0, 1), lambda co: co.z < BONE['pelvis'][0].z + 0.1 and abs(co.x) < SHW * 1.2),
+                                              # A round collar: one clean cut across the base of the neck, lower in front.
+                                              ((NECK_C.x, NECK_C.y, neck0.z + 0.004), (0, 0.3, -1),
+                                               lambda co: co.z > neck0.z - 0.07 and math.hypot(co.x - NECK_C.x, co.y - NECK_C.y) < hole * 2.4)],
+          loose=DRAPE)
+    shorts = any_of(bone_in('pelvis'), bone_in('thigh_l', 'thigh_r', tmax=0.75),
                     lambda c, n, b, t, g: b == 'spine_01' and c.z < BONE['pelvis'][0].z + 0.11)
-    shell('body_shorts', KIT_D, shorts, 0.005, thick=0.003, cuts=hems(THIGHS, 0.55, 'head'))
+    waist_z, knee_z = BONE['pelvis'][0].z + 0.06, KNEE[L].z
+
+    def legs_open(co):
+        # Snug at the waist, wide at the hem.
+        k = min(1.0, max(0.0, (waist_z - co.z) / max(0.05, waist_z - knee_z) * 2.0))
+        return 0.002 + 0.016 * k
+
+    shell('body_shorts', KIT_D, shorts, 0.005, thick=0.003, cuts=hems(THIGHS, 0.64, 'head'), loose=legs_open)
 
 with part('body_socks'):
     shell('socks', KIT_S, bone_in('calf_l', 'calf_r', tmin=0.78), 0.002, thick=0.0, cuts=hems(CALVES, 0.86, 'tail'))
@@ -735,7 +769,7 @@ with part('gear_pin'):
     cyl(PIN - Vector((0, 0.003, 0)), 0.008, 0.003, ACCENT, rot=(math.pi / 2 - 0.2, 0, 0), name='face')
 with part('gear_hr_band'):
     hz = CHEST_Z - 0.06
-    shell('strap', RUBBER, lambda c, n, b, t, g: b in ('spine_02', 'spine_03') and abs(c.z - hz) < 0.012, 0.009, thick=0.003)
+    shell('strap', RUBBER, lambda c, n, b, t, g: b in ('spine_02', 'spine_03') and abs(c.z - hz) < 0.012, 0.009 + DRAPE, thick=0.003)
     cube((0, CHEST_FRONT - 0.006, hz), (0.03, 0.008, 0.012), RUBBER, sub=1, name='pod')
 with part('gear_golden_hinge'):
     for s in (L, R):
@@ -787,11 +821,11 @@ with part('gear_gloves'):
 
 waist = lambda c, n, b, t, g: b in ('pelvis', 'spine_01') and abs(c.z - (BONE['pelvis'][0].z + 0.06)) < 0.03  # noqa: E731
 with part('gear_belt'):
-    shell('belt', LEATHER, waist, 0.014, thick=0.006)
-    cube((0, WAIST_C.y - WAIST_R.y - 0.02, BONE['pelvis'][0].z + 0.06), (0.03, 0.008, 0.026), BRASS, sub=1, name='buckle')
+    shell('belt', LEATHER, waist, 0.014 + DRAPE, thick=0.006)
+    cube((0, WAIST_C.y - WAIST_R.y - 0.02 - DRAPE, BONE['pelvis'][0].z + 0.06), (0.03, 0.008, 0.026), BRASS, sub=1, name='buckle')
 with part('gear_spring_belt'):
-    shell('belt', LEATHER_D, waist, 0.012, thick=0.005)
-    cube((0, WAIST_C.y - WAIST_R.y - 0.018, BONE['pelvis'][0].z + 0.06), (0.024, 0.008, 0.02), BRASS, sub=1, name='buckle')
+    shell('belt', LEATHER_D, waist, 0.012 + DRAPE, thick=0.005)
+    cube((0, WAIST_C.y - WAIST_R.y - 0.018 - DRAPE, BONE['pelvis'][0].z + 0.06), (0.024, 0.008, 0.02), BRASS, sub=1, name='buckle')
     for s in (L, R):
         for i in range(4):
             ring((WAIST_R.x * 1.1 * s, WAIST_C.y, BONE['pelvis'][0].z + 0.02 - i * 0.016), 0.013, 0.0035, BRASS, segs=16, name='coil')
@@ -882,11 +916,11 @@ with part('aid_crutches'):
 def long_sleeves(m=KIT):
     shell('sleeves', m, any_of(bone_in('upperarm_l', 'upperarm_r'), bone_in('lowerarm_l', 'lowerarm_r', tmax=1.0),
                                lambda c, n, b, t, g: b in ('clavicle_l', 'clavicle_r', 'spine_03') and abs(c.x) > SHW * 0.7), 0.009, thick=0.003,
-          cuts=hems(ARMS_L, 0.92, 'head'))
+          cuts=hems(ARMS_L, 0.92, 'head'), loose=DRAPE)
 
 
 def long_pants(m=KIT_D):
-    shell('pants', m, any_of(bone_in('thigh_l', 'thigh_r'), bone_in('calf_l', 'calf_r', tmax=0.98)), 0.006, thick=0.003, cuts=hems(CALVES, 0.9, 'head'))
+    shell('pants', m, any_of(bone_in('thigh_l', 'thigh_r'), bone_in('calf_l', 'calf_r', tmax=0.98)), 0.006, thick=0.003, cuts=hems(CALVES, 0.9, 'head'), loose=0.012)
 
 
 def high_socks(m=KIT_S):
@@ -894,17 +928,21 @@ def high_socks(m=KIT_S):
 
 
 def number(z=None, m=KIT_S):
-    cube((0, CHEST_FRONT - 0.009, z or CHEST_Z - 0.01), (0.03, 0.003, 0.038), m, sub=1, name='number')
+    zc = z or CHEST_Z - 0.01
+    # In front of whatever the cloth bridges there, not only the hollow of the breastbone.
+    front = min(p.y for p in TORSO if abs(p.z - zc) < 0.05 and abs(p.x) < 0.09)
+    # A flat patch with square corners reads as a shirt number; a rounded one as a blob.
+    cube((0, front - 0.006 - DRAPE, zc + 0.02), (0.042, 0.002, 0.048), m, sub=0, bevel=0.15, name='number')
 
 
 with part('outfit_tracksuit'):
     long_sleeves()
     long_pants()
-    cube((0, CHEST_FRONT - 0.01, CHEST_Z - 0.02), (0.003, 0.004, 0.12), KIT_S, sub=0, name='zip')
+    cube((0, CHEST_FRONT - 0.01 - DRAPE - FRONT, CHEST_Z - 0.02), (0.003, 0.004, 0.12), KIT_S, sub=0, name='zip')
 with part('outfit_team_kit'):
     number()
     for s in (L, R):
-        ring_on(along(f'upperarm_{SIDE[s]}', 0.4), along(f'upperarm_{SIDE[s]}', 0.5), limb_r(f'upperarm_{SIDE[s]}', 0.4) + 0.01, 0.005, KIT_S, name='cuff')
+        ring_on(along(f'upperarm_{SIDE[s]}', 0.4), along(f'upperarm_{SIDE[s]}', 0.5), limb_r(f'upperarm_{SIDE[s]}', 0.4) + 0.01 + DRAPE, 0.005, KIT_S, name='cuff')
     high_socks()
 with part('outfit_champion'):
     for s in (L, R):
@@ -915,15 +953,15 @@ with part('outfit_champion'):
             o.rotation_euler = (0, math.radians(-22 * s), 0)
         ring(p - Vector((0, 0, 0.012)), 0.11 * shoulder_scale, 0.012, GOLD, rot=(0, math.radians(-22 * s), 0), scale=(1.1, 1.05, 1), name='trim')
         cone(p + Vector((0.035 * s, 0, 0.09)), 0.024, 0.09, GOLD, rot=(0, math.radians(-30 * s), 0), name='horn')
-    shell('sash', GOLD, waist, 0.012, thick=0.004)
-    sphere((0, CHEST_FRONT - 0.008, CHEST_Z), 0.03, GOLD, scale=(1, 0.25, 1.25), name='emblem')
-    sphere((0, CHEST_FRONT - 0.014, CHEST_Z), 0.016, ACCENT, scale=(1, 0.3, 1.3), name='emblem_core')
+    shell('sash', GOLD, waist, 0.012 + DRAPE, thick=0.004)
+    sphere((0, CHEST_FRONT - 0.008 - DRAPE - FRONT, CHEST_Z), 0.03, GOLD, scale=(1, 0.25, 1.25), name='emblem')
+    sphere((0, CHEST_FRONT - 0.014 - DRAPE - FRONT, CHEST_Z), 0.016, ACCENT, scale=(1, 0.3, 1.3), name='emblem_core')
 with part('outfit_sport_football'):
     number()
     high_socks()
 with part('outfit_sport_basketball'):
     number(CHEST_Z - 0.03)
-    shell('shorts', KIT_D, any_of(bone_in('pelvis'), bone_in('thigh_l', 'thigh_r', tmax=0.95)), 0.012, thick=0.003, cuts=hems(THIGHS, 0.85, 'head'))
+    shell('shorts', KIT_D, any_of(bone_in('pelvis'), bone_in('thigh_l', 'thigh_r', tmax=0.95)), 0.012, thick=0.003, cuts=hems(THIGHS, 0.85, 'head'), loose=0.02)
 with part('outfit_sport_hockey'):
     high_socks()
     shell('pads', KIT_D, lambda c, n, b, t, g: b in ('calf_l', 'calf_r') and 0.3 < t < 0.8 and n.y < -0.3, 0.012, thick=0.006)
@@ -934,8 +972,8 @@ with part('outfit_sport_ski'):
     ring((BC.x, BC.y, BAND_Z - 0.01), 1, 0.007, KIT_D, scale=(BR.x + 0.008, BR.y + 0.008, 1), name='strap')
     cube((HC.x, FRONT_Y - 0.012, EYE_Z + 0.004), (HR.x * 0.8, 0.012, 0.02), ICE, sub=2, name='goggles')
 with part('outfit_sport_running'):
-    cube((0, CHEST_FRONT - 0.008, WAIST_Z + 0.03), (0.045, 0.002, 0.032), WHITE, sub=0, name='bib')
-    cube((0, CHEST_FRONT - 0.011, WAIST_Z + 0.03), (0.026, 0.001, 0.013), EYE, sub=0, name='bibno')
+    cube((0, CHEST_FRONT - 0.008 - DRAPE, WAIST_Z + 0.03), (0.045, 0.002, 0.032), WHITE, sub=0, name='bib')
+    cube((0, CHEST_FRONT - 0.011 - DRAPE, WAIST_Z + 0.03), (0.026, 0.001, 0.013), EYE, sub=0, name='bibno')
 with part('outfit_sport_padel'):
     number(CHEST_Z + 0.01)
     ring((BC.x, BC.y, BAND_Z), 1, 0.007, WHITE, scale=(BR.x + 0.006, BR.y + 0.006, 1), name='band')

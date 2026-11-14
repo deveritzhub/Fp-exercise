@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { readStaffLook, staffLook } from '../lib/staffLook';
 import { areaPainRising, progressionSignal, painRising } from '../../../shared/progression';
 import { withUser } from '../db';
 import { requireStaff, type AppEnv } from '../middleware';
@@ -7,6 +8,7 @@ import { adherenceForPatient, loadAdherenceInputs } from '../lib/progress';
 import { toISODate } from '../../../shared/adherence';
 import { heroState } from './hero';
 import type { VillageHome } from '../../../shared/practiceVillage';
+import { checkLayout, type Placed } from '../../../shared/homeDecor';
 
 export const dashboard = new Hono<AppEnv>();
 
@@ -244,4 +246,45 @@ dashboard.get('/village', async (c) => {
       return { homes };
     }),
   );
+});
+
+/**
+ * Inside one home of the practice village: where the patient put the furniture. Only for a member who
+ * may manage this patient; what was paid for it and the coins stay the patient's own business.
+ */
+dashboard.get('/village/:patientId/home', async (c) => {
+  const { user, practiceId } = requireStaff(c);
+  const patientId = c.req.param('patientId');
+  if (!/^[0-9a-f-]{36}$/i.test(patientId)) return c.json({ error: 'not_found' }, 404);
+  const out = await withUser(user.id, async (tx) => {
+    const ok = (await tx.query('SELECT 1 FROM patients WHERE id = $1 AND practice_id = $2 AND archived_at IS NULL AND app.can_manage_patient(id)', [patientId, practiceId])).rows[0];
+    if (!ok) return null;
+    const row = (await tx.query('SELECT layout FROM hero_homes WHERE patient_id = $1', [patientId])).rows[0];
+    const stored = (Array.isArray(row?.layout) ? row.layout : []) as Placed[];
+    // The same rules as in the patient's own view; what stands there counts as owned.
+    const owned = new Set(stored.map((it) => it?.key).filter((k): k is string => typeof k === 'string'));
+    const kept: Placed[] = [];
+    for (const it of stored) {
+      const next = checkLayout([...kept, it], owned);
+      if (next.ok) kept.push(next.items[next.items.length - 1]);
+    }
+    return { layout: kept };
+  });
+  return out ? c.json(out) : c.json({ error: 'not_found' }, 404);
+});
+
+dashboard.get('/avatar', async (c) => {
+  const { user } = requireStaff(c);
+  const row = await withUser(user.id, async (tx) => (await tx.query('SELECT look FROM staff_avatars WHERE user_id = $1', [user.id])).rows[0]);
+  return c.json({ look: readStaffLook(row?.look) });
+});
+
+dashboard.put('/avatar', async (c) => {
+  const { user } = requireStaff(c);
+  const parsed = staffLook.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: 'invalid_input' }, 400);
+  await withUser(user.id, (tx) =>
+    tx.query('INSERT INTO staff_avatars(user_id, look) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET look = EXCLUDED.look, updated_at = now()', [user.id, JSON.stringify(parsed.data)]),
+  );
+  return c.json({ look: parsed.data });
 });

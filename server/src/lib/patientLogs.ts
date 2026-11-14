@@ -98,7 +98,9 @@ export async function loadPatientLogs(tx: Tx, patientId: string) {
   const stepsReward = rewardStepDays(stepHits.length);
   const connection = (await tx.query('SELECT synced_at FROM fitness_connections WHERE patient_id = $1 AND provider = $2', [patientId, 'google_health'])).rows[0];
   const skills: Partial<Record<SkillKey, number>> = {};
-  const survival = await loadSurvival(tx, patientId, weightKg);
+  // Steps of today loosen the stiffness: walking counts as moving.
+  const walkedToday = Number(stepRows.find((r) => r.day === today)?.steps ?? 0);
+  const survival = await loadSurvival(tx, patientId, weightKg, { steps: walkedToday, goal: stepGoal });
   for (const part of [self.skills, protein.skills, stepsReward.skills, { recovery: survival.recoveryXp }]) {
     for (const [k, n] of Object.entries(part)) skills[k as SkillKey] = (skills[k as SkillKey] ?? 0) + (n ?? 0);
   }

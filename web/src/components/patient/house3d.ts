@@ -22,10 +22,35 @@ export type HouseRoom = {
   obstacles: Obstacle[];
 };
 
-const PLASTER = 0xf1e6cf;
-const BEAM = 0x5b3f26;
-const WOOD = 0xb98a5a;
 const BLACK = 0x1d1f1e;
+const PLY = 0xd9b77e;
+
+/** Brick for the gym wall: staggered courses with pale joints, tinted by the material. */
+let bricks: THREE.CanvasTexture | null = null;
+function brickTexture() {
+  if (bricks) return bricks;
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d');
+  if (g) {
+    g.fillStyle = '#d9d2c6';
+    g.fillRect(0, 0, 256, 256);
+    let seed = 7;
+    const R = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let r = 0; r < 16; r++) {
+      for (let i = -1; i < 5; i++) {
+        const v = 150 + Math.round(R() * 70);
+        g.fillStyle = `rgb(${v},${Math.round(v * 0.86)},${Math.round(v * 0.8)})`;
+        g.fillRect(i * 64 + (r % 2 ? 32 : 0) + 2, r * 16 + 2, 60, 12);
+      }
+    }
+  }
+  bricks = new THREE.CanvasTexture(c);
+  bricks.colorSpace = THREE.SRGBColorSpace;
+  bricks.wrapS = bricks.wrapT = THREE.RepeatWrapping;
+  bricks.repeat.set(4, 2);
+  return bricks;
+}
 
 export function houseRoom(kind: HouseKind, origin: Vec): HouseRoom {
   const group = new THREE.Group();
@@ -41,16 +66,28 @@ export function houseRoom(kind: HouseKind, origin: Vec): HouseRoom {
   const at = (x: number, z: number): Vec => ({ x: origin.x + x, z: origin.z + z });
   const obstacles: Obstacle[] = [];
   const block = (x: number, z: number, r: number) => obstacles.push({ ...at(x, z), r });
+  // The gym is a city gym after the practice's second location: brick, white pillars, a rubber floor
+  // and a black rig. The studio and the home keep the timber room.
+  const gym = kind === 'kracht';
+  const PLASTER = gym ? 0xece9e2 : 0xf1e6cf;
+  const BEAM = gym ? 0xf4f2ec : 0x5b3f26;
+  const WOOD = gym ? 0x35383a : 0xb98a5a;
   const accent = kind === 'kracht' ? 0x7a2f24 : kind === 'mobiliteit' ? 0x2f7f8a : 0x29483c;
 
   // Plank floor and a rug.
   room.box(6.7, 0.1, 5.3, WOOD, 0, -0.05, 0).castShadow = false;
-  for (let i = -5; i <= 5; i++) room.box(0.02, 0.012, 5, 0x8e6740, i * 0.58, 0.005, 0).castShadow = false;
+  for (let i = -5; i <= 5; i++) room.box(0.02, 0.012, 5, gym ? 0x24272a : 0x8e6740, i * 0.58, 0.005, 0).castShadow = false;
+  if (gym) {
+    // Rubber tiles both ways, and the green sprint lane across the room.
+    for (let j = -4; j <= 4; j++) room.box(6.5, 0.012, 0.02, 0x24272a, 0, 0.005, j * 0.58).castShadow = false;
+    room.box(5.9, 0.02, 0.62, 0x6fae3a, 0.2, 0.012, 1.32).castShadow = false;
+    room.box(5.9, 0.021, 0.04, 0x86c24c, 0.2, 0.013, 1.32).castShadow = false;
+  }
 
   // North wall: timber frame, a window with evening light, and the programme board.
   const n = wall(0, -1);
-  n.k.box(6.7, 2.7, 0.15, PLASTER, 0, 1.35, -2.575);
-  for (const x of [-3.2, -1.6, 0, 1.6, 3.2]) n.k.box(0.14, 2.7, 0.06, BEAM, x, 1.35, -2.48);
+  n.k.box(6.7, 2.7, 0.15, gym ? 0xb0705a : PLASTER, 0, 1.35, -2.575, gym ? { map: brickTexture() } : {});
+  for (const x of [-3.2, -1.6, 0, 1.6, 3.2]) n.k.box(gym ? 0.22 : 0.14, 2.7, 0.06, BEAM, x, 1.35, -2.48);
   n.k.box(6.7, 0.14, 0.06, BEAM, 0, 2.62, -2.48);
   n.k.box(1.2, 1.0, 0.06, BEAM, -2.4, 1.6, -2.47);
   n.k.box(1.04, 0.84, 0.07, 0xffe2a6, -2.4, 1.6, -2.465, { emissive: 0xffc35a, emissiveIntensity: 0.5 });
@@ -59,8 +96,16 @@ export function houseRoom(kind: HouseKind, origin: Vec): HouseRoom {
   n.k.box(1.3, 0.95, 0.06, 0x6b4a2b, 0, 1.55, -2.47);
   n.k.box(1.16, 0.81, 0.07, 0xd9c08f, 0, 1.55, -2.465);
   for (const [x, y, c] of [[-0.32, 1.7, 0xfaf7f0], [0.1, 1.72, 0xfaf7f0], [0.38, 1.4, 0xfaf7f0], [-0.25, 1.35, accent]] as const) n.k.box(0.3, 0.36, 0.02, c, x, y, -2.42);
-  n.k.box(0.9, 1.3, 0.04, accent, 2.4, 1.75, -2.47);
-  n.k.box(0.5, 0.5, 0.05, 0xe4bc63, 2.4, 1.85, -2.455, { metalness: 0.5, roughness: 0.4 });
+  n.k.box(0.9, 1.3, 0.04, gym ? BLACK : accent, 2.4, 1.75, -2.47);
+  if (gym) {
+    // The practice's mark on black: a gold ring.
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.035, 8, 28), new THREE.MeshStandardMaterial({ color: 0xe4bc63, metalness: 0.5, roughness: 0.4 }));
+    ring.position.set(2.4, 1.85, -2.44);
+    n.g.add(ring);
+    const inner = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.025, 8, 22), new THREE.MeshStandardMaterial({ color: 0xf4f2ec }));
+    inner.position.set(2.4, 1.85, -2.44);
+    n.g.add(inner);
+  } else n.k.box(0.5, 0.5, 0.05, 0xe4bc63, 2.4, 1.85, -2.455, { metalness: 0.5, roughness: 0.4 });
 
   // West wall with the door back to the village; east wall with a shelf.
   const w = wall(-1, 0);
@@ -126,8 +171,22 @@ export function houseRoom(kind: HouseKind, origin: Vec): HouseRoom {
     room.box(0.03, 0.9, 0.03, 0x8c8f8a, -1.5, 2.25, -0.4).castShadow = false;
     room.cyl(0.24, 1.15, accent, -1.5, 1.25, -0.4);
     block(-1.5, -0.4, 0.42);
-    room.cyl(0.2, 0.34, 0x8c8f8a, -0.6, 0.17, -2.0, {}, 0.24);
-    room.cyl(0.2, 0.04, 0xfafafa, -0.6, 0.33, -2.0);
+    // Plywood jump boxes against the brick, a mirror above them and the climbing rope on the rig.
+    room.box(0.5, 0.5, 0.45, PLY, -0.95, 0.25, -2.15);
+    room.box(0.42, 0.34, 0.4, PLY, -0.95, 0.67, -2.17);
+    room.box(0.16, 0.05, 0.02, 0x8a6a3c, -0.95, 0.3, -1.92).castShadow = false;
+    block(-0.95, -2.15, 0.42);
+    n.k.box(1.5, 1.5, 0.03, 0xb9c6cc, -1.15, 1.5, -2.47, { roughness: 0.08, metalness: 0.85 });
+    room.cyl(0.03, 1.95, 0xd8c39a, 1.6, 1.2, -1.86, { roughness: 1 });
+    room.ball(0.05, 0xd8c39a, 1.6, 0.22, -1.86);
+    // The leather sofa of the lounge corner, with its low table.
+    const LEATHER = 0x6b3d22;
+    room.box(1.7, 0.3, 0.62, LEATHER, 0.35, 0.27, 2.12);
+    room.box(1.7, 0.42, 0.16, LEATHER, 0.35, 0.6, 2.38);
+    for (const x of [-0.42, 1.12]) room.box(0.16, 0.34, 0.62, LEATHER, x, 0.56, 2.12);
+    for (const x of [-0.05, 0.35, 0.75]) room.ball(0.022, 0xc9a14a, x, 0.62, 2.29, { metalness: 0.6, roughness: 0.3 });
+    block(-0.1, 2.15, 0.48);
+    block(0.8, 2.15, 0.48);
   } else if (kind === 'mobiliteit') {
     // Mats on the floor, wall bars, balls, rollers, a tall mirror and a lot of green.
     [[0x3f8f7a, -0.9], [0x8e6fb0, 0.25], [0xe0a25a, 1.4]].forEach(([c, x]) => {
