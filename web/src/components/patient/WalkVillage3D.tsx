@@ -745,6 +745,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const fade = useRef<HTMLDivElement>(null);
   const zone = useRef<string>(startAtTv ? PRACTICE_KEY : 'village');
   const turn = useRef<(deg: number) => void>(() => {});
+  // How far the camera stands off (1 = normal) and how steeply it looks down (1 = normal).
+  const camZoom = useRef(1);
+  const camTilt = useRef(1);
+  const zoomBy = (f: number) => { camZoom.current = Math.min(2.2, Math.max(0.45, camZoom.current * f)); };
   const pos = useRef<Vec>(startAtTv ? { ...TV_SPOT } : { ...VILLAGE_LAYOUT.spawn });
   const facing = useRef(startAtTv ? Math.PI : 0);
   const camAngle = useRef(0);
@@ -798,7 +802,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const canvas = renderer.domElement;
     canvas.setAttribute('aria-hidden', 'true');
-    canvas.style.touchAction = 'pan-y';
+    canvas.style.touchAction = 'none'; // drags turn and tip the view, two fingers zoom: none of it may scroll or zoom the page
     el.prepend(canvas);
 
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1013,6 +1017,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     };
     mark(TV_KEY, ROOM.tvWall, 2.75, PRACTICE_KEY);
     mark(EXIT_KEY, { x: ROOM.exit.x + 0.7, z: ROOM.exit.z }, 2.45, PRACTICE_KEY);
+    // Figures that can be tapped to talk: where they stand, in which room, and the spot the hero talks from.
+    const talkers: { x: number; z: number; zone: string; who: string; spot: string }[] = [];
     const trainers: { at: THREE.Vector3; wear: Set<string>; tint: Record<string, string>; face: number; fabric: string | null }[] = [];
     buildings.forEach((b, i) => {
       if (!b.kind && !b.keeper) return;
@@ -1069,6 +1075,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         scene.add(stand);
         anchors.push({ id: trainerKey(b.key), obj: stand, y: HERO_HEIGHT + 0.55, zone: b.key });
         h.obstacles.push({ x: origin.x + tr.x, z: origin.z + tr.z, r: 0.4 });
+        talkers.push({ x: stand.position.x, z: stand.position.z, zone: b.key, who: b.key, spot: boardKey(b.key) });
         trainers.push({ at: stand.position, wear: new Set(tr.wear), tint: tr.tint, fabric: tr.fabric, face: b.kind ? Math.atan2(h.board.x - stand.position.x, h.board.z + 1.4 - stand.position.z) : 0 });
       }
       mark(EXIT_KEY, h.exitMark, 2.45, b.key);
@@ -1143,6 +1150,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       stand.position.set(COACH_AT.x, 0, COACH_AT.z);
       scene.add(stand);
       anchors.push({ id: COACH_KEY, obj: stand, y: HERO_HEIGHT + 0.55, zone: PRACTICE_KEY });
+      talkers.push({ x: COACH_AT.x, z: COACH_AT.z, zone: PRACTICE_KEY, who: 'practice', spot: TV_KEY });
       inObstacles.push({ x: COACH_AT.x, z: COACH_AT.z, r: 0.42 });
     }
     roads.push({ a: { x: 0, z: 2.6 }, b: { x: 0, z: GROUND / 2 }, w: 2.3 });
@@ -1799,16 +1807,73 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const limit = new THREE.Vector3();
     let down: { x: number; y: number; moved: boolean } | null = null;
-    const onDown = (e: PointerEvent) => { down = { x: e.clientX, y: e.clientY, moved: false }; };
+    // Two fingers: pinch to zoom. The fingers on the glass, by pointer id.
+    const fingers = new Map<number, { x: number; y: number }>();
+    let pinch = 0;
+    const spread = () => {
+      const [a2, b2] = [...fingers.values()];
+      return Math.hypot(a2.x - b2.x, a2.y - b2.y);
+    };
+    const onDown = (e: PointerEvent) => {
+      fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (fingers.size === 2) {
+        pinch = spread();
+        down = null;
+        return;
+      }
+      down = { x: e.clientX, y: e.clientY, moved: false };
+    };
     const onMove = (e: PointerEvent) => {
+      if (fingers.has(e.pointerId)) fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (fingers.size === 2 && pinch > 0) {
+        const now = spread();
+        if (now > 0) zoomBy(pinch / now);
+        pinch = now;
+        return;
+      }
       if (!down) return;
       if (!down.moved && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 9) down.moved = true;
-      if (down.moved) camAngle.current -= e.movementX * 0.008;
+      if (down.moved) {
+        // Sideways turns all the way round; up and down tips the view between low and from above.
+        camAngle.current -= e.movementX * 0.008;
+        camTilt.current = Math.min(2.4, Math.max(0.35, camTilt.current + e.movementY * 0.006));
+      }
     };
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      zoomBy(e.deltaY > 0 ? 1.1 : 1 / 1.1);
+    };
+    const proj = new THREE.Vector3();
     const onUp = (e: PointerEvent) => {
+      fingers.delete(e.pointerId);
+      if (fingers.size < 2) pinch = 0;
       const d = down;
       down = null;
       if (!d || d.moved) return;
+      // A tap on a figure itself (anywhere from feet to head): talk to it.
+      if (!live.current.placing) {
+        const box = canvas.getBoundingClientRect();
+        let best: (typeof talkers)[number] | null = null;
+        let bd = 46;
+        for (const tk of talkers) {
+          if (tk.zone !== zone.current) continue;
+          for (const y of [0.25, 0.7, 1.15]) {
+            proj.set(tk.x, y, tk.z).project(camera);
+            if (proj.z > 1) continue;
+            const dist = Math.hypot((proj.x * 0.5 + 0.5) * box.width + box.left - e.clientX, (-proj.y * 0.5 + 0.5) * box.height + box.top - e.clientY);
+            if (dist < bd) {
+              bd = dist;
+              best = tk;
+            }
+          }
+        }
+        if (best) {
+          // After this tap's own click has passed: opened at once, that click would land on the dialog's backdrop and close it.
+          const { who, spot } = best;
+          window.setTimeout(() => talkRef.current(who, spot), 150);
+          return;
+        }
+      }
       // Placing furniture: the tap is a spot on the floor of the home, not somewhere to walk to.
       if (live.current.placing && zone.current === HOME_KEY) {
         const rect = canvas.getBoundingClientRect();
@@ -1824,7 +1889,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       if (!ray.ray.intersectPlane(ground, hit)) hit.copy(limit.copy(ray.ray.direction).setY(0).normalize().multiplyScalar(B * 2).add(camera.position)).setY(0);
       walkTo.current({ x: hit.x, z: hit.z }, null);
     };
-    const onCancel = () => { down = null; };
+    const onCancel = (e: PointerEvent) => {
+      fingers.delete(e.pointerId);
+      pinch = 0;
+      down = null;
+    };
+    canvas.addEventListener('wheel', onWheel, { passive: false });
     canvas.addEventListener('pointerdown', onDown);
     canvas.addEventListener('pointermove', onMove);
     canvas.addEventListener('pointerup', onUp);
@@ -2007,8 +2077,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const zoom = narrow ? 1.08 : 1;
       // In the room the camera looks down from higher up, over the wall that is left out.
       const indoor = inside();
-      const far2 = (indoor ? 6.6 : 6.6) * zoom;
-      camPos.set(p.x + Math.sin(camAngle.current) * far2, (indoor ? 5.6 : 3.5) * zoom, p.z + Math.cos(camAngle.current) * far2);
+      const far2 = 6.6 * zoom * camZoom.current;
+      camPos.set(p.x + Math.sin(camAngle.current) * far2, Math.max(0.9, (indoor ? 5.6 : 3.5) * zoom * camZoom.current * camTilt.current), p.z + Math.cos(camAngle.current) * far2);
       if (first || reduce) camera.position.copy(camPos);
       else camera.position.lerp(camPos, Math.min(1, dt * 6));
       first = false;
@@ -2160,6 +2230,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       cancelAnimationFrame(raf);
       ro.disconnect();
       io.disconnect();
+      canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointermove', onMove);
       canvas.removeEventListener('pointerup', onUp);
@@ -2199,6 +2270,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     goTo.current(k);
   };
   /** Tap a figure: talk at once when the hero stands there, else walk up first. */
+  const talkRef = useRef<(who: string, spot: string) => void>(() => {});
   const talk = (who: string, spot: string) => {
     if (host.current?.dataset.near === spot) {
       cb.current.onTalk?.(who);
@@ -2207,6 +2279,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     pendingTalk.current = { who, spot };
     goTo.current(spot);
   };
+  talkRef.current = talk;
   // Nameplates as in an online world: bright letters with a dark outline, straight over the scene.
   const plate = 'absolute left-0 top-0 inline-flex min-h-[32px] items-center whitespace-nowrap rounded-md px-1.5 font-display text-[13.5px] font-extrabold tracking-wide transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a] [text-shadow:0_1px_0_#000,0_-1px_0_#000,1px_0_0_#000,-1px_0_0_#000,0_2px_6px_rgba(0,0,0,.75)]';
   return (
@@ -2306,6 +2379,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       </div>
       {/* Stacked on the right edge, clear of the action bar. */}
       <div className="absolute bottom-2 right-2 flex flex-col gap-1.5">
+        <button type="button" data-testid="zoom-in" onClick={() => zoomBy(1 / 1.25)} aria-label={t('Inzoomen', 'Zoom in')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[20px] font-bold leading-none text-[#f6e2a6]">+</button>
+        <button type="button" data-testid="zoom-out" onClick={() => zoomBy(1.25)} aria-label={t('Uitzoomen', 'Zoom out')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[22px] font-bold leading-none text-[#f6e2a6]">−</button>
         <button type="button" onClick={() => turn.current(-45)} aria-label={t('Draai naar links', 'Turn left')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[#f6e2a6]"><RotateCcw size={18} aria-hidden /></button>
         <button type="button" onClick={() => turn.current(45)} aria-label={t('Draai naar rechts', 'Turn right')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[#f6e2a6]"><RotateCw size={18} aria-hidden /></button>
       </div>

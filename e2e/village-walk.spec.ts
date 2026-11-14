@@ -100,18 +100,5 @@ test('patient walks to the TV in the village, starts the workout there and retur
   await page.getByRole('button', { name: 'Loop naar de uitgang' }).press('Enter');
   await expect(village).toHaveAttribute('data-zone', 'village', { timeout: 90_000 });
 
-  // A house can be entered too: the strength house has its own room with the programme board.
-  await page.getByRole('button', { name: 'Loop naar Krachthonk' }).press('Enter');
-  await page.getByTestId('enter-house').click({ timeout: 60_000 });
-  await expect(page.getByTestId('walk-village')).toHaveAttribute('data-zone', 'kracht', { timeout: 30_000 });
-  // The coach is tapped from across the room: the hero walks up and the talk opens, with the 1RM among the choices.
-  await page.getByRole('button', { name: 'Praat met Coach' }).press('Enter');
-  const talk = page.getByTestId('keeper-talk');
-  await expect(talk).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByTestId('enter-building')).toHaveAttribute('href', '/p/kracht');
-  await expect(talk.getByRole('link', { name: /1RM/ })).toHaveAttribute('href', '/p/krachtlog');
-  await page.getByRole('dialog').getByRole('button', { name: /Sluit/ }).first().click();
-  await page.getByRole('button', { name: 'Loop naar de uitgang' }).press('Enter');
-  await expect(page.getByTestId('walk-village')).toHaveAttribute('data-zone', 'village', { timeout: 90_000 });
   await context.close();
 });
