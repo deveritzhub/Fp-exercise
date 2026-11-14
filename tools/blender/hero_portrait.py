@@ -1,5 +1,5 @@
 """Face/hair study 02: original iris art and hair wisps on the fitted CC0 MakeHuman base.
-Opt-in through --portrait-study. The eight approved production models remain unchanged.
+Use --portrait-study for a separate reference, or --portrait-finish for all approved variants.
 """
 import math
 from pathlib import Path

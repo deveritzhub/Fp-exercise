@@ -1,8 +1,8 @@
 # Face and hair study 02 — 14 November 2026
 
 Public review page: `/hero3d-face-study.html`. It compares the new study with the approved study 01
-under identical camera, lighting and palette. Only this synthetic female/average example changes;
-the eight normal models remain at version 7. The study is a reviewable step, not finished premium art.
+under identical camera, lighting and palette. The page preserves this synthetic female/average reference;
+the approved face/hair finish is now applied to all eight normal models at version 8. The study is a reviewable step, not finished premium art.
 
 The new eyes use original radial iris artwork with fibres, a pupil and a limbal edge, curved surfaces
 fitted by ray casts to the actual eyeballs, and a glTF clearcoat reflection. MakeHuman expression
@@ -24,8 +24,8 @@ python tools/blender/mh_hero.py --portrait-study --frame f --build average \
 ```
 
 The prototype has a separate 3 MB gzip budget to allow high-detail face/hair review. The eight
-production models keep their 2.5 MB budget. Optimisation and fitting to all builds/hairstyles follow
-visual acceptance of this reference. Realistic hair silhouettes, fine facial anatomy, clothing and
+production models keep their 2.5 MB budget. The production rollout uses lossless textures and standard packed geometry to keep all eight
+models below 2.5 MB gzip while preserving their choices and physical sizes. Realistic hair silhouettes, fine facial anatomy, clothing and
 animation still need further art work; see `../HERO-ART-DIRECTION.md`.
 
 Original iris texture, hair wisps and shader work are authored in `tools/blender/hero_portrait.py`.

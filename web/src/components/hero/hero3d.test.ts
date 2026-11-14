@@ -61,7 +61,7 @@ describe('3D hero', () => {
         ...HERO_OPTIONS.hair.filter((h) => h !== 'none').map((h) => `hair_${h}`),
         ...HERO_OPTIONS.beard.filter((b) => b !== 'none').map((b) => `beard_${b}`),
         ...HERO_OPTIONS.glasses.filter((g) => g !== 'none').map((g) => `glasses_${g}`),
-        'aid_crutches', 'base_shoes', 'body', 'body_eyebrows', 'body_eyelashes',
+        'aid_crutches', 'base_shoes', 'body', 'body_eyebrows', 'body_eyelashes', 'body_iris_l', 'body_iris_r',
       ];
       expect(want.filter((n) => !names.has(n))).toEqual([]);
       const bytes = fs.readFileSync(path.resolve(import.meta.dirname, `../../../public/hero3d/hero_${frame}_${build}.glb`));
@@ -73,6 +73,13 @@ describe('3D hero', () => {
       const skin = doc.materials.find((m: { name: string }) => m.name === 'skin');
       expect(skin.pbrMetallicRoughness.baseColorTexture).toBeDefined();
       expect(skin.normalTexture).toBeDefined();
+      expect(doc.extensionsRequired).toContain('EXT_texture_webp');
+      expect(doc.extensionsRequired).toContain('KHR_mesh_quantization');
+      expect(doc.asset.extras.fpFlowPositionScale / 32767).toBeLessThan(.0001);
+      expect(doc.images.some((image: { mimeType: string }) => image.mimeType === 'image/webp')).toBe(true);
+      const iris = doc.materials.find((m: { name: string }) => m.name === 'iris');
+      expect(iris.pbrMetallicRoughness.baseColorTexture).toBeDefined();
+      expect(iris.extensions.KHR_materials_clearcoat).toBeDefined();
       // Native glTF packed skin weights must still sum to exactly one at every vertex.
       const weightIndices = new Set<number>(doc.meshes.flatMap((m: { primitives: { attributes: Record<string, number> }[] }) => m.primitives.map(p => p.attributes.WEIGHTS_0)).filter((i: number | undefined) => i !== undefined));
       let invalidWeights = 0;
@@ -102,7 +109,9 @@ describe('3D hero', () => {
         const accessor = doc.accessors[primitive.attributes.POSITION];
         const view = doc.bufferViews[accessor.bufferView];
         const offset = 28 + jsonSize + (view.byteOffset ?? 0) + (accessor.byteOffset ?? 0);
-        return createHash('sha256').update(bytes.subarray(offset, offset + accessor.count * 12)).digest('hex');
+        expect(accessor.componentType).toBe(5122);
+        expect(accessor.normalized).toBe(true);
+        return createHash('sha256').update(bytes.subarray(offset, offset + accessor.count * 6)).digest('hex');
       });
       expect(new Set(hashes).size).toBe(4);
     }
