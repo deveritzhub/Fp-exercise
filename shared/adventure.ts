@@ -19,6 +19,8 @@ export const CREATURES = {
   // Not creatures but things to harvest, the same way: an oak gives wood, a rock gives stone.
   oak: { nl: 'Eik', en: 'Oak', hp: 5, xp: 3, weakTo: 'moving', level: 1 },
   rock: { nl: 'Rots', en: 'Rock', hp: 7, xp: 4, weakTo: 'trained', level: 1 },
+  // A berry bush: picked by hand, for those who would rather not hunt.
+  bush: { nl: 'Bessenstruik', en: 'Berry bush', hp: 2, xp: 3, weakTo: 'moving', level: 1 },
 } as const;
 export type CreatureKind = keyof typeof CREATURES;
 export const CREATURE_KINDS = Object.keys(CREATURES) as CreatureKind[];
@@ -40,9 +42,10 @@ export const ATTACKS: Record<CreatureKind, { damage: number; everyMs: number; ag
   alpha_boar: { damage: 8, everyMs: 1600, aggressive: true },
   oak: { damage: 0, everyMs: 1500, aggressive: false },
   rock: { damage: 0, everyMs: 1500, aggressive: false },
+  bush: { damage: 0, everyMs: 1500, aggressive: false },
 };
 /** Trees and rocks: you chop them for wood and stone; they never fight back. */
-export const isHarvest = (kind: CreatureKind) => kind === 'oak' || kind === 'rock';
+export const isHarvest = (kind: CreatureKind) => kind === 'oak' || kind === 'rock' || kind === 'bush';
 /** Friendly: never hits the hero (prey, trees and rocks). */
 export const isFriendly = (kind: CreatureKind) => ATTACKS[kind].damage === 0;
 /** An Alpha: a big, dangerous one with its own warning; worth fighting with a good weapon. */
@@ -137,6 +140,7 @@ export const LOOT = {
   alpha_tusk: { nl: 'Alfaslagtand', en: 'Alpha tusk', icon: '🐗' },
   wood: { nl: 'Hout', en: 'Wood', icon: '🪵' },
   stone: { nl: 'Steen', en: 'Stone', icon: '🪨' },
+  berries: { nl: 'Bessen', en: 'Berries', icon: '🫐' },
 } as const;
 export type LootKey = keyof typeof LOOT;
 export const LOOT_KEYS = Object.keys(LOOT) as LootKey[];
@@ -154,6 +158,7 @@ export const DROPS: Record<CreatureKind, { item: LootKey; chance: number; max: n
   alpha_boar: [{ item: 'alpha_tusk', chance: 1, max: 1 }, { item: 'tusk', chance: 1, max: 2 }, { item: 'meat', chance: 1, max: 3 }],
   oak: [{ item: 'wood', chance: 1, max: 3 }],
   rock: [{ item: 'stone', chance: 1, max: 2 }],
+  bush: [{ item: 'berries', chance: 1, max: 3 }],
 };
 
 /** The drops of one win. `rnd` gives numbers in [0, 1), as Math.random does. */
@@ -165,3 +170,22 @@ export function rollDrops(kind: CreatureKind, rnd: () => number): { item: LootKe
   }
   return out;
 }
+
+/**
+ * Tools, bought from the smith with coins: the hatchet for oaks, the pickaxe for rocks. By hand it
+ * works too, slowly; with the right tool every blow counts three times and the yield is doubled.
+ */
+export const TOOLS = [
+  { key: 'hatchet', for: 'oak', price: 40, nl: 'Hakbijl', en: 'Hatchet', icon: '🪓' },
+  { key: 'pickaxe', for: 'rock', price: 60, nl: 'Pikhouweel', en: 'Pickaxe', icon: '⛏️' },
+] as const;
+export type Tool = (typeof TOOLS)[number];
+export const toolItem = (key: string) => `tool_${key}`;
+export const toolFor = (kind: CreatureKind): Tool | null => TOOLS.find((t) => t.for === kind) ?? null;
+export const TOOL_BONUS = { blows: 3, yield: 2 } as const;
+
+/**
+ * Plant-based: loot that comes from animals can always be paid with berries instead. How many berries
+ * one piece is worth. Nobody has to hunt to build a home.
+ */
+export const BERRIES_FOR: Partial<Record<LootKey, number>> = { hide: 3, bone: 3, meat: 2, feather: 1, egg: 2, tusk: 5, alpha_tusk: 25 };

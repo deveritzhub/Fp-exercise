@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Beef, Coins, Droplets, Footprints, Gem, Lock, Swords } from 'lucide-react';
-import { LOOT, LOOT_KEYS, WEAPONS, weaponByKey } from '@shared/adventure';
+import { CREATURES, LOOT, LOOT_KEYS, TOOLS, WEAPONS, weaponByKey } from '@shared/adventure';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
@@ -9,7 +9,7 @@ import { Button, Card, useToast } from '@/components/ui';
 import type { HeroState } from '@/lib/types';
 import { useSupplies } from '@/lib/supplies';
 
-type Adventure = { level: number; weapon: string | null; owned: string[]; coins: number; loot?: Record<string, number> };
+type Adventure = { level: number; weapon: string | null; owned: string[]; tools?: string[]; coins: number; loot?: Record<string, number> };
 
 const ICON: Record<string, string> = { fists: '✊', staff: '🦯', gloves: '🥊', club: '🏏', hammer: '🔨', sword: '🗡️', axe: '🪓', spear: '🔱', hero_sword: '⚔️' };
 /**
@@ -95,6 +95,31 @@ export function BackpackCard({ d }: { d: HeroState }) {
                 <Button size="sm" variant="secondary" loading={busy === 'off'} onClick={() => void wear(null, name)} aria-label={t(`Doe ${name} uit`, `Take ${name} off`)}>{t('Uit', 'Off')}</Button>
               ) : (
                 <Button size="sm" loading={busy === w.key} onClick={() => void wear(w.key, name)} aria-label={t(`Doe ${name} aan`, `Put ${name} on`)}>{t('Aan', 'On')}</Button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      <h3 className="mt-5 text-[15px] font-semibold text-ink-950">{t('Gereedschap', 'Tools')}</h3>
+      <p className="mt-0.5 text-[13px] text-ink-700">{t('Met de hand lukt het ook, langzaam. Met het juiste gereedschap telt elke slag drie keer en krijg je dubbel zoveel.', 'By hand it works too, slowly. With the right tool every blow counts three times and you get twice as much.')}</p>
+      <ul className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="tools">
+        {TOOLS.map((tool) => {
+          const name = nl ? tool.nl : tool.en;
+          const has = (a?.tools ?? []).includes(tool.key);
+          const what = nl ? CREATURES[tool.for].nl.toLowerCase() : CREATURES[tool.for].en.toLowerCase();
+          return (
+            <li key={tool.key} data-tool={tool.key} data-state={has ? 'owned' : 'shop'} className="flex items-center gap-3 rounded-xl border border-line bg-white p-2.5">
+              <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">{tool.icon}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14.5px] font-semibold text-ink-950">{name}</span>
+                <span className="block text-[12.5px] text-ink-700">{t(`Voor de ${what}`, `For the ${what}`)}{has ? t(' · in je rugzak', ' · in your backpack') : ` · ${tool.price} ${t('muntjes', 'coins')}`}</span>
+              </span>
+              {!has && (
+                <Button size="sm" disabled={!a || a.coins < tool.price} loading={busy === tool.key}
+                  onClick={() => void act(tool.key, () => api.post<Adventure>('/patient/hero/adventure/tool/buy', { key: tool.key }), t(`${name} gekocht!`, `${name} bought!`))}>
+                  {t('Koop', 'Buy')}
+                </Button>
               )}
             </li>
           );

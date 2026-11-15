@@ -1,4 +1,4 @@
-import type { LootKey } from './adventure';
+import { BERRIES_FOR, type LootKey } from './adventure';
 
 /**
  * The practice village on the staff side: one home per patient, growing with the hero's level from a
@@ -37,19 +37,44 @@ export const HOME_COSTS: Partial<Record<LootKey, number>>[] = [
   { wood: 45, stone: 35, alpha_tusk: 1, crown: 2 },
 ];
 
-export type NextHome = { stage: number; cost: Partial<Record<LootKey, number>>; levelOk: boolean; ready: boolean; missing: Partial<Record<LootKey, number>> };
-/** The next home after `built`: what it costs, what is still missing, and whether it can be built now. */
+export type NextHome = {
+  stage: number;
+  cost: Partial<Record<LootKey, number>>;
+  levelOk: boolean;
+  ready: boolean;
+  /** What is still short after berries stood in for animal loot. */
+  missing: Partial<Record<LootKey, number>>;
+  /** What will be handed in: the loot itself, with berries where animal loot is short. */
+  pay: Partial<Record<LootKey, number>>;
+};
+/**
+ * The next home after `built`: what it costs, what is still missing, and whether it can be built now.
+ * Animal loot that is short is paid with berries (BERRIES_FOR), so a home never needs hunting.
+ */
 export function nextHome(built: number, level: number, loot: Partial<Record<LootKey, number>>): NextHome | null {
   const stage = built + 1;
   if (stage >= HOME_STAGES.length) return null;
   const cost = HOME_COSTS[stage];
   const missing: Partial<Record<LootKey, number>> = {};
+  const pay: Partial<Record<LootKey, number>> = {};
+  let berries = loot.berries ?? 0;
   for (const [k, n] of Object.entries(cost) as [LootKey, number][]) {
-    const short = n - (loot[k] ?? 0);
+    const have = Math.min(n, loot[k] ?? 0);
+    if (have > 0) pay[k] = have;
+    let short = n - have;
+    const rate = BERRIES_FOR[k];
+    if (short > 0 && rate) {
+      const covered = Math.min(short, Math.floor(berries / rate));
+      if (covered > 0) {
+        berries -= covered * rate;
+        pay.berries = (pay.berries ?? 0) + covered * rate;
+        short -= covered;
+      }
+    }
     if (short > 0) missing[k] = short;
   }
   const levelOk = level >= HOME_STAGES[stage].from;
-  return { stage, cost, levelOk, ready: levelOk && Object.keys(missing).length === 0, missing };
+  return { stage, cost, levelOk, ready: levelOk && Object.keys(missing).length === 0, missing, pay };
 }
 
 /** Levels still to go until the next kind of home; null at the villa. */

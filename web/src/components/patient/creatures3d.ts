@@ -66,6 +66,7 @@ function simpleCreature(kind: CreatureKind): THREE.Group {
   if (kind === 'alpha_boar') return alphaBoar();
   if (kind === 'oak') return oak();
   if (kind === 'rock') return rock();
+  if (kind === 'bush') return bush();
   const g = new THREE.Group();
   if (kind === 'slime') {
     const body = new THREE.Mesh(new THREE.SphereGeometry(0.32, 20, 14), m(0x8fb2c9, { transparent: true, opacity: 0.9, roughness: 0.25 }));
@@ -434,5 +435,25 @@ export function pond(radius = 1.5): THREE.Group {
     pad.position.set(x, 0.035, z);
     g.add(pad);
   }
+  return g;
+}
+
+/** A berry bush to pick: a low round shrub with blue and red berries. */
+function bush(): THREE.Group {
+  const g = new THREE.Group();
+  for (const [x, y, z, r] of [[0, 0.42, 0, 0.5], [0.38, 0.32, 0.12, 0.34], [-0.36, 0.3, 0.1, 0.36], [0.05, 0.3, -0.34, 0.34]] as const) {
+    const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), m(0x4c8f3c, { roughness: 0.9, flatShading: true }));
+    leaf.position.set(x, y, z);
+    g.add(leaf);
+  }
+  for (let i = 0; i < 16; i++) {
+    const a = i * 2.4;
+    const h = 0.25 + ((i * 37) % 50) / 100;
+    const rad = 0.42 + (i % 3) * 0.05;
+    const berry = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), m(i % 4 === 0 ? 0xd62d44 : 0x4a5fe0, { roughness: 0.3 }));
+    berry.position.set(Math.cos(a) * rad * 0.9, h, Math.sin(a) * rad * 0.9 + 0.05);
+    g.add(berry);
+  }
+  g.traverse((o) => { o.castShadow = true; });
   return g;
 }

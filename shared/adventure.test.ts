@@ -66,3 +66,18 @@ describe('fighting back and the hero life', async () => {
     expect(rollDrops('alpha_boar', () => 0.99).map((x) => x.item)).toContain('alpha_tusk');
   });
 });
+
+describe('berries and tools', async () => {
+  const { ATTACKS, isHarvest, rollDrops, toolFor, TOOLS } = await import('./adventure');
+  it('a bush is picked like a harvest, never fights back and gives berries', () => {
+    expect(isHarvest('bush')).toBe(true);
+    expect(ATTACKS.bush.damage).toBe(0);
+    expect(rollDrops('bush', () => 0).map((x) => x.item)).toEqual(['berries']);
+  });
+  it('the hatchet is for the oak, the pickaxe for the rock; a bush needs no tool', () => {
+    expect(toolFor('oak')?.key).toBe('hatchet');
+    expect(toolFor('rock')?.key).toBe('pickaxe');
+    expect(toolFor('bush')).toBeNull();
+    expect(TOOLS.every((t) => t.price > 0)).toBe(true);
+  });
+});

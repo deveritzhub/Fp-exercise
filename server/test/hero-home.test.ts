@@ -112,3 +112,43 @@ describe('own home: the next one is built with loot', () => {
     for (const [item, n] of Object.entries(now.build.cost as Record<string, number>)) expect(loot[item]).toBe(n);
   });
 });
+
+describe('tools and the plant-based way', () => {
+  it('a tool costs coins once and doubles the yield of its harvest; berries pay for hides', async () => {
+    const p = await login('patientA');
+    // The coins of the first test are still there.
+    expect((await p.post('/patient/hero/adventure/tool/buy', { key: 'spade' })).body.error).toBe('unknown_item');
+    const before = (await p.get('/patient/hero/adventure')).body;
+    const bought = await p.post('/patient/hero/adventure/tool/buy', { key: 'hatchet' });
+    expect(bought.status).toBe(201);
+    expect(bought.body.tools).toEqual(['hatchet']);
+    expect(bought.body.coins).toBe(before.coins - 40);
+    expect((await p.post('/patient/hero/adventure/tool/buy', { key: 'hatchet' })).body.error).toBe('gear_owned');
+
+    // An oak with the hatchet: always an even number of wood (doubled); a rock by hand is not doubled.
+    for (let i = 0; i < 4; i++) {
+      const win = (await p.post('/patient/hero/adventure/win', { kind: 'oak' })).body;
+      expect(win.drops[0].item).toBe('wood');
+      expect(win.drops[0].n % 2).toBe(0);
+    }
+    const bush = (await p.post('/patient/hero/adventure/win', { kind: 'bush' })).body;
+    expect(bush.drops[0].item).toBe('berries');
+
+    // A cottage needs two hides: with none, berries are handed in instead.
+    const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
+    await db.connect();
+    try {
+      await db.query('UPDATE hero_homes SET built_stage = 1 WHERE patient_id = $1', [s.patients.emma]);
+      for (const [item, n] of [['wood', 12], ['stone', 6], ['hide', 0], ['berries', 10]] as const) {
+        await db.query('INSERT INTO hero_loot(patient_id, item, n) VALUES ($1,$2,$3) ON CONFLICT (patient_id, item) DO UPDATE SET n = EXCLUDED.n', [s.patients.emma, item, n]);
+      }
+    } finally {
+      await db.end();
+    }
+    const home = (await p.get('/patient/hero/home')).body;
+    if (!home.build.levelOk) return; // the level decides; the rules themselves are covered in shared tests
+    expect(home.build.pay).toEqual({ wood: 12, stone: 6, berries: 6 });
+    expect((await p.post('/patient/hero/home/build', {})).status).toBe(201);
+    expect((await p.get('/patient/hero/adventure')).body.loot.berries).toBe(4);
+  });
+});

@@ -1,5 +1,5 @@
 import { BELTS, examReady, nextItems, validItem } from '../../../shared/karate';
-import { ADVENTURE_DAILY_WINS, BOXING, CREATURES, CREATURE_KINDS, WEAPONS, adventureLevel, boxingXp, rollDrops, weaponItem, type CreatureKind, type LootKey } from '../../../shared/adventure';
+import { ADVENTURE_DAILY_WINS, BOXING, CREATURES, CREATURE_KINDS, TOOLS, TOOL_BONUS, WEAPONS, toolFor, toolItem, adventureLevel, boxingXp, rollDrops, weaponItem, type CreatureKind, type LootKey } from '../../../shared/adventure';
 import { homeStage, nextHome } from '../../../shared/practiceVillage';
 import { readStaffLook } from '../lib/staffLook';
 import { HEIRLOOM_KINDS } from '../../../shared/measurementBoss';
@@ -752,19 +752,20 @@ heroPatient.get('/hero/coach', async (c) => {
   return c.json({ look: readStaffLook(row?.look) });
 });
 
-const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number; weapon?: string | null; owned?: string[]; coins?: number; loot?: Record<string, number> } | undefined) => {
+const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number; weapon?: string | null; owned?: string[]; tools?: string[]; coins?: number; loot?: Record<string, number> } | undefined) => {
   const xp = Number(r?.xp ?? 0);
   const owned = r?.owned ?? [];
   // Only a weapon that was bought can be worn.
   const weapon = r?.weapon && owned.includes(r.weapon) ? r.weapon : null;
-  return { weapon, owned, coins: r?.coins ?? 0, loot: r?.loot ?? {}, xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...adventureLevel(xp) };
+  return { weapon, owned, tools: r?.tools ?? [], coins: r?.coins ?? 0, loot: r?.loot ?? {}, xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...adventureLevel(xp) };
 };
 const adventureRow = async (tx: Tx, patientId: string) => {
   const row = (await tx.query('SELECT xp, wins, weapon, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today, CASE WHEN day = CURRENT_DATE THEN rounds_today ELSE 0 END AS rounds_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
   const owned = (await tx.query("SELECT item FROM hero_purchases WHERE patient_id = $1 AND item LIKE 'wpn\\_%'", [patientId])).rows.map((r) => (r.item as string).slice(4));
+  const tools = (await tx.query("SELECT item FROM hero_purchases WHERE patient_id = $1 AND item LIKE 'tool\\_%'", [patientId])).rows.map((r) => (r.item as string).slice(5));
   const coins = (await heroState(tx, patientId)).gear.coins;
   const loot = Object.fromEntries((await tx.query('SELECT item, n FROM hero_loot WHERE patient_id = $1 AND n > 0', [patientId])).rows.map((r) => [r.item as string, Number(r.n)]));
-  return { xp: 0, wins: 0, wins_today: 0, rounds_today: 0, ...(row ?? {}), owned, coins, loot };
+  return { xp: 0, wins: 0, wins_today: 0, rounds_today: 0, ...(row ?? {}), owned, tools, coins, loot };
 };
 
 heroPatient.get('/hero/adventure', async (c) => {
@@ -792,7 +793,10 @@ heroPatient.post('/hero/adventure/win', async (c) => {
         [patient.id, gained],
       );
       // What it leaves behind goes into the backpack; only for wins that still count today.
-      const drops = gained > 0 ? rollDrops(body.data.kind, Math.random) : [];
+      // With the right tool (hatchet for oaks, pickaxe for rocks) the yield is doubled.
+      const tool = toolFor(body.data.kind);
+      const bonus = tool && (await before).tools.includes(tool.key) ? TOOL_BONUS.yield : 1;
+      const drops = (gained > 0 ? rollDrops(body.data.kind, Math.random) : []).map((d) => ({ ...d, n: d.n * bonus }));
       for (const d of drops) await tx.query('INSERT INTO hero_loot(patient_id, item, n) VALUES ($1, $2, $3) ON CONFLICT (patient_id, item) DO UPDATE SET n = hero_loot.n + EXCLUDED.n', [patient.id, d.item, d.n]);
       return { gained, drops, ...adventureView(await adventureRow(tx, patient.id)) };
     }),
@@ -883,6 +887,26 @@ heroPatient.put('/view', async (c) => {
   return c.json({ simple: body.data.simple });
 });
 
+/** Buy a tool from the smith with coins, once: the hatchet or the pickaxe. */
+heroPatient.post('/hero/adventure/tool/buy', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ key: z.string().max(24) }).safeParse(await c.req.json().catch(() => null));
+  const tool = body.success ? TOOLS.find((x) => x.key === body.data.key) : undefined;
+  if (!tool) throw badRequest('unknown_item');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const hero = (await tx.query('SELECT 1 FROM patient_heroes WHERE patient_id = $1 FOR UPDATE', [patient.id])).rows[0];
+      if (!hero) throw badRequest('hero_required');
+      const now = await adventureRow(tx, patient.id);
+      if (now.tools.includes(tool.key)) throw badRequest('gear_owned');
+      if (now.coins < tool.price) throw badRequest('not_enough_coins');
+      await tx.query('INSERT INTO hero_purchases (patient_id, item, price) VALUES ($1, $2, $3)', [patient.id, toolItem(tool.key), tool.price]);
+      return adventureView(await adventureRow(tx, patient.id));
+    }),
+    201,
+  );
+});
+
 /** Buy a weapon from the smith with coins: one the adventurer level allows, once. */
 heroPatient.post('/hero/adventure/weapon/buy', async (c) => {
   const { user, patient } = requirePatient(c);
@@ -938,7 +962,8 @@ heroPatient.post('/hero/home/build', async (c) => {
     if (!b) throw badRequest('home_complete');
     if (!b.levelOk) throw badRequest('level_too_low');
     if (!b.ready) throw badRequest('not_enough_loot');
-    for (const [item, n] of Object.entries(b.cost)) {
+    // What is handed in: the loot itself, and berries where animal loot is short.
+    for (const [item, n] of Object.entries(b.pay)) {
       const r = await tx.query('UPDATE hero_loot SET n = n - $3 WHERE patient_id = $1 AND item = $2 AND n >= $3', [patient.id, item, n]);
       if (!r.rowCount) throw badRequest('not_enough_loot');
     }

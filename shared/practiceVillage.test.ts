@@ -47,3 +47,18 @@ describe('building the next home with loot', async () => {
     expect(HOME_COSTS[5].alpha_tusk).toBe(1);
   });
 });
+
+describe('plant-based: berries pay for animal loot', async () => {
+  const { nextHome } = await import('./practiceVillage');
+  it('a cottage without hides: six berries stand in for two hides', () => {
+    const r = nextHome(1, 4, { wood: 12, stone: 6, berries: 7 })!;
+    expect(r.ready).toBe(true);
+    expect(r.pay).toEqual({ wood: 12, stone: 6, berries: 6 });
+  });
+  it('uses the animal loot that is there first, berries for the rest; wood and stone cannot be berries', () => {
+    const r = nextHome(1, 4, { wood: 12, stone: 6, hide: 1, berries: 3 })!;
+    expect(r.pay).toEqual({ wood: 12, stone: 6, hide: 1, berries: 3 });
+    expect(nextHome(1, 4, { wood: 12, stone: 6, hide: 1, berries: 2 })!.missing).toEqual({ hide: 1 });
+    expect(nextHome(0, 2, { berries: 99 })!.missing).toEqual({ wood: 6, stone: 2 });
+  });
+});

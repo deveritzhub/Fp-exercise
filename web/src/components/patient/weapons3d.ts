@@ -73,6 +73,15 @@ function simpleWeapon(key: string): THREE.Group | null {
       blade.rotation.set(Math.PI / 2, 0, s > 0 ? -Math.PI / 2 : Math.PI / 2);
       blade.position.x = s * 0.02;
     }
+  } else if (key === 'hatchet') {
+    part(g, new THREE.CylinderGeometry(0.016, 0.02, 0.5, 8), m(WOOD), 0.18);
+    const blade = part(g, new THREE.BoxGeometry(0.16, 0.12, 0.02), m(0xc9cfd3, STEEL), 0.38);
+    blade.position.x = 0.07;
+  } else if (key === 'pickaxe') {
+    part(g, new THREE.CylinderGeometry(0.018, 0.022, 0.75, 8), m(WOOD), 0.28);
+    // The head: a curved bar with a point at each end.
+    const head = part(g, new THREE.TorusGeometry(0.26, 0.022, 6, 14, Math.PI * 0.6), m(0x6f7478, STEEL), 0.42);
+    head.rotation.z = Math.PI * 0.2;
   } else if (key === 'spear') {
     part(g, new THREE.CylinderGeometry(0.014, 0.016, 1.5, 8), m(WOOD), 0.4);
     part(g, new THREE.ConeGeometry(0.04, 0.2, 8), m(0xd5dadd, STEEL), 1.25);

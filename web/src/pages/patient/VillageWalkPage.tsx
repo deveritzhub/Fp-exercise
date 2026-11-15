@@ -19,7 +19,7 @@ import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
 import { SUPPLY } from '@shared/supplies';
 import { useSupplies } from '@/lib/supplies';
-import { ALPHA_ADVISED_LEVEL, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
+import { ALPHA_ADVISED_LEVEL, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
@@ -328,7 +328,7 @@ export function VillageWalkPage() {
 
   const d = heroQ.data;
   // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
-  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; coins: number };
+  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; coins: number };
   const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
   // The weapon in hand is the one bought and put on in the backpack; none means bare fists.
   const weapon = weaponByKey(adventure.data?.weapon);
@@ -575,7 +575,9 @@ export function VillageWalkPage() {
       // The first Alpha, at the far edge of the meadow.
       ['alpha_boar', 12, 14.6],
       // Oaks and rocks behind the strength house: wood and stone to build your home with.
-      ['oak', 205, 11.4], ['oak', 222, 11.8], ['rock', 244, 11.3], ['rock', 257, 11.6]] as [CreatureKind, number, number][])
+      ['oak', 205, 11.4], ['oak', 222, 11.8], ['rock', 244, 11.3], ['rock', 257, 11.6],
+      // Berry bushes at the edge of the meadow and by the oaks: picked by hand, no hunting needed.
+      ['bush', 66, 12.9], ['bush', 74, 13.6], ['bush', 192, 12.2]] as [CreatureKind, number, number][])
       .map(([kind, deg, r], i) => ({ key: `mob:${i}`, kind, label: nl ? CREATURES[kind].nl : CREATURES[kind].en, x: Math.cos((deg * Math.PI) / 180) * r, z: Math.sin((deg * Math.PI) / 180) * r }))
       // The big ones only show themselves to an adventurer of their level.
       .filter((c) => (adventure.data?.level ?? 1) >= CREATURES[c.kind].level),
@@ -640,11 +642,14 @@ export function VillageWalkPage() {
     world.current?.respawn();
   };
 
+  // The right tool for what stands here: the hatchet for an oak, the pickaxe for a rock.
+  const mobTool = mob ? toolFor(mob.kind) : null;
+  const hasTool = !!mobTool && (adventure.data?.tools ?? []).includes(mobTool.key);
   const strike = async () => {
     if (!mob || downBy) return;
     world.current?.strike(mob.key);
     if (!provoked.includes(mob.key)) setProvoked((p) => [...p, mob.key]);
-    const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, weapon.power) * (supply.fed ? SUPPLY.fedPower : 1);
+    const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, isHarvest(mob.kind) ? 0 : weapon.power) * (supply.fed ? SUPPLY.fedPower : 1) * (hasTool ? TOOL_BONUS.blows : 1);
     if (left > 0) {
       setHurt((h) => ({ ...h, [mob.key]: CREATURES[mob.kind].hp - left }));
       return;
@@ -743,7 +748,7 @@ export function VillageWalkPage() {
             creatureHurt={hurt}
             boxing={!!d?.hero}
             belt={karate.data && karate.data.belt > 0 ? BELTS[karate.data.belt].color : null}
-            weapon={weapon.key === 'fists' ? null : weapon.key}
+            weapon={hasTool && mobTool ? mobTool.key : mob && isHarvest(mob.kind) ? null : weapon.key === 'fists' ? null : weapon.key}
             pace={pace}
             api={world}
             practiceLabel={home.data?.patient.practiceName ?? t('De praktijk', 'The practice')}
@@ -866,7 +871,7 @@ export function VillageWalkPage() {
               </p>
             )}
             <Button size="lg" data-testid="strike" className="pointer-events-auto border border-[#ffb3a1] shadow-lift" icon={<Swords className="h-5 w-5" />} onClick={() => void strike()}>
-              {isHarvest(mob.kind) ? t(`Hak de ${mob.label.toLowerCase()}`, `Chop the ${mob.label.toLowerCase()}`) : t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : ''}
+              {mob.kind === 'bush' ? t('Pluk bessen', 'Pick berries') : isHarvest(mob.kind) ? t(`Hak de ${mob.label.toLowerCase()}${hasTool && mobTool ? ` met je ${mobTool.nl.toLowerCase()}` : ''}`, `Chop the ${mob.label.toLowerCase()}${hasTool && mobTool ? ` with your ${mobTool.en.toLowerCase()}` : ''}`) : t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : ''}
             </Button>
             </span>
           ) : near === BOXING_KEY ? (
@@ -1205,6 +1210,7 @@ function BuildHome({ own, level, busy, justBuilt, onBuild }: { own: OwnHome; lev
       <p className="mt-0.5 text-[13.5px] text-ink-700">{t('Verzamel buit in het dorp: hak eiken voor hout en rotsen voor steen, en versla wezens voor wat ze laten vallen.', 'Collect loot in the village: chop oaks for wood and rocks for stone, and beat creatures for what they drop.')}</p>
       <ul className="mt-2 grid grid-cols-2 gap-1.5">
         {(Object.entries(b.cost) as [LootKey, number][]).map(([k, n]) => {
+          // Counted as there: the loot itself, or berries standing in for animal loot.
           const have = Math.min(n, n - (b.missing[k] ?? 0));
           return (
             <li key={k} data-cost={k} className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[13.5px] ${have >= n ? 'border-[#9fd4a8] bg-[#eef8f0]' : 'border-line'}`}>
@@ -1215,6 +1221,13 @@ function BuildHome({ own, level, busy, justBuilt, onBuild }: { own: OwnHome; lev
           );
         })}
       </ul>
+      {(Object.keys(b.cost) as LootKey[]).some((k) => BERRIES_FOR[k]) && (
+        <p data-testid="berries-hint" className="mt-2 rounded-lg bg-[#eef1fb] px-2.5 py-1.5 text-[13px] text-ink-800">
+          {t('Liever niet jagen? Dierlijke buit betaal je ook met bessen van de struiken: ', 'Rather not hunt? Animal loot can be paid with berries from the bushes too: ')}
+          {(Object.keys(b.cost) as LootKey[]).filter((k) => BERRIES_FOR[k]).map((k) => `${BERRIES_FOR[k]} ${t('bessen', 'berries')} = 1 ${(nl ? LOOT[k].nl : LOOT[k].en).toLowerCase()}`).join(', ')}.
+          {b.pay.berries ? t(` Je betaalt nu ${b.pay.berries} bessen.`, ` You now pay ${b.pay.berries} berries.`) : ''}
+        </p>
+      )}
       {!b.levelOk && <p className="mt-2 text-[13.5px] text-ink-700">{t(`Vanaf level ${next.from} mag je een ${next.nl.toLowerCase()} bouwen (nu level ${level}).`, `From level ${next.from} you may build a ${next.en.toLowerCase()} (now level ${level}).`)}</p>}
       <Button className="mt-2 w-full" data-testid="build-home-button" disabled={!b.ready} loading={busy} onClick={onBuild}>
         {b.ready ? t(`Bouw je ${next.nl.toLowerCase()}`, `Build your ${next.en.toLowerCase()}`) : !b.levelOk ? t(`Nog niet: level ${next.from} nodig`, `Not yet: level ${next.from} needed`) : t('Nog niet genoeg buit', 'Not enough loot yet')}
