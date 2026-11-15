@@ -92,7 +92,7 @@ const swatch = (bg: string) => <span className="h-7 w-7 shrink-0 rounded-full bo
 function AdventureSkill() {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
-  const q = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<{ xp: number; level: number; from: number; to: number; wins: number; weapon: string | null }>('/patient/hero/adventure') });
+  const q = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<{ xp: number; level: number; from: number; to: number; wins: number; weapon: string | null; quest?: { nl: string; en: string; n: number; progress: number; done: boolean; xp: number } | null }>('/patient/hero/adventure') });
   if (!q.data) return null;
   const a = q.data;
   const { next } = weaponAt(a.level);
@@ -107,6 +107,11 @@ function AdventureSkill() {
           {next ? t(`Versla kwaaltjes in je dorp. Vanaf level ${next.level} te koop: ${next.nl}.`, `Beat ailments in your village. For sale from level ${next.level}: ${next.en}.`) : t('Versla kwaaltjes in je dorp. Je hebt het sterkste wapen.', 'Beat ailments in your village. You hold the strongest weapon.')}
           {' '}{t('Telt niet mee voor je totaal level.', 'Does not count towards your total level.')}
         </span>
+        {a.quest && (
+          <span data-testid="adventure-quest" className="mt-1 block text-[12.5px] font-semibold text-[#6b4705]">
+            {a.quest.done ? t(`Taak van vandaag klaar: ${a.quest.nl.toLowerCase()}`, `Today’s task done: ${a.quest.en.toLowerCase()}`) : t(`Taak van vandaag: ${a.quest.nl.toLowerCase()} (${a.quest.progress}/${a.quest.n}) · +${a.quest.xp} XP`, `Today’s task: ${a.quest.en.toLowerCase()} (${a.quest.progress}/${a.quest.n}) · +${a.quest.xp} XP`)}
+          </span>
+        )}
       </span>
       <ChevronRight className="h-5 w-5 shrink-0 text-ink-600" aria-hidden />
     </Link>
