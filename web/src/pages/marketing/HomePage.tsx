@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BarChart3, BookOpen, Building2, Check, Layers, Lock, Smartphone, Sparkles, Timer } from 'lucide-react';
+import { Apple, ArrowRight, BarChart3, BookOpen, Building2, Check, Dumbbell, Gamepad2, HeartPulse, Layers, Lock, Smartphone, Sparkles, Timer } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
 import { ButtonLink } from '@/components/ui';
@@ -10,7 +10,7 @@ export function HomePage() {
   const { t } = useI18n();
   useDocumentMeta(
     t('FP Flow — Oefentherapie op maat voor fysiotherapiepraktijken', 'FP Flow — Tailored exercise therapy for physiotherapy practices'),
-    t('Stel in een paar minuten een oefenprogramma samen, deel het via een eenvoudige patiëntapp en volg therapietrouw en feedback.', 'Build an exercise programme in minutes, share it through a simple patient app and follow adherence and feedback.'),
+    t('Stel in een paar minuten een oefenprogramma samen. Je patiënt traint met een app met krachtschema’s, voeding, hartslag en een 3D-dorp dat meegroeit met elke training.', 'Build an exercise programme in minutes. Your patient trains with an app with strength plans, nutrition, heart rate and a 3D village that grows with every workout.'),
   );
   useEffect(() => {
     const s = document.createElement('script');
@@ -43,14 +43,14 @@ export function HomePage() {
               {t('Oefentherapie die je patiënt', 'Exercise therapy your patients')} <span className="text-accent">{t('écht volhoudt', 'actually stick with')}</span>.
             </h1>
             <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-ink-600">
-              {t('Stel in een paar minuten een programma samen uit een doorzoekbare oefenbibliotheek, deel het via een rustige patiëntapp en zie direct hoe het gaat — inclusief pijn- en zwaarte-feedback.', 'Build a programme in minutes from a searchable exercise library, share it through a calm patient app and see straight away how it’s going — including pain and difficulty feedback.')}
+              {t('Jij stelt in een paar minuten het programma samen. Je patiënt traint thuis met een app die motiveert: een eigen held in een 3D-dorp die sterker wordt van elke oefening, krachtschema’s, voeding en hartslag. Jij ziet direct hoe het gaat, inclusief pijn en zwaarte.', 'You build the programme in minutes. Your patient trains at home with an app that motivates: their own hero in a 3D village that grows stronger with every exercise, strength plans, nutrition and heart rate. You see straight away how it’s going, including pain and difficulty.')}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <ButtonLink to="/contact?onderwerp=demo" size="lg" icon={<ArrowRight className="h-4 w-4" />} className="flex-row-reverse">{t('Plan een demo', 'Book a demo')}</ButtonLink>
               <ButtonLink to="/demo" size="lg" variant="secondary">{t('Probeer de interactieve demo', 'Try the interactive demo')}</ButtonLink>
             </div>
             <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[14px] text-ink-500">
-              {[t('Geen installatie', 'No installation'), t('Werkt op elke smartphone', 'Works on any smartphone'), t('Nederlands & Engels', 'Dutch & English')].map((x) => (
+              {[t('Geen installatie', 'No installation'), t('Werkt op elke smartphone, ook liggend', 'Works on any smartphone, also sideways'), t('Nederlands & Engels', 'Dutch & English')].map((x) => (
                 <li key={x} className="flex items-center gap-1.5"><Check className="h-4 w-4 text-accent" />{x}</li>
               ))}
             </ul>
@@ -64,7 +64,7 @@ export function HomePage() {
         <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-3">
           {[
             [Timer, t('Programma in < 3 minuten', 'Programme in < 3 minutes'), t('Zoeken, toevoegen, doseren, toewijzen. Of start vanuit een sjabloon.', 'Search, add, dose, assign. Or start from a template.')],
-            [Smartphone, t('Eenvoudig voor elke patiënt', 'Simple for every patient'), t('Grote knoppen, duidelijke instructies, video en één ding tegelijk.', 'Large buttons, clear instructions, video and one thing at a time.')],
+            [Gamepad2, t('Volhouden wordt een spel', 'Sticking with it becomes a game'), t('Elke training geeft je patiënt XP, loot en een sterker personage. Wie traint, bouwt zijn dorp op.', 'Every workout gives your patient XP, loot and a stronger character. Training builds their village.')],
             [BarChart3, t('Bijsturen op basis van data', 'Adjust based on data'), t('Therapietrouw, zwaarte en pijn per oefening in één overzicht.', 'Adherence, difficulty and pain per exercise in one overview.')],
           ].map(([Icon, title, text]) => {
             const I = Icon as typeof Timer;
@@ -79,20 +79,56 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* Patient app showcase */}
+      <section className="mx-auto max-w-6xl px-5 pt-24">
+        <div className="max-w-2xl">
+          <span className="text-[13px] font-semibold uppercase tracking-wider text-accent">{t('De patiëntapp', 'The patient app')}</span>
+          <h2 className="mt-2 text-[32px] font-bold leading-tight tracking-tight">{t('Meer dan een oefenlijst', 'More than an exercise list')}</h2>
+          <p className="mt-3 text-[16px] text-ink-500">{t('De app opent op Vandaag: wat er vandaag te doen is, in één oogopslag. Van daaruit is het één tik naar de training, de voeding of het dorp.', 'The app opens on Today: what to do today, at a glance. From there it’s one tap to the workout, nutrition or the village.')}</p>
+        </div>
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            ['/marketing/today.webp', t('Vandaag', 'Today'), t('Oefeningen, water, eten en het dorp op één plek.', 'Exercises, water, food and the village in one place.')],
+            ['/marketing/workout.webp', t('Training met hartslag', 'Workout with heart rate'), t('Set-teller, rusttimer en live hartslag via een borstband.', 'Set counter, rest timer and live heart rate from a chest strap.')],
+            ['/marketing/nutrition.webp', t('Voeding', 'Nutrition'), t('Typ wat je at in je eigen woorden. De app rekent eiwit en energie uit.', 'Type what you ate in your own words. The app works out protein and energy.')],
+          ].map(([src, title, text]) => (
+            <figure key={src} className="overflow-hidden rounded-2xl border border-line bg-canvas">
+              <div className="flex justify-center px-6 pt-6">
+                <img src={src} alt={title} loading="lazy" width={390} height={844} className="h-[420px] w-auto rounded-t-[22px] border border-b-0 border-line object-cover object-top shadow-card" />
+              </div>
+              <figcaption className="border-t border-line bg-white p-5">
+                <h3 className="text-[16px] font-bold">{title}</h3>
+                <p className="mt-1 text-[14.5px] leading-relaxed text-ink-500">{text}</p>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+        <figure className="mt-6 overflow-hidden rounded-2xl border border-line bg-ink-950">
+          <img src="/marketing/village.webp" alt={t('Het 3D-dorp met de held van de patiënt', 'The 3D village with the patient’s hero')} loading="lazy" width={844} height={390} className="w-full" />
+          <figcaption className="p-6 text-white sm:p-8">
+            <h3 className="text-[20px] font-bold text-white">{t('Een eigen held in een 3D-dorp', 'Their own hero in a 3D village')}</h3>
+            <p className="mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-300">{t('Trainen levert XP en skills op. In het dorp hakt je patiënt bomen, plukt besjes, verslaat monsters en bouwt met de buit zijn huis uit. Water en eten uit de voedingslog houden de held fit. Speelbaar staand en liggend.', 'Training earns XP and skills. In the village your patient chops trees, picks berries, defeats monsters and uses the loot to upgrade their home. Water and food from the nutrition log keep the hero fit. Playable upright and sideways.')}</p>
+          </figcaption>
+        </figure>
+      </section>
+
       {/* Features */}
       <section className="mx-auto max-w-6xl px-5 py-24">
         <div className="max-w-2xl">
           <h2 className="text-[32px] font-bold leading-tight tracking-tight">{t('Alles wat je nodig hebt. Niets wat je afleidt.', 'Everything you need. Nothing that distracts.')}</h2>
-          <p className="mt-3 text-[16px] text-ink-500">{t('Ontworpen rond de spreekkamer: snel tijdens het consult, rustig voor de patiënt thuis.', 'Designed around the treatment room: fast during the session, calm for the patient at home.')}</p>
+          <p className="mt-3 text-[16px] text-ink-500">{t('Snel voor jou tijdens het consult. Motiverend voor je patiënt thuis.', 'Fast for you during the session. Motivating for your patient at home.')}</p>
         </div>
         <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
           {[
             [BookOpen, t('Oefenbibliotheek', 'Exercise library'), t('Zoek op naam, spier, regio, materiaal of categorie. Met regressies, progressies en je eigen oefeningen en video’s.', 'Search by name, muscle, region, equipment or category. With regressions, progressions and your own exercises and videos.')],
             [Layers, t('Programmabouwer', 'Programme builder'), t('Slepen, doseren, trainingsdagen kiezen en persoonlijke notities toevoegen. Versiegeschiedenis inbegrepen.', 'Drag, dose, choose training days and add personal notes. Version history included.')],
-            [Smartphone, t('Patiëntapp', 'Patient app'), t('Video, instructies, set-teller en rusttimer. Registreer uitvoering, zwaarte en pijn in een paar tikken.', 'Video, instructions, set counter and rest timer. Log completion, difficulty and pain in a few taps.')],
+            [Smartphone, t('Patiëntapp', 'Patient app'), t('Video of een duidelijke beschrijving, set-teller en rusttimer. Een training typen in eigen woorden kan ook.', 'Video or a clear description, set counter and rest timer. Typing a workout in your own words works too.')],
+            [Dumbbell, t('Krachtschema’s', 'Strength plans'), t('Onderbouwde hypertrofieschema’s. De patiënt kiest vorm, dagen per week en doel; de app houdt gewichten en 1RM bij.', 'Evidence-based hypertrophy plans. The patient picks format, days per week and goal; the app tracks weights and 1RM.')],
+            [Apple, t('Voeding', 'Nutrition'), t('Eetlog in eigen woorden, persoonlijke richtlijn, recepten (ook vegetarisch en veganistisch), weekplanning en boodschappenlijst.', 'Food log in your own words, a personal guide, recipes (also vegetarian and vegan), a week plan and a shopping list.')],
+            [HeartPulse, t('Hartslag', 'Heart rate'), t('Live hartslag tijdens de training via een Bluetooth-borstband, met gemiddelde en maximum per sessie.', 'Live heart rate during the workout from a Bluetooth chest strap, with average and maximum per session.')],
             [BarChart3, t('Voortgang & signalen', 'Progress & signals'), t('Zie wie aandacht nodig heeft: hoge pijnscores, nieuwe feedback of lage therapietrouw.', 'See who needs attention: high pain scores, new feedback or low adherence.')],
             [Building2, t('Praktijkbeheer', 'Practice management'), t('Teamleden, rollen, gedeelde praktijksjablonen en eigen huisstijl.', 'Team members, roles, shared practice templates and your own branding.')],
-            [Lock, t('Privacy by design', 'Privacy by design'), t('Strikte scheiding tussen praktijken, minimale gegevens en audit logging. Hosting in de EU.', 'Strict separation between practices, minimal data and audit logging. Hosted in the EU.')],
+            [Lock, t('Privacy by design', 'Privacy by design'), t('Strikte scheiding tussen praktijken, minimale gegevens en audit logging. Voeding blijft privé van de patiënt. Hosting in de EU.', 'Strict separation between practices, minimal data and audit logging. Nutrition stays private to the patient. Hosted in the EU.')],
           ].map(([Icon, title, text]) => {
             const I = Icon as typeof Timer;
             return (
@@ -110,8 +146,8 @@ export function HomePage() {
       <section className="bg-canvas">
         <div className="mx-auto grid max-w-6xl gap-6 px-5 py-24 lg:grid-cols-2">
           {[
-            [t('Voor fysiotherapeuten', 'For physiotherapists'), [t('Minder tijd kwijt aan uitleg en papieren schema’s', 'Less time spent on explanations and paper sheets'), t('Bijsturen tussen consulten op basis van echte feedback', 'Adjust between sessions based on real feedback'), t('Eigen video’s en oefeningen voor je hele team', 'Your own videos and exercises for the whole team'), t('Sjablonen als startpunt — jij houdt de klinische regie', 'Templates as a starting point — you stay in clinical control')]],
-            [t('Voor patiënten', 'For patients'), [t('Altijd weten wat en hoe — met video', 'Always know what and how — with video'), t('Eén oefening tegelijk, grote knoppen', 'One exercise at a time, large buttons'), t('Zie je eigen voortgang groeien', 'See your own progress grow'), t('Laat makkelijk weten hoe het ging', 'Easily share how it went')]],
+            [t('Voor fysiotherapeuten', 'For physiotherapists'), [t('Minder tijd kwijt aan uitleg en papieren schema’s', 'Less time spent on explanations and paper sheets'), t('Bijsturen tussen consulten op basis van echte feedback', 'Adjust between sessions based on real feedback'), t('Eigen video’s en oefeningen voor je hele team', 'Your own videos and exercises for the whole team'), t('Sjablonen als startpunt — jij houdt de klinische regie', 'Templates as a starting point — you stay in clinical control'), t('Een praktijkdorp dat groeit met wat je patiënten samen trainen', 'A practice village that grows with what your patients train together')]],
+            [t('Voor patiënten', 'For patients'), [t('Altijd weten wat en hoe — met video of beschrijving', 'Always know what and how — with video or description'), t('Een held die sterker wordt van elke training', 'A hero that grows stronger with every workout'), t('Krachtschema dat past bij je doel en agenda', 'A strength plan that fits your goal and schedule'), t('Voeding bijhouden in gewone taal, met recepten en boodschappenlijst', 'Track food in plain words, with recipes and a shopping list'), t('Hartslag live tijdens het trainen', 'Live heart rate while training'), t('Laat makkelijk weten hoe het ging', 'Easily share how it went')]],
           ].map(([title, points]) => (
             <div key={title as string} className="rounded-2xl border border-line bg-white p-8 shadow-card">
               <h2 className="text-[22px] font-bold">{title as string}</h2>

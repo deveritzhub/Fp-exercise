@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import type { Macros } from '@shared/foods';
 
-type FoodDay = { totals: Macros; proteinGoal: number | null; items: unknown[] };
+type FoodDay = { totals: Macros; proteinGoal: number | null; items: unknown[]; profile?: { hideKcal: boolean }; targets?: { kcal: number } | null };
 
 /** Today: nutrition at a glance, with the way to log what you eat. */
 export function NutritionCard() {
@@ -19,7 +19,10 @@ export function NutritionCard() {
         <h2 id="nutrition-card" className="mt-0.5 text-[16.5px] font-bold text-ink-950">{t('Eten bijhouden', 'Track what you eat')}</h2>
         <p className="mt-0.5 text-[13.5px] text-ink-600">
           {d && d.items.length
-            ? t(`${d.totals.kcal} kcal · ${Math.round(d.totals.protein)}${d.proteinGoal ? `/${d.proteinGoal}` : ''} g eiwit`, `${d.totals.kcal} kcal · ${Math.round(d.totals.protein)}${d.proteinGoal ? `/${d.proteinGoal}` : ''} g protein`)
+            ? [
+                !d.profile?.hideKcal && `${d.totals.kcal}${d.targets ? `/${d.targets.kcal}` : ''} kcal`,
+                t(`${Math.round(d.totals.protein)}${d.proteinGoal ? `/${d.proteinGoal}` : ''} g eiwit`, `${Math.round(d.totals.protein)}${d.proteinGoal ? `/${d.proteinGoal}` : ''} g protein`),
+              ].filter(Boolean).join(' · ')
             : t('Recepten, weekplan en boodschappenlijst.', 'Recipes, week plan and shopping list.')}
         </p>
       </div>

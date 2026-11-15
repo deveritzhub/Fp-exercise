@@ -12,6 +12,8 @@ export type Recipe = {
   minutes: number;
   prep: boolean;
   vegetarian: boolean;
+  /** No meat, fish, dairy, eggs or honey. */
+  vegan: boolean;
   ingredients: { food: string; g: number }[];
   steps: string[];
 };
@@ -19,6 +21,7 @@ export type Recipe = {
 const R = (key: string, nl: string, en: string, meal: Meal, minutes: number, prep: boolean, ingredients: [string, number][], steps: string[]): Recipe => ({
   key, nl, en, meal, minutes, prep,
   vegetarian: ingredients.every(([food]) => FOOD_BY_KEY[food]?.aisle !== 'vlees_vis'),
+  vegan: ingredients.every(([food]) => !['vlees_vis', 'zuivel'].includes(FOOD_BY_KEY[food]?.aisle ?? '') && food !== 'honing'),
   ingredients: ingredients.map(([food, g]) => ({ food, g })),
   steps,
 });
@@ -72,6 +75,27 @@ export const RECIPES: Recipe[] = [
   R('huttenkase_rijstwafel', 'Hüttenkäse met komkommer op rijstwafels', 'Cottage cheese with cucumber on rice cakes', 'tussendoor', 3, false,
     [['huttenkase', 150], ['komkommer', 100], ['rijstwafel', 16]],
     ['Besmeer twee rijstwafels met hüttenkäse.', 'Leg er plakjes komkommer op.']),
+  R('tofu_scramble', 'Tofu-scramble met spinazie op brood', 'Tofu scramble with spinach on toast', 'ontbijt', 12, false,
+    [['tofu', 180], ['spinazie', 50], ['tomaat', 80], ['brood_volkoren', 70], ['olijfolie', 5]],
+    ['Verkruimel de tofu in een koekenpan met olie, kruid met kurkuma, peper en zout.', 'Laat de spinazie meeslinken en schep de tomaat erdoor.', 'Serveer op twee sneetjes brood.']),
+  R('soja_oats', 'Plantaardige overnight oats met bessen', 'Plant-based overnight oats with berries', 'ontbijt', 5, true,
+    [['havermout', 60], ['sojayoghurt', 200], ['sojadrink', 100], ['blauwe_bessen', 75], ['pindakaas', 15]],
+    ['Meng havermout, sojayoghurt en sojadrink in een pot.', 'Een nacht in de koelkast.', 'Bessen en pindakaas erop.']),
+  R('linzensoep', 'Linzensoep met wortel en brood', 'Lentil soup with carrot and bread', 'lunch', 30, true,
+    [['linzen', 250], ['wortel', 100], ['ui', 50], ['passata', 150], ['knoflook', 5], ['olijfolie', 5], ['brood_volkoren', 35]],
+    ['Fruit ui en knoflook in de olie, voeg de wortel in blokjes toe.', 'Doe linzen, passata en 300 ml water erbij en laat 20 minuten zachtjes koken.', 'Pureer half, met een sneetje brood erbij.']),
+  R('hummus_wrap', 'Wraps met hummus, kikkererwten en groente', 'Wraps with hummus, chickpeas and vegetables', 'lunch', 8, false,
+    [['wrap', 120], ['hummus', 60], ['kikkererwten', 80], ['sla', 30], ['komkommer', 60], ['tomaat', 60]],
+    ['Besmeer de wraps met hummus.', 'Verdeel kikkererwten, sla, komkommer en tomaat erover en rol op.']),
+  R('kikkererwten_curry', 'Kikkererwtencurry met spinazie en rijst', 'Chickpea curry with spinach and rice', 'diner', 30, true,
+    [['kikkererwten', 200], ['spinazie', 100], ['passata', 150], ['ui', 50], ['rijst', 60], ['olijfolie', 10], ['knoflook', 5]],
+    ['Kook de rijst.', 'Fruit ui en knoflook met kerriepoeder, voeg passata en kikkererwten toe en laat 10 minuten koken.', 'Laat de spinazie erin slinken.']),
+  R('tempeh_noedels', 'Noedels met tempeh, broccoli en pindasaus', 'Noodles with tempeh, broccoli and peanut sauce', 'diner', 20, false,
+    [['tempeh', 150], ['noedels', 70], ['broccoli', 100], ['paprika', 80], ['sojasaus', 15], ['pindakaas', 15]],
+    ['Kook de noedels.', 'Bak de tempeh in plakjes, roerbak broccoli en paprika.', 'Roer pindakaas en sojasaus met wat kookwater tot een saus en meng alles.']),
+  R('sojayoghurt_noten', 'Sojayoghurt met aardbeien en walnoten', 'Soy yoghurt with strawberries and walnuts', 'tussendoor', 3, false,
+    [['sojayoghurt', 200], ['aardbeien', 100], ['walnoten', 15]],
+    ['Schep de yoghurt in een kom, aardbeien en walnoten erop.']),
   R('edamame', 'Edamame met een snufje zout', 'Edamame with a pinch of salt', 'tussendoor', 5, false,
     [['edamame', 150]],
     ['Kook of magnetron de edamame 3 minuten, zout erover.']),
@@ -131,4 +155,36 @@ export function shoppingList(plan: PlanItem[]): ShoppingLine[] {
   }
   const order = ['groente', 'fruit', 'zuivel', 'vlees_vis', 'vega', 'brood_graan', 'voorraad', 'drinken', 'snoep'];
   return lines.sort((a, b) => order.indexOf(a.aisle) - order.indexOf(b.aisle) || FOOD_BY_KEY[a.food].nl.localeCompare(FOOD_BY_KEY[b.food].nl, 'nl'));
+}
+
+export type Diet = 'alles' | 'vegetarisch' | 'veganistisch';
+const fitsDiet = (r: Recipe, diet: Diet) => diet === 'alles' || (diet === 'vegetarisch' ? r.vegetarian : r.vegan);
+
+/**
+ * "Vul mijn week": a plan for seven days that fits the goal and the diet. Cooking ahead is the idea:
+ * a prep dinner and a prep lunch each come back three days in a row (Monday to Wednesday, Thursday to
+ * Saturday), Sunday gets something fresh, breakfasts take turns. With muscle growth a snack is added.
+ * `variant` gives another plan for "something else".
+ */
+export function planWeek(goal: NutritionGoal, diet: Diet, variant = 0, snacks = goal === 'spiergroei'): PlanItem[] {
+  const pick = (meal: Meal, prepFirst: boolean) => {
+    const list = RECIPES.filter((r) => r.meal === meal && fitsDiet(r, diet));
+    const fit = list.filter((r) => recipeGoals(r).includes(goal));
+    const pool = (fit.length ? fit : list).slice().sort((a, b) => (prepFirst ? Number(b.prep) - Number(a.prep) : 0) || a.key.localeCompare(b.key));
+    return pool;
+  };
+  const at = <T,>(xs: T[], i: number) => xs[((i % xs.length) + xs.length) % xs.length];
+  const breakfasts = pick('ontbijt', false);
+  const lunches = pick('lunch', true);
+  const dinners = pick('diner', true);
+  const snackList = pick('tussendoor', false);
+  const out: PlanItem[] = [];
+  for (let day = 0; day < 7; day++) {
+    const block = day < 3 ? 0 : day < 6 ? 1 : 2;
+    if (breakfasts.length) out.push({ day, meal: 'ontbijt', recipe: at(breakfasts, day + variant).key, servings: 1 });
+    if (lunches.length) out.push({ day, meal: 'lunch', recipe: at(lunches, block + variant).key, servings: 1 });
+    if (dinners.length) out.push({ day, meal: 'diner', recipe: at(dinners, block * 2 + variant).key, servings: 1 });
+    if (snacks && snackList.length) out.push({ day, meal: 'tussendoor', recipe: at(snackList, day + variant).key, servings: 1 });
+  }
+  return out;
 }

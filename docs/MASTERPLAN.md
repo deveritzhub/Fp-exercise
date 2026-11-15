@@ -423,6 +423,13 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     hoeft te jagen. Hakbijl (25 muntjes, nodig voor eiken; van de andere sessie) en pikhouweel (60, rotsen; met de hand kan ook): slag telt 3×, opbrengst 2×
     (server bepaalt de opbrengst); het gereedschap is in de hand te zien.
 
+117. [x] **Voeding, stap 2** (15 nov): profiel (geslacht, geboortejaar, activiteit, doel, eetpatroon,
+    calorieën verbergen) en richtlijn (Mifflin-St Jeor, ondergrens 1200/1500 kcal); invullen in stuks of
+    grammen; favorieten; eigen producten (per 100 g); tot 6 dagen terug; "zelfde als dag ervoor"; water;
+    weekoverzicht; 7 extra recepten (vegan); porties schalen; kookmodus (scherm blijft aan); "Vul mijn
+    week" met prep-blokken van drie dagen; eigen boodschappen, delen en printen. Nooit rode cijfers.
+    NEVO-tabel: alleen na akkoord, zie de voorwaarden (geen betaalde toegang tot de NEVO-gegevens).
+
 113. [ ] **Echte app met Health Connect en Apple Health**: akkoord eigenaar 15 nov; plan en stappen in
     `docs/APP_HEALTH.md`. Stap 1 (hartslag) is klaar.
 
