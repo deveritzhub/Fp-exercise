@@ -3,7 +3,7 @@ import { login } from './helpers';
 
 /** The patient's own home in the village: walk in, buy a piece with coins, and put it somewhere else. */
 test('patient furnishes the own home with coins', async ({ browser }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(450_000);
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'nl-NL' });
   const page = await context.newPage();
   await page.addInitScript(() => localStorage.setItem('fp.village.tip', '1'));
@@ -26,7 +26,7 @@ test('patient furnishes the own home with coins', async ({ browser }) => {
   await page.getByTestId('slot-places').click();
   await page.getByTestId('places').getByRole('button', { name: /Jouw huis/ }).click();
   await page.getByTestId('enter-home').click({ timeout: 90_000 });
-  await expect(village).toHaveAttribute('data-zone', 'home', { timeout: 30_000 });
+  await expect(village).toHaveAttribute('data-zone', 'home', { timeout: 200_000 });
 
   // At the furnishing table: the shop sells with the coins earned by training.
   await page.getByRole('button', { name: 'Loop naar de inrichtingstafel' }).press('Enter');

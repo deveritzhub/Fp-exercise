@@ -3,7 +3,7 @@ import { expandFolds, expectAccessible, login } from './helpers';
 
 /** Karate as a skill: tick the list for the next belt, take the exam, and find the dojo in the village. */
 test('patient earns the orange belt and walks to the dojo', async ({ browser }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(450_000);
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'nl-NL' });
   const page = await context.newPage();
   await page.addInitScript(() => localStorage.setItem('fp.village.tip', '1'));
@@ -39,7 +39,7 @@ test('patient earns the orange belt and walks to the dojo', async ({ browser }) 
   // The hero walks in; the sensei stands on the mats under the banner.
   await expect(village).toHaveAttribute('data-zone', 'dojo', { timeout: 120_000 });
   await page.getByRole('button', { name: 'Praat met Sensei' }).press('Enter');
-  await page.getByTestId('talk-first').click({ timeout: 60_000 });
+  await page.getByTestId('talk-first').click({ timeout: 200_000 });
   await expect(page.getByTestId('karate-belt')).toContainText('oranje band');
   await page.getByTestId('dojo-kun').locator('summary').click();
   await expect(page.getByTestId('dojo-kun')).toContainText('onwankelbare geest');

@@ -49,7 +49,7 @@ test('patient walks to the TV in the village, starts the workout there and retur
   // While the hero walks by itself, the screen says where to and offers a way to stop.
   await expect(page.getByTestId('on-the-way')).toContainText('Onderweg naar de tv in de praktijk');
   const tv = page.getByTestId('tv-panel');
-  await expect(tv).toBeVisible({ timeout: 60_000 });
+  await expect(tv).toBeVisible({ timeout: 200_000 });
   await expect(village).toHaveAttribute('data-zone', 'practice');
   await expect(village).toHaveAttribute('data-near', 'tv');
   await expect(tv.getByRole('button', { name: /Spaanse squat/ })).toBeVisible();
