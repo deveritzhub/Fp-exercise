@@ -161,12 +161,8 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   await expect(round).toHaveAttribute('data-state', 'done', { timeout: 20_000 });
   await expect.poll(advXp, { timeout: 15_000 }).toBeGreaterThan(xp0 + 12);
   await page.keyboard.press('Escape');
-  // The flask: filled at the well, a glass to drink on the way.
-  await page.getByRole('button', { name: 'Loop naar de waterput' }).press('Enter');
-  await page.getByTestId('fill-flask').click({ timeout: 90_000 });
-  await expect(page.getByTestId('flask')).toHaveAttribute('aria-label', /2 van 2 glazen/);
-  await page.getByTestId('flask').click();
-  await expect(page.getByTestId('flask')).toHaveAttribute('aria-label', /1 van 2 glazen/, { timeout: 15_000 });
+  // The flask holds what was really logged: the glass from the well is in it.
+  await expect.poll(async () => Number(await page.getByTestId('flask').getAttribute('data-n')), { timeout: 15_000 }).toBeGreaterThanOrEqual(1);
   if (process.env.SHOTS) {
     await page.getByRole('button', { name: /^Loop naar Oefenzaal/ }).press('Enter');
     await expect(village).toHaveAttribute('data-zone', 'practice', { timeout: 90_000 });
@@ -178,7 +174,8 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   const pack = page.getByTestId('weapons');
   await expect(pack.locator('[data-weapon]')).toHaveCount(9);
   await expect(pack.locator('[data-weapon="fists"]')).toHaveAttribute('data-state', 'on');
-  await expect(page.getByTestId('backpack-flask')).toContainText('1/2');
+  await expect(page.getByTestId('backpack-flask')).toContainText(/Veldfles · \d+ glas/);
+  await expect(page.getByTestId('backpack-rations')).toContainText('Rantsoenen');
   // The loot of the village: a square per kind, a question mark until it is found.
   await expect(page.getByTestId('loot').locator('[data-loot]')).toHaveCount(LOOT_KEYS.length);
   // Enough adventure XP for the staff: the smith sells it, it goes on at once and comes off again.

@@ -17,6 +17,8 @@ import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
 import { MODULE_SITES, VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
+import { SUPPLY } from '@shared/supplies';
+import { useSupplies } from '@/lib/supplies';
 import { ALPHA_ADVISED_LEVEL, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
@@ -490,36 +492,28 @@ export function VillageWalkPage() {
     try {
       await api.post('/patient/logs/water', { ml: WATER.glassMl });
       await qc.invalidateQueries({ queryKey: ['patient-hero'] });
-      // A real glass of water heals the hero in full.
-      setHeroHp(null);
-      toast(t('Glas water gelogd, je held is weer helemaal fit. Drink het ook echt op!', 'Glass of water logged, your hero is fully healed. Do drink it!'));
+      toast(t('Glas water gelogd: +1 glas in de veldfles van je held. Drink het ook echt op!', 'Glass of water logged: +1 glass in your hero’s flask. Do drink it!'));
     } catch (e) {
       say(e);
     } finally {
       setDrinking(false);
     }
   };
-  // The flask in the backpack: filled at the well, two glasses to drink on the way. Kept in this browser, for today.
-  const FLASK = 'fp.village.flask';
-  const todayKey = new Date().toDateString();
-  const [flask, setFlaskState] = useState<number>(() => {
-    try {
-      const v = JSON.parse(localStorage.getItem(FLASK) ?? 'null') as { day: string; n: number } | null;
-      return v && v.day === todayKey ? Math.max(0, Math.min(2, v.n)) : 0;
-    } catch {
-      return 0;
-    }
-  });
-  const setFlask = (n: number) => {
-    setFlaskState(n);
-    try {
-      localStorage.setItem(FLASK, JSON.stringify({ day: todayKey, n }));
-    } catch { /* a full or closed store: the flask is simply not kept */ }
+  // Supplies come from real life: a glass per glass of water logged today, a ration per meal logged.
+  // The hero drinks or eats them to heal; three main meals logged make the hero faster and stronger.
+  const supply = useSupplies(d?.logs?.survival.water.ml ?? 0, !!d?.hero);
+  const heal = (fraction: number) => setHeroHp((h) => (h === null ? null : Math.min(maxHp, h + maxHp * fraction) >= maxHp ? null : h + maxHp * fraction));
+  const sip = () => {
+    if (supply.glasses <= 0) return;
+    supply.use('water');
+    heal(SUPPLY.waterHeals);
+    toast(t('Je held drinkt een glas uit de veldfles: +50% leven.', 'Your hero drinks a glass from the flask: +50% life.'));
   };
-  const sip = async () => {
-    if (flask <= 0 || drinking) return;
-    setFlask(flask - 1);
-    await drink();
+  const eat = () => {
+    if (supply.rations <= 0) return;
+    supply.use('food');
+    heal(SUPPLY.rationHeals);
+    toast(t('Je held eet een rantsoen: weer helemaal fit.', 'Your hero eats a ration: fully fit again.'));
   };
   // One folding part of the HUD open at a time (meters or tasks), so the world stays in view. Kept in this browser.
   const [panel, setPanel] = useState<'meters' | 'tasks' | null>(() => {
@@ -557,7 +551,7 @@ export function VillageWalkPage() {
   const states = d?.logs?.survival.status ?? [];
   const thirsty = states.some((x) => x.key === 'thirsty');
   const stiff = states.some((x) => x.key === 'stiff');
-  const pace = (thirsty ? 0.8 : 1) * (stiff ? 0.8 : 1);
+  const pace = (thirsty ? 0.8 : 1) * (stiff ? 0.8 : 1) * (supply.fed ? SUPPLY.fedPace : 1);
 
   // The adventure: little ailments round the village to beat, for XP of its own (never the hero's).
   const creatures = useMemo(
@@ -636,7 +630,7 @@ export function VillageWalkPage() {
     if (!mob || downBy) return;
     world.current?.strike(mob.key);
     if (!provoked.includes(mob.key)) setProvoked((p) => [...p, mob.key]);
-    const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, weapon.power);
+    const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, weapon.power) * (supply.fed ? SUPPLY.fedPower : 1);
     if (left > 0) {
       setHurt((h) => ({ ...h, [mob.key]: CREATURES[mob.kind].hp - left }));
       return;
@@ -865,7 +859,6 @@ export function VillageWalkPage() {
           ) : near === WELL_KEY ? (
             <span className="pointer-events-auto flex flex-wrap justify-center gap-2">
               <Button size="lg" data-testid="drink-well" loading={drinking} className="border border-[#9fd8ff] shadow-lift" icon={<Droplets className="h-5 w-5" />} onClick={() => void drink()}>{t(`Drink een glas (+${WATER.glassMl} ml)`, `Drink a glass (+${WATER.glassMl} ml)`)}</Button>
-              {flask < 2 && <Button size="lg" variant="secondary" data-testid="fill-flask" className="border border-[#9fd8ff] shadow-lift" onClick={() => { setFlask(2); toast(t('Fles gevuld: twee glazen voor onderweg.', 'Flask filled: two glasses for on the way.')); }}>{t('Vul je fles', 'Fill your flask')}</Button>}
             </span>
           ) : near === HOME_KEY ? (
             <Button size="lg" data-testid="enter-home" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(HOME_KEY)}>{t('Naar binnen: jouw huis', 'Go in: your home')}</Button>
@@ -924,13 +917,6 @@ export function VillageWalkPage() {
                 <span className="shrink-0 text-[9.5px] font-semibold leading-none tabular-nums">{text}</span>
               </button>
             ))}
-            <button type="button" data-testid="flask" disabled={flask <= 0 || drinking} onClick={() => void sip()}
-              aria-label={flask > 0 ? t(`Waterfles: ${flask} van 2 glazen. Tik om een glas te drinken.`, `Flask: ${flask} of 2 glasses. Tap to drink a glass.`) : t('Waterfles leeg. Vul hem bij de waterput.', 'Flask empty. Fill it at the well.')}
-              className="flex h-[22px] w-[128px] items-center gap-1 rounded-md border border-black/60 bg-[#141c18]/85 pl-1 pr-1.5 text-white shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a] disabled:opacity-70">
-              <Backpack className="h-3.5 w-3.5 shrink-0 text-[#9fd8ff]" aria-hidden />
-              <span className="flex flex-1 gap-1" aria-hidden>{[0, 1].map((i) => <span key={i} className={`h-[9px] flex-1 rounded-sm ${i < flask ? 'bg-[#58a8e8]' : 'bg-black/60'}`} />)}</span>
-              <span className="shrink-0 text-[9.5px] font-semibold leading-none">{flask > 0 ? t('drink', 'drink') : t('leeg', 'empty')}</span>
-            </button>
             {adventure.data && (
               <p className="flex w-max items-center gap-1 rounded-md border border-black/60 bg-[#141c18]/85 px-1.5 py-[3px] text-[10.5px] font-semibold leading-none text-[#ffd9a8] shadow-lift" data-testid="adventure-level">
                 <Sparkles className="h-3 w-3" aria-hidden />{t(`Avonturier ${adventure.data.level}`, `Adventurer ${adventure.data.level}`)} · {adventure.data.xp - adventure.data.from}/{adventure.data.to - adventure.data.from}<span className="sr-only"> · {nl ? weapon.nl : weapon.en}</span>
@@ -940,8 +926,20 @@ export function VillageWalkPage() {
           </div>
         )}
 
-        {(thirsty || stiff) && !dest && (
-          <ul className={`absolute left-2 flex max-w-[190px] flex-wrap gap-1 ${panel === 'meters' ? 'top-[246px]' : 'top-[122px]'}`} data-testid="world-states" aria-label={t('Hoe je held zich voelt', 'How your hero feels')}>
+        {d?.hero && !dest && !placing && (
+          <ul className={`absolute left-2 flex max-w-[236px] flex-wrap gap-1 whitespace-nowrap ${panel === 'meters' ? 'top-[246px]' : 'top-[122px]'}`} data-testid="world-states" aria-label={t('Hoe je held zich voelt', 'How your hero feels')}>
+            <li><button type="button" data-testid="flask" data-n={supply.glasses} disabled={supply.glasses <= 0 || hp >= maxHp} onClick={sip}
+              aria-label={supply.glasses > 0 ? t(`Veldfles: ${supply.glasses} ${supply.glasses === 1 ? 'glas' : 'glazen'}. Tik om te drinken: +50% leven.`, `Flask: ${supply.glasses} ${supply.glasses === 1 ? 'glass' : 'glasses'}. Tap to drink: +50% life.`) : t('Veldfles leeg. Log een glas water dat je echt drinkt, dan krijgt je held er een.', 'Flask empty. Log a glass of water you really drink, and your hero gets one.')}
+              className="flex min-h-[28px] items-center gap-1 rounded-full border bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none shadow-lift disabled:opacity-60 border-[#9fd8ff]/70 text-[#cfeaff]"><Droplets className="h-3.5 w-3.5" aria-hidden />{supply.glasses}</button></li>
+            <li><button type="button" data-testid="rations" data-n={supply.rations} disabled={supply.rations <= 0 || hp >= maxHp} onClick={eat}
+              aria-label={supply.rations > 0 ? t(`Rantsoenen: ${supply.rations}. Tik om te eten: weer helemaal fit.`, `Rations: ${supply.rations}. Tap to eat: fully fit again.`) : t('Geen rantsoenen. Vul bij Voeding in wat je at, dan krijgt je held eten.', 'No rations. Log what you ate under Nutrition, and your hero gets food.')}
+              className="flex min-h-[28px] items-center gap-1 rounded-full border bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none shadow-lift disabled:opacity-60 border-[#f0c36a]/70 text-[#ffe9b8]"><Beef className="h-3.5 w-3.5" aria-hidden />{supply.rations}</button></li>
+            {supply.fed ? (
+              <li><span data-testid="well-fed" className="flex min-h-[28px] items-center gap-1 rounded-full border bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none shadow-lift disabled:opacity-60 border-[#9fe39a]/70 text-[#c9f2c0]">{t('Goed gegeten · sneller en sterker', 'Well fed · faster and stronger')}</span></li>
+            ) : (
+              <li><Link to="/p/voeding" data-testid="fed-progress" className="flex min-h-[28px] items-center gap-1 rounded-full border bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none shadow-lift disabled:opacity-60 border-white/30 text-white/85"
+                aria-label={t(`${supply.mainMeals} van 3 maaltijden ingevuld. Vul ontbijt, lunch en diner in: dan is je held sneller en sterker.`, `${supply.mainMeals} of 3 meals logged. Log breakfast, lunch and dinner: then your hero is faster and stronger.`)}>{t(`Eten ${supply.mainMeals}/3`, `Food ${supply.mainMeals}/3`)}</Link></li>
+            )}
             {thirsty && (
               <li><button type="button" onClick={() => world.current?.goTo(WELL_KEY)}
                 aria-label={t('Dorst: je loopt trager. Tik om naar de waterput te lopen.', 'Thirsty: you walk slower. Tap to walk to the well.')}

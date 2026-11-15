@@ -409,6 +409,11 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     Bluetooth-hartslagmeter (of de brug van de app); live hartslag, en gemiddelde/hoogste/laagste en
     gemeten tijd per training opgeslagen (`session_heart_rates`, privé, in de AVG-export).
 
+114. [x] **Voorraad van je held uit het echte leven** (15 nov): veldfles = ingevulde glazen water van
+    vandaag (max 8, +50% leven per glas), rantsoenen = ingevulde maaltijden (volledig herstel).
+    Ontbijt, lunch en diner ingevuld: "goed gegeten", 15% sneller en 25% sterker. De fles vult niet meer
+    gratis bij de put. Eten geeft nooit een straf (`shared/supplies.ts`).
+
 113. [ ] **Echte app met Health Connect en Apple Health**: akkoord eigenaar 15 nov; plan en stappen in
     `docs/APP_HEALTH.md`. Stap 1 (hartslag) is klaar.
 

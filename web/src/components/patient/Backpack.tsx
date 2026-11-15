@@ -2,29 +2,16 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Beef, Coins, Droplets, Footprints, Gem, Lock, Swords } from 'lucide-react';
 import { LOOT, LOOT_KEYS, WEAPONS, weaponByKey } from '@shared/adventure';
-import { WATER } from '@shared/survival';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import { Button, Card, useToast } from '@/components/ui';
 import type { HeroState } from '@/lib/types';
+import { useSupplies } from '@/lib/supplies';
 
 type Adventure = { level: number; weapon: string | null; owned: string[]; coins: number; loot?: Record<string, number> };
 
 const ICON: Record<string, string> = { fists: '✊', staff: '🦯', gloves: '🥊', club: '🏏', hammer: '🔨', sword: '🗡️', axe: '🪓', spear: '🔱', hero_sword: '⚔️' };
-const FLASK = 'fp.village.flask';
-const FLASK_MAX = 2;
-
-/** The flask filled at the village well: glasses left for today, kept in this browser. */
-const readFlask = () => {
-  try {
-    const v = JSON.parse(localStorage.getItem(FLASK) ?? 'null') as { day: string; n: number } | null;
-    return v && v.day === new Date().toDateString() ? Math.max(0, Math.min(FLASK_MAX, v.n)) : 0;
-  } catch {
-    return 0;
-  }
-};
-
 /**
  * The backpack: the weapons of the adventure (bought with coins, put on or off) and what the hero
  * carries for the day: the flask, and the water, protein and steps of today.
@@ -36,7 +23,7 @@ export function BackpackCard({ d }: { d: HeroState }) {
   const toast = useToast();
   const q = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure') });
   const [busy, setBusy] = useState<string | null>(null);
-  const [flask, setFlask] = useState(readFlask);
+  const supply = useSupplies(d.logs?.survival.water.ml ?? 0, !!d.hero);
   const a = q.data;
   const worn = weaponByKey(a?.weapon);
 
@@ -55,23 +42,6 @@ export function BackpackCard({ d }: { d: HeroState }) {
   const wear = (key: string | null, name: string) =>
     act(key ?? 'off', () => api.put<Adventure>('/patient/hero/adventure/weapon', { key }), key ? t(`${name} in de hand.`, `${name} in hand.`) : t('Wapen opgeborgen. Je vecht met je vuisten.', 'Weapon put away. You fight with your fists.'));
   const buy = (key: string, name: string) => act(key, () => api.post<Adventure>('/patient/hero/adventure/weapon/buy', { key }), t(`${name} gekocht en in de hand!`, `${name} bought and in hand!`));
-
-  const sip = async () => {
-    if (flask <= 0) return;
-    setBusy('sip');
-    try {
-      await api.post('/patient/logs/water', { ml: WATER.glassMl });
-      const n = flask - 1;
-      setFlask(n);
-      try { localStorage.setItem(FLASK, JSON.stringify({ day: new Date().toDateString(), n })); } catch { /* storage optional */ }
-      void qc.invalidateQueries({ queryKey: ['patient-hero'] });
-      toast(t('Glas water gelogd. Drink het ook echt op!', 'Glass of water logged. Do drink it!'));
-    } catch (e) {
-      toast(describeError(e, locale), 'bad');
-    } finally {
-      setBusy(null);
-    }
-  };
 
   const logs = d.logs;
   const supplies = logs ? [
@@ -148,13 +118,21 @@ export function BackpackCard({ d }: { d: HeroState }) {
       </ul>
 
       <h3 className="mt-5 flex items-center gap-1.5 text-[15px] font-semibold text-ink-950"><Droplets className="h-4 w-4" aria-hidden />{t('Voorraad', 'Supplies')}</h3>
-      <div className="mt-2 flex items-center gap-3 rounded-xl border border-line bg-white p-2.5" data-testid="backpack-flask">
-        <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">🧴</span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-[14.5px] font-semibold text-ink-950">{t('Veldfles', 'Flask')} · {flask}/{FLASK_MAX}</span>
-          <span className="block text-[12.5px] text-ink-700">{flask > 0 ? t('Glazen water voor onderweg.', 'Glasses of water for the road.') : t('Leeg. Vul hem bij de waterput in je dorp.', 'Empty. Fill it at the well in your village.')}</span>
-        </span>
-        <Button size="sm" disabled={flask <= 0} loading={busy === 'sip'} onClick={() => void sip()}>{t('Drink', 'Drink')}</Button>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <div className="flex items-center gap-3 rounded-xl border border-line bg-white p-2.5" data-testid="backpack-flask">
+          <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">🧴</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14.5px] font-semibold text-ink-950">{t('Veldfles', 'Flask')} · {supply.glasses} {t(supply.glasses === 1 ? 'glas' : 'glazen', supply.glasses === 1 ? 'glass' : 'glasses')}</span>
+            <span className="block text-[12.5px] text-ink-700">{t('Elk glas water dat je invult geeft je held een glas. In het dorp drinkt je held het voor +50% leven.', 'Every glass of water you log gives your hero a glass. In the village your hero drinks it for +50% life.')}</span>
+          </span>
+        </div>
+        <div className="flex items-center gap-3 rounded-xl border border-line bg-white p-2.5" data-testid="backpack-rations">
+          <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">🍱</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14.5px] font-semibold text-ink-950">{t('Rantsoenen', 'Rations')} · {supply.rations}</span>
+            <span className="block text-[12.5px] text-ink-700">{supply.fed ? t('Goed gegeten vandaag: je held is sneller en sterker.', 'Well fed today: your hero is faster and stronger.') : t(`Elke maaltijd die je bij Voeding invult geeft een rantsoen. ${supply.mainMeals}/3 maaltijden vandaag; bij 3 is je held sneller en sterker.`, `Every meal you log under Nutrition gives a ration. ${supply.mainMeals}/3 meals today; at 3 your hero is faster and stronger.`)}</span>
+          </span>
+        </div>
       </div>
       {supplies.length > 0 && (
         <ul className="mt-2 grid gap-2 sm:grid-cols-3">
