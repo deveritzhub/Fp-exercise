@@ -1,0 +1,1002 @@
+{
+ "_meta": {
+  "naam": "Schema's voor spiergroei (hypertrofie)",
+  "versie": "fp-kracht-v5",
+  "toelichting": "Vijf schema's voor spiergroei, van 2× tot 5× per week, met zes nieuwe oefeningen: vier die de spier in gestrekte stand belasten (zittende leg curl, Bulgaarse split squat, curl op schuine bank, zittend kuitheffen) en twee stabiele oefeningen om veilig dicht bij je maximum te trainen (zijwaartse raise aan de kabel, chest press machine). Volume en frequentie volgens de krachtmodule (10 tot 20 harde sets per spiergroep per week, elke spiergroep minstens 2× per week), grondoefeningen RPE 8 en isolatie RPE 9, blokken van 6 weken met een lichtere week."
+ },
+ "seed_data": {
+  "krachttraining": {
+   "_toelichting": {
+    "veiligheid": {
+     "screening_vooraf": "Bij bekende hartklachten, hoge bloeddruk, duizeligheid of pijn in de borst: eerst met de huisarts overleggen.",
+     "rode_vlaggen_tijdens_training": [
+      "Pijn op de borst",
+      "Duizeligheid of zwart zien",
+      "Scherpe pijn in een gewricht",
+      "Gevoelloosheid of uitstraling in een arm of been"
+     ]
+    }
+   },
+   "oefeningen": [
+    {
+     "id": "kr_seated_leg_curl",
+     "naam": "Zittende leg curl",
+     "categorie": "legs",
+     "hoofdspier": "hamstrings",
+     "materiaal": "Machine",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "8-15",
+     "rust_min": 1.5,
+     "cues": "Stel de machine zo in dat je knie gelijk ligt met het draaipunt en het kussen je bovenbenen vastzet. Leun iets naar voren vanuit je heupen: zo staan de hamstrings meer op rek. Buig je knieën zo ver mogelijk, houd kort vast en laat in 2 tot 3 tellen terugkomen tot je benen bijna gestrekt zijn.",
+     "tags": [
+      "kracht",
+      "hypertrofie",
+      "sportschool"
+     ]
+    },
+    {
+     "id": "kr_bulgarian_split_squat",
+     "naam": "Bulgaarse split squat",
+     "categorie": "legs",
+     "hoofdspier": "quadriceps, bilspieren",
+     "materiaal": "Bank, dumbbells (optioneel)",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "8-12",
+     "rust_min": 2,
+     "cues": "Zet je achterste voet met de wreef op een bank en je voorste voet zo ver naar voren dat je recht naar beneden kunt zakken. Zak tot je achterste knie bijna de grond raakt; je voorste knie mag over je tenen. Duw via je hele voorste voet omhoog. Iets voorover leunen geeft meer bilspieren. Lichter: zonder gewicht en houd je ergens aan vast.",
+     "tags": [
+      "kracht",
+      "hypertrofie",
+      "sportschool"
+     ]
+    },
+    {
+     "id": "kr_incline_db_curl",
+     "naam": "Dumbbell curl op schuine bank",
+     "categorie": "pull",
+     "hoofdspier": "biceps",
+     "materiaal": "Dumbbells, schuine bank",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "8-15",
+     "rust_min": 1,
+     "cues": "Ga met je rug op een schuine bank (45 tot 60 graden) zitten en laat je armen recht naar beneden hangen, iets achter je lichaam: zo staat de biceps op rek. Buig je ellebogen zonder ze naar voren te bewegen en laat de dumbbells langzaam helemaal zakken.",
+     "tags": [
+      "kracht",
+      "hypertrofie",
+      "sportschool"
+     ]
+    },
+    {
+     "id": "kr_seated_calf_raise",
+     "naam": "Zittend kuitheffen",
+     "categorie": "legs",
+     "hoofdspier": "kuiten (diepe kuitspier)",
+     "materiaal": "Machine, of dumbbell op de knieën",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "12-20",
+     "rust_min": 1,
+     "cues": "Ga zitten met je knieën in een hoek van 90 graden en je voorvoeten op een verhoging. Laat je hielen zo ver mogelijk zakken en houd onderin 1 tel vast, kom dan zo hoog mogelijk op je tenen. Zittend train je vooral de diepe kuitspier (soleus), staand meer de oppervlakkige.",
+     "tags": [
+      "kracht",
+      "hypertrofie",
+      "sportschool"
+     ]
+    },
+    {
+     "id": "kr_cable_lateral_raise",
+     "naam": "Zijwaartse raise aan de kabel",
+     "categorie": "push",
+     "hoofdspier": "middelste schouder",
+     "materiaal": "Kabelstation",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "12-20",
+     "rust_min": 1,
+     "cues": "Sta zijwaarts naast de kabel met de katrol laag en pak het handvat met de hand die het verst van de kabel af is. Til je arm met een licht gebogen elleboog zijwaarts op tot schouderhoogte en laat langzaam zakken. De kabel houdt ook onderin spanning op de schouder.",
+     "tags": [
+      "kracht",
+      "hypertrofie",
+      "sportschool"
+     ]
+    },
+    {
+     "id": "kr_machine_chest_press",
+     "naam": "Chest press machine",
+     "categorie": "push",
+     "hoofdspier": "borst, triceps",
+     "materiaal": "Machine",
+     "niveau": "basis",
+     "1rm_relevant": false,
+     "herhalingen_range": "8-12",
+     "rust_min": 2,
+     "cues": "Stel de stoel zo in dat de handvatten op borsthoogte zitten. Houd je schouderbladen tegen het kussen, duw de handvatten naar voren zonder je ellebogen op slot te zetten en laat ze gecontroleerd terugkomen tot je rek in je borst voelt. Stabiel, dus veilig om dicht bij je maximum te trainen.",
+     "tags": [
+      "kracht",
+      "hypertrofie",
+      "sportschool"
+     ]
+    }
+   ],
+   "programmas": [
+    {
+     "id": "kr5_hyp_fullbody_3d",
+     "naam": "Spiergroei full body, 3× per week",
+     "niveau": "beginner tot gemiddeld (vanaf ongeveer 2 maanden krachttraining)",
+     "doel": "Spiermassa opbouwen met elke spiergroep 3× per week: veel kwaliteit per set, genoeg herstel",
+     "dagen": [
+      {
+       "dag": "Full body A",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_back_squat",
+         "sets": 3,
+         "herhalingen": "6-10",
+         "rust_min": 3,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_bench_press",
+         "sets": 3,
+         "herhalingen": "6-10",
+         "rust_min": 3,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_chest_supported_row",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_rdl",
+         "sets": 3,
+         "herhalingen": "8-10",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_lateral_raise",
+         "sets": 3,
+         "herhalingen": "12-20",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_overhead_triceps",
+         "sets": 2,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      },
+      {
+       "dag": "Full body B",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_leg_press",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_lat_pulldown",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_db_shoulder_press",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_cable_fly",
+         "sets": 2,
+         "herhalingen": "12-15",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_seated_leg_curl",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 1.5,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_incline_db_curl",
+         "sets": 2,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_standing_calf_raise",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      },
+      {
+       "dag": "Full body C",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_hip_thrust",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_incline_db_press",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_seated_cable_row",
+         "sets": 3,
+         "herhalingen": "10-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_leg_extension",
+         "sets": 2,
+         "herhalingen": "12-15",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_lateral_raise",
+         "sets": 3,
+         "herhalingen": "12-20",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_reverse_fly",
+         "sets": 2,
+         "herhalingen": "12-20",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      }
+     ],
+     "geschat_sets_per_week": "Ongeveer 8 tot 10 harde sets per week voor borst, rug, schouders en bovenbenen; armen 6 tot 7, kuiten 3. Indirecte sets (zoals triceps bij drukken) tellen voor de helft.",
+     "opmerking": "Elke spiergroep 3× per week. Werk in blokken van 6 weken. Week 1: RPE 7 (nog 3 herhalingen over) om je gewichten te vinden. Week 2 tot 5: grondoefeningen op RPE 8 (2 over), isolatieoefeningen op RPE 9 (1 over); voeg in week 3 en 5 één set toe bij een spiergroep die achterblijft. Week 6: lichter (de helft van de sets, RPE 6), daarna een nieuw blok. Dubbele progressie: haal je bij alle sets de bovenkant van de range, dan gaat het gewicht omhoog en begin je weer onderaan. Zak gecontroleerd en gebruik de volle bewegingsuitslag: de spier groeit het best als hij ook in gestrekte stand wordt belast. Doet een oefening pijn, kies dan een andere voor dezelfde spiergroep. Eet genoeg eiwit (ongeveer 1,6 g per kg per dag, zie de eiwitmeter) en slaap 7 tot 9 uur.",
+     "verwijzing": "Schoenfeld e.a. 2017 (meer sets per week, meer groei); Baz-Valle e.a. 2022 (12 tot 20 sets); Schoenfeld e.a. 2016 (elke spiergroep minstens 2× per week); Schoenfeld e.a. 2017 (zwaar en licht even goed, mits dicht bij falen); Refalo e.a. 2023 (afstand tot falen); Schoenfeld e.a. 2016 (2 tot 3 minuten rust bij grondoefeningen); Maeo e.a. 2021 en 2023 (training in gestrekte spierlengte); Morton e.a. 2018 (eiwit)."
+    },
+    {
+     "id": "kr5_hyp_upper_lower_4d",
+     "naam": "Spiergroei boven/onder, 4× per week",
+     "niveau": "gemiddeld (vanaf ongeveer 6 maanden krachttraining)",
+     "doel": "Meer volume per spiergroep: bovenlichaam en benen elk 2× per week, met zware en lichtere oefeningen",
+     "dagen": [
+      {
+       "dag": "Bovenlichaam A",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_bench_press",
+         "sets": 3,
+         "herhalingen": "6-10",
+         "rust_min": 3,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_barbell_row",
+         "sets": 3,
+         "herhalingen": "6-10",
+         "rust_min": 2.5,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_incline_db_press",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_lat_pulldown",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_lateral_raise",
+         "sets": 3,
+         "herhalingen": "12-20",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_overhead_triceps",
+         "sets": 2,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_incline_db_curl",
+         "sets": 2,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      },
+      {
+       "dag": "Benen A",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_back_squat",
+         "sets": 3,
+         "herhalingen": "6-10",
+         "rust_min": 3,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_rdl",
+         "sets": 3,
+         "herhalingen": "8-10",
+         "rust_min": 2.5,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_leg_extension",
+         "sets": 2,
+         "herhalingen": "12-15",
+         "rust_min": 1.5,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_seated_leg_curl",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 1.5,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_standing_calf_raise",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_pallof_press",
+         "sets": 2,
+         "herhalingen": "10-12 per kant",
+         "rust_min": 1
+        }
+       ]
+      },
+      {
+       "dag": "Bovenlichaam B",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_db_shoulder_press",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_pull_up",
+         "sets": 3,
+         "herhalingen": "6-10",
+         "rust_min": 2.5,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_db_bench_press",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_seated_cable_row",
+         "sets": 3,
+         "herhalingen": "10-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_cable_fly",
+         "sets": 2,
+         "herhalingen": "12-15",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_lateral_raise",
+         "sets": 3,
+         "herhalingen": "12-20",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_reverse_fly",
+         "sets": 2,
+         "herhalingen": "12-20",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_hammer_curl",
+         "sets": 2,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_triceps_pushdown",
+         "sets": 2,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      },
+      {
+       "dag": "Benen B",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_hack_squat",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2.5,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_hip_thrust",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_walking_lunge",
+         "sets": 2,
+         "herhalingen": "10-12 per been",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_leg_curl",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 1.5,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_seated_calf_raise",
+         "sets": 3,
+         "herhalingen": "12-20",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_hip_abduction",
+         "sets": 2,
+         "herhalingen": "15-20",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      }
+     ],
+     "geschat_sets_per_week": "Ongeveer 10 tot 13 harde sets per week voor borst, rug, armen en bovenbenen; schouders 8 tot 9, kuiten 6. Indirecte sets tellen voor de helft.",
+     "opmerking": "Leg de twee rustdagen na Benen A en na Benen B. Werk in blokken van 6 weken. Week 1: RPE 7 (nog 3 herhalingen over) om je gewichten te vinden. Week 2 tot 5: grondoefeningen op RPE 8 (2 over), isolatieoefeningen op RPE 9 (1 over); voeg in week 3 en 5 één set toe bij een spiergroep die achterblijft. Week 6: lichter (de helft van de sets, RPE 6), daarna een nieuw blok. Dubbele progressie: haal je bij alle sets de bovenkant van de range, dan gaat het gewicht omhoog en begin je weer onderaan. Zak gecontroleerd en gebruik de volle bewegingsuitslag: de spier groeit het best als hij ook in gestrekte stand wordt belast. Doet een oefening pijn, kies dan een andere voor dezelfde spiergroep. Eet genoeg eiwit (ongeveer 1,6 g per kg per dag, zie de eiwitmeter) en slaap 7 tot 9 uur.",
+     "verwijzing": "Schoenfeld e.a. 2017 (meer sets per week, meer groei); Baz-Valle e.a. 2022 (12 tot 20 sets); Schoenfeld e.a. 2016 (elke spiergroep minstens 2× per week); Schoenfeld e.a. 2017 (zwaar en licht even goed, mits dicht bij falen); Refalo e.a. 2023 (afstand tot falen); Schoenfeld e.a. 2016 (2 tot 3 minuten rust bij grondoefeningen); Maeo e.a. 2021 en 2023 (training in gestrekte spierlengte); Morton e.a. 2018 (eiwit)."
+    },
+    {
+     "id": "kr5_hyp_ulppl_5d",
+     "naam": "Spiergroei 5× per week: boven/onder + push/pull/benen",
+     "niveau": "gevorderd (vanaf ongeveer 1 jaar regelmatige krachttraining)",
+     "doel": "Hoog volume voor ervaren sporters: elke spiergroep 2× per week, met 15 tot 20 sets voor de grote spiergroepen",
+     "dagen": [
+      {
+       "dag": "Bovenlichaam",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_bench_press",
+         "sets": 4,
+         "herhalingen": "6-10",
+         "rust_min": 3,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_pull_up",
+         "sets": 3,
+         "herhalingen": "6-10",
+         "rust_min": 2.5,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_db_shoulder_press",
+         "sets": 2,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_chest_supported_row",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_lateral_raise",
+         "sets": 4,
+         "herhalingen": "12-20",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_db_curl",
+         "sets": 2,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_triceps_pushdown",
+         "sets": 2,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      },
+      {
+       "dag": "Benen (kracht)",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_back_squat",
+         "sets": 3,
+         "herhalingen": "6-10",
+         "rust_min": 3,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_rdl",
+         "sets": 4,
+         "herhalingen": "8-10",
+         "rust_min": 2.5,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_leg_extension",
+         "sets": 3,
+         "herhalingen": "12-15",
+         "rust_min": 1.5,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_seated_leg_curl",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 1.5,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_standing_calf_raise",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      },
+      {
+       "dag": "Push",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_incline_db_press",
+         "sets": 4,
+         "herhalingen": "8-12",
+         "rust_min": 2.5,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_machine_chest_press",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_cable_fly",
+         "sets": 3,
+         "herhalingen": "12-15",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_cable_lateral_raise",
+         "sets": 4,
+         "herhalingen": "12-20",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_overhead_triceps",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      },
+      {
+       "dag": "Pull",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_barbell_row",
+         "sets": 3,
+         "herhalingen": "6-10",
+         "rust_min": 2.5,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_lat_pulldown",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_seated_cable_row",
+         "sets": 2,
+         "herhalingen": "10-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_reverse_fly",
+         "sets": 3,
+         "herhalingen": "12-20",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_incline_db_curl",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      },
+      {
+       "dag": "Benen (volume)",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_hack_squat",
+         "sets": 4,
+         "herhalingen": "8-12",
+         "rust_min": 2.5,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_hip_thrust",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_bulgarian_split_squat",
+         "sets": 2,
+         "herhalingen": "8-12 per been",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_leg_extension",
+         "sets": 2,
+         "herhalingen": "12-15",
+         "rust_min": 1.5,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_leg_curl",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 1.5,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_seated_calf_raise",
+         "sets": 3,
+         "herhalingen": "12-20",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_hip_abduction",
+         "sets": 2,
+         "herhalingen": "15-20",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      }
+     ],
+     "geschat_sets_per_week": "Ongeveer 14 tot 16 harde sets per week voor borst, rug en bovenbenen; armen 11 tot 12, schouders 10 tot 11, hamstrings 10, kuiten 6. Indirecte sets tellen voor de helft.",
+     "opmerking": "Alleen als herstel, slaap en techniek op orde zijn; voel je je na 2 weken nog steeds kapot, ga dan terug naar 4× per week. Werk in blokken van 6 weken. Week 1: RPE 7 (nog 3 herhalingen over) om je gewichten te vinden. Week 2 tot 5: grondoefeningen op RPE 8 (2 over), isolatieoefeningen op RPE 9 (1 over); voeg in week 3 en 5 één set toe bij een spiergroep die achterblijft. Week 6: lichter (de helft van de sets, RPE 6), daarna een nieuw blok. Dubbele progressie: haal je bij alle sets de bovenkant van de range, dan gaat het gewicht omhoog en begin je weer onderaan. Zak gecontroleerd en gebruik de volle bewegingsuitslag: de spier groeit het best als hij ook in gestrekte stand wordt belast. Doet een oefening pijn, kies dan een andere voor dezelfde spiergroep. Eet genoeg eiwit (ongeveer 1,6 g per kg per dag, zie de eiwitmeter) en slaap 7 tot 9 uur.",
+     "verwijzing": "Schoenfeld e.a. 2017 (meer sets per week, meer groei); Baz-Valle e.a. 2022 (12 tot 20 sets); Schoenfeld e.a. 2016 (elke spiergroep minstens 2× per week); Schoenfeld e.a. 2017 (zwaar en licht even goed, mits dicht bij falen); Refalo e.a. 2023 (afstand tot falen); Schoenfeld e.a. 2016 (2 tot 3 minuten rust bij grondoefeningen); Maeo e.a. 2021 en 2023 (training in gestrekte spierlengte); Morton e.a. 2018 (eiwit)."
+    },
+    {
+     "id": "kr5_hyp_dumbbell_3d",
+     "naam": "Spiergroei met dumbbells, 3× per week",
+     "niveau": "beginner tot gemiddeld",
+     "doel": "Spiermassa opbouwen thuis of in een kleine sportschool: alleen dumbbells en een bank",
+     "dagen": [
+      {
+       "dag": "Dumbbells A",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_goblet_squat",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_db_bench_press",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_db_row",
+         "sets": 4,
+         "herhalingen": "8-12 per arm",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_rdl",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_lateral_raise",
+         "sets": 2,
+         "herhalingen": "12-20",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_overhead_triceps",
+         "sets": 2,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      },
+      {
+       "dag": "Dumbbells B",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_reverse_lunge",
+         "sets": 3,
+         "herhalingen": "8-12 per been",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_db_shoulder_press",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_push_up",
+         "sets": 2,
+         "herhalingen": "6-20",
+         "rust_min": 1.5,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_hip_thrust",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_db_curl",
+         "sets": 3,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_reverse_fly",
+         "sets": 2,
+         "herhalingen": "12-20",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      },
+      {
+       "dag": "Dumbbells C",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_bulgarian_split_squat",
+         "sets": 3,
+         "herhalingen": "8-12 per been",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_incline_db_press",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_db_row",
+         "sets": 4,
+         "herhalingen": "10-15 per arm",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_rdl",
+         "sets": 3,
+         "herhalingen": "10-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_hammer_curl",
+         "sets": 2,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_lateral_raise",
+         "sets": 2,
+         "herhalingen": "12-20",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      }
+     ],
+     "geschat_sets_per_week": "Ongeveer 8 tot 10 harde sets per week voor borst, rug, armen, bovenbenen en bilspieren; schouders 6 tot 7. Indirecte sets tellen voor de helft.",
+     "opmerking": "Te licht geworden? Neem een zwaardere dumbbell, of doe meer herhalingen tot 1 herhaling voor het maximum (tot ongeveer 20 herhalingen werkt nog voor spiergroei). Geen kuitoefening: voeg zo nodig kuitheffen op een traptrede toe. Werk in blokken van 6 weken. Week 1: RPE 7 (nog 3 herhalingen over) om je gewichten te vinden. Week 2 tot 5: grondoefeningen op RPE 8 (2 over), isolatieoefeningen op RPE 9 (1 over); voeg in week 3 en 5 één set toe bij een spiergroep die achterblijft. Week 6: lichter (de helft van de sets, RPE 6), daarna een nieuw blok. Dubbele progressie: haal je bij alle sets de bovenkant van de range, dan gaat het gewicht omhoog en begin je weer onderaan. Zak gecontroleerd en gebruik de volle bewegingsuitslag: de spier groeit het best als hij ook in gestrekte stand wordt belast. Doet een oefening pijn, kies dan een andere voor dezelfde spiergroep. Eet genoeg eiwit (ongeveer 1,6 g per kg per dag, zie de eiwitmeter) en slaap 7 tot 9 uur.",
+     "verwijzing": "Schoenfeld e.a. 2017 (meer sets per week, meer groei); Baz-Valle e.a. 2022 (12 tot 20 sets); Schoenfeld e.a. 2016 (elke spiergroep minstens 2× per week); Schoenfeld e.a. 2017 (zwaar en licht even goed, mits dicht bij falen); Refalo e.a. 2023 (afstand tot falen); Schoenfeld e.a. 2016 (2 tot 3 minuten rust bij grondoefeningen); Maeo e.a. 2021 en 2023 (training in gestrekte spierlengte); Morton e.a. 2018 (eiwit)."
+    },
+    {
+     "id": "kr5_hyp_minimaal_2d",
+     "naam": "Spiergroei in weinig tijd, 2× per week",
+     "niveau": "beginner of weinig tijd (ongeveer 45 minuten per training)",
+     "doel": "De kleinste dosis die nog spiergroei geeft: weinig sets, maar elke set dicht bij het maximum",
+     "dagen": [
+      {
+       "dag": "Kort A",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_leg_press",
+         "sets": 3,
+         "herhalingen": "8-15",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_machine_chest_press",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_lat_pulldown",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_seated_leg_curl",
+         "sets": 2,
+         "herhalingen": "10-15",
+         "rust_min": 1.5,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_lateral_raise",
+         "sets": 2,
+         "herhalingen": "12-20",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      },
+      {
+       "dag": "Kort B",
+       "oefeningen": [
+        {
+         "exercise_id": "kr_rdl",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_incline_db_press",
+         "sets": 3,
+         "herhalingen": "8-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_seated_cable_row",
+         "sets": 3,
+         "herhalingen": "10-12",
+         "rust_min": 2,
+         "rpe": "8"
+        },
+        {
+         "exercise_id": "kr_leg_extension",
+         "sets": 2,
+         "herhalingen": "12-15",
+         "rust_min": 1.5,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_db_curl",
+         "sets": 2,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        },
+        {
+         "exercise_id": "kr_triceps_pushdown",
+         "sets": 2,
+         "herhalingen": "10-15",
+         "rust_min": 1,
+         "rpe": "9"
+        }
+       ]
+      }
+     ],
+     "geschat_sets_per_week": "Ongeveer 5 tot 6 harde sets per spiergroep per week: onder de 10, bewust de kleinste dosis die nog groei geeft. Meer sets geven meer groei.",
+     "opmerking": "Ga hier elke set tot 1 herhaling voor het maximum: met weinig sets telt elke set. Meer tijd? Stap over op het schema full body 3× per week. Werk in blokken van 6 weken. Week 1: RPE 7 (nog 3 herhalingen over) om je gewichten te vinden. Week 2 tot 5: grondoefeningen op RPE 8 (2 over), isolatieoefeningen op RPE 9 (1 over); voeg in week 3 en 5 één set toe bij een spiergroep die achterblijft. Week 6: lichter (de helft van de sets, RPE 6), daarna een nieuw blok. Dubbele progressie: haal je bij alle sets de bovenkant van de range, dan gaat het gewicht omhoog en begin je weer onderaan. Zak gecontroleerd en gebruik de volle bewegingsuitslag: de spier groeit het best als hij ook in gestrekte stand wordt belast. Doet een oefening pijn, kies dan een andere voor dezelfde spiergroep. Eet genoeg eiwit (ongeveer 1,6 g per kg per dag, zie de eiwitmeter) en slaap 7 tot 9 uur.",
+     "verwijzing": "Schoenfeld e.a. 2017 (meer sets per week, meer groei); Baz-Valle e.a. 2022 (12 tot 20 sets); Schoenfeld e.a. 2016 (elke spiergroep minstens 2× per week); Schoenfeld e.a. 2017 (zwaar en licht even goed, mits dicht bij falen); Refalo e.a. 2023 (afstand tot falen); Schoenfeld e.a. 2016 (2 tot 3 minuten rust bij grondoefeningen); Maeo e.a. 2021 en 2023 (training in gestrekte spierlengte); Morton e.a. 2018 (eiwit)."
+    }
+   ]
+  }
+ }
+}
