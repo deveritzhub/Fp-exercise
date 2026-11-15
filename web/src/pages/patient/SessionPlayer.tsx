@@ -1,4 +1,3 @@
-import { RegionFigure } from '@/components/patient/RegionFigure';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -389,13 +388,7 @@ export function ExerciseInfo({ item }: { item: ProgramItem }) {
         </div>
       ) : image ? (
         <img src={image} alt="" className="-mx-4 aspect-video w-[calc(100%+2rem)] max-w-none object-cover sm:mx-0 sm:w-full sm:rounded-2xl" />
-      ) : (
-        // No video or photo yet: a calm figure with the body region marked, and one line that says so.
-        <div className="flex items-center gap-4 rounded-2xl bg-mist px-4 py-3 text-[14.5px] text-ink-700" data-testid="no-video">
-          <RegionFigure region={ex.bodyRegion} className="h-[84px] w-[72px] shrink-0 text-accent" />
-          <p>{t('Voor deze oefening is nog geen video. Volg de beschrijving hieronder.', 'There is no video for this exercise yet. Follow the description below.')}</p>
-        </div>
-      )}
+      ) : null /* No video or photo yet: no empty video box; the description below is open in full. */}
 
       <div>
         <div className="flex items-start justify-between gap-3">
@@ -425,6 +418,18 @@ export function ExerciseInfo({ item }: { item: ProgramItem }) {
         </div>
       )}
 
+      {!video && !image ? (
+        // Without a video the text is the instruction: every part open, no tapping needed.
+        <div className="space-y-3" data-testid="exercise-text-only">
+          {sections.length === 0 && <p className="text-[16px] text-ink-700">{t('Vraag je fysiotherapeut hoe je deze oefening doet.', 'Ask your physiotherapist how to do this exercise.')}</p>}
+          {sections.map(([key, title, text]) => (
+            <section key={key} aria-labelledby={`ex-${key}`} className={cn('rounded-2xl border p-4', key === 'tips' ? 'border-line bg-sand-soft' : 'border-line bg-white')}>
+              <h2 id={`ex-${key}`} className="mb-1 text-[16px] font-semibold text-ink-950">{title}</h2>
+              <p className="text-[16px] leading-relaxed text-ink-800">{text}</p>
+            </section>
+          ))}
+        </div>
+      ) : (
       <div className="divide-y divide-line rounded-2xl border border-line">
         {sections.map(([key, title, text]) => (
           <div key={key}>
@@ -436,6 +441,7 @@ export function ExerciseInfo({ item }: { item: ProgramItem }) {
           </div>
         ))}
       </div>
+      )}
 
       {item.alternative && (
         <p className="flex items-start gap-2 text-[14.5px] text-ink-700"><Repeat className="mt-0.5 h-4 w-4 shrink-0 text-ink-500" />{t('Lukt deze oefening niet? Doe dan:', 'Can’t do this exercise? Do this instead:')} <strong className="font-semibold">{nl ? item.alternative.nameNl : item.alternative.nameEn}</strong></p>

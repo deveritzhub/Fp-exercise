@@ -30,6 +30,7 @@ const STAFF: Item[] = [
   { nl: 'Reageren op een training bij "Markeer als gezien"; de patiënt krijgt je reactie.', en: 'Reply to a workout with "Mark as seen"; the patient gets your reply.' },
 ];
 const PATIENT: Item[] = [
+  { nl: 'Nog geen video bij een oefening? Dan zie je meteen de hele beschrijving: startpositie, uitvoering en waar je op moet letten.', en: 'No video for an exercise yet? Then you see the whole description at once: starting position, how to do it and what to watch out for.' },
   { nl: 'Kies je schema: geef op welk format je wilt, hoe vaak per week je traint en wat je doel is, en zie welk krachtschema bij je past. Nieuw: vijf schema’s voor spiergroei.', en: 'Choose your schedule: say which format you want, how often a week you train and what your goal is, and see which strength schedule suits you. New: five muscle growth schedules.', to: '/p/kracht' },
   { nl: 'Loop zelf door je dorp in 3D: tik op de grond en je held loopt erheen. In de oefenzaal staat een tv met je oefeningen van vandaag; na je training krijgt je held daar de XP.', en: 'Walk through your village in 3D: tap the ground and your hero walks there. The gym has a TV with your exercises for today; after your workout your hero gets the XP there.', to: '/p/dorp' },
   { nl: 'Je dorp groeit mee: een huisje per 5 trainingen, een vlag per verslagen baas, een molen, akkers, een standbeeld en een vuurtoren.', en: 'Your village grows with you: a cottage per 5 workouts, a pennant per defeated boss, a windmill, fields, a statue and a lighthouse.', to: '/p/wereld' },

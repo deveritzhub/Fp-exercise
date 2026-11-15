@@ -992,14 +992,28 @@ export function VillageWalkPage() {
 
       <Dialog open={tvOpen} onClose={() => { setTvOpen(false); setPlaying(null); }} title={t('Je oefeningen van vandaag', "Today's exercises")} size="md" sheet>
         <div data-testid="tv-panel" className="space-y-4">
-          {exercise && (
+          {exercise && !mediaUrl(exercise.exercise.videoMediaId) && !mediaUrl(exercise.exercise.thumbnailMediaId) && (
+            // No video yet: no empty screen, but how to do it and what to watch out for.
+            <div data-testid="tv-text-only" className="rounded-xl border border-line bg-white p-3">
+              <p className="text-[15.5px] font-semibold text-ink-950">{nl ? exercise.exercise.nameNl : exercise.exercise.nameEn}</p>
+              {[
+                [t('Startpositie', 'Starting position'), nl ? exercise.exercise.startingPositionNl : exercise.exercise.startingPositionEn],
+                [t('Uitvoering', 'How to do it'), nl ? exercise.exercise.movementNl : exercise.exercise.movementEn],
+                [t('Let op', 'Remember'), nl ? exercise.exercise.instructionsNl : exercise.exercise.instructionsEn],
+              ].filter(([, v]) => v).map(([title, text]) => (
+                <div key={title} className="mt-2">
+                  <p className="text-[14px] font-semibold text-ink-800">{title}</p>
+                  <p className="text-[15px] leading-relaxed text-ink-700">{text}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {exercise && (mediaUrl(exercise.exercise.videoMediaId) || mediaUrl(exercise.exercise.thumbnailMediaId)) && (
             <div className="overflow-hidden rounded-xl border-4 border-[#1c2420] bg-black">
               {mediaUrl(exercise.exercise.videoMediaId) ? (
                 <video key={exercise.id} src={mediaUrl(exercise.exercise.videoMediaId)!} poster={mediaUrl(exercise.exercise.thumbnailMediaId) ?? undefined} controls autoPlay muted loop playsInline className="aspect-video w-full" />
-              ) : mediaUrl(exercise.exercise.thumbnailMediaId) ? (
-                <img src={mediaUrl(exercise.exercise.thumbnailMediaId)!} alt="" className="aspect-video w-full object-contain" />
               ) : (
-                <p className="grid aspect-video place-items-center px-4 text-center text-[14.5px] text-white/85">{t('Van deze oefening is nog geen video.', 'There is no video of this exercise yet.')}</p>
+                <img src={mediaUrl(exercise.exercise.thumbnailMediaId)!} alt="" className="aspect-video w-full object-contain" />
               )}
               <p className="bg-[#1c2420] px-3 py-2 text-[14.5px] font-semibold text-white">{nl ? exercise.exercise.nameNl : exercise.exercise.nameEn}</p>
             </div>

@@ -388,9 +388,10 @@ function normaliseStrength(m: z.infer<typeof strengthModule>, b: Bundle) {
       equipment: e.materiaal && e.materiaal !== 'Geen' ? equipmentFor(e.materiaal) : ['none'],
       difficulty: e.niveau === 'gevorderd' ? 4 : e.niveau === 'beginner' ? 2 : 3,
       muscles: (e.hoofdspier ?? '').split(/,\s*/).filter(Boolean),
-      movementNl: '',
+      // The cues describe how to do it ("Uitvoering"); the rep range and rest go under "Let op".
+      movementNl: e.cues ?? '',
       movementEn: '',
-      cuesNl: [e.cues, range && `Herhalingen: ${range}.`, e.rust_min && `Rust: ${e.rust_min} min.`].filter(Boolean).join(' '),
+      cuesNl: [range && `Herhalingen: ${range}.`, e.rust_min && `Rust: ${e.rust_min} min.`].filter(Boolean).join(' '),
       cuesEn: '',
       sets: 3,
       reps: isTime ? null : lastInt(range),
