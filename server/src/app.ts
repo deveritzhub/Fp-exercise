@@ -58,7 +58,8 @@ export function createApp() {
       },
       strictTransportSecurity: config.isProd ? 'max-age=63072000; includeSubDomains' : false,
       referrerPolicy: 'strict-origin-when-cross-origin',
-      permissionsPolicy: { camera: [], microphone: [], geolocation: [] },
+      // Bluetooth only on our own pages: the heart rate strap during a workout.
+      permissionsPolicy: { camera: [], microphone: [], geolocation: [], bluetooth: ['self'] },
     }),
   );
 

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useHeartRate } from '@/lib/heartRate';
+import type { HrSummary } from '@shared/heartRate';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Brain, Check, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, X, Printer, Trophy, Swords, Coins, Gift, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, Brain, Check, Heart, CheckCircle2, ChevronDown, ChevronRight, Info, MessageCircle, PartyPopper, Pause, Play, Repeat, SkipForward, Timer, X, Printer, Trophy, Swords, Coins, Gift, Volume2, VolumeX } from 'lucide-react';
 import { MUSCLES, musclesOf } from '@shared/muscleAtlas';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { useI18n, describeError } from '@/lib/i18n';
@@ -145,6 +147,9 @@ export function SessionPlayer() {
   useDocumentMeta(t('Training', 'Workout'));
   const q = useQuery({ queryKey: ['patient-program', id], queryFn: () => api.get<PatientProgram>(`/patient/programs/${id}`), staleTime: Infinity });
   const [sessionId, setSessionId] = useState<string | null>(null);
+  // Live heart rate (strap, watch or the app): shown in the top bar, its summary saved with the workout.
+  const hr = useHeartRate();
+  const [hrSummary, setHrSummary] = useState<HrSummary | null>(null);
   const [phase, setPhase] = useState<Phase>('intro');
   const [idx, setIdx] = useState(0);
   const [done, setDone] = useState<Record<string, Rating>>({});
@@ -237,6 +242,22 @@ export function SessionPlayer() {
               <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${progress * 100}%` }} />
             </div>
           </div>
+          {hr.way && phase !== 'done' && (
+            hr.state === 'on' && hr.bpm !== null ? (
+              <button type="button" data-testid="hr-live" data-bpm={hr.bpm} onClick={hr.disconnect}
+                aria-label={t(`Hartslag ${hr.bpm} slagen per minuut. Tik om de meting te stoppen.`, `Heart rate ${hr.bpm} beats per minute. Tap to stop measuring.`)}
+                className="flex min-h-[44px] items-center gap-1 rounded-lg px-2 text-[16px] font-bold tabular-nums text-ink-950">
+                <Heart className="hr-beat h-5 w-5 fill-[#d93a2b] text-[#d93a2b]" aria-hidden />{hr.bpm}
+              </button>
+            ) : (
+              <button type="button" data-testid="hr-connect" disabled={hr.state === 'connecting'}
+                onClick={async () => { const r = await hr.connect(); if (r === 'failed') setError(t('De hartslagmeter kon niet verbinden. Zet hem aan (band nat maken helpt) en probeer het opnieuw.', 'The heart rate monitor could not connect. Switch it on (wetting the strap helps) and try again.')); }}
+                aria-label={hr.state === 'lost' ? t('Hartslagmeter kwijt, bezig met zoeken', 'Heart rate monitor lost, searching') : t('Hartslagmeter koppelen', 'Connect heart rate monitor')}
+                className="flex h-11 min-w-[44px] items-center justify-center gap-1 rounded-lg px-2 text-[13.5px] font-semibold text-ink-700">
+                <Heart className="h-5 w-5" aria-hidden />{hr.state === 'connecting' ? '…' : hr.state === 'lost' ? '?' : ''}
+              </button>
+            )
+          )}
           {phase === 'exercise' || phase === 'rate' ? <span className="text-[15px] font-medium tabular-nums text-ink-600">{idx + 1}/{items.length}</span> : null}
         </div>
       </div>
@@ -275,7 +296,10 @@ export function SessionPlayer() {
               setSaving(true);
               setError(null);
               try {
-                const how = await postOrQueue(uid, `/patient/sessions/${sessionId}/complete`, { ...s, feedback: s.feedback.trim() || null, completedAt: new Date().toISOString() });
+                const heartRate = hr.summary();
+                setHrSummary(heartRate);
+                hr.disconnect();
+                const how = await postOrQueue(uid, `/patient/sessions/${sessionId}/complete`, { ...s, feedback: s.feedback.trim() || null, completedAt: new Date().toISOString(), ...(heartRate ? { heartRate } : {}) });
                 if (how === 'queued') setSavedOffline(true);
                 setEarned(XP.session + (s.pain !== null ? XP.painReported : 0));
                 // Level ups: compare the hero before and after this workout (only when it reached the server).
@@ -352,6 +376,7 @@ export function SessionPlayer() {
             rewards={rewards}
             heroRun={heroRun}
             savedOffline={savedOffline}
+            heartRate={hrSummary}
           />
         )}
         {phase === 'done' && (
@@ -705,7 +730,7 @@ type Rewards = { bossKey: string | null; bossDamage: number; bossDefeated: boole
  * After a workout: the hero cheers on its podium, XP and coins count up, the XP bar fills (across a
  * level-up), and a new level or rank gets rays and a shield. Every value is also plain text.
  */
-function RewardScreen({ villageNews, earned, levelUps, rewards, heroRun, savedOffline }: { villageNews: VillageNews[]; earned: number; levelUps: { key: string; from: number; to: number }[]; rewards: Rewards | null; heroRun: { before: HeroState; after: HeroState } | null; savedOffline: boolean }) {
+function RewardScreen({ villageNews, earned, levelUps, rewards, heroRun, savedOffline, heartRate }: { villageNews: VillageNews[]; earned: number; levelUps: { key: string; from: number; to: number }[]; rewards: Rewards | null; heroRun: { before: HeroState; after: HeroState } | null; savedOffline: boolean; heartRate: HrSummary | null }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const after = heroRun?.after;
@@ -741,6 +766,12 @@ function RewardScreen({ villageNews, earned, levelUps, rewards, heroRun, savedOf
           ? t('Goed bezig! Houd de app open: je training wordt automatisch verstuurd zodra je weer internet hebt.', 'Great work! Keep the app open: your workout is sent automatically once you are back online.')
           : t('Goed bezig. Je fysiotherapeut kan je voortgang en feedback nu bekijken.', 'Great work. Your physiotherapist can now see your progress and feedback.')}
       </p>
+      {heartRate && (
+        <p data-testid="hr-summary" className="reward-in mt-3 inline-flex items-center gap-2 rounded-full bg-[#fdebe9] px-4 py-2 text-[15px] font-semibold text-[#8f1d12]">
+          <Heart className="h-4 w-4 fill-current" aria-hidden />
+          {t(`Hartslag: gemiddeld ${heartRate.avg}, hoogste ${heartRate.max} · ${Math.round(heartRate.seconds / 60)} min gemeten`, `Heart rate: average ${heartRate.avg}, highest ${heartRate.max} · ${Math.round(heartRate.seconds / 60)} min measured`)}
+        </p>
+      )}
       {earned > 0 && (
         <p className="reward-in mt-4 inline-flex items-center gap-2 rounded-full bg-sand-soft px-4 py-2 font-display text-[19px] font-bold text-sand-ink" style={delay()}>
           <Trophy className="h-5 w-5" aria-hidden /><CountUp value={earned} prefix="+" /> XP {t('voor je sportheld', 'for your sports hero')}

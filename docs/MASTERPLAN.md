@@ -405,10 +405,16 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
 111. [x] **De app opent op Vandaag** (15 nov): een nieuw bezoek aan het dorp start op Vandaag; daar
     staat "Speel in je 3D-dorp" en een Voeding-kaart.
 
+112. [x] **Hartslag tijdens de training** (15 nov): hartje in de trainingsbalk koppelt een
+    Bluetooth-hartslagmeter (of de brug van de app); live hartslag, en gemiddelde/hoogste/laagste en
+    gemeten tijd per training opgeslagen (`session_heart_rates`, privé, in de AVG-export).
+
+113. [ ] **Echte app met Health Connect en Apple Health**: akkoord eigenaar 15 nov; plan en stappen in
+    `docs/APP_HEALTH.md`. Stap 1 (hartslag) is klaar.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
-- Hartslag en Google Health Connect / Apple Health: zie het voorstel van 15 nov (live hartslag via
-  Bluetooth kan in de web-app op Android en computer; Health Connect en Apple Health vragen een
-  echte app en het delen van gezondheidsgegevens met Google/Apple, dus jouw akkoord).
+- Apple Developer-account (€99 per jaar) en Google Play-account aanmaken voor de echte app
+  (`docs/APP_HEALTH.md`).
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.
 - `DEMO_PASSWORD` instellen in Render (zelf doen, niet naar Claude sturen).
