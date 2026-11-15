@@ -43,6 +43,8 @@ patientModules.get('/modes', async (c) => {
           phase: t.phase_no ? { seriesTitle: t.series_title, no: t.phase_no, count: t.phase_count, name: t.phase_name, weeks: t.phase_weeks, goal: t.phase_goal } : null,
           redFlags: t.red_flags ?? [],
           itemCount: t.item_count,
+          sourceKey: t.source_key ?? null,
+          daysPerWeek: t.days_per_week ?? null,
         })),
       };
     }),
@@ -262,6 +264,9 @@ patientModules.get('/export', async (c) => {
       painMap: await q(`SELECT batch, area, score, recorded_at FROM pain_map_entries WHERE patient_id = $1 AND area <> 'none' ORDER BY recorded_at`),
       proteinGoal: (await q('SELECT grams, updated_at FROM protein_goals WHERE patient_id = $1'))[0] ?? null,
       proteinLogs: await q('SELECT day, grams, label, created_at FROM protein_logs WHERE patient_id = $1 ORDER BY created_at'),
+      sessionHeartRates: await q('SELECT session_id, avg_bpm, max_bpm, min_bpm, seconds, source, created_at FROM session_heart_rates WHERE patient_id = $1 ORDER BY created_at'),
+      foodLogs: await q('SELECT day, meal, name, grams, kcal, protein_g, carbs_g, fat_g, created_at FROM food_logs WHERE patient_id = $1 ORDER BY created_at'),
+      mealPlan: await q('SELECT items, checked, goal, updated_at FROM meal_plans WHERE patient_id = $1'),
       selfTrainings: await q('SELECT day, kind, minutes, pain, stopped_for_pain, note, created_at FROM self_trainings WHERE patient_id = $1 ORDER BY created_at'),
       stepGoal: (await q('SELECT steps, updated_at FROM step_goals WHERE patient_id = $1'))[0] ?? null,
       stepDays: await q('SELECT day, steps, source, updated_at FROM step_days WHERE patient_id = $1 ORDER BY day'),

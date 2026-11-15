@@ -14,11 +14,57 @@ export const CREATURES = {
   chicken: { nl: 'Kip', en: 'Chicken', hp: 2, xp: 6, weakTo: 'moving', level: 1 },
   cow: { nl: 'Koe', en: 'Cow', hp: 8, xp: 20, weakTo: 'trained', level: 1 },
   boar: { nl: 'Wild zwijn', en: 'Wild boar', hp: 16, xp: 45, weakTo: 'trained', level: 4 },
-  // A tree to chop for wood: it asks for a hatchet from the smith.
-  tree: { nl: 'Boom', en: 'Tree', hp: 4, xp: 4, weakTo: 'trained', level: 1 },
+  // The first Alpha: a huge boar at the edge of the meadow. It attacks by itself and can beat you.
+  alpha_boar: { nl: 'Alfazwijn', en: 'Alpha boar', hp: 60, xp: 220, weakTo: 'trained', level: 1 },
+  // Not creatures but things to harvest, the same way: an oak gives wood, a rock gives stone.
+  oak: { nl: 'Eik', en: 'Oak', hp: 5, xp: 3, weakTo: 'moving', level: 1 },
+  rock: { nl: 'Rots', en: 'Rock', hp: 7, xp: 4, weakTo: 'trained', level: 1 },
 } as const;
 export type CreatureKind = keyof typeof CREATURES;
 export const CREATURE_KINDS = Object.keys(CREATURES) as CreatureKind[];
+
+/**
+ * Fighting back: what a creature does to the hero per hit, how often, and whether it starts the fight
+ * itself (aggressive: the thirst imp, the wild boar, the couch king and the Alpha; the slimes and the
+ * couch lurker only hit back once struck). Prey (chickens, cows) and trees and rocks are friendly.
+ */
+export const ATTACKS: Record<CreatureKind, { damage: number; everyMs: number; aggressive: boolean }> = {
+  slime: { damage: 1, everyMs: 1600, aggressive: false },
+  imp: { damage: 1, everyMs: 1300, aggressive: true },
+  couch: { damage: 2, everyMs: 1800, aggressive: false },
+  giant_slime: { damage: 3, everyMs: 1700, aggressive: false },
+  couch_king: { damage: 5, everyMs: 1800, aggressive: true },
+  chicken: { damage: 0, everyMs: 1500, aggressive: false },
+  cow: { damage: 0, everyMs: 1500, aggressive: false },
+  boar: { damage: 3, everyMs: 1500, aggressive: true },
+  alpha_boar: { damage: 8, everyMs: 1600, aggressive: true },
+  oak: { damage: 0, everyMs: 1500, aggressive: false },
+  rock: { damage: 0, everyMs: 1500, aggressive: false },
+};
+/** Trees and rocks: you chop them for wood and stone; they never fight back. */
+export const isHarvest = (kind: CreatureKind) => kind === 'oak' || kind === 'rock';
+/** Friendly: never hits the hero (prey, trees and rocks). */
+export const isFriendly = (kind: CreatureKind) => ATTACKS[kind].damage === 0;
+/** An Alpha: a big, dangerous one with its own warning; worth fighting with a good weapon. */
+export const isAlpha = (kind: CreatureKind) => kind.startsWith('alpha_');
+/** The adventurer level at which an Alpha is a fair fight (it shows itself earlier, as a warning). */
+export const ALPHA_ADVISED_LEVEL = 5;
+
+/**
+ * The hero's life in the village: it grows with the adventure level, and a real workout today gives
+ * a quarter more (what you did for real makes your hero tougher). Play only: losing costs nothing.
+ */
+export function heroMaxHp(level: number, trainedToday: boolean): number {
+  const base = 40 + 10 * (Math.max(1, Math.floor(level)) - 1);
+  return Math.round(base * (trainedToday ? 1.25 : 1));
+}
+/** Life that comes back by itself out of a fight, per second; after a while without being hit. */
+export const HERO_REGEN = { perSecond: 2, afterMs: 5000 } as const;
+/** Damage a creature does after the hero's armour: a real workout today takes the edge off by a fifth. */
+export const hitOnHero = (kind: CreatureKind, trainedToday: boolean) => {
+  const d = ATTACKS[kind].damage;
+  return d <= 0 ? 0 : Math.max(1, Math.round(d * (trainedToday ? 0.8 : 1)));
+};
 
 /** Wins that count per day; after that the creatures can still be beaten, for nothing. */
 export const ADVENTURE_DAILY_WINS = 40;
@@ -78,7 +124,6 @@ export const weaponItem = (key: string) => `wpn_${key}`;
 
 /** Loot: what a beaten creature leaves behind. Collected in the backpack; it buys nothing. */
 export const LOOT = {
-  wood: { nl: 'Hout', en: 'Wood', icon: '🪵' },
   feather: { nl: 'Veer', en: 'Feather', icon: '🪶' },
   egg: { nl: 'Ei', en: 'Egg', icon: '🥚' },
   meat: { nl: 'Rauw vlees', en: 'Raw meat', icon: '🥩' },
@@ -89,6 +134,9 @@ export const LOOT = {
   horn: { nl: 'Duivelshoorntje', en: 'Imp horn', icon: '🌶️' },
   button: { nl: 'Bankknoop', en: 'Couch button', icon: '🔘' },
   crown: { nl: 'Kroonscherf', en: 'Crown shard', icon: '👑' },
+  alpha_tusk: { nl: 'Alfaslagtand', en: 'Alpha tusk', icon: '🐗' },
+  wood: { nl: 'Hout', en: 'Wood', icon: '🪵' },
+  stone: { nl: 'Steen', en: 'Stone', icon: '🪨' },
 } as const;
 export type LootKey = keyof typeof LOOT;
 export const LOOT_KEYS = Object.keys(LOOT) as LootKey[];
@@ -100,10 +148,12 @@ export const DROPS: Record<CreatureKind, { item: LootKey; chance: number; max: n
   couch: [{ item: 'button', chance: 0.5, max: 2 }],
   giant_slime: [{ item: 'gel', chance: 1, max: 3 }],
   couch_king: [{ item: 'button', chance: 1, max: 3 }, { item: 'crown', chance: 0.25, max: 1 }],
-  tree: [{ item: 'wood', chance: 1, max: 2 }],
   chicken: [{ item: 'feather', chance: 1, max: 3 }, { item: 'egg', chance: 0.3, max: 1 }, { item: 'bone', chance: 0.5, max: 1 }],
   cow: [{ item: 'hide', chance: 1, max: 1 }, { item: 'bone', chance: 1, max: 1 }, { item: 'meat', chance: 0.7, max: 2 }],
   boar: [{ item: 'bone', chance: 1, max: 2 }, { item: 'meat', chance: 0.8, max: 2 }, { item: 'tusk', chance: 0.4, max: 1 }],
+  alpha_boar: [{ item: 'alpha_tusk', chance: 1, max: 1 }, { item: 'tusk', chance: 1, max: 2 }, { item: 'meat', chance: 1, max: 3 }],
+  oak: [{ item: 'wood', chance: 1, max: 3 }],
+  rock: [{ item: 'stone', chance: 1, max: 2 }],
 };
 
 /** The drops of one win. `rnd` gives numbers in [0, 1), as Math.random does. */
@@ -120,7 +170,7 @@ export function rollDrops(kind: CreatureKind, rnd: () => number): { item: LootKe
 export const TOOLS = [{ key: 'hatchet', price: 25, nl: 'Hakbijl', en: 'Hatchet', icon: '🪓' }] as const;
 export const toolItem = (key: string) => `tool_${key}`;
 /** What a creature asks for before it can be beaten at all. */
-export const NEEDS_TOOL: Partial<Record<CreatureKind, string>> = { tree: 'hatchet' };
+export const NEEDS_TOOL: Partial<Record<CreatureKind, string>> = { oak: 'hatchet' };
 
 /**
  * Things to make from loot: the weaker weapons (a second way next to buying), and a chest.
@@ -135,4 +185,4 @@ export const RECIPES = [
 export type Recipe = (typeof RECIPES)[number];
 export const builtItem = (key: string) => `built_${key}`;
 /** How many of one kind of loot the backpack holds; a chest holds far more. */
-export const LOOT_CAP = { backpack: 10, chest: 99 } as const;
+export const LOOT_CAP = { backpack: 20, chest: 99 } as const;

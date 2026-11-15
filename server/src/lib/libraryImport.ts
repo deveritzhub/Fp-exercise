@@ -223,9 +223,11 @@ const lastInt = (s: string | number | undefined | null) => {
   const all = String(s ?? '').match(/\d+/g);
   return all ? Number(all[all.length - 1]) : null;
 };
-const minutesToS = (v: string | number | undefined) => {
-  const n = firstInt(v);
-  return n ? Math.min(900, n * 60) : null;
+/** Rest in minutes to seconds; decimals count (1.5 → 90 s, "2,5" → 150 s), a range uses its lower end. */
+export const minutesToS = (v: string | number | undefined) => {
+  const m = String(v ?? '').match(/\d+(?:[.,]\d+)?/);
+  const n = m ? Number(m[0].replace(',', '.')) : 0;
+  return n ? Math.min(900, Math.round(n * 60)) : null;
 };
 
 function equipmentFor(text: string) {
@@ -386,9 +388,10 @@ function normaliseStrength(m: z.infer<typeof strengthModule>, b: Bundle) {
       equipment: e.materiaal && e.materiaal !== 'Geen' ? equipmentFor(e.materiaal) : ['none'],
       difficulty: e.niveau === 'gevorderd' ? 4 : e.niveau === 'beginner' ? 2 : 3,
       muscles: (e.hoofdspier ?? '').split(/,\s*/).filter(Boolean),
-      movementNl: '',
+      // The cues describe how to do it ("Uitvoering"); the rep range and rest go under "Let op".
+      movementNl: e.cues ?? '',
       movementEn: '',
-      cuesNl: [e.cues, range && `Herhalingen: ${range}.`, e.rust_min && `Rust: ${e.rust_min} min.`].filter(Boolean).join(' '),
+      cuesNl: [range && `Herhalingen: ${range}.`, e.rust_min && `Rust: ${e.rust_min} min.`].filter(Boolean).join(' '),
       cuesEn: '',
       sets: 3,
       reps: isTime ? null : lastInt(range),
@@ -406,8 +409,8 @@ function normaliseStrength(m: z.infer<typeof strengthModule>, b: Bundle) {
     ? [{ to: 'Start krachtmodule', title: 'Voorwaarden om te starten (overgang van revalidatie)', items: m.overgang_naar_kracht.criteria.map((c) => ({ label: c, threshold: '', test: '', source: m.overgang_naar_kracht?.bron ?? '' })) }]
     : [];
   for (const p of m.programmas) {
-    // Spread the training days over the week: 2 → Mon/Thu, 3 → Mon/Wed/Fri, 4 → Mon/Tue/Thu/Fri.
-    const weekdays = ({ 2: [1, 4], 3: [1, 3, 5], 4: [1, 2, 4, 5] } as Record<number, number[]>)[p.dagen.length] ?? [1, 2, 3, 4, 5, 6, 7].slice(0, p.dagen.length);
+    // Spread the training days over the week: 2 → Mon/Thu, 3 → Mon/Wed/Fri, 4 → Mon/Tue/Thu/Fri, 5 → Mon/Tue/Thu/Fri/Sat.
+    const weekdays = ({ 2: [1, 4], 3: [1, 3, 5], 4: [1, 2, 4, 5], 5: [1, 2, 4, 5, 6] } as Record<number, number[]>)[p.dagen.length] ?? [1, 2, 3, 4, 5, 6, 7].slice(0, p.dagen.length);
     const lowVolume = /onder de 10/i.test(p.geschat_sets_per_week ?? '');
     const isTime = (h: unknown) => /sec/.test(String(h ?? ''));
     b.templates.push({

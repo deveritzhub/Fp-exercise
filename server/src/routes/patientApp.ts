@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { HR_LIMITS, HR_SOURCES, type HrSource } from '../../../shared/heartRate';
 import { isClinical } from '../../../shared/accountKind';
 import { z } from 'zod';
 import { withUser, type Tx } from '../db';
@@ -244,6 +245,7 @@ patientApp.post('/sessions/:id/logs', async (c) => {
   return c.json({ ok: true });
 });
 
+const bpm = z.number().int().min(HR_LIMITS.min).max(HR_LIMITS.max);
 patientApp.post('/sessions/:id/complete', async (c) => {
   const { user, patient } = requirePatient(c);
   const sid = parse(uuidParam, c.req.param('id'));
@@ -253,6 +255,12 @@ patientApp.post('/sessions/:id/complete', async (c) => {
       pain: score,
       feedback: z.string().trim().max(2000).nullable().optional(),
       completedAt: z.string().datetime().optional(), // when finished offline
+      // Summary of the heart rate measured during the workout, if a strap, watch or the app measured it.
+      heartRate: z
+        .object({ avg: bpm, max: bpm, min: bpm, seconds: z.number().int().min(1).max(HR_LIMITS.maxSeconds), source: z.enum(HR_SOURCES as [HrSource, ...HrSource[]]) })
+        .refine((h) => h.min <= h.avg && h.avg <= h.max, 'invalid_heart_rate')
+        .nullable()
+        .optional(),
     }),
     await c.req.json(),
   );
@@ -269,6 +277,13 @@ patientApp.post('/sessions/:id/complete', async (c) => {
     const highPain = Math.max(b.pain ?? 0, maxPain.rows[0].m ?? 0) >= 6;
     if (highPain || b.feedback || maxPain.rows[0].fb) {
       await notifyTherapists(tx, patient.id, s.practice_id, user.fullName, highPain);
+    }
+    if (b.heartRate) {
+      await tx.query(
+        `INSERT INTO session_heart_rates(session_id, patient_id, practice_id, avg_bpm, max_bpm, min_bpm, seconds, source)
+         VALUES ($1, $2, app.patient_practice($2), $3, $4, $5, $6, $7) ON CONFLICT (session_id) DO NOTHING`,
+        [sid, patient.id, b.heartRate.avg, b.heartRate.max, b.heartRate.min, b.heartRate.seconds, b.heartRate.source],
+      );
     }
     await audit(tx, user.id, s.practice_id, 'complete', 'workout_session', sid);
   });

@@ -1,6 +1,6 @@
 import { weaponMesh } from './weapons3d';
-import { creature } from './creatures3d';
-import { CREATURES, type CreatureKind } from '@shared/adventure';
+import { creature, habitat, pond } from './creatures3d';
+import { ATTACKS, CREATURES, isAlpha, isFriendly, isHarvest, type CreatureKind } from '@shared/adventure';
 import { dress } from '@/components/hero/fabric3d';
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
@@ -44,7 +44,7 @@ const HOME_REACH = [1.3, 1.5, 1.8, 2.2, 2.8, 3.1];
 const STREET_HOME = 0.85;
 /** A room behind a door in the village. */
 type Place = { group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[] };
-export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key`: the hero turns to it and it flinches. */ strike: (key: string) => void };
+export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key`: the hero turns to it and it flinches. */ strike: (key: string) => void; /** The creature `key` lunges at the hero. */ lunge: (key: string) => void; /** Beaten: the hero stands up at the well at once, without walking. */ respawn: () => void };
 /** The bag of the boxing school in the village. */
 export const BOXING_KEY = 'boxing';
 const BOXING_AT: Vec = { x: -3.1, z: 5.4 };
@@ -888,7 +888,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     scene.add(well3d, wellWater);
     obstacles.push({ x: 0, z: 0, r: 0.95 });
     // Creatures: each at its spot, with a place beside it to stand and strike from.
-    const mobs: { key: string; kind: CreatureKind; g: THREE.Group; door: Vec; hurtAt: number }[] = [];
+    const mobs: { key: string; kind: CreatureKind; g: THREE.Group; door: Vec; hurtAt: number; lungeAt: number; x: number; z: number; still: boolean }[] = [];
     // How the blow in progress is swung, how long it takes, and until when the hatchet is in hand.
     let swingStyle: 'jab' | 'thrust' | 'slash' | 'overhead' = 'jab';
     let swingFor = 0.32;
@@ -898,17 +898,36 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     let fpsFrames = 0;
     let fpsSince = performance.now();
     let equip: () => void = () => {};
+    // Where each creature lives, and a pond by the slimes' swamp: only with the adventure on.
+    if (creatures?.length) {
+      for (const c of creatures) {
+        const h = habitat(c.kind);
+        if (!h) continue;
+        h.position.set(c.x, 0, c.z);
+        // Local +z towards the square: the props stand behind the creature.
+        h.rotation.y = Math.atan2(-c.x, -c.z);
+        scene.add(h);
+      }
+      const pa = (112 * Math.PI) / 180;
+      const water = pond(1.5);
+      water.position.set(Math.cos(pa) * 13.4, 0, Math.sin(pa) * 13.4);
+      scene.add(water);
+      obstacles.push({ x: water.position.x, z: water.position.z, r: 1.7 });
+    }
     for (const c of creatures ?? []) {
       const g = creature(c.kind);
       g.position.set(c.x, 0, c.z);
       g.lookAt(0, 0, 0);
       scene.add(g);
       const len = Math.hypot(c.x, c.z) || 1;
-      const door = { x: c.x * (1 - 0.85 / len), z: c.z * (1 - 0.85 / len) };
-      anchors.push({ id: c.key, obj: g, y: c.kind === 'tree' ? 2.9 : c.kind === 'cow' ? 1.45 : c.kind === 'boar' ? 1.1 : 1.0 });
+      // An Alpha is big: the hero stands further off, and its label floats higher.
+      const big = isAlpha(c.kind);
+      const reach = big ? 2.3 : 0.85;
+      const door = { x: c.x * (1 - reach / len), z: c.z * (1 - reach / len) };
+      anchors.push({ id: c.key, obj: g, y: big ? 2.9 : c.kind === 'cow' ? 1.45 : c.kind === 'boar' ? 1.1 : 1.0 });
       spots.push({ key: c.key, door });
-      obstacles.push({ x: c.x, z: c.z, r: 0.38 });
-      mobs.push({ key: c.key, kind: c.kind, g, door, hurtAt: 0 });
+      obstacles.push({ x: c.x, z: c.z, r: big ? 1.4 : 0.38 });
+      mobs.push({ key: c.key, kind: c.kind, g, door, hurtAt: 0, lungeAt: 0, x: c.x, z: c.z, still: isHarvest(c.kind) });
     }
     if (boxing) {
       // The boxing school: four posts with ropes, a mat and the heavy bag on its stand.
@@ -1799,12 +1818,34 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           // Each weapon has its own blow: a jab with the fists, a thrust with staff and spear, a slash
           // with a sword, and a swing from overhead with club, hammer and axe. A tree is chopped.
           const w = live.current.weapon;
-          const chop = mob.kind === 'tree';
+          const chop = mob.still;
           swingStyle = chop || w === 'club' || w === 'hammer' || w === 'axe' ? 'overhead' : w === 'sword' || w === 'hero_sword' ? 'slash' : w === 'staff' || w === 'spear' ? 'thrust' : 'jab';
           swingFor = swingStyle === 'overhead' ? 0.56 : swingStyle === 'slash' ? 0.4 : swingStyle === 'thrust' ? 0.36 : 0.24;
           swing = swingFor;
-          if (chop) chopUntil = performance.now() + 1600;
+          if (mob.kind === 'oak') chopUntil = performance.now() + 1600;
           mob.hurtAt = performance.now() + swingFor * (swingStyle === 'overhead' ? 620 : 450);
+        },
+        respawn: () => {
+          goal = null;
+          clearTrail();
+          const put = () => {
+            pos.current.x = WELL_SPOT.x;
+            pos.current.z = WELL_SPOT.z;
+            hero.position.set(WELL_SPOT.x, 0, WELL_SPOT.z);
+            // Facing the square, so the well is in view.
+            facing.current = Math.atan2(-WELL_SPOT.x, -WELL_SPOT.z);
+            hero.rotation.y = facing.current;
+          };
+          if (inside()) {
+            travel('village');
+            window.setTimeout(put, 30);
+          } else put();
+        },
+        lunge: (k) => {
+          const mob = mobs.find((x) => x.key === k);
+          if (!mob) return;
+          mob.g.lookAt(pos.current.x, 0, pos.current.z);
+          mob.lungeAt = performance.now();
         },
         stop: () => {
           goal = null;
@@ -2171,17 +2212,21 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         // Creatures hop on the spot; a beaten one is away until it comes back.
         mobs.forEach((mob, i) => {
           mob.g.visible = !live.current.gone.has(mob.key);
+          // Trees and rocks stand still; a hit makes them shake instead of hop.
+          const hop = mob.still ? 1 : Math.abs(Math.sin(performance.now() / 380 + i * 1.7));
+          mob.g.position.y = mob.still ? 0 : hop * 0.09;
+          // Hit: it flattens for a moment (a tree or rock only shudders a little).
           const since = performance.now() - mob.hurtAt;
-          // A tree stands still, and shakes when the hatchet lands.
-          if (mob.kind === 'tree') {
-            mob.g.rotation.z = since >= 0 && since < 420 ? Math.sin((since / 420) * Math.PI * 3) * 0.07 * (1 - since / 420) : 0;
-            return;
-          }
-          const hop = Math.abs(Math.sin(performance.now() / 380 + i * 1.7));
-          mob.g.position.y = hop * 0.09;
-          // Hit: it flattens for a moment.
-          const flat = since >= 0 && since < 260 ? Math.sin((since / 260) * Math.PI) * 0.45 : 0;
+          const flat = since >= 0 && since < 260 ? Math.sin((since / 260) * Math.PI) * (mob.still ? 0.08 : 0.45) : 0;
           mob.g.scale.set(1 + (1 - hop) * 0.06 + flat * 0.5, (0.94 + hop * 0.1) * (1 - flat), 1 + (1 - hop) * 0.06 + flat * 0.5);
+          // An attack: a quick lunge towards the hero and back.
+          const lt = performance.now() - mob.lungeAt;
+          const out = lt >= 0 && lt < 360 ? Math.sin((lt / 360) * Math.PI) : 0;
+          const dx = pos.current.x - mob.x;
+          const dz = pos.current.z - mob.z;
+          const dl = Math.hypot(dx, dz) || 1;
+          mob.g.position.x = mob.x + (dx / dl) * out * 0.45;
+          mob.g.position.z = mob.z + (dz / dl) * out * 0.45;
         });
         // Villagers only live while the hero is in the village: indoors nobody sees them.
         if (!indoor) {
@@ -2413,9 +2458,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             </button>
           ))}
           {(creatures ?? []).map((c) => (
-            <button key={c.key} ref={setLabel(c.key)} type="button" data-spot={c.key} hidden={gone.has(c.key)} onClick={() => go(c.key)} aria-label={t(`Loop naar ${c.label}`, `Walk to ${c.label}`)}
-              className={cn(plate, '!min-h-[34px] flex-col !items-stretch gap-1 text-[12.5px] leading-none text-[#ffb3a1]')} style={{ transform: 'translate(-9999px,0)' }}>
-              <span className="text-center">{c.label}</span>
+            <button key={c.key} ref={setLabel(c.key)} type="button" data-spot={c.key} hidden={gone.has(c.key)} onClick={() => go(c.key)}
+              aria-label={ATTACKS[c.kind].aggressive ? t(`Loop naar ${c.label}, agressief`, `Walk to ${c.label}, aggressive`) : isFriendly(c.kind) && !isHarvest(c.kind) ? t(`Loop naar ${c.label}, vriendelijk`, `Walk to ${c.label}, friendly`) : t(`Loop naar ${c.label}`, `Walk to ${c.label}`)}
+              data-aggressive={ATTACKS[c.kind].aggressive ? '1' : undefined}
+              className={cn(plate, '!min-h-[34px] flex-col !items-stretch gap-1 text-[12.5px] leading-none', ATTACKS[c.kind].aggressive ? 'border-[#ff6b4a] text-[#ffb3a1]' : isFriendly(c.kind) ? 'text-[#c9f2c0]' : 'text-[#ffd9a8]')} style={{ transform: 'translate(-9999px,0)' }}>
+              <span className="text-center">{c.label}{ATTACKS[c.kind].aggressive ? <span className="ml-1 text-[10px] font-bold uppercase text-[#ff8a6e]">{t('agressief', 'aggressive')}</span> : isFriendly(c.kind) && !isHarvest(c.kind) ? <span className="ml-1 text-[10px] font-semibold text-[#9fe39a]">{t('vriendelijk', 'friendly')}</span> : null}</span>
               {(() => {
                 const max = CREATURES[c.kind].hp;
                 const hp = Math.max(0, max - (creatureHurt?.[c.key] ?? 0));

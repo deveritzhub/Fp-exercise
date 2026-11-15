@@ -1,3 +1,5 @@
+import type { LootKey } from './adventure';
+
 /**
  * The practice village on the staff side: one home per patient, growing with the hero's level from a
  * camp to a villa. A home carries a number, never a name: the scene can be on a screen others see.
@@ -19,6 +21,35 @@ export function homeStage(level: number): number {
     if (level >= s.from) i = k;
   });
   return i;
+}
+
+/**
+ * What it takes to build each home, in loot from the village: wood from oaks, stone from rocks, and
+ * from the bigger homes on also what creatures drop. The level still has to allow the home first.
+ * Index = the stage that is built (the camp is where everyone starts).
+ */
+export const HOME_COSTS: Partial<Record<LootKey, number>>[] = [
+  {},
+  { wood: 6, stone: 2 },
+  { wood: 12, stone: 6, hide: 2 },
+  { wood: 20, stone: 14, hide: 4, bone: 4 },
+  { wood: 30, stone: 24, tusk: 3, crown: 1 },
+  { wood: 45, stone: 35, alpha_tusk: 1, crown: 2 },
+];
+
+export type NextHome = { stage: number; cost: Partial<Record<LootKey, number>>; levelOk: boolean; ready: boolean; missing: Partial<Record<LootKey, number>> };
+/** The next home after `built`: what it costs, what is still missing, and whether it can be built now. */
+export function nextHome(built: number, level: number, loot: Partial<Record<LootKey, number>>): NextHome | null {
+  const stage = built + 1;
+  if (stage >= HOME_STAGES.length) return null;
+  const cost = HOME_COSTS[stage];
+  const missing: Partial<Record<LootKey, number>> = {};
+  for (const [k, n] of Object.entries(cost) as [LootKey, number][]) {
+    const short = n - (loot[k] ?? 0);
+    if (short > 0) missing[k] = short;
+  }
+  const levelOk = level >= HOME_STAGES[stage].from;
+  return { stage, cost, levelOk, ready: levelOk && Object.keys(missing).length === 0, missing };
 }
 
 /** Levels still to go until the next kind of home; null at the villa. */

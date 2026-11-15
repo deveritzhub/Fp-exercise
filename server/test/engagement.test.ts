@@ -51,8 +51,13 @@ describe('offline workouts (synced later)', () => {
     const program = (await c.get(`/patient/programs/${s.programs.emma}`)).body;
     expect((await c.post(`/patient/sessions/${id}/logs`, { programItemId: program.items[0].id, completed: true, pain: 2 })).status).toBe(200);
     const finished = new Date(twoDaysAgo.getTime() + 20 * 60_000).toISOString();
-    expect((await c.post(`/patient/sessions/${id}/complete`, { difficulty: 4, completedAt: finished })).status).toBe(200);
-    expect((await c.post(`/patient/sessions/${id}/complete`, { difficulty: 4, completedAt: finished })).status).toBe(200);
+    // A heart rate that cannot be (lowest above the average) is refused; a real summary is stored once.
+    expect((await c.post(`/patient/sessions/${id}/complete`, { difficulty: 4, completedAt: finished, heartRate: { avg: 100, max: 150, min: 120, seconds: 600, source: 'bluetooth' } })).status).toBe(400);
+    const hr = { avg: 118, max: 152, min: 84, seconds: 1100, source: 'bluetooth' };
+    expect((await c.post(`/patient/sessions/${id}/complete`, { difficulty: 4, completedAt: finished, heartRate: hr })).status).toBe(200);
+    expect((await c.post(`/patient/sessions/${id}/complete`, { difficulty: 4, completedAt: finished, heartRate: { ...hr, avg: 130 } })).status).toBe(200);
+    const stored = (await owner.query('SELECT avg_bpm, max_bpm, source FROM session_heart_rates WHERE session_id = $1', [id])).rows;
+    expect(stored).toEqual([{ avg_bpm: 118, max_bpm: 152, source: 'bluetooth' }]);
     const { rows } = await owner.query('SELECT completed_at FROM workout_sessions WHERE id = $1', [id]);
     expect(new Date(rows[0].completed_at).toISOString()).toBe(finished);
 

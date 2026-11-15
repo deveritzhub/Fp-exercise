@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Armchair, Backpack, Beef, Droplets, Sparkles, ChevronRight, Coins, DoorOpen, Footprints, Gamepad2, Gauge, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
+import { Armchair, Backpack, Beef, Droplets, Heart, Sparkles, ChevronRight, Coins, DoorOpen, Footprints, Gamepad2, Gauge, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
 import { ApiError, api, mediaUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -13,11 +13,13 @@ import { GEAR_SLOT, SKILLS, bodyShape, levelTier } from '@shared/hero';
 import { villageBuildings } from '@shared/worldMap';
 import { BOXING_KEY, EXIT_KEY, HOME_AT, HOME_KEY, PRACTICE_KEY, TV_KEY, WELL_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
 import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@shared/homeDecor';
-import { HOME_STAGES, homeStage, levelsToNextHome } from '@shared/practiceVillage';
+import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
 import { MODULE_SITES, VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
-import { BOXING, CREATURES, LOOT, blow, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
+import { SUPPLY } from '@shared/supplies';
+import { useSupplies } from '@/lib/supplies';
+import { ALPHA_ADVISED_LEVEL, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
@@ -124,8 +126,10 @@ const dose = (i: { sets: number | null; reps: number | null; holdS: number | nul
   [i.sets && i.reps ? `${i.sets} × ${i.reps}` : i.sets ? `${i.sets} ×` : i.reps ? `${i.reps} ×` : null, i.holdS ? `${i.holdS} s` : null].filter(Boolean).join(' · ');
 
 type Track = MapTrack;
-type OwnHome = { level: number; coins: number; owned: string[]; layout: Placed[] };
+type OwnHome = { level: number; coins: number; owned: string[]; layout: Placed[]; stage: number; build: NextHome | null };
 const WHY_NOT: Record<string, [string, string]> = {
+  not_enough_loot: ['Je hebt nog niet genoeg buit om te bouwen.', 'You do not have enough loot to build yet.'],
+  home_complete: ['Je woont al in het grootste huis.', 'You already live in the biggest home.'],
   layout_door: ['Dat is te dicht bij de deur.', 'That is too close to the door.'],
   layout_overlap: ['Daar staat al iets.', 'Something already stands there.'],
   layout_outside: ['Dat is te dicht bij de muur.', 'That is too close to the wall.'],
@@ -418,7 +422,8 @@ export function VillageWalkPage() {
   // The village is built once, when everything it is made from has arrived: built earlier it would be
   // built again a moment later, and a walk just started would be lost.
   const settled = !home.isLoading && !heroQ.isLoading && !coach.isLoading && !(d?.hero && (homeQ.isLoading || adventure.isLoading));
-  const stage = L ? homeStage(L.level) : 0;
+  // The home that stands is the one built with loot; before the first answer, the one the level gives.
+  const stage = own?.stage ?? (L ? homeStage(L.level) : 0);
   const homeLabel = t('Jouw huis', 'Your home');
   const say = (e: unknown) => {
     const code = e instanceof ApiError ? e.message : '';
@@ -462,6 +467,24 @@ export function VillageWalkPage() {
     if (ok) setPlacing(null);
   };
 
+  // Building the next home: the loot is handed in, the house in the village grows.
+  const [building, setBuilding] = useState(false);
+  const [justBuilt, setJustBuilt] = useState<number | null>(null);
+  const build = async () => {
+    setBuilding(true);
+    try {
+      const r = await api.post<OwnHome>('/patient/hero/home/build', {});
+      qc.setQueryData(['patient-own-home'], r);
+      setJustBuilt(r.stage);
+      await Promise.all([qc.invalidateQueries({ queryKey: ['patient-adventure'] }), qc.invalidateQueries({ queryKey: ['patient-hero'] })]);
+      toast(t(`Gebouwd! Je woont nu in een ${HOME_STAGES[r.stage].nl.toLowerCase()}.`, `Built! You now live in a ${HOME_STAGES[r.stage].en.toLowerCase()}.`), 'ok');
+    } catch (e) {
+      say(e);
+    } finally {
+      setBuilding(false);
+    }
+  };
+
   // The well: one real glass of water, logged where the hero stands.
   const [drinking, setDrinking] = useState(false);
   const drink = async () => {
@@ -469,34 +492,28 @@ export function VillageWalkPage() {
     try {
       await api.post('/patient/logs/water', { ml: WATER.glassMl });
       await qc.invalidateQueries({ queryKey: ['patient-hero'] });
-      toast(t('Glas water gelogd. Drink het ook echt op!', 'Glass of water logged. Do drink it!'));
+      toast(t('Glas water gelogd: +1 glas in de veldfles van je held. Drink het ook echt op!', 'Glass of water logged: +1 glass in your hero’s flask. Do drink it!'));
     } catch (e) {
       say(e);
     } finally {
       setDrinking(false);
     }
   };
-  // The flask in the backpack: filled at the well, two glasses to drink on the way. Kept in this browser, for today.
-  const FLASK = 'fp.village.flask';
-  const todayKey = new Date().toDateString();
-  const [flask, setFlaskState] = useState<number>(() => {
-    try {
-      const v = JSON.parse(localStorage.getItem(FLASK) ?? 'null') as { day: string; n: number } | null;
-      return v && v.day === todayKey ? Math.max(0, Math.min(2, v.n)) : 0;
-    } catch {
-      return 0;
-    }
-  });
-  const setFlask = (n: number) => {
-    setFlaskState(n);
-    try {
-      localStorage.setItem(FLASK, JSON.stringify({ day: todayKey, n }));
-    } catch { /* a full or closed store: the flask is simply not kept */ }
+  // Supplies come from real life: a glass per glass of water logged today, a ration per meal logged.
+  // The hero drinks or eats them to heal; three main meals logged make the hero faster and stronger.
+  const supply = useSupplies(d?.logs?.survival.water.ml ?? 0, !!d?.hero);
+  const heal = (fraction: number) => setHeroHp((h) => (h === null ? null : Math.min(maxHp, h + maxHp * fraction) >= maxHp ? null : h + maxHp * fraction));
+  const sip = () => {
+    if (supply.glasses <= 0) return;
+    supply.use('water');
+    heal(SUPPLY.waterHeals);
+    toast(t('Je held drinkt een glas uit de veldfles: +50% leven.', 'Your hero drinks a glass from the flask: +50% life.'));
   };
-  const sip = async () => {
-    if (flask <= 0 || drinking) return;
-    setFlask(flask - 1);
-    await drink();
+  const eat = () => {
+    if (supply.rations <= 0) return;
+    supply.use('food');
+    heal(SUPPLY.rationHeals);
+    toast(t('Je held eet een rantsoen: weer helemaal fit.', 'Your hero eats a ration: fully fit again.'));
   };
   // One folding part of the HUD open at a time (meters or tasks), so the world stays in view. Kept in this browser.
   const [panel, setPanel] = useState<'meters' | 'tasks' | null>(() => {
@@ -534,15 +551,17 @@ export function VillageWalkPage() {
   const states = d?.logs?.survival.status ?? [];
   const thirsty = states.some((x) => x.key === 'thirsty');
   const stiff = states.some((x) => x.key === 'stiff');
-  const pace = (thirsty ? 0.8 : 1) * (stiff ? 0.8 : 1);
+  const pace = (thirsty ? 0.8 : 1) * (stiff ? 0.8 : 1) * (supply.fed ? SUPPLY.fedPace : 1);
 
   // The adventure: little ailments round the village to beat, for XP of its own (never the hero's).
   const creatures = useMemo(
     () => ([['slime', 120, 10.5], ['imp', 80, 11.2], ['couch', 325, 10.8], ['slime', 105, 8.4], ['giant_slime', 140, 11.3], ['couch_king', 295, 11.4],
       // The meadow: animals to beat for what they drop.
       ['cow', 38, 12.2], ['cow', 52, 11.6], ['chicken', 45, 9.6], ['chicken', 60, 10.4], ['boar', 30, 14],
-      // Trees to chop for wood, with a hatchet from the smith.
-      ['tree', 68, 13], ['tree', 22, 12.6], ['tree', 244, 12.4]] as [CreatureKind, number, number][])
+      // The first Alpha, at the far edge of the meadow.
+      ['alpha_boar', 12, 14.6],
+      // Oaks and rocks behind the strength house: wood and stone to build your home with.
+      ['oak', 205, 11.4], ['oak', 222, 11.8], ['rock', 244, 11.3], ['rock', 257, 11.6]] as [CreatureKind, number, number][])
       .map(([kind, deg, r], i) => ({ key: `mob:${i}`, kind, label: nl ? CREATURES[kind].nl : CREATURES[kind].en, x: Math.cos((deg * Math.PI) / 180) * r, z: Math.sin((deg * Math.PI) / 180) * r }))
       // The big ones only show themselves to an adventurer of their level.
       .filter((c) => (adventure.data?.level ?? 1) >= CREATURES[c.kind].level),
@@ -553,15 +572,70 @@ export function VillageWalkPage() {
   const mob = near?.startsWith('mob:') && !beaten.includes(near) ? creatures.find((c) => c.key === near) ?? null : null;
   // What was put right in real life today hits its own creature twice as hard.
   const strong = useMemo(() => new Set([...states.filter((x) => x.kind === 'buff').map((x) => x.key), ...(doneToday ? ['trained'] : [])]), [states, doneToday]);
+  // The hero's life: monsters hit back once struck, an Alpha attacks by itself. Play only: losing
+  // sends the hero back to the well with full life, nothing is lost.
+  const maxHp = heroMaxHp(adventure.data?.level ?? 1, doneToday);
+  const [heroHp, setHeroHp] = useState<number | null>(null);
+  const hp = Math.min(maxHp, heroHp ?? maxHp);
+  const [provoked, setProvoked] = useState<string[]>([]);
+  const [downBy, setDownBy] = useState<string | null>(null);
+  const [hitAt, setHitAt] = useState(0);
+  const lastHit = useRef(0);
+  const lastAttack = useRef<Record<string, number>>({});
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (downBy) return;
+      const now = Date.now();
+      const atk = mob ? ATTACKS[mob.kind] : null;
+      if (mob && atk && atk.damage > 0 && (atk.aggressive || provoked.includes(mob.key))) {
+        const since = now - (lastAttack.current[mob.key] ?? 0);
+        // The first blow comes after a short warning, then at the creature's own pace.
+        if (!lastAttack.current[mob.key]) lastAttack.current[mob.key] = now - atk.everyMs + 700;
+        else if (since >= atk.everyMs) {
+          lastAttack.current[mob.key] = now;
+          lastHit.current = now;
+          world.current?.lunge(mob.key);
+          setHitAt(now);
+          const dmg = hitOnHero(mob.kind, doneToday);
+          setHeroHp((h) => {
+            const left = Math.max(0, Math.min(maxHp, h ?? maxHp) - dmg);
+            if (left === 0) setDownBy(mob.label);
+            return left;
+          });
+        }
+        return;
+      }
+      if (mob) return;
+      // Out of a fight the life comes back by itself, after a little while.
+      if (now - lastHit.current > HERO_REGEN.afterMs) setHeroHp((h) => (h === null || h >= maxHp ? h : Math.min(maxHp, h + HERO_REGEN.perSecond / 2)));
+    }, 500);
+    return () => window.clearInterval(id);
+  }, [mob, provoked, downBy, maxHp, doneToday]);
+  // Walking away ends the fight: a creature forgets you once you are gone.
+  useEffect(() => {
+    if (!mob) lastAttack.current = {};
+  }, [mob]);
+  const respawn = () => {
+    const by = mob?.key;
+    setDownBy(null);
+    setHeroHp(maxHp);
+    setProvoked([]);
+    lastAttack.current = {};
+    // The creature heals too: the fight starts over.
+    if (by) setHurt((h) => ({ ...h, [by]: 0 }));
+    world.current?.respawn();
+  };
+
   const strike = async () => {
-    if (!mob) return;
-    // A tree asks for a hatchet.
-    if (mob.kind === 'tree' && !adventure.data?.tools?.includes('hatchet')) {
+    if (!mob || downBy) return;
+    // An oak asks for a hatchet.
+    if (mob.kind === 'oak' && !adventure.data?.tools?.includes('hatchet')) {
       toast(t('Hier heb je een hakbijl voor nodig. Koop er een bij de wapensmid.', 'You need a hatchet for this. Buy one at the armourer.'));
       return;
     }
     world.current?.strike(mob.key);
-    const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, weapon.power);
+    if (!provoked.includes(mob.key)) setProvoked((p) => [...p, mob.key]);
+    const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, weapon.power) * (supply.fed ? SUPPLY.fedPower : 1);
     if (left > 0) {
       setHurt((h) => ({ ...h, [mob.key]: CREATURES[mob.kind].hp - left }));
       return;
@@ -576,7 +650,9 @@ export function VillageWalkPage() {
       const was = adventure.data?.level ?? 1;
       qc.setQueryData(['patient-adventure'], r);
       levelUp(was, r.level);
-      toast(r.gained > 0 ? (mob.kind === 'tree' ? t(`Boom omgehakt! +${r.gained} avonturen-XP`, `Tree chopped! +${r.gained} adventure XP`) : t(`${mob.label} verslagen! +${r.gained} avonturen-XP`, `${mob.label} beaten! +${r.gained} adventure XP`)) : t(`${mob.label} verslagen! Voor vandaag heb je alle avonturen-XP al binnen.`, `${mob.label} beaten! You already have all of today's adventure XP.`));
+      if (!isHarvest(mob.kind)) toast(r.gained > 0 ? t(`${mob.label} verslagen! +${r.gained} avonturen-XP`, `${mob.label} beaten! +${r.gained} adventure XP`) : t(`${mob.label} verslagen! Voor vandaag heb je alle avonturen-XP al binnen.`, `${mob.label} beaten! You already have all of today's adventure XP.`));
+      // Loot counts for building the home: refresh what it still needs.
+      if (r.drops?.length) void qc.invalidateQueries({ queryKey: ['patient-own-home'] });
       if (r.drops?.length) toast(t(`Buit: ${r.drops.map((x) => `${x.n}× ${LOOT[x.item].nl.toLowerCase()}`).join(', ')}. Het zit in je rugzak.`, `Loot: ${r.drops.map((x) => `${x.n}× ${LOOT[x.item].en.toLowerCase()}`).join(', ')}. It is in your backpack.`));
     } catch (e) {
       say(e);
@@ -676,11 +752,21 @@ export function VillageWalkPage() {
         </Suspense>
 
         {/* Unit frame: who you are, your level and the way to the next one. */}
-        <Link to="/p/held" aria-label={L ? t(`Naar je held, level ${L.level}, ${pct}% naar het volgende level`, `To your hero, level ${L.level}, ${pct}% to the next level`) : t('Naar je held', 'To your hero')}
+        <Link to="/p/held" aria-label={L ? t(`Naar je held, level ${L.level}, ${pct}% naar het volgende level, leven ${Math.ceil(hp)} van ${maxHp}`, `To your hero, level ${L.level}, ${pct}% to the next level, life ${Math.ceil(hp)} of ${maxHp}`) : t('Naar je held', 'To your hero')}
           className={`${PANEL} absolute left-2 top-2 flex items-center gap-2 py-1 pl-1 pr-3`}>
           {L && <LevelBadge level={L.level} size={38} />}
           <span className="min-w-0">
             <span className="block max-w-[120px] truncate font-display text-[13.5px] font-bold leading-tight text-[#f6e2a6]">{d?.hero?.heroName ?? t('Je dorp', 'Your village')}</span>
+            {/* Life: green to red, with the numbers; it drops when a creature hits. */}
+            {d?.hero && (
+              <span data-testid="hero-hp" data-hp={Math.ceil(hp)} data-max={maxHp} aria-hidden className="mt-0.5 flex w-[112px] items-center gap-1">
+                <Heart className="h-3 w-3 shrink-0 fill-[#e2574a] text-[#e2574a]" />
+                <span className="relative block h-[9px] min-w-0 flex-1 overflow-hidden rounded-sm border border-black/70 bg-black/60">
+                  <span className="absolute inset-y-0 left-0 transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${(hp / maxHp) * 100}%`, background: hp / maxHp > 0.5 ? '#4ad06a' : hp / maxHp > 0.25 ? '#f0b429' : '#e2574a' }} />
+                </span>
+                <span className="shrink-0 text-[9.5px] font-semibold leading-none tabular-nums text-white/90">{Math.ceil(hp)}/{maxHp}</span>
+              </span>
+            )}
             {L && (
               <>
                 <span className="mt-0.5 block h-[9px] w-[112px] overflow-hidden rounded-sm border border-black/70 bg-black/60">
@@ -728,13 +814,13 @@ export function VillageWalkPage() {
 
         {/* On the way: where to, and a way to stop. */}
         {dest ? (
-          <p role="status" data-testid="on-the-way" className={`${PANEL} absolute left-2 flex max-w-[172px] items-center gap-2 py-1 pl-2.5 pr-1 text-[12.5px] ${panel === 'meters' ? 'top-[232px]' : 'top-[108px]'}`}>
+          <p role="status" data-testid="on-the-way" className={`${PANEL} absolute left-2 flex max-w-[172px] items-center gap-2 py-1 pl-2.5 pr-1 text-[12.5px] ${panel === 'meters' ? 'top-[246px]' : 'top-[122px]'}`}>
             <Footprints className="h-4 w-4 shrink-0 text-[#ffd76a]" aria-hidden />
             <span className="min-w-0 flex-1 leading-tight">{t(`Onderweg naar ${placeName(dest)}`, `On the way to ${placeName(dest)}`)}</span>
             <button type="button" onClick={() => world.current?.stop()} className="min-h-[32px] rounded-md px-2 font-semibold text-[#ffd76a] hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]">{t('Stop', 'Stop')}</button>
           </p>
         ) : tip ? (
-          <p className={`${PANEL} absolute left-[56px] top-[62px] flex max-w-[176px] items-start gap-1 py-1.5 pl-2.5 pr-1 text-[12.5px] leading-snug`}>
+          <p className={`${PANEL} absolute left-[56px] top-[76px] flex max-w-[176px] items-start gap-1 py-1.5 pl-2.5 pr-1 text-[12.5px] leading-snug`}>
             <span className="min-w-0 flex-1">{t('Tik op een taak of op de kaart: je held loopt er vanzelf heen.', 'Tap a task or the map: your hero walks there by itself.')}</span>
             <button type="button" onClick={hideTip} aria-label={t('Tip sluiten', 'Close tip')} className="grid min-h-[32px] min-w-[32px] place-items-center rounded-md text-[#ffd76a] hover:bg-white/10">✕</button>
           </p>
@@ -763,15 +849,21 @@ export function VillageWalkPage() {
               <button type="button" onClick={() => setPlacing(null)} className="min-h-[36px] rounded-md px-2 font-semibold text-[#ffd76a] hover:bg-white/10">{t('Annuleer', 'Cancel')}</button>
             </p>
           ) : mob ? (
+            <span className="flex flex-col items-center gap-1.5">
+            {isAlpha(mob.kind) && (
+              <p role="status" data-testid="alpha-warning" className={`${PANEL} max-w-[300px] border-[#ff8a6e] px-3 py-1.5 text-center text-[13px] leading-snug`}>
+                {t(`Alfa! Hij valt zelf aan en slaat hard. Eerlijk gevecht vanaf avonturier ${ALPHA_ADVISED_LEVEL}, met een goed wapen.`, `Alpha! It attacks by itself and hits hard. A fair fight from adventurer ${ALPHA_ADVISED_LEVEL}, with a good weapon.`)}
+              </p>
+            )}
             <Button size="lg" data-testid="strike" className="pointer-events-auto border border-[#ffb3a1] shadow-lift" icon={<Swords className="h-5 w-5" />} onClick={() => void strike()}>
-              {mob.kind === 'tree' ? t('Hak de boom', 'Chop the tree') : t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : ''}
+              {isHarvest(mob.kind) ? t(`Hak de ${mob.label.toLowerCase()}`, `Chop the ${mob.label.toLowerCase()}`) : t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : ''}
             </Button>
+            </span>
           ) : near === BOXING_KEY ? (
             <Button size="lg" data-testid="open-boxing" className="pointer-events-auto border border-[#ffd76a] shadow-lift" icon={<Swords className="h-5 w-5" />} onClick={() => { setRoundNo((n) => n + 1); setBoxingOpen(true); }}>{t('Train op de bokszak', 'Train on the bag')}</Button>
           ) : near === WELL_KEY ? (
             <span className="pointer-events-auto flex flex-wrap justify-center gap-2">
               <Button size="lg" data-testid="drink-well" loading={drinking} className="border border-[#9fd8ff] shadow-lift" icon={<Droplets className="h-5 w-5" />} onClick={() => void drink()}>{t(`Drink een glas (+${WATER.glassMl} ml)`, `Drink a glass (+${WATER.glassMl} ml)`)}</Button>
-              {flask < 2 && <Button size="lg" variant="secondary" data-testid="fill-flask" className="border border-[#9fd8ff] shadow-lift" onClick={() => { setFlask(2); toast(t('Fles gevuld: twee glazen voor onderweg.', 'Flask filled: two glasses for on the way.')); }}>{t('Vul je fles', 'Fill your flask')}</Button>}
             </span>
           ) : near === HOME_KEY ? (
             <Button size="lg" data-testid="enter-home" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(HOME_KEY)}>{t('Naar binnen: jouw huis', 'Go in: your home')}</Button>
@@ -796,9 +888,12 @@ export function VillageWalkPage() {
           ) : null}
         </div>
 
+        {/* Red flash at the edges when a creature lands a blow. */}
+        {hitAt > 0 && <div key={hitAt} className="hero-hit pointer-events-none absolute inset-0 z-[5]" aria-hidden />}
+
         {/* Meters of the day, as in a game: protein, steps and water. A tap opens the quick log on that tab. */}
         {d?.hero && d.logs && (
-          <div className="absolute left-[58px] top-[62px] flex flex-col items-start gap-[3px]" data-testid="world-meters">
+          <div className="absolute left-[58px] top-[76px] flex flex-col items-start gap-[3px]" data-testid="world-meters">
             {/* Folded: three small gauges in one button. Open: the full meters, the flask and the adventurer level. */}
             <button type="button" data-testid="toggle-meters" aria-expanded={panel === 'meters'} onClick={() => openPanel(panel === 'meters' ? null : 'meters')}
               aria-label={t('Meters van vandaag: eiwit, beweging en water', 'Today’s meters: protein, movement and water')}
@@ -827,13 +922,6 @@ export function VillageWalkPage() {
                 <span className="shrink-0 text-[9.5px] font-semibold leading-none tabular-nums">{text}</span>
               </button>
             ))}
-            <button type="button" data-testid="flask" disabled={flask <= 0 || drinking} onClick={() => void sip()}
-              aria-label={flask > 0 ? t(`Waterfles: ${flask} van 2 glazen. Tik om een glas te drinken.`, `Flask: ${flask} of 2 glasses. Tap to drink a glass.`) : t('Waterfles leeg. Vul hem bij de waterput.', 'Flask empty. Fill it at the well.')}
-              className="flex h-[22px] w-[128px] items-center gap-1 rounded-md border border-black/60 bg-[#141c18]/85 pl-1 pr-1.5 text-white shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a] disabled:opacity-70">
-              <Backpack className="h-3.5 w-3.5 shrink-0 text-[#9fd8ff]" aria-hidden />
-              <span className="flex flex-1 gap-1" aria-hidden>{[0, 1].map((i) => <span key={i} className={`h-[9px] flex-1 rounded-sm ${i < flask ? 'bg-[#58a8e8]' : 'bg-black/60'}`} />)}</span>
-              <span className="shrink-0 text-[9.5px] font-semibold leading-none">{flask > 0 ? t('drink', 'drink') : t('leeg', 'empty')}</span>
-            </button>
             {adventure.data && (
               <p className="flex w-max items-center gap-1 rounded-md border border-black/60 bg-[#141c18]/85 px-1.5 py-[3px] text-[10.5px] font-semibold leading-none text-[#ffd9a8] shadow-lift" data-testid="adventure-level">
                 <Sparkles className="h-3 w-3" aria-hidden />{t(`Avonturier ${adventure.data.level}`, `Adventurer ${adventure.data.level}`)} · {adventure.data.xp - adventure.data.from}/{adventure.data.to - adventure.data.from}<span className="sr-only"> · {nl ? weapon.nl : weapon.en}</span>
@@ -843,8 +931,20 @@ export function VillageWalkPage() {
           </div>
         )}
 
-        {(thirsty || stiff) && !dest && (
-          <ul className={`absolute left-2 flex max-w-[190px] flex-wrap gap-1 ${panel === 'meters' ? 'top-[232px]' : 'top-[108px]'}`} data-testid="world-states" aria-label={t('Hoe je held zich voelt', 'How your hero feels')}>
+        {d?.hero && !dest && !placing && (
+          <ul className={`absolute left-2 flex max-w-[236px] flex-wrap gap-1 whitespace-nowrap ${panel === 'meters' ? 'top-[246px]' : 'top-[122px]'}`} data-testid="world-states" aria-label={t('Hoe je held zich voelt', 'How your hero feels')}>
+            <li><button type="button" data-testid="flask" data-n={supply.glasses} disabled={supply.glasses <= 0 || hp >= maxHp} onClick={sip}
+              aria-label={supply.glasses > 0 ? t(`Veldfles: ${supply.glasses} ${supply.glasses === 1 ? 'glas' : 'glazen'}. Tik om te drinken: +50% leven.`, `Flask: ${supply.glasses} ${supply.glasses === 1 ? 'glass' : 'glasses'}. Tap to drink: +50% life.`) : t('Veldfles leeg. Log een glas water dat je echt drinkt, dan krijgt je held er een.', 'Flask empty. Log a glass of water you really drink, and your hero gets one.')}
+              className="flex min-h-[28px] items-center gap-1 rounded-full border bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none shadow-lift disabled:opacity-60 border-[#9fd8ff]/70 text-[#cfeaff]"><Droplets className="h-3.5 w-3.5" aria-hidden />{supply.glasses}</button></li>
+            <li><button type="button" data-testid="rations" data-n={supply.rations} disabled={supply.rations <= 0 || hp >= maxHp} onClick={eat}
+              aria-label={supply.rations > 0 ? t(`Rantsoenen: ${supply.rations}. Tik om te eten: weer helemaal fit.`, `Rations: ${supply.rations}. Tap to eat: fully fit again.`) : t('Geen rantsoenen. Vul bij Voeding in wat je at, dan krijgt je held eten.', 'No rations. Log what you ate under Nutrition, and your hero gets food.')}
+              className="flex min-h-[28px] items-center gap-1 rounded-full border bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none shadow-lift disabled:opacity-60 border-[#f0c36a]/70 text-[#ffe9b8]"><Beef className="h-3.5 w-3.5" aria-hidden />{supply.rations}</button></li>
+            {supply.fed ? (
+              <li><span data-testid="well-fed" className="flex min-h-[28px] items-center gap-1 rounded-full border bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none shadow-lift disabled:opacity-60 border-[#9fe39a]/70 text-[#c9f2c0]">{t('Goed gegeten · sneller en sterker', 'Well fed · faster and stronger')}</span></li>
+            ) : (
+              <li><Link to="/p/voeding" data-testid="fed-progress" className="flex min-h-[28px] items-center gap-1 rounded-full border bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none shadow-lift disabled:opacity-60 border-white/30 text-white/85"
+                aria-label={t(`${supply.mainMeals} van 3 maaltijden ingevuld. Vul ontbijt, lunch en diner in: dan is je held sneller en sterker.`, `${supply.mainMeals} of 3 meals logged. Log breakfast, lunch and dinner: then your hero is faster and stronger.`)}>{t(`Eten ${supply.mainMeals}/3`, `Food ${supply.mainMeals}/3`)}</Link></li>
+            )}
             {thirsty && (
               <li><button type="button" onClick={() => world.current?.goTo(WELL_KEY)}
                 aria-label={t('Dorst: je loopt trager. Tik om naar de waterput te lopen.', 'Thirsty: you walk slower. Tap to walk to the well.')}
@@ -860,7 +960,7 @@ export function VillageWalkPage() {
 
         {/* Action bar. */}
         <button type="button" data-testid="toggle-full" aria-pressed={full} onClick={() => setFull((v) => !v)} aria-label={full ? t('Volledig scherm sluiten', 'Leave full screen') : t('Volledig scherm', 'Full screen')}
-          className="absolute left-2 top-[62px] grid h-10 w-10 place-items-center rounded-lg border border-[#e4bc63]/70 bg-[#141c18]/85 text-[#f6e2a6] shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]">
+          className="absolute left-2 top-[76px] grid h-10 w-10 place-items-center rounded-lg border border-[#e4bc63]/70 bg-[#141c18]/85 text-[#f6e2a6] shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]">
           {full ? <Minimize2 className="h-5 w-5" aria-hidden /> : <Maximize2 className="h-5 w-5" aria-hidden />}
         </button>
         <nav aria-label={t('Snelbalk', 'Action bar')} className="absolute bottom-2 left-2 flex gap-1.5">
@@ -879,7 +979,8 @@ export function VillageWalkPage() {
       </p>
 
       <Dialog open={decorOpen} onClose={() => setDecorOpen(false)} title={t('Jouw huis inrichten', 'Furnish your home')} size="md" sheet
-        description={L ? t(`${HOME_STAGES[stage].nl}, level ${L.level}. ${levelsToNextHome(L.level) === null ? 'Dit is het grootste huis.' : `Nog ${levelsToNextHome(L.level)} level(s) tot een ${HOME_STAGES[stage + 1].nl.toLowerCase()}.`}`, `${HOME_STAGES[stage].en}, level ${L.level}. ${levelsToNextHome(L.level) === null ? 'This is the biggest home.' : `${levelsToNextHome(L.level)} more level(s) to a ${HOME_STAGES[stage + 1].en.toLowerCase()}.`}`) : undefined}>
+        description={L ? t(`${HOME_STAGES[stage].nl}, level ${L.level}.`, `${HOME_STAGES[stage].en}, level ${L.level}.`) : undefined}>
+        {own && <BuildHome own={own} level={L?.level ?? 1} busy={building} justBuilt={justBuilt} onBuild={() => void build()} />}
         {own && (
           <div data-testid="decor-panel">
             <p className="mb-2 text-[12.5px] text-ink-600">{t('Je fysiotherapeut kan in het dorp van de praktijk bij je binnen kijken en ziet dan je meubels, niet je muntjes.', 'Your physiotherapist can look into your home in the practice village and sees your furniture, not your coins.')}</p>
@@ -997,16 +1098,39 @@ export function VillageWalkPage() {
         <Link to="/p/wereld" className="mt-3 inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">{t('Naar de wereldkaart met je route', 'To the world map with your route')}<ChevronRight className="h-4 w-4" aria-hidden /></Link>
       </Dialog>
 
+      <Dialog open={!!downBy} onClose={respawn} title={t('Je bent verslagen', 'You were beaten')} size="sm"
+        description={t(`${downBy ?? ''} was te sterk deze keer.`, `${downBy ?? ''} was too strong this time.`)}
+        footer={<Button size="lg" className="w-full" data-testid="respawn" icon={<Droplets className="h-5 w-5" />} onClick={respawn}>{t('Opstaan bij de waterput', 'Get up at the well')}</Button>}>
+        <div data-testid="hero-down" className="space-y-2 text-[15px] leading-relaxed text-ink-800">
+          <p>{t('Je verliest niets: je held staat weer op bij de waterput, met al zijn leven terug.', 'You lose nothing: your hero gets up at the well, with all life back.')}</p>
+          <p>{t('Sterker terugkomen? Koop een beter wapen bij de wapensmid, of doe vandaag je training: dan heeft je held een kwart meer leven en komen klappen minder hard aan.', 'Come back stronger? Buy a better weapon at the armourer, or do today’s workout: then your hero has a quarter more life and blows land softer.')}</p>
+        </div>
+      </Dialog>
+
       <Dialog open={tvOpen} onClose={() => { setTvOpen(false); setPlaying(null); }} title={t('Je oefeningen van vandaag', "Today's exercises")} size="md" sheet>
         <div data-testid="tv-panel" className="space-y-4">
-          {exercise && (
+          {exercise && !mediaUrl(exercise.exercise.videoMediaId) && !mediaUrl(exercise.exercise.thumbnailMediaId) && (
+            // No video yet: no empty screen, but how to do it and what to watch out for.
+            <div data-testid="tv-text-only" className="rounded-xl border border-line bg-white p-3">
+              <p className="text-[15.5px] font-semibold text-ink-950">{nl ? exercise.exercise.nameNl : exercise.exercise.nameEn}</p>
+              {[
+                [t('Startpositie', 'Starting position'), nl ? exercise.exercise.startingPositionNl : exercise.exercise.startingPositionEn],
+                [t('Uitvoering', 'How to do it'), nl ? exercise.exercise.movementNl : exercise.exercise.movementEn],
+                [t('Let op', 'Remember'), nl ? exercise.exercise.instructionsNl : exercise.exercise.instructionsEn],
+              ].filter(([, v]) => v).map(([title, text]) => (
+                <div key={title} className="mt-2">
+                  <p className="text-[14px] font-semibold text-ink-800">{title}</p>
+                  <p className="text-[15px] leading-relaxed text-ink-700">{text}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {exercise && (mediaUrl(exercise.exercise.videoMediaId) || mediaUrl(exercise.exercise.thumbnailMediaId)) && (
             <div className="overflow-hidden rounded-xl border-4 border-[#1c2420] bg-black">
               {mediaUrl(exercise.exercise.videoMediaId) ? (
                 <video key={exercise.id} src={mediaUrl(exercise.exercise.videoMediaId)!} poster={mediaUrl(exercise.exercise.thumbnailMediaId) ?? undefined} controls autoPlay muted loop playsInline className="aspect-video w-full" />
-              ) : mediaUrl(exercise.exercise.thumbnailMediaId) ? (
-                <img src={mediaUrl(exercise.exercise.thumbnailMediaId)!} alt="" className="aspect-video w-full object-contain" />
               ) : (
-                <p className="grid aspect-video place-items-center px-4 text-center text-[14.5px] text-white/85">{t('Van deze oefening is nog geen video.', 'There is no video of this exercise yet.')}</p>
+                <img src={mediaUrl(exercise.exercise.thumbnailMediaId)!} alt="" className="aspect-video w-full object-contain" />
               )}
               <p className="bg-[#1c2420] px-3 py-2 text-[14.5px] font-semibold text-white">{nl ? exercise.exercise.nameNl : exercise.exercise.nameEn}</p>
             </div>
@@ -1048,5 +1172,44 @@ export function VillageWalkPage() {
         </div>
       </Dialog>
     </div>
+  );
+}
+
+/** The next home: what it costs in loot, what you have, and the button to build it. */
+function BuildHome({ own, level, busy, justBuilt, onBuild }: { own: OwnHome; level: number; busy: boolean; justBuilt: number | null; onBuild: () => void }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const b = own.build;
+  const done = justBuilt !== null && justBuilt === own.stage && (
+    <p role="status" data-testid="home-built" className="mb-2 rounded-xl border border-[#9fd4a8] bg-[#eef8f0] px-3 py-2 text-[14.5px] font-semibold text-ink-900">
+      {t(`Gebouwd! Je woont nu in een ${HOME_STAGES[own.stage].nl.toLowerCase()}.`, `Built! You now live in a ${HOME_STAGES[own.stage].en.toLowerCase()}.`)}
+    </p>
+  );
+  if (!b) return <>{done}<p data-testid="build-home" className="mb-3 rounded-xl bg-[#F3F7F1] px-3 py-2.5 text-[14.5px] text-ink-800">{t('Je woont in het grootste huis van het dorp.', 'You live in the biggest home of the village.')}</p></>;
+  const next = HOME_STAGES[b.stage];
+  return (
+    <>
+    {done}
+    <section data-testid="build-home" aria-labelledby="build-home-h" className="mb-3 rounded-xl border border-line bg-white p-3">
+      <h3 id="build-home-h" className="text-[15.5px] font-semibold text-ink-950">{t(`Bouw een ${next.nl.toLowerCase()}`, `Build a ${next.en.toLowerCase()}`)}</h3>
+      <p className="mt-0.5 text-[13.5px] text-ink-700">{t('Verzamel buit in het dorp: hak eiken voor hout en rotsen voor steen, en versla wezens voor wat ze laten vallen.', 'Collect loot in the village: chop oaks for wood and rocks for stone, and beat creatures for what they drop.')}</p>
+      <ul className="mt-2 grid grid-cols-2 gap-1.5">
+        {(Object.entries(b.cost) as [LootKey, number][]).map(([k, n]) => {
+          const have = Math.min(n, n - (b.missing[k] ?? 0));
+          return (
+            <li key={k} data-cost={k} className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[13.5px] ${have >= n ? 'border-[#9fd4a8] bg-[#eef8f0]' : 'border-line'}`}>
+              <span aria-hidden>{LOOT[k].icon}</span>
+              <span className="min-w-0 flex-1 truncate">{nl ? LOOT[k].nl : LOOT[k].en}</span>
+              <span className="tabular-nums font-semibold">{have}/{n}</span>
+            </li>
+          );
+        })}
+      </ul>
+      {!b.levelOk && <p className="mt-2 text-[13.5px] text-ink-700">{t(`Vanaf level ${next.from} mag je een ${next.nl.toLowerCase()} bouwen (nu level ${level}).`, `From level ${next.from} you may build a ${next.en.toLowerCase()} (now level ${level}).`)}</p>}
+      <Button className="mt-2 w-full" data-testid="build-home-button" disabled={!b.ready} loading={busy} onClick={onBuild}>
+        {b.ready ? t(`Bouw je ${next.nl.toLowerCase()}`, `Build your ${next.en.toLowerCase()}`) : !b.levelOk ? t(`Nog niet: level ${next.from} nodig`, `Not yet: level ${next.from} needed`) : t('Nog niet genoeg buit', 'Not enough loot yet')}
+      </Button>
+    </section>
+    </>
   );
 }

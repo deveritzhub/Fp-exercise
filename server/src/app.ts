@@ -29,6 +29,7 @@ import { patientModules } from './routes/patientModules';
 import { mobilityPatient, mobilityStaff } from './routes/mobilityTests';
 import { heroPatient, heroStaff } from './routes/hero';
 import { patientLogs } from './routes/patientLogs';
+import { nutrition } from './routes/nutrition';
 import { gymPatient, gymStaff } from './routes/gymLog';
 import { atlasPatient, atlasStaff } from './routes/atlas';
 import { stepRoutes } from './routes/steps';
@@ -57,7 +58,8 @@ export function createApp() {
       },
       strictTransportSecurity: config.isProd ? 'max-age=63072000; includeSubDomains' : false,
       referrerPolicy: 'strict-origin-when-cross-origin',
-      permissionsPolicy: { camera: [], microphone: [], geolocation: [] },
+      // Bluetooth only on our own pages: the heart rate strap during a workout.
+      permissionsPolicy: { camera: [], microphone: [], geolocation: [], bluetooth: ['self'] },
     }),
   );
 
@@ -102,6 +104,7 @@ export function createApp() {
   api.route('/patient', patientModules);
   api.route('/patient', heroPatient);
   api.route('/patient', patientLogs);
+  api.route('/patient', nutrition);
   api.route('/patient', gymPatient);
   api.route('/patient', atlasPatient);
   api.route('/atlas', atlasStaff);

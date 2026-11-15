@@ -12,6 +12,13 @@ import { applyTheme, readTheme } from '@/lib/theme';
 
 installErrorReporting();
 // Light or dark before the first paint (no inline script: the CSP allows only our own files).
+// A visit that starts anywhere but the 3D village (for example at the login page) has started: going to
+// the village later is a choice. Only a visit that starts in the village opens on Today (PatientLayout).
+try {
+  if (!/^\/p\/(dorp|wereld)(\/|$)/.test(window.location.pathname)) sessionStorage.setItem('fp.p.open', '1');
+} catch {
+  /* storage optional */
+}
 applyTheme(readTheme());
 window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', () => applyTheme(readTheme()));
 window.addEventListener('fp-theme', () => applyTheme(readTheme()));

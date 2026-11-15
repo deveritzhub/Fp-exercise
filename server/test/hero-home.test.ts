@@ -73,3 +73,42 @@ describe('own home: furniture bought with coins and put down in the room', () =>
     expect(theirs.layout).toEqual([]);
   });
 });
+
+describe('own home: the next one is built with loot', () => {
+  it('keeps the home the level gave, and builds the next only with enough loot (which is then used up)', async () => {
+    const p = await login('patientA');
+    const start = (await p.get('/patient/hero/home')).body;
+    expect(typeof start.stage).toBe('number');
+    expect((await p.get('/patient/hero')).body.homeStage).toBe(start.stage);
+    const b = start.build;
+    expect(b.stage).toBe(start.stage + 1);
+    expect(Object.keys(b.cost)).toEqual(expect.arrayContaining(['wood', 'stone']));
+    // Without the loot: nothing is built.
+    const poor = await p.post('/patient/hero/home/build', {});
+    expect(poor.status).toBe(400);
+    expect(poor.body.error).toBe(b.levelOk ? 'not_enough_loot' : 'level_too_low');
+
+    // A hero whose level does not reach the next home yet: start again from the camp, so the hut is in reach.
+    const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
+    await db.connect();
+    let now;
+    try {
+      if (!b.levelOk) await db.query('UPDATE hero_homes SET built_stage = 0 WHERE patient_id = $1', [s.patients.emma]);
+      now = (await p.get('/patient/hero/home')).body;
+      if (!now.build.levelOk) return; // a level-1 hero cannot build a hut yet; covered by the shared rules
+      // Loot from the village: twice what it costs.
+      for (const [item, n] of Object.entries(now.build.cost as Record<string, number>)) {
+        await db.query('INSERT INTO hero_loot(patient_id, item, n) VALUES ($1,$2,$3) ON CONFLICT (patient_id, item) DO UPDATE SET n = EXCLUDED.n', [s.patients.emma, item, n * 2]);
+      }
+    } finally {
+      await db.end();
+    }
+    now = (await p.get('/patient/hero/home')).body;
+    expect(now.build.ready).toBe(true);
+    const built = await p.post('/patient/hero/home/build', {});
+    expect(built.status).toBe(201);
+    expect(built.body.stage).toBe(now.stage + 1);
+    const loot = (await p.get('/patient/hero/adventure')).body.loot;
+    for (const [item, n] of Object.entries(now.build.cost as Record<string, number>)) expect(loot[item]).toBe(n);
+  });
+});

@@ -40,3 +40,29 @@ describe('adventure', () => {
     }
   });
 });
+
+describe('fighting back and the hero life', async () => {
+  const { ATTACKS, CREATURES, heroMaxHp, hitOnHero, isAlpha, rollDrops } = await import('./adventure');
+  it('the hero has more life with a higher adventure level and after a real workout', () => {
+    expect(heroMaxHp(1, false)).toBe(40);
+    expect(heroMaxHp(5, false)).toBe(80);
+    expect(heroMaxHp(1, true)).toBe(50);
+  });
+  it('prey never hits back; the Alpha attacks by itself, hits hardest and can beat a new hero', () => {
+    expect(hitOnHero('chicken', false)).toBe(0);
+    expect(hitOnHero('cow', false)).toBe(0);
+    expect(isAlpha('alpha_boar')).toBe(true);
+    expect(ATTACKS.alpha_boar.aggressive).toBe(true);
+    for (const k of Object.keys(ATTACKS) as (keyof typeof ATTACKS)[]) if (k !== 'alpha_boar') expect(ATTACKS[k].damage).toBeLessThan(ATTACKS.alpha_boar.damage);
+    // Fists (1 per blow, about one blow a second) cannot finish 60 life before 40 life is gone.
+    const secondsToLose = (heroMaxHp(1, false) / hitOnHero('alpha_boar', false)) * (ATTACKS.alpha_boar.everyMs / 1000);
+    expect(secondsToLose).toBeLessThan(CREATURES.alpha_boar.hp);
+  });
+  it('a workout today softens every blow, but a blow always does at least 1', () => {
+    expect(hitOnHero('alpha_boar', true)).toBeLessThan(hitOnHero('alpha_boar', false));
+    expect(hitOnHero('slime', true)).toBe(1);
+  });
+  it('the Alpha always drops its own tusk', () => {
+    expect(rollDrops('alpha_boar', () => 0.99).map((x) => x.item)).toContain('alpha_tusk');
+  });
+});

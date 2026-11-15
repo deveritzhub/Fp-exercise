@@ -1,5 +1,6 @@
 import { BELTS, examReady, nextItems, validItem } from '../../../shared/karate';
-import { ADVENTURE_DAILY_WINS, BOXING, CREATURES, CREATURE_KINDS, LOOT_CAP, NEEDS_TOOL, RECIPES, TOOLS, WEAPONS, adventureLevel, boxingXp, builtItem, rollDrops, toolItem, weaponItem, type CreatureKind } from '../../../shared/adventure';
+import { ADVENTURE_DAILY_WINS, BOXING, CREATURES, CREATURE_KINDS, LOOT_CAP, NEEDS_TOOL, RECIPES, TOOLS, WEAPONS, adventureLevel, boxingXp, builtItem, rollDrops, toolItem, weaponItem, type CreatureKind, type LootKey } from '../../../shared/adventure';
+import { homeStage, nextHome } from '../../../shared/practiceVillage';
 import { readStaffLook } from '../lib/staffLook';
 import { HEIRLOOM_KINDS } from '../../../shared/measurementBoss';
 import { wearableAclReward, ACL_SPORTS } from '../../../shared/aclRewards';
@@ -441,6 +442,8 @@ heroPatient.get('/hero', async (c) => {
         customPhoto: config.personalHeroPhotos.get(user.email.toLowerCase()) ?? guest,
         heroGuests: [...config.heroGuests].map(([key, name]) => ({ key, name })),
         heirloom: await heirloomView(tx, patient.id),
+        // The home that stands (built with loot), for the lobby and the village.
+        homeStage: state.hero ? await builtStage(tx, patient.id, state.level.level) : null,
       };
     }),
   );
@@ -698,9 +701,29 @@ heroPatient.post('/hero/chest', async (c) => {
   return c.json(out, 201);
 });
 
-// ---- The patient's own home: furniture bought with the same coins, and where it stands. ----
+// ---- The patient's own home: built with loot, furnished with coins. ----
+/**
+ * The home that stands. The first time it is asked for, it is the one the level already gave (so an
+ * existing hero keeps the house), and stored; from then on a next home is built with loot.
+ */
+async function builtStage(tx: Tx, patientId: string, level: number): Promise<number> {
+  const row = (await tx.query('SELECT built_stage FROM hero_homes WHERE patient_id = $1', [patientId])).rows[0];
+  if (row && row.built_stage !== null) return Number(row.built_stage);
+  const start = homeStage(level);
+  await tx.query(
+    `INSERT INTO hero_homes (patient_id, built_stage) VALUES ($1, $2)
+     ON CONFLICT (patient_id) DO UPDATE SET built_stage = coalesce(hero_homes.built_stage, EXCLUDED.built_stage)`,
+    [patientId, start],
+  );
+  return start;
+}
+const lootOf = async (tx: Tx, patientId: string) =>
+  Object.fromEntries((await tx.query('SELECT item, n FROM hero_loot WHERE patient_id = $1 AND n > 0', [patientId])).rows.map((r) => [r.item as string, Number(r.n)])) as Partial<Record<LootKey, number>>;
+
 async function homeState(tx: Tx, patientId: string) {
   const state = await heroState(tx, patientId);
+  const stage = await builtStage(tx, patientId, state.level.level);
+  const build = nextHome(stage, state.level.level, await lootOf(tx, patientId));
   const bought = (await tx.query('SELECT item FROM hero_purchases WHERE patient_id = $1', [patientId])).rows.map((r) => r.item as string);
   const owned = bought.filter((k) => DECOR_KEYS.has(k));
   const row = (await tx.query('SELECT layout FROM hero_homes WHERE patient_id = $1', [patientId])).rows[0];
@@ -711,7 +734,7 @@ async function homeState(tx: Tx, patientId: string) {
     const next = checkLayout([...kept, it], new Set(owned));
     if (next.ok) kept.push(next.items[next.items.length - 1]);
   }
-  return { level: state.level.level, coins: state.gear.coins, owned, layout: kept };
+  return { level: state.level.level, coins: state.gear.coins, owned, layout: kept, stage, build };
 }
 
 /**
@@ -956,6 +979,28 @@ heroPatient.put('/hero/adventure/weapon', async (c) => {
 heroPatient.get('/hero/home', async (c) => {
   const { user, patient } = requirePatient(c);
   return c.json(await withUser(user.id, (tx) => homeState(tx, patient.id)));
+});
+
+/** Build the next home: the level must allow it and the loot it costs is handed in. */
+heroPatient.post('/hero/home/build', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const home = await withUser(user.id, async (tx) => {
+    // One build at a time per patient, so two taps cannot spend the same loot twice.
+    const row = (await tx.query('SELECT 1 FROM patient_heroes WHERE patient_id = $1 FOR UPDATE', [patient.id])).rows[0];
+    if (!row) throw badRequest('hero_required');
+    const now = await homeState(tx, patient.id);
+    const b = now.build;
+    if (!b) throw badRequest('home_complete');
+    if (!b.levelOk) throw badRequest('level_too_low');
+    if (!b.ready) throw badRequest('not_enough_loot');
+    for (const [item, n] of Object.entries(b.cost)) {
+      const r = await tx.query('UPDATE hero_loot SET n = n - $3 WHERE patient_id = $1 AND item = $2 AND n >= $3', [patient.id, item, n]);
+      if (!r.rowCount) throw badRequest('not_enough_loot');
+    }
+    await tx.query('UPDATE hero_homes SET built_stage = $2, updated_at = now() WHERE patient_id = $1', [patient.id, b.stage]);
+    return homeState(tx, patient.id);
+  });
+  return c.json(home, 201);
 });
 
 /** Buy a piece of furniture with coins; it is put down on the first free spot. */

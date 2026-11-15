@@ -2,29 +2,16 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Axe, Beef, Coins, Droplets, Footprints, Gem, Hammer, Lock, Swords } from 'lucide-react';
 import { LOOT, LOOT_KEYS, RECIPES, TOOLS, WEAPONS, weaponByKey, type LootKey } from '@shared/adventure';
-import { WATER } from '@shared/survival';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import { Button, Card, Spinner, useToast } from '@/components/ui';
 import type { HeroState } from '@/lib/types';
+import { useSupplies } from '@/lib/supplies';
 
 type Adventure = { level: number; weapon: string | null; owned: string[]; coins: number; loot?: Record<string, number>; tools?: string[]; built?: string[]; strength?: number; lootCap?: number };
 
 const ICON: Record<string, string> = { fists: '✊', staff: '🦯', gloves: '🥊', club: '🏏', hammer: '🔨', sword: '🗡️', axe: '🪓', spear: '🔱', hero_sword: '⚔️' };
-const FLASK = 'fp.village.flask';
-const FLASK_MAX = 2;
-
-/** The flask filled at the village well: glasses left for today, kept in this browser. */
-const readFlask = () => {
-  try {
-    const v = JSON.parse(localStorage.getItem(FLASK) ?? 'null') as { day: string; n: number } | null;
-    return v && v.day === new Date().toDateString() ? Math.max(0, Math.min(FLASK_MAX, v.n)) : 0;
-  } catch {
-    return 0;
-  }
-};
-
 /**
  * The backpack: the weapons of the adventure (bought with coins, put on or off) and what the hero
  * carries for the day: the flask, and the water, protein and steps of today.
@@ -36,7 +23,7 @@ export function BackpackCard({ d }: { d: HeroState }) {
   const toast = useToast();
   const q = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure') });
   const [busy, setBusy] = useState<string | null>(null);
-  const [flask, setFlask] = useState(readFlask);
+  const supply = useSupplies(d.logs?.survival.water.ml ?? 0, !!d.hero);
   const a = q.data;
   const worn = weaponByKey(a?.weapon);
 
@@ -57,23 +44,6 @@ export function BackpackCard({ d }: { d: HeroState }) {
   const buyTool = (key: string, name: string) => act(`tool:${key}`, () => api.post<Adventure>('/patient/hero/adventure/tool/buy', { key }), t(`${name} gekocht!`, `${name} bought!`));
   const craft = (key: string, name: string) => act(`craft:${key}`, () => api.post<Adventure>('/patient/hero/adventure/craft', { key }), t(`${name} gemaakt!`, `${name} made!`));
   const buy = (key: string, name: string) => act(key, () => api.post<Adventure>('/patient/hero/adventure/weapon/buy', { key }), t(`${name} gekocht en in de hand!`, `${name} bought and in hand!`));
-
-  const sip = async () => {
-    if (flask <= 0) return;
-    setBusy('sip');
-    try {
-      await api.post('/patient/logs/water', { ml: WATER.glassMl });
-      const n = flask - 1;
-      setFlask(n);
-      try { localStorage.setItem(FLASK, JSON.stringify({ day: new Date().toDateString(), n })); } catch { /* storage optional */ }
-      void qc.invalidateQueries({ queryKey: ['patient-hero'] });
-      toast(t('Glas water gelogd. Drink het ook echt op!', 'Glass of water logged. Do drink it!'));
-    } catch (e) {
-      toast(describeError(e, locale), 'bad');
-    } finally {
-      setBusy(null);
-    }
-  };
 
   const logs = d.logs;
   const supplies = logs ? [
@@ -147,7 +117,7 @@ export function BackpackCard({ d }: { d: HeroState }) {
               <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">{tool.icon}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[14.5px] font-semibold text-ink-950">{name}</span>
-                <span className="block text-[12.5px] text-ink-700">{t('Hak er bomen mee voor hout.', 'Chop trees with it for wood.')}{!has && <> · <span className="inline-flex items-center gap-0.5 font-semibold text-[#855806]"><Coins className="h-3 w-3" aria-hidden />{tool.price}</span></>}</span>
+                <span className="block text-[12.5px] text-ink-700">{t('Hak er eiken mee voor hout.', 'Chop oaks with it for wood.')}{!has && <> · <span className="inline-flex items-center gap-0.5 font-semibold text-[#855806]"><Coins className="h-3 w-3" aria-hidden />{tool.price}</span></>}</span>
               </span>
               {has ? <span className="shrink-0 text-[12.5px] font-semibold text-[#6b4705]">{t('In je rugzak', 'In your pack')}</span> : (
                 <Button size="sm" disabled={short || !a} loading={busy === `tool:${tool.key}`} onClick={() => void buyTool(tool.key, name)} aria-label={t(`Koop ${name} voor ${tool.price} muntjes`, `Buy ${name} for ${tool.price} coins`)}>{short ? t(`Nog ${tool.price - (a?.coins ?? 0)}`, `${tool.price - (a?.coins ?? 0)} short`) : t('Koop', 'Buy')}</Button>
@@ -158,7 +128,7 @@ export function BackpackCard({ d }: { d: HeroState }) {
       </ul>
 
       <h3 id="craft-title" className="mt-5 flex scroll-mt-20 items-center gap-1.5 text-[15px] font-semibold text-ink-950"><Hammer className="h-4 w-4" aria-hidden />{t('Maken', 'Make')}</h3>
-      <p className="mt-1 text-[13.5px] text-ink-700">{t('Maak van je buit een eenvoudig wapen of een kist. In een kist bewaar je tot 99 stuks per soort in plaats van 10.', 'Make a simple weapon or a chest from your loot. A chest keeps up to 99 of a kind instead of 10.')}</p>
+      <p className="mt-1 text-[13.5px] text-ink-700">{t('Maak van je buit een eenvoudig wapen of een kist. In een kist bewaar je tot 99 stuks per soort in plaats van 20; dat heb je nodig voor de grotere huizen.', 'Make a simple weapon or a chest from your loot. A chest keeps up to 99 of a kind instead of 20; the bigger homes need that.')}</p>
       <ul className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="recipes">
         {RECIPES.map((r) => {
           const name = nl ? r.nl : r.en;
@@ -185,7 +155,7 @@ export function BackpackCard({ d }: { d: HeroState }) {
       </ul>
 
       <h3 className="mt-5 flex items-center gap-1.5 text-[15px] font-semibold text-ink-950"><Gem className="h-4 w-4" aria-hidden />{t('Buit', 'Loot')}</h3>
-      <p className="mt-1 text-[13.5px] text-ink-700">{t(`Wat kwaaltjes, dieren en bomen in je dorp opleveren. Een vakje met een vraagteken heb je nog niet gevonden. Je bewaart er ${a?.lootCap ?? 10} per soort.`, `What ailments, animals and trees in your village drop. A square with a question mark is one you have not found yet. You keep ${a?.lootCap ?? 10} of a kind.`)}</p>
+      <p className="mt-1 text-[13.5px] text-ink-700">{t(`Wat kwaaltjes, dieren en bomen in je dorp opleveren. Een vakje met een vraagteken heb je nog niet gevonden. Je bewaart er ${a?.lootCap ?? 20} per soort.`, `What ailments, animals and trees in your village drop. A square with a question mark is one you have not found yet. You keep ${a?.lootCap ?? 20} of a kind.`)}</p>
       <ul className="mt-2 grid grid-cols-5 gap-2" data-testid="loot">
         {LOOT_KEYS.map((k) => {
           const n = a?.loot?.[k] ?? 0;
@@ -201,13 +171,21 @@ export function BackpackCard({ d }: { d: HeroState }) {
       </ul>
 
       <h3 className="mt-5 flex items-center gap-1.5 text-[15px] font-semibold text-ink-950"><Droplets className="h-4 w-4" aria-hidden />{t('Voorraad', 'Supplies')}</h3>
-      <div className="mt-2 flex items-center gap-3 rounded-xl border border-line bg-white p-2.5" data-testid="backpack-flask">
-        <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">🧴</span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-[14.5px] font-semibold text-ink-950">{t('Veldfles', 'Flask')} · {flask}/{FLASK_MAX}</span>
-          <span className="block text-[12.5px] text-ink-700">{flask > 0 ? t('Glazen water voor onderweg.', 'Glasses of water for the road.') : t('Leeg. Vul hem bij de waterput in je dorp.', 'Empty. Fill it at the well in your village.')}</span>
-        </span>
-        <Button size="sm" disabled={flask <= 0} loading={busy === 'sip'} onClick={() => void sip()}>{t('Drink', 'Drink')}</Button>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <div className="flex items-center gap-3 rounded-xl border border-line bg-white p-2.5" data-testid="backpack-flask">
+          <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">🧴</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14.5px] font-semibold text-ink-950">{t('Veldfles', 'Flask')} · {supply.glasses} {t(supply.glasses === 1 ? 'glas' : 'glazen', supply.glasses === 1 ? 'glass' : 'glasses')}</span>
+            <span className="block text-[12.5px] text-ink-700">{t('Elk glas water dat je invult geeft je held een glas. In het dorp drinkt je held het voor +50% leven.', 'Every glass of water you log gives your hero a glass. In the village your hero drinks it for +50% life.')}</span>
+          </span>
+        </div>
+        <div className="flex items-center gap-3 rounded-xl border border-line bg-white p-2.5" data-testid="backpack-rations">
+          <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">🍱</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14.5px] font-semibold text-ink-950">{t('Rantsoenen', 'Rations')} · {supply.rations}</span>
+            <span className="block text-[12.5px] text-ink-700">{supply.fed ? t('Goed gegeten vandaag: je held is sneller en sterker.', 'Well fed today: your hero is faster and stronger.') : t(`Elke maaltijd die je bij Voeding invult geeft een rantsoen. ${supply.mainMeals}/3 maaltijden vandaag; bij 3 is je held sneller en sterker.`, `Every meal you log under Nutrition gives a ration. ${supply.mainMeals}/3 meals today; at 3 your hero is faster and stronger.`)}</span>
+          </span>
+        </div>
       </div>
       {supplies.length > 0 && (
         <ul className="mt-2 grid gap-2 sm:grid-cols-3">

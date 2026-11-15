@@ -360,7 +360,66 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     Vervolg blijft artistieke verfijning van gezichten, haar, plooien en individuele accessoires;
     geen claim dat de volledige premium art-direction al is afgerond.
 
+103. [x] **Schema's voor spiergroei** (15 nov): vijf hypertrofieschema's in `fp-kracht-v5`
+    (2× minimaal, full body 3×, dumbbells 3×, boven/onder 4×, boven/onder + push/pull/benen 5×).
+    10 tot 16 harde sets per grote spiergroep per week (minimaal schema bewust 5 à 6), elke spiergroep
+    2× per week, grondoefeningen RPE 8 en isolatie RPE 9, blokken van 6 weken met een lichtere week.
+    Zes nieuwe oefeningen (zittende leg curl, Bulgaarse split squat, curl op schuine bank, zittend
+    kuitheffen, kabel-zijwaartse raise, chest press machine). Rust van 1,5/2,5 min telt nu met decimalen.
+
+104. [x] **Kies je schema** (15 nov): op Kracht kiest de patiënt format, dagen per week en doel en
+    ziet de passende schema's, beste eerst (`shared/strengthChooser.ts`); de praktijksjablonen
+    blijven eronder. Migratie 053 geeft bij starttemplates de bron-id en het aantal trainingsdagen mee.
+
+105. [x] **Zonder video de beschrijving** (15 nov): geen leeg videovak meer; startpositie, uitvoering
+    en "Let op" staan meteen open, ook op de tv in het dorp. Krachtoefeningen uit de bibliotheek: de
+    beschrijving onder Uitvoering, herhalingen en rust onder Let op.
+
+106. [x] **Levensbalk, monsters slaan terug, eerste Alfa** (15 nov): je held heeft leven (40 + 10 per
+    avonturiersniveau, een kwart meer na een echte training vandaag; klappen dan een vijfde zachter).
+    Kwaaltjes en het wilde zwijn slaan terug als je ze slaat; prooidieren niet. Het Alfazwijn (60 leven,
+    220 XP, eigen Alfaslagtand) aan de rand van de weide valt zelf aan en kan je verslaan. Verslagen:
+    je verliest niets en staat op bij de waterput. Een echt glas water bij de put geneest volledig.
+    Buiten een gevecht komt leven vanzelf terug. Alles is spel, los van je echte level.
+
+107. [x] **Huis bouwen met buit** (15 nov): eiken (hout) en rotsen (steen) om te hakken; elk volgend huis
+    kost buit (hut 6 hout + 2 steen … villa met de Alfaslagtand), het level moet het toelaten. Bestaande
+    helden houden hun huis (migratie 054, eerste keer vastgelegd). Bouwen in het inrichtingspaneel.
+
+108. [x] **Wezens met een eigen plek** (15 nov): moeras, dorre plek, oud kleed (troon voor de koning),
+    stro, trog, modderpoel en een leger van staande stenen voor het Alfazwijn; een vijver. Agressief:
+    duiveltje, wild zwijn, Bankkoning, Alfazwijn; vriendelijk: kippen en koeien. Verslagen: direct
+    opstaan bij de waterput.
+
+109. [x] **Training snel invoeren** (15 nov): tekstveld in Logboek en Krachtlog; de app leest minuten,
+    sets, herhalingen en kilo's en herkent oefeningen uit de bibliotheek (onbekend wordt een eigen
+    oefening). Eerst controleren, dan opslaan. Snelknoppen: herhaal vorige training, recente oefeningen.
+    Geen externe dienst (`shared/workoutText.ts`). Spraak of AI alleen na akkoord.
+
+110. [x] **Voeding** (15 nov): `/p/voeding` met Vandaag (eten in eigen woorden of zoeken, controleren,
+    opslaan per maaltijd; kcal, eiwit, koolhydraten, vet; eiwit gaat ook in de eiwitmeter), Recepten (17,
+    per doel spiergroei/afvallen/gezond uit de eigen voedingswaarden, filters maaltijd/vega/prep),
+    Weekplan (dag, porties) en Boodschappen (opgeteld per afdeling, afvinken). Privé voor de patiënt,
+    in de AVG-export. Eigen gemiddelde waarden, geen gekopieerde database (`shared/foods.ts`).
+
+111. [x] **De app opent op Vandaag** (15 nov): een nieuw bezoek aan het dorp start op Vandaag; daar
+    staat "Speel in je 3D-dorp" en een Voeding-kaart.
+
+112. [x] **Hartslag tijdens de training** (15 nov): hartje in de trainingsbalk koppelt een
+    Bluetooth-hartslagmeter (of de brug van de app); live hartslag, en gemiddelde/hoogste/laagste en
+    gemeten tijd per training opgeslagen (`session_heart_rates`, privé, in de AVG-export).
+
+114. [x] **Voorraad van je held uit het echte leven** (15 nov): veldfles = ingevulde glazen water van
+    vandaag (max 8, +50% leven per glas), rantsoenen = ingevulde maaltijden (volledig herstel).
+    Ontbijt, lunch en diner ingevuld: "goed gegeten", 15% sneller en 25% sterker. De fles vult niet meer
+    gratis bij de put. Eten geeft nooit een straf (`shared/supplies.ts`).
+
+113. [ ] **Echte app met Health Connect en Apple Health**: akkoord eigenaar 15 nov; plan en stappen in
+    `docs/APP_HEALTH.md`. Stap 1 (hartslag) is klaar.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
+- Apple Developer-account (€99 per jaar) en Google Play-account aanmaken voor de echte app
+  (`docs/APP_HEALTH.md`).
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.
 - `DEMO_PASSWORD` instellen in Render (zelf doen, niet naar Claude sturen).

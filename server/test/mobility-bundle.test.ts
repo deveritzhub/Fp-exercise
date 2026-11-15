@@ -88,6 +88,49 @@ describe('extra strength programmes (fp-kracht-v2)', () => {
   });
 });
 
+describe('hypertrophy schedules (fp-kracht-v5)', () => {
+  const bundle = toBundle(readFpBundle('fp-kracht-v5.json'));
+  const known = new Set(FP_BUNDLES.flatMap((b) => toBundle(readFpBundle(b.file)).exercises.map((e) => e.key)));
+  const days = (k: string) => [...new Set(bundle.templates.find((t) => t.key === k)!.items.flatMap((i) => i.days))].sort();
+  it('adds five schedules from library exercises plus six new ones (stretch-focused and stable machine work), with red flags and the training days spread over the week', () => {
+    expect(bundle.exercises.map((e) => e.key).sort()).toEqual(['kr_bulgarian_split_squat', 'kr_cable_lateral_raise', 'kr_incline_db_curl', 'kr_machine_chest_press', 'kr_seated_calf_raise', 'kr_seated_leg_curl']);
+    const elsewhere = new Set(FP_BUNDLES.filter((b) => b.name !== 'fp-kracht-v5').flatMap((b) => toBundle(readFpBundle(b.file)).exercises.map((e) => e.key)));
+    for (const e of bundle.exercises) expect(elsewhere.has(e.key), e.key).toBe(false);
+    expect(bundle.templates.map((t) => t.key).sort()).toEqual(['kr5_hyp_dumbbell_3d', 'kr5_hyp_fullbody_3d', 'kr5_hyp_minimaal_2d', 'kr5_hyp_ulppl_5d', 'kr5_hyp_upper_lower_4d']);
+    for (const tp of bundle.templates) {
+      expect(tp.module).toBe('kracht');
+      expect(tp.redFlags).toContain('Pijn op de borst');
+      for (const i of tp.items) {
+        expect(known.has(i.ex), `${tp.key}: ${i.ex}`).toBe(true);
+        expect(i.sets).toBeGreaterThanOrEqual(2);
+        expect(i.restS).toBeGreaterThanOrEqual(60);
+      }
+    }
+    expect(days('kr5_hyp_minimaal_2d')).toEqual([1, 4]);
+    expect(days('kr5_hyp_fullbody_3d')).toEqual([1, 3, 5]);
+    expect(days('kr5_hyp_upper_lower_4d')).toEqual([1, 2, 4, 5]);
+    expect(days('kr5_hyp_ulppl_5d')).toEqual([1, 2, 4, 5, 6]);
+    // Rest in minutes keeps its decimals: 2.5 min before a heavy row is 150 s, not 120.
+    const row = bundle.templates.find((t) => t.key === 'kr5_hyp_upper_lower_4d')!.items.find((i) => i.ex === 'kr_barbell_row')!;
+    expect(row.restS).toBe(150);
+  });
+  it('trains every big muscle group at least twice a week and only flags the minimal schedule as low volume', () => {
+    const groups: Record<string, string[]> = {
+      borst: ['kr_machine_chest_press', 'kr_bench_press', 'kr_db_bench_press', 'kr_incline_db_press', 'kr_dips', 'kr_push_up', 'kr_cable_fly'],
+      rug: ['kr_barbell_row', 'kr_chest_supported_row', 'kr_seated_cable_row', 'kr_db_row', 'kr_lat_pulldown', 'kr_pull_up', 'kr_chin_up'],
+      benen: ['kr_bulgarian_split_squat', 'kr_seated_leg_curl', 'kr_back_squat', 'kr_leg_press', 'kr_hack_squat', 'kr_goblet_squat', 'kr_walking_lunge', 'kr_reverse_lunge', 'kr_step_up', 'kr_leg_extension', 'kr_rdl', 'kr_leg_curl', 'kr_hip_thrust'],
+    };
+    for (const tp of bundle.templates) {
+      for (const [g, ids] of Object.entries(groups)) {
+        const onDays = new Set(tp.items.filter((i) => ids.includes(i.ex)).flatMap((i) => i.days));
+        expect(onDays.size, `${tp.key}: ${g}`).toBeGreaterThanOrEqual(2);
+      }
+      const low = tp.warnings.some((w) => w.startsWith('Volume:'));
+      expect(low, tp.key).toBe(tp.key === 'kr5_hyp_minimaal_2d');
+    }
+  });
+});
+
 describe('extra strength exercises (fp-kracht-v3)', () => {
   it('adds twenty strength exercises with valid regions and no programmes', async () => {
     const { BODY_REGIONS } = await import('../../shared/taxonomy');

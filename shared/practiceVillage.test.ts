@@ -28,3 +28,22 @@ describe('practice village', () => {
     });
   });
 });
+
+describe('building the next home with loot', async () => {
+  const { HOME_COSTS, nextHome, HOME_STAGES } = await import('./practiceVillage');
+  it('every home after the camp costs wood and stone, more each time', () => {
+    for (let i = 1; i < HOME_STAGES.length; i++) {
+      expect(HOME_COSTS[i].wood).toBeGreaterThan(HOME_COSTS[i - 1].wood ?? 0);
+      expect(HOME_COSTS[i].stone).toBeGreaterThan(HOME_COSTS[i - 1].stone ?? 0);
+    }
+  });
+  it('needs the level and all the loot; says what is missing', () => {
+    expect(nextHome(0, 1, { wood: 99, stone: 99 })).toMatchObject({ stage: 1, levelOk: false, ready: false });
+    expect(nextHome(0, 2, { wood: 4 })).toMatchObject({ levelOk: true, ready: false, missing: { wood: 2, stone: 2 } });
+    expect(nextHome(0, 2, { wood: 6, stone: 2 })).toMatchObject({ ready: true, missing: {} });
+    expect(nextHome(5, 40, {})).toBeNull();
+  });
+  it('the villa asks for the tusk of the Alpha', () => {
+    expect(HOME_COSTS[5].alpha_tusk).toBe(1);
+  });
+});
