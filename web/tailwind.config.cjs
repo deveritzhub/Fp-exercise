@@ -6,6 +6,8 @@ module.exports = {
   content: [path.join(__dirname, 'index.html'), path.join(__dirname, 'src/**/*.{ts,tsx}')],
   theme: {
     extend: {
+      // A phone held sideways: wide and low. Used by the village so its controls fit.
+      screens: { land: { raw: '(orientation: landscape) and (max-height: 520px)' } },
       fontFamily: {
         // Inter for body text, labels, tables and numbers; Manrope for headings. Self-hosted (no Google Fonts requests).
         sans: ['"Inter Variable"', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],

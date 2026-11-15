@@ -2523,7 +2523,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         </div>
       </div>
       {/* Stacked on the right edge, clear of the action bar. */}
-      <div className="absolute bottom-2 right-2 flex flex-col gap-1.5">
+      <div className="absolute bottom-2 right-2 flex flex-col gap-1.5 land:grid land:grid-cols-2">
         <button type="button" data-testid="zoom-in" onClick={() => zoomBy(1 / 1.25)} aria-label={t('Inzoomen', 'Zoom in')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[20px] font-bold leading-none text-[#f6e2a6]">+</button>
         <button type="button" data-testid="zoom-out" onClick={() => zoomBy(1.25)} aria-label={t('Uitzoomen', 'Zoom out')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[22px] font-bold leading-none text-[#f6e2a6]">−</button>
         <button type="button" onClick={() => turn.current(-45)} aria-label={t('Draai naar links', 'Turn left')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[#f6e2a6]"><RotateCcw size={18} aria-hidden /></button>

@@ -256,6 +256,20 @@ export function VillageWalkPage() {
       if (document.fullscreenElement) void document.exitFullscreen?.().catch(() => undefined);
     };
   }, [full]);
+  const autoFull = useRef(false);
+  // A phone turned sideways: the village takes the whole screen by itself, and gives it back when the
+  // phone is upright again (unless full screen was chosen by hand).
+  useEffect(() => {
+    const mq = window.matchMedia?.('(orientation: landscape) and (max-height: 520px)');
+    if (!mq) return;
+    const sync = () => {
+      if (mq.matches) setFull((f) => { if (!f) autoFull.current = true; return true; });
+      else if (autoFull.current) { autoFull.current = false; setFull(false); }
+    };
+    sync();
+    mq.addEventListener?.('change', sync);
+    return () => mq.removeEventListener?.('change', sync);
+  }, []);
   const location = useLocation();
   const navigate = useNavigate();
   // Back from a workout that was started at the TV: celebrate once.
@@ -703,9 +717,10 @@ export function VillageWalkPage() {
   return (
     <div className="space-y-3">
       <h1 className="sr-only">{t('Je dorp', 'Your village')}</h1>
+      <p className="mb-1 text-[13px] text-ink-600">{t('Tip: draai je telefoon om liggend te spelen.', 'Tip: turn your phone to play sideways.')}</p>
       <Button size="md" variant="secondary" className="mb-2 w-full" data-testid="play-full" icon={<Maximize2 className="h-4 w-4" />} onClick={() => setFull(true)}>{t('Speel in volledig scherm', 'Play full screen')}</Button>
       <section aria-label={t('Je dorp in 3D. Tik op de grond om te lopen, of kies een gebouw.', 'Your village in 3D. Tap the ground to walk, or pick a building.')} data-full={full ? '1' : undefined}
-        className={full ? 'fixed inset-0 z-50 bg-[#1b2a22] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pt-[env(safe-area-inset-top)]' : 'relative'}>
+        className={full ? 'fixed inset-0 z-50 !mt-0 bg-[#1b2a22] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pt-[env(safe-area-inset-top)]' : 'relative'}>
         <div className={full ? 'relative h-full' : 'relative'}>
         <Suspense fallback={<div className="h-[calc(100dvh-13.5rem)] min-h-[440px] animate-pulse rounded-2xl bg-[#26342c]" />}>
           {!settled ? <div className="h-[calc(100dvh-13.5rem)] min-h-[440px] animate-pulse rounded-2xl bg-[#26342c]" /> :
@@ -833,7 +848,7 @@ export function VillageWalkPage() {
             <Joystick stick={stick} label={t('Joystick: sleep om te lopen, tot de rand om te rennen', 'Joystick: drag to walk, to the rim to run')} />
           </div>
         )}
-        <div className={`pointer-events-none absolute inset-x-2 flex justify-center ${joystick ? 'bottom-[182px]' : 'bottom-[64px]'}`}>
+        <div className={`pointer-events-none absolute inset-x-2 flex justify-center ${joystick ? 'bottom-[182px] land:bottom-[64px] land:left-[130px]' : 'bottom-[64px]'}`}>
           {near === TV_KEY ? (
             <Button size="lg" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<Tv className="h-5 w-5" />} onClick={() => setTvOpen(true)}>{t('Bekijk de tv', 'Watch the TV')}</Button>
           ) : near === PRACTICE_KEY ? (
@@ -927,7 +942,7 @@ export function VillageWalkPage() {
         )}
 
         {d?.hero && !dest && !placing && (
-          <ul className={`absolute left-2 flex max-w-[236px] flex-wrap gap-1 whitespace-nowrap ${panel === 'meters' ? 'top-[246px]' : 'top-[122px]'}`} data-testid="world-states" aria-label={t('Hoe je held zich voelt', 'How your hero feels')}>
+          <ul className={`absolute left-2 flex max-w-[236px] flex-wrap gap-1 whitespace-nowrap land:left-[212px] land:!top-2 land:max-w-[calc(100%-400px)] ${panel === 'meters' ? 'top-[246px]' : 'top-[122px]'}`} data-testid="world-states" aria-label={t('Hoe je held zich voelt', 'How your hero feels')}>
             <li><button type="button" data-testid="flask" data-n={supply.glasses} disabled={supply.glasses <= 0 || hp >= maxHp} onClick={sip}
               aria-label={supply.glasses > 0 ? t(`Veldfles: ${supply.glasses} ${supply.glasses === 1 ? 'glas' : 'glazen'}. Tik om te drinken: +50% leven.`, `Flask: ${supply.glasses} ${supply.glasses === 1 ? 'glass' : 'glasses'}. Tap to drink: +50% life.`) : t('Veldfles leeg. Log een glas water dat je echt drinkt, dan krijgt je held er een.', 'Flask empty. Log a glass of water you really drink, and your hero gets one.')}
               className="flex min-h-[28px] items-center gap-1 rounded-full border bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none shadow-lift disabled:opacity-60 border-[#9fd8ff]/70 text-[#cfeaff]"><Droplets className="h-3.5 w-3.5" aria-hidden />{supply.glasses}</button></li>

@@ -414,6 +414,10 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     Ontbijt, lunch en diner ingevuld: "goed gegeten", 15% sneller en 25% sterker. De fles vult niet meer
     gratis bij de put. Eten geeft nooit een straf (`shared/supplies.ts`).
 
+115. [x] **Dorp liggend spelen** (15 nov): de app mag draaien (manifest `orientation: any`); ligt de
+    telefoon op zijn kant, dan gaat het dorp vanzelf schermvullend en schuiven voorraad, zoomknoppen en
+    actieknop zo dat niets overlapt (getest op 780×360).
+
 113. [ ] **Echte app met Health Connect en Apple Health**: akkoord eigenaar 15 nov; plan en stappen in
     `docs/APP_HEALTH.md`. Stap 1 (hartslag) is klaar.
 
