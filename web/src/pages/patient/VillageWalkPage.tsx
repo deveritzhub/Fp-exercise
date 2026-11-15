@@ -69,7 +69,7 @@ const TALK: Record<string, { name: [string, string]; says: [string, string]; opt
   },
   smithy: {
     name: ['Wapensmid', 'Armourer'], says: ['Welkom in de smederij! Hier ruil je muntjes voor uitrusting.', 'Welcome to the smithy! Here you trade coins for gear.'],
-    options: [{ nl: 'Wapens kopen', en: 'Buy weapons', to: '/p/held/inventaris#backpack-title' }, { nl: 'Laat de uitrusting zien', en: 'Show me the gear', to: '/p/held/inventaris#gear-title' }, { nl: 'Mijn uiterlijk aanpassen', en: 'Change my look', to: '/p/held/uiterlijk' }],
+    options: [{ nl: 'Wapens en gereedschap kopen', en: 'Buy weapons and tools', to: '/p/held/inventaris#backpack-title' }, { nl: 'Iets maken van mijn buit', en: 'Make something from my loot', to: '/p/held/inventaris#craft-title' }, { nl: 'Laat de uitrusting zien', en: 'Show me the gear', to: '/p/held/inventaris#gear-title' }, { nl: 'Mijn uiterlijk aanpassen', en: 'Change my look', to: '/p/held/uiterlijk' }],
   },
   library: {
     name: ['Bibliothecaris', 'Librarian'], says: ['Stil in de bibliotheek… maar vraag gerust.', 'Quiet in the library… but do ask.'],
@@ -314,7 +314,7 @@ export function VillageWalkPage() {
 
   const d = heroQ.data;
   // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
-  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; coins: number };
+  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; coins: number; tools?: string[] };
   const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
   // The weapon in hand is the one bought and put on in the backpack; none means bare fists.
   const weapon = weaponByKey(adventure.data?.weapon);
@@ -628,6 +628,11 @@ export function VillageWalkPage() {
 
   const strike = async () => {
     if (!mob || downBy) return;
+    // An oak asks for a hatchet.
+    if (mob.kind === 'oak' && !adventure.data?.tools?.includes('hatchet')) {
+      toast(t('Hier heb je een hakbijl voor nodig. Koop er een bij de wapensmid.', 'You need a hatchet for this. Buy one at the armourer.'));
+      return;
+    }
     world.current?.strike(mob.key);
     if (!provoked.includes(mob.key)) setProvoked((p) => [...p, mob.key]);
     const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, weapon.power) * (supply.fed ? SUPPLY.fedPower : 1);

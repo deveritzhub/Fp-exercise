@@ -19,6 +19,8 @@ test('the patient chops wood and builds the next home with loot', async ({ brows
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'nl-NL' });
   const page = await context.newPage();
   await page.addInitScript(() => localStorage.setItem('fp.village.tip', '1'));
+  // An oak asks for a hatchet from the smith.
+  await sql("INSERT INTO hero_purchases(patient_id, item, price) VALUES ($1, 'tool_hatchet', 0) ON CONFLICT DO NOTHING", [emma.id]);
   await login(page, 'patient@praktijk-a.test');
   await page.goto('/p/dorp');
   const village = page.getByTestId('walk-village');

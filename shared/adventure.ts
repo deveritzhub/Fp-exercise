@@ -90,15 +90,15 @@ export function adventureLevel(xp: number): { level: number; from: number; to: n
  * The village shows it in the hero's hand (web/src/components/patient/weapons3d.ts).
  */
 export const WEAPONS = [
-  { key: 'fists', level: 1, power: 0, price: 0, nl: 'Vuisten', en: 'Fists' },
-  { key: 'staff', level: 2, power: 1, price: 30, nl: 'Wandelstaf', en: 'Walking staff' },
-  { key: 'gloves', level: 3, power: 1.5, price: 60, nl: 'Bokshandschoenen', en: 'Boxing gloves' },
-  { key: 'club', level: 4, power: 2, price: 90, nl: 'Knots', en: 'Club' },
-  { key: 'hammer', level: 6, power: 3, price: 140, nl: 'Smidshamer', en: 'Smith’s hammer' },
-  { key: 'sword', level: 8, power: 4, price: 200, nl: 'IJzeren zwaard', en: 'Iron sword' },
-  { key: 'axe', level: 10, power: 5, price: 280, nl: 'Strijdbijl', en: 'Battle axe' },
-  { key: 'spear', level: 13, power: 6.5, price: 380, nl: 'Speer', en: 'Spear' },
-  { key: 'hero_sword', level: 16, power: 9, price: 600, nl: 'Heldenzwaard', en: 'Hero’s sword' },
+  { key: 'fists', level: 1, power: 0, price: 0, strength: 0, nl: 'Vuisten', en: 'Fists' },
+  { key: 'staff', level: 2, power: 1, price: 30, strength: 0, nl: 'Wandelstaf', en: 'Walking staff' },
+  { key: 'gloves', level: 3, power: 1.5, price: 60, strength: 0, nl: 'Bokshandschoenen', en: 'Boxing gloves' },
+  { key: 'club', level: 4, power: 2, price: 90, strength: 0, nl: 'Knots', en: 'Club' },
+  { key: 'hammer', level: 6, power: 3, price: 140, strength: 2, nl: 'Smidshamer', en: 'Smith’s hammer' },
+  { key: 'sword', level: 8, power: 4, price: 200, strength: 3, nl: 'IJzeren zwaard', en: 'Iron sword' },
+  { key: 'axe', level: 10, power: 5, price: 280, strength: 4, nl: 'Strijdbijl', en: 'Battle axe' },
+  { key: 'spear', level: 13, power: 6.5, price: 380, strength: 5, nl: 'Speer', en: 'Spear' },
+  { key: 'hero_sword', level: 16, power: 9, price: 600, strength: 6, nl: 'Heldenzwaard', en: 'Hero’s sword' },
 ] as const;
 export type Weapon = (typeof WEAPONS)[number];
 /** The best weapon earned at this level, and the next one to come (null at the last). */
@@ -165,3 +165,24 @@ export function rollDrops(kind: CreatureKind, rnd: () => number): { item: LootKe
   }
   return out;
 }
+
+/** Tools from the smith, bought with coins. The hatchet is what a tree asks for. */
+export const TOOLS = [{ key: 'hatchet', price: 25, nl: 'Hakbijl', en: 'Hatchet', icon: '🪓' }] as const;
+export const toolItem = (key: string) => `tool_${key}`;
+/** What a creature asks for before it can be beaten at all. */
+export const NEEDS_TOOL: Partial<Record<CreatureKind, string>> = { oak: 'hatchet' };
+
+/**
+ * Things to make from loot: the weaker weapons (a second way next to buying), and a chest.
+ * A weapon made still asks for its adventurer level.
+ */
+export const RECIPES = [
+  { key: 'staff', kind: 'weapon', nl: 'Wandelstaf', en: 'Walking staff', icon: '🦯', needs: { wood: 3 } },
+  { key: 'gloves', kind: 'weapon', nl: 'Bokshandschoenen', en: 'Boxing gloves', icon: '🥊', needs: { hide: 2, feather: 2 } },
+  { key: 'club', kind: 'weapon', nl: 'Knots', en: 'Club', icon: '🏏', needs: { wood: 4, bone: 2 } },
+  { key: 'chest', kind: 'build', nl: 'Kist', en: 'Chest', icon: '🧰', needs: { wood: 6, hide: 1 } },
+] as const satisfies readonly { key: string; kind: 'weapon' | 'build'; nl: string; en: string; icon: string; needs: Partial<Record<LootKey, number>> }[];
+export type Recipe = (typeof RECIPES)[number];
+export const builtItem = (key: string) => `built_${key}`;
+/** How many of one kind of loot the backpack holds; a chest holds far more. */
+export const LOOT_CAP = { backpack: 20, chest: 99 } as const;
