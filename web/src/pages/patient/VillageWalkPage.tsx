@@ -17,7 +17,7 @@ import { HOME_STAGES, homeStage, levelsToNextHome } from '@shared/practiceVillag
 import { MODULE_SITES, VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
-import { BOXING, CREATURES, blow, weaponAt, type CreatureKind } from '@shared/adventure';
+import { BOXING, CREATURES, blow, weaponAt, weaponByKey, type CreatureKind } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
@@ -67,7 +67,7 @@ const TALK: Record<string, { name: [string, string]; says: [string, string]; opt
   },
   smithy: {
     name: ['Wapensmid', 'Armourer'], says: ['Welkom in de smederij! Hier ruil je muntjes voor uitrusting.', 'Welcome to the smithy! Here you trade coins for gear.'],
-    options: [{ nl: 'Laat de uitrusting zien', en: 'Show me the gear', to: '/p/held/inventaris#gear-title' }, { nl: 'Mijn uiterlijk aanpassen', en: 'Change my look', to: '/p/held/uiterlijk' }],
+    options: [{ nl: 'Wapens kopen', en: 'Buy weapons', to: '/p/held/inventaris#backpack-title' }, { nl: 'Laat de uitrusting zien', en: 'Show me the gear', to: '/p/held/inventaris#gear-title' }, { nl: 'Mijn uiterlijk aanpassen', en: 'Change my look', to: '/p/held/uiterlijk' }],
   },
   library: {
     name: ['Bibliothecaris', 'Librarian'], says: ['Stil in de bibliotheek… maar vraag gerust.', 'Quiet in the library… but do ask.'],
@@ -310,9 +310,16 @@ export function VillageWalkPage() {
 
   const d = heroQ.data;
   // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
-  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number };
+  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; coins: number };
   const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
-  const { weapon } = weaponAt(adventure.data?.level ?? 1);
+  // The weapon in hand is the one bought and put on in the backpack; none means bare fists.
+  const weapon = weaponByKey(adventure.data?.weapon);
+  /** A new adventurer level: say which weapon the smith now sells, if one came with it. */
+  const levelUp = (was: number, now: number) => {
+    if (now <= was) return;
+    const w = weaponAt(now).weapon;
+    toast(w.level > was ? t(`Avonturier ${now}! Nieuw bij de wapensmid: ${w.nl}.`, `Adventurer ${now}! New at the armourer: ${w.en}.`) : t(`Avonturier ${now}!`, `Adventurer ${now}!`));
+  };
   const look = useMemo(
     () => (d?.hero ? { ...d.hero, gear: [...d.gear.equipped.filter((g) => weapon.key === 'fists' || GEAR_SLOT[g] !== 'held'), ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null } : null),
     [d, weapon.key],
@@ -502,7 +509,7 @@ export function VillageWalkPage() {
       const r = await api.post<Adventure & { gained: number }>('/patient/hero/adventure/round', { hits });
       qc.setQueryData(['patient-adventure'], r);
       toast(r.gained > 0 ? t(`${hits} raak: +${r.gained} avonturen-XP`, `${hits} hit: +${r.gained} adventure XP`) : t('Lekker gebokst! Voor vandaag heb je de XP van de bokszak al binnen.', 'Nice boxing! You already have today’s XP from the bag.'));
-      if (r.level > was) toast(t(`Avonturier ${r.level}! Wapen: ${weaponAt(r.level).weapon.nl}.`, `Adventurer ${r.level}! Weapon: ${weaponAt(r.level).weapon.en}.`));
+      levelUp(was, r.level);
     } catch (e) {
       say(e);
     }
@@ -543,8 +550,7 @@ export function VillageWalkPage() {
       const r = await api.post<Adventure & { gained: number }>('/patient/hero/adventure/win', { kind: mob.kind });
       const was = adventure.data?.level ?? 1;
       qc.setQueryData(['patient-adventure'], r);
-      const won = weaponAt(r.level).weapon;
-      if (r.level > was) toast(won.level > was ? t(`Avonturier ${r.level}! Nieuw wapen: ${won.nl}.`, `Adventurer ${r.level}! New weapon: ${won.en}.`) : t(`Avonturier ${r.level}!`, `Adventurer ${r.level}!`));
+      levelUp(was, r.level);
       toast(r.gained > 0 ? t(`${mob.label} verslagen! +${r.gained} avonturen-XP`, `${mob.label} beaten! +${r.gained} adventure XP`) : t(`${mob.label} verslagen! Voor vandaag heb je alle avonturen-XP al binnen.`, `${mob.label} beaten! You already have all of today's adventure XP.`));
     } catch (e) {
       say(e);
@@ -622,6 +628,7 @@ export function VillageWalkPage() {
             well={!!d?.hero}
             creatures={d?.hero ? creatures : undefined}
             creaturesGone={beaten}
+            creatureHurt={hurt}
             boxing={!!d?.hero}
             belt={karate.data && karate.data.belt > 0 ? BELTS[karate.data.belt].color : null}
             weapon={weapon.key === 'fists' ? null : weapon.key}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { adventureLevel, blow, boxingXp, weaponAt } from './adventure';
+import { adventureLevel, blow, boxingXp, weaponAt, weaponByKey } from './adventure';
 
 describe('adventure', () => {
   it('levels: 60 XP for the first, 30 more for each next', () => {
@@ -23,5 +23,10 @@ describe('adventure', () => {
     expect(boxingXp(999)).toBe(28);
     expect(blow('slime', new Set(), 2)).toBe(3);
     expect(blow('slime', new Set(['moving']), 2)).toBe(6);
+  });
+  it('a weapon is found by key, and fists stand in for none', () => {
+    expect(weaponByKey('sword')).toMatchObject({ power: 4, price: 200 });
+    expect(weaponByKey(null).key).toBe('fists');
+    expect(weaponByKey('laser').key).toBe('fists');
   });
 });

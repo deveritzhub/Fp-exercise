@@ -131,6 +131,7 @@ const ERRORS: Record<string, [string, string]> = {
   passkey_exists: ['Deze passkey is al toegevoegd.', 'This passkey has already been added.'],
   passkey_limit: ['Je hebt het maximum van 10 passkeys bereikt.', 'You have reached the maximum of 10 passkeys.'],
   gear_not_owned: ['Dit item heb je nog niet gekocht.', 'You have not bought this item yet.'],
+  level_too_low: ['Hier is je avonturier nog niet sterk genoeg voor. Versla meer kwaaltjes.', 'Your adventurer is not strong enough for this yet. Beat more ailments.'],
   gear_owned: ['Dit item heb je al.', 'You already own this item.'],
   chest_opened: ['Je dagkist is vandaag al open. Morgen weer!', 'You already opened today’s chest. Back tomorrow!'],
   chest_locked: ['Doe eerst je dagcheck of een training, dan gaat je dagkist open.', 'Do your daily check-in or a workout first to open your chest.'],
