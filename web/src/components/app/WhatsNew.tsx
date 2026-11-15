@@ -30,6 +30,7 @@ const STAFF: Item[] = [
   { nl: 'Reageren op een training bij "Markeer als gezien"; de patiënt krijgt je reactie.', en: 'Reply to a workout with "Mark as seen"; the patient gets your reply.' },
 ];
 const PATIENT: Item[] = [
+  { nl: 'Voeding: je eigen richtlijn, favorieten, eigen producten, een weekoverzicht, “Vul mijn week” en een kookmodus.', en: 'Nutrition: your own guide, favourites, own products, a week overview, “Fill my week” and a cooking mode.', to: '/p/voeding' },
   { nl: 'Nieuw: Voeding. Houd bij wat je eet in je eigen woorden, kies recepten voor je doel, plan je week en neem je boodschappenlijst mee.', en: 'New: Nutrition. Track what you eat in your own words, pick recipes for your goal, plan your week and take your shopping list along.', to: '/p/voeding' },
   { nl: 'Training snel invoeren: typ wat je deed in je eigen woorden, bijvoorbeeld “5 min gefietst, 3 sets chest press, 3x row”. Je controleert het eerst.', en: 'Log a workout quickly: type what you did in your own words, e.g. “5 min cycling, 3 sets chest press, 3x row”. You check it first.', to: '/p/logboek' },
   { nl: 'In je dorp: een levensbalk voor je held, agressieve en vriendelijke wezens, het Alfazwijn, en je huis bouw je met hout, steen en buit.', en: 'In your village: a life bar for your hero, aggressive and friendly creatures, the Alpha boar, and you build your home with wood, stone and loot.', to: '/p/dorp' },

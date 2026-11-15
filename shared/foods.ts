@@ -36,6 +36,7 @@ export const FOODS: Food[] = [
   f('aardappel', 'Aardappelen', 'Potatoes', 80, 2, 17, 0.1, [200, 'portie', 'serving'], 'groente', ['aardappel', 'aardappels', 'krieltjes', 'potato']),
   f('zoete_aardappel', 'Zoete aardappel', 'Sweet potato', 86, 1.6, 20, 0.1, [250, 'stuk', 'piece'], 'groente', ['bataat', 'sweet potato']),
   f('quinoa', 'Quinoa (ongekookt)', 'Quinoa (dry)', 370, 14, 64, 6, [70, 'portie', 'serving'], 'brood_graan', ['quinoa']),
+  f('noedels', 'Volkoren noedels (ongekookt)', 'Wholemeal noodles (dry)', 350, 13, 68, 2.5, [70, 'portie', 'serving'], 'brood_graan', ['noedels', 'mie', 'noodles']),
   f('rijstwafel', 'Rijstwafel', 'Rice cake', 380, 8, 80, 3, [8, 'stuk', 'piece'], 'brood_graan', ['rijstwafels', 'rijstcracker']),
   // Meat, fish, eggs
   f('kipfilet', 'Kipfilet', 'Chicken breast', 110, 23, 0, 1.5, [125, 'filet', 'fillet'], 'vlees_vis', ['kip', 'kippenborst', 'chicken']),
@@ -64,6 +65,8 @@ export const FOODS: Food[] = [
   f('kikkererwten', 'Kikkererwten (blik)', 'Chickpeas (tin)', 120, 7, 16, 2.6, [120, 'portie', 'serving'], 'vega', ['kikkererwten', 'chickpeas']),
   f('bruine_bonen', 'Bruine bonen (blik)', 'Kidney beans (tin)', 90, 6, 13, 0.5, [200, 'portie', 'serving'], 'vega', ['bonen', 'kidneybonen', 'beans']),
   f('edamame', 'Edamame', 'Edamame', 120, 11, 9, 5, [150, 'portie', 'serving'], 'vega'),
+  f('sojayoghurt', 'Sojayoghurt (naturel)', 'Soy yoghurt (plain)', 50, 4, 2.5, 2.5, [150, 'schaaltje', 'bowl'], 'vega', ['soja yoghurt', 'plantaardige yoghurt', 'soy yogurt', 'alpro']),
+  f('sojadrink', 'Sojadrink (ongezoet)', 'Soy drink (unsweetened)', 35, 3.3, 1, 1.8, [200, 'glas', 'glass'], 'vega', ['sojamelk', 'soja melk', 'soy milk', 'plantaardige melk']),
   f('hummus', 'Hummus', 'Hummus', 280, 7, 14, 22, [30, 'eetlepel', 'tablespoon'], 'vega'),
   // Nuts, spreads, fats
   f('pindakaas', 'Pindakaas', 'Peanut butter', 600, 25, 15, 48, [15, 'eetlepel', 'tablespoon'], 'voorraad', ['pindakaas', 'peanut butter']),
