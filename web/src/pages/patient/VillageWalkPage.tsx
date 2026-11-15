@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Armchair, Backpack, Beef, Droplets, Sparkles, ChevronRight, Coins, DoorOpen, Footprints, Gamepad2, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
+import { Armchair, Backpack, Beef, Droplets, Sparkles, ChevronRight, Coins, DoorOpen, Footprints, Gamepad2, Gauge, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
 import { ApiError, api, mediaUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -154,13 +154,18 @@ function FpsMeter() {
     }, 1000);
     return () => window.clearInterval(id);
   }, [on]);
+  // In the action bar of the world itself, so it is in reach in full screen too; the number sits just above the bar.
   return (
-    <p className="mt-2 text-[13px] text-ink-600">
-      <button type="button" data-testid="fps-toggle" aria-pressed={on} onClick={() => setOn((v) => !v)} className="min-h-[44px] font-medium text-accent underline underline-offset-2">
-        {on ? t('Verberg de snelheid', 'Hide the speed') : t('Toon hoe vloeiend het dorp loopt', 'Show how smoothly the village runs')}
-      </button>
-      {on && <span data-testid="fps" className="ml-2 tabular-nums">{fps === null ? t('meten…', 'measuring…') : t(`${fps} beelden per seconde (30 of meer is goed)`, `${fps} frames per second (30 or more is good)`)}</span>}
-    </p>
+    <>
+      <button type="button" data-testid="fps-toggle" aria-pressed={on} onClick={() => setOn((v) => !v)} aria-label={on ? t('Verberg de snelheid', 'Hide the speed') : t('Toon hoe vloeiend het dorp loopt', 'Show how smoothly the village runs')}
+        className={`${SLOT} aria-pressed:border-[#ffd76a] aria-pressed:bg-[linear-gradient(180deg,#5a4a1c,#2a2410)]`}><Gauge className="h-5 w-5" aria-hidden /></button>
+      {on && (
+        <p role="status" data-testid="fps" className="pointer-events-none absolute bottom-[54px] left-0 whitespace-nowrap rounded-md border border-black/60 bg-[#141c18]/90 px-2 py-1 text-[12.5px] font-semibold tabular-nums text-white shadow-lift">
+          {fps === null ? t('meten…', 'measuring…') : t(`${fps} beelden per seconde`, `${fps} frames per second`)}
+          {fps !== null && <span className="ml-1 font-normal text-white/80">{fps >= 30 ? t('· goed', '· good') : fps >= 20 ? t('· matig', '· fair') : t('· traag', '· slow')}</span>}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -830,6 +835,7 @@ export function VillageWalkPage() {
           <Link to="/p/held" className={SLOT} aria-label={t('Skills en je held', 'Skills and your hero')}><Swords className="h-5 w-5" aria-hidden /></Link>
           <button type="button" data-testid="slot-places" className={SLOT} aria-label={t('Plekken: kies waar je heen wilt', 'Places: pick where to go')} onClick={() => setPlacesOpen(true)}><MapIcon className="h-5 w-5" aria-hidden /></button>
           <button type="button" data-testid="slot-joystick" aria-pressed={joystick} className={`${SLOT} aria-pressed:border-[#ffd76a] aria-pressed:bg-[linear-gradient(180deg,#5a4a1c,#2a2410)]`} aria-label={t('Joystick aan of uit', 'Joystick on or off')} onClick={toggleJoystick}><Gamepad2 className="h-5 w-5" aria-hidden /></button>
+          <FpsMeter />
         </nav>
         </div>
       </section>
@@ -837,8 +843,6 @@ export function VillageWalkPage() {
       <p className="text-[13.5px] leading-relaxed text-ink-700">
         {t('Tik op de grond om te lopen. Sleep opzij om helemaal rond te draaien, omhoog of omlaag om te kantelen, en knijp met twee vingers (of gebruik + en −) om in en uit te zoomen. Tik op een poppetje om te praten. Liever een joystick? Zet hem aan met de knop met de gamepad. In de oefenzaal van je praktijk staan de fysiotherapeut en de tv met je oefeningen van vandaag.', 'Tap the ground to walk and drag sideways to look around. Prefer a joystick? Switch it on with the gamepad button. In the exercise room of your practice you find the physiotherapist and the TV with your exercises for today.')}
       </p>
-
-      <FpsMeter />
 
       <Dialog open={decorOpen} onClose={() => setDecorOpen(false)} title={t('Jouw huis inrichten', 'Furnish your home')} size="md" sheet
         description={L ? t(`${HOME_STAGES[stage].nl}, level ${L.level}. ${levelsToNextHome(L.level) === null ? 'Dit is het grootste huis.' : `Nog ${levelsToNextHome(L.level)} level(s) tot een ${HOME_STAGES[stage + 1].nl.toLowerCase()}.`}`, `${HOME_STAGES[stage].en}, level ${L.level}. ${levelsToNextHome(L.level) === null ? 'This is the biggest home.' : `${levelsToNextHome(L.level)} more level(s) to a ${HOME_STAGES[stage + 1].en.toLowerCase()}.`}`) : undefined}>

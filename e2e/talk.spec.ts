@@ -81,7 +81,10 @@ test('the village can show its frames per second', async ({ browser }) => {
   await login(page, 'patient@praktijk-a.test');
   await page.goto('/p/dorp');
   await expect(page.getByTestId('walk-village')).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
+  // The button is in the action bar of the world, so it is there in full screen too.
+  await page.getByTestId('play-full').click();
   await page.getByTestId('fps-toggle').click();
   await expect(page.getByTestId('fps')).toContainText(/\d+ beelden per seconde/, { timeout: 15_000 });
+  if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/fps.png' });
   await context.close();
 });
