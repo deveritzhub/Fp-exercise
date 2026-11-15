@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Apple, ArrowRight, BarChart3, BookOpen, Building2, Check, Dumbbell, HeartPulse, Layers, Lock, Smartphone, Sparkles, Timer } from 'lucide-react';
+import { Apple, ArrowRight, BarChart3, BookOpen, Building2, Check, Dumbbell, HeartPulse, Layers, Lock, Smartphone, Sparkles, Stethoscope, Timer, User } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
 import { ButtonLink } from '@/components/ui';
@@ -37,7 +37,7 @@ export function HomePage() {
         <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] items-center gap-14 px-5 pb-24 pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:pt-24">
           <div className="min-w-0">
             <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-line bg-white px-3 py-1 text-[13px] font-medium text-ink-600 shadow-xs">
-              <Sparkles className="h-3.5 w-3.5 text-accent" /> {t('Gemaakt in Rotterdam, voor de Nederlandse fysiotherapie', 'Made in Rotterdam for Dutch physiotherapy')}
+              <Sparkles className="h-3.5 w-3.5 text-accent" /> {t('Gemaakt in Rotterdam, voor fysiotherapeuten en personal trainers', 'Made in Rotterdam for physiotherapists and personal trainers')}
             </span>
             <h1 className="mt-6 text-[34px] font-bold leading-[1.08] [overflow-wrap:anywhere] sm:text-[42px] tracking-[-0.02em] sm:text-[56px]">
               {t('Oefentherapie die je patiënt', 'Exercise therapy your patients')} <span className="text-accent">{t('écht volhoudt', 'actually stick with')}</span>.
@@ -73,6 +73,31 @@ export function HomePage() {
                 <I className="h-5 w-5 text-accent" />
                 <h2 className="mt-3 text-[16px] font-bold">{title as string}</h2>
                 <p className="mt-1 text-[14.5px] leading-relaxed text-ink-500">{text as string}</p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* For whom */}
+      <section className="mx-auto max-w-6xl px-5 pt-24">
+        <div className="max-w-2xl">
+          <span className="text-[13px] font-semibold uppercase tracking-wider text-accent">{t('Voor wie', 'Who it’s for')}</span>
+          <h2 className="mt-2 text-[32px] font-bold leading-tight tracking-tight">{t('Fysio, personal trainer of zelf aan de slag', 'Physio, personal trainer or on your own')}</h2>
+          <p className="mt-3 text-[16px] text-ink-500">{t('Bij je account kies je wat je bent. De app past zich daarop aan: de woorden, de schermen en wat er wel en niet in zit.', 'With your account you choose what you are. The app adapts to it: the words, the screens and what is and isn’t in it.')}</p>
+        </div>
+        <div className="mt-10 grid gap-6 md:grid-cols-3">
+          {[
+            [Stethoscope, t('Fysiotherapeut', 'Physiotherapist'), t('Alles erin: revalidatieprogramma’s met fases en criteria, pijnregistratie en signalen bij waarschuwingstekens. Je werkt met patiënten.', 'Everything in: rehab programmes with phases and criteria, pain logging and alerts on warning signs. You work with patients.')],
+            [Dumbbell, t('Personal trainer', 'Personal trainer'), t('Dezelfde tools voor kracht en mobiliteit, zonder het medische deel. Je werkt met klanten en ziet hun schema’s, gewichten en voortgang.', 'The same tools for strength and mobility, without the medical part. You work with clients and see their plans, weights and progress.')],
+            [User, t('Voor jezelf', 'For yourself'), t('Zelf trainen zonder begeleider: krachtschema’s, mobiliteit, voeding en je eigen held. Geen medische adviezen.', 'Train on your own without a coach: strength plans, mobility, nutrition and your own hero. No medical advice.')],
+          ].map(([Icon, title, text]) => {
+            const I = Icon as typeof Timer;
+            return (
+              <div key={title as string} className="rounded-2xl border border-line bg-white p-7 shadow-card">
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-soft text-accent"><I className="h-5 w-5" /></span>
+                <h3 className="mt-4 text-[18px] font-bold">{title as string}</h3>
+                <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-500">{text as string}</p>
               </div>
             );
           })}
