@@ -1,4 +1,5 @@
 import { useHero } from '@/pages/patient/HeroPages';
+import { NutritionCard, Village3DCard } from '@/components/patient/TodayExtras';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -156,9 +157,12 @@ export function PatientHome() {
         <>
           {/* Strength keeps a fixed place: the own log, with the latest estimate when there is one. */}
           <StrengthCard />
+          <Village3DCard />
           <TodayTiles rate={d.stats.adherence7d.rate ?? 0} done={d.stats.adherence7d.completed} planned={d.stats.adherence7d.planned} />
         </>
       )}
+      {/* Nutrition in both views: what you ate today, recipes and the shopping list. */}
+      <NutritionCard />
       {/* Below the training of the day, so "Start training" is in view without scrolling. */}
       <ViewChoiceCard />
 

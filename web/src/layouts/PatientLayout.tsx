@@ -100,14 +100,21 @@ export function PatientLayout() {
   useEffect(() => {
     const KEY = 'fp.p.seen';
     const stamp = () => { try { localStorage.setItem(KEY, String(Date.now())); } catch { /* storage optional */ } };
+    const inGame = () => /^\/p\/(dorp|wereld)(\/|$)/.test(window.location.pathname);
     // Back after a quarter of an hour or more, and the game is what was left open: go to Today.
     const back = () => {
       try {
         const seen = Number(localStorage.getItem(KEY)) || 0;
-        if (seen && Date.now() - seen > 15 * 60_000 && /^\/p\/(dorp|wereld)(\/|$)/.test(window.location.pathname)) nav('/p', { replace: true });
+        if (seen && Date.now() - seen > 15 * 60_000 && inGame()) nav('/p', { replace: true });
       } catch { /* storage optional */ }
       stamp();
     };
+    // Opening the app (a new tab or the installed app starting) always starts on Today; the 3D village
+    // is one tap away there. A reload within the same visit keeps the place.
+    try {
+      if (!sessionStorage.getItem('fp.p.open') && inGame()) nav('/p', { replace: true });
+      sessionStorage.setItem('fp.p.open', '1');
+    } catch { /* storage optional */ }
     back();
     const id = window.setInterval(() => { if (document.visibilityState === 'visible') stamp(); }, 60_000);
     const seenChange = () => (document.visibilityState === 'visible' ? back() : stamp());

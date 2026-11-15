@@ -396,6 +396,15 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     oefening). Eerst controleren, dan opslaan. Snelknoppen: herhaal vorige training, recente oefeningen.
     Geen externe dienst (`shared/workoutText.ts`). Spraak of AI alleen na akkoord.
 
+110. [x] **Voeding** (15 nov): `/p/voeding` met Vandaag (eten in eigen woorden of zoeken, controleren,
+    opslaan per maaltijd; kcal, eiwit, koolhydraten, vet; eiwit gaat ook in de eiwitmeter), Recepten (17,
+    per doel spiergroei/afvallen/gezond uit de eigen voedingswaarden, filters maaltijd/vega/prep),
+    Weekplan (dag, porties) en Boodschappen (opgeteld per afdeling, afvinken). Privé voor de patiënt,
+    in de AVG-export. Eigen gemiddelde waarden, geen gekopieerde database (`shared/foods.ts`).
+
+111. [x] **De app opent op Vandaag** (15 nov): een nieuw bezoek aan het dorp start op Vandaag; daar
+    staat "Speel in je 3D-dorp" en een Voeding-kaart.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Hartslag en Google Health Connect / Apple Health: zie het voorstel van 15 nov (live hartslag via
   Bluetooth kan in de web-app op Android en computer; Health Connect en Apple Health vragen een

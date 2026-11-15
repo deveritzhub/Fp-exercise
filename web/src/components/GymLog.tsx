@@ -92,7 +92,7 @@ export function GymLog({ base, staff = false }: { base: string; staff?: boolean 
         </Notice>
       )}
 
-      {!staff && <QuickWorkout gym={data} />}
+      {!staff && <QuickWorkout gym={data} chips={false} />}
 
       <section className="rounded-2xl border border-line bg-white p-4 shadow-card sm:p-5" aria-labelledby="gym-add">
         <h2 id="gym-add" className="t-section flex items-center gap-2"><Dumbbell className="h-5 w-5 text-accent" aria-hidden />{t('Set loggen', 'Log a set')}</h2>

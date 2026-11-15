@@ -22,7 +22,7 @@ let nextId = 1;
  * to check before saving. (D) quick buttons: repeat the last workout, or tap a recent exercise.
  * Strength exercises go to the strength log as sets; cycling, walking and the like as a training.
  */
-export function QuickWorkout({ gym }: { gym: Gym }) {
+export function QuickWorkout({ gym, chips = true }: { gym: Gym; chips?: boolean }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const qc = useQueryClient();
@@ -46,7 +46,8 @@ export function QuickWorkout({ gym }: { gym: Gym }) {
     }
     return { day, items: [...by.values()] };
   }, [gym.sets]);
-  const recent = gym.exercises.filter((e) => e.last).slice(0, 6);
+  // On the strength log page its own recent buttons are already there: then only "repeat" here.
+  const recent = chips ? gym.exercises.filter((e) => e.last).slice(0, 6) : [];
 
   const strengthRow = (options: { id: string | null; name: string }[], sets: number | null, reps: number | null, weightKg: number | null): Row => {
     // Fill in what the strength log knows about this exercise from last time.
