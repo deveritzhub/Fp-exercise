@@ -101,6 +101,14 @@ export function furniture(key: string): THREE.Group {
       k.box(0.12, 0.14, 0.04, 0xe4bc63, 0, 0.34, 0.27, GOLD);
       break;
     }
+    case 'home_lootchest': {
+      // The chest made from wood and a hide: plain planks with dark iron bands.
+      k.box(0.72, 0.4, 0.46, 0x9a6b3c, 0, 0.2, 0);
+      k.box(0.74, 0.12, 0.48, 0x7d5430, 0, 0.46, 0);
+      for (const x of [-0.26, 0.26]) k.box(0.05, 0.54, 0.5, 0x3a3532, x, 0.27, 0);
+      k.box(0.1, 0.12, 0.04, 0x3a3532, 0, 0.36, 0.24);
+      break;
+    }
     case 'home_fireplace': {
       k.box(1.3, 1.25, 0.5, 0x8d8a82, 0, 0.62, 0);
       k.box(1.5, 0.12, 0.6, DARK, 0, 1.3, 0);

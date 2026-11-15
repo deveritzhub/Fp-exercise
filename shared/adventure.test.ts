@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { adventureLevel, blow, boxingXp, CREATURE_KINDS, DROPS, LOOT, rollDrops, weaponAt, weaponByKey } from './adventure';
+import { COOKING, DAILY_QUESTS, dailyQuest, adventureLevel, blow, boxingXp, CREATURE_KINDS, DROPS, LOOT, rollDrops, weaponAt, weaponByKey } from './adventure';
 
 describe('adventure', () => {
   it('levels: 60 XP for the first, 30 more for each next', () => {
@@ -79,5 +79,15 @@ describe('berries and tools', async () => {
     expect(toolFor('rock')?.key).toBe('pickaxe');
     expect(toolFor('bush')).toBeNull();
     expect(TOOLS.every((t) => t.price > 0)).toBe(true);
+  });
+  it('cooks loot into food and picks one task a day, the same all day', () => {
+    for (const d of COOKING) {
+      expect(LOOT[d.key]).toBeTruthy();
+      for (const k of Object.keys(d.needs)) expect(LOOT[k as keyof typeof LOOT]).toBeTruthy();
+    }
+    expect(dailyQuest('2026-11-15', 'a')).toBe(dailyQuest('2026-11-15', 'a'));
+    const seen = new Set(Array.from({ length: 60 }, (_, i) => dailyQuest(`2026-11-${String((i % 28) + 1).padStart(2, '0')}`, `p${i}`).key));
+    expect(seen.size).toBeGreaterThan(3);
+    for (const q of DAILY_QUESTS) expect(CREATURE_KINDS).toContain(q.kind);
   });
 });
