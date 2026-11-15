@@ -629,7 +629,7 @@ export function VillageWalkPage() {
     lastAttack.current = {};
     // The creature heals too: the fight starts over.
     if (by) setHurt((h) => ({ ...h, [by]: 0 }));
-    world.current?.goTo(WELL_KEY);
+    world.current?.respawn();
   };
 
   const strike = async () => {

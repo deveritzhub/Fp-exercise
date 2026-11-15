@@ -298,3 +298,141 @@ function rock(): THREE.Group {
   g.traverse((o) => { o.castShadow = true; });
   return g;
 }
+
+const flat = (r: number, color: number, o: THREE.MeshStandardMaterialParameters = {}) => {
+  const d = new THREE.Mesh(new THREE.CircleGeometry(r, 28), m(color, { roughness: 1, ...o }));
+  d.rotation.x = -Math.PI / 2;
+  d.position.y = 0.015;
+  d.receiveShadow = true;
+  return d;
+};
+const reed = (x: number, z: number, h = 0.7) => {
+  const g = new THREE.Group();
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, h, 5), m(0x5f7d3a));
+  stem.position.set(x, h / 2, z);
+  const tip = new THREE.Mesh(new THREE.CapsuleGeometry(0.035, 0.14, 4, 8), m(0x6b4a2e));
+  tip.position.set(x, h + 0.05, z);
+  g.add(stem, tip);
+  return g;
+};
+const stone = (x: number, z: number, r: number, color = 0x8a8d8f) => {
+  const s = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 0), m(color, { roughness: 0.95, flatShading: true }));
+  s.position.set(x, r * 0.55, z);
+  s.rotation.set(x, z, 0.4);
+  s.castShadow = true;
+  return s;
+};
+const bale = (x: number, z: number) => {
+  const b = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.42, 14), m(0xd9b65b, { roughness: 1 }));
+  b.rotation.z = Math.PI / 2;
+  b.position.set(x, 0.28, z);
+  b.castShadow = true;
+  return b;
+};
+
+/**
+ * Where a creature lives, drawn round it on the ground: a swamp for the slime, a dry patch for the
+ * thirst imp, an old rug for the couch lurker, straw for the chickens, a trough for the cows, a mud
+ * wallow for the boar and a lair of standing stones for the Alpha. Local +z points to the square, so
+ * the props stand behind and to the sides, never between the creature and the hero.
+ */
+export function habitat(kind: CreatureKind): THREE.Group | null {
+  const g = new THREE.Group();
+  if (kind === 'slime' || kind === 'giant_slime') {
+    const big = kind === 'giant_slime' ? 1.6 : 1;
+    g.add(flat(1.1 * big, 0x3d4a2a), flat(0.45 * big, 0x2f5a4a, { roughness: 0.2, metalness: 0.2 }));
+    g.children[1].position.set(-0.5 * big, 0.02, -0.4 * big);
+    for (const [x, z] of [[-0.9, -0.5], [-0.75, -0.8], [0.8, -0.6], [0.95, -0.25], [-0.2, -1.0]]) g.add(reed(x * big, z * big, 0.6 + Math.abs(x) * 0.2));
+  } else if (kind === 'imp') {
+    g.add(flat(0.95, 0xc9a96e));
+    // A dead bush: bare twigs.
+    for (let i = 0; i < 5; i++) {
+      const twig = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.02, 0.5, 4), m(0x6e5536));
+      twig.position.set(-0.55 + i * 0.03, 0.22, -0.6);
+      twig.rotation.set(0.3 * Math.sin(i * 2), 0, -0.6 + i * 0.3);
+      g.add(twig);
+    }
+    g.add(stone(0.6, -0.45, 0.12, 0xb59a6a));
+  } else if (kind === 'couch' || kind === 'couch_king') {
+    const rug = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.02, 1.1), m(kind === 'couch_king' ? 0x6b1f3a : 0x8a3b2c, { roughness: 1 }));
+    rug.position.y = 0.012;
+    rug.receiveShadow = true;
+    g.add(rug);
+    for (const [x, z, c] of [[-0.6, -0.45, 0xd9a441], [0.65, -0.35, 0x4f6fa8]] as const) {
+      const cushion = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.12, 0.3), m(c));
+      cushion.position.set(x, 0.07, z);
+      cushion.rotation.y = x;
+      g.add(cushion);
+    }
+    if (kind === 'couch_king') {
+      const back = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.3, 0.14), m(0x6b1f3a));
+      back.position.set(0, 0.65, -0.75);
+      const trim = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.08, 0.16), m(0xe4bc63, { metalness: 0.5, roughness: 0.4 }));
+      trim.position.set(0, 1.32, -0.75);
+      g.add(back, trim);
+    }
+  } else if (kind === 'chicken') {
+    g.add(flat(0.6, 0xd9c27a));
+    const nest = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.06, 6, 14), m(0xb08d4a, { roughness: 1 }));
+    nest.rotation.x = -Math.PI / 2;
+    nest.position.set(-0.35, 0.05, -0.35);
+    g.add(nest, bale(0.45, -0.45));
+  } else if (kind === 'cow') {
+    const trough = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.3, 0.32), m(0x6b4a2e));
+    trough.position.set(0, 0.15, -0.85);
+    const water = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.02, 0.24), m(0x4a90c2, { roughness: 0.15, metalness: 0.2 }));
+    water.position.set(0, 0.29, -0.85);
+    g.add(flat(1.0, 0x86a656), trough, water, bale(-0.85, -0.3));
+  } else if (kind === 'boar') {
+    g.add(flat(0.9, 0x5a4330));
+    const log = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.9, 8), m(0x5b432b));
+    log.rotation.z = Math.PI / 2;
+    log.position.set(0, 0.12, -0.7);
+    g.add(log);
+  } else if (kind === 'alpha_boar') {
+    // The lair: scorched ground, a half ring of standing stones behind it, bones in the dirt.
+    g.add(flat(2.6, 0x2b2420), flat(1.6, 0x3a2a22));
+    for (let i = 0; i < 7; i++) {
+      const a = Math.PI + (i - 3) * 0.42;
+      const r = 2.3;
+      const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.2 + (i % 3) * 0.35, 0.3), m(0x5d5f61, { roughness: 0.95, flatShading: true }));
+      pillar.position.set(Math.sin(a) * r, pillar.geometry.parameters.height / 2, Math.cos(a) * r);
+      pillar.rotation.set(0.05 * (i % 2 ? 1 : -1), a, 0.04 * (i - 3));
+      pillar.castShadow = true;
+      g.add(pillar);
+    }
+    for (const [x, z, rot] of [[1.1, 0.4, 0.6], [-1.2, 0.2, -0.4], [0.5, -1.1, 1.2]] as const) {
+      const bone = new THREE.Mesh(new THREE.CapsuleGeometry(0.04, 0.32, 4, 8), m(0xece3cf));
+      bone.rotation.set(Math.PI / 2, 0, rot);
+      bone.position.set(x, 0.05, z);
+      g.add(bone);
+    }
+  } else if (kind === 'rock') {
+    for (const [x, z, r] of [[0.7, -0.3, 0.1], [-0.6, -0.4, 0.13], [0.2, -0.75, 0.09]] as const) g.add(stone(x, z, r));
+  } else {
+    return null;
+  }
+  return g;
+}
+
+/** A pond: still water with stones round the edge and reeds on the far side. */
+export function pond(radius = 1.5): THREE.Group {
+  const g = new THREE.Group();
+  const bank = flat(radius + 0.35, 0x6f6a4a);
+  const water = flat(radius, 0x3f86b8, { roughness: 0.08, metalness: 0.25, transparent: true, opacity: 0.92 });
+  water.position.y = 0.025;
+  g.add(bank, water);
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    g.add(stone(Math.cos(a) * (radius + 0.2), Math.sin(a) * (radius + 0.2), 0.12 + (i % 3) * 0.04));
+  }
+  for (const [x, z] of [[-0.9, -1.2], [-0.6, -1.4], [0.4, -1.45], [0.9, -1.15], [1.3, -0.7]]) g.add(reed(x * radius / 1.5, z * radius / 1.5, 0.8));
+  // Lily pads.
+  for (const [x, z] of [[0.3, 0.2], [-0.5, 0.5], [0.6, -0.4]]) {
+    const pad = new THREE.Mesh(new THREE.CircleGeometry(0.16, 12), m(0x4f8a3a, { roughness: 0.6 }));
+    pad.rotation.x = -Math.PI / 2;
+    pad.position.set(x, 0.035, z);
+    g.add(pad);
+  }
+  return g;
+}

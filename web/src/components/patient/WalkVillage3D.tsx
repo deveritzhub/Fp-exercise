@@ -1,6 +1,6 @@
 import { weaponMesh } from './weapons3d';
-import { creature } from './creatures3d';
-import { CREATURES, isAlpha, isHarvest, type CreatureKind } from '@shared/adventure';
+import { creature, habitat, pond } from './creatures3d';
+import { ATTACKS, CREATURES, isAlpha, isFriendly, isHarvest, type CreatureKind } from '@shared/adventure';
 import { dress } from '@/components/hero/fabric3d';
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
@@ -44,7 +44,7 @@ const HOME_REACH = [1.3, 1.5, 1.8, 2.2, 2.8, 3.1];
 const STREET_HOME = 0.85;
 /** A room behind a door in the village. */
 type Place = { group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[] };
-export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key`: the hero turns to it and it flinches. */ strike: (key: string) => void; /** The creature `key` lunges at the hero. */ lunge: (key: string) => void };
+export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key`: the hero turns to it and it flinches. */ strike: (key: string) => void; /** The creature `key` lunges at the hero. */ lunge: (key: string) => void; /** Beaten: the hero stands up at the well at once, without walking. */ respawn: () => void };
 /** The bag of the boxing school in the village. */
 export const BOXING_KEY = 'boxing';
 const BOXING_AT: Vec = { x: -3.1, z: 5.4 };
@@ -894,6 +894,22 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     let fpsFrames = 0;
     let fpsSince = performance.now();
     let equip: () => void = () => {};
+    // Where each creature lives, and a pond by the slimes' swamp: only with the adventure on.
+    if (creatures?.length) {
+      for (const c of creatures) {
+        const h = habitat(c.kind);
+        if (!h) continue;
+        h.position.set(c.x, 0, c.z);
+        // Local +z towards the square: the props stand behind the creature.
+        h.rotation.y = Math.atan2(-c.x, -c.z);
+        scene.add(h);
+      }
+      const pa = (112 * Math.PI) / 180;
+      const water = pond(1.5);
+      water.position.set(Math.cos(pa) * 13.4, 0, Math.sin(pa) * 13.4);
+      scene.add(water);
+      obstacles.push({ x: water.position.x, z: water.position.z, r: 1.7 });
+    }
     for (const c of creatures ?? []) {
       const g = creature(c.kind);
       g.position.set(c.x, 0, c.z);
@@ -1797,6 +1813,22 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           swing = 0.32;
           mob.hurtAt = performance.now() + 140;
         },
+        respawn: () => {
+          goal = null;
+          clearTrail();
+          const put = () => {
+            pos.current.x = WELL_SPOT.x;
+            pos.current.z = WELL_SPOT.z;
+            hero.position.set(WELL_SPOT.x, 0, WELL_SPOT.z);
+            // Facing the square, so the well is in view.
+            facing.current = Math.atan2(-WELL_SPOT.x, -WELL_SPOT.z);
+            hero.rotation.y = facing.current;
+          };
+          if (inside()) {
+            travel('village');
+            window.setTimeout(put, 30);
+          } else put();
+        },
         lunge: (k) => {
           const mob = mobs.find((x) => x.key === k);
           if (!mob) return;
@@ -2396,9 +2428,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             </button>
           ))}
           {(creatures ?? []).map((c) => (
-            <button key={c.key} ref={setLabel(c.key)} type="button" data-spot={c.key} hidden={gone.has(c.key)} onClick={() => go(c.key)} aria-label={t(`Loop naar ${c.label}`, `Walk to ${c.label}`)}
-              className={cn(plate, '!min-h-[34px] flex-col !items-stretch gap-1 text-[12.5px] leading-none text-[#ffb3a1]')} style={{ transform: 'translate(-9999px,0)' }}>
-              <span className="text-center">{c.label}</span>
+            <button key={c.key} ref={setLabel(c.key)} type="button" data-spot={c.key} hidden={gone.has(c.key)} onClick={() => go(c.key)}
+              aria-label={ATTACKS[c.kind].aggressive ? t(`Loop naar ${c.label}, agressief`, `Walk to ${c.label}, aggressive`) : isFriendly(c.kind) && !isHarvest(c.kind) ? t(`Loop naar ${c.label}, vriendelijk`, `Walk to ${c.label}, friendly`) : t(`Loop naar ${c.label}`, `Walk to ${c.label}`)}
+              data-aggressive={ATTACKS[c.kind].aggressive ? '1' : undefined}
+              className={cn(plate, '!min-h-[34px] flex-col !items-stretch gap-1 text-[12.5px] leading-none', ATTACKS[c.kind].aggressive ? 'border-[#ff6b4a] text-[#ffb3a1]' : isFriendly(c.kind) ? 'text-[#c9f2c0]' : 'text-[#ffd9a8]')} style={{ transform: 'translate(-9999px,0)' }}>
+              <span className="text-center">{c.label}{ATTACKS[c.kind].aggressive ? <span className="ml-1 text-[10px] font-bold uppercase text-[#ff8a6e]">{t('agressief', 'aggressive')}</span> : isFriendly(c.kind) && !isHarvest(c.kind) ? <span className="ml-1 text-[10px] font-semibold text-[#9fe39a]">{t('vriendelijk', 'friendly')}</span> : null}</span>
               {(() => {
                 const max = CREATURES[c.kind].hp;
                 const hp = Math.max(0, max - (creatureHurt?.[c.key] ?? 0));

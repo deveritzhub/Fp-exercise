@@ -33,5 +33,9 @@ test('the Alpha attacks, the hero can be beaten and gets up again at the well', 
   await down.getByTestId('respawn').click();
   await expect(down).toBeHidden();
   await expect(life).toHaveAttribute('data-hp', String(max));
+  // Up again at the well at once, without walking: the well's own button is there.
+  await expect(page.getByTestId('drink-well')).toBeVisible({ timeout: 10_000 });
+  // Aggressive creatures say so on their label.
+  await expect(page.getByRole('button', { name: 'Loop naar Alfazwijn, agressief' })).toHaveCount(1);
   await context.close();
 });

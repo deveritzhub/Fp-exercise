@@ -25,23 +25,26 @@ export const CREATURE_KINDS = Object.keys(CREATURES) as CreatureKind[];
 
 /**
  * Fighting back: what a creature does to the hero per hit, how often, and whether it starts the fight
- * itself (an Alpha does; the others only hit back once struck). Animals that are only prey do nothing.
+ * itself (aggressive: the thirst imp, the wild boar, the couch king and the Alpha; the slimes and the
+ * couch lurker only hit back once struck). Prey (chickens, cows) and trees and rocks are friendly.
  */
 export const ATTACKS: Record<CreatureKind, { damage: number; everyMs: number; aggressive: boolean }> = {
   slime: { damage: 1, everyMs: 1600, aggressive: false },
-  imp: { damage: 1, everyMs: 1300, aggressive: false },
+  imp: { damage: 1, everyMs: 1300, aggressive: true },
   couch: { damage: 2, everyMs: 1800, aggressive: false },
   giant_slime: { damage: 3, everyMs: 1700, aggressive: false },
-  couch_king: { damage: 5, everyMs: 1800, aggressive: false },
+  couch_king: { damage: 5, everyMs: 1800, aggressive: true },
   chicken: { damage: 0, everyMs: 1500, aggressive: false },
   cow: { damage: 0, everyMs: 1500, aggressive: false },
-  boar: { damage: 3, everyMs: 1500, aggressive: false },
+  boar: { damage: 3, everyMs: 1500, aggressive: true },
   alpha_boar: { damage: 8, everyMs: 1600, aggressive: true },
   oak: { damage: 0, everyMs: 1500, aggressive: false },
   rock: { damage: 0, everyMs: 1500, aggressive: false },
 };
 /** Trees and rocks: you chop them for wood and stone; they never fight back. */
 export const isHarvest = (kind: CreatureKind) => kind === 'oak' || kind === 'rock';
+/** Friendly: never hits the hero (prey, trees and rocks). */
+export const isFriendly = (kind: CreatureKind) => ATTACKS[kind].damage === 0;
 /** An Alpha: a big, dangerous one with its own warning; worth fighting with a good weapon. */
 export const isAlpha = (kind: CreatureKind) => kind.startsWith('alpha_');
 /** The adventurer level at which an Alpha is a fair fight (it shows itself earlier, as a warning). */

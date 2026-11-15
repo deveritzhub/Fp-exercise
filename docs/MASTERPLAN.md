@@ -382,6 +382,20 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     je verliest niets en staat op bij de waterput. Een echt glas water bij de put geneest volledig.
     Buiten een gevecht komt leven vanzelf terug. Alles is spel, los van je echte level.
 
+107. [x] **Huis bouwen met buit** (15 nov): eiken (hout) en rotsen (steen) om te hakken; elk volgend huis
+    kost buit (hut 6 hout + 2 steen … villa met de Alfaslagtand), het level moet het toelaten. Bestaande
+    helden houden hun huis (migratie 054, eerste keer vastgelegd). Bouwen in het inrichtingspaneel.
+
+108. [x] **Wezens met een eigen plek** (15 nov): moeras, dorre plek, oud kleed (troon voor de koning),
+    stro, trog, modderpoel en een leger van staande stenen voor het Alfazwijn; een vijver. Agressief:
+    duiveltje, wild zwijn, Bankkoning, Alfazwijn; vriendelijk: kippen en koeien. Verslagen: direct
+    opstaan bij de waterput.
+
+109. [x] **Training snel invoeren** (15 nov): tekstveld in Logboek en Krachtlog; de app leest minuten,
+    sets, herhalingen en kilo's en herkent oefeningen uit de bibliotheek (onbekend wordt een eigen
+    oefening). Eerst controleren, dan opslaan. Snelknoppen: herhaal vorige training, recente oefeningen.
+    Geen externe dienst (`shared/workoutText.ts`). Spraak of AI alleen na akkoord.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Hartslag en Google Health Connect / Apple Health: zie het voorstel van 15 nov (live hartslag via
   Bluetooth kan in de web-app op Android en computer; Health Connect en Apple Health vragen een
