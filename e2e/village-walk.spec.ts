@@ -34,6 +34,14 @@ test('patient walks to the TV in the village, starts the workout there and retur
   await expect(page.getByTestId('joystick')).toHaveCount(0);
 
   // The daily quest sends the hero through the practice door to the TV in the exercise room.
+  // Doors open by themselves: a walk that ended at a door is a walk inside. Step out again first.
+  await page.waitForTimeout(1500);
+  if ((await village.getAttribute('data-zone')) !== 'village') {
+    await page.getByRole('button', { name: 'Loop naar de uitgang' }).press('Enter');
+    await expect(village).toHaveAttribute('data-zone', 'village', { timeout: 60_000 });
+    // Standing at the door just left does not pull the hero back in.
+    await page.waitForTimeout(1500);
+  }
   await expect(village).toHaveAttribute('data-zone', 'village');
   // The task list is folded until asked for.
   await page.getByTestId('toggle-tasks').click();

@@ -22,7 +22,7 @@ test('tapping the flow master and the physiotherapist opens a talk with the func
   if (process.env.SHOTS) { await page.waitForTimeout(2500); await page.screenshot({ path: process.env.SHOTS + '/zoom-in.png' }); }
   await page.getByTestId('zoom-out').click();
   await page.getByRole('button', { name: 'Loop naar Mobiliteitsstudio' }).press('Enter');
-  await page.getByTestId('enter-house').click({ timeout: 120_000 });
+  // The door opens by itself: no button to press.
   await expect(village).toHaveAttribute('data-zone', 'mobiliteit', { timeout: 30_000 });
   // Walk up so the flow master is in view; then the body itself is tapped, a little below the name above the head.
   await page.getByRole('button', { name: 'Loop naar het programmabord van Mobiliteitsstudio' }).press('Enter');
@@ -58,7 +58,7 @@ test('the coach in the strength house offers the programme and the 1RM', async (
   await expect(village).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
   // A house can be entered too: the strength house has its own room with the programme board.
   await page.getByRole('button', { name: 'Loop naar Krachthonk' }).press('Enter');
-  await page.getByTestId('enter-house').click({ timeout: 60_000 });
+  // The door opens by itself: no button to press.
   await expect(village).toHaveAttribute('data-zone', 'kracht', { timeout: 30_000 });
   // The coach is tapped from across the room: the hero walks up and the talk opens, with the 1RM among the choices.
   await page.getByRole('button', { name: 'Praat met Coach' }).press('Enter');

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { adventureLevel, blow, boxingXp, weaponAt, weaponByKey } from './adventure';
+import { adventureLevel, blow, boxingXp, CREATURE_KINDS, DROPS, LOOT, rollDrops, weaponAt, weaponByKey } from './adventure';
 
 describe('adventure', () => {
   it('levels: 60 XP for the first, 30 more for each next', () => {
@@ -28,5 +28,15 @@ describe('adventure', () => {
     expect(weaponByKey('sword')).toMatchObject({ power: 4, price: 200 });
     expect(weaponByKey(null).key).toBe('fists');
     expect(weaponByKey('laser').key).toBe('fists');
+  });
+  it('a beaten creature drops what its table says, within its bounds', () => {
+    // A cow always leaves a hide and a bone; meat only when the roll is low enough.
+    expect(rollDrops('cow', () => 0.99)).toEqual([{ item: 'hide', n: 1 }, { item: 'bone', n: 1 }]);
+    expect(rollDrops('cow', () => 0)).toEqual([{ item: 'hide', n: 1 }, { item: 'bone', n: 1 }, { item: 'meat', n: 1 }]);
+    for (const k of CREATURE_KINDS) {
+      expect(DROPS[k].length).toBeGreaterThan(0);
+      for (const d of DROPS[k]) expect(LOOT[d.item]).toBeTruthy();
+      for (const d of rollDrops(k, () => 0.999)) expect(d.n).toBeLessThanOrEqual(DROPS[k].find((x) => x.item === d.item)!.max);
+    }
   });
 });

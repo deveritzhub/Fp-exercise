@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Beef, Coins, Droplets, Footprints, Lock, Swords } from 'lucide-react';
-import { WEAPONS, weaponByKey } from '@shared/adventure';
+import { Beef, Coins, Droplets, Footprints, Gem, Lock, Swords } from 'lucide-react';
+import { LOOT, LOOT_KEYS, WEAPONS, weaponByKey } from '@shared/adventure';
 import { WATER } from '@shared/survival';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
@@ -9,7 +9,7 @@ import { cn } from '@/lib/cn';
 import { Button, Card, useToast } from '@/components/ui';
 import type { HeroState } from '@/lib/types';
 
-type Adventure = { level: number; weapon: string | null; owned: string[]; coins: number };
+type Adventure = { level: number; weapon: string | null; owned: string[]; coins: number; loot?: Record<string, number> };
 
 const ICON: Record<string, string> = { fists: '✊', staff: '🦯', gloves: '🥊', club: '🏏', hammer: '🔨', sword: '🗡️', axe: '🪓', spear: '🔱', hero_sword: '⚔️' };
 const FLASK = 'fp.village.flask';
@@ -126,6 +126,22 @@ export function BackpackCard({ d }: { d: HeroState }) {
               ) : (
                 <Button size="sm" loading={busy === w.key} onClick={() => void wear(w.key, name)} aria-label={t(`Doe ${name} aan`, `Put ${name} on`)}>{t('Aan', 'On')}</Button>
               )}
+            </li>
+          );
+        })}
+      </ul>
+
+      <h3 className="mt-5 flex items-center gap-1.5 text-[15px] font-semibold text-ink-950"><Gem className="h-4 w-4" aria-hidden />{t('Buit', 'Loot')}</h3>
+      <p className="mt-1 text-[13.5px] text-ink-700">{t('Wat kwaaltjes en dieren in je dorp laten vallen. Een vakje met een vraagteken heb je nog niet gevonden.', 'What ailments and animals in your village drop. A square with a question mark is one you have not found yet.')}</p>
+      <ul className="mt-2 grid grid-cols-5 gap-2" data-testid="loot">
+        {LOOT_KEYS.map((k) => {
+          const n = a?.loot?.[k] ?? 0;
+          const name = nl ? LOOT[k].nl : LOOT[k].en;
+          return (
+            <li key={k} data-loot={k} data-n={n} title={n > 0 ? name : undefined} aria-label={n > 0 ? `${name}: ${n}` : t('Nog niet gevonden', 'Not found yet')}
+              className={cn('relative grid aspect-square place-items-center rounded-xl border text-[24px]', n > 0 ? 'border-[#e4bc63] bg-[#fbf0d9]' : 'border-line bg-canvas text-ink-600')}>
+              <span aria-hidden>{n > 0 ? LOOT[k].icon : '?'}</span>
+              {n > 0 && <span aria-hidden className="absolute bottom-0.5 right-1 text-[11.5px] font-bold tabular-nums text-ink-950">{n}</span>}
             </li>
           );
         })}

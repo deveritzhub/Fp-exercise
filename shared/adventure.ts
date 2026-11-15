@@ -10,6 +10,10 @@ export const CREATURES = {
   // Bigger ones show themselves to an adventurer who has grown: more blows, more XP.
   giant_slime: { nl: 'Reuzenslijm', en: 'Giant slime', hp: 10, xp: 40, weakTo: 'moving', level: 3 },
   couch_king: { nl: 'Bankkoning', en: 'Couch king', hp: 24, xp: 75, weakTo: 'trained', level: 5 },
+  // Animals in the meadow, as in the old online worlds: beaten for what they drop.
+  chicken: { nl: 'Kip', en: 'Chicken', hp: 2, xp: 6, weakTo: 'moving', level: 1 },
+  cow: { nl: 'Koe', en: 'Cow', hp: 8, xp: 20, weakTo: 'trained', level: 1 },
+  boar: { nl: 'Wild zwijn', en: 'Wild boar', hp: 16, xp: 45, weakTo: 'trained', level: 4 },
 } as const;
 export type CreatureKind = keyof typeof CREATURES;
 export const CREATURE_KINDS = Object.keys(CREATURES) as CreatureKind[];
@@ -69,3 +73,41 @@ export const boxingXp = (hits: number) => Math.max(0, Math.min(BOXING.beats, Mat
 export const weaponByKey = (key: string | null | undefined): Weapon => WEAPONS.find((w) => w.key === key) ?? WEAPONS[0];
 /** How a bought weapon is named in the purchases. */
 export const weaponItem = (key: string) => `wpn_${key}`;
+
+/** Loot: what a beaten creature leaves behind. Collected in the backpack; it buys nothing. */
+export const LOOT = {
+  feather: { nl: 'Veer', en: 'Feather', icon: '🪶' },
+  egg: { nl: 'Ei', en: 'Egg', icon: '🥚' },
+  meat: { nl: 'Rauw vlees', en: 'Raw meat', icon: '🥩' },
+  hide: { nl: 'Koeienhuid', en: 'Cowhide', icon: '🟫' },
+  bone: { nl: 'Bot', en: 'Bone', icon: '🦴' },
+  tusk: { nl: 'Slagtand', en: 'Tusk', icon: '🦷' },
+  gel: { nl: 'Slijm', en: 'Slime gel', icon: '🫧' },
+  horn: { nl: 'Duivelshoorntje', en: 'Imp horn', icon: '🌶️' },
+  button: { nl: 'Bankknoop', en: 'Couch button', icon: '🔘' },
+  crown: { nl: 'Kroonscherf', en: 'Crown shard', icon: '👑' },
+} as const;
+export type LootKey = keyof typeof LOOT;
+export const LOOT_KEYS = Object.keys(LOOT) as LootKey[];
+
+/** Per creature: what it can drop, how often (0..1) and how many at most. */
+export const DROPS: Record<CreatureKind, { item: LootKey; chance: number; max: number }[]> = {
+  slime: [{ item: 'gel', chance: 0.6, max: 1 }],
+  imp: [{ item: 'horn', chance: 0.35, max: 1 }],
+  couch: [{ item: 'button', chance: 0.5, max: 2 }],
+  giant_slime: [{ item: 'gel', chance: 1, max: 3 }],
+  couch_king: [{ item: 'button', chance: 1, max: 3 }, { item: 'crown', chance: 0.25, max: 1 }],
+  chicken: [{ item: 'feather', chance: 1, max: 3 }, { item: 'egg', chance: 0.3, max: 1 }, { item: 'bone', chance: 0.5, max: 1 }],
+  cow: [{ item: 'hide', chance: 1, max: 1 }, { item: 'bone', chance: 1, max: 1 }, { item: 'meat', chance: 0.7, max: 2 }],
+  boar: [{ item: 'bone', chance: 1, max: 2 }, { item: 'meat', chance: 0.8, max: 2 }, { item: 'tusk', chance: 0.4, max: 1 }],
+};
+
+/** The drops of one win. `rnd` gives numbers in [0, 1), as Math.random does. */
+export function rollDrops(kind: CreatureKind, rnd: () => number): { item: LootKey; n: number }[] {
+  const out: { item: LootKey; n: number }[] = [];
+  for (const d of DROPS[kind]) {
+    if (rnd() >= d.chance) continue;
+    out.push({ item: d.item, n: 1 + Math.floor(rnd() * d.max) });
+  }
+  return out;
+}

@@ -16,7 +16,7 @@ const eye = (g: THREE.Group, x: number, y: number, z: number, r = 0.055) => {
 };
 
 /** The sculpted models (web/public/village/creatures). Bump the version when a file changes. */
-const MODEL: Record<CreatureKind, { file: string; scale: number }> = {
+const MODEL: Partial<Record<CreatureKind, { file: string; scale: number }>> = {
   slime: { file: 'stijfheidsslijm', scale: 0.9 },
   imp: { file: 'dorstduiveltje', scale: 0.95 },
   couch: { file: 'bankhanger', scale: 1 },
@@ -34,6 +34,8 @@ export function creature(kind: CreatureKind): THREE.Group {
   const simple = simpleCreature(kind);
   g.add(simple);
   const m3 = MODEL[kind];
+  // The animals are made here; a sculpted file can take their place later.
+  if (!m3) return g;
   loadModel(`/village/creatures/${m3.file}.glb?v=${CREATURES_VERSION}`)
     .then((gltf) => {
       const model = gltf.scene.clone(true);
@@ -60,6 +62,7 @@ function simpleCreature(kind: CreatureKind): THREE.Group {
     }
     return g;
   }
+  if (kind === 'chicken' || kind === 'cow' || kind === 'boar') return animal(kind);
   const g = new THREE.Group();
   if (kind === 'slime') {
     const body = new THREE.Mesh(new THREE.SphereGeometry(0.32, 20, 14), m(0x8fb2c9, { transparent: true, opacity: 0.9, roughness: 0.25 }));
@@ -105,6 +108,98 @@ function simpleCreature(kind: CreatureKind): THREE.Group {
     }
     eye(g, -0.12, 0.44, -0.05, 0.06);
     eye(g, 0.12, 0.44, -0.05, 0.06);
+  }
+  g.traverse((o) => { o.castShadow = true; });
+  return g;
+}
+
+/** A four-legged body: barrel, head, legs. The cow and the boar are both made of it. */
+function animal(kind: 'chicken' | 'cow' | 'boar'): THREE.Group {
+  const g = new THREE.Group();
+  const dark = 0x2a2420;
+  if (kind === 'chicken') {
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 12), m(0xf4efe4));
+    body.scale.set(0.9, 0.95, 1.2);
+    body.position.y = 0.26;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 10), m(0xf4efe4));
+    head.position.set(0, 0.46, 0.14);
+    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.09, 8), m(0xe8a23a));
+    beak.rotation.x = Math.PI / 2;
+    beak.position.set(0, 0.45, 0.25);
+    const comb = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), m(0xc8322c));
+    comb.scale.set(0.5, 1, 1.3);
+    comb.position.set(0, 0.56, 0.13);
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.2, 8), m(0xe6dfd0));
+    tail.rotation.x = -0.9;
+    tail.position.set(0, 0.38, -0.2);
+    g.add(body, head, beak, comb, tail);
+    for (const s of [-1, 1]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.13, 6), m(0xe8a23a));
+      leg.position.set(s * 0.06, 0.065, 0.02);
+      const wing = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), m(0xe6dfd0));
+      wing.scale.set(0.35, 0.7, 1);
+      wing.position.set(s * 0.15, 0.28, -0.01);
+      g.add(leg, wing);
+      eye(g, s * 0.05, 0.48, 0.2, 0.022);
+    }
+  } else {
+    const cow = kind === 'cow';
+    const hideC = cow ? 0xf2ede2 : 0x5a4636;
+    const len = cow ? 0.95 : 0.78;
+    const tall = cow ? 0.62 : 0.42;
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(cow ? 0.27 : 0.23, len - 0.5, 6, 14), m(hideC));
+    body.rotation.x = Math.PI / 2;
+    body.position.y = tall;
+    g.add(body);
+    if (cow) {
+      // Black patches on the white hide.
+      for (const [x, y, z, r] of [[0.2, 0.72, 0.12, 0.16], [-0.21, 0.66, -0.16, 0.18], [0.05, 0.86, -0.25, 0.14]] as const) {
+        const patch = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), m(dark));
+        patch.scale.set(0.55, 0.7, 1);
+        patch.position.set(x, y, z);
+        g.add(patch);
+      }
+      const udder = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), m(0xe9a9a6));
+      udder.position.set(0, tall - 0.26, -0.18);
+      g.add(udder);
+    } else {
+      // A ridge of bristles down the back.
+      const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.08, len * 0.8), m(dark));
+      ridge.position.set(0, tall + 0.24, -0.02);
+      g.add(ridge);
+    }
+    const head = new THREE.Mesh(new THREE.BoxGeometry(cow ? 0.26 : 0.24, cow ? 0.26 : 0.22, cow ? 0.34 : 0.36), m(cow ? hideC : 0x4d3b2d));
+    head.position.set(0, tall + (cow ? 0.12 : 0.02), len / 2 + 0.12);
+    const nose = new THREE.Mesh(new THREE.BoxGeometry(cow ? 0.22 : 0.16, cow ? 0.14 : 0.12, 0.1), m(cow ? 0xe9a9a6 : 0x8a6a5a));
+    nose.position.set(0, tall + (cow ? 0.06 : -0.02), len / 2 + 0.33);
+    g.add(head, nose);
+    for (const s of [-1, 1]) {
+      const ear = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), m(cow ? dark : 0x4d3b2d));
+      ear.scale.set(1.4, 0.6, 0.5);
+      ear.position.set(s * 0.18, tall + (cow ? 0.22 : 0.14), len / 2 + 0.04);
+      // Horns on the cow, tusks on the boar.
+      const horn = new THREE.Mesh(new THREE.ConeGeometry(0.03, cow ? 0.14 : 0.12, 8), m(0xf1e6c8));
+      if (cow) {
+        horn.position.set(s * 0.1, tall + 0.3, len / 2 + 0.08);
+        horn.rotation.z = -s * 0.5;
+      } else {
+        horn.position.set(s * 0.09, tall - 0.01, len / 2 + 0.36);
+        horn.rotation.z = -s * 0.3;
+      }
+      g.add(ear, horn);
+      eye(g, s * (cow ? 0.09 : 0.08), tall + (cow ? 0.16 : 0.07), len / 2 + 0.29, 0.035);
+      for (const z of [len / 2 - 0.12, -len / 2 + 0.12]) {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.045, tall - 0.12, 8), m(cow ? hideC : 0x3f3026));
+        leg.position.set(s * 0.15, (tall - 0.12) / 2, z);
+        const hoof = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.052, 0.06, 8), m(dark));
+        hoof.position.set(s * 0.15, 0.03, z);
+        g.add(leg, hoof);
+      }
+    }
+    const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, cow ? 0.42 : 0.16, 6), m(cow ? hideC : dark));
+    tail.position.set(0, tall + (cow ? -0.05 : 0.1), -len / 2 - 0.1);
+    tail.rotation.x = cow ? 0.25 : -0.9;
+    g.add(tail);
   }
   g.traverse((o) => { o.castShadow = true; });
   return g;

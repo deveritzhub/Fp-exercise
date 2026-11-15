@@ -17,7 +17,7 @@ import { HOME_STAGES, homeStage, levelsToNextHome } from '@shared/practiceVillag
 import { MODULE_SITES, VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
-import { BOXING, CREATURES, blow, weaponAt, weaponByKey, type CreatureKind } from '@shared/adventure';
+import { BOXING, CREATURES, LOOT, blow, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
@@ -350,6 +350,22 @@ export function VillageWalkPage() {
     return [doneToday ? t('Alles gedaan voor vandaag!', 'All done for today!') : t('Vandaag geen oefeningen', 'No exercises today')];
   }, [home.data, todo, doneToday, nl, t]);
 
+  // Doors open by themselves: standing at the door of a house or shop, the hero walks in. Not while
+  // passing by on the way elsewhere, not right after stepping out, and not when a task waits at this door.
+  const leftBy = useRef(false);
+  useEffect(() => {
+    if (!near) {
+      leftBy.current = false;
+      return;
+    }
+    const b = buildings.find((x) => x.key === near);
+    if (!b || leftBy.current || !(('keeper' in b && b.keeper) || 'kind' in b)) return;
+    if (dest && dest !== near) return;
+    if (errand?.link && errand.dest === near) return;
+    const id = window.setTimeout(() => world.current?.use(near), dest ? 150 : 700);
+    return () => window.clearTimeout(id);
+  }, [near, dest, buildings, errand]);
+
   if (home.isError) return <ErrorState error={home.error} onRetry={() => home.refetch()} />;
   const L = d?.level;
   const nearBuilding = buildings.find((b) => b.key === near) ?? null;
@@ -522,7 +538,9 @@ export function VillageWalkPage() {
 
   // The adventure: little ailments round the village to beat, for XP of its own (never the hero's).
   const creatures = useMemo(
-    () => ([['slime', 120, 10.5], ['imp', 80, 11.2], ['couch', 325, 10.8], ['slime', 105, 8.4], ['giant_slime', 140, 11.3], ['couch_king', 295, 11.4]] as [CreatureKind, number, number][])
+    () => ([['slime', 120, 10.5], ['imp', 80, 11.2], ['couch', 325, 10.8], ['slime', 105, 8.4], ['giant_slime', 140, 11.3], ['couch_king', 295, 11.4],
+      // The meadow: animals to beat for what they drop.
+      ['cow', 38, 12.2], ['cow', 52, 11.6], ['chicken', 45, 9.6], ['chicken', 60, 10.4], ['boar', 30, 14]] as [CreatureKind, number, number][])
       .map(([kind, deg, r], i) => ({ key: `mob:${i}`, kind, label: nl ? CREATURES[kind].nl : CREATURES[kind].en, x: Math.cos((deg * Math.PI) / 180) * r, z: Math.sin((deg * Math.PI) / 180) * r }))
       // The big ones only show themselves to an adventurer of their level.
       .filter((c) => (adventure.data?.level ?? 1) >= CREATURES[c.kind].level),
@@ -547,11 +565,12 @@ export function VillageWalkPage() {
     // It comes back after a while, somewhere to return to.
     window.setTimeout(() => setBeaten((b) => b.filter((k) => k !== key)), 45_000);
     try {
-      const r = await api.post<Adventure & { gained: number }>('/patient/hero/adventure/win', { kind: mob.kind });
+      const r = await api.post<Adventure & { gained: number; drops?: { item: LootKey; n: number }[] }>('/patient/hero/adventure/win', { kind: mob.kind });
       const was = adventure.data?.level ?? 1;
       qc.setQueryData(['patient-adventure'], r);
       levelUp(was, r.level);
       toast(r.gained > 0 ? t(`${mob.label} verslagen! +${r.gained} avonturen-XP`, `${mob.label} beaten! +${r.gained} adventure XP`) : t(`${mob.label} verslagen! Voor vandaag heb je alle avonturen-XP al binnen.`, `${mob.label} beaten! You already have all of today's adventure XP.`));
+      if (r.drops?.length) toast(t(`Buit: ${r.drops.map((x) => `${x.n}× ${LOOT[x.item].nl.toLowerCase()}`).join(', ')}. Het zit in je rugzak.`, `Loot: ${r.drops.map((x) => `${x.n}× ${LOOT[x.item].en.toLowerCase()}`).join(', ')}. It is in your backpack.`));
     } catch (e) {
       say(e);
     }
@@ -642,6 +661,7 @@ export function VillageWalkPage() {
             track={track}
             stick={stick}
             onNear={setNear}
+            onZone={(z) => { if (z === 'village') leftBy.current = true; }}
             onTalk={setTalk}
             onDestination={(k) => { setDest(k); if (!k) return; hideTip(); }}
             onArrive={(k) => { if (k === TV_KEY) setTvOpen(true); }}
