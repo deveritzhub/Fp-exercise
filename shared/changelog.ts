@@ -9,6 +9,17 @@ export type Release = { date: string; titleNl: string; titleEn: string; items: C
 
 export const RELEASES: Release[] = [
   {
+    date: '2026-11-15',
+    titleNl: 'Schema’s voor spiergroei en kies je schema',
+    titleEn: 'Muscle growth schedules and choose your schedule',
+    items: [
+      { for: 'patient', nl: 'Kies je schema (Kracht): geef op welk format je wilt (full body, boven/onder, push/pull/benen, thuis of “weet ik niet”), hoe vaak per week je traint en wat je doel is. Je ziet meteen welke schema’s passen, het beste eerst.', en: 'Choose your schedule (Strength): say which format you want (full body, upper/lower, push/pull/legs, at home or “not sure”), how often a week you train and what your goal is. You see right away which schedules fit, best first.' },
+      { for: 'all', nl: 'Vijf schema’s voor spiergroei: 2× per week in weinig tijd, full body 3×, met dumbbells 3×, boven/onder 4× en 5× per week voor gevorderden. Elke spiergroep minstens 2× per week, in blokken van 6 weken met een lichtere week.', en: 'Five muscle growth schedules: 2× a week in little time, full body 3×, with dumbbells 3×, upper/lower 4× and 5× a week for advanced lifters. Every muscle group at least twice a week, in 6-week blocks with a lighter week.' },
+      { for: 'all', nl: 'Zes nieuwe oefeningen: zittende leg curl, Bulgaarse split squat, curl op schuine bank, zittend kuitheffen, zijwaartse raise aan de kabel en chest press machine.', en: 'Six new exercises: seated leg curl, Bulgarian split squat, incline bench curl, seated calf raise, cable lateral raise and machine chest press.' },
+      { for: 'staff', nl: 'Rusttijden van 1,5 en 2,5 minuut in de krachtschema’s komen nu goed door (90 en 150 seconden in plaats van 60 en 120).', en: 'Rest times of 1.5 and 2.5 minutes in strength schedules now come through right (90 and 150 seconds instead of 60 and 120).' },
+    ],
+  },
+  {
     date: '2026-11-13',
     titleNl: 'Een dorp voor de praktijk',
     titleEn: 'A village for the practice',

@@ -43,6 +43,8 @@ patientModules.get('/modes', async (c) => {
           phase: t.phase_no ? { seriesTitle: t.series_title, no: t.phase_no, count: t.phase_count, name: t.phase_name, weeks: t.phase_weeks, goal: t.phase_goal } : null,
           redFlags: t.red_flags ?? [],
           itemCount: t.item_count,
+          sourceKey: t.source_key ?? null,
+          daysPerWeek: t.days_per_week ?? null,
         })),
       };
     }),

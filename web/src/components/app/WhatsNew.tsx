@@ -11,6 +11,7 @@ import { cn } from '@/lib/cn';
  */
 type Item = { nl: string; en: string; to?: string; clinical?: true };
 const STAFF: Item[] = [
+  { nl: 'Vijf nieuwe schema’s voor spiergroei (2× tot 5× per week), met zes nieuwe oefeningen zoals zittende leg curl en Bulgaarse split squat. Volume per spiergroep staat bij de onderbouwing.', en: 'Five new muscle growth schedules (2× to 5× a week), with six new exercises such as the seated leg curl and Bulgarian split squat. Volume per muscle group is under the rationale.', to: '/app/programmas' },
   { clinical: true, nl: 'VKB-route toewijzen in één keer: vijf fases, bazen en standaardcriteria. Testsessie met LSI, fasedoelen en een grafiek in het dossier.', en: 'Assign the ACL route in one go: five phases, bosses and default criteria. A test session with LSI, phase goals and a chart in the record.', to: '/app/patienten?filter=acl' },
   { nl: 'Snelfilters in de patiëntenlijst: vraagt aandacht, nog niet uitgenodigd, uitnodiging open, geen programma.', en: 'Quick filters in the patient list: needs attention, not invited, invitation open, no programme.', to: '/app/patienten' },
   { nl: 'Bij "Kies een sjabloon" staan je laatst gebruikte sjablonen bovenaan.', en: '"Choose a template" shows your recently used templates first.' },
@@ -29,6 +30,7 @@ const STAFF: Item[] = [
   { nl: 'Reageren op een training bij "Markeer als gezien"; de patiënt krijgt je reactie.', en: 'Reply to a workout with "Mark as seen"; the patient gets your reply.' },
 ];
 const PATIENT: Item[] = [
+  { nl: 'Kies je schema: geef op welk format je wilt, hoe vaak per week je traint en wat je doel is, en zie welk krachtschema bij je past. Nieuw: vijf schema’s voor spiergroei.', en: 'Choose your schedule: say which format you want, how often a week you train and what your goal is, and see which strength schedule suits you. New: five muscle growth schedules.', to: '/p/kracht' },
   { nl: 'Loop zelf door je dorp in 3D: tik op de grond en je held loopt erheen. In de oefenzaal staat een tv met je oefeningen van vandaag; na je training krijgt je held daar de XP.', en: 'Walk through your village in 3D: tap the ground and your hero walks there. The gym has a TV with your exercises for today; after your workout your hero gets the XP there.', to: '/p/dorp' },
   { nl: 'Je dorp groeit mee: een huisje per 5 trainingen, een vlag per verslagen baas, een molen, akkers, een standbeeld en een vuurtoren.', en: 'Your village grows with you: a cottage per 5 workouts, a pennant per defeated boss, a windmill, fields, a statue and a lighthouse.', to: '/p/wereld' },
   { nl: 'Je wereldkaart is nu een 3D-eiland met je dorp en je route. Draai rond en tik op een gebouw of zone.', en: 'Your world map is now a 3D island with your village and route. Turn it and tap a building or zone.', to: '/p/wereld' },
@@ -46,7 +48,7 @@ const PATIENT: Item[] = [
   { nl: 'Op Voortgang zie je hoe zwaar en pijnlijk je trainingen waren, in gewone taal.', en: 'Progress shows how hard and painful your workouts were, in plain words.', to: '/p/voortgang' },
   { nl: 'Nieuwe quizvragen over welke spier het werk overneemt als een andere zwak is.', en: 'New quiz questions on which muscle takes over when another is weak.' },
 ];
-const VERSION = '2026-11-12';
+const VERSION = '2026-11-15';
 const KEY = 'fp.whatsnew.v1';
 
 function seenVersion(): string | null | undefined {

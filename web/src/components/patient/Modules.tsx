@@ -8,6 +8,8 @@ import { fmtDate } from '@/lib/format';
 import { Badge, Button, Card, CardHeader, Dialog, Notice, Textarea, useToast } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { SELF_CHECK, type AccountKind } from '@shared/accountKind';
+import { SCHEDULES } from '@shared/strengthChooser';
+import { ScheduleChooser } from './ScheduleChooser';
 
 export type Mode = 'revalidatie' | 'kracht' | 'mobiliteit';
 export type Modes = {
@@ -17,7 +19,7 @@ export type Modes = {
   strengthCleared: boolean;
   selfCheck: { at: string | null; outcome: 'clear' | 'doctor_ok' | null } | null;
   consents: { kracht: string | null; mobiliteit: string | null };
-  templates: { id: string; title: string; patientInstructions: string; module: 'kracht' | 'mobiliteit'; phase: { seriesTitle: string; name: string; weeks: string | null } | null; redFlags: string[]; itemCount: number }[];
+  templates: { id: string; title: string; patientInstructions: string; module: 'kracht' | 'mobiliteit'; phase: { seriesTitle: string; name: string; weeks: string | null } | null; redFlags: string[]; itemCount: number; sourceKey: string | null; daysPerWeek: number | null }[];
 };
 
 export const useModes = () => useQuery({ queryKey: ['patient-modes'], queryFn: () => api.get<Modes>('/patient/modes') });
@@ -111,6 +113,12 @@ export function StartTemplates({ modes, module }: { modes: Modes; module: 'krach
       {blocked && modes.kind === 'personal' && <SelfCheck />}
       {blocked && modes.kind !== 'personal' && (
         <Notice tone="info">{t('Krachttraining start pas als je fysiotherapeut heeft bevestigd dat je eraan toe bent. Bespreek het bij je volgende afspraak.', 'Strength training starts once your physiotherapist has confirmed you are ready. Discuss it at your next appointment.')}</Notice>
+      )}
+      {module === 'kracht' && list.filter((x) => x.sourceKey && SCHEDULES[x.sourceKey]).length >= 2 && (
+        <>
+          <ScheduleChooser templates={list} disabled={blocked} onPick={(id) => setConfirm(list.find((x) => x.id === id) ?? null)} />
+          <h3 className="pt-2 text-[15px] font-semibold text-ink-800">{t('Of kies zelf uit alle programma’s', 'Or choose from all programmes yourself')}</h3>
+        </>
       )}
       {list.map((x) => (
         <div key={x.id} className="flex items-center gap-3 rounded-2xl border border-line bg-white p-4 shadow-card">

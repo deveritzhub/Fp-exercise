@@ -360,6 +360,17 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     Vervolg blijft artistieke verfijning van gezichten, haar, plooien en individuele accessoires;
     geen claim dat de volledige premium art-direction al is afgerond.
 
+103. [x] **Schema's voor spiergroei** (15 nov): vijf hypertrofieschema's in `fp-kracht-v5`
+    (2× minimaal, full body 3×, dumbbells 3×, boven/onder 4×, boven/onder + push/pull/benen 5×).
+    10 tot 16 harde sets per grote spiergroep per week (minimaal schema bewust 5 à 6), elke spiergroep
+    2× per week, grondoefeningen RPE 8 en isolatie RPE 9, blokken van 6 weken met een lichtere week.
+    Zes nieuwe oefeningen (zittende leg curl, Bulgaarse split squat, curl op schuine bank, zittend
+    kuitheffen, kabel-zijwaartse raise, chest press machine). Rust van 1,5/2,5 min telt nu met decimalen.
+
+104. [x] **Kies je schema** (15 nov): op Kracht kiest de patiënt format, dagen per week en doel en
+    ziet de passende schema's, beste eerst (`shared/strengthChooser.ts`); de praktijksjablonen
+    blijven eronder. Migratie 053 geeft bij starttemplates de bron-id en het aantal trainingsdagen mee.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.
