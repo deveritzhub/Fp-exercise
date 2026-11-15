@@ -14,7 +14,7 @@ test('pictures of the patient app for the home page', async ({ browser }) => {
   test.setTimeout(300_000);
   const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'nl-NL' });
   const page = await phone.newPage();
-  await page.addInitScript(() => { localStorage.setItem('fp.village.tip', '1'); localStorage.setItem('fp.whatsnew.v1', '9999'); });
+  await page.addInitScript(() => { localStorage.setItem('fp.village.tip', '1'); localStorage.setItem('fp.whatsnew.v1', '2999-12-31'); });
   await login(page, 'patient@praktijk-a.test');
 
   // Today.
@@ -43,7 +43,7 @@ test('pictures of the patient app for the home page', async ({ browser }) => {
   const w = await hr.newPage();
   await w.addInitScript(() => {
     (window as unknown as { FPHealth: unknown }).FPHealth = { heartRate: { start: (cb: (b: number) => void) => { let n = 0; window.setInterval(() => cb(118 + (n++ % 4) * 3), 400); return 'healthkit'; }, stop: () => undefined } };
-    localStorage.setItem('fp.whatsnew.v1', '9999');
+    localStorage.setItem('fp.whatsnew.v1', '2999-12-31');
   });
   await login(w, 'patient@praktijk-a.test');
   await w.goto(`/p/sessie/${prog.id}`);
@@ -57,7 +57,7 @@ test('pictures of the patient app for the home page', async ({ browser }) => {
   // The 3D village, sideways.
   const side = await browser.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'nl-NL' });
   const v = await side.newPage();
-  await v.addInitScript(() => { localStorage.setItem('fp.village.tip', '1'); localStorage.setItem('fp.whatsnew.v1', '9999'); });
+  await v.addInitScript(() => { localStorage.setItem('fp.village.tip', '1'); localStorage.setItem('fp.whatsnew.v1', '2999-12-31'); });
   await login(v, 'patient@praktijk-a.test');
   await v.goto('/p/dorp');
   await expect(v.getByTestId('walk-village')).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
@@ -65,4 +65,28 @@ test('pictures of the patient app for the home page', async ({ browser }) => {
   await v.screenshot({ path: `${OUT}/village.png` });
   await side.close();
   await phone.close();
+});
+
+test('picture of the hero in the practice room', async ({ browser }) => {
+  test.setTimeout(280_000);
+  const side = await browser.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'nl-NL' });
+  const v = await side.newPage();
+  await v.addInitScript(() => { localStorage.setItem('fp.village.tip', '1'); localStorage.setItem('fp.whatsnew.v1', '2999-12-31'); });
+  await login(v, 'patient@praktijk-a.test');
+  await v.goto('/p/dorp');
+  const village = v.getByTestId('walk-village');
+  await expect(village).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
+  await v.waitForTimeout(1500);
+  if ((await village.getAttribute('data-zone')) !== 'practice') {
+    await v.getByTestId('toggle-tasks').click();
+    await v.getByTestId('quest-tracker').click();
+  }
+  await expect(village).toHaveAttribute('data-zone', 'practice', { timeout: 150_000 });
+  await v.waitForTimeout(6000);
+  const dlg = v.getByRole('dialog');
+  if (await dlg.count()) await dlg.getByRole('button', { name: /Sluiten|Close/ }).first().click();
+  await expect(dlg).toHaveCount(0);
+  await v.waitForTimeout(3000);
+  await v.screenshot({ path: `${OUT}/practice.png` });
+  await side.close();
 });
