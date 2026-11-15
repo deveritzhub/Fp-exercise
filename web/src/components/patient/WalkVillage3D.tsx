@@ -812,6 +812,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const scene = new THREE.Scene();
     scene.fog = new THREE.Fog(HORIZON, 28, 140);
     const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 420);
+    // The camera for the village as seen from inside a room (see the render step).
+    const outCam = camera.clone();
+    const outTurn = new THREE.Quaternion();
+    const UP = new THREE.Vector3(0, 1, 0);
     const skyLight = new THREE.HemisphereLight(0xd6e6ff, 0x7d8c46, 1.55);
     scene.add(skyLight);
     const sun = new THREE.DirectionalLight(0xffdca8, 3.1);
@@ -2196,7 +2200,54 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           cl.position.z = Math.sin(a) * cl.userData.radius;
         });
       }
-      renderer.render(scene, camera);
+      if (!indoor) {
+        renderer.autoClear = true;
+        renderer.render(scene, camera);
+      } else {
+        // Inside, the room stands where its building stands: the village is drawn round it first, seen
+        // from where the camera would be if the room were at that door, and the room goes on top.
+        const pl = here();
+        const inV = Math.atan2(pl.map.x - pl.outside.x, pl.map.z - pl.outside.z);
+        const turn = inV - pl.face;
+        const ax = pl.exit.x - Math.sin(pl.face) * 0.6;
+        const az = pl.exit.z - Math.cos(pl.face) * 0.6;
+        const dx = camera.position.x - ax;
+        const dz = camera.position.z - az;
+        const cs = Math.cos(turn);
+        const sn = Math.sin(turn);
+        outCam.copy(camera);
+        outCam.position.set(pl.outside.x + dx * cs + dz * sn, camera.position.y, pl.outside.z - dx * sn + dz * cs);
+        outCam.quaternion.copy(camera.quaternion).premultiply(outTurn.setFromAxisAngle(UP, turn));
+        outCam.updateMatrixWorld(true);
+        // The building itself gives way to its room.
+        const shell = anchors.find((an) => !an.zone && (zone.current === HOME_KEY ? Math.hypot(an.obj.position.x - pl.map.x, an.obj.position.z - pl.map.z) < 0.05 : an.id === zone.current))?.obj ?? null;
+        const shown = shell?.visible ?? false;
+        if (shell) shell.visible = false;
+        sky.position.copy(outCam.position);
+        glow.position.copy(outCam.position).addScaledVector(sunDir, 250);
+        disc.position.copy(glow.position);
+        skyLight.intensity = 1.55;
+        sun.intensity = 3.1;
+        renderer.autoClear = false;
+        renderer.shadowMap.autoUpdate = false;
+        renderer.clear();
+        renderer.render(scene, outCam);
+        if (shell) shell.visible = shown;
+        // The room: over whatever of the village lies behind it, with its own light and shadows.
+        sky.visible = glow.visible = disc.visible = false;
+        skyLight.intensity = 2.5;
+        sun.intensity = 1.6;
+        renderer.shadowMap.autoUpdate = true;
+        renderer.shadowMap.needsUpdate = true;
+        const far = camera.far;
+        camera.far = 60;
+        camera.updateProjectionMatrix();
+        renderer.clearDepth();
+        renderer.render(scene, camera);
+        camera.far = far;
+        camera.updateProjectionMatrix();
+        sky.visible = glow.visible = disc.visible = true;
+      }
 
       // A name shows when its place is the one the hero is in, in view and not too far off; the
       // button itself stays reachable by keyboard.
