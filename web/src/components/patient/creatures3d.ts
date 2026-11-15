@@ -63,6 +63,7 @@ function simpleCreature(kind: CreatureKind): THREE.Group {
     return g;
   }
   if (kind === 'chicken' || kind === 'cow' || kind === 'boar') return animal(kind);
+  if (kind === 'alpha_boar') return alphaBoar();
   const g = new THREE.Group();
   if (kind === 'slime') {
     const body = new THREE.Mesh(new THREE.SphereGeometry(0.32, 20, 14), m(0x8fb2c9, { transparent: true, opacity: 0.9, roughness: 0.25 }));
@@ -200,6 +201,63 @@ function animal(kind: 'chicken' | 'cow' | 'boar'): THREE.Group {
     tail.position.set(0, tall + (cow ? -0.05 : 0.1), -len / 2 - 0.1);
     tail.rotation.x = cow ? 0.25 : -0.9;
     g.add(tail);
+  }
+  g.traverse((o) => { o.castShadow = true; });
+  return g;
+}
+
+/**
+ * The first Alpha: the boar of the meadow grown huge and dark, with glowing eyes, long tusks and a
+ * mane of spikes. Big enough to read as the boss of the field from far away.
+ */
+function alphaBoar(): THREE.Group {
+  const g = new THREE.Group();
+  const S = 2.8;
+  const body = animal('boar');
+  const drop: THREE.Object3D[] = [];
+  body.traverse((o) => {
+    if (o instanceof THREE.Mesh && o.material instanceof THREE.MeshStandardMaterial) {
+      const c = o.material.color.getHex();
+      // The friendly eyes and the small tusks of the meadow boar go; the Alpha gets its own.
+      if (c === 0xffffff || c === 0x15181a || c === 0xf1e6c8) drop.push(o);
+      // Darker, almost black fur.
+      else o.material = m(new THREE.Color(c).multiplyScalar(0.5).getHex(), { roughness: 0.85 });
+    }
+  });
+  drop.forEach((o) => o.parent?.remove(o));
+  body.scale.setScalar(S);
+  g.add(body);
+  const tall = 0.42 * S;
+  const front = (0.78 / 2) * S;
+  // A mane of spikes along the back.
+  for (let i = 0; i < 7; i++) {
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.34 - Math.abs(i - 3) * 0.04, 6), m(0x1b1714, { roughness: 0.9 }));
+    spike.position.set(0, tall + 0.62, front * 0.7 - i * 0.24);
+    spike.rotation.x = -0.35;
+    g.add(spike);
+  }
+  // The snout tip, in world units (the boar's own nose sits at len/2 + 0.33).
+  const snoutZ = (0.78 / 2 + 0.33) * S;
+  for (const sd of [-1, 1]) {
+    // Long tusks curving up and out from the side of the snout.
+    const tusk = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.5, 10), m(0xf1e6c8, { roughness: 0.35 }));
+    tusk.position.set(sd * 0.27, tall - 0.02, snoutZ - 0.05);
+    tusk.rotation.set(-0.55, 0, -sd * 0.55);
+    g.add(tusk);
+    // Small, deep eyes that glow red, under a heavy brow.
+    const glow = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), new THREE.MeshStandardMaterial({ color: 0xff3b1f, emissive: 0xff2a10, emissiveIntensity: 2.4 }));
+    glow.position.set(sd * 0.2, tall + 0.2, (0.78 / 2 + 0.29) * S + 0.04);
+    const brow = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.06, 0.12), m(0x1b1714, { roughness: 0.9 }));
+    brow.position.set(sd * 0.2, tall + 0.29, (0.78 / 2 + 0.29) * S);
+    brow.rotation.z = sd * 0.35;
+    g.add(glow, brow);
+  }
+  // Scars of old fights.
+  for (const [x, y, z] of [[0.6, tall + 0.15, 0.2], [-0.58, tall + 0.05, -0.3]] as const) {
+    const scar = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.05, 0.4), m(0x8a3a2c));
+    scar.position.set(x, y, z);
+    scar.rotation.x = 0.5;
+    g.add(scar);
   }
   g.traverse((o) => { o.castShadow = true; });
   return g;

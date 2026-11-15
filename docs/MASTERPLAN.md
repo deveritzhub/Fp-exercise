@@ -371,7 +371,21 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     ziet de passende schema's, beste eerst (`shared/strengthChooser.ts`); de praktijksjablonen
     blijven eronder. Migratie 053 geeft bij starttemplates de bron-id en het aantal trainingsdagen mee.
 
+105. [x] **Zonder video de beschrijving** (15 nov): geen leeg videovak meer; startpositie, uitvoering
+    en "Let op" staan meteen open, ook op de tv in het dorp. Krachtoefeningen uit de bibliotheek: de
+    beschrijving onder Uitvoering, herhalingen en rust onder Let op.
+
+106. [x] **Levensbalk, monsters slaan terug, eerste Alfa** (15 nov): je held heeft leven (40 + 10 per
+    avonturiersniveau, een kwart meer na een echte training vandaag; klappen dan een vijfde zachter).
+    Kwaaltjes en het wilde zwijn slaan terug als je ze slaat; prooidieren niet. Het Alfazwijn (60 leven,
+    220 XP, eigen Alfaslagtand) aan de rand van de weide valt zelf aan en kan je verslaan. Verslagen:
+    je verliest niets en staat op bij de waterput. Een echt glas water bij de put geneest volledig.
+    Buiten een gevecht komt leven vanzelf terug. Alles is spel, los van je echte level.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
+- Hartslag en Google Health Connect / Apple Health: zie het voorstel van 15 nov (live hartslag via
+  Bluetooth kan in de web-app op Android en computer; Health Connect en Apple Health vragen een
+  echte app en het delen van gezondheidsgegevens met Google/Apple, dus jouw akkoord).
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.
 - `DEMO_PASSWORD` instellen in Render (zelf doen, niet naar Claude sturen).

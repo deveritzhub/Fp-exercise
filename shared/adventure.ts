@@ -14,9 +14,47 @@ export const CREATURES = {
   chicken: { nl: 'Kip', en: 'Chicken', hp: 2, xp: 6, weakTo: 'moving', level: 1 },
   cow: { nl: 'Koe', en: 'Cow', hp: 8, xp: 20, weakTo: 'trained', level: 1 },
   boar: { nl: 'Wild zwijn', en: 'Wild boar', hp: 16, xp: 45, weakTo: 'trained', level: 4 },
+  // The first Alpha: a huge boar at the edge of the meadow. It attacks by itself and can beat you.
+  alpha_boar: { nl: 'Alfazwijn', en: 'Alpha boar', hp: 60, xp: 220, weakTo: 'trained', level: 1 },
 } as const;
 export type CreatureKind = keyof typeof CREATURES;
 export const CREATURE_KINDS = Object.keys(CREATURES) as CreatureKind[];
+
+/**
+ * Fighting back: what a creature does to the hero per hit, how often, and whether it starts the fight
+ * itself (an Alpha does; the others only hit back once struck). Animals that are only prey do nothing.
+ */
+export const ATTACKS: Record<CreatureKind, { damage: number; everyMs: number; aggressive: boolean }> = {
+  slime: { damage: 1, everyMs: 1600, aggressive: false },
+  imp: { damage: 1, everyMs: 1300, aggressive: false },
+  couch: { damage: 2, everyMs: 1800, aggressive: false },
+  giant_slime: { damage: 3, everyMs: 1700, aggressive: false },
+  couch_king: { damage: 5, everyMs: 1800, aggressive: false },
+  chicken: { damage: 0, everyMs: 1500, aggressive: false },
+  cow: { damage: 0, everyMs: 1500, aggressive: false },
+  boar: { damage: 3, everyMs: 1500, aggressive: false },
+  alpha_boar: { damage: 8, everyMs: 1600, aggressive: true },
+};
+/** An Alpha: a big, dangerous one with its own warning; worth fighting with a good weapon. */
+export const isAlpha = (kind: CreatureKind) => kind.startsWith('alpha_');
+/** The adventurer level at which an Alpha is a fair fight (it shows itself earlier, as a warning). */
+export const ALPHA_ADVISED_LEVEL = 5;
+
+/**
+ * The hero's life in the village: it grows with the adventure level, and a real workout today gives
+ * a quarter more (what you did for real makes your hero tougher). Play only: losing costs nothing.
+ */
+export function heroMaxHp(level: number, trainedToday: boolean): number {
+  const base = 40 + 10 * (Math.max(1, Math.floor(level)) - 1);
+  return Math.round(base * (trainedToday ? 1.25 : 1));
+}
+/** Life that comes back by itself out of a fight, per second; after a while without being hit. */
+export const HERO_REGEN = { perSecond: 2, afterMs: 5000 } as const;
+/** Damage a creature does after the hero's armour: a real workout today takes the edge off by a fifth. */
+export const hitOnHero = (kind: CreatureKind, trainedToday: boolean) => {
+  const d = ATTACKS[kind].damage;
+  return d <= 0 ? 0 : Math.max(1, Math.round(d * (trainedToday ? 0.8 : 1)));
+};
 
 /** Wins that count per day; after that the creatures can still be beaten, for nothing. */
 export const ADVENTURE_DAILY_WINS = 40;
@@ -86,6 +124,7 @@ export const LOOT = {
   horn: { nl: 'Duivelshoorntje', en: 'Imp horn', icon: '🌶️' },
   button: { nl: 'Bankknoop', en: 'Couch button', icon: '🔘' },
   crown: { nl: 'Kroonscherf', en: 'Crown shard', icon: '👑' },
+  alpha_tusk: { nl: 'Alfaslagtand', en: 'Alpha tusk', icon: '🐗' },
 } as const;
 export type LootKey = keyof typeof LOOT;
 export const LOOT_KEYS = Object.keys(LOOT) as LootKey[];
@@ -100,6 +139,7 @@ export const DROPS: Record<CreatureKind, { item: LootKey; chance: number; max: n
   chicken: [{ item: 'feather', chance: 1, max: 3 }, { item: 'egg', chance: 0.3, max: 1 }, { item: 'bone', chance: 0.5, max: 1 }],
   cow: [{ item: 'hide', chance: 1, max: 1 }, { item: 'bone', chance: 1, max: 1 }, { item: 'meat', chance: 0.7, max: 2 }],
   boar: [{ item: 'bone', chance: 1, max: 2 }, { item: 'meat', chance: 0.8, max: 2 }, { item: 'tusk', chance: 0.4, max: 1 }],
+  alpha_boar: [{ item: 'alpha_tusk', chance: 1, max: 1 }, { item: 'tusk', chance: 1, max: 2 }, { item: 'meat', chance: 1, max: 3 }],
 };
 
 /** The drops of one win. `rnd` gives numbers in [0, 1), as Math.random does. */

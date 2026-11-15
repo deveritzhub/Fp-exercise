@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Armchair, Backpack, Beef, Droplets, Sparkles, ChevronRight, Coins, DoorOpen, Footprints, Gamepad2, Gauge, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
+import { Armchair, Backpack, Beef, Droplets, Heart, Sparkles, ChevronRight, Coins, DoorOpen, Footprints, Gamepad2, Gauge, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
 import { ApiError, api, mediaUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -17,7 +17,7 @@ import { HOME_STAGES, homeStage, levelsToNextHome } from '@shared/practiceVillag
 import { MODULE_SITES, VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
-import { BOXING, CREATURES, LOOT, blow, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
+import { ALPHA_ADVISED_LEVEL, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
@@ -469,7 +469,9 @@ export function VillageWalkPage() {
     try {
       await api.post('/patient/logs/water', { ml: WATER.glassMl });
       await qc.invalidateQueries({ queryKey: ['patient-hero'] });
-      toast(t('Glas water gelogd. Drink het ook echt op!', 'Glass of water logged. Do drink it!'));
+      // A real glass of water heals the hero in full.
+      setHeroHp(null);
+      toast(t('Glas water gelogd, je held is weer helemaal fit. Drink het ook echt op!', 'Glass of water logged, your hero is fully healed. Do drink it!'));
     } catch (e) {
       say(e);
     } finally {
@@ -540,7 +542,9 @@ export function VillageWalkPage() {
   const creatures = useMemo(
     () => ([['slime', 120, 10.5], ['imp', 80, 11.2], ['couch', 325, 10.8], ['slime', 105, 8.4], ['giant_slime', 140, 11.3], ['couch_king', 295, 11.4],
       // The meadow: animals to beat for what they drop.
-      ['cow', 38, 12.2], ['cow', 52, 11.6], ['chicken', 45, 9.6], ['chicken', 60, 10.4], ['boar', 30, 14]] as [CreatureKind, number, number][])
+      ['cow', 38, 12.2], ['cow', 52, 11.6], ['chicken', 45, 9.6], ['chicken', 60, 10.4], ['boar', 30, 14],
+      // The first Alpha, at the far edge of the meadow.
+      ['alpha_boar', 12, 14.6]] as [CreatureKind, number, number][])
       .map(([kind, deg, r], i) => ({ key: `mob:${i}`, kind, label: nl ? CREATURES[kind].nl : CREATURES[kind].en, x: Math.cos((deg * Math.PI) / 180) * r, z: Math.sin((deg * Math.PI) / 180) * r }))
       // The big ones only show themselves to an adventurer of their level.
       .filter((c) => (adventure.data?.level ?? 1) >= CREATURES[c.kind].level),
@@ -551,9 +555,64 @@ export function VillageWalkPage() {
   const mob = near?.startsWith('mob:') && !beaten.includes(near) ? creatures.find((c) => c.key === near) ?? null : null;
   // What was put right in real life today hits its own creature twice as hard.
   const strong = useMemo(() => new Set([...states.filter((x) => x.kind === 'buff').map((x) => x.key), ...(doneToday ? ['trained'] : [])]), [states, doneToday]);
+  // The hero's life: monsters hit back once struck, an Alpha attacks by itself. Play only: losing
+  // sends the hero back to the well with full life, nothing is lost.
+  const maxHp = heroMaxHp(adventure.data?.level ?? 1, doneToday);
+  const [heroHp, setHeroHp] = useState<number | null>(null);
+  const hp = Math.min(maxHp, heroHp ?? maxHp);
+  const [provoked, setProvoked] = useState<string[]>([]);
+  const [downBy, setDownBy] = useState<string | null>(null);
+  const [hitAt, setHitAt] = useState(0);
+  const lastHit = useRef(0);
+  const lastAttack = useRef<Record<string, number>>({});
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (downBy) return;
+      const now = Date.now();
+      const atk = mob ? ATTACKS[mob.kind] : null;
+      if (mob && atk && atk.damage > 0 && (atk.aggressive || provoked.includes(mob.key))) {
+        const since = now - (lastAttack.current[mob.key] ?? 0);
+        // The first blow comes after a short warning, then at the creature's own pace.
+        if (!lastAttack.current[mob.key]) lastAttack.current[mob.key] = now - atk.everyMs + 700;
+        else if (since >= atk.everyMs) {
+          lastAttack.current[mob.key] = now;
+          lastHit.current = now;
+          world.current?.lunge(mob.key);
+          setHitAt(now);
+          const dmg = hitOnHero(mob.kind, doneToday);
+          setHeroHp((h) => {
+            const left = Math.max(0, Math.min(maxHp, h ?? maxHp) - dmg);
+            if (left === 0) setDownBy(mob.label);
+            return left;
+          });
+        }
+        return;
+      }
+      if (mob) return;
+      // Out of a fight the life comes back by itself, after a little while.
+      if (now - lastHit.current > HERO_REGEN.afterMs) setHeroHp((h) => (h === null || h >= maxHp ? h : Math.min(maxHp, h + HERO_REGEN.perSecond / 2)));
+    }, 500);
+    return () => window.clearInterval(id);
+  }, [mob, provoked, downBy, maxHp, doneToday]);
+  // Walking away ends the fight: a creature forgets you once you are gone.
+  useEffect(() => {
+    if (!mob) lastAttack.current = {};
+  }, [mob]);
+  const respawn = () => {
+    const by = mob?.key;
+    setDownBy(null);
+    setHeroHp(maxHp);
+    setProvoked([]);
+    lastAttack.current = {};
+    // The creature heals too: the fight starts over.
+    if (by) setHurt((h) => ({ ...h, [by]: 0 }));
+    world.current?.goTo(WELL_KEY);
+  };
+
   const strike = async () => {
-    if (!mob) return;
+    if (!mob || downBy) return;
     world.current?.strike(mob.key);
+    if (!provoked.includes(mob.key)) setProvoked((p) => [...p, mob.key]);
     const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, weapon.power);
     if (left > 0) {
       setHurt((h) => ({ ...h, [mob.key]: CREATURES[mob.kind].hp - left }));
@@ -669,11 +728,21 @@ export function VillageWalkPage() {
         </Suspense>
 
         {/* Unit frame: who you are, your level and the way to the next one. */}
-        <Link to="/p/held" aria-label={L ? t(`Naar je held, level ${L.level}, ${pct}% naar het volgende level`, `To your hero, level ${L.level}, ${pct}% to the next level`) : t('Naar je held', 'To your hero')}
+        <Link to="/p/held" aria-label={L ? t(`Naar je held, level ${L.level}, ${pct}% naar het volgende level, leven ${Math.ceil(hp)} van ${maxHp}`, `To your hero, level ${L.level}, ${pct}% to the next level, life ${Math.ceil(hp)} of ${maxHp}`) : t('Naar je held', 'To your hero')}
           className={`${PANEL} absolute left-2 top-2 flex items-center gap-2 py-1 pl-1 pr-3`}>
           {L && <LevelBadge level={L.level} size={38} />}
           <span className="min-w-0">
             <span className="block max-w-[120px] truncate font-display text-[13.5px] font-bold leading-tight text-[#f6e2a6]">{d?.hero?.heroName ?? t('Je dorp', 'Your village')}</span>
+            {/* Life: green to red, with the numbers; it drops when a creature hits. */}
+            {d?.hero && (
+              <span data-testid="hero-hp" data-hp={Math.ceil(hp)} data-max={maxHp} aria-hidden className="mt-0.5 flex w-[112px] items-center gap-1">
+                <Heart className="h-3 w-3 shrink-0 fill-[#e2574a] text-[#e2574a]" />
+                <span className="relative block h-[9px] min-w-0 flex-1 overflow-hidden rounded-sm border border-black/70 bg-black/60">
+                  <span className="absolute inset-y-0 left-0 transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${(hp / maxHp) * 100}%`, background: hp / maxHp > 0.5 ? '#4ad06a' : hp / maxHp > 0.25 ? '#f0b429' : '#e2574a' }} />
+                </span>
+                <span className="shrink-0 text-[9.5px] font-semibold leading-none tabular-nums text-white/90">{Math.ceil(hp)}/{maxHp}</span>
+              </span>
+            )}
             {L && (
               <>
                 <span className="mt-0.5 block h-[9px] w-[112px] overflow-hidden rounded-sm border border-black/70 bg-black/60">
@@ -721,13 +790,13 @@ export function VillageWalkPage() {
 
         {/* On the way: where to, and a way to stop. */}
         {dest ? (
-          <p role="status" data-testid="on-the-way" className={`${PANEL} absolute left-2 flex max-w-[172px] items-center gap-2 py-1 pl-2.5 pr-1 text-[12.5px] ${panel === 'meters' ? 'top-[232px]' : 'top-[108px]'}`}>
+          <p role="status" data-testid="on-the-way" className={`${PANEL} absolute left-2 flex max-w-[172px] items-center gap-2 py-1 pl-2.5 pr-1 text-[12.5px] ${panel === 'meters' ? 'top-[246px]' : 'top-[122px]'}`}>
             <Footprints className="h-4 w-4 shrink-0 text-[#ffd76a]" aria-hidden />
             <span className="min-w-0 flex-1 leading-tight">{t(`Onderweg naar ${placeName(dest)}`, `On the way to ${placeName(dest)}`)}</span>
             <button type="button" onClick={() => world.current?.stop()} className="min-h-[32px] rounded-md px-2 font-semibold text-[#ffd76a] hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]">{t('Stop', 'Stop')}</button>
           </p>
         ) : tip ? (
-          <p className={`${PANEL} absolute left-[56px] top-[62px] flex max-w-[176px] items-start gap-1 py-1.5 pl-2.5 pr-1 text-[12.5px] leading-snug`}>
+          <p className={`${PANEL} absolute left-[56px] top-[76px] flex max-w-[176px] items-start gap-1 py-1.5 pl-2.5 pr-1 text-[12.5px] leading-snug`}>
             <span className="min-w-0 flex-1">{t('Tik op een taak of op de kaart: je held loopt er vanzelf heen.', 'Tap a task or the map: your hero walks there by itself.')}</span>
             <button type="button" onClick={hideTip} aria-label={t('Tip sluiten', 'Close tip')} className="grid min-h-[32px] min-w-[32px] place-items-center rounded-md text-[#ffd76a] hover:bg-white/10">✕</button>
           </p>
@@ -756,9 +825,16 @@ export function VillageWalkPage() {
               <button type="button" onClick={() => setPlacing(null)} className="min-h-[36px] rounded-md px-2 font-semibold text-[#ffd76a] hover:bg-white/10">{t('Annuleer', 'Cancel')}</button>
             </p>
           ) : mob ? (
+            <span className="flex flex-col items-center gap-1.5">
+            {isAlpha(mob.kind) && (
+              <p role="status" data-testid="alpha-warning" className={`${PANEL} max-w-[300px] border-[#ff8a6e] px-3 py-1.5 text-center text-[13px] leading-snug`}>
+                {t(`Alfa! Hij valt zelf aan en slaat hard. Eerlijk gevecht vanaf avonturier ${ALPHA_ADVISED_LEVEL}, met een goed wapen.`, `Alpha! It attacks by itself and hits hard. A fair fight from adventurer ${ALPHA_ADVISED_LEVEL}, with a good weapon.`)}
+              </p>
+            )}
             <Button size="lg" data-testid="strike" className="pointer-events-auto border border-[#ffb3a1] shadow-lift" icon={<Swords className="h-5 w-5" />} onClick={() => void strike()}>
               {t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : ''}
             </Button>
+            </span>
           ) : near === BOXING_KEY ? (
             <Button size="lg" data-testid="open-boxing" className="pointer-events-auto border border-[#ffd76a] shadow-lift" icon={<Swords className="h-5 w-5" />} onClick={() => { setRoundNo((n) => n + 1); setBoxingOpen(true); }}>{t('Train op de bokszak', 'Train on the bag')}</Button>
           ) : near === WELL_KEY ? (
@@ -789,9 +865,12 @@ export function VillageWalkPage() {
           ) : null}
         </div>
 
+        {/* Red flash at the edges when a creature lands a blow. */}
+        {hitAt > 0 && <div key={hitAt} className="hero-hit pointer-events-none absolute inset-0 z-[5]" aria-hidden />}
+
         {/* Meters of the day, as in a game: protein, steps and water. A tap opens the quick log on that tab. */}
         {d?.hero && d.logs && (
-          <div className="absolute left-[58px] top-[62px] flex flex-col items-start gap-[3px]" data-testid="world-meters">
+          <div className="absolute left-[58px] top-[76px] flex flex-col items-start gap-[3px]" data-testid="world-meters">
             {/* Folded: three small gauges in one button. Open: the full meters, the flask and the adventurer level. */}
             <button type="button" data-testid="toggle-meters" aria-expanded={panel === 'meters'} onClick={() => openPanel(panel === 'meters' ? null : 'meters')}
               aria-label={t('Meters van vandaag: eiwit, beweging en water', 'Today’s meters: protein, movement and water')}
@@ -837,7 +916,7 @@ export function VillageWalkPage() {
         )}
 
         {(thirsty || stiff) && !dest && (
-          <ul className={`absolute left-2 flex max-w-[190px] flex-wrap gap-1 ${panel === 'meters' ? 'top-[232px]' : 'top-[108px]'}`} data-testid="world-states" aria-label={t('Hoe je held zich voelt', 'How your hero feels')}>
+          <ul className={`absolute left-2 flex max-w-[190px] flex-wrap gap-1 ${panel === 'meters' ? 'top-[246px]' : 'top-[122px]'}`} data-testid="world-states" aria-label={t('Hoe je held zich voelt', 'How your hero feels')}>
             {thirsty && (
               <li><button type="button" onClick={() => world.current?.goTo(WELL_KEY)}
                 aria-label={t('Dorst: je loopt trager. Tik om naar de waterput te lopen.', 'Thirsty: you walk slower. Tap to walk to the well.')}
@@ -853,7 +932,7 @@ export function VillageWalkPage() {
 
         {/* Action bar. */}
         <button type="button" data-testid="toggle-full" aria-pressed={full} onClick={() => setFull((v) => !v)} aria-label={full ? t('Volledig scherm sluiten', 'Leave full screen') : t('Volledig scherm', 'Full screen')}
-          className="absolute left-2 top-[62px] grid h-10 w-10 place-items-center rounded-lg border border-[#e4bc63]/70 bg-[#141c18]/85 text-[#f6e2a6] shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]">
+          className="absolute left-2 top-[76px] grid h-10 w-10 place-items-center rounded-lg border border-[#e4bc63]/70 bg-[#141c18]/85 text-[#f6e2a6] shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]">
           {full ? <Minimize2 className="h-5 w-5" aria-hidden /> : <Maximize2 className="h-5 w-5" aria-hidden />}
         </button>
         <nav aria-label={t('Snelbalk', 'Action bar')} className="absolute bottom-2 left-2 flex gap-1.5">
@@ -988,6 +1067,15 @@ export function VillageWalkPage() {
           ))}
         </ul>
         <Link to="/p/wereld" className="mt-3 inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">{t('Naar de wereldkaart met je route', 'To the world map with your route')}<ChevronRight className="h-4 w-4" aria-hidden /></Link>
+      </Dialog>
+
+      <Dialog open={!!downBy} onClose={respawn} title={t('Je bent verslagen', 'You were beaten')} size="sm"
+        description={t(`${downBy ?? ''} was te sterk deze keer.`, `${downBy ?? ''} was too strong this time.`)}
+        footer={<Button size="lg" className="w-full" data-testid="respawn" icon={<Droplets className="h-5 w-5" />} onClick={respawn}>{t('Opstaan bij de waterput', 'Get up at the well')}</Button>}>
+        <div data-testid="hero-down" className="space-y-2 text-[15px] leading-relaxed text-ink-800">
+          <p>{t('Je verliest niets: je held staat weer op bij de waterput, met al zijn leven terug.', 'You lose nothing: your hero gets up at the well, with all life back.')}</p>
+          <p>{t('Sterker terugkomen? Koop een beter wapen bij de wapensmid, of doe vandaag je training: dan heeft je held een kwart meer leven en komen klappen minder hard aan.', 'Come back stronger? Buy a better weapon at the armourer, or do today’s workout: then your hero has a quarter more life and blows land softer.')}</p>
+        </div>
       </Dialog>
 
       <Dialog open={tvOpen} onClose={() => { setTvOpen(false); setPlaying(null); }} title={t('Je oefeningen van vandaag', "Today's exercises")} size="md" sheet>

@@ -1,6 +1,6 @@
 import { weaponMesh } from './weapons3d';
 import { creature } from './creatures3d';
-import { CREATURES, type CreatureKind } from '@shared/adventure';
+import { CREATURES, isAlpha, type CreatureKind } from '@shared/adventure';
 import { dress } from '@/components/hero/fabric3d';
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
@@ -44,7 +44,7 @@ const HOME_REACH = [1.3, 1.5, 1.8, 2.2, 2.8, 3.1];
 const STREET_HOME = 0.85;
 /** A room behind a door in the village. */
 type Place = { group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[] };
-export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key`: the hero turns to it and it flinches. */ strike: (key: string) => void };
+export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key`: the hero turns to it and it flinches. */ strike: (key: string) => void; /** The creature `key` lunges at the hero. */ lunge: (key: string) => void };
 /** The bag of the boxing school in the village. */
 export const BOXING_KEY = 'boxing';
 const BOXING_AT: Vec = { x: -3.1, z: 5.4 };
@@ -888,7 +888,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     scene.add(well3d, wellWater);
     obstacles.push({ x: 0, z: 0, r: 0.95 });
     // Creatures: each at its spot, with a place beside it to stand and strike from.
-    const mobs: { key: string; g: THREE.Group; door: Vec; hurtAt: number }[] = [];
+    const mobs: { key: string; g: THREE.Group; door: Vec; hurtAt: number; lungeAt: number; x: number; z: number }[] = [];
     let swing = 0;
     let armR: THREE.Object3D | null = null;
     let fpsFrames = 0;
@@ -900,11 +900,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       g.lookAt(0, 0, 0);
       scene.add(g);
       const len = Math.hypot(c.x, c.z) || 1;
-      const door = { x: c.x * (1 - 0.85 / len), z: c.z * (1 - 0.85 / len) };
-      anchors.push({ id: c.key, obj: g, y: 1.0 });
+      // An Alpha is big: the hero stands further off, and its label floats higher.
+      const big = isAlpha(c.kind);
+      const reach = big ? 2.3 : 0.85;
+      const door = { x: c.x * (1 - reach / len), z: c.z * (1 - reach / len) };
+      anchors.push({ id: c.key, obj: g, y: big ? 2.9 : 1.0 });
       spots.push({ key: c.key, door });
-      obstacles.push({ x: c.x, z: c.z, r: 0.38 });
-      mobs.push({ key: c.key, g, door, hurtAt: 0 });
+      obstacles.push({ x: c.x, z: c.z, r: big ? 1.4 : 0.38 });
+      mobs.push({ key: c.key, g, door, hurtAt: 0, lungeAt: 0, x: c.x, z: c.z });
     }
     if (boxing) {
       // The boxing school: four posts with ropes, a mat and the heavy bag on its stand.
@@ -1794,6 +1797,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           swing = 0.32;
           mob.hurtAt = performance.now() + 140;
         },
+        lunge: (k) => {
+          const mob = mobs.find((x) => x.key === k);
+          if (!mob) return;
+          mob.g.lookAt(pos.current.x, 0, pos.current.z);
+          mob.lungeAt = performance.now();
+        },
         stop: () => {
           goal = null;
           clearTrail();
@@ -2147,6 +2156,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           const since = performance.now() - mob.hurtAt;
           const flat = since >= 0 && since < 260 ? Math.sin((since / 260) * Math.PI) * 0.45 : 0;
           mob.g.scale.set(1 + (1 - hop) * 0.06 + flat * 0.5, (0.94 + hop * 0.1) * (1 - flat), 1 + (1 - hop) * 0.06 + flat * 0.5);
+          // An attack: a quick lunge towards the hero and back.
+          const lt = performance.now() - mob.lungeAt;
+          const out = lt >= 0 && lt < 360 ? Math.sin((lt / 360) * Math.PI) : 0;
+          const dx = pos.current.x - mob.x;
+          const dz = pos.current.z - mob.z;
+          const dl = Math.hypot(dx, dz) || 1;
+          mob.g.position.x = mob.x + (dx / dl) * out * 0.45;
+          mob.g.position.z = mob.z + (dz / dl) * out * 0.45;
         });
         // Villagers only live while the hero is in the village: indoors nobody sees them.
         if (!indoor) {

@@ -231,3 +231,8 @@
   .dark .border-\[\#D5C8AF\] { border-color: #4a4335; }
   .dark .border-\[\#C9D7C2\] { border-color: #3a4a3f; }
 }
+
+/* Village: a red flash at the edges when a creature hits the hero. */
+@keyframes hero-hit { 0% { box-shadow: inset 0 0 0 0 rgba(226, 52, 40, 0); } 25% { box-shadow: inset 0 0 70px 18px rgba(226, 52, 40, 0.55); } 100% { box-shadow: inset 0 0 0 0 rgba(226, 52, 40, 0); } }
+.hero-hit { animation: hero-hit 0.5s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) { .hero-hit { animation: none; } }
