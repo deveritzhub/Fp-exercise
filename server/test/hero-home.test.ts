@@ -120,9 +120,9 @@ describe('tools and the plant-based way', () => {
     expect((await p.post('/patient/hero/adventure/tool/buy', { key: 'spade' })).body.error).toBe('unknown_item');
     const before = (await p.get('/patient/hero/adventure')).body;
     const bought = await p.post('/patient/hero/adventure/tool/buy', { key: 'hatchet' });
-    expect(bought.status).toBe(201);
+    expect(bought.status).toBe(200);
     expect(bought.body.tools).toEqual(['hatchet']);
-    expect(bought.body.coins).toBe(before.coins - 40);
+    expect(bought.body.coins).toBe(before.coins - 25);
     expect((await p.post('/patient/hero/adventure/tool/buy', { key: 'hatchet' })).body.error).toBe('gear_owned');
 
     // An oak with the hatchet: always an even number of wood (doubled); a rock by hand is not doubled.

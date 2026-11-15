@@ -420,7 +420,7 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
 
 116. [x] **Bessen en gereedschap** (15 nov): bessenstruiken om te plukken; dierlijke buit in de
     huiskosten is ook met bessen te betalen (huid/bot 3, slagtand 5, Alfaslagtand 25), zodat niemand
-    hoeft te jagen. Hakbijl (40 muntjes, eiken) en pikhouweel (60, rotsen): slag telt 3×, opbrengst 2×
+    hoeft te jagen. Hakbijl (25 muntjes, nodig voor eiken; van de andere sessie) en pikhouweel (60, rotsen; met de hand kan ook): slag telt 3×, opbrengst 2×
     (server bepaalt de opbrengst); het gereedschap is in de hand te zien.
 
 113. [ ] **Echte app met Health Connect en Apple Health**: akkoord eigenaar 15 nov; plan en stappen in
