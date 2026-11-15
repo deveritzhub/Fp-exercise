@@ -14,6 +14,8 @@ export type DecorItem = {
   r: number;
   /** Hero level from which the shop sells it. */
   level: number;
+  /** Not sold: made in the village (from loot) and then placed like the rest. */
+  made?: boolean;
 };
 
 /** Keys match hero_purchases.item (lower case and underscores only). */
@@ -31,6 +33,7 @@ export const DECOR: DecorItem[] = [
   { key: 'home_sofa', nl: 'Bank', en: 'Sofa', price: 90, kind: 'seat', r: 0.8, level: 6 },
   { key: 'home_chest', nl: 'Schatkist', en: 'Treasure chest', price: 100, kind: 'storage', r: 0.45, level: 8 },
   { key: 'home_fireplace', nl: 'Open haard', en: 'Fireplace', price: 150, kind: 'light', r: 0.7, level: 10 },
+  { key: 'home_lootchest', nl: 'Buitkist', en: 'Loot chest', price: 0, kind: 'storage', r: 0.4, level: 1, made: true },
   { key: 'home_statue', nl: 'Gouden beeld', en: 'Golden statue', price: 250, kind: 'wall', r: 0.4, level: 15 },
 ];
 export const DECOR_KEYS = new Set(DECOR.map((d) => d.key));

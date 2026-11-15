@@ -133,6 +133,7 @@ const ERRORS: Record<string, [string, string]> = {
   gear_not_owned: ['Dit item heb je nog niet gekocht.', 'You have not bought this item yet.'],
   strength_too_low: ['Hier is je kracht-skill nog niet hoog genoeg voor. Die groeit met je krachttraining.', 'Your strength skill is not high enough for this yet. It grows with your strength training.'],
   tool_required: ['Hier heb je een hakbijl voor nodig. Koop er een bij de wapensmid.', 'You need a hatchet for this. Buy one at the armourer.'],
+  backpack_full: ['Je rugzak zit vol van dit soort. Maak een kist om meer te bewaren.', 'Your backpack is full of this kind. Make a chest to keep more.'],
   not_enough_loot: ['Je hebt hier nog niet genoeg buit voor.', 'You do not have enough loot for this yet.'],
   level_too_low: ['Hier is je avonturier nog niet sterk genoeg voor. Versla meer kwaaltjes.', 'Your adventurer is not strong enough for this yet. Beat more ailments.'],
   gear_owned: ['Dit item heb je al.', 'You already own this item.'],

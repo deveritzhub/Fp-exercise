@@ -141,6 +141,10 @@ export const LOOT = {
   wood: { nl: 'Hout', en: 'Wood', icon: '🪵' },
   stone: { nl: 'Steen', en: 'Stone', icon: '🪨' },
   berries: { nl: 'Bessen', en: 'Berries', icon: '🫐' },
+  // Cooked at the campfire: eaten in the village, they bring the hero's life back.
+  cooked_meat: { nl: 'Gebraden vlees', en: 'Roast meat', icon: '🍖' },
+  fried_egg: { nl: 'Gebakken ei', en: 'Fried egg', icon: '🍳' },
+  berry_tart: { nl: 'Bessentaart', en: 'Berry tart', icon: '🥧' },
 } as const;
 export type LootKey = keyof typeof LOOT;
 export const LOOT_KEYS = Object.keys(LOOT) as LootKey[];
@@ -207,3 +211,36 @@ export type Recipe = (typeof RECIPES)[number];
 export const builtItem = (key: string) => `built_${key}`;
 /** How many of one kind of loot the backpack holds; a chest holds far more. */
 export const LOOT_CAP = { backpack: 20, chest: 99 } as const;
+
+/** Cooking at the campfire: raw loot becomes food that heals the hero in the village. */
+export const COOKING = [
+  { key: 'cooked_meat', needs: { meat: 1 }, heals: 0.5 },
+  { key: 'fried_egg', needs: { egg: 1 }, heals: 0.3 },
+  // Plant-based: berries make a tart that heals as much as meat.
+  { key: 'berry_tart', needs: { berries: 4 }, heals: 0.5 },
+] as const satisfies readonly { key: LootKey; needs: Partial<Record<LootKey, number>>; heals: number }[];
+export type Dish = (typeof COOKING)[number];
+export const dishByKey = (key: string): Dish | null => COOKING.find((d) => d.key === key) ?? null;
+
+/**
+ * The adventure's task of the day: one per day, the same all day, different from patient to patient.
+ * Done, it gives a bonus of adventure XP once.
+ */
+export const DAILY_QUESTS = [
+  { key: 'oak', kind: 'oak', n: 3, nl: 'Hak 3 eiken', en: 'Chop 3 oaks' },
+  { key: 'rock', kind: 'rock', n: 2, nl: 'Breek 2 rotsen', en: 'Break 2 rocks' },
+  { key: 'bush', kind: 'bush', n: 3, nl: 'Pluk 3 bessenstruiken', en: 'Pick 3 berry bushes' },
+  { key: 'slime', kind: 'slime', n: 3, nl: 'Versla 3 stijfheidsslijmen', en: 'Beat 3 stiffness slimes' },
+  { key: 'imp', kind: 'imp', n: 2, nl: 'Versla 2 dorstduiveltjes', en: 'Beat 2 thirst imps' },
+  { key: 'couch', kind: 'couch', n: 2, nl: 'Versla 2 bankhangers', en: 'Beat 2 couch lurkers' },
+  { key: 'cow', kind: 'cow', n: 2, nl: 'Versla 2 koeien', en: 'Beat 2 cows' },
+  { key: 'chicken', kind: 'chicken', n: 3, nl: 'Versla 3 kippen', en: 'Beat 3 chickens' },
+] as const satisfies readonly { key: string; kind: CreatureKind; n: number; nl: string; en: string }[];
+export type DailyQuest = (typeof DAILY_QUESTS)[number];
+export const ADVENTURE_QUEST_XP = 40;
+/** Today's task for this patient: `day` as YYYY-MM-DD. */
+export function dailyQuest(day: string, seed: string): DailyQuest {
+  let h = 2166136261;
+  for (const ch of `${day}|${seed}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  return DAILY_QUESTS[h % DAILY_QUESTS.length];
+}

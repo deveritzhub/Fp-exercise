@@ -17,6 +17,7 @@ const eye = (g: THREE.Group, x: number, y: number, z: number, r = 0.055) => {
 
 /** The sculpted models (web/public/village/creatures). Bump the version when a file changes. */
 const MODEL: Partial<Record<CreatureKind, { file: string; scale: number }>> = {
+  oak: { file: 'eik', scale: 1 },
   slime: { file: 'stijfheidsslijm', scale: 0.9 },
   imp: { file: 'dorstduiveltje', scale: 0.95 },
   couch: { file: 'bankhanger', scale: 1 },
@@ -26,7 +27,7 @@ const MODEL: Partial<Record<CreatureKind, { file: string; scale: number }>> = {
   cow: { file: 'koe', scale: 0.92 },
   boar: { file: 'zwijn', scale: 1 },
 };
-const CREATURES_VERSION = 1;
+const CREATURES_VERSION = 2;
 
 /**
  * A creature for the village: the sculpted model, with the simple one made here standing in until
@@ -43,7 +44,15 @@ export function creature(kind: CreatureKind): THREE.Group {
     .then((gltf) => {
       const model = gltf.scene.clone(true);
       model.scale.setScalar(m3.scale);
-      model.traverse((o) => { o.castShadow = true; });
+      model.traverse((o) => {
+        o.castShadow = true;
+        // A file with colours on its points but no material of its own would come out as dark metal.
+        const mm = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+        if (mm?.isMeshStandardMaterial && mm.metalness === 1 && !mm.map) {
+          mm.metalness = 0;
+          mm.roughness = 0.85;
+        }
+      });
       g.remove(simple);
       g.add(model);
     })

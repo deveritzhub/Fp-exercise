@@ -753,6 +753,7 @@ export function VillageWalkPage() {
             creatureHurt={hurt}
             boxing={!!d?.hero}
             belt={karate.data && karate.data.belt > 0 ? BELTS[karate.data.belt].color : null}
+            tools={adventure.data?.tools}
             weapon={hasTool && mobTool ? mobTool.key : mob && isHarvest(mob.kind) ? null : weapon.key === 'fists' ? null : weapon.key}
             pace={pace}
             api={world}

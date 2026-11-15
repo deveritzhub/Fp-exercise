@@ -7,6 +7,7 @@ import { describeError, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import { Button, Card, Spinner, useToast } from '@/components/ui';
 import type { HeroState } from '@/lib/types';
+import { ItemIcon } from './ItemIcon';
 import { useSupplies } from '@/lib/supplies';
 
 type Adventure = { level: number; weapon: string | null; owned: string[]; coins: number; loot?: Record<string, number>; tools?: string[]; built?: string[]; strength?: number; lootCap?: number };
@@ -80,7 +81,7 @@ export function BackpackCard({ d }: { d: HeroState }) {
           return (
             <li key={w.key} data-weapon={w.key} data-state={on ? 'on' : owned ? 'owned' : locked ? 'locked' : 'shop'}
               className={cn('flex items-center gap-3 rounded-xl border p-2.5', on ? 'border-[#b8892a] bg-[#fbf0d9]' : 'border-line bg-white')}>
-              <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">{ICON[w.key] ?? '⚔️'}</span>
+              <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]"><ItemIcon k={w.key} emoji={ICON[w.key] ?? '⚔️'} /></span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[14.5px] font-semibold text-ink-950">{name}</span>
                 <span className="block text-[12.5px] text-ink-700">
@@ -114,7 +115,7 @@ export function BackpackCard({ d }: { d: HeroState }) {
           const short = !has && (a?.coins ?? 0) < tool.price;
           return (
             <li key={tool.key} data-tool={tool.key} data-state={has ? 'owned' : 'shop'} className="flex items-center gap-3 rounded-xl border border-line bg-white p-2.5">
-              <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">{tool.icon}</span>
+              <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]"><ItemIcon k={tool.key} emoji={tool.icon} /></span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[14.5px] font-semibold text-ink-950">{name}</span>
                 <span className="block text-[12.5px] text-ink-700">{tool.key === 'hatchet' ? t('Nodig om eiken te hakken; geeft dubbel zoveel hout.', 'Needed to chop oaks; gives twice the wood.') : t('Rotsen breken drie keer zo snel en geven dubbel zoveel steen. Met de hand kan het ook.', 'Rocks break three times as fast and give twice the stone. By hand works too.')}{!has && <> · <span className="inline-flex items-center gap-0.5 font-semibold text-[#855806]"><Coins className="h-3 w-3" aria-hidden />{tool.price}</span></>}</span>
@@ -148,11 +149,11 @@ export function BackpackCard({ d }: { d: HeroState }) {
           });
           return (
             <li key={r.key} data-recipe={r.key} data-state={have ? 'made' : low ? 'locked' : enough ? 'ready' : 'short'} className={cn('flex items-center gap-3 rounded-xl border p-2.5', have ? 'border-[#b8892a] bg-[#fbf0d9]' : 'border-line bg-white')}>
-              <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">{r.icon}</span>
+              <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]"><ItemIcon k={r.key} emoji={r.icon} /></span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[14.5px] font-semibold text-ink-950">{name}</span>
                 <span className="block text-[12.5px] text-ink-700">
-                  {needs.map(([k, n], i) => <span key={k}>{i > 0 && ' · '}<span aria-hidden>{LOOT[k].icon}</span> {(nl ? LOOT[k].nl : LOOT[k].en).toLowerCase()} {Math.min(a?.loot?.[k] ?? 0, n)}/{n}</span>)}
+                  {needs.map(([k, n], i) => <span key={k}>{i > 0 && ' · '}<span className="inline-grid h-4 w-4 place-items-center align-[-3px]"><ItemIcon k={k} emoji={LOOT[k].icon} className="!h-4 !w-4" /></span> {(nl ? LOOT[k].nl : LOOT[k].en).toLowerCase()} {Math.min(a?.loot?.[k] ?? 0, n)}/{n}</span>)}
                 </span>
               </span>
               {have ? <span className="shrink-0 text-[12.5px] font-semibold text-[#6b4705]">{t('Heb je', 'Owned')}</span>
@@ -172,7 +173,7 @@ export function BackpackCard({ d }: { d: HeroState }) {
           return (
             <li key={k} data-loot={k} data-n={n} title={n > 0 ? name : undefined} aria-label={n > 0 ? `${name}: ${n}` : t('Nog niet gevonden', 'Not found yet')}
               className={cn('relative grid aspect-square place-items-center rounded-xl border text-[24px]', n > 0 ? 'border-[#e4bc63] bg-[#fbf0d9]' : 'border-line bg-canvas text-ink-600')}>
-              <span aria-hidden>{n > 0 ? LOOT[k].icon : '?'}</span>
+              {n > 0 ? <ItemIcon k={k} emoji={LOOT[k].icon} /> : <span aria-hidden>?</span>}
               {n > 0 && <span aria-hidden className="absolute bottom-0.5 right-1 text-[11.5px] font-bold tabular-nums text-ink-950">{n}</span>}
             </li>
           );
