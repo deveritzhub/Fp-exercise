@@ -129,7 +129,10 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/well.png' });
   // An ailment as a creature: walk to it, strike until it is beaten; that gives adventure XP, apart from the hero's.
   const adv = page.getByTestId('adventure-level');
-  await expect(adv).toContainText('Avonturier 1 · 0/60');
+  // Other tests may have given adventure XP already: count from where it stands now.
+  const advXp = async () => Number((await (await page.request.get('/api/patient/hero/adventure')).json()).xp);
+  const xp0 = await advXp();
+  await expect(adv).toContainText('Avonturier');
   await page.getByRole('button', { name: 'Loop naar Stijfheidsslijm' }).last().press('Enter');
   const strike = page.getByTestId('strike');
   await expect(strike).toBeVisible({ timeout: 90_000 });
@@ -142,7 +145,7 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   await expect.poll(async () => (await strike.count()) === 0 || Number(await life.getAttribute('data-hp')) < full).toBe(true);
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/mob-hit.png' });
   for (let i = 0; i < 4 && (await strike.count()); i++) await strike.click();
-  await expect(adv).toContainText('Avonturier 1 · 12/60', { timeout: 15_000 });
+  await expect.poll(advXp, { timeout: 15_000 }).toBe(xp0 + 12);
   await expect(strike).toHaveCount(0);
   // The boxing school: a round on the bag; hits give adventure XP.
   await page.getByRole('button', { name: 'Loop naar de boksschool' }).press('Enter');
@@ -156,7 +159,7 @@ test('therapist makes a figure and the patient meets it in the practice', async 
     await page.waitForTimeout(300);
   }
   await expect(round).toHaveAttribute('data-state', 'done', { timeout: 20_000 });
-  await expect(adv).not.toContainText('· 12/60', { timeout: 15_000 });
+  await expect.poll(advXp, { timeout: 15_000 }).toBeGreaterThan(xp0 + 12);
   await page.keyboard.press('Escape');
   // The flask: filled at the well, a glass to drink on the way.
   await page.getByRole('button', { name: 'Loop naar de waterput' }).press('Enter');

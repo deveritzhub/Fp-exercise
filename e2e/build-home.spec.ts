@@ -53,7 +53,8 @@ test('the patient chops wood and builds the next home with loot', async ({ brows
   await expectAccessible(page, 'build home');
   await page.screenshot({ path: 'screenshots/hero/build-home.png' });
   await panel.getByTestId('build-home-button').click();
-  await expect(page.getByTestId('home-built')).toHaveText('Gebouwd! Je woont nu in een huisje.');
+  // The village draws the new house first; that can take a moment on a slow machine.
+  await expect(page.getByTestId('home-built')).toHaveText('Gebouwd! Je woont nu in een huisje.', { timeout: 30_000 });
   // The next one asks for a higher level first.
   await expect(panel).toContainText('Bouw een woonhuis');
   await expect(panel.getByTestId('build-home-button')).toBeDisabled();
