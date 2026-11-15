@@ -350,6 +350,22 @@ export function VillageWalkPage() {
     return [doneToday ? t('Alles gedaan voor vandaag!', 'All done for today!') : t('Vandaag geen oefeningen', 'No exercises today')];
   }, [home.data, todo, doneToday, nl, t]);
 
+  // Doors open by themselves: standing at the door of a house or shop, the hero walks in. Not while
+  // passing by on the way elsewhere, not right after stepping out, and not when a task waits at this door.
+  const leftBy = useRef(false);
+  useEffect(() => {
+    if (!near) {
+      leftBy.current = false;
+      return;
+    }
+    const b = buildings.find((x) => x.key === near);
+    if (!b || leftBy.current || !(('keeper' in b && b.keeper) || 'kind' in b)) return;
+    if (dest && dest !== near) return;
+    if (errand?.link && errand.dest === near) return;
+    const id = window.setTimeout(() => world.current?.use(near), dest ? 150 : 700);
+    return () => window.clearTimeout(id);
+  }, [near, dest, buildings, errand]);
+
   if (home.isError) return <ErrorState error={home.error} onRetry={() => home.refetch()} />;
   const L = d?.level;
   const nearBuilding = buildings.find((b) => b.key === near) ?? null;
@@ -642,6 +658,7 @@ export function VillageWalkPage() {
             track={track}
             stick={stick}
             onNear={setNear}
+            onZone={(z) => { if (z === 'village') leftBy.current = true; }}
             onTalk={setTalk}
             onDestination={(k) => { setDest(k); if (!k) return; hideTip(); }}
             onArrive={(k) => { if (k === TV_KEY) setTvOpen(true); }}

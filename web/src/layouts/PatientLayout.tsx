@@ -2,7 +2,7 @@ import { useView } from '@/components/patient/ViewChoice';
 import { useEffect } from 'react';
 import { TestBanner } from '@/components/app/TestBanner';
 import { WelcomeTour } from '@/components/patient/WelcomeTour';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, CalendarCheck2, CloudOff, Dumbbell, HeartPulse, Move, RefreshCw, Settings, Trophy } from 'lucide-react';
 import type { PatientHomeData } from '@/pages/patient/PatientHome';
 import { isClinical } from '@shared/accountKind';
@@ -95,6 +95,26 @@ export function PatientLayout() {
   }, [inPlayer]);
   // Creating the hero is a focused flow: no tab bar.
   const inSetup = loc.pathname === '/p/held/nieuw';
+  // Opening the app after being away starts on Today, not in the game where it was left.
+  const nav = useNavigate();
+  useEffect(() => {
+    const KEY = 'fp.p.seen';
+    const stamp = () => { try { localStorage.setItem(KEY, String(Date.now())); } catch { /* storage optional */ } };
+    // Back after a quarter of an hour or more, and the game is what was left open: go to Today.
+    const back = () => {
+      try {
+        const seen = Number(localStorage.getItem(KEY)) || 0;
+        if (seen && Date.now() - seen > 15 * 60_000 && /^\/p\/(dorp|wereld)(\/|$)/.test(window.location.pathname)) nav('/p', { replace: true });
+      } catch { /* storage optional */ }
+      stamp();
+    };
+    back();
+    const id = window.setInterval(() => { if (document.visibilityState === 'visible') stamp(); }, 60_000);
+    const seenChange = () => (document.visibilityState === 'visible' ? back() : stamp());
+    document.addEventListener('visibilitychange', seenChange);
+    window.addEventListener('pagehide', stamp);
+    return () => { window.clearInterval(id); document.removeEventListener('visibilitychange', seenChange); window.removeEventListener('pagehide', stamp); };
+  }, [nav]);
   const home = useQuery({ queryKey: ['patient-home'], queryFn: () => api.get<PatientHomeData>('/patient/home'), enabled: !!user?.patient });
   const { simple: simpleView } = useView();
   const simple = simpleView === true;

@@ -28,3 +28,17 @@ test('"Start training" is in view on a phone without scrolling, under a compact 
   await expect(page).toHaveURL(/\/p$/);
   await context.close();
 });
+
+test('the app opens on Today after being away, not in the game where it was left', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'nl-NL' });
+  const page = await context.newPage();
+  await login(page, 'patient@praktijk-a.test');
+  // A short break: the village stays where it was.
+  await page.goto('/p/wereld');
+  await expect(page).toHaveURL(/\/p\/wereld$/);
+  // Away for an hour: back on Today.
+  await page.evaluate(() => localStorage.setItem('fp.p.seen', String(Date.now() - 3600_000)));
+  await page.goto('/p/dorp');
+  await expect(page).toHaveURL(/\/p$/);
+  await context.close();
+});
