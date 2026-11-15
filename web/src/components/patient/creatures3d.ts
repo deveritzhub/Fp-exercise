@@ -62,6 +62,22 @@ function simpleCreature(kind: CreatureKind): THREE.Group {
     }
     return g;
   }
+  if (kind === 'tree') {
+    // A tree to chop: a thick trunk with a round crown, and a notch where the hatchet goes.
+    const g = new THREE.Group();
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.24, 1.5, 9), m(0x6a4a2c, { roughness: 0.9 }));
+    trunk.position.y = 0.75;
+    const notch = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.12), m(0xe2c08a, { roughness: 0.8 }));
+    notch.position.set(0, 0.55, 0.19);
+    g.add(trunk, notch);
+    for (const [x, y, z, r] of [[0, 2.0, 0, 0.75], [0.42, 1.7, 0.1, 0.5], [-0.4, 1.75, -0.12, 0.52], [0.05, 2.5, -0.05, 0.5]] as const) {
+      const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), m(0x3f7d3a, { roughness: 0.85, flatShading: true }));
+      crown.position.set(x, y, z);
+      g.add(crown);
+    }
+    g.traverse((o) => { o.castShadow = true; });
+    return g;
+  }
   if (kind === 'chicken' || kind === 'cow' || kind === 'boar') return animal(kind);
   const g = new THREE.Group();
   if (kind === 'slime') {

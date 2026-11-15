@@ -58,6 +58,22 @@ describe('adventure in the village', () => {
     expect((await P.post('/patient/hero/adventure/win', { kind: 'cow' })).body.loot).toMatchObject({ hide: 2, bone: 2 });
     // A boar is not in the meadow yet for this adventurer.
     expect((await P.post('/patient/hero/adventure/win', { kind: 'boar' })).status).toBe(400);
+    // A tree asks for a hatchet; with one it gives wood. Wood, bones and a hide make a club and a chest.
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'tree' })).body.error).toBe('tool_required');
+    expect((await P.post('/patient/hero/adventure/tool/buy', { key: 'hatchet' })).body.tools).toEqual(['hatchet']);
+    expect((await P.post('/patient/hero/adventure/tool/buy', { key: 'hatchet' })).body.error).toBe('gear_owned');
+    expect((await P.post('/patient/hero/adventure/craft', { key: 'chest' })).body.error).toBe('not_enough_loot');
+    let wood = 0;
+    for (let i = 0; i < 12 && wood < 10; i++) wood = (await P.post('/patient/hero/adventure/win', { kind: 'tree' })).body.loot.wood;
+    // The backpack holds ten of a kind.
+    expect(wood).toBe(10);
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'tree' })).body.loot.wood).toBe(10);
+    const chest = await P.post('/patient/hero/adventure/craft', { key: 'chest' });
+    expect(chest.body).toMatchObject({ built: ['chest'], lootCap: 99, loot: { wood: 4, hide: 1, bone: 2 } });
+    expect((await P.post('/patient/hero/adventure/craft', { key: 'chest' })).body.error).toBe('gear_owned');
+    // The staff was bought already; the club asks for adventurer 4.
+    expect((await P.post('/patient/hero/adventure/craft', { key: 'staff' })).body.error).toBe('gear_owned');
+    expect((await P.post('/patient/hero/adventure/craft', { key: 'club' })).body.error).toBe('level_too_low');
     // A win keeps the weapon in hand.
     expect((await P.post('/patient/hero/adventure/win', { kind: 'slime' })).body.weapon).toBe('staff');
     // The home and its furniture are untouched by a weapon in the purchases.

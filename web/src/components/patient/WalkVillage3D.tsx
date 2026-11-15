@@ -888,7 +888,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     scene.add(well3d, wellWater);
     obstacles.push({ x: 0, z: 0, r: 0.95 });
     // Creatures: each at its spot, with a place beside it to stand and strike from.
-    const mobs: { key: string; g: THREE.Group; door: Vec; hurtAt: number }[] = [];
+    const mobs: { key: string; kind: CreatureKind; g: THREE.Group; door: Vec; hurtAt: number }[] = [];
+    // How the blow in progress is swung, how long it takes, and until when the hatchet is in hand.
+    let swingStyle: 'jab' | 'thrust' | 'slash' | 'overhead' = 'jab';
+    let swingFor = 0.32;
+    let chopUntil = 0;
     let swing = 0;
     let armR: THREE.Object3D | null = null;
     let fpsFrames = 0;
@@ -901,10 +905,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       scene.add(g);
       const len = Math.hypot(c.x, c.z) || 1;
       const door = { x: c.x * (1 - 0.85 / len), z: c.z * (1 - 0.85 / len) };
-      anchors.push({ id: c.key, obj: g, y: 1.0 });
+      anchors.push({ id: c.key, obj: g, y: c.kind === 'tree' ? 2.9 : c.kind === 'cow' ? 1.25 : 1.0 });
       spots.push({ key: c.key, door });
       obstacles.push({ x: c.x, z: c.z, r: 0.38 });
-      mobs.push({ key: c.key, g, door, hurtAt: 0 });
+      mobs.push({ key: c.key, kind: c.kind, g, door, hurtAt: 0 });
     }
     if (boxing) {
       // The boxing school: four posts with ropes, a mat and the heavy bag on its stand.
@@ -1514,7 +1518,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           let held: THREE.Group | null = null;
           let wearing: { weapon: string | null; belt: string | null } | null = null;
           equip = () => {
-            const want = { weapon: live.current.weapon, belt: live.current.belt };
+            // While chopping, the hatchet is in the hand instead of the weapon.
+            const want = { weapon: performance.now() < chopUntil ? 'axe' : live.current.weapon, belt: live.current.belt };
             if (wearing && wearing.weapon === want.weapon && wearing.belt === want.belt) return;
             wearing = want;
             if (waist) {
@@ -1791,8 +1796,15 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           if (!mob) return;
           facing.current = Math.atan2(mob.g.position.x - pos.current.x, mob.g.position.z - pos.current.z);
           hero.rotation.y = facing.current;
-          swing = 0.32;
-          mob.hurtAt = performance.now() + 140;
+          // Each weapon has its own blow: a jab with the fists, a thrust with staff and spear, a slash
+          // with a sword, and a swing from overhead with club, hammer and axe. A tree is chopped.
+          const w = live.current.weapon;
+          const chop = mob.kind === 'tree';
+          swingStyle = chop || w === 'club' || w === 'hammer' || w === 'axe' ? 'overhead' : w === 'sword' || w === 'hero_sword' ? 'slash' : w === 'staff' || w === 'spear' ? 'thrust' : 'jab';
+          swingFor = swingStyle === 'overhead' ? 0.56 : swingStyle === 'slash' ? 0.4 : swingStyle === 'thrust' ? 0.36 : 0.24;
+          swing = swingFor;
+          if (chop) chopUntil = performance.now() + 1600;
+          mob.hurtAt = performance.now() + swingFor * (swingStyle === 'overhead' ? 620 : 450);
         },
         stop: () => {
           goal = null;
@@ -2097,7 +2109,25 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         // A blow: the arm swings up and down over the motion that plays.
         if (swing > 0 && armR) {
           swing = Math.max(0, swing - dt);
-          armR.rotateX(-Math.sin((1 - swing / 0.32) * Math.PI) * 1.5);
+          const u = 1 - swing / swingFor;
+          const arc = Math.sin(u * Math.PI);
+          if (swingStyle === 'overhead') {
+            // Up behind the head, then down hard, a little past level.
+            const up = u < 0.5 ? Math.sin((u / 0.5) * Math.PI / 2) : Math.max(-0.15, Math.cos(((u - 0.5) / 0.28) * Math.PI / 2));
+            armR.rotateX(-2.7 * up);
+            figure.rotation.x = u < 0.5 ? -0.12 * arc : 0.22 * arc;
+          } else if (swingStyle === 'slash') {
+            armR.rotateX(-1.35 * arc);
+            armR.rotateZ((0.9 - 1.8 * u) * arc);
+            figure.rotation.y = (0.5 - u) * 0.5 * arc;
+          } else if (swingStyle === 'thrust') {
+            armR.rotateX(-1.45 * Math.sqrt(arc));
+            figure.rotation.x = 0.2 * arc;
+          } else {
+            armR.rotateX(-1.5 * arc);
+            figure.rotation.x = 0.08 * arc;
+          }
+          if (swing === 0) figure.rotation.set(0, 0, 0);
         }
         figure.position.y = jump * 0.6;
       } else {
@@ -2141,10 +2171,15 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         // Creatures hop on the spot; a beaten one is away until it comes back.
         mobs.forEach((mob, i) => {
           mob.g.visible = !live.current.gone.has(mob.key);
+          const since = performance.now() - mob.hurtAt;
+          // A tree stands still, and shakes when the hatchet lands.
+          if (mob.kind === 'tree') {
+            mob.g.rotation.z = since >= 0 && since < 420 ? Math.sin((since / 420) * Math.PI * 3) * 0.07 * (1 - since / 420) : 0;
+            return;
+          }
           const hop = Math.abs(Math.sin(performance.now() / 380 + i * 1.7));
           mob.g.position.y = hop * 0.09;
           // Hit: it flattens for a moment.
-          const since = performance.now() - mob.hurtAt;
           const flat = since >= 0 && since < 260 ? Math.sin((since / 260) * Math.PI) * 0.45 : 0;
           mob.g.scale.set(1 + (1 - hop) * 0.06 + flat * 0.5, (0.94 + hop * 0.1) * (1 - flat), 1 + (1 - hop) * 0.06 + flat * 0.5);
         });

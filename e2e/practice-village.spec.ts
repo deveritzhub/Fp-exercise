@@ -176,7 +176,11 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   await expect(pack.locator('[data-weapon="fists"]')).toHaveAttribute('data-state', 'on');
   await expect(page.getByTestId('backpack-flask')).toContainText('1/2');
   // The loot of the village: a square per kind, a question mark until it is found.
-  await expect(page.getByTestId('loot').locator('[data-loot]')).toHaveCount(10);
+  await expect(page.getByTestId('loot').locator('[data-loot]')).toHaveCount(11);
+  // Tools to buy and things to make: the hatchet is for sale, the recipes wait for loot or level.
+  await expect(page.locator('[data-tool="hatchet"]')).toHaveAttribute('data-state', 'shop');
+  await expect(page.getByTestId('recipes').locator('[data-recipe]')).toHaveCount(4);
+  await expect(page.locator('[data-recipe="chest"]')).toHaveAttribute('data-state', 'short');
   // Enough adventure XP for the staff: the smith sells it, it goes on at once and comes off again.
   const staffRow = pack.locator('[data-weapon="staff"]');
   if ((await staffRow.getAttribute('data-state')) === 'shop' && await staffRow.getByRole('button', { name: /Koop Wandelstaf/ }).isEnabled()) {

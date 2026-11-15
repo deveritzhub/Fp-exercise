@@ -14,6 +14,8 @@ export const CREATURES = {
   chicken: { nl: 'Kip', en: 'Chicken', hp: 2, xp: 6, weakTo: 'moving', level: 1 },
   cow: { nl: 'Koe', en: 'Cow', hp: 8, xp: 20, weakTo: 'trained', level: 1 },
   boar: { nl: 'Wild zwijn', en: 'Wild boar', hp: 16, xp: 45, weakTo: 'trained', level: 4 },
+  // A tree to chop for wood: it asks for a hatchet from the smith.
+  tree: { nl: 'Boom', en: 'Tree', hp: 4, xp: 4, weakTo: 'trained', level: 1 },
 } as const;
 export type CreatureKind = keyof typeof CREATURES;
 export const CREATURE_KINDS = Object.keys(CREATURES) as CreatureKind[];
@@ -42,15 +44,15 @@ export function adventureLevel(xp: number): { level: number; from: number; to: n
  * The village shows it in the hero's hand (web/src/components/patient/weapons3d.ts).
  */
 export const WEAPONS = [
-  { key: 'fists', level: 1, power: 0, price: 0, nl: 'Vuisten', en: 'Fists' },
-  { key: 'staff', level: 2, power: 1, price: 30, nl: 'Wandelstaf', en: 'Walking staff' },
-  { key: 'gloves', level: 3, power: 1.5, price: 60, nl: 'Bokshandschoenen', en: 'Boxing gloves' },
-  { key: 'club', level: 4, power: 2, price: 90, nl: 'Knots', en: 'Club' },
-  { key: 'hammer', level: 6, power: 3, price: 140, nl: 'Smidshamer', en: 'Smith’s hammer' },
-  { key: 'sword', level: 8, power: 4, price: 200, nl: 'IJzeren zwaard', en: 'Iron sword' },
-  { key: 'axe', level: 10, power: 5, price: 280, nl: 'Strijdbijl', en: 'Battle axe' },
-  { key: 'spear', level: 13, power: 6.5, price: 380, nl: 'Speer', en: 'Spear' },
-  { key: 'hero_sword', level: 16, power: 9, price: 600, nl: 'Heldenzwaard', en: 'Hero’s sword' },
+  { key: 'fists', level: 1, power: 0, price: 0, strength: 0, nl: 'Vuisten', en: 'Fists' },
+  { key: 'staff', level: 2, power: 1, price: 30, strength: 0, nl: 'Wandelstaf', en: 'Walking staff' },
+  { key: 'gloves', level: 3, power: 1.5, price: 60, strength: 0, nl: 'Bokshandschoenen', en: 'Boxing gloves' },
+  { key: 'club', level: 4, power: 2, price: 90, strength: 0, nl: 'Knots', en: 'Club' },
+  { key: 'hammer', level: 6, power: 3, price: 140, strength: 2, nl: 'Smidshamer', en: 'Smith’s hammer' },
+  { key: 'sword', level: 8, power: 4, price: 200, strength: 3, nl: 'IJzeren zwaard', en: 'Iron sword' },
+  { key: 'axe', level: 10, power: 5, price: 280, strength: 4, nl: 'Strijdbijl', en: 'Battle axe' },
+  { key: 'spear', level: 13, power: 6.5, price: 380, strength: 5, nl: 'Speer', en: 'Spear' },
+  { key: 'hero_sword', level: 16, power: 9, price: 600, strength: 6, nl: 'Heldenzwaard', en: 'Hero’s sword' },
 ] as const;
 export type Weapon = (typeof WEAPONS)[number];
 /** The best weapon earned at this level, and the next one to come (null at the last). */
@@ -76,6 +78,7 @@ export const weaponItem = (key: string) => `wpn_${key}`;
 
 /** Loot: what a beaten creature leaves behind. Collected in the backpack; it buys nothing. */
 export const LOOT = {
+  wood: { nl: 'Hout', en: 'Wood', icon: '🪵' },
   feather: { nl: 'Veer', en: 'Feather', icon: '🪶' },
   egg: { nl: 'Ei', en: 'Egg', icon: '🥚' },
   meat: { nl: 'Rauw vlees', en: 'Raw meat', icon: '🥩' },
@@ -97,6 +100,7 @@ export const DROPS: Record<CreatureKind, { item: LootKey; chance: number; max: n
   couch: [{ item: 'button', chance: 0.5, max: 2 }],
   giant_slime: [{ item: 'gel', chance: 1, max: 3 }],
   couch_king: [{ item: 'button', chance: 1, max: 3 }, { item: 'crown', chance: 0.25, max: 1 }],
+  tree: [{ item: 'wood', chance: 1, max: 2 }],
   chicken: [{ item: 'feather', chance: 1, max: 3 }, { item: 'egg', chance: 0.3, max: 1 }, { item: 'bone', chance: 0.5, max: 1 }],
   cow: [{ item: 'hide', chance: 1, max: 1 }, { item: 'bone', chance: 1, max: 1 }, { item: 'meat', chance: 0.7, max: 2 }],
   boar: [{ item: 'bone', chance: 1, max: 2 }, { item: 'meat', chance: 0.8, max: 2 }, { item: 'tusk', chance: 0.4, max: 1 }],
@@ -111,3 +115,24 @@ export function rollDrops(kind: CreatureKind, rnd: () => number): { item: LootKe
   }
   return out;
 }
+
+/** Tools from the smith, bought with coins. The hatchet is what a tree asks for. */
+export const TOOLS = [{ key: 'hatchet', price: 25, nl: 'Hakbijl', en: 'Hatchet', icon: '🪓' }] as const;
+export const toolItem = (key: string) => `tool_${key}`;
+/** What a creature asks for before it can be beaten at all. */
+export const NEEDS_TOOL: Partial<Record<CreatureKind, string>> = { tree: 'hatchet' };
+
+/**
+ * Things to make from loot: the weaker weapons (a second way next to buying), and a chest.
+ * A weapon made still asks for its adventurer level.
+ */
+export const RECIPES = [
+  { key: 'staff', kind: 'weapon', nl: 'Wandelstaf', en: 'Walking staff', icon: '🦯', needs: { wood: 3 } },
+  { key: 'gloves', kind: 'weapon', nl: 'Bokshandschoenen', en: 'Boxing gloves', icon: '🥊', needs: { hide: 2, feather: 2 } },
+  { key: 'club', kind: 'weapon', nl: 'Knots', en: 'Club', icon: '🏏', needs: { wood: 4, bone: 2 } },
+  { key: 'chest', kind: 'build', nl: 'Kist', en: 'Chest', icon: '🧰', needs: { wood: 6, hide: 1 } },
+] as const satisfies readonly { key: string; kind: 'weapon' | 'build'; nl: string; en: string; icon: string; needs: Partial<Record<LootKey, number>> }[];
+export type Recipe = (typeof RECIPES)[number];
+export const builtItem = (key: string) => `built_${key}`;
+/** How many of one kind of loot the backpack holds; a chest holds far more. */
+export const LOOT_CAP = { backpack: 10, chest: 99 } as const;

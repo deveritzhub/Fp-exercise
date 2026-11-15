@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Beef, Coins, Droplets, Footprints, Gem, Lock, Swords } from 'lucide-react';
-import { LOOT, LOOT_KEYS, WEAPONS, weaponByKey } from '@shared/adventure';
+import { Axe, Beef, Coins, Droplets, Footprints, Gem, Hammer, Lock, Swords } from 'lucide-react';
+import { LOOT, LOOT_KEYS, RECIPES, TOOLS, WEAPONS, weaponByKey, type LootKey } from '@shared/adventure';
 import { WATER } from '@shared/survival';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
-import { Button, Card, useToast } from '@/components/ui';
+import { Button, Card, Spinner, useToast } from '@/components/ui';
 import type { HeroState } from '@/lib/types';
 
-type Adventure = { level: number; weapon: string | null; owned: string[]; coins: number; loot?: Record<string, number> };
+type Adventure = { level: number; weapon: string | null; owned: string[]; coins: number; loot?: Record<string, number>; tools?: string[]; built?: string[]; strength?: number; lootCap?: number };
 
 const ICON: Record<string, string> = { fists: '✊', staff: '🦯', gloves: '🥊', club: '🏏', hammer: '🔨', sword: '🗡️', axe: '🪓', spear: '🔱', hero_sword: '⚔️' };
 const FLASK = 'fp.village.flask';
@@ -54,6 +54,8 @@ export function BackpackCard({ d }: { d: HeroState }) {
   };
   const wear = (key: string | null, name: string) =>
     act(key ?? 'off', () => api.put<Adventure>('/patient/hero/adventure/weapon', { key }), key ? t(`${name} in de hand.`, `${name} in hand.`) : t('Wapen opgeborgen. Je vecht met je vuisten.', 'Weapon put away. You fight with your fists.'));
+  const buyTool = (key: string, name: string) => act(`tool:${key}`, () => api.post<Adventure>('/patient/hero/adventure/tool/buy', { key }), t(`${name} gekocht!`, `${name} bought!`));
+  const craft = (key: string, name: string) => act(`craft:${key}`, () => api.post<Adventure>('/patient/hero/adventure/craft', { key }), t(`${name} gemaakt!`, `${name} made!`));
   const buy = (key: string, name: string) => act(key, () => api.post<Adventure>('/patient/hero/adventure/weapon/buy', { key }), t(`${name} gekocht en in de hand!`, `${name} bought and in hand!`));
 
   const sip = async () => {
@@ -80,6 +82,8 @@ export function BackpackCard({ d }: { d: HeroState }) {
     { key: 'steps', Icon: Footprints, color: '#2f8a45', label: t('Stappen vandaag', 'Steps today'), text: `${logs.steps.today.toLocaleString(nl ? 'nl-NL' : 'en-GB')} / ${logs.steps.goal.toLocaleString(nl ? 'nl-NL' : 'en-GB')}`, ratio: logs.steps.goal ? logs.steps.today / logs.steps.goal : 0 },
   ] : [];
 
+  // Nothing to buy or make until the purse and the loot are known.
+  if (!a) return <Card className="p-5"><h2 id="backpack-title" className="t-section scroll-mt-20">{t('Rugzak', 'Backpack')}</h2><div className="mt-3"><Spinner /></div></Card>;
   return (
     <Card className="p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -100,7 +104,8 @@ export function BackpackCard({ d }: { d: HeroState }) {
           const fists = w.key === 'fists';
           const owned = fists || !!a?.owned.includes(w.key);
           const on = worn.key === w.key;
-          const locked = !owned && (a?.level ?? 1) < w.level;
+          const weak = !owned && (a?.strength ?? 1) < w.strength;
+          const locked = !owned && ((a?.level ?? 1) < w.level || weak);
           const short = !owned && !locked && (a?.coins ?? 0) < w.price;
           return (
             <li key={w.key} data-weapon={w.key} data-state={on ? 'on' : owned ? 'owned' : locked ? 'locked' : 'shop'}
@@ -109,12 +114,12 @@ export function BackpackCard({ d }: { d: HeroState }) {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[14.5px] font-semibold text-ink-950">{name}</span>
                 <span className="block text-[12.5px] text-ink-700">
-                  {fists ? t('Altijd bij je', 'Always with you') : t(`+${w.power} kracht`, `+${w.power} power`)}
+                  {fists ? t('Altijd bij je', 'Always with you') : t(`+${w.power} per slag`, `+${w.power} per blow`)}{w.strength > 0 && !owned ? t(` · kracht-skill ${w.strength}`, ` · strength skill ${w.strength}`) : ''}
                   {!owned && <> · <span className="inline-flex items-center gap-0.5 font-semibold text-[#855806]"><Coins className="h-3 w-3" aria-hidden />{w.price}</span></>}
                 </span>
               </span>
               {locked ? (
-                <span className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-ink-600"><Lock className="h-3.5 w-3.5" aria-hidden />{t(`Level ${w.level}`, `Level ${w.level}`)}</span>
+                <span className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-ink-600"><Lock className="h-3.5 w-3.5" aria-hidden />{(a?.level ?? 1) < w.level ? t(`Level ${w.level}`, `Level ${w.level}`) : t(`Kracht ${w.strength}`, `Strength ${w.strength}`)}</span>
               ) : !owned ? (
                 <Button size="sm" disabled={short || !a} loading={busy === w.key} onClick={() => void buy(w.key, name)} aria-label={t(`Koop ${name} voor ${w.price} muntjes`, `Buy ${name} for ${w.price} coins`)}>
                   {short ? t(`Nog ${w.price - (a?.coins ?? 0)}`, `${w.price - (a?.coins ?? 0)} short`) : t('Koop', 'Buy')}
@@ -131,8 +136,56 @@ export function BackpackCard({ d }: { d: HeroState }) {
         })}
       </ul>
 
+      <h3 className="mt-5 flex items-center gap-1.5 text-[15px] font-semibold text-ink-950"><Axe className="h-4 w-4" aria-hidden />{t('Gereedschap', 'Tools')}</h3>
+      <ul className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="tools">
+        {TOOLS.map((tool) => {
+          const name = nl ? tool.nl : tool.en;
+          const has = !!a?.tools?.includes(tool.key);
+          const short = !has && (a?.coins ?? 0) < tool.price;
+          return (
+            <li key={tool.key} data-tool={tool.key} data-state={has ? 'owned' : 'shop'} className="flex items-center gap-3 rounded-xl border border-line bg-white p-2.5">
+              <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">{tool.icon}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14.5px] font-semibold text-ink-950">{name}</span>
+                <span className="block text-[12.5px] text-ink-700">{t('Hak er bomen mee voor hout.', 'Chop trees with it for wood.')}{!has && <> · <span className="inline-flex items-center gap-0.5 font-semibold text-[#855806]"><Coins className="h-3 w-3" aria-hidden />{tool.price}</span></>}</span>
+              </span>
+              {has ? <span className="shrink-0 text-[12.5px] font-semibold text-[#6b4705]">{t('In je rugzak', 'In your pack')}</span> : (
+                <Button size="sm" disabled={short || !a} loading={busy === `tool:${tool.key}`} onClick={() => void buyTool(tool.key, name)} aria-label={t(`Koop ${name} voor ${tool.price} muntjes`, `Buy ${name} for ${tool.price} coins`)}>{short ? t(`Nog ${tool.price - (a?.coins ?? 0)}`, `${tool.price - (a?.coins ?? 0)} short`) : t('Koop', 'Buy')}</Button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      <h3 id="craft-title" className="mt-5 flex scroll-mt-20 items-center gap-1.5 text-[15px] font-semibold text-ink-950"><Hammer className="h-4 w-4" aria-hidden />{t('Maken', 'Make')}</h3>
+      <p className="mt-1 text-[13.5px] text-ink-700">{t('Maak van je buit een eenvoudig wapen of een kist. In een kist bewaar je tot 99 stuks per soort in plaats van 10.', 'Make a simple weapon or a chest from your loot. A chest keeps up to 99 of a kind instead of 10.')}</p>
+      <ul className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="recipes">
+        {RECIPES.map((r) => {
+          const name = nl ? r.nl : r.en;
+          const weapon = r.kind === 'weapon' ? WEAPONS.find((w) => w.key === r.key) : undefined;
+          const have = weapon ? !!a?.owned.includes(r.key) : !!a?.built?.includes(r.key);
+          const low = !!weapon && (a?.level ?? 1) < weapon.level;
+          const needs = Object.entries(r.needs) as [LootKey, number][];
+          const enough = needs.every(([k, n]) => (a?.loot?.[k] ?? 0) >= n);
+          return (
+            <li key={r.key} data-recipe={r.key} data-state={have ? 'made' : low ? 'locked' : enough ? 'ready' : 'short'} className={cn('flex items-center gap-3 rounded-xl border p-2.5', have ? 'border-[#b8892a] bg-[#fbf0d9]' : 'border-line bg-white')}>
+              <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">{r.icon}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14.5px] font-semibold text-ink-950">{name}</span>
+                <span className="block text-[12.5px] text-ink-700">
+                  {needs.map(([k, n], i) => <span key={k}>{i > 0 && ' · '}<span aria-hidden>{LOOT[k].icon}</span> {(nl ? LOOT[k].nl : LOOT[k].en).toLowerCase()} {Math.min(a?.loot?.[k] ?? 0, n)}/{n}</span>)}
+                </span>
+              </span>
+              {have ? <span className="shrink-0 text-[12.5px] font-semibold text-[#6b4705]">{t('Heb je', 'Owned')}</span>
+                : low ? <span className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-ink-600"><Lock className="h-3.5 w-3.5" aria-hidden />{t(`Level ${weapon!.level}`, `Level ${weapon!.level}`)}</span>
+                : <Button size="sm" disabled={!enough || !a} loading={busy === `craft:${r.key}`} onClick={() => void craft(r.key, name)} aria-label={t(`Maak ${name}`, `Make ${name}`)}>{t('Maak', 'Make')}</Button>}
+            </li>
+          );
+        })}
+      </ul>
+
       <h3 className="mt-5 flex items-center gap-1.5 text-[15px] font-semibold text-ink-950"><Gem className="h-4 w-4" aria-hidden />{t('Buit', 'Loot')}</h3>
-      <p className="mt-1 text-[13.5px] text-ink-700">{t('Wat kwaaltjes en dieren in je dorp laten vallen. Een vakje met een vraagteken heb je nog niet gevonden.', 'What ailments and animals in your village drop. A square with a question mark is one you have not found yet.')}</p>
+      <p className="mt-1 text-[13.5px] text-ink-700">{t(`Wat kwaaltjes, dieren en bomen in je dorp opleveren. Een vakje met een vraagteken heb je nog niet gevonden. Je bewaart er ${a?.lootCap ?? 10} per soort.`, `What ailments, animals and trees in your village drop. A square with a question mark is one you have not found yet. You keep ${a?.lootCap ?? 10} of a kind.`)}</p>
       <ul className="mt-2 grid grid-cols-5 gap-2" data-testid="loot">
         {LOOT_KEYS.map((k) => {
           const n = a?.loot?.[k] ?? 0;

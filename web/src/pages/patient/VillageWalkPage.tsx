@@ -67,7 +67,7 @@ const TALK: Record<string, { name: [string, string]; says: [string, string]; opt
   },
   smithy: {
     name: ['Wapensmid', 'Armourer'], says: ['Welkom in de smederij! Hier ruil je muntjes voor uitrusting.', 'Welcome to the smithy! Here you trade coins for gear.'],
-    options: [{ nl: 'Wapens kopen', en: 'Buy weapons', to: '/p/held/inventaris#backpack-title' }, { nl: 'Laat de uitrusting zien', en: 'Show me the gear', to: '/p/held/inventaris#gear-title' }, { nl: 'Mijn uiterlijk aanpassen', en: 'Change my look', to: '/p/held/uiterlijk' }],
+    options: [{ nl: 'Wapens en gereedschap kopen', en: 'Buy weapons and tools', to: '/p/held/inventaris#backpack-title' }, { nl: 'Iets maken van mijn buit', en: 'Make something from my loot', to: '/p/held/inventaris#craft-title' }, { nl: 'Laat de uitrusting zien', en: 'Show me the gear', to: '/p/held/inventaris#gear-title' }, { nl: 'Mijn uiterlijk aanpassen', en: 'Change my look', to: '/p/held/uiterlijk' }],
   },
   library: {
     name: ['Bibliothecaris', 'Librarian'], says: ['Stil in de bibliotheek… maar vraag gerust.', 'Quiet in the library… but do ask.'],
@@ -310,7 +310,7 @@ export function VillageWalkPage() {
 
   const d = heroQ.data;
   // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
-  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; coins: number };
+  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; coins: number; tools?: string[] };
   const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
   // The weapon in hand is the one bought and put on in the backpack; none means bare fists.
   const weapon = weaponByKey(adventure.data?.weapon);
@@ -540,7 +540,9 @@ export function VillageWalkPage() {
   const creatures = useMemo(
     () => ([['slime', 120, 10.5], ['imp', 80, 11.2], ['couch', 325, 10.8], ['slime', 105, 8.4], ['giant_slime', 140, 11.3], ['couch_king', 295, 11.4],
       // The meadow: animals to beat for what they drop.
-      ['cow', 38, 12.2], ['cow', 52, 11.6], ['chicken', 45, 9.6], ['chicken', 60, 10.4], ['boar', 30, 14]] as [CreatureKind, number, number][])
+      ['cow', 38, 12.2], ['cow', 52, 11.6], ['chicken', 45, 9.6], ['chicken', 60, 10.4], ['boar', 30, 14],
+      // Trees to chop for wood, with a hatchet from the smith.
+      ['tree', 68, 13], ['tree', 22, 12.6], ['tree', 244, 12.4]] as [CreatureKind, number, number][])
       .map(([kind, deg, r], i) => ({ key: `mob:${i}`, kind, label: nl ? CREATURES[kind].nl : CREATURES[kind].en, x: Math.cos((deg * Math.PI) / 180) * r, z: Math.sin((deg * Math.PI) / 180) * r }))
       // The big ones only show themselves to an adventurer of their level.
       .filter((c) => (adventure.data?.level ?? 1) >= CREATURES[c.kind].level),
@@ -553,6 +555,11 @@ export function VillageWalkPage() {
   const strong = useMemo(() => new Set([...states.filter((x) => x.kind === 'buff').map((x) => x.key), ...(doneToday ? ['trained'] : [])]), [states, doneToday]);
   const strike = async () => {
     if (!mob) return;
+    // A tree asks for a hatchet.
+    if (mob.kind === 'tree' && !adventure.data?.tools?.includes('hatchet')) {
+      toast(t('Hier heb je een hakbijl voor nodig. Koop er een bij de wapensmid.', 'You need a hatchet for this. Buy one at the armourer.'));
+      return;
+    }
     world.current?.strike(mob.key);
     const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, weapon.power);
     if (left > 0) {
@@ -569,7 +576,7 @@ export function VillageWalkPage() {
       const was = adventure.data?.level ?? 1;
       qc.setQueryData(['patient-adventure'], r);
       levelUp(was, r.level);
-      toast(r.gained > 0 ? t(`${mob.label} verslagen! +${r.gained} avonturen-XP`, `${mob.label} beaten! +${r.gained} adventure XP`) : t(`${mob.label} verslagen! Voor vandaag heb je alle avonturen-XP al binnen.`, `${mob.label} beaten! You already have all of today's adventure XP.`));
+      toast(r.gained > 0 ? (mob.kind === 'tree' ? t(`Boom omgehakt! +${r.gained} avonturen-XP`, `Tree chopped! +${r.gained} adventure XP`) : t(`${mob.label} verslagen! +${r.gained} avonturen-XP`, `${mob.label} beaten! +${r.gained} adventure XP`)) : t(`${mob.label} verslagen! Voor vandaag heb je alle avonturen-XP al binnen.`, `${mob.label} beaten! You already have all of today's adventure XP.`));
       if (r.drops?.length) toast(t(`Buit: ${r.drops.map((x) => `${x.n}× ${LOOT[x.item].nl.toLowerCase()}`).join(', ')}. Het zit in je rugzak.`, `Loot: ${r.drops.map((x) => `${x.n}× ${LOOT[x.item].en.toLowerCase()}`).join(', ')}. It is in your backpack.`));
     } catch (e) {
       say(e);
@@ -757,7 +764,7 @@ export function VillageWalkPage() {
             </p>
           ) : mob ? (
             <Button size="lg" data-testid="strike" className="pointer-events-auto border border-[#ffb3a1] shadow-lift" icon={<Swords className="h-5 w-5" />} onClick={() => void strike()}>
-              {t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : ''}
+              {mob.kind === 'tree' ? t('Hak de boom', 'Chop the tree') : t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : ''}
             </Button>
           ) : near === BOXING_KEY ? (
             <Button size="lg" data-testid="open-boxing" className="pointer-events-auto border border-[#ffd76a] shadow-lift" icon={<Swords className="h-5 w-5" />} onClick={() => { setRoundNo((n) => n + 1); setBoxingOpen(true); }}>{t('Train op de bokszak', 'Train on the bag')}</Button>
