@@ -50,6 +50,14 @@ describe('adventure in the village', () => {
     expect((await P.post('/patient/hero/adventure/weapon/buy', { key: 'staff' })).body.error).toBe('gear_owned');
     expect((await P.put('/patient/hero/adventure/weapon', { key: null })).body).toMatchObject({ weapon: null, owned: ['staff'] });
     expect((await P.put('/patient/hero/adventure/weapon', { key: 'staff' })).body.weapon).toBe('staff');
+    // A cow always leaves a hide and a bone; they are kept, and counted up.
+    const cow = await P.post('/patient/hero/adventure/win', { kind: 'cow' });
+    expect(cow.body.gained).toBe(20);
+    expect(cow.body.drops).toEqual(expect.arrayContaining([{ item: 'hide', n: 1 }, { item: 'bone', n: 1 }]));
+    expect(cow.body.loot).toMatchObject({ hide: 1, bone: 1 });
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'cow' })).body.loot).toMatchObject({ hide: 2, bone: 2 });
+    // A boar is not in the meadow yet for this adventurer.
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'boar' })).status).toBe(400);
     // A win keeps the weapon in hand.
     expect((await P.post('/patient/hero/adventure/win', { kind: 'slime' })).body.weapon).toBe('staff');
     // The home and its furniture are untouched by a weapon in the purchases.

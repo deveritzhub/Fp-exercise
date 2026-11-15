@@ -1709,27 +1709,43 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const travel = (to: string, then?: string) => {
       clearTrail();
       if (!then) announce(null);
-      const veil = fade.current;
-      if (veil) veil.style.opacity = '1';
       goal = null;
       delete el.dataset.walking;
       (marker.material as THREE.MeshBasicMaterial).opacity = 0;
       window.clearTimeout(switching);
       switching = window.setTimeout(() => {
         const spot = to === 'village' ? (here()?.outside ?? VILLAGE_LAYOUT.spawn) : places[to].entry;
+        // The room stands where its building stands (see the render step), so the camera keeps its
+        // place in the world: it is carried over to the other frame and glides on from there.
+        const pl = to === 'village' ? here() : places[to];
+        if (pl) {
+          const turn = Math.atan2(pl.map.x - pl.outside.x, pl.map.z - pl.outside.z) - pl.face;
+          const cs = Math.cos(turn);
+          const sn = Math.sin(turn);
+          const ax = pl.exit.x - Math.sin(pl.face) * 0.6;
+          const az = pl.exit.z - Math.cos(pl.face) * 0.6;
+          if (to === 'village') {
+            const dx = camera.position.x - ax;
+            const dz = camera.position.z - az;
+            camera.position.set(pl.outside.x + dx * cs + dz * sn, camera.position.y, pl.outside.z - dx * sn + dz * cs);
+            camAngle.current += turn;
+          } else {
+            const dx = camera.position.x - pl.outside.x;
+            const dz = camera.position.z - pl.outside.z;
+            camera.position.set(ax + dx * cs - dz * sn, camera.position.y, az + dx * sn + dz * cs);
+            camAngle.current -= turn;
+          }
+        }
         zone.current = to;
         pos.current.x = spot.x;
         pos.current.z = spot.z;
         // Into a room: facing in. Out again: facing the square.
         facing.current = to === 'village' ? Math.atan2(-spot.x, -spot.z) : places[to].face;
         hero.rotation.y = facing.current;
-        camAngle.current = 0;
-        first = true;
         el.dataset.zone = to;
         cb.current.onZone?.(to);
-        if (veil) veil.style.opacity = '0';
         if (then) goTo.current(then);
-      }, reduce ? 0 : 260);
+      }, 0);
     };
     goTo.current = (k) => {
       if (inside()) {
@@ -2218,6 +2234,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         outCam.copy(camera);
         outCam.position.set(pl.outside.x + dx * cs + dz * sn, camera.position.y, pl.outside.z - dx * sn + dz * cs);
         outCam.quaternion.copy(camera.quaternion).premultiply(outTurn.setFromAxisAngle(UP, turn));
+        // What stands between the camera and the room (a tree, a neighbour's roof) is cut away.
+        outCam.near = Math.max(0.1, Math.hypot(camera.position.x - p.x, camera.position.y - 1, camera.position.z - p.z) - 3.6);
+        outCam.updateProjectionMatrix();
         outCam.updateMatrixWorld(true);
         // The building itself gives way to its room.
         const shell = anchors.find((an) => !an.zone && (zone.current === HOME_KEY ? Math.hypot(an.obj.position.x - pl.map.x, an.obj.position.z - pl.map.z) < 0.05 : an.id === zone.current))?.obj ?? null;
