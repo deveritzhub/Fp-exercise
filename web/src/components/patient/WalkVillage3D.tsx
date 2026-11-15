@@ -2107,8 +2107,18 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const top = px + half > w - 170 ? 206 : 62;
       const py = Math.min(h - 8, Math.max(node.offsetHeight + top, ((1 - v.y) / 2) * h)) - lift;
       node.style.transform = `translate(-50%, -100%) translate(${px}px, ${py}px)`;
+      placed.x = px;
+      placed.y = py;
+      placed.w = half * 2;
+      placed.h = node.offsetHeight;
       return v.z <= 1;
     };
+    /** Where the last name was put on screen, to keep names from piling up on each other. */
+    const placed = { x: 0, y: 0, w: 0, h: 0 };
+    /** How far off a name still shows in the village: buildings from afar, small things up close. */
+    const bigPlaces = new Set<string>([PRACTICE_KEY, HOME_KEY, ...buildings.map((b) => b.key)]);
+    const alerts = new Set<string>(buildings.filter((b) => b.alert).map((b) => b.key));
+    const reachOf = (id: string) => (bigPlaces.has(id) ? 14 : id.startsWith('mob:') ? 6 : id === WELL_KEY || id === CAMP_KEY || id === BOXING_KEY ? 7.5 : 8);
 
     const reduce = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const camPos = new THREE.Vector3();
@@ -2493,7 +2503,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       // A name shows when its place is the one the hero is in, in view and not too far off; the
       // button itself stays reachable by keyboard.
       const drawn = new Set<string>();
-      for (const a of anchors) {
+      const shown: { x: number; y: number; w: number; h: number }[] = [];
+      // Nearest first: a closer name wins over a farther one in the same place on screen.
+      const order = anchors
+        .map((a) => ({ a, d: Math.hypot(a.obj.position.x - p.x, a.obj.position.z - p.z) }))
+        .sort((x, y) => x.d - y.d);
+      for (const { a, d } of order) {
         const node = labels.current.get(a.id);
         if (!node || drawn.has(a.id)) continue;
         if ((a.zone ?? 'village') !== zone.current) {
@@ -2504,7 +2519,16 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         }
         drawn.add(a.id);
         const inFront = place(node, a.obj.position.x, a.y, a.obj.position.z);
-        const show = inFront && Math.abs(v.x) < 1.05 && v.y < 1.1 && Math.hypot(a.obj.position.x - p.x, a.obj.position.z - p.z) < 19;
+        // Indoors every name in the room shows. In the village a name shows within its reach, and
+        // always for where the hero is going or standing, and for a building with something waiting.
+        const wanted = indoor || d < reachOf(a.id) || goal?.key === a.id || near === a.id || alerts.has(a.id);
+        let show = inFront && Math.abs(v.x) < 1.05 && v.y < 1.1 && d < 19 && wanted;
+        if (show && !indoor) {
+          const r = { ...placed };
+          const clash = shown.some((o) => Math.abs(o.x - r.x) < (o.w + r.w) / 2 - 6 && Math.abs(o.y - r.y) < (o.h + r.h) / 2 - 4);
+          if (clash && goal?.key !== a.id && near !== a.id) show = false;
+          else shown.push(r);
+        }
         node.style.opacity = show ? '1' : '0';
         node.style.pointerEvents = show ? 'auto' : 'none';
       }
