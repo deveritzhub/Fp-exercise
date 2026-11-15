@@ -133,6 +133,13 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   const strike = page.getByTestId('strike');
   await expect(strike).toBeVisible({ timeout: 90_000 });
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/mob.png' });
+  // A life bar above the creature: full at first, lower after a blow.
+  const life = page.getByTestId('hp-mob:3');
+  const full = Number(await life.getAttribute('data-hp'));
+  expect(full).toBeGreaterThan(0);
+  await strike.click();
+  await expect.poll(async () => (await strike.count()) === 0 || Number(await life.getAttribute('data-hp')) < full).toBe(true);
+  if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/mob-hit.png' });
   for (let i = 0; i < 4 && (await strike.count()); i++) await strike.click();
   await expect(adv).toContainText('Avonturier 1 · 12/60', { timeout: 15_000 });
   await expect(strike).toHaveCount(0);
@@ -162,5 +169,24 @@ test('therapist makes a figure and the patient meets it in the practice', async 
     await page.waitForTimeout(9000);
     await page.screenshot({ path: process.env.SHOTS + '/av-1.png' });
   }
+  // The backpack in the inventory: the flask with its glass, and the weapons; fists in hand, the rest to buy.
+  await page.goto('/p/held/inventaris');
+  const pack = page.getByTestId('weapons');
+  await expect(pack.locator('[data-weapon]')).toHaveCount(9);
+  await expect(pack.locator('[data-weapon="fists"]')).toHaveAttribute('data-state', 'on');
+  await expect(page.getByTestId('backpack-flask')).toContainText('1/2');
+  // Enough adventure XP for the staff: the smith sells it, it goes on at once and comes off again.
+  const staffRow = pack.locator('[data-weapon="staff"]');
+  if ((await staffRow.getAttribute('data-state')) === 'shop' && await staffRow.getByRole('button', { name: /Koop Wandelstaf/ }).isEnabled()) {
+    await staffRow.getByRole('button', { name: /Koop Wandelstaf/ }).click();
+    await expect(staffRow).toHaveAttribute('data-state', 'on');
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/pack.png', fullPage: true });
+    await staffRow.getByRole('button', { name: 'Doe Wandelstaf uit' }).click();
+    await expect(staffRow).toHaveAttribute('data-state', 'owned');
+    await expect(pack.locator('[data-weapon="fists"]')).toHaveAttribute('data-state', 'on');
+    await staffRow.getByRole('button', { name: 'Doe Wandelstaf aan' }).click();
+    await expect(staffRow).toHaveAttribute('data-state', 'on');
+  } else if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/pack.png', fullPage: true });
+  await expectAccessible(page, 'backpack');
   await context.close();
 });

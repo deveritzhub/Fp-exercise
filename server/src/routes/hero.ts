@@ -1,5 +1,5 @@
 import { BELTS, examReady, nextItems, validItem } from '../../../shared/karate';
-import { ADVENTURE_DAILY_WINS, BOXING, CREATURES, CREATURE_KINDS, adventureLevel, boxingXp, type CreatureKind } from '../../../shared/adventure';
+import { ADVENTURE_DAILY_WINS, BOXING, CREATURES, CREATURE_KINDS, WEAPONS, adventureLevel, boxingXp, weaponItem, type CreatureKind } from '../../../shared/adventure';
 import { readStaffLook } from '../lib/staffLook';
 import { HEIRLOOM_KINDS } from '../../../shared/measurementBoss';
 import { wearableAclReward, ACL_SPORTS } from '../../../shared/aclRewards';
@@ -729,12 +729,19 @@ heroPatient.get('/hero/coach', async (c) => {
   return c.json({ look: readStaffLook(row?.look) });
 });
 
-const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number } | undefined) => {
+const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number; weapon?: string | null; owned?: string[]; coins?: number } | undefined) => {
   const xp = Number(r?.xp ?? 0);
-  return { xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...adventureLevel(xp) };
+  const owned = r?.owned ?? [];
+  // Only a weapon that was bought can be worn.
+  const weapon = r?.weapon && owned.includes(r.weapon) ? r.weapon : null;
+  return { weapon, owned, coins: r?.coins ?? 0, xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...adventureLevel(xp) };
 };
-const adventureRow = async (tx: Tx, patientId: string) =>
-  (await tx.query('SELECT xp, wins, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today, CASE WHEN day = CURRENT_DATE THEN rounds_today ELSE 0 END AS rounds_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
+const adventureRow = async (tx: Tx, patientId: string) => {
+  const row = (await tx.query('SELECT xp, wins, weapon, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today, CASE WHEN day = CURRENT_DATE THEN rounds_today ELSE 0 END AS rounds_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
+  const owned = (await tx.query("SELECT item FROM hero_purchases WHERE patient_id = $1 AND item LIKE 'wpn\\_%'", [patientId])).rows.map((r) => (r.item as string).slice(4));
+  const coins = (await heroState(tx, patientId)).gear.coins;
+  return { xp: 0, wins: 0, wins_today: 0, rounds_today: 0, ...(row ?? {}), owned, coins };
+};
 
 heroPatient.get('/hero/adventure', async (c) => {
   const { user, patient } = requirePatient(c);
@@ -847,6 +854,44 @@ heroPatient.put('/view', async (c) => {
   if (!body.success) throw badRequest('invalid_input');
   await withUser(user.id, (tx) => tx.query(SAVE_VIEW, [patient.id, body.data.simple]));
   return c.json({ simple: body.data.simple });
+});
+
+/** Buy a weapon from the smith with coins: one the adventurer level allows, once. */
+heroPatient.post('/hero/adventure/weapon/buy', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ key: z.string().max(24) }).safeParse(await c.req.json().catch(() => null));
+  const w = body.success ? WEAPONS.find((x) => x.key === body.data.key && x.price > 0) : undefined;
+  if (!w) throw badRequest('unknown_item');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      // One purchase at a time per patient, so two taps cannot spend the same coins twice.
+      const hero = (await tx.query('SELECT 1 FROM patient_heroes WHERE patient_id = $1 FOR UPDATE', [patient.id])).rows[0];
+      if (!hero) throw badRequest('hero_required');
+      const now = await adventureRow(tx, patient.id);
+      if (now.owned.includes(w.key)) throw badRequest('gear_owned');
+      if (adventureLevel(Number(now.xp)).level < w.level) throw badRequest('level_too_low');
+      if (now.coins < w.price) throw badRequest('not_enough_coins');
+      await tx.query('INSERT INTO hero_purchases (patient_id, item, price) VALUES ($1, $2, $3)', [patient.id, weaponItem(w.key), w.price]);
+      // A new weapon is put on at once; it can be taken off again.
+      await tx.query('INSERT INTO hero_adventure(patient_id, weapon) VALUES ($1, $2) ON CONFLICT (patient_id) DO UPDATE SET weapon = EXCLUDED.weapon, updated_at = now()', [patient.id, w.key]);
+      return adventureView(await adventureRow(tx, patient.id));
+    }),
+  );
+});
+
+/** Put a bought weapon on, or take it off (null: bare fists). */
+heroPatient.put('/hero/adventure/weapon', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ key: z.string().max(24).nullable() }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) throw badRequest('invalid_input');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const now = await adventureRow(tx, patient.id);
+      if (body.data.key !== null && !now.owned.includes(body.data.key)) throw badRequest('gear_not_owned');
+      await tx.query('INSERT INTO hero_adventure(patient_id, weapon) VALUES ($1, $2) ON CONFLICT (patient_id) DO UPDATE SET weapon = EXCLUDED.weapon, updated_at = now()', [patient.id, body.data.key]);
+      return adventureView(await adventureRow(tx, patient.id));
+    }),
+  );
 });
 
 heroPatient.get('/hero/home', async (c) => {

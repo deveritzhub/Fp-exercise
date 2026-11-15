@@ -1,6 +1,6 @@
 import { weaponMesh } from './weapons3d';
 import { creature } from './creatures3d';
-import type { CreatureKind } from '@shared/adventure';
+import { CREATURES, type CreatureKind } from '@shared/adventure';
 import { dress } from '@/components/hero/fabric3d';
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
@@ -93,6 +93,8 @@ type Props = {
   /** Creatures to beat, at fixed spots. `creaturesGone` are the beaten ones: hidden until they come back. */
   creatures?: { key: string; kind: CreatureKind; label: string; x: number; z: number }[];
   creaturesGone?: string[];
+  /** Damage each creature has taken, by key: drawn as a life bar above it. */
+  creatureHurt?: Record<string, number>;
   /** The well can be walked to and used (the patient's village). */
   well?: boolean;
   /** The boxing school: a ring with a bag to walk to. */
@@ -733,7 +735,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, boxing = false, weapon = null, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
   const { t } = useI18n();
   const coachName = coachLabel ?? t('Fysiotherapeut', 'Physiotherapist');
   const host = useRef<HTMLDivElement>(null);
@@ -2307,8 +2309,18 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           ))}
           {(creatures ?? []).map((c) => (
             <button key={c.key} ref={setLabel(c.key)} type="button" data-spot={c.key} hidden={gone.has(c.key)} onClick={() => go(c.key)} aria-label={t(`Loop naar ${c.label}`, `Walk to ${c.label}`)}
-              className={cn(plate, '!min-h-[28px] text-[12.5px] text-[#ffb3a1]')} style={{ transform: 'translate(-9999px,0)' }}>
-              {c.label}
+              className={cn(plate, '!min-h-[34px] flex-col !items-stretch gap-1 text-[12.5px] leading-none text-[#ffb3a1]')} style={{ transform: 'translate(-9999px,0)' }}>
+              <span className="text-center">{c.label}</span>
+              {(() => {
+                const max = CREATURES[c.kind].hp;
+                const hp = Math.max(0, max - (creatureHurt?.[c.key] ?? 0));
+                return (
+                  <span data-testid={`hp-${c.key}`} data-hp={hp} role="img" aria-label={t(`${hp} van ${max} leven`, `${hp} of ${max} life`)} className="flex items-center gap-1">
+                    <span className="block h-1.5 min-w-[52px] flex-1 overflow-hidden rounded-full bg-black/55 ring-1 ring-black/40"><span className="block h-full rounded-full transition-[width] duration-200" style={{ width: `${(hp / max) * 100}%`, background: hp / max > 0.5 ? '#4ad06a' : hp / max > 0.25 ? '#f0b429' : '#e2574a' }} /></span>
+                    <span className="text-[10.5px] tabular-nums text-white/90">{hp}/{max}</span>
+                  </span>
+                );
+              })()}
             </button>
           ))}
           {boxing && (

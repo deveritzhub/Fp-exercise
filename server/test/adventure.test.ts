@@ -30,4 +30,29 @@ describe('adventure in the village', () => {
     const T = await login('therapistA');
     expect((await T.get('/patient/hero/adventure')).status).toBe(403);
   });
+
+  it('sells weapons for coins and lets the patient put one on or off', async () => {
+    const P = await login('patientA');
+    // No hero yet: nothing to buy for.
+    expect((await P.post('/patient/hero/adventure/weapon/buy', { key: 'staff' })).body.error).toBe('hero_required');
+    expect((await P.put('/patient/hero', { heroName: 'Emma de Sprinter', frame: 'f', build: 'athletic', skin: 's3', hair: 'long', hairColor: 'blond', eyeColor: 'blue', beard: 'none', glasses: 'round', outfit: 'forest', sport: 'running' })).status).toBe(200);
+    const start = (await P.get('/patient/hero/adventure')).body;
+    expect(start).toMatchObject({ level: 2, weapon: null, owned: [] });
+    expect(start.coins).toBeGreaterThanOrEqual(30);
+    // Not for sale yet at this level, not a weapon at all, and nothing to wear before buying.
+    expect((await P.post('/patient/hero/adventure/weapon/buy', { key: 'sword' })).body.error).toBe('level_too_low');
+    expect((await P.post('/patient/hero/adventure/weapon/buy', { key: 'fists' })).status).toBe(400);
+    expect((await P.put('/patient/hero/adventure/weapon', { key: 'staff' })).body.error).toBe('gear_not_owned');
+    const bought = await P.post('/patient/hero/adventure/weapon/buy', { key: 'staff' });
+    expect(bought.body).toMatchObject({ weapon: 'staff', owned: ['staff'], coins: start.coins - 30, xp: start.xp });
+    // The coins are the hero's own: the purse on the hero page shows the same.
+    expect((await P.get('/patient/hero')).body.gear.coins).toBe(start.coins - 30);
+    expect((await P.post('/patient/hero/adventure/weapon/buy', { key: 'staff' })).body.error).toBe('gear_owned');
+    expect((await P.put('/patient/hero/adventure/weapon', { key: null })).body).toMatchObject({ weapon: null, owned: ['staff'] });
+    expect((await P.put('/patient/hero/adventure/weapon', { key: 'staff' })).body.weapon).toBe('staff');
+    // A win keeps the weapon in hand.
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'slime' })).body.weapon).toBe('staff');
+    // The home and its furniture are untouched by a weapon in the purchases.
+    expect((await P.get('/patient/hero/home')).status).toBe(200);
+  });
 });
