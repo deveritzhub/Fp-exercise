@@ -7,7 +7,20 @@ import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import { bodyShape, levelTier, titleFor } from '@shared/hero';
 import { villageGrowth, type VillageGrowth } from '@shared/villageGrowth';
-import { HOME_STAGES, homeStage, levelsToNextHome } from '@shared/practiceVillage';
+import { HOME_STAGES, homeStage } from '@shared/practiceVillage';
+
+/** The home that stands: the one built with loot, or (before the first answer) the one the level gives. */
+const ownStageOf = (d: { homeStage?: number | null } | undefined, level: number) => d?.homeStage ?? homeStage(level);
+/** One line about the next home: levels still to go, or that it can be built with loot now. */
+function nextHomeLine(stage: number, level: number): { nl: string; en: string } | null {
+  const next = HOME_STAGES[stage + 1];
+  if (!next) return null;
+  if (level < next.from) {
+    const n = next.from - level;
+    return { nl: `Nog ${n} ${n === 1 ? 'level' : 'levels'} tot een ${next.nl.toLowerCase()}`, en: `${n} more ${n === 1 ? 'level' : 'levels'} to a ${next.en.toLowerCase()}` };
+  }
+  return { nl: `Bouw een ${next.nl.toLowerCase()}: verzamel hout en steen`, en: `Build a ${next.en.toLowerCase()}: collect wood and stone` };
+}
 import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { HeroStage, LevelBadge, XpBar } from '@/components/hero/GameFx';
 import { useHero } from '@/pages/patient/HeroPages';
@@ -232,15 +245,15 @@ export function HomeLobby({ greeting, subtitle, date }: { greeting: string; subt
   return (
     <section aria-labelledby="lobby-greeting" className="relative overflow-hidden rounded-3xl border border-line shadow-card" data-daypart={daypart}>
       <div className="relative min-h-[232px]">
-        <VillageScene daypart={daypart} growth={growth} ownStage={L ? homeStage(L.level) : null} />
+        <VillageScene daypart={daypart} growth={growth} ownStage={L ? ownStageOf(d, L.level) : null} />
         {/* The whole picture is the way into the village; the hero and the greeting keep their own links on top. */}
         <Link to="/p/dorp" data-testid="lobby-to-village" aria-label={t('Naar je dorp in 3D', 'To your village in 3D')} className="absolute inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent" />
         {L && (
           <Link to="/p/dorp" data-testid="lobby-home" className={cn('tap absolute right-2 top-2 flex min-h-[40px] items-center gap-1.5 rounded-full border px-2.5 text-[12.5px] font-semibold shadow-card backdrop-blur-[2px]', light ? 'border-white/30 bg-[#17233f]/75 text-white' : 'border-white/70 bg-white/85 text-ink-950')}>
             <Home className="h-4 w-4 shrink-0 text-accent" aria-hidden />
             <span className="leading-tight">
-              <span className="block">{t('Jouw huis', 'Your home')} · {nl ? HOME_STAGES[homeStage(L.level)].nl : HOME_STAGES[homeStage(L.level)].en} · {t(`level ${L.level}`, `level ${L.level}`)}</span>
-              {levelsToNextHome(L.level) !== null && <span className={cn('block text-[11px] font-normal', light ? 'text-white/85' : 'text-ink-700')}>{t(`nog ${levelsToNextHome(L.level)} tot een ${HOME_STAGES[homeStage(L.level) + 1].nl.toLowerCase()}`, `${levelsToNextHome(L.level)} to a ${HOME_STAGES[homeStage(L.level) + 1].en.toLowerCase()}`)}</span>}
+              <span className="block">{t('Jouw huis', 'Your home')} · {nl ? HOME_STAGES[ownStageOf(d, L.level)].nl : HOME_STAGES[ownStageOf(d, L.level)].en} · {t(`level ${L.level}`, `level ${L.level}`)}</span>
+              {nextHomeLine(ownStageOf(d, L.level), L.level) && <span className={cn('block text-[11px] font-normal', light ? 'text-white/85' : 'text-ink-700')}>{nl ? nextHomeLine(ownStageOf(d, L.level), L.level)!.nl.toLowerCase() : nextHomeLine(ownStageOf(d, L.level), L.level)!.en.toLowerCase()}</span>}
             </span>
             <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
           </Link>
@@ -363,13 +376,13 @@ export function VillageBanner() {
   if (!d?.hero || !L) return null;
   return (
     <section aria-label={t('Je dorp', 'Your village')} className="relative h-[190px] overflow-hidden rounded-3xl shadow-card" data-daypart={daypart} data-testid="village-banner">
-      <VillageScene daypart={daypart} growth={growth} ownStage={homeStage(L.level)} />
+      <VillageScene daypart={daypart} growth={growth} ownStage={ownStageOf(d, L.level)} />
       <Link to="/p/dorp" data-testid="lobby-to-village" aria-label={t('Naar je dorp in 3D', 'To your village in 3D')} className="absolute inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent" />
       <Link to="/p/dorp" data-testid="lobby-home" className={cn('tap absolute right-2 top-2 flex min-h-[40px] items-center gap-1.5 rounded-full border px-2.5 text-[12.5px] font-semibold shadow-card backdrop-blur-[2px]', light ? 'border-white/30 bg-[#17233f]/75 text-white' : 'border-white/70 bg-white/85 text-ink-950')}>
         <Home className="h-4 w-4 shrink-0 text-accent" aria-hidden />
         <span className="leading-tight">
-          <span className="block">{t('Jouw huis', 'Your home')} · {nl ? HOME_STAGES[homeStage(L.level)].nl : HOME_STAGES[homeStage(L.level)].en} · {t(`level ${L.level}`, `level ${L.level}`)}</span>
-          {levelsToNextHome(L.level) !== null && <span className={cn('block text-[11px] font-normal', light ? 'text-white/85' : 'text-ink-700')}>{t(`nog ${levelsToNextHome(L.level)} tot een ${HOME_STAGES[homeStage(L.level) + 1].nl.toLowerCase()}`, `${levelsToNextHome(L.level)} to a ${HOME_STAGES[homeStage(L.level) + 1].en.toLowerCase()}`)}</span>}
+          <span className="block">{t('Jouw huis', 'Your home')} · {nl ? HOME_STAGES[ownStageOf(d, L.level)].nl : HOME_STAGES[ownStageOf(d, L.level)].en} · {t(`level ${L.level}`, `level ${L.level}`)}</span>
+          {nextHomeLine(ownStageOf(d, L.level), L.level) && <span className={cn('block text-[11px] font-normal', light ? 'text-white/85' : 'text-ink-700')}>{nl ? nextHomeLine(ownStageOf(d, L.level), L.level)!.nl.toLowerCase() : nextHomeLine(ownStageOf(d, L.level), L.level)!.en.toLowerCase()}</span>}
         </span>
         <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
       </Link>
@@ -400,14 +413,14 @@ export function TodayTiles({ rate, done, planned }: { rate: number; done: number
         <Link to="/p/wereld" className={tile}>
           <span className="flex items-start justify-between gap-1">
             <span className="text-[13px] text-ink-600">{t('Je dorp', 'Your village')}</span>
-            <img src={`/village/homes/${HOME_STAGES[homeStage(L.level)].key}.webp?v=1`} alt="" width={56} height={52} className="-mr-1 -mt-1 h-12 w-auto" />
+            <img src={`/village/homes/${HOME_STAGES[ownStageOf(d, L.level)].key}.webp?v=1`} alt="" width={56} height={52} className="-mr-1 -mt-1 h-12 w-auto" />
           </span>
           <span className="text-[14px] font-semibold leading-snug text-ink-950">
-            {levelsToNextHome(L.level) === null
+            {nextHomeLine(ownStageOf(d, L.level), L.level) === null
               ? t('Je woont in een villa.', 'You live in a villa.')
-              : t(`Nog ${levelsToNextHome(L.level)} ${levelsToNextHome(L.level) === 1 ? 'level' : 'levels'} tot een ${HOME_STAGES[homeStage(L.level) + 1].nl.toLowerCase()}`, `${levelsToNextHome(L.level)} more ${levelsToNextHome(L.level) === 1 ? 'level' : 'levels'} to a ${HOME_STAGES[homeStage(L.level) + 1].en.toLowerCase()}`)}
+              : nl ? nextHomeLine(ownStageOf(d, L.level), L.level)!.nl : nextHomeLine(ownStageOf(d, L.level), L.level)!.en}
           </span>
-          <span className="sr-only">{nl ? HOME_STAGES[homeStage(L.level)].nl : HOME_STAGES[homeStage(L.level)].en}</span>
+          <span className="sr-only">{nl ? HOME_STAGES[ownStageOf(d, L.level)].nl : HOME_STAGES[ownStageOf(d, L.level)].en}</span>
         </Link>
       ) : (
         <Link to="/p/held/nieuw" className={tile}>

@@ -1,6 +1,6 @@
 import { weaponMesh } from './weapons3d';
 import { creature } from './creatures3d';
-import { CREATURES, isAlpha, type CreatureKind } from '@shared/adventure';
+import { CREATURES, isAlpha, isHarvest, type CreatureKind } from '@shared/adventure';
 import { dress } from '@/components/hero/fabric3d';
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
@@ -888,7 +888,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     scene.add(well3d, wellWater);
     obstacles.push({ x: 0, z: 0, r: 0.95 });
     // Creatures: each at its spot, with a place beside it to stand and strike from.
-    const mobs: { key: string; g: THREE.Group; door: Vec; hurtAt: number; lungeAt: number; x: number; z: number }[] = [];
+    const mobs: { key: string; g: THREE.Group; door: Vec; hurtAt: number; lungeAt: number; x: number; z: number; still: boolean }[] = [];
     let swing = 0;
     let armR: THREE.Object3D | null = null;
     let fpsFrames = 0;
@@ -907,7 +907,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       anchors.push({ id: c.key, obj: g, y: big ? 2.9 : 1.0 });
       spots.push({ key: c.key, door });
       obstacles.push({ x: c.x, z: c.z, r: big ? 1.4 : 0.38 });
-      mobs.push({ key: c.key, g, door, hurtAt: 0, lungeAt: 0, x: c.x, z: c.z });
+      mobs.push({ key: c.key, g, door, hurtAt: 0, lungeAt: 0, x: c.x, z: c.z, still: isHarvest(c.kind) });
     }
     if (boxing) {
       // The boxing school: four posts with ropes, a mat and the heavy bag on its stand.
@@ -2150,11 +2150,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         // Creatures hop on the spot; a beaten one is away until it comes back.
         mobs.forEach((mob, i) => {
           mob.g.visible = !live.current.gone.has(mob.key);
-          const hop = Math.abs(Math.sin(performance.now() / 380 + i * 1.7));
-          mob.g.position.y = hop * 0.09;
-          // Hit: it flattens for a moment.
+          // Trees and rocks stand still; a hit makes them shake instead of hop.
+          const hop = mob.still ? 1 : Math.abs(Math.sin(performance.now() / 380 + i * 1.7));
+          mob.g.position.y = mob.still ? 0 : hop * 0.09;
+          // Hit: it flattens for a moment (a tree or rock only shudders a little).
           const since = performance.now() - mob.hurtAt;
-          const flat = since >= 0 && since < 260 ? Math.sin((since / 260) * Math.PI) * 0.45 : 0;
+          const flat = since >= 0 && since < 260 ? Math.sin((since / 260) * Math.PI) * (mob.still ? 0.08 : 0.45) : 0;
           mob.g.scale.set(1 + (1 - hop) * 0.06 + flat * 0.5, (0.94 + hop * 0.1) * (1 - flat), 1 + (1 - hop) * 0.06 + flat * 0.5);
           // An attack: a quick lunge towards the hero and back.
           const lt = performance.now() - mob.lungeAt;

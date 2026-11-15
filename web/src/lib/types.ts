@@ -181,6 +181,8 @@ export type Labelled = { key: string; nl: string; en: string };
 /** Sports hero (gamified revalidatie), see shared/hero.ts. */
 export type PainCheckin = { recordedAt: string; entries: { area: string; score: number }[] };
 export type HeroState = {
+  /** The home that stands, built with loot (0 = camp … 5 = villa); null without a hero. */
+  homeStage?: number | null;
   /** Walking aids switched on by the professional, e.g. 'crutches'. */
   aids?: string[];
   /** Personal photo key (own likeness) for this account's hero, if set. */

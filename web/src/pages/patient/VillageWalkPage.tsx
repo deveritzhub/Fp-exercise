@@ -13,11 +13,11 @@ import { GEAR_SLOT, SKILLS, bodyShape, levelTier } from '@shared/hero';
 import { villageBuildings } from '@shared/worldMap';
 import { BOXING_KEY, EXIT_KEY, HOME_AT, HOME_KEY, PRACTICE_KEY, TV_KEY, WELL_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
 import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@shared/homeDecor';
-import { HOME_STAGES, homeStage, levelsToNextHome } from '@shared/practiceVillage';
+import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
 import { MODULE_SITES, VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
-import { ALPHA_ADVISED_LEVEL, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
+import { ALPHA_ADVISED_LEVEL, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
@@ -124,8 +124,10 @@ const dose = (i: { sets: number | null; reps: number | null; holdS: number | nul
   [i.sets && i.reps ? `${i.sets} × ${i.reps}` : i.sets ? `${i.sets} ×` : i.reps ? `${i.reps} ×` : null, i.holdS ? `${i.holdS} s` : null].filter(Boolean).join(' · ');
 
 type Track = MapTrack;
-type OwnHome = { level: number; coins: number; owned: string[]; layout: Placed[] };
+type OwnHome = { level: number; coins: number; owned: string[]; layout: Placed[]; stage: number; build: NextHome | null };
 const WHY_NOT: Record<string, [string, string]> = {
+  not_enough_loot: ['Je hebt nog niet genoeg buit om te bouwen.', 'You do not have enough loot to build yet.'],
+  home_complete: ['Je woont al in het grootste huis.', 'You already live in the biggest home.'],
   layout_door: ['Dat is te dicht bij de deur.', 'That is too close to the door.'],
   layout_overlap: ['Daar staat al iets.', 'Something already stands there.'],
   layout_outside: ['Dat is te dicht bij de muur.', 'That is too close to the wall.'],
@@ -418,7 +420,8 @@ export function VillageWalkPage() {
   // The village is built once, when everything it is made from has arrived: built earlier it would be
   // built again a moment later, and a walk just started would be lost.
   const settled = !home.isLoading && !heroQ.isLoading && !coach.isLoading && !(d?.hero && (homeQ.isLoading || adventure.isLoading));
-  const stage = L ? homeStage(L.level) : 0;
+  // The home that stands is the one built with loot; before the first answer, the one the level gives.
+  const stage = own?.stage ?? (L ? homeStage(L.level) : 0);
   const homeLabel = t('Jouw huis', 'Your home');
   const say = (e: unknown) => {
     const code = e instanceof ApiError ? e.message : '';
@@ -460,6 +463,24 @@ export function VillageWalkPage() {
     const z = Math.min(HOME_ROOM.z1 - pad, Math.max(HOME_ROOM.z0 + pad, spot.z));
     const ok = await saveLayout([...own.layout.filter((i) => i.key !== placing), { key: placing, x, z, rot: before?.rot ?? 0 }]);
     if (ok) setPlacing(null);
+  };
+
+  // Building the next home: the loot is handed in, the house in the village grows.
+  const [building, setBuilding] = useState(false);
+  const [justBuilt, setJustBuilt] = useState<number | null>(null);
+  const build = async () => {
+    setBuilding(true);
+    try {
+      const r = await api.post<OwnHome>('/patient/hero/home/build', {});
+      qc.setQueryData(['patient-own-home'], r);
+      setJustBuilt(r.stage);
+      await Promise.all([qc.invalidateQueries({ queryKey: ['patient-adventure'] }), qc.invalidateQueries({ queryKey: ['patient-hero'] })]);
+      toast(t(`Gebouwd! Je woont nu in een ${HOME_STAGES[r.stage].nl.toLowerCase()}.`, `Built! You now live in a ${HOME_STAGES[r.stage].en.toLowerCase()}.`), 'ok');
+    } catch (e) {
+      say(e);
+    } finally {
+      setBuilding(false);
+    }
   };
 
   // The well: one real glass of water, logged where the hero stands.
@@ -544,7 +565,9 @@ export function VillageWalkPage() {
       // The meadow: animals to beat for what they drop.
       ['cow', 38, 12.2], ['cow', 52, 11.6], ['chicken', 45, 9.6], ['chicken', 60, 10.4], ['boar', 30, 14],
       // The first Alpha, at the far edge of the meadow.
-      ['alpha_boar', 12, 14.6]] as [CreatureKind, number, number][])
+      ['alpha_boar', 12, 14.6],
+      // Oaks and rocks behind the strength house: wood and stone to build your home with.
+      ['oak', 205, 11.4], ['oak', 222, 11.8], ['rock', 244, 11.3], ['rock', 257, 11.6]] as [CreatureKind, number, number][])
       .map(([kind, deg, r], i) => ({ key: `mob:${i}`, kind, label: nl ? CREATURES[kind].nl : CREATURES[kind].en, x: Math.cos((deg * Math.PI) / 180) * r, z: Math.sin((deg * Math.PI) / 180) * r }))
       // The big ones only show themselves to an adventurer of their level.
       .filter((c) => (adventure.data?.level ?? 1) >= CREATURES[c.kind].level),
@@ -628,7 +651,9 @@ export function VillageWalkPage() {
       const was = adventure.data?.level ?? 1;
       qc.setQueryData(['patient-adventure'], r);
       levelUp(was, r.level);
-      toast(r.gained > 0 ? t(`${mob.label} verslagen! +${r.gained} avonturen-XP`, `${mob.label} beaten! +${r.gained} adventure XP`) : t(`${mob.label} verslagen! Voor vandaag heb je alle avonturen-XP al binnen.`, `${mob.label} beaten! You already have all of today's adventure XP.`));
+      if (!isHarvest(mob.kind)) toast(r.gained > 0 ? t(`${mob.label} verslagen! +${r.gained} avonturen-XP`, `${mob.label} beaten! +${r.gained} adventure XP`) : t(`${mob.label} verslagen! Voor vandaag heb je alle avonturen-XP al binnen.`, `${mob.label} beaten! You already have all of today's adventure XP.`));
+      // Loot counts for building the home: refresh what it still needs.
+      if (r.drops?.length) void qc.invalidateQueries({ queryKey: ['patient-own-home'] });
       if (r.drops?.length) toast(t(`Buit: ${r.drops.map((x) => `${x.n}× ${LOOT[x.item].nl.toLowerCase()}`).join(', ')}. Het zit in je rugzak.`, `Loot: ${r.drops.map((x) => `${x.n}× ${LOOT[x.item].en.toLowerCase()}`).join(', ')}. It is in your backpack.`));
     } catch (e) {
       say(e);
@@ -832,7 +857,7 @@ export function VillageWalkPage() {
               </p>
             )}
             <Button size="lg" data-testid="strike" className="pointer-events-auto border border-[#ffb3a1] shadow-lift" icon={<Swords className="h-5 w-5" />} onClick={() => void strike()}>
-              {t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : ''}
+              {isHarvest(mob.kind) ? t(`Hak de ${mob.label.toLowerCase()}`, `Chop the ${mob.label.toLowerCase()}`) : t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : ''}
             </Button>
             </span>
           ) : near === BOXING_KEY ? (
@@ -951,7 +976,8 @@ export function VillageWalkPage() {
       </p>
 
       <Dialog open={decorOpen} onClose={() => setDecorOpen(false)} title={t('Jouw huis inrichten', 'Furnish your home')} size="md" sheet
-        description={L ? t(`${HOME_STAGES[stage].nl}, level ${L.level}. ${levelsToNextHome(L.level) === null ? 'Dit is het grootste huis.' : `Nog ${levelsToNextHome(L.level)} level(s) tot een ${HOME_STAGES[stage + 1].nl.toLowerCase()}.`}`, `${HOME_STAGES[stage].en}, level ${L.level}. ${levelsToNextHome(L.level) === null ? 'This is the biggest home.' : `${levelsToNextHome(L.level)} more level(s) to a ${HOME_STAGES[stage + 1].en.toLowerCase()}.`}`) : undefined}>
+        description={L ? t(`${HOME_STAGES[stage].nl}, level ${L.level}.`, `${HOME_STAGES[stage].en}, level ${L.level}.`) : undefined}>
+        {own && <BuildHome own={own} level={L?.level ?? 1} busy={building} justBuilt={justBuilt} onBuild={() => void build()} />}
         {own && (
           <div data-testid="decor-panel">
             <p className="mb-2 text-[12.5px] text-ink-600">{t('Je fysiotherapeut kan in het dorp van de praktijk bij je binnen kijken en ziet dan je meubels, niet je muntjes.', 'Your physiotherapist can look into your home in the practice village and sees your furniture, not your coins.')}</p>
@@ -1143,5 +1169,44 @@ export function VillageWalkPage() {
         </div>
       </Dialog>
     </div>
+  );
+}
+
+/** The next home: what it costs in loot, what you have, and the button to build it. */
+function BuildHome({ own, level, busy, justBuilt, onBuild }: { own: OwnHome; level: number; busy: boolean; justBuilt: number | null; onBuild: () => void }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const b = own.build;
+  const done = justBuilt !== null && justBuilt === own.stage && (
+    <p role="status" data-testid="home-built" className="mb-2 rounded-xl border border-[#9fd4a8] bg-[#eef8f0] px-3 py-2 text-[14.5px] font-semibold text-ink-900">
+      {t(`Gebouwd! Je woont nu in een ${HOME_STAGES[own.stage].nl.toLowerCase()}.`, `Built! You now live in a ${HOME_STAGES[own.stage].en.toLowerCase()}.`)}
+    </p>
+  );
+  if (!b) return <>{done}<p data-testid="build-home" className="mb-3 rounded-xl bg-[#F3F7F1] px-3 py-2.5 text-[14.5px] text-ink-800">{t('Je woont in het grootste huis van het dorp.', 'You live in the biggest home of the village.')}</p></>;
+  const next = HOME_STAGES[b.stage];
+  return (
+    <>
+    {done}
+    <section data-testid="build-home" aria-labelledby="build-home-h" className="mb-3 rounded-xl border border-line bg-white p-3">
+      <h3 id="build-home-h" className="text-[15.5px] font-semibold text-ink-950">{t(`Bouw een ${next.nl.toLowerCase()}`, `Build a ${next.en.toLowerCase()}`)}</h3>
+      <p className="mt-0.5 text-[13.5px] text-ink-700">{t('Verzamel buit in het dorp: hak eiken voor hout en rotsen voor steen, en versla wezens voor wat ze laten vallen.', 'Collect loot in the village: chop oaks for wood and rocks for stone, and beat creatures for what they drop.')}</p>
+      <ul className="mt-2 grid grid-cols-2 gap-1.5">
+        {(Object.entries(b.cost) as [LootKey, number][]).map(([k, n]) => {
+          const have = Math.min(n, n - (b.missing[k] ?? 0));
+          return (
+            <li key={k} data-cost={k} className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[13.5px] ${have >= n ? 'border-[#9fd4a8] bg-[#eef8f0]' : 'border-line'}`}>
+              <span aria-hidden>{LOOT[k].icon}</span>
+              <span className="min-w-0 flex-1 truncate">{nl ? LOOT[k].nl : LOOT[k].en}</span>
+              <span className="tabular-nums font-semibold">{have}/{n}</span>
+            </li>
+          );
+        })}
+      </ul>
+      {!b.levelOk && <p className="mt-2 text-[13.5px] text-ink-700">{t(`Vanaf level ${next.from} mag je een ${next.nl.toLowerCase()} bouwen (nu level ${level}).`, `From level ${next.from} you may build a ${next.en.toLowerCase()} (now level ${level}).`)}</p>}
+      <Button className="mt-2 w-full" data-testid="build-home-button" disabled={!b.ready} loading={busy} onClick={onBuild}>
+        {b.ready ? t(`Bouw je ${next.nl.toLowerCase()}`, `Build your ${next.en.toLowerCase()}`) : !b.levelOk ? t(`Nog niet: level ${next.from} nodig`, `Not yet: level ${next.from} needed`) : t('Nog niet genoeg buit', 'Not enough loot yet')}
+      </Button>
+    </section>
+    </>
   );
 }

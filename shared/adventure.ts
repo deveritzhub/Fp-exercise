@@ -16,6 +16,9 @@ export const CREATURES = {
   boar: { nl: 'Wild zwijn', en: 'Wild boar', hp: 16, xp: 45, weakTo: 'trained', level: 4 },
   // The first Alpha: a huge boar at the edge of the meadow. It attacks by itself and can beat you.
   alpha_boar: { nl: 'Alfazwijn', en: 'Alpha boar', hp: 60, xp: 220, weakTo: 'trained', level: 1 },
+  // Not creatures but things to harvest, the same way: an oak gives wood, a rock gives stone.
+  oak: { nl: 'Eik', en: 'Oak', hp: 5, xp: 3, weakTo: 'moving', level: 1 },
+  rock: { nl: 'Rots', en: 'Rock', hp: 7, xp: 4, weakTo: 'trained', level: 1 },
 } as const;
 export type CreatureKind = keyof typeof CREATURES;
 export const CREATURE_KINDS = Object.keys(CREATURES) as CreatureKind[];
@@ -34,7 +37,11 @@ export const ATTACKS: Record<CreatureKind, { damage: number; everyMs: number; ag
   cow: { damage: 0, everyMs: 1500, aggressive: false },
   boar: { damage: 3, everyMs: 1500, aggressive: false },
   alpha_boar: { damage: 8, everyMs: 1600, aggressive: true },
+  oak: { damage: 0, everyMs: 1500, aggressive: false },
+  rock: { damage: 0, everyMs: 1500, aggressive: false },
 };
+/** Trees and rocks: you chop them for wood and stone; they never fight back. */
+export const isHarvest = (kind: CreatureKind) => kind === 'oak' || kind === 'rock';
 /** An Alpha: a big, dangerous one with its own warning; worth fighting with a good weapon. */
 export const isAlpha = (kind: CreatureKind) => kind.startsWith('alpha_');
 /** The adventurer level at which an Alpha is a fair fight (it shows itself earlier, as a warning). */
@@ -125,6 +132,8 @@ export const LOOT = {
   button: { nl: 'Bankknoop', en: 'Couch button', icon: '🔘' },
   crown: { nl: 'Kroonscherf', en: 'Crown shard', icon: '👑' },
   alpha_tusk: { nl: 'Alfaslagtand', en: 'Alpha tusk', icon: '🐗' },
+  wood: { nl: 'Hout', en: 'Wood', icon: '🪵' },
+  stone: { nl: 'Steen', en: 'Stone', icon: '🪨' },
 } as const;
 export type LootKey = keyof typeof LOOT;
 export const LOOT_KEYS = Object.keys(LOOT) as LootKey[];
@@ -140,6 +149,8 @@ export const DROPS: Record<CreatureKind, { item: LootKey; chance: number; max: n
   cow: [{ item: 'hide', chance: 1, max: 1 }, { item: 'bone', chance: 1, max: 1 }, { item: 'meat', chance: 0.7, max: 2 }],
   boar: [{ item: 'bone', chance: 1, max: 2 }, { item: 'meat', chance: 0.8, max: 2 }, { item: 'tusk', chance: 0.4, max: 1 }],
   alpha_boar: [{ item: 'alpha_tusk', chance: 1, max: 1 }, { item: 'tusk', chance: 1, max: 2 }, { item: 'meat', chance: 1, max: 3 }],
+  oak: [{ item: 'wood', chance: 1, max: 3 }],
+  rock: [{ item: 'stone', chance: 1, max: 2 }],
 };
 
 /** The drops of one win. `rnd` gives numbers in [0, 1), as Math.random does. */

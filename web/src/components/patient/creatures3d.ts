@@ -64,6 +64,8 @@ function simpleCreature(kind: CreatureKind): THREE.Group {
   }
   if (kind === 'chicken' || kind === 'cow' || kind === 'boar') return animal(kind);
   if (kind === 'alpha_boar') return alphaBoar();
+  if (kind === 'oak') return oak();
+  if (kind === 'rock') return rock();
   const g = new THREE.Group();
   if (kind === 'slime') {
     const body = new THREE.Mesh(new THREE.SphereGeometry(0.32, 20, 14), m(0x8fb2c9, { transparent: true, opacity: 0.9, roughness: 0.25 }));
@@ -259,6 +261,40 @@ function alphaBoar(): THREE.Group {
     scar.rotation.x = 0.5;
     g.add(scar);
   }
+  g.traverse((o) => { o.castShadow = true; });
+  return g;
+}
+
+/** An oak to chop: a thick trunk, a round crown, a cut mark where the axe goes in. */
+function oak(): THREE.Group {
+  const g = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.28, 1.5, 10), m(0x6b4a2e, { roughness: 0.9 }));
+  trunk.position.y = 0.75;
+  const cut = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.16, 0.1), m(0xd9b98a));
+  cut.position.set(0, 0.55, 0.24);
+  g.add(trunk, cut);
+  for (const [x, y, z, r] of [[0, 2.0, 0, 0.85], [0.45, 1.75, 0.15, 0.55], [-0.42, 1.8, -0.1, 0.6], [0.05, 2.4, -0.15, 0.55]] as const) {
+    const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), m(0x3f7a35, { roughness: 0.85, flatShading: true }));
+    leaf.position.set(x, y, z);
+    g.add(leaf);
+  }
+  g.traverse((o) => { o.castShadow = true; });
+  return g;
+}
+
+/** A rock to break: a few grey boulders with a lighter vein of stone. */
+function rock(): THREE.Group {
+  const g = new THREE.Group();
+  for (const [x, y, z, r, c] of [[0, 0.42, 0, 0.55, 0x8a8d8f], [0.45, 0.25, 0.2, 0.32, 0x7b7e80], [-0.38, 0.22, 0.18, 0.28, 0x96999b]] as const) {
+    const b = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 0), m(c, { roughness: 0.95, flatShading: true }));
+    b.position.set(x, y, z);
+    b.rotation.set(x * 2, z * 3, 0.3);
+    g.add(b);
+  }
+  const vein = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, 0.05), m(0xd8d2c4));
+  vein.position.set(0.05, 0.62, 0.42);
+  vein.rotation.z = 0.4;
+  g.add(vein);
   g.traverse((o) => { o.castShadow = true; });
   return g;
 }

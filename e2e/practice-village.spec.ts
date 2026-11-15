@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { LOOT_KEYS } from '../shared/adventure';
 import { expectAccessible, login } from './helpers';
 
 /** Staff: the practice as a village, one numbered home per patient, growing with the hero's level. */
@@ -176,7 +177,7 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   await expect(pack.locator('[data-weapon="fists"]')).toHaveAttribute('data-state', 'on');
   await expect(page.getByTestId('backpack-flask')).toContainText('1/2');
   // The loot of the village: a square per kind, a question mark until it is found.
-  await expect(page.getByTestId('loot').locator('[data-loot]')).toHaveCount(10);
+  await expect(page.getByTestId('loot').locator('[data-loot]')).toHaveCount(LOOT_KEYS.length);
   // Enough adventure XP for the staff: the smith sells it, it goes on at once and comes off again.
   const staffRow = pack.locator('[data-weapon="staff"]');
   if ((await staffRow.getAttribute('data-state')) === 'shop' && await staffRow.getByRole('button', { name: /Koop Wandelstaf/ }).isEnabled()) {
