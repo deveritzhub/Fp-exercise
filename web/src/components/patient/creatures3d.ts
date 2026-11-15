@@ -22,6 +22,9 @@ const MODEL: Partial<Record<CreatureKind, { file: string; scale: number }>> = {
   couch: { file: 'bankhanger', scale: 1 },
   giant_slime: { file: 'stijfheidsslijm', scale: 1.9 },
   couch_king: { file: 'bankkoning', scale: 1 },
+  chicken: { file: 'kip', scale: 1 },
+  cow: { file: 'koe', scale: 0.92 },
+  boar: { file: 'zwijn', scale: 1 },
 };
 const CREATURES_VERSION = 1;
 
@@ -34,7 +37,7 @@ export function creature(kind: CreatureKind): THREE.Group {
   const simple = simpleCreature(kind);
   g.add(simple);
   const m3 = MODEL[kind];
-  // The animals are made here; a sculpted file can take their place later.
+  // What has no sculpted file (the tree to chop) stays as made here.
   if (!m3) return g;
   loadModel(`/village/creatures/${m3.file}.glb?v=${CREATURES_VERSION}`)
     .then((gltf) => {

@@ -905,7 +905,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       scene.add(g);
       const len = Math.hypot(c.x, c.z) || 1;
       const door = { x: c.x * (1 - 0.85 / len), z: c.z * (1 - 0.85 / len) };
-      anchors.push({ id: c.key, obj: g, y: c.kind === 'tree' ? 2.9 : c.kind === 'cow' ? 1.25 : 1.0 });
+      anchors.push({ id: c.key, obj: g, y: c.kind === 'tree' ? 2.9 : c.kind === 'cow' ? 1.45 : c.kind === 'boar' ? 1.1 : 1.0 });
       spots.push({ key: c.key, door });
       obstacles.push({ x: c.x, z: c.z, r: 0.38 });
       mobs.push({ key: c.key, kind: c.kind, g, door, hurtAt: 0 });
