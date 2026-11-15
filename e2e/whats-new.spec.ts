@@ -21,7 +21,8 @@ test('patient: "What\'s new" in Settings', async ({ browser }) => {
   await page.goto('/p/instellingen');
   await page.getByRole('button', { name: /Wat is er nieuw\?/ }).click();
   const dlg = page.getByRole('dialog', { name: 'Wat is er nieuw?' });
-  await expect(dlg.getByText(/Lees voor/)).toBeVisible();
+  // The newest point first.
+  await expect(dlg.getByText(/Nieuw: Voeding/)).toBeVisible();
   await expectAccessible(page, 'whats new (patient)');
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
   // The full history, from the first version, with dates.
