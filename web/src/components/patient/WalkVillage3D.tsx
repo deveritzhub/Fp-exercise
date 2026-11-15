@@ -47,6 +47,9 @@ type Place = { group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry
 export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key`: the hero turns to it and it flinches. */ strike: (key: string) => void; /** The creature `key` lunges at the hero. */ lunge: (key: string) => void; /** Beaten: the hero stands up at the well at once, without walking. */ respawn: () => void };
 /** The bag of the boxing school in the village. */
 export const BOXING_KEY = 'boxing';
+/** The campfire by the meadow: raw loot is cooked there. Shown with the boxing school (the adventure). */
+export const CAMP_KEY = 'camp';
+const CAMP_AT: Vec = { x: Math.cos((50 * Math.PI) / 180) * 4.6, z: Math.sin((50 * Math.PI) / 180) * 4.6 };
 const BOXING_AT: Vec = { x: -3.1, z: 5.4 };
 type Props = {
   /** Buildings round the square take the next free slot; one with a `site` stands there instead. */
@@ -103,6 +106,8 @@ type Props = {
   belt?: string | null;
   /** The adventure weapon in the hero's hand (weapons3d.ts), if any. */
   weapon?: string | null;
+  /** The tools the patient owns: shown in hand while chopping or mining. */
+  tools?: string[];
   /** How fast the hero moves, 1 = normal. Lower when thirsty or stiff. */
   pace?: number;
   /** How the figure by the TV looks: the patient's own therapist. Without it: the practice colours. */
@@ -735,7 +740,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
   const { t } = useI18n();
   const coachName = coachLabel ?? t('Fysiotherapeut', 'Physiotherapist');
   const host = useRef<HTMLDivElement>(null);
@@ -766,8 +771,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   // Read at the moment of use, so new furniture or a new mode never rebuilds the whole village.
   const slow = Math.min(1, Math.max(0.5, paceProp));
   const gone = useMemo(() => new Set(creaturesGone ?? []), [creaturesGone]);
-  const live = useRef({ homeItems: homeItems ?? [], placing, onFloor, slow, gone, weapon, belt });
-  live.current = { homeItems: homeItems ?? [], placing, onFloor, slow, gone, weapon, belt };
+  const live = useRef({ homeItems: homeItems ?? [], placing, onFloor, slow, gone, weapon, belt, tools: tools ?? [] });
+  live.current = { homeItems: homeItems ?? [], placing, onFloor, slow, gone, weapon, belt, tools: tools ?? [] };
   const furnish = useRef<(items: Placed[]) => void>(() => {});
   const itemsKey = JSON.stringify(homeItems ?? []);
   useEffect(() => {
@@ -888,11 +893,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     scene.add(well3d, wellWater);
     obstacles.push({ x: 0, z: 0, r: 0.95 });
     // Creatures: each at its spot, with a place beside it to stand and strike from.
-    const mobs: { key: string; kind: CreatureKind; g: THREE.Group; door: Vec; hurtAt: number; lungeAt: number; x: number; z: number; still: boolean }[] = [];
+    const mobs: { key: string; kind: CreatureKind; g: THREE.Group; door: Vec; hurtAt: number; lungeAt: number; x: number; z: number; still: boolean; roam: { home: Vec; r: number; speed: number; to: Vec | null; wait: number; ob: Obstacle } | null }[] = [];
     // How the blow in progress is swung, how long it takes, and until when the hatchet is in hand.
     let swingStyle: 'jab' | 'thrust' | 'slash' | 'overhead' = 'jab';
     let swingFor = 0.32;
     let chopUntil = 0;
+    let chopWith = 'hatchet';
     let swing = 0;
     let armR: THREE.Object3D | null = null;
     let fpsFrames = 0;
@@ -913,6 +919,60 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       water.position.set(Math.cos(pa) * 13.4, 0, Math.sin(pa) * 13.4);
       scene.add(water);
       obstacles.push({ x: water.position.x, z: water.position.z, r: 1.7 });
+      // The meadow where the cows and chickens graze: lush grass with clover, a wooden fence round it
+      // and an opening towards the square.
+      if (creatures.some((c) => c.kind === 'cow' || c.kind === 'chicken')) {
+        const ma = (40 * Math.PI) / 180;
+        const mc = { x: Math.cos(ma) * 12, z: Math.sin(ma) * 12 };
+        const MR = 3.2;
+        const grass = new THREE.TextureLoader().load('/village/ground/weide.webp?v=1');
+        grass.colorSpace = THREE.SRGBColorSpace;
+        grass.wrapS = grass.wrapT = THREE.RepeatWrapping;
+        grass.repeat.set(2.4, 2.4);
+        const edge = document.createElement('canvas');
+        edge.width = edge.height = 128;
+        const ec = edge.getContext('2d');
+        if (ec) {
+          const gr = ec.createRadialGradient(64, 64, 40, 64, 64, 64);
+          gr.addColorStop(0, '#fff');
+          gr.addColorStop(1, '#000');
+          ec.fillStyle = gr;
+          ec.fillRect(0, 0, 128, 128);
+        }
+        const field = new THREE.Mesh(
+          new THREE.CircleGeometry(MR + 0.6, 48),
+          new THREE.MeshStandardMaterial({ map: grass, alphaMap: new THREE.CanvasTexture(edge), transparent: true, depthWrite: false, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -2 }),
+        );
+        field.rotation.x = -Math.PI / 2;
+        field.position.set(mc.x, 0.015, mc.z);
+        field.receiveShadow = true;
+        scene.add(field);
+        loadModel('/village/props/hek.glb?v=1')
+          .then((gltf) => {
+            const piece = gltf.scene;
+            piece.traverse((o) => {
+              const mm = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+              if (mm?.isMeshStandardMaterial) {
+                mm.metalness = 0;
+                mm.roughness = 0.9;
+              }
+              o.castShadow = true;
+            });
+            const toSquare = Math.atan2(-mc.z, -mc.x);
+            const n = 11;
+            for (let i = 0; i < n; i++) {
+              const a = toSquare + ((i + 0.5) / n) * Math.PI * 2;
+              // The opening: no fence on the side that faces the square.
+              if (Math.abs(Math.atan2(Math.sin(a - toSquare), Math.cos(a - toSquare))) < 0.5) continue;
+              const f = piece.clone(true);
+              f.position.set(mc.x + Math.cos(a) * MR, 0, mc.z + Math.sin(a) * MR);
+              f.rotation.y = -a + Math.PI / 2;
+              f.scale.set((2 * Math.PI * MR) / n / 2, 0.8, 1);
+              scene.add(f);
+            }
+          })
+          .catch(() => undefined);
+      }
     }
     for (const c of creatures ?? []) {
       const g = creature(c.kind);
@@ -926,8 +986,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const door = { x: c.x * (1 - reach / len), z: c.z * (1 - reach / len) };
       anchors.push({ id: c.key, obj: g, y: big ? 2.9 : c.kind === 'cow' ? 1.45 : c.kind === 'boar' ? 1.1 : 1.0 });
       spots.push({ key: c.key, door });
-      obstacles.push({ x: c.x, z: c.z, r: big ? 1.4 : 0.38 });
-      mobs.push({ key: c.key, kind: c.kind, g, door, hurtAt: 0, lungeAt: 0, x: c.x, z: c.z, still: isHarvest(c.kind) });
+      const ob: Obstacle = { x: c.x, z: c.z, r: big ? 1.4 : 0.38 };
+      obstacles.push(ob);
+      // Animals graze: they wander a little round where they live, slowly, and stop when the hero comes.
+      const grazer = c.kind === 'cow' || c.kind === 'chicken' || c.kind === 'boar';
+      const roam = grazer ? { home: { x: c.x, z: c.z }, r: c.kind === 'chicken' ? 1.5 : 1.2, speed: c.kind === 'chicken' ? 0.55 : 0.3, to: null, wait: 1 + (c.x * 7.31 - Math.floor(c.x * 7.31)) * 4, ob } : null;
+      mobs.push({ key: c.key, kind: c.kind, g, door, hurtAt: 0, lungeAt: 0, x: c.x, z: c.z, still: isHarvest(c.kind), roam });
     }
     if (boxing) {
       // The boxing school: four posts with ropes, a mat and the heavy bag on its stand.
@@ -965,6 +1029,37 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const len = Math.hypot(BOXING_AT.x, BOXING_AT.z);
       anchors.push({ id: BOXING_KEY, obj: ring, y: 2.35 });
       spots.push({ key: BOXING_KEY, door: { x: BOXING_AT.x * (1 - 1.0 / len), z: BOXING_AT.z * (1 - 1.0 / len) } });
+    }
+    // The campfire: a ring of stones, crossed logs and a flame that flickers.
+    let flames: THREE.Mesh[] = [];
+    if (boxing) {
+      const camp = new THREE.Group();
+      for (let i = 0; i < 9; i++) {
+        const a = (i / 9) * Math.PI * 2;
+        const st = new THREE.Mesh(new THREE.DodecahedronGeometry(0.13, 0), mat(0x8d8a82));
+        st.position.set(Math.cos(a) * 0.45, 0.07, Math.sin(a) * 0.45);
+        st.rotation.set(a, a * 2, 0);
+        camp.add(st);
+      }
+      for (let i = 0; i < 3; i++) {
+        const log = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.7, 6), mat(0x5d4027));
+        log.rotation.set(Math.PI / 2 - 0.35, (i / 3) * Math.PI, 0);
+        log.position.y = 0.12;
+        camp.add(log);
+      }
+      flames = [[0.22, 0.55, 0xff9a3c], [0.14, 0.42, 0xffd36a]].map(([r, h, c]) => {
+        const f = new THREE.Mesh(new THREE.ConeGeometry(r, h, 7), new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 1.8, transparent: true, opacity: 0.92 }));
+        f.position.y = 0.12 + h / 2;
+        camp.add(f);
+        return f;
+      });
+      camp.position.set(CAMP_AT.x, 0, CAMP_AT.z);
+      camp.traverse((o) => { o.castShadow = true; });
+      scene.add(camp);
+      obstacles.push({ x: CAMP_AT.x, z: CAMP_AT.z, r: 0.55 });
+      const len = Math.hypot(CAMP_AT.x, CAMP_AT.z);
+      anchors.push({ id: CAMP_KEY, obj: camp, y: 1.5 });
+      spots.push({ key: CAMP_KEY, door: { x: CAMP_AT.x * (1 - 0.95 / len), z: CAMP_AT.z * (1 - 0.95 / len) } });
     }
     if (well) {
       anchors.push({ id: WELL_KEY, obj: well3d, y: 2.55 });
@@ -1538,7 +1633,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           let wearing: { weapon: string | null; belt: string | null } | null = null;
           equip = () => {
             // While chopping, the hatchet is in the hand instead of the weapon.
-            const want = { weapon: performance.now() < chopUntil ? 'axe' : live.current.weapon, belt: live.current.belt };
+            const want = { weapon: performance.now() < chopUntil ? chopWith : live.current.weapon, belt: live.current.belt };
             if (wearing && wearing.weapon === want.weapon && wearing.belt === want.belt) return;
             wearing = want;
             if (waist) {
@@ -1796,6 +1891,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const mob = mobs.find((x) => x.key === k);
       if (mob) walkTo.current(mob.door, k);
       else if (k === BOXING_KEY && boxing) walkTo.current(spots.find((sp) => sp.key === BOXING_KEY)!.door, BOXING_KEY);
+      else if (k === CAMP_KEY && boxing) walkTo.current(spots.find((sp) => sp.key === CAMP_KEY)!.door, CAMP_KEY);
       else if (k === WELL_KEY && well) walkTo.current(WELL_SPOT, WELL_KEY);
       else if (k === TV_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY, TV_KEY);
       else if (k === PRACTICE_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY);
@@ -1822,7 +1918,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           swingStyle = chop || w === 'club' || w === 'hammer' || w === 'axe' ? 'overhead' : w === 'sword' || w === 'hero_sword' ? 'slash' : w === 'staff' || w === 'spear' ? 'thrust' : 'jab';
           swingFor = swingStyle === 'overhead' ? 0.56 : swingStyle === 'slash' ? 0.4 : swingStyle === 'thrust' ? 0.36 : 0.24;
           swing = swingFor;
-          if (mob.kind === 'oak') chopUntil = performance.now() + 1600;
+          // The tool for the job in hand while it is used: the hatchet for an oak, the pickaxe for a rock.
+          const tool = mob.kind === 'oak' ? 'hatchet' : mob.kind === 'rock' ? 'pickaxe' : null;
+          if (tool && live.current.tools.includes(tool)) {
+            chopWith = tool;
+            chopUntil = performance.now() + 1600;
+          }
           mob.hurtAt = performance.now() + swingFor * (swingStyle === 'overhead' ? 620 : 450);
         },
         respawn: () => {
@@ -2209,9 +2310,50 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       if (!reduce) {
         for (const mx of staffMixers) mx.update(dt);
+        for (const [i, f] of flames.entries()) {
+          const fl = reduce ? 1 : 1 + Math.sin(tt * (9 + i * 4) + i) * 0.12 + Math.sin(tt * 23 + i) * 0.05;
+          f.scale.set(1 / Math.sqrt(fl), fl, 1 / Math.sqrt(fl));
+        }
         // Creatures hop on the spot; a beaten one is away until it comes back.
         mobs.forEach((mob, i) => {
           mob.g.visible = !live.current.gone.has(mob.key);
+          // Grazing: a few steps to a new spot near home, a rest, and on again. Not while the hero is
+          // close by, on the way to it, or just after a blow.
+          if (mob.roam && !reduce) {
+            const rm = mob.roam;
+            const near = Math.hypot(pos.current.x - mob.x, pos.current.z - mob.z) < 4.5;
+            const busy = near || goal?.key === mob.key || performance.now() - mob.hurtAt < 3000;
+            if (busy) {
+              rm.to = null;
+              if (near) mob.g.rotation.y = Math.atan2(pos.current.x - mob.x, pos.current.z - mob.z);
+            } else if (!rm.to) {
+              rm.wait -= dt;
+              if (rm.wait <= 0) {
+                const a = Math.random() * Math.PI * 2;
+                const r = Math.sqrt(Math.random()) * rm.r;
+                rm.to = { x: rm.home.x + Math.cos(a) * r, z: rm.home.z + Math.sin(a) * r };
+              }
+            } else {
+              const tx = rm.to.x - mob.x;
+              const tz = rm.to.z - mob.z;
+              const left = Math.hypot(tx, tz);
+              const stepLen = rm.speed * dt;
+              if (left <= stepLen) {
+                rm.to = null;
+                rm.wait = 2 + Math.random() * 5;
+              } else {
+                mob.x += (tx / left) * stepLen;
+                mob.z += (tz / left) * stepLen;
+                mob.g.rotation.y = Math.atan2(tx, tz);
+              }
+              // Where it can be hit from, and what the hero walks round, go with it.
+              const len = Math.hypot(mob.x, mob.z) || 1;
+              mob.door.x = mob.x * (1 - 0.85 / len);
+              mob.door.z = mob.z * (1 - 0.85 / len);
+              rm.ob.x = mob.x;
+              rm.ob.z = mob.z;
+            }
+          }
           // Trees and rocks stand still; a hit makes them shake instead of hop.
           const hop = mob.still ? 1 : Math.abs(Math.sin(performance.now() / 380 + i * 1.7));
           mob.g.position.y = mob.still ? 0 : hop * 0.09;
@@ -2479,6 +2621,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             <button ref={setLabel(BOXING_KEY)} type="button" data-spot={BOXING_KEY} onClick={() => go(BOXING_KEY)} aria-label={t('Loop naar de boksschool', 'Walk to the boxing school')}
               className={cn(plate, 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
               {t('Boksschool', 'Boxing school')}
+            </button>
+          )}
+          {boxing && (
+            <button ref={setLabel(CAMP_KEY)} type="button" data-spot={CAMP_KEY} onClick={() => go(CAMP_KEY)} aria-label={t('Loop naar het kampvuur', 'Walk to the campfire')}
+              className={cn(plate, 'text-[#ffc078]')} style={{ transform: 'translate(-9999px,0)' }}>
+              {t('Kampvuur', 'Campfire')}
             </button>
           )}
           {well && (

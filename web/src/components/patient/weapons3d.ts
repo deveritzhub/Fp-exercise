@@ -18,7 +18,7 @@ const part = (g: THREE.Group, geo: THREE.BufferGeometry, mat: THREE.Material, y:
 };
 
 /** The sculpted weapons (web/public/village/weapons): grip at the origin, standing up. */
-const FILE: Record<string, string> = { staff: 'wandelstaf', gloves: 'bokshandschoen', club: 'knots', hammer: 'smidshamer', sword: 'zwaard', axe: 'strijdbijl', spear: 'speer', hero_sword: 'heldenzwaard' };
+const FILE: Record<string, string> = { hatchet: 'hakbijl', staff: 'wandelstaf', gloves: 'bokshandschoen', club: 'knots', hammer: 'smidshamer', sword: 'zwaard', axe: 'strijdbijl', spear: 'speer', hero_sword: 'heldenzwaard' };
 const WEAPONS_VERSION = 1;
 
 /** The weapon for the hand: the sculpted model, with the simple one made here until it has loaded. */

@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Armchair, Backpack, Beef, Droplets, Heart, Sparkles, ChevronRight, Coins, DoorOpen, Footprints, Gamepad2, Gauge, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
+import { Armchair, Backpack, Beef, Flame, Utensils, Package, Droplets, Heart, Sparkles, ChevronRight, Coins, DoorOpen, Footprints, Gamepad2, Gauge, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
 import { ApiError, api, mediaUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -11,7 +11,8 @@ import { useHero } from '@/pages/patient/HeroPages';
 import { MODULE_PATH, moduleOf, openToday, type PatientHomeData } from '@/pages/patient/PatientHome';
 import { GEAR_SLOT, SKILLS, bodyShape, levelTier } from '@shared/hero';
 import { villageBuildings } from '@shared/worldMap';
-import { BOXING_KEY, EXIT_KEY, HOME_AT, HOME_KEY, PRACTICE_KEY, TV_KEY, WELL_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
+import { ItemIcon } from '@/components/patient/ItemIcon';
+import { BOXING_KEY, CAMP_KEY, EXIT_KEY, HOME_AT, HOME_KEY, PRACTICE_KEY, TV_KEY, WELL_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
 import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@shared/homeDecor';
 import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
 import { MODULE_SITES, VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
@@ -19,7 +20,7 @@ import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
 import { SUPPLY } from '@shared/supplies';
 import { useSupplies } from '@/lib/supplies';
-import { ALPHA_ADVISED_LEVEL, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
+import { ALPHA_ADVISED_LEVEL, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
@@ -328,7 +329,8 @@ export function VillageWalkPage() {
 
   const d = heroQ.data;
   // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
-  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; coins: number };
+  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number;
+    quest?: { key: string; kind: CreatureKind; n: number; nl: string; en: string; progress: number; done: boolean; xp: number } | null };
   const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
   // The weapon in hand is the one bought and put on in the backpack; none means bare fists.
   const weapon = weaponByKey(adventure.data?.weapon);
@@ -429,6 +431,8 @@ export function VillageWalkPage() {
         link: link ?? undefined,
       };
     }),
+    // The adventure's task of the day: walk to the first of its kind; done, it gives its bonus.
+    ...(adventure.data?.quest && !adventure.data.quest.done ? [{ id: 'adv-quest', label: nl ? adventure.data.quest.nl : adventure.data.quest.en, hint: t(`${adventure.data.quest.progress}/${adventure.data.quest.n} · +${adventure.data.quest.xp} avonturen-XP`, `${adventure.data.quest.progress}/${adventure.data.quest.n} · +${adventure.data.quest.xp} adventure XP`), dest: `quest:${adventure.data.quest.kind}` }] : []),
     ...(d?.chest?.available ? [{ id: 'chest', label: t('Open je dagkist', 'Open your day chest'), hint: t('Ligt klaar in de smederij', 'Ready in the smithy'), dest: 'smithy', link: '/p/held/inventaris' }] : []),
   ];
   // ---- The own home ----
@@ -549,6 +553,37 @@ export function VillageWalkPage() {
   const [dojoOpen, setDojoOpen] = useState(false);
   // The boxing school: a round on the bag, for adventure XP.
   const [boxingOpen, setBoxingOpen] = useState(false);
+  // The campfire, the chest at home, and where the hero is (the village or a room).
+  const [campOpen, setCampOpen] = useState(false);
+  const [chestOpen, setChestOpen] = useState(false);
+  const [zone, setZone] = useState('village');
+  const [cooking, setCooking] = useState<string | null>(null);
+  const cook = async (key: string) => {
+    setCooking(key);
+    try {
+      qc.setQueryData(['patient-adventure'], await api.post<Adventure>('/patient/hero/adventure/cook', { key }));
+      toast(t(`${LOOT[key as LootKey].nl} klaar! Het zit in je rugzak.`, `${LOOT[key as LootKey].en} ready! It is in your backpack.`));
+    } catch (e) {
+      say(e);
+    } finally {
+      setCooking(null);
+    }
+  };
+  // A cooked dish from the pack: the one that heals most first.
+  const dishes = COOKING.filter((x) => (adventure.data?.loot?.[x.key] ?? 0) > 0).sort((a, b) => b.heals - a.heals);
+  const dishCount = COOKING.reduce((n, x) => n + (adventure.data?.loot?.[x.key] ?? 0), 0);
+  const eatDish = async () => {
+    const dish = dishes[0];
+    if (!dish) return;
+    try {
+      const r = await api.post<Adventure & { heals: number }>('/patient/hero/adventure/eat', { key: dish.key });
+      qc.setQueryData(['patient-adventure'], r);
+      heal(r.heals);
+      toast(t(`Je held eet ${LOOT[dish.key].nl.toLowerCase()}: +${Math.round(r.heals * 100)}% leven.`, `Your hero eats ${LOOT[dish.key].en.toLowerCase()}: +${Math.round(r.heals * 100)}% life.`));
+    } catch (e) {
+      say(e);
+    }
+  };
   const [roundNo, setRoundNo] = useState(0);
   const roundDone = async (hits: number) => {
     try {
@@ -665,7 +700,8 @@ export function VillageWalkPage() {
     // It comes back after a while, somewhere to return to.
     window.setTimeout(() => setBeaten((b) => b.filter((k) => k !== key)), 45_000);
     try {
-      const r = await api.post<Adventure & { gained: number; drops?: { item: LootKey; n: number }[] }>('/patient/hero/adventure/win', { kind: mob.kind });
+      const r = await api.post<Adventure & { gained: number; questXp?: number; drops?: { item: LootKey; n: number }[] }>('/patient/hero/adventure/win', { kind: mob.kind });
+      if (r.questXp) toast(t(`Taak van vandaag klaar: ${r.quest?.nl.toLowerCase() ?? ''}! +${r.questXp} avonturen-XP`, `Today’s task done: ${r.quest?.en.toLowerCase() ?? ''}! +${r.questXp} adventure XP`));
       const was = adventure.data?.level ?? 1;
       qc.setQueryData(['patient-adventure'], r);
       levelUp(was, r.level);
@@ -680,6 +716,16 @@ export function VillageWalkPage() {
 
   const run = (task: Task) => {
     hideTip();
+    // The task of the day goes to the nearest one of its kind that is there.
+    if (task.dest.startsWith('quest:')) {
+      const kind = task.dest.slice(6);
+      const at = track.current;
+      const target = creatures.filter((c) => c.kind === kind && !beaten.includes(c.key)).sort((a, b) => Math.hypot(a.x - at.x, a.z - at.z) - Math.hypot(b.x - at.x, b.z - at.z))[0];
+      if (!target) return;
+      setErrand({ ...task, dest: target.key });
+      world.current?.goTo(target.key);
+      return;
+    }
     setErrand(task);
     world.current?.goTo(task.dest);
   };
@@ -694,6 +740,7 @@ export function VillageWalkPage() {
       : k.startsWith('in:') ? t('het programmabord', 'the programme board')
       : k === WELL_KEY ? t('de waterput', 'the well')
       : k === BOXING_KEY ? t('de boksschool', 'the boxing school')
+      : k === CAMP_KEY ? t('het kampvuur', 'the campfire')
       : k.startsWith('mob:') ? creatures.find((c) => c.key === k)?.label ?? t('het kwaaltje', 'the ailment')
       : buildings.find((b) => b.key === k)?.label ?? k;
   // Landmarks for the maps: every building with its own sign, and the practice.
@@ -753,6 +800,7 @@ export function VillageWalkPage() {
             creatureHurt={hurt}
             boxing={!!d?.hero}
             belt={karate.data && karate.data.belt > 0 ? BELTS[karate.data.belt].color : null}
+            tools={adventure.data?.tools}
             weapon={hasTool && mobTool ? mobTool.key : mob && isHarvest(mob.kind) ? null : weapon.key === 'fists' ? null : weapon.key}
             pace={pace}
             api={world}
@@ -764,7 +812,7 @@ export function VillageWalkPage() {
             track={track}
             stick={stick}
             onNear={setNear}
-            onZone={(z) => { if (z === 'village') leftBy.current = true; }}
+            onZone={(z) => { setZone(z); if (z === 'village') leftBy.current = true; }}
             onTalk={setTalk}
             onDestination={(k) => { setDest(k); if (!k) return; hideTip(); }}
             onArrive={(k) => { if (k === TV_KEY) setTvOpen(true); }}
@@ -885,6 +933,10 @@ export function VillageWalkPage() {
             </Button>
             )}
             </span>
+          ) : near === CAMP_KEY ? (
+            <Button size="lg" data-testid="open-camp" className="pointer-events-auto border border-[#ffc078] shadow-lift" icon={<Flame className="h-5 w-5" />} onClick={() => setCampOpen(true)}>{t('Koken op het vuur', 'Cook on the fire')}</Button>
+          ) : zone === HOME_KEY && own?.layout.some((i) => i.key === 'home_lootchest') && !near ? (
+            <Button size="lg" data-testid="open-lootchest" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<Package className="h-5 w-5" />} onClick={() => setChestOpen(true)}>{t('Open je buitkist', 'Open your loot chest')}</Button>
           ) : near === BOXING_KEY ? (
             <Button size="lg" data-testid="open-boxing" className="pointer-events-auto border border-[#ffd76a] shadow-lift" icon={<Swords className="h-5 w-5" />} onClick={() => { setRoundNo((n) => n + 1); setBoxingOpen(true); }}>{t('Train op de bokszak', 'Train on the bag')}</Button>
           ) : near === WELL_KEY ? (
@@ -896,7 +948,12 @@ export function VillageWalkPage() {
           ) : near === boardKey(HOME_KEY) ? (
             <Button size="lg" data-testid="open-decor" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<Armchair className="h-5 w-5" />} onClick={() => setDecorOpen(true)}>{t('Inrichten en winkel', 'Furnish and shop')}</Button>
           ) : near === EXIT_KEY ? (
-            <Button size="lg" variant="secondary" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(EXIT_KEY)}>{t('Naar buiten: het dorp', 'Go out: the village')}</Button>
+            <span className="pointer-events-auto flex flex-wrap justify-center gap-2">
+              {zone === HOME_KEY && own?.layout.some((i) => i.key === 'home_lootchest') && (
+                <Button size="lg" data-testid="open-lootchest" className="border border-[#e4bc63] shadow-lift" icon={<Package className="h-5 w-5" />} onClick={() => setChestOpen(true)}>{t('Open je buitkist', 'Open your loot chest')}</Button>
+              )}
+              <Button size="lg" variant="secondary" className="border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(EXIT_KEY)}>{t('Naar buiten: het dorp', 'Go out: the village')}</Button>
+            </span>
           ) : errandHere ? (
             <Link to={errandHere.link!} data-testid="errand-link" className="tap pointer-events-auto inline-flex min-h-[48px] max-w-full items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">
               <DoorOpen className="h-5 w-5 shrink-0" aria-hidden /><span className="truncate">{errandHere.label}</span>
@@ -962,6 +1019,9 @@ export function VillageWalkPage() {
             <li><button type="button" data-testid="flask" data-n={supply.glasses} disabled={supply.glasses <= 0 || hp >= maxHp} onClick={sip}
               aria-label={supply.glasses > 0 ? t(`Veldfles: ${supply.glasses} ${supply.glasses === 1 ? 'glas' : 'glazen'}. Tik om te drinken: +50% leven.`, `Flask: ${supply.glasses} ${supply.glasses === 1 ? 'glass' : 'glasses'}. Tap to drink: +50% life.`) : t('Veldfles leeg. Log een glas water dat je echt drinkt, dan krijgt je held er een.', 'Flask empty. Log a glass of water you really drink, and your hero gets one.')}
               className="flex min-h-[28px] items-center gap-1 rounded-full border bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none shadow-lift disabled:opacity-60 border-[#9fd8ff]/70 text-[#cfeaff]"><Droplets className="h-3.5 w-3.5" aria-hidden />{supply.glasses}</button></li>
+            <li><button type="button" data-testid="eat-dish" data-n={dishCount} disabled={dishCount <= 0 || hp >= maxHp} onClick={() => void eatDish()}
+              aria-label={dishCount > 0 ? t(`Gekookt eten: ${dishCount}. Tik om te eten: ${LOOT[dishes[0].key].nl.toLowerCase()}.`, `Cooked food: ${dishCount}. Tap to eat: ${LOOT[dishes[0].key].en.toLowerCase()}.`) : t('Geen gekookt eten. Kook vlees, een ei of bessen bij het kampvuur.', 'No cooked food. Cook meat, an egg or berries at the campfire.')}
+              className="flex min-h-[28px] items-center gap-1 rounded-full border bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none shadow-lift disabled:opacity-60 border-[#ffc078]/70 text-[#ffe0bd]"><Utensils className="h-3.5 w-3.5" aria-hidden />{dishCount}</button></li>
             <li><button type="button" data-testid="rations" data-n={supply.rations} disabled={supply.rations <= 0 || hp >= maxHp} onClick={eat}
               aria-label={supply.rations > 0 ? t(`Rantsoenen: ${supply.rations}. Tik om te eten: weer helemaal fit.`, `Rations: ${supply.rations}. Tap to eat: fully fit again.`) : t('Geen rantsoenen. Vul bij Voeding in wat je at, dan krijgt je held eten.', 'No rations. Log what you ate under Nutrition, and your hero gets food.')}
               className="flex min-h-[28px] items-center gap-1 rounded-full border bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none shadow-lift disabled:opacity-60 border-[#f0c36a]/70 text-[#ffe9b8]"><Beef className="h-3.5 w-3.5" aria-hidden />{supply.rations}</button></li>
@@ -1043,7 +1103,7 @@ export function VillageWalkPage() {
               )
             ) : (
               <ul className="mt-3 divide-y divide-line overflow-hidden rounded-xl border border-line" data-testid="decor-shop">
-                {DECOR.filter((item) => !own.owned.includes(item.key)).map((item) => {
+                {DECOR.filter((item) => !item.made && !own.owned.includes(item.key)).map((item) => {
                   const locked = own.level < item.level;
                   const poor = own.coins < item.price;
                   const full = !freeSpot(item.key, own.layout, new Set([...own.owned, item.key]));
@@ -1099,6 +1159,38 @@ export function VillageWalkPage() {
         )}
       </Dialog>
       <KarateSheet open={dojoOpen} onClose={() => setDojoOpen(false)} />
+      <Dialog open={campOpen} onClose={() => setCampOpen(false)} size="md" sheet title={t('Kampvuur', 'Campfire')}
+        description={t('Kook je buit: gekookt eten brengt het leven van je held terug in het dorp.', 'Cook your loot: cooked food brings your hero’s life back in the village.')}>
+        <ul className="space-y-2" data-testid="cook-list">
+          {COOKING.map((dish) => {
+            const needs = Object.entries(dish.needs) as [LootKey, number][];
+            const enough = needs.every(([k, n]) => (adventure.data?.loot?.[k] ?? 0) >= n);
+            const name = nl ? LOOT[dish.key].nl : LOOT[dish.key].en;
+            return (
+              <li key={dish.key} data-dish={dish.key} className="flex items-center gap-3 rounded-xl border border-line bg-white p-2.5">
+                <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">{LOOT[dish.key].icon}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14.5px] font-semibold text-ink-950">{name} <span className="font-normal text-ink-700">· {t(`+${Math.round(dish.heals * 100)}% leven`, `+${Math.round(dish.heals * 100)}% life`)} · {t(`je hebt er ${adventure.data?.loot?.[dish.key] ?? 0}`, `you have ${adventure.data?.loot?.[dish.key] ?? 0}`)}</span></span>
+                  <span className="block text-[12.5px] text-ink-700">{needs.map(([k, n]) => `${LOOT[k].icon} ${(nl ? LOOT[k].nl : LOOT[k].en).toLowerCase()} ${Math.min(adventure.data?.loot?.[k] ?? 0, n)}/${n}`).join(' · ')}</span>
+                </span>
+                <Button size="sm" disabled={!enough} loading={cooking === dish.key} onClick={() => void cook(dish.key)} aria-label={t(`Kook ${name}`, `Cook ${name}`)}>{t('Kook', 'Cook')}</Button>
+              </li>
+            );
+          })}
+        </ul>
+      </Dialog>
+      <Dialog open={chestOpen} onClose={() => setChestOpen(false)} size="md" sheet title={t('Je buitkist', 'Your loot chest')}
+        description={t(`Hier bewaar je tot ${adventure.data?.lootCap ?? 99} stuks per soort.`, `Here you keep up to ${adventure.data?.lootCap ?? 99} of a kind.`)}>
+        <ul className="grid grid-cols-4 gap-2" data-testid="chest-loot">
+          {LOOT_KEYS.filter((k) => (adventure.data?.loot?.[k] ?? 0) > 0).map((k) => (
+            <li key={k} data-loot={k} aria-label={`${nl ? LOOT[k].nl : LOOT[k].en}: ${adventure.data?.loot?.[k]}`} className="relative grid aspect-square place-items-center rounded-xl border border-[#e4bc63] bg-[#fbf0d9] text-[24px]">
+              <ItemIcon k={k} emoji={LOOT[k].icon} />
+              <span aria-hidden className="absolute bottom-0.5 right-1 text-[11.5px] font-bold tabular-nums text-ink-950">{adventure.data?.loot?.[k]}</span>
+            </li>
+          ))}
+        </ul>
+        {!LOOT_KEYS.some((k) => (adventure.data?.loot?.[k] ?? 0) > 0) && <p className="text-[14px] text-ink-700">{t('Nog leeg. Versla kwaaltjes en dieren, hak eiken en pluk bessen.', 'Empty so far. Beat ailments and animals, chop oaks and pick berries.')}</p>}
+      </Dialog>
       <Dialog open={boxingOpen} onClose={() => setBoxingOpen(false)} size="md" sheet title={t('Boksschool', 'Boxing school')}
         description={adventure.data ? t(`Ronde ${Math.min(adventure.data.roundsToday + 1, BOXING.roundsPerDay)} van ${BOXING.roundsPerDay} die vandaag XP geeft.`, `Round ${Math.min(adventure.data.roundsToday + 1, BOXING.roundsPerDay)} of ${BOXING.roundsPerDay} that gives XP today.`) : undefined}
         footer={<Button variant="secondary" onClick={() => setRoundNo((n) => n + 1)} data-testid="next-round">{t('Nog een ronde', 'Another round')}</Button>}>

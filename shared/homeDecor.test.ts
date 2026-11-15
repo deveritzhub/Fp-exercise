@@ -7,7 +7,9 @@ describe('home decor', () => {
   it('has keys the purchases table accepts, and prices that rise with the level', () => {
     for (const d of DECOR) {
       expect(d.key).toMatch(/^[a-z_]{2,32}$/);
-      expect(d.price).toBeGreaterThan(0);
+      // What is sold costs coins; what is made in the village (from loot) costs none.
+      if (d.made) expect(d.price).toBe(0);
+      else expect(d.price).toBeGreaterThan(0);
     }
     expect(new Set(DECOR.map((d) => d.key)).size).toBe(DECOR.length);
     expect(DECOR.filter((d) => d.level === 1).length).toBeGreaterThanOrEqual(3);
