@@ -19,3 +19,14 @@ The study's bun texture uses 256px; the skin shading uses 512px. Original source
 Approved-finish rollout (14 November 2026): the matching `young_caucasian_male` CC0 material and
 source diffuse PNG are also included from the official system archive. Production skin shading
 uses neutralised 448px maps; the original source files and release headers remain unmodified.
+
+Fitted-clothing rollout (15 November 2026): `system/clothes/female_casualsuit02` and
+`male_casualsuit02` geometry/MHCLO/material metadata and `shoes05` foot-coverage source are unmodified files from the same official
+CC0 archive. All three retain the explicit September 2020 CC0 release and original authors in their
+headers. Original diffuse/normal/AO artwork is not used or distributed here. `hero_clothing.py`
+authors the FP Flow weave, trim, zipper, pockets and monogram; MHCLO fits the base topology and
+weights to each macro body. Only the conservative coverage of the always-worn short base kit
+and shoes is culled from the exported skin, after body measurement and attachment calculations.
+Final trainers use an original FP Flow closed last, separate shaped midsole, heel counter, laces
+and piping, sized from each foot. No original MakeHuman shoe texture or logo is used.
+The full long-outfit body mask is never applied, so unequipping does not remove exposed limbs.

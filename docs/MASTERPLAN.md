@@ -347,6 +347,19 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     en standaard glTF-geometrieopslag houden elk model onder 2,5 MB gzip. De browser controleert
     echte textuurdecodering en lichaamsafmetingen; geen extra decoder of 3D-engine.
 
+
+102. [x] **3D-kleding, gedragen sportuitrusting en inventarispaskamer** (15 nov): modelversie 9,
+    passende kledingtopologie voor shirt/shorts en drie complete outfits, met eigen stofstructuur,
+    kraag, randen, rits, zakken en FP-merkteken. Vijf originele sneaker-varianten met afzonderlijke
+    zool, hielstuk, veters en bies. Koptelefoon over de oren en boven de pet; doorlopende riem,
+    hartslagband en passende armband/beschermers. Expliciete romp-/armbevestigingen voorkomen
+    uitrekking tijdens juichen. Optionele 3D-inventaris naast Foto/RPG, met dezelfde koop-, equip-,
+    preview- en opslagfuncties. Alle 26 itembeelden uit de gedragen modellen; bestaande tiers,
+    itemlevels en loot-reveal behouden. Acht frame/builds, mobiele interactie, bewegingsbeelden,
+    legacy referenties en dorpsbewoners worden gecontroleerd; bewijs in `docs/hero3d-clothing/`.
+    Vervolg blijft artistieke verfijning van gezichten, haar, plooien en individuele accessoires;
+    geen claim dat de volledige premium art-direction al is afgerond.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.

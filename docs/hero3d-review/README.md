@@ -37,3 +37,8 @@ Version 8 validation: 71 unit tests, all 7 browser scenarios, typecheck and buil
 checks verify actual decoded skin/iris/hair maps for every model, physical sizes, four animations
 and gear. All eight front views, representative side views, the equipped champion and village
 were visually reviewed. Production files remain below 2.5 MB gzip.
+
+Version 9: fitted clothing, original trainers and refined attachments are applied to all eight
+models. These images now show the current clothing; the earlier study directories stay frozen.
+The 3D inventory, item thumbnails and motion review are documented in
+[hero3d-clothing](../hero3d-clothing/README.md). Final downloads remain below 2.5 MB gzip.

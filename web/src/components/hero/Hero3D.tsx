@@ -9,7 +9,7 @@ import { RotateCcw, RotateCw } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import type { FigureLook } from './HumanFigure';
-import { hero3dScene, isToggleNode, FABRIC_PLAIN } from './hero3d';
+import { hero3dScene, isToggleNode, withBaseKit, FABRIC_PLAIN, type HeroMotion } from './hero3d';
 
 /** One download per model per app session; every viewer clones it. */
 const models = new Map<string, Promise<GLTF>>();
@@ -22,6 +22,13 @@ export const loadModel = (url: string) => {
   }
   return p;
 };
+
+/** Complete physical height: covered foot skin is culled below the always-worn trainers. */
+export function heroBodyBounds(model: THREE.Object3D) {
+  const box = new THREE.Box3().setFromObject(model.getObjectByName('body') ?? model);
+  box.min.y = Math.min(0, box.min.y);
+  return box;
+}
 
 const webglOk = () => {
   try {
@@ -38,9 +45,11 @@ type Stage = { root: THREE.Group; base: THREE.Group; model: THREE.Object3D | nul
  * Turnable 3D figurine of the hero with the worn gear (model: tools/blender/mh_hero.py). Drag to turn,
  * or use the buttons; it turns slowly by itself unless the person prefers reduced motion.
  */
-export default function Hero3D({ look, className, modelUrl, studio = true, portrait = false, palette }: {
+export default function Hero3D({ look, className, modelUrl, studio = true, portrait = false, palette, artPose }: {
   look: FigureLook; className?: string; modelUrl?: string; studio?: boolean; portrait?: boolean;
   palette?: { main: string; dark: string; soft: string };
+  /** Frozen animation sample for visual art review; ordinary viewers retain the idle motion. */
+  artPose?: { motion: HeroMotion; time: number };
 }) {
   const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null);
@@ -49,7 +58,7 @@ export default function Hero3D({ look, className, modelUrl, studio = true, portr
   const scene3d = hero3dScene(look);
   if (modelUrl) scene3d.url = modelUrl;
   if (palette) Object.assign(scene3d.tints, { kit_main: palette.main, kit_dark: palette.dark, kit_soft: palette.soft });
-  const key = JSON.stringify([scene3d.url, [...scene3d.visible].sort(), scene3d.tints]);
+  const key = JSON.stringify([scene3d.url, [...scene3d.visible].sort(), scene3d.tints, scene3d.fabric]);
 
   // Renderer, camera, lights and the render loop: once per mount.
   useEffect(() => {
@@ -145,10 +154,10 @@ export default function Hero3D({ look, className, modelUrl, studio = true, portr
       const dt = Math.min((now - lastTime) / 1000, .05);
       lastTime = now;
       if (!visible || document.hidden) return;
-      if (studio && !reduce) stage.current?.mixer?.update(dt);
+      if (studio && !reduce && !artPose) stage.current?.mixer?.update(dt);
       controls.update();
       const st = stage.current;
-      if (st && (st.dirty || (studio && !reduce && st.mixer))) {
+      if (st && (st.dirty || (studio && !reduce && !artPose && st.mixer))) {
         renderer.render(scene, camera);
         st.dirty = false;
       }
@@ -173,7 +182,7 @@ export default function Hero3D({ look, className, modelUrl, studio = true, portr
       stage.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state === 'nogl', studio, portrait]);
+  }, [state === 'nogl', studio, portrait, artPose?.motion, artPose?.time]);
 
   // Model, gear and colours: whenever the look changes.
   useEffect(() => {
@@ -208,12 +217,13 @@ export default function Hero3D({ look, className, modelUrl, studio = true, portr
           st.model = model;
           if (studio) {
             st.mixer = new THREE.AnimationMixer(model);
-            const idle = gltf.animations.find(clip => clip.name === 'idle');
+            const idle = gltf.animations.find(clip => clip.name === (artPose?.motion ?? 'idle'));
             if (idle) st.mixer.clipAction(idle).play();
+            if (artPose) st.mixer.setTime(artPose.time);
           }
           st.url = scene3d.url;
           // Frame the figure, whatever the model's height.
-          const box = new THREE.Box3().setFromObject(model.getObjectByName('body') ?? model);
+          const box = heroBodyBounds(model);
           const h = Math.max(0.5, box.max.y - box.min.y);
           st.controls.target.set(0, box.min.y + h * (portrait ? .87 : .5), 0);
           st.controls.object.position.set(0, box.min.y + h * (portrait ? .88 : .6), h * (portrait ? .76 : 2.55));
@@ -221,10 +231,12 @@ export default function Hero3D({ look, className, modelUrl, studio = true, portr
           st.base.scale.setScalar(h / 2.15);
         }
         const model = st.model!;
+        // Frozen reference GLBs retain the base kit beneath their older decorative outfits.
+        const visible = withBaseKit(scene3d.visible, !!model.getObjectByName('tailored_jacket_tracksuit'));
         await waitForFabric(scene3d.fabric ?? FABRIC_PLAIN);
         if (cancelled) return;
         model.traverse((o) => {
-          if (isToggleNode(o.name)) o.visible = scene3d.visible.has(o.name);
+          if (isToggleNode(o.name)) o.visible = visible.has(o.name);
           const m = o as THREE.Mesh;
           if (m.isMesh) {
             const mat = m.material as THREE.MeshStandardMaterial;
@@ -242,7 +254,7 @@ export default function Hero3D({ look, className, modelUrl, studio = true, portr
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, state === 'nogl', studio, portrait]);
+  }, [key, state === 'nogl', studio, portrait, artPose?.motion, artPose?.time]);
 
   const turn = (deg: number) => {
     const st = stage.current;

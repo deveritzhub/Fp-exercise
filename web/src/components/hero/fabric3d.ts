@@ -7,6 +7,9 @@ import { FABRIC_PLAIN, fabricUrl } from './hero3d';
  */
 const cache = new Map<string, THREE.Texture>();
 const readiness = new Map<string, Promise<void>>();
+// Keep the authored weave/UV mapping on fitted cloth. A patterned outfit can temporarily
+// replace it, then restore it without leaking a previous avatar's texture into this one.
+const authoredCloth = new WeakMap<THREE.Material, THREE.Texture | null>();
 /** How often the picture repeats over the shirt's own layout. */
 const REPEAT = 3;
 
@@ -42,8 +45,12 @@ export async function waitForFabric(key: string) {
 /** Dress one material of the hero model: the shirt takes the cloth, everything else only its colour. */
 export function dress(mat: THREE.MeshStandardMaterial, base: string, tint: string | undefined, fabric: string | null) {
   if (base === 'kit_main') {
-    mat.map = fabricTexture(fabric ?? FABRIC_PLAIN);
+    if (!authoredCloth.has(mat)) authoredCloth.set(mat, mat.normalMap ? mat.map : null);
+    const map = fabric ? fabricTexture(fabric) : authoredCloth.get(mat) ?? fabricTexture(FABRIC_PLAIN);
+    if (mat.map !== map) {
+      mat.map = map;
+      mat.needsUpdate = true;
+    }
     mat.color.set(fabric ? '#ffffff' : tint ?? '#ffffff');
-    mat.needsUpdate = true;
   } else if (tint) mat.color.set(tint);
 }

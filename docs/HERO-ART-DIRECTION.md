@@ -32,3 +32,16 @@ Een afbeelding-/videogenerator kan referenties geven, maar een bruikbaar rigged 
 mesh, materialen en skelet worden geleverd.
 
 Buiten scope: klinische beslissingen, patiëntgegevens, trainingsdruk en beloningen voor sneller herstel.
+
+## Uitwerking 15 november 2026
+
+Modelversie 9 geeft shirt/shorts en de trainings-, ski- en kampioensoutfit een passende kledingvorm,
+met eigen materiaal en afwerking. Originele sneaker-vormen en betere bevestigingen maken meer
+uitrusting overtuigend zichtbaar. De optionele 3D-inventaris gebruikt dezelfde bestaande acties;
+alle 26 winkelbeelden worden uit de gedragen meshes gerenderd. De vijf tiers blijven behouden.
+De echte browserbeelden, acht lichaamsvarianten en bewegingssamples staan in
+[`hero3d-clothing/`](hero3d-clothing/README.md).
+
+Dit voltooit de technische kledingconstructie en de koppeling met de collectie. Fijnere plooien,
+rijkere kapsels, meer expressie en de artistieke afwerking van afzonderlijke items blijven werk.
+Beoordeel die stap met nieuwe renders, zonder deze basis al 'afgerond premium' te noemen.

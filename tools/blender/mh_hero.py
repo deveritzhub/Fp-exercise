@@ -32,6 +32,7 @@ ap.add_argument('--side', action='store_true', help='render from the side (to ju
 ap.add_argument('--study', action='store_true', help='Build the single art-direction study; does not replace production models')
 ap.add_argument('--polished', action='store_true', help='Apply the approved art-study finish while preserving every hairstyle')
 ap.add_argument('--portrait-study', action='store_true', help='Single face/hair refinement study; retains the approved models')
+ap.add_argument('--tailored', action='store_true', help='Fitted cloth topology and original FP Flow tailoring')
 ap.add_argument('--portrait-finish', action='store_true', help='Apply approved face/hair details to all frame/build variants')
 args = ap.parse_args(argv)
 if args.portrait_study: args.study = True
@@ -204,7 +205,12 @@ for node_name, relative in ASSETS.items():
         poly.use_smooth = True
     asset_objects.append(ob)
 
-for ob in (human, eyes, *asset_objects):
+clothing_objects = []
+if args.tailored:
+    from hero_clothing import load_clothes
+    clothing_objects = load_clothes(human, HumanService, args.assets)
+
+for ob in (human, eyes, *asset_objects, *clothing_objects):
     bpy.ops.object.select_all(action='DESELECT')
     bpy.context.view_layer.objects.active = ob
     ob.select_set(True)
@@ -995,10 +1001,14 @@ if POLISHED:
         from hero_portrait import refine_portrait
         refine_portrait(globals())
 
+if args.tailored:
+    from hero_clothing import finish_clothes
+    finish_clothes(globals(), clothing_objects)
+
 # ---------------------------------------------------------------- skin: every part follows the skeleton
 DEF = {b.name for b in rig.data.bones}
 HEAD_PARTS = ('hair_', 'beard_', 'glasses_', 'gear_cap', 'gear_visor', 'gear_headband', 'gear_crown', 'gear_champion_helm', 'gear_headphones')
-CHEST_PARTS = ('gear_deswell_mantle', 'gear_wind_cape', 'gear_yoga_mat', 'gear_medal', 'gear_pin', 'gear_frog_badge', 'gear_golden_hinge', 'gear_scarf', 'gear_towel')
+CHEST_PARTS = ('gear_deswell_mantle', 'gear_wind_cape', 'gear_yoga_mat', 'gear_medal', 'gear_pin', 'gear_frog_badge', 'gear_golden_hinge', 'gear_scarf', 'gear_towel', 'gear_hr_band')
 HAND_PARTS = ('gear_sport_item', 'gear_crutch_staff', 'gear_smith_hammer', 'aid_crutches')
 BODY_W = [{GNAME[x.group]: x.weight for x in v.groups if GNAME.get(x.group) in DEF and x.weight > 0.01} for v in human.data.vertices]
 kd = KDTree(len(human.data.vertices))
@@ -1028,10 +1038,15 @@ def skin(o):
         hi = Vector((max(c.x for c in cos), max(c.y for c in cos), max(c.z for c in cos)))
         name = top_name(o)
         one = None
-        if name.startswith(HEAD_PARTS) or lo.z > J['neck'].z:
+        # Match equipment keys exactly: gear_captain is an armband, not gear_cap.
+        if name.startswith(('hair_', 'beard_', 'glasses_')) or name in HEAD_PARTS or lo.z > J['neck'].z:
             one = 'head'
         elif name.startswith(CHEST_PARTS):
             one = 'spine_03'
+        elif name.startswith(('gear_belt', 'gear_spring_belt')):
+            one = 'pelvis'
+        elif name.startswith('gear_captain'):
+            one = 'upperarm_l'
         elif name.startswith(HAND_PARTS):
             one = 'hand_l' if (lo.x + hi.x) > 0 else 'hand_r'
         if one is None:

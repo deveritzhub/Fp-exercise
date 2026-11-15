@@ -7,7 +7,7 @@ import { EYE_COLOURS, HAIR_COLOURS, KIT, SKIN_TONES, type FigureLook } from './H
  */
 
 /** Bump when the .glb files change, so phones fetch the new model. */
-export const HERO3D_VERSION = 8;
+export const HERO3D_VERSION = 9;
 export const HERO3D_BUILDS = ['slim', 'average', 'athletic', 'full'] as const;
 export type Hero3dBuild = typeof HERO3D_BUILDS[number];
 export const hero3dUrl = (frame?: string, build: string = 'average') =>
@@ -33,7 +33,19 @@ export const GAIT_SPEED = { walk: 0.75, run: 1.6 } as const;
 
 /** Node name prefixes the viewer switches on and off; everything else is always shown. */
 export const TOGGLE_PREFIXES = ['hair_', 'beard_', 'glasses_', 'gear_', 'outfit_', 'aid_', 'base_shoes'] as const;
-export const isToggleNode = (name: string) => TOGGLE_PREFIXES.some((p) => name.startsWith(p));
+export const BASE_KIT_NODES = new Set(['body_shirt', 'body_shorts', 'body_study_details']);
+export const TAILORED_OUTFITS = new Set(['tracksuit', 'sport_ski', 'champion']);
+export const isToggleNode = (name: string) => BASE_KIT_NODES.has(name) || TOGGLE_PREFIXES.some((p) => name.startsWith(p));
+
+/** Also used by village staff/fallback villagers, whose outfits are stored as node names. */
+export function withBaseKit(nodes: Iterable<string>, tailored = true) {
+  const visible = new Set(nodes);
+  const covered = tailored && [...TAILORED_OUTFITS].some(key => visible.has(`outfit_${key}`));
+  for (const name of BASE_KIT_NODES) {
+    if (covered) visible.delete(name); else visible.add(name);
+  }
+  return visible;
+}
 
 /** Shoes replace the plain trainers. */
 export const SHOE_ITEMS = new Set(['gold_shoes', 'balance_shoes', 'spikes', 'pilgrim_boots', 'wing_shoes']);
@@ -71,7 +83,7 @@ export type Hero3dScene = {
 export function hero3dScene(look: FigureLook): Hero3dScene {
   const all = look.gear ?? [];
   const worn = onePerSlot(all.filter((k) => GEAR_SLOT[k]));
-  const visible = new Set<string>();
+  const visible = new Set<string>(BASE_KIT_NODES);
   const head = worn.find((k) => GEAR_SLOT[k] === 'head');
   let hair = look.hair;
   if (head && TIGHT_HEADGEAR.has(head) && BIG_HAIR.has(hair)) hair = 'short';
@@ -91,7 +103,7 @@ export function hero3dScene(look: FigureLook): Hero3dScene {
   const build = hero3dBuild(look);
   return {
     url: hero3dUrl(look.frame, build),
-    visible,
+    visible: withBaseKit(visible),
     tints: {
       skin: SKIN_TONES[look.skin] ?? SKIN_TONES.s4,
       hair: HAIR_COLOURS[look.hairColor ?? 'darkbrown'] ?? HAIR_COLOURS.darkbrown,

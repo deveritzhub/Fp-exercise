@@ -7,7 +7,7 @@ import { ACL_REWARDS, ACL_SPORTS } from '@shared/aclRewards';
 import { GearArtwork } from '@/components/hero/RpgGear';
 import { HEIRLOOM_KINDS } from '@shared/measurementBoss';
 import '../../components/hero/rpg.css';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Award, BookOpen, Brain, CalendarCheck, Check, ChevronRight, CircleCheck, Coins, Dumbbell, Flag, HeartPulse, Hourglass, Lock, MapPin, Move, Pencil, PersonStanding, Shield, Sparkles, Target, Gift, Crown, Trophy, Utensils, Droplets, Zap, Swords, type LucideIcon } from 'lucide-react';
@@ -22,7 +22,7 @@ import { HeroPhoto } from '@/components/hero/HeroPhoto';
 import { HeroStage, LevelBadge, XpBar } from '@/components/hero/GameFx';
 import { COMPOUND_LABEL, TIER_LABEL } from '@shared/strengthStandards';
 import { HumanFigure, KIT, SKIN_TONES, type FigureLook } from '@/components/hero/HumanFigure';
-import { FABRICS, fabricUrl } from '@/components/hero/hero3d';
+import { FABRICS, fabricUrl, HERO3D_VERSION } from '@/components/hero/hero3d';
 import { BodyMap, painWord, type PainEntries } from '@/components/hero/BodyMap';
 import { MOBILITY_MEASURE_XP } from '@shared/mobilityTests';
 import { BADGES, BOSSES, SEASONS, BODY_KIND_LABEL, bodyShape, BODY_AREAS, CHECKIN_XP, DEFAULT_LOOK, FUTURE_REWARDS, GEAR, GEAR_SLOT, GEAR_TIERS, SHOWCASE_MAX, WALL_BADGES_MAX, TROPHY_TIERS, GEAR_SLOTS, HERO_OPTIONS, onePerSlot, type GearSlot, METRICS, SKILL_EMBLEM_LEVEL, SKILLS, XP, comboTitles, hairPreset, heroNickname, metricInRange, skinGroup, HAIR_PRESETS, HAIR_PRESET_KEYS, SKIN_GROUPS, parseMetric, sceneForTotal, levelTier, nextLevelTier, skillLockLabel, skillTitle, titleFor, type HeroLook, type SkillKey } from '@shared/hero';
@@ -34,6 +34,13 @@ import { Fold } from '@/components/app/Fold';
 import { SurvivalPanel } from '@/components/patient/Survival';
 import { FriendsCard } from './FriendsPage';
 import { RehabRoute } from '@/components/hero/RehabRoute';
+
+const Hero3D = lazy(() => import('@/components/hero/Hero3D'));
+
+type InventoryView = 'photo' | 'rpg' | '3d';
+const readInventoryView = (): InventoryView => {
+  try { const saved = sessionStorage.getItem('fp.inventory.view'); return saved === '3d' || saved === 'rpg' ? saved : sessionStorage.getItem('fp.inventory.illustrated') === 'true' ? 'rpg' : 'photo'; } catch { return 'photo'; }
+};
 
 export const HERO_LATER_KEY = 'fp.heroLater';
 export const useHero = () => useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero') });
@@ -1046,6 +1053,8 @@ function GearCard({ d }: { d: HeroState }) {
   const [preview, setPreview] = useState<string | null>(null);
   const [loot, setLoot] = useState<string | null>(null);
   const [cape, setCape] = useState(false);
+  const [view, setView] = useState<InventoryView>(readInventoryView);
+  useEffect(() => { try { sessionStorage.setItem('fp.inventory.view', view); sessionStorage.setItem('fp.inventory.illustrated', String(view === 'rpg')); } catch { /* storage optional */ } }, [view]);
   const [filter, setFilter] = useState<'all' | 'open' | 'shop'>('all');
   const save = async (next: string[], key: string) => {
     setBusy(key);
@@ -1094,11 +1103,11 @@ function GearCard({ d }: { d: HeroState }) {
           <span className="ml-1">{(tier.tier-1)*20+1}–{tier.tier*20}</span>
         </li>)}
       </ul>
-      <CharacterScreen d={d} onPreview={setPreview} preview={preview} busy={busy} onSave={save} onBuy={buy} />
+      <CharacterScreen d={d} view={view} onView={setView} onPreview={setPreview} preview={preview} busy={busy} onSave={save} onBuy={buy} />
 
       {preview && <div className="my-3 flex flex-wrap items-center gap-3" role="status"><span>{t('Paskamer — nog niet gekocht:', 'Preview — not purchased:')} {nl ? GEAR.find(g=>g.key===preview)?.nl : GEAR.find(g=>g.key===preview)?.en}</span><Button variant="secondary" onClick={()=>setPreview(null)}>{t('Preview sluiten','Close preview')}</Button></div>}
       <Dialog open={!!loot} onClose={()=>setLoot(null)} title={t('Nieuw in je collectie','New in your collection')} footer={<Button onClick={()=>setLoot(null)}>{t('Verder','Continue')}</Button>}>
-        {loot && <div className="rpg-loot text-center" style={{'--gear-color':GEAR_TIERS[(GEAR.find(g=>g.key===loot)?.tier ?? 1)-1].glow} as CSSProperties}><div className="mx-auto h-40 w-40"><GearImg gearKey={loot}/></div><p className="font-bold">{nl ? GEAR.find(g=>g.key===loot)?.nl : GEAR.find(g=>g.key===loot)?.en}</p><p>{t('Je nieuwe item is aangetrokken.','Your new item is equipped.')}</p></div>}
+        {loot && <div className="rpg-loot text-center" style={{'--gear-color':GEAR_TIERS[(GEAR.find(g=>g.key===loot)?.tier ?? 1)-1].glow} as CSSProperties}><div className="mx-auto h-40 w-40"><GearImg threeD={view === '3d'} gearKey={loot}/></div><p className="font-bold">{nl ? GEAR.find(g=>g.key===loot)?.nl : GEAR.find(g=>g.key===loot)?.en}</p><p>{t('Je nieuwe item is aangetrokken.','Your new item is equipped.')}</p></div>}
       </Dialog>
       <div className="mt-4">
         <Segmented label={t('Toon', 'Show')} value={filter} onChange={setFilter} size="sm"
@@ -1111,7 +1120,7 @@ function GearCard({ d }: { d: HeroState }) {
       <ul className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-2">
         {shown.map((g) => (
           <li key={g.key}>
-            <GearTile g={g} d={d} busy={busy} onPreview={() => setPreview(g.key)} onToggle={() => toggle(g.key)} onBuy={() => buy(g.key)} />
+            <GearTile threeD={view === '3d'} g={g} d={d} busy={busy} onPreview={() => setPreview(g.key)} onToggle={() => toggle(g.key)} onBuy={() => buy(g.key)} />
           </li>
         ))}
       </ul>
@@ -1164,7 +1173,7 @@ function TierTag({ g }: { g: GearItem }) {
 }
 
 /** One item: owned → wear / take off; not owned → buy with coins. */
-function GearTile({ g, d, busy, onToggle, onBuy, onPreview }: { onPreview?: () => void; g: GearItem; d: HeroState; busy: string | null; onToggle: () => void; onBuy: () => void }) {
+function GearTile({ g, d, busy, onToggle, onBuy, onPreview, threeD = false }: { threeD?: boolean; onPreview?: () => void; g: GearItem; d: HeroState; busy: string | null; onToggle: () => void; onBuy: () => void }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const name = nl ? g.nl : g.en;
@@ -1176,7 +1185,7 @@ function GearTile({ g, d, busy, onToggle, onBuy, onPreview }: { onPreview?: () =
         data-tier={g.tier} data-item={g.key}
         className={cn('gear-tile tap relative flex h-full w-full flex-col items-center gap-1 rounded-xl border-2 p-2 text-center transition-colors', on ? 'border-accent bg-accent-soft' : 'bg-white hover:border-ink-300')}
         style={{'--gear-color':tier.glow,borderColor:tier.color} as CSSProperties}>
-        <span className="gear-art block h-20 w-20 overflow-hidden rounded-lg" aria-hidden><GearImg gearKey={g.key} /></span>
+        <span className="gear-art block h-20 w-20 overflow-hidden rounded-lg" aria-hidden><GearImg threeD={threeD} gearKey={g.key} /></span>
         <span className="max-w-full text-[12.5px] font-semibold leading-tight text-ink-900 [hyphens:auto] [overflow-wrap:anywhere]" lang={locale}>{name}</span>
         <TierTag g={g} />
         <span className={cn('text-[11.5px] font-medium', on ? 'text-accent' : 'text-ink-600')}>{on ? t('Uittrekken ✓', 'Unequip ✓') : t('Aandoen', 'Wear')}</span>
@@ -1186,7 +1195,7 @@ function GearTile({ g, d, busy, onToggle, onBuy, onPreview }: { onPreview?: () =
   const short = g.price - d.gear.coins;
   return (
     <div data-tier={g.tier} data-item={g.key} className="gear-tile flex h-full flex-col items-center gap-1 rounded-xl border-2 bg-canvas p-2 text-center" style={{'--gear-color':tier.glow,borderColor:tier.color} as CSSProperties}>
-      <span className="gear-art block h-20 w-20 overflow-hidden rounded-lg" aria-hidden><GearImg gearKey={g.key} className={short > 0 ? 'opacity-60' : ''} /></span>
+      <span className="gear-art block h-20 w-20 overflow-hidden rounded-lg" aria-hidden><GearImg threeD={threeD} gearKey={g.key} className={short > 0 ? 'opacity-60' : ''} /></span>
       <span className="max-w-full text-[12.5px] font-semibold leading-tight text-ink-800 [hyphens:auto] [overflow-wrap:anywhere]" lang={locale}>{name}</span>
       <TierTag g={g} />
       {onPreview && <Button variant="secondary" size="sm" onClick={onPreview} aria-label={t(`Passen: ${name}`, `Try on: ${name}`)}>{t('Passen', 'Try on')}</Button>}
@@ -1208,12 +1217,11 @@ const slotLabel = (k: GearSlot, nl: boolean) => { const s = GEAR_SLOTS.find((x) 
  * Character screen (RPG paper doll): the hero photo in the middle, a slot per body part around it.
  * Tap a slot to pick from the pieces that fit there; locked ones are shown in grey.
  */
-function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPreview: (key:string)=>void; preview?: string | null; d: HeroState; busy: string | null; onSave: (next: string[], key: string) => Promise<void>; onBuy: (key: string) => Promise<void> }) {
+function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview, view, onView }: { view: InventoryView; onView: (view: InventoryView) => void; onPreview: (key:string)=>void; preview?: string | null; d: HeroState; busy: string | null; onSave: (next: string[], key: string) => Promise<void>; onBuy: (key: string) => Promise<void> }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const [open, setOpen] = useState<GearSlot | null>(null);
-  const [illustrated, setIllustrated] = useState(() => { try { return sessionStorage.getItem('fp.inventory.illustrated') === 'true'; } catch { return false; } });
-  useEffect(() => { try { sessionStorage.setItem('fp.inventory.illustrated', String(illustrated)); } catch { /* storage optional */ } }, [illustrated]);
+  const illustrated = view === 'rpg';
   const look = { ...d.hero!, gear: [...(preview ? onePerSlot([...d.gear.equipped, preview]) : d.gear.equipped), ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero!.frame) : null, photo: d.customPhoto ?? null };
   const inSlot = (k: GearSlot) => d.gear.equipped.find((g) => GEAR_SLOT[g] === k) ?? null;
   const slotBtn = (k: GearSlot) => {
@@ -1224,7 +1232,7 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
       <button key={k} type="button" onClick={() => setOpen(k)} data-tier={g?.tier} title={g ? `${nl ? g.nl : g.en} · Tier ${g.tier} · Itemlevel ${g.itemLevel}` : undefined} style={g ? {borderColor:GEAR_TIERS[g.tier-1].color} : undefined}
         aria-label={g ? t(`${slotLabel(k, true)}: ${g.nl}. Tier ${g.tier}, IL ${g.itemLevel}. Wijzigen`, `${slotLabel(k, false)}: ${g.en}. Tier ${g.tier}, IL ${g.itemLevel}. Change`) : t(`${slotLabel(k, true)}${free ? ` +${free}` : ''}: leeg${free ? `, ${free} beschikbaar` : ''}`, `${slotLabel(k, false)}${free ? ` +${free}` : ''}: empty${free ? `, ${free} available` : ''}`)}
         className={cn('tap relative flex aspect-square w-full flex-col items-center justify-center overflow-hidden rounded-xl border-2 text-center', g ? 'border-accent bg-white' : 'border-dashed border-line bg-canvas')}>
-        {g ? <><span className="absolute inset-1 bottom-4 overflow-hidden rounded-lg" aria-hidden><GearImg gearKey={g.key} /></span><span className="absolute bottom-0.5 rounded bg-white/95 px-1 text-[10px] font-bold text-ink-800" aria-hidden>IL {g.itemLevel}</span></> : (
+        {g ? <><span className="absolute inset-1 bottom-4 overflow-hidden rounded-lg" aria-hidden><GearImg threeD={view === '3d'} gearKey={g.key} /></span><span className="absolute bottom-0.5 rounded bg-white/95 px-1 text-[10px] font-bold text-ink-800" aria-hidden>IL {g.itemLevel}</span></> : (
           <span className="px-0.5 text-[10.5px] font-semibold uppercase leading-tight tracking-wide text-ink-500" aria-hidden>{slotLabel(k, nl)}{free > 0 && <span className="mt-0.5 block text-[10px] font-bold text-accent">+{free}</span>}</span>
         )}
       </button>
@@ -1238,13 +1246,16 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
       <TrophyWall d={d} compact className="mb-2" />
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-[12.5px] text-ink-700">{t('Verander je outfit zonder je behandelschema te veranderen.', 'Change your outfit without changing your treatment.')}</p>
-        <button type="button" onClick={() => setIllustrated(x => !x)} aria-pressed={illustrated} className="tap inline-flex min-h-[44px] items-center rounded-full border border-accent bg-white px-3 text-[13px] font-semibold text-accent hover:bg-accent-soft">
-          {illustrated ? t('Fotoweergave', 'Photo view') : t('RPG-weergave', 'RPG view')}
-        </button>
+        <div role="group" aria-label={t('Weergave van je held', 'Hero view')} className="flex gap-1 rounded-full border border-line bg-white p-1">
+          {([['photo','Fotoweergave','Photo view','Fotoweergave','Photo'],['rpg','RPG-weergave','RPG view','RPG','RPG'],['3d','3D-weergave','3D view','3D','3D']] as const).map(([mode,nlLabel,enLabel,nlShort,enShort]) => (
+            <button key={mode} type="button" onClick={() => onView(mode)} aria-label={t(nlLabel,enLabel)} aria-pressed={view === mode}
+              className={cn('tap min-h-[44px] min-w-[52px] rounded-full px-3 text-[13px] font-semibold',view === mode ? 'bg-accent text-white' : 'text-accent hover:bg-accent-soft')}>{t(nlShort,enShort)}</button>
+          ))}
+        </div>
       </div>
       <div className="grid grid-cols-[44px_1fr_44px] sm:grid-cols-[64px_1fr_64px] items-start gap-2">
         <div className="grid gap-2">{side('left')}</div>
-        {illustrated ? <span className="flex h-full min-h-[300px] min-w-0 items-center justify-center overflow-hidden rounded-2xl rpg-podium" role="img" aria-label={t('Je geïllustreerde held met je gedragen uitrusting', 'Your illustrated hero wearing equipped items')}><HumanFigure rpg look={look} viewBox="0 -10 200 440" className="h-[420px] sm:h-[520px] w-full max-w-[260px]" /></span> : <span role="img" aria-label={t('Je fotorealistische held met je gedragen uitrusting', 'Your photographic hero wearing equipped items')} className="min-w-0"><HeroPhoto fittedGear look={look} className="h-[420px] sm:h-[520px] w-full" /></span>}
+        {view === '3d' ? <Suspense fallback={<div className="flex h-[420px] items-center justify-center"><Spinner /></div>}><Hero3D look={look} className="h-[420px] sm:h-[520px] w-full min-w-0 rounded-2xl rpg-podium" /></Suspense> : illustrated ? <span className="flex h-full min-h-[300px] min-w-0 items-center justify-center overflow-hidden rounded-2xl rpg-podium" role="img" aria-label={t('Je geïllustreerde held met je gedragen uitrusting', 'Your illustrated hero wearing equipped items')}><HumanFigure rpg look={look} viewBox="0 -10 200 440" className="h-[420px] sm:h-[520px] w-full max-w-[260px]" /></span> : <span role="img" aria-label={t('Je fotorealistische held met je gedragen uitrusting', 'Your photographic hero wearing equipped items')} className="min-w-0"><HeroPhoto fittedGear look={look} className="h-[420px] sm:h-[520px] w-full" /></span>}
         <div className="grid gap-2">{side('right')}</div>
       </div>
       <div className="mx-auto mt-2 grid w-[136px] grid-cols-2 gap-2">{GEAR_SLOTS.filter((x) => x.side === 'bottom').map((x) => slotBtn(x.key))}</div>
@@ -1257,7 +1268,7 @@ function CharacterScreen({ d, busy, onSave, onBuy, preview, onPreview }: { onPre
               const on = d.gear.equipped.includes(g.key);
               return (
                 <li key={g.key}>
-                  <GearTile g={g} d={d} busy={busy} onPreview={GEAR_SLOT[g.key] === 'outfit' ? ()=>{onPreview(g.key);setOpen(null);} : undefined}
+                  <GearTile threeD={view === '3d'} g={g} d={d} busy={busy} onPreview={GEAR_SLOT[g.key] === 'outfit' ? ()=>{onPreview(g.key);setOpen(null);} : undefined}
                     onToggle={async () => { await onSave(on ? d.gear.equipped.filter((x) => x !== g.key) : onePerSlot([...d.gear.equipped, g.key]), g.key); setOpen(null); }}
                     onBuy={async () => { await onBuy(g.key); if (!mine) setOpen(null); }} />
                 </li>
@@ -1493,7 +1504,8 @@ function BadgeArt({ k, earned }: { k: string; earned: boolean }) {
   return <img src={`/api/hero-assets/award/badge_${k}`} alt="" aria-hidden loading="lazy" onError={() => setFailed(true)} className={cn('mx-auto mb-1 h-20 w-20 object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.2)]', !earned && 'opacity-30 grayscale')} />;
 }
 
-function GearImg({ gearKey, className }: { gearKey: string; className?: string }) {
+function GearImg({ gearKey, className, threeD = false }: { gearKey: string; className?: string; threeD?: boolean }) {
+  if (threeD) return <img src={`/hero3d/items/${gearKey}.png?v=${HERO3D_VERSION}`} alt="" className={cn('h-full w-full object-contain', className)} loading="lazy" />;
   return <PhotoGearThumbnail key={gearKey} item={gearKey} className={cn('h-full w-full object-contain p-1', className)} fallback={<GearArtwork item={gearKey} className={cn('h-full w-full p-1', className)} />} />;
 }
 

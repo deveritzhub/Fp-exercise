@@ -9,8 +9,8 @@ import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import type { FigureLook } from '@/components/hero/HumanFigure';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { GAIT_SPEED, hero3dScene, isToggleNode, type HeroMotion } from '@/components/hero/hero3d';
-import { loadModel } from '@/components/hero/Hero3D';
+import { GAIT_SPEED, hero3dScene, isToggleNode, withBaseKit, type HeroMotion } from '@/components/hero/hero3d';
+import { loadModel, heroBodyBounds } from '@/components/hero/Hero3D';
 import { PALETTE, mat, rng, webglOk } from './Village3D';
 import { VILLAGE_LAYOUT, clampRect, findPath, nearestSpot, reachable, slotPosition, stepToward, type Obstacle, type Rect, type Site, type Vec } from './walk';
 import { PRACTICE_DOOR_X, ROOM, ROOM_AT, kit, practiceBuilding, practiceRoom, type RoomWall } from './practice3d';
@@ -1483,7 +1483,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               m.frustumCulled = false; // the bounds are those of the rest pose
             }
           });
-          const box = new THREE.Box3().setFromObject(model.getObjectByName('body') ?? model);
+          const box = heroBodyBounds(model);
           const k = HERO_HEIGHT / Math.max(0.5, box.max.y - box.min.y);
           const holder = new THREE.Group();
           holder.add(model);
@@ -1532,6 +1532,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           const breathe = gltf.animations.find((c) => c.name === 'idle');
           const staff = (x: number, z: number, wear: Set<string>, tints: Record<string, string>, face: number, fabric: string | null = null, src = gltf) => {
             const cm = cloneSkinned(src.scene);
+            wear = withBaseKit(wear);
             cm.traverse((o) => {
               if (isToggleNode(o.name)) o.visible = wear.has(o.name);
               const m = o as THREE.Mesh;
@@ -1545,7 +1546,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               }
             });
             // Another body has another height: every figure stands as tall as the hero, a touch more.
-            const own = src === gltf ? box : new THREE.Box3().setFromObject(cm.getObjectByName('body') ?? cm);
+            const own = src === gltf ? box : heroBodyBounds(cm);
             const kk = (src === gltf ? k : HERO_HEIGHT / Math.max(0.5, own.max.y - own.min.y)) * 1.05;
             const g = new THREE.Group();
             g.add(cm);
@@ -1590,7 +1591,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             const place = (src: typeof gltf, own: boolean) => {
               if (cancelled) return;
               const fig = cloneSkinned(src.scene);
-              const wear = new Set(v.wear);
+              const wear = withBaseKit(v.wear);
               fig.traverse((o) => {
                 if (!own && isToggleNode(o.name)) o.visible = wear.has(o.name);
                 const m = o as THREE.Mesh;
