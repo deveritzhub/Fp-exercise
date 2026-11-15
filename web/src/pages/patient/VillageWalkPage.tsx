@@ -12,10 +12,11 @@ import { MODULE_PATH, moduleOf, openToday, type PatientHomeData } from '@/pages/
 import { GEAR_SLOT, SKILLS, bodyShape, levelTier } from '@shared/hero';
 import { villageBuildings } from '@shared/worldMap';
 import { ItemIcon } from '@/components/patient/ItemIcon';
-import { BOXING_KEY, CAMP_KEY, EXIT_KEY, HOME_AT, HOME_KEY, PRACTICE_KEY, TV_KEY, WELL_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
+import { BOXING_KEY, CAMP_KEY, EXIT_KEY, HOME_KEY, PRACTICE_KEY, TV_KEY, WELL_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
 import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@shared/homeDecor';
 import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
-import { MODULE_SITES, VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
+import { VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
+import { SITES, SPOTS, TOWN_HOUSES, WILD, placeAt } from '@/components/patient/townPlan';
 import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
 import { SUPPLY } from '@shared/supplies';
@@ -24,7 +25,6 @@ import { ALPHA_ADVISED_LEVEL, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, 
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
-import { siteAt } from '@/components/patient/walk';
 import type { FigureLook } from '@/components/hero/HumanFigure';
 import { Minimap, WorldMap, type Landmark, type MapTrack } from '@/components/patient/VillageMap';
 // three.js only loads on the 3D pages.
@@ -111,9 +111,42 @@ const SIGN: Record<string, [string, string]> = {
   guild: ['🚩', '#29483c'],
   kracht: ['🏋️', '#7a2f24'],
   mobiliteit: ['🧘', '#2f7f8a'],
+  dojo: ['🥋', '#1d1f1e'],
+  weaponshop: ['⚔️', '#8a3a2a'],
+  armourer: ['🛡️', '#5c6a7a'],
+  tailor: ['🧵', '#9a4a6a'],
+  workshop: ['⚙️', '#3d5a8a'],
+  carpenter: ['🔨', '#a0522d'],
+  rehab: ['➕', '#3d6a8a'],
+  healer: ['❤️', '#a83a3a'],
+  physio: ['🏃', '#7a4a8a'],
+  massage: ['💆', '#6a8a5a'],
+  pool: ['🏊', '#3a7ab8'],
+  grocer: ['🧺', '#5a8a3a'],
+  baker: ['🥖', '#b8782a'],
+  inn: ['🍺', '#8a3a2a'],
+  tradepost: ['⚓', '#7a5a3a'],
+  townhall: ['🏛️', '#3a4a8a'],
+  stables: ['🐴', '#8a5a3a'],
 };
 
 const PLACE_HINT: Record<string, [string, string]> = {
+  weaponshop: ['Wapens en gereedschap kopen', 'Buy weapons and tools'],
+  armourer: ['Je uitrusting', 'Your gear'],
+  tailor: ['Je uiterlijk aanpassen', 'Change your look'],
+  workshop: ['Maken van je buit', 'Make things from your loot'],
+  carpenter: ['Een kist of wapen maken', 'Make a chest or a weapon'],
+  rehab: ['Je revalidatie', 'Your rehabilitation'],
+  healer: ['Je pijnkaart bijwerken', 'Update your body map'],
+  grocer: ['Voeding en boodschappen', 'Nutrition and shopping'],
+  baker: ['Recepten', 'Recipes'],
+  inn: ['Je vrienden', 'Your friends'],
+  townhall: ['Je instellingen', 'Your settings'],
+  physio: ['Komt later', 'Comes later'],
+  massage: ['Komt later', 'Comes later'],
+  pool: ['Komt later', 'Comes later'],
+  tradepost: ['Komt later', 'Comes later'],
+  stables: ['Komt later', 'Comes later'],
   smithy: ['Je uitrusting en de winkel', 'Your gear and the shop'],
   library: ['Spierenatlas en de quiz', 'Muscle atlas and the quiz'],
   hall: ['Je prijzenkast', 'Your trophy cabinet'],
@@ -349,11 +382,13 @@ export function VillageWalkPage() {
   // Round the square: the hero's buildings. Further out, west and east: the houses for strength and mobility.
   const buildings = useMemo(
     () => [
-      ...villageBuildings({ hero: true, atlas: true, mission: true, guild: true }).map((b) => ({ key: b.key as string, to: b.to as string, label: nl ? LABEL[b.key][0] : LABEL[b.key][1], keeper: KEEPER[b.key] ? KEEPER[b.key].name[nl ? 0 : 1] : undefined })),
-      { key: 'kracht', to: MODULE_PATH.kracht, label: nl ? 'Krachthonk' : 'Strength house', site: MODULE_SITES.kracht as Site, roof: 0x7a2f24, kind: 'kracht' as const, alert: waiting.kracht },
-      { key: 'mobiliteit', to: MODULE_PATH.mobiliteit, label: nl ? 'Mobiliteitsstudio' : 'Mobility studio', site: MODULE_SITES.mobiliteit as Site, roof: 0x2f7f8a, kind: 'mobiliteit' as const, alert: waiting.mobiliteit },
+      ...villageBuildings({ hero: true, atlas: true, mission: true, guild: true }).map((b) => ({ key: b.key as string, to: b.to as string, label: nl ? LABEL[b.key][0] : LABEL[b.key][1], keeper: KEEPER[b.key] ? KEEPER[b.key].name[nl ? 0 : 1] : undefined, site: SITES[b.key as keyof typeof SITES] as Site | undefined })),
+      { key: 'kracht', to: MODULE_PATH.kracht, label: nl ? 'Krachthonk' : 'Strength house', site: SITES.kracht as Site, roof: 0x7a2f24, kind: 'kracht' as const, alert: waiting.kracht },
+      { key: 'mobiliteit', to: MODULE_PATH.mobiliteit, label: nl ? 'Mobiliteitsstudio' : 'Mobility studio', site: SITES.mobiliteit as Site, roof: 0x2f7f8a, kind: 'mobiliteit' as const, alert: waiting.mobiliteit },
       // The Kyokushin dojo, behind the houses in the north-west: its door opens the belt list.
-      { key: 'dojo', to: '/p/held', label: 'Dojo', site: siteAt(213, 10.5) as Site, roof: 0x1d1f1e, keeper: 'Sensei', model: { url: '/village/buildings/dojo.glb?v=1', scale: 0.8 } },
+      { key: 'dojo', to: '/p/held', label: 'Dojo', site: SITES.dojo as Site, roof: 0x1d1f1e, keeper: 'Sensei', model: { url: '/village/buildings/dojo.glb?v=1', scale: 0.8 } },
+      // The rest of the town plan: shops and houses that open a part of the app, and some that come later.
+      ...TOWN_HOUSES.map((h) => ({ key: h.key, to: h.to ?? '', label: nl ? h.nl : h.en, site: placeAt(h.at.x, h.at.z, 2.1 * (h.scale ?? 1)) as Site, roof: h.roof, scale: h.scale, soon: !!h.soon })),
     ],
     [nl, waiting.kracht, waiting.mobiliteit],
   );
@@ -604,16 +639,7 @@ export function VillageWalkPage() {
 
   // The adventure: little ailments round the village to beat, for XP of its own (never the hero's).
   const creatures = useMemo(
-    () => ([['slime', 120, 10.5], ['imp', 80, 11.2], ['couch', 325, 10.8], ['slime', 105, 8.4], ['giant_slime', 140, 11.3], ['couch_king', 295, 11.4],
-      // The meadow: animals to beat for what they drop.
-      ['cow', 38, 12.2], ['cow', 52, 11.6], ['chicken', 45, 9.6], ['chicken', 60, 10.4], ['boar', 30, 14],
-      // The first Alpha, at the far edge of the meadow.
-      ['alpha_boar', 12, 14.6],
-      // Oaks and rocks behind the strength house: wood and stone to build your home with.
-      ['oak', 205, 11.4], ['oak', 222, 11.8], ['rock', 244, 11.3], ['rock', 257, 11.6],
-      // Berry bushes at the edge of the meadow and by the oaks: picked by hand, no hunting needed.
-      ['bush', 66, 12.9], ['bush', 74, 13.6], ['bush', 192, 12.2]] as [CreatureKind, number, number][])
-      .map(([kind, deg, r], i) => ({ key: `mob:${i}`, kind, label: nl ? CREATURES[kind].nl : CREATURES[kind].en, x: Math.cos((deg * Math.PI) / 180) * r, z: Math.sin((deg * Math.PI) / 180) * r }))
+    () => WILD.map((w, i) => ({ key: `mob:${i}`, kind: w.kind as CreatureKind, label: nl ? CREATURES[w.kind as CreatureKind].nl : CREATURES[w.kind as CreatureKind].en, x: w.x, z: w.z }))
       // The big ones only show themselves to an adventurer of their level.
       .filter((c) => (adventure.data?.level ?? 1) >= CREATURES[c.kind].level),
     [nl, adventure.data?.level],
@@ -747,7 +773,7 @@ export function VillageWalkPage() {
   const landmarks: Landmark[] = [
       { key: TV_KEY, label: practiceName.replace(/\s*\(.*?\)\s*/g, ' ').trim(), x: VILLAGE_LAYOUT.gym.x, z: VILLAGE_LAYOUT.gym.z - 1.6, icon: '🏥', color: '#b4532f', wide: true, alert: todo.some((p) => moduleOf(p) === 'revalidatie') },
       ...buildings.map((b, i) => ({ key: 'kind' in b ? boardKey(b.key) : b.key, label: b.label, x: sites[i].x, z: sites[i].z, icon: SIGN[b.key]?.[0] ?? '🏠', color: SIGN[b.key]?.[1] ?? '#8a6038', alert: 'alert' in b && !!b.alert })),
-      ...(own ? [{ key: HOME_KEY, label: homeLabel, x: HOME_AT.x, z: HOME_AT.z, icon: '🏡', color: '#3f8f5a' }] : []),
+      ...(own ? [{ key: HOME_KEY, label: homeLabel, x: SPOTS.home.x, z: SPOTS.home.z, icon: '🏡', color: '#3f8f5a' }] : []),
     ];
 
   const toPlace = (key: string) => {
@@ -784,6 +810,7 @@ export function VillageWalkPage() {
           <WalkVillage3D
             className={full ? 'h-full !rounded-none !border-0' : 'h-[calc(100dvh-13.5rem)] min-h-[440px]'}
             buildings={buildings}
+            plan
             tvLabel={t('Oefenzaal · tv', 'Gym · TV')}
             tvTitle={t('Vandaag', 'Today')}
             tvLines={tvLines}
@@ -964,6 +991,8 @@ export function VillageWalkPage() {
             <Button size="lg" data-testid="enter-shop" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(nearBuilding.key)}>{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}</Button>
           ) : nearBuilding && 'kind' in nearBuilding ? (
             <Button size="lg" data-testid="enter-house" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(nearBuilding.key)}>{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}</Button>
+          ) : nearBuilding && 'soon' in nearBuilding && nearBuilding.soon ? (
+            <p role="status" data-testid="building-soon" className={`${PANEL} px-3 py-2 text-[13.5px]`}>{t(`${nearBuilding.label}: nog dicht. Dit deel van het dorp komt later.`, `${nearBuilding.label}: closed for now. This part of the village comes later.`)}</p>
           ) : nearBuilding ? (
             <Link to={nearBuilding.to} data-testid="enter-building" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">
               <DoorOpen className="h-5 w-5" aria-hidden />{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}

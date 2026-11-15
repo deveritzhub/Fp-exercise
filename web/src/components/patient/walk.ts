@@ -63,7 +63,7 @@ export const VILLAGE_LAYOUT = {
   /** Building slots around the square; the gym with the TV has the north side. */
   slots: [195, 345, 232, 308, 150, 30],
   ring: 6.6,
-  gym: { x: 0, z: -8.2 },
+  gym: { x: 0, z: -16.5 },
   spawn: { x: 0, z: 2.4 },
 } as const;
 

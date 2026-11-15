@@ -135,21 +135,22 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   await expect(adv).toContainText('Avonturier');
   await page.getByRole('button', { name: 'Loop naar Stijfheidsslijm' }).last().press('Enter');
   const strike = page.getByTestId('strike');
-  await expect(strike).toBeVisible({ timeout: 90_000 });
+  await expect(strike).toBeVisible({ timeout: 200_000 });
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/mob.png' });
   // A life bar above the creature: full at first, lower after a blow.
-  const life = page.getByTestId('hp-mob:3');
+  const life = page.getByTestId('hp-mob:1');
   const full = Number(await life.getAttribute('data-hp'));
   expect(full).toBeGreaterThan(0);
   await strike.click();
   await expect.poll(async () => (await strike.count()) === 0 || Number(await life.getAttribute('data-hp')) < full).toBe(true);
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/mob-hit.png' });
   for (let i = 0; i < 4 && (await strike.count()); i++) await strike.click();
-  await expect.poll(advXp, { timeout: 15_000 }).toBe(xp0 + 12);
+  // Twelve for the slime (and the task of the day's bonus on a day it is about slimes).
+  await expect.poll(advXp, { timeout: 15_000 }).toBeGreaterThanOrEqual(xp0 + 12);
   await expect(strike).toHaveCount(0);
   // The boxing school: a round on the bag; hits give adventure XP.
   await page.getByRole('button', { name: 'Loop naar de boksschool' }).press('Enter');
-  await page.getByTestId('open-boxing').click({ timeout: 90_000 });
+  await page.getByTestId('open-boxing').click({ timeout: 200_000 });
   const round = page.getByTestId('boxing-round');
   await page.getByTestId('start-round').click();
   for (let i = 0; i < 40 && (await round.getAttribute('data-state')) === 'on'; i++) {

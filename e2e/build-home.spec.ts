@@ -14,7 +14,7 @@ async function sql(q: string, params: unknown[] = []) {
 
 /** Chop an oak for wood; a next home is built with loot once the level allows it. */
 test('the patient chops wood and builds the next home with loot', async ({ browser }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(480_000);
   const [emma] = await sql(`SELECT id FROM patients WHERE email = 'patient@praktijk-a.test'`);
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'nl-NL' });
   const page = await context.newPage();
@@ -30,7 +30,7 @@ test('the patient chops wood and builds the next home with loot', async ({ brows
   // An oak behind the strength house: chop it until it falls; it gives wood.
   await page.getByRole('button', { name: 'Loop naar Eik' }).first().press('Enter');
   const chop = page.getByTestId('strike');
-  await expect(chop).toContainText('Hak de eik', { timeout: 90_000 });
+  await expect(chop).toContainText('Hak de eik', { timeout: 200_000 });
   await page.screenshot({ path: 'screenshots/hero/chop-oak.png' });
   for (let i = 0; i < 8 && (await chop.count()); i++) await chop.click();
   await expect(chop).toHaveCount(0, { timeout: 15_000 });
