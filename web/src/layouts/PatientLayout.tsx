@@ -155,7 +155,7 @@ export function PatientLayout() {
     { to: '/p/kracht', end: false, icon: Dumbbell, label: t('Kracht', 'Strength'), dot: openIn('kracht') },
     { to: '/p/mobiliteit', end: false, icon: Move, label: t('Mobiliteit', 'Mobility'), dot: openIn('mobiliteit') },
     // Plain view: no hero, and only the parts that have a programme; progress takes the hero's place.
-    ...(simple ? [{ to: '/p/voortgang', end: false, icon: Trophy, label: t('Voortgang', 'Progress'), dot: false }] : [{ to: '/p/dorp', end: false, icon: Trophy, label: t('Held', 'Hero'), dot: false, also: '/p/held' }]),
+    ...(simple ? [{ to: '/p/voortgang', end: false, icon: Trophy, label: t('Voortgang', 'Progress'), dot: false }] : [{ to: '/p/held', end: false, icon: Trophy, label: t('Held', 'Hero'), dot: false, also: '/p/dorp' }]),
   ].filter((tab) => !simple || !['/p/kracht', '/p/mobiliteit'].includes(tab.to) || hasPart(tab.to.slice(3)));
   // The hero tab opens the 3D world; the hero's own pages count as that tab too.
   const tabOn = (tab: (typeof tabs)[number], isActive: boolean) => isActive || ('also' in tab && !!tab.also && loc.pathname.startsWith(tab.also));
