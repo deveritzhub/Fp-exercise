@@ -12,7 +12,7 @@ import { MODULE_PATH, moduleOf, openToday, type PatientHomeData } from '@/pages/
 import { GEAR_SLOT, SKILLS, bodyShape, levelTier } from '@shared/hero';
 import { villageBuildings } from '@shared/worldMap';
 import { ItemIcon } from '@/components/patient/ItemIcon';
-import { BOXING_KEY, CAMP_KEY, EXIT_KEY, HOME_KEY, PRACTICE_KEY, TV_KEY, WELL_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
+import { BOXING_KEY, CAMP_KEY, DUNGEON_KEY, EXIT_KEY, HOME_KEY, PRACTICE_KEY, TV_KEY, WELL_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
 import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@shared/homeDecor';
 import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
 import { VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
@@ -670,7 +670,7 @@ export function VillageWalkPage() {
 
   // The adventure: little ailments round the village to beat, for XP of its own (never the hero's).
   const creatures = useMemo(
-    () => WILD.map((w, i) => ({ key: `mob:${i}`, kind: w.kind as CreatureKind, label: nl ? CREATURES[w.kind as CreatureKind].nl : CREATURES[w.kind as CreatureKind].en, x: w.x, z: w.z }))
+    () => WILD.map((w, i) => ({ key: `mob:${i}`, kind: w.kind as CreatureKind, label: nl ? CREATURES[w.kind as CreatureKind].nl : CREATURES[w.kind as CreatureKind].en, x: w.x, z: w.z, zone: w.zone }))
       // The big ones only show themselves to an adventurer of their level.
       .filter((c) => (adventure.data?.level ?? 1) >= CREATURES[c.kind].level),
     [nl, adventure.data?.level],
@@ -679,7 +679,7 @@ export function VillageWalkPage() {
   const [beaten, setBeaten] = useState<string[]>([]);
   const mob = near?.startsWith('mob:') && !beaten.includes(near) ? creatures.find((c) => c.key === near) ?? null : null;
   // What was put right in real life today hits its own creature twice as hard.
-  const strong = useMemo(() => new Set([...states.filter((x) => x.kind === 'buff').map((x) => x.key), ...(doneToday ? ['trained'] : [])]), [states, doneToday]);
+  const strong = useMemo(() => new Set([...states.filter((x) => x.kind === 'buff').map((x) => x.key), ...(doneToday ? ['trained'] : []), ...(supply.fed ? ['fed'] : [])]), [states, doneToday, supply.fed]);
   // The hero's life: monsters hit back once struck, an Alpha attacks by itself. Play only: losing
   // sends the hero back to the well with full life, nothing is lost.
   const maxHp = heroMaxHp(adventure.data?.level ?? 1, doneToday);
@@ -798,6 +798,7 @@ export function VillageWalkPage() {
       : k === WELL_KEY ? t('de waterput', 'the well')
       : k === BOXING_KEY ? t('de boksschool', 'the boxing school')
       : k === CAMP_KEY ? t('het kampvuur', 'the campfire')
+      : k === DUNGEON_KEY ? t('de onderwereld', 'the underworld')
       : k.startsWith('mob:') ? creatures.find((c) => c.key === k)?.label ?? t('het kwaaltje', 'the ailment')
       : buildings.find((b) => b.key === k)?.label ?? k;
   // Landmarks for the maps: every building with its own sign, and the practice.
@@ -835,6 +836,7 @@ export function VillageWalkPage() {
     ...(d?.hero ? [
       { key: CAMP_KEY, label: t('Kampvuur', 'Campfire'), hint: t('Koken van je buit', 'Cook your loot'), alert: false },
       { key: BOXING_KEY, label: t('Boksschool', 'Boxing school'), hint: t('Een ronde op de bokszak', 'A round on the bag'), alert: false },
+      { key: DUNGEON_KEY, label: t('🕳️ Onderwereld', '🕳️ Underworld'), hint: t('Kerker onder het Schaduwdal · avonturier 10+', 'Dungeon under the Shadow valley · adventurer 10+'), alert: false },
       ...ZONES.map((zn) => ({ key: `zone:${zn.key}`, label: `${zn.icon} ${nl ? zn.nl : zn.en}`, hint: t(`Jachtgebied · avonturier ${zn.level}+`, `Hunting ground · adventurer ${zn.level}+`), alert: false })),
     ] : []),
   ];
@@ -884,7 +886,7 @@ export function VillageWalkPage() {
             track={track}
             stick={stick}
             onNear={setNear}
-            onZone={(z) => { setZone(z); if (z === 'village') leftBy.current = true; }}
+            onZone={(z) => { setZone(z); if (z === DUNGEON_KEY) toast((adventure.data?.level ?? 1) >= 10 ? t('🕳️ De onderwereld. Hoe dieper, hoe zwaarder. Achterin wacht de Schaamtevorst.', '🕳️ The underworld. The deeper, the heavier. The Shame lord waits at the far end.') : t('🕳️ De onderwereld is voor avonturier 10 en hoger. Nu is het hier nog stil.', '🕳️ The underworld is for adventurer 10 and up. For now it is quiet down here.')); if (z === 'village') leftBy.current = true; }}
             onTalk={setTalk}
             onDestination={(k) => { setDest(k); if (!k) return; hideTip(); }}
             onArrive={(k) => { if (k === TV_KEY) setTvOpen(true); }}
@@ -1009,6 +1011,8 @@ export function VillageWalkPage() {
             <Button size="lg" data-testid="open-camp" className="pointer-events-auto border border-[#ffc078] shadow-lift" icon={<Flame className="h-5 w-5" />} onClick={() => setCampOpen(true)}>{t('Koken op het vuur', 'Cook on the fire')}</Button>
           ) : zone === HOME_KEY && own?.layout.some((i) => i.key === 'home_lootchest') && !near ? (
             <Button size="lg" data-testid="open-lootchest" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<Package className="h-5 w-5" />} onClick={() => setChestOpen(true)}>{t('Open je buitkist', 'Open your loot chest')}</Button>
+          ) : near === DUNGEON_KEY ? (
+            <Button size="lg" data-testid="enter-dungeon" className="pointer-events-auto border border-[#a070ff] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(DUNGEON_KEY)}>{t('Daal af naar de onderwereld', 'Go down to the underworld')}</Button>
           ) : near === BOXING_KEY ? (
             <Button size="lg" data-testid="open-boxing" className="pointer-events-auto border border-[#ffd76a] shadow-lift" icon={<Swords className="h-5 w-5" />} onClick={() => { setRoundNo((n) => n + 1); setBoxingOpen(true); }}>{t('Train op de bokszak', 'Train on the bag')}</Button>
           ) : near === WELL_KEY ? (
@@ -1024,7 +1028,7 @@ export function VillageWalkPage() {
               {zone === HOME_KEY && own?.layout.some((i) => i.key === 'home_lootchest') && (
                 <Button size="lg" data-testid="open-lootchest" className="border border-[#e4bc63] shadow-lift" icon={<Package className="h-5 w-5" />} onClick={() => setChestOpen(true)}>{t('Open je buitkist', 'Open your loot chest')}</Button>
               )}
-              <Button size="lg" variant="secondary" className="border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(EXIT_KEY)}>{t('Naar buiten: het dorp', 'Go out: the village')}</Button>
+              <Button size="lg" variant="secondary" className="border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(EXIT_KEY)}>{zone === DUNGEON_KEY ? t('Terug naar boven', 'Back up') : t('Naar buiten: het dorp', 'Go out: the village')}</Button>
             </span>
           ) : errandHere ? (
             <Link to={errandHere.link!} data-testid="errand-link" className="tap pointer-events-auto inline-flex min-h-[48px] max-w-full items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">

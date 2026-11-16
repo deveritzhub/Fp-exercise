@@ -81,6 +81,7 @@ function simpleCreature(kind: CreatureKind): THREE.Group {
   if (kind === 'chicken' || kind === 'cow' || kind === 'boar') return animal(kind);
   if (kind === 'alpha_boar') return alphaBoar();
   if (kind === 'wolf' || kind === 'bear') return beast(kind);
+  if (SHADOWS.has(kind)) return shadowCreature(kind);
   if (kind === 'alpha_wolf' || kind === 'alpha_bear') {
     // The pack leader: the same animal, much bigger and darker, with glowing eyes.
     const g = new THREE.Group();
@@ -436,7 +437,7 @@ export function habitat(kind: CreatureKind): THREE.Group | null {
     log.rotation.z = Math.PI / 2;
     log.position.set(0, 0.12, -0.7);
     g.add(log);
-  } else if (kind === 'alpha_boar' || kind === 'alpha_wolf' || kind === 'alpha_bear') {
+  } else if (kind === 'alpha_boar' || kind === 'alpha_wolf' || kind === 'alpha_bear' || kind === 'shame_lord') {
     // The lair: scorched ground, a half ring of standing stones behind it, bones in the dirt.
     g.add(flat(2.6, 0x2b2420), flat(1.6, 0x3a2a22));
     for (let i = 0; i < 7; i++) {
@@ -552,6 +553,123 @@ function beast(kind: 'wolf' | 'bear', alpha = false): THREE.Group {
     const hump = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 8), m(fur, { roughness: 0.95 }));
     hump.position.set(0, tall + 0.22, len / 2 - 0.25);
     g.add(hump);
+  }
+  g.traverse((o) => { o.castShadow = true; });
+  return g;
+}
+
+const SHADOWS = new Set<CreatureKind>(['pride', 'rage', 'craving', 'fright', 'sorrow', 'apathy', 'guilt', 'shame_lord']);
+const glowM = (color: number, k = 1.8) => m(color, { emissive: color, emissiveIntensity: k });
+
+/** The shadow side: heavy feelings as creatures, made of simple shapes, darker as they get heavier. */
+function shadowCreature(kind: CreatureKind): THREE.Group {
+  const g = new THREE.Group();
+  const add = (mesh: THREE.Mesh, x: number, y: number, z: number) => {
+    mesh.position.set(x, y, z);
+    g.add(mesh);
+    return mesh;
+  };
+  if (kind === 'pride') {
+    // A puffed-up golden bird with a fan of tail feathers, nose in the air.
+    const body = add(new THREE.Mesh(new THREE.SphereGeometry(0.26, 14, 10), m(0xd4a62a, { metalness: 0.3, roughness: 0.35 })), 0, 0.45, 0);
+    body.scale.set(0.9, 1.1, 1);
+    const head = add(new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 8), m(0x2c6fb0)), 0, 0.82, 0.14);
+    head.rotation.x = -0.4;
+    add(new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.12, 6), m(0xe8a23a)), 0, 0.86, 0.27).rotation.x = Math.PI / 2 - 0.4;
+    for (let i = 0; i < 9; i++) {
+      const a = -1.1 + (i / 8) * 2.2;
+      const f = add(new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.75, 5), m(i % 2 ? 0x2a8a6a : 0x2c6fb0)), Math.sin(a) * 0.32, 0.72 + Math.cos(a) * 0.32, -0.22);
+      f.rotation.set(-0.3, 0, -a);
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), glowM(0xffd23a, 0.8)), Math.sin(a) * 0.62, 0.72 + Math.cos(a) * 0.62, -0.28);
+    }
+    for (const sd of [-1, 1]) {
+      add(new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.22, 6), m(0xe8a23a)), sd * 0.08, 0.11, 0);
+      eye(g, sd * 0.05, 0.86, 0.22, 0.022);
+    }
+  } else if (kind === 'rage') {
+    // A glowing red head that burns: flames on top, gritted white teeth.
+    add(new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 12), glowM(0xc8321e, 0.6)), 0, 0.42, 0);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      add(new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.42, 6), glowM(i % 2 ? 0xff8a1e : 0xffc23a, 2)), Math.cos(a) * 0.14, 0.82, Math.sin(a) * 0.14).userData.dynamic = true;
+    }
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.05, 0.04), m(0xf4efe4)), 0, 0.34, 0.28);
+    for (const sd of [-1, 1]) {
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), glowM(0xfff0a0, 2.2)), sd * 0.11, 0.5, 0.26);
+      add(new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.03), m(0x3a0e08)), sd * 0.11, 0.59, 0.27).rotation.z = sd * 0.5;
+    }
+  } else if (kind === 'craving') {
+    // A see-through ghost with long grabbing arms.
+    const ghostM = m(0x9fe0c8, { transparent: true, opacity: 0.6, emissive: 0x2a8a6a, emissiveIntensity: 0.6 });
+    add(new THREE.Mesh(new THREE.CapsuleGeometry(0.24, 0.5, 6, 14), ghostM), 0, 0.75, 0);
+    add(new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.5, 12), ghostM), 0, 0.25, 0).rotation.x = Math.PI;
+    for (const sd of [-1, 1]) {
+      const arm = add(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 0.85, 6), ghostM), sd * 0.38, 0.75, 0.25);
+      arm.rotation.set(1.1, 0, sd * 0.5);
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), ghostM), sd * 0.56, 0.58, 0.58);
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), m(0x0d1a16)), sd * 0.09, 0.95, 0.21);
+    }
+  } else if (kind === 'fright') {
+    // A trembling shadow: dark cloak, two big white eyes.
+    const dark = m(0x14121c, { transparent: true, opacity: 0.85, roughness: 1 });
+    add(new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.3, 12), dark), 0, 0.65, 0);
+    add(new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 10), dark), 0, 1.25, 0);
+    for (const sd of [-1, 1]) add(new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), glowM(0xf4f4ff, 2)), sd * 0.09, 1.27, 0.2);
+  } else if (kind === 'sorrow') {
+    // A big blue sludge that drips, with sad, drooping eyes.
+    const blue = m(0x3a6ab8, { transparent: true, opacity: 0.85, roughness: 0.2 });
+    const body = add(new THREE.Mesh(new THREE.SphereGeometry(0.6, 18, 12), blue), 0, 0.45, 0);
+    body.scale.set(1, 0.8, 1);
+    for (const [x, z] of [[0.5, 0.2], [-0.45, 0.3], [0.2, -0.5], [-0.3, -0.4]] as const) {
+      const drip = add(new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), blue), x, 0.06, z);
+      drip.scale.y = 0.4;
+    }
+    for (const sd of [-1, 1]) {
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), m(0xeef4ff)), sd * 0.2, 0.62, 0.48);
+      add(new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.03), m(0x1a2a4a)), sd * 0.2, 0.74, 0.5).rotation.z = -sd * 0.4;
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), glowM(0x9fd0ff, 1.2)), sd * 0.22, 0.46, 0.55);
+    }
+  } else if (kind === 'apathy') {
+    // A grey figure half lying down, hardly moving.
+    const grey = m(0x7a7a80, { roughness: 1 });
+    const body = add(new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.8, 6, 12), grey), 0, 0.32, 0);
+    body.rotation.z = Math.PI / 2 - 0.25;
+    add(new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 10), grey), 0.62, 0.55, 0);
+    for (const sd of [-1, 1]) add(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), m(0x3a3a40)), 0.75, 0.58, sd * 0.09).rotation.y = Math.PI / 2;
+  } else if (kind === 'guilt') {
+    // A hunched figure in chains, one finger pointing.
+    const robe = m(0x4a3a5a, { roughness: 0.9 });
+    add(new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.2, 12), robe), 0, 0.6, 0);
+    add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), m(0x8a7a90)), 0, 1.3, 0.05);
+    const chain = m(0x9a9aa2, { metalness: 0.7, roughness: 0.35 });
+    for (let i = 0; i < 4; i++) {
+      const ring = add(new THREE.Mesh(new THREE.TorusGeometry(0.36 - i * 0.05, 0.03, 6, 18), chain), 0, 0.3 + i * 0.22, 0);
+      ring.rotation.x = Math.PI / 2 + (i % 2 ? 0.2 : -0.2);
+    }
+    const arm = add(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.6, 6), m(0x8a7a90)), 0.25, 1.0, 0.3);
+    arm.rotation.x = 1.3;
+    for (const sd of [-1, 1]) add(new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), glowM(0xb08aff, 1.5)), sd * 0.08, 1.32, 0.24);
+  } else {
+    // The Shame lord: a tall hooded figure bowed low, with a crown of thorns, red eyes and dark wisps.
+    const cloak = m(0x1a0f24, { roughness: 1 });
+    add(new THREE.Mesh(new THREE.ConeGeometry(0.75, 2.2, 14), cloak), 0, 1.1, 0);
+    const hood = add(new THREE.Mesh(new THREE.SphereGeometry(0.42, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.65), cloak), 0, 2.05, 0.1);
+    hood.rotation.x = 0.5;
+    add(new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 10), m(0x050208)), 0, 1.95, 0.18);
+    for (const sd of [-1, 1]) add(new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), glowM(0xff1a2a, 2.6)), sd * 0.12, 1.98, 0.45);
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2;
+      add(new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.3, 5), m(0x3a2a14)), Math.cos(a) * 0.3, 2.42, Math.sin(a) * 0.3 + 0.05);
+    }
+    for (const sd of [-1, 1]) {
+      const arm = add(new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 1.1, 8), cloak), sd * 0.62, 1.35, 0.2);
+      arm.rotation.set(0.6, 0, sd * 0.5);
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), m(0x2a1a34)), sd * 0.95, 0.95, 0.55);
+    }
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), m(0x2a0f3a, { transparent: true, opacity: 0.55, emissive: 0x3a0a4a, emissiveIntensity: 1 })), Math.cos(a) * 1.2, 0.4 + (i % 3) * 0.5, Math.sin(a) * 1.2);
+    }
   }
   g.traverse((o) => { o.castShadow = true; });
   return g;

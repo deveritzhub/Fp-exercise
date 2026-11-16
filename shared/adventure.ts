@@ -27,6 +27,17 @@ export const CREATURES = {
   // The boss of each hunting ground: shows itself with its pack, a fair fight only later (alphaAdvised).
   alpha_wolf: { nl: 'Alfawolf', en: 'Alpha wolf', hp: 120, xp: 400, weakTo: 'trained', level: 6 },
   alpha_bear: { nl: 'Alfabeer', en: 'Alpha bear', hp: 220, xp: 800, weakTo: 'trained', level: 10 },
+  // The shadow side: heavy feelings as creatures, the heavier the stronger. The milder ones live in
+  // the Shadow valley, the deeper ones in the dungeon of the underworld. What you really did today is
+  // what hits them hardest: you are stronger than this.
+  pride: { nl: 'Pronkpauw', en: 'Peacock of pride', hp: 14, xp: 40, weakTo: 'trained', level: 4 },
+  rage: { nl: 'Vuurkop', en: 'Hothead', hp: 24, xp: 65, weakTo: 'hydrated', level: 6 },
+  craving: { nl: 'Graaigeest', en: 'Grabbing ghost', hp: 30, xp: 90, weakTo: 'fed', level: 8 },
+  fright: { nl: 'Schrikschim', en: 'Fright shade', hp: 40, xp: 120, weakTo: 'moving', level: 10 },
+  sorrow: { nl: 'Tranenslijk', en: 'Tear sludge', hp: 60, xp: 160, weakTo: 'rested', level: 12 },
+  apathy: { nl: 'Grijze Slaper', en: 'Grey sleeper', hp: 70, xp: 200, weakTo: 'trained', level: 14 },
+  guilt: { nl: 'Schuldketter', en: 'Guilt chainer', hp: 90, xp: 260, weakTo: 'hydrated', level: 16 },
+  shame_lord: { nl: 'Schaamtevorst', en: 'Shame lord', hp: 400, xp: 1500, weakTo: 'trained', level: 16 },
 } as const;
 export type CreatureKind = keyof typeof CREATURES;
 export const CREATURE_KINDS = Object.keys(CREATURES) as CreatureKind[];
@@ -53,17 +64,25 @@ export const ATTACKS: Record<CreatureKind, { damage: number; everyMs: number; ag
   bear: { damage: 9, everyMs: 1700, aggressive: true },
   alpha_wolf: { damage: 12, everyMs: 1500, aggressive: true },
   alpha_bear: { damage: 18, everyMs: 1800, aggressive: true },
+  pride: { damage: 3, everyMs: 1500, aggressive: false },
+  rage: { damage: 5, everyMs: 1200, aggressive: true },
+  craving: { damage: 5, everyMs: 1400, aggressive: true },
+  fright: { damage: 7, everyMs: 1500, aggressive: true },
+  sorrow: { damage: 8, everyMs: 1800, aggressive: false },
+  apathy: { damage: 9, everyMs: 2000, aggressive: true },
+  guilt: { damage: 12, everyMs: 1600, aggressive: true },
+  shame_lord: { damage: 22, everyMs: 1800, aggressive: true },
 };
 /** Trees and rocks: you chop them for wood and stone; they never fight back. */
 export const isHarvest = (kind: CreatureKind) => kind === 'oak' || kind === 'rock' || kind === 'bush';
 /** Friendly: never hits the hero (prey, trees and rocks). */
 export const isFriendly = (kind: CreatureKind) => ATTACKS[kind].damage === 0;
 /** An Alpha: a big, dangerous one with its own warning; worth fighting with a good weapon. */
-export const isAlpha = (kind: CreatureKind) => kind.startsWith('alpha_');
+export const isAlpha = (kind: CreatureKind) => kind.startsWith('alpha_') || kind === 'shame_lord';
 /** The adventurer level at which an Alpha is a fair fight (it shows itself earlier, as a warning). */
 export const ALPHA_ADVISED_LEVEL = 5;
 /** The adventurer level at which each Alpha is a fair fight. */
-export const alphaAdvised = (kind: CreatureKind): number => (kind === 'alpha_wolf' ? 9 : kind === 'alpha_bear' ? 13 : ALPHA_ADVISED_LEVEL);
+export const alphaAdvised = (kind: CreatureKind): number => (kind === 'alpha_wolf' ? 9 : kind === 'alpha_bear' ? 13 : kind === 'shame_lord' ? 20 : ALPHA_ADVISED_LEVEL);
 
 /**
  * The hero's life in the village: it grows with the adventure level, and a real workout today gives
@@ -156,6 +175,14 @@ export const LOOT = {
   claw: { nl: 'Berenklauw', en: 'Bear claw', icon: '🐾' },
   alpha_fang: { nl: 'Alfawolventand', en: 'Alpha wolf fang', icon: '🌙' },
   alpha_claw: { nl: 'Alfaberenklauw', en: 'Alpha bear claw', icon: '💥' },
+  mirror_feather: { nl: 'Spiegelveer', en: 'Mirror feather', icon: '🪞' },
+  ember: { nl: 'Gloeiende kool', en: 'Ember', icon: '🔥' },
+  empty_purse: { nl: 'Lege buidel', en: 'Empty purse', icon: '👝' },
+  shiver_crystal: { nl: 'Bibberkristal', en: 'Shiver crystal', icon: '💠' },
+  tear_stone: { nl: 'Traansteen', en: 'Tear stone', icon: '💧' },
+  grey_dust: { nl: 'Grijs stof', en: 'Grey dust', icon: '🌫️' },
+  broken_link: { nl: 'Gebroken schakel', en: 'Broken link', icon: '⛓️' },
+  crown_of_light: { nl: 'Kroon van het Licht', en: 'Crown of light', icon: '✨' },
   wood: { nl: 'Hout', en: 'Wood', icon: '🪵' },
   stone: { nl: 'Steen', en: 'Stone', icon: '🪨' },
   berries: { nl: 'Bessen', en: 'Berries', icon: '🫐' },
@@ -185,6 +212,14 @@ export const DROPS: Record<CreatureKind, { item: LootKey; chance: number; max: n
   bear: [{ item: 'bear_pelt', chance: 1, max: 1 }, { item: 'meat', chance: 1, max: 3 }, { item: 'claw', chance: 0.5, max: 2 }],
   alpha_wolf: [{ item: 'alpha_fang', chance: 1, max: 1 }, { item: 'wolf_pelt', chance: 1, max: 2 }, { item: 'fang', chance: 1, max: 2 }],
   alpha_bear: [{ item: 'alpha_claw', chance: 1, max: 1 }, { item: 'bear_pelt', chance: 1, max: 2 }, { item: 'claw', chance: 1, max: 3 }],
+  pride: [{ item: 'mirror_feather', chance: 1, max: 2 }],
+  rage: [{ item: 'ember', chance: 1, max: 2 }],
+  craving: [{ item: 'empty_purse', chance: 1, max: 1 }],
+  fright: [{ item: 'shiver_crystal', chance: 1, max: 2 }],
+  sorrow: [{ item: 'tear_stone', chance: 1, max: 2 }],
+  apathy: [{ item: 'grey_dust', chance: 1, max: 3 }],
+  guilt: [{ item: 'broken_link', chance: 1, max: 2 }],
+  shame_lord: [{ item: 'crown_of_light', chance: 1, max: 1 }, { item: 'broken_link', chance: 1, max: 3 }, { item: 'tear_stone', chance: 1, max: 3 }],
 };
 
 /** The drops of one win. `rnd` gives numbers in [0, 1), as Math.random does. */
@@ -285,6 +320,7 @@ export const ZONES = [
   { key: 'bearhill', nl: 'Berenheuvel', en: 'Bear hill', level: 10, x: 39.5, z: -4, r: 6.5, icon: '🐻', outside: true },
   { key: 'woodcut', nl: 'Houthakkersbos', en: 'Woodcutters’ wood', level: 1, x: -39, z: 3, r: 6.5, icon: '🪵', outside: true },
   { key: 'quarry', nl: 'Steengroeve', en: 'Quarry', level: 1, x: -4, z: -39.5, r: 6, icon: '⛏️', outside: true },
+  { key: 'shadowvale', nl: 'Schaduwdal', en: 'Shadow valley', level: 4, x: -25.5, z: 29, r: 6.5, icon: '🌑', outside: true },
 ] as const;
 export type Zone = (typeof ZONES)[number];
 /** The hunting ground a point lies in, if any. */

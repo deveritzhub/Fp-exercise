@@ -49,6 +49,8 @@ export const SPOTS = {
   /** The meadow (manege) with the cows and chickens. */
   meadow: { x: 18.4, z: 12.6 } as Vec,
   meadowR: 3.6,
+  /** The cave mouth in the Shadow valley: the way down to the dungeon of the underworld. */
+  cave: { x: -29.6, z: 33.4 } as Vec,
   /** The pond in the park, where the slimes live. */
   pond: { x: 13.6, z: 21.5 } as Vec,
 } as const;
@@ -97,7 +99,7 @@ export const RESIDENTS: { at: Vec; stage: number }[] = [
 ];
 
 /** Where the creatures and things to harvest live in the town. */
-export const WILD: { kind: string; x: number; z: number }[] = [
+export const WILD: { kind: string; x: number; z: number; zone?: 'dungeon' }[] = [
   // Slimes by the pond in the park; the giant one further in.
   { kind: 'slime', x: 10.8, z: 23.2 },
   { kind: 'slime', x: 16.4, z: 23.6 },
@@ -144,4 +146,17 @@ export const WILD: { kind: string; x: number; z: number }[] = [
   { kind: 'rock', x: -1.6, z: -41.8 },
   { kind: 'rock', x: -7.6, z: -41.2 },
   { kind: 'rock', x: 0.4, z: -37.6 },
+  // The Shadow valley, south-west outside the wall: the milder heavy feelings.
+  { kind: 'pride', x: -22, z: 26 },
+  { kind: 'pride', x: -27, z: 24.6 },
+  { kind: 'rage', x: -24, z: 31.6 },
+  { kind: 'rage', x: -29.6, z: 28 },
+  { kind: 'craving', x: -21.4, z: 31 },
+  // The dungeon of the underworld, below the valley (x and z from the middle of the hall, north is deeper).
+  { kind: 'fright', x: -3, z: 10, zone: 'dungeon' },
+  { kind: 'fright', x: 3, z: 6, zone: 'dungeon' },
+  { kind: 'sorrow', x: -2.5, z: 0, zone: 'dungeon' },
+  { kind: 'apathy', x: 2.6, z: -5, zone: 'dungeon' },
+  { kind: 'guilt', x: -2.6, z: -10, zone: 'dungeon' },
+  { kind: 'shame_lord', x: 0, z: -16.4, zone: 'dungeon' },
 ];

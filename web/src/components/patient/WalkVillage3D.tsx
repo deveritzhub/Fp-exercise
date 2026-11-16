@@ -46,7 +46,7 @@ const HOME_REACH = [1.3, 1.5, 1.8, 2.2, 2.8, 3.1];
 /** Homes along the street stand a little smaller than the patient's own, so neighbours fit side by side. */
 const STREET_HOME = 0.85;
 /** A room behind a door in the village. */
-type Place = { group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[] };
+type Place = { under?: boolean; group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[] };
 export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key`: the hero turns to it and it flinches. */ strike: (key: string) => void; /** The creature `key` lunges at the hero. */ lunge: (key: string) => void; /** Beaten: the hero stands up at the well at once, without walking. */ respawn: () => void; /** Fast travel: the hero stands at the place `key` at once (after a short fade). */ jump: (key: string) => void };
 /** The bag of the boxing school in the village. */
 export const BOXING_KEY = 'boxing';
@@ -54,6 +54,10 @@ export const BOXING_KEY = 'boxing';
 export const CAMP_KEY = 'camp';
 const CAMP_AT: Vec = { x: Math.cos((50 * Math.PI) / 180) * 4.6, z: Math.sin((50 * Math.PI) / 180) * 4.6 };
 const BOXING_AT: Vec = { x: -3.1, z: 5.4 };
+/** The dungeon of the underworld: a long hall under the Shadow valley, its door a cave mouth there. */
+export const DUNGEON_KEY = 'dungeon';
+const DUNGEON_AT: Vec = { x: 420, z: 420 };
+const DUNGEON_HALF = { w: 6, l: 20 };
 type Props = {
   /** Buildings round the square take the next free slot; one with a `site` stands there instead. */
   buildings: {
@@ -99,7 +103,7 @@ type Props = {
   questOpen?: boolean;
   coachLabel?: string;
   /** Creatures to beat, at fixed spots. `creaturesGone` are the beaten ones: hidden until they come back. */
-  creatures?: { key: string; kind: CreatureKind; label: string; x: number; z: number }[];
+  creatures?: { key: string; kind: CreatureKind; label: string; x: number; z: number; /** 'dungeon': x and z are from the dungeon's middle. */ zone?: string }[];
   creaturesGone?: string[];
   /** Damage each creature has taken, by key: drawn as a life bar above it. */
   creatureHurt?: Record<string, number>;
@@ -950,6 +954,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     // Where each creature lives, and a pond by the slimes' swamp: only with the adventure on.
     if (creatures?.length) {
       for (const c of creatures) {
+        if (c.zone === DUNGEON_KEY) continue;
         const h = habitat(c.kind);
         if (!h) continue;
         h.position.set(c.x, 0, c.z);
@@ -1019,8 +1024,40 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           .catch(() => undefined);
       }
     }
+    // The dungeon: made now so the creatures that live in it can be put there; its walls come later.
+    const dungeon: Place | null = plan && creatures
+      ? {
+          under: true,
+          group: new THREE.Group(),
+          walls: [],
+          at: DUNGEON_AT,
+          rect: { x0: DUNGEON_AT.x - DUNGEON_HALF.w + 0.5, x1: DUNGEON_AT.x + DUNGEON_HALF.w - 0.5, z0: DUNGEON_AT.z - DUNGEON_HALF.l + 0.5, z1: DUNGEON_AT.z + DUNGEON_HALF.l - 0.5 },
+          entry: { x: DUNGEON_AT.x, z: DUNGEON_AT.z + DUNGEON_HALF.l - 2 },
+          face: Math.PI,
+          exit: { x: DUNGEON_AT.x, z: DUNGEON_AT.z + DUNGEON_HALF.l - 0.9 },
+          outside: { x: SPOTS.cave.x * (1 - 1.8 / Math.hypot(SPOTS.cave.x, SPOTS.cave.z)), z: SPOTS.cave.z * (1 - 1.8 / Math.hypot(SPOTS.cave.x, SPOTS.cave.z)) },
+          map: SPOTS.cave,
+          obstacles: [],
+          spots: [{ key: EXIT_KEY, door: { x: DUNGEON_AT.x, z: DUNGEON_AT.z + DUNGEON_HALF.l - 0.9 } }],
+        }
+      : null;
     for (const c of creatures ?? []) {
       const g = creature(c.kind);
+      // A creature of the dungeon stands in it, facing the way in (south).
+      const below = c.zone === DUNGEON_KEY && dungeon;
+      if (below) {
+        g.position.set(DUNGEON_AT.x + c.x, 0, DUNGEON_AT.z + c.z);
+        g.rotation.y = 0;
+        scene.add(g);
+        const big = isAlpha(c.kind);
+        const door = { x: g.position.x, z: g.position.z + (big ? 2.4 : 1.1) };
+        anchors.push({ id: c.key, obj: g, y: c.kind === 'shame_lord' ? 3.2 : c.kind === 'sorrow' || c.kind === 'apathy' ? 1.3 : 1.8, zone: DUNGEON_KEY });
+        dungeon.spots.push({ key: c.key, door });
+        dungeon.obstacles.push({ x: g.position.x, z: g.position.z, r: big ? 1.3 : 0.5 });
+        g.userData.mob = true;
+        mobs.push({ key: c.key, kind: c.kind, g, door, hurtAt: 0, lungeAt: 0, x: g.position.x, z: g.position.z, still: false, roam: null });
+        continue;
+      }
       g.position.set(c.x, 0, c.z);
       g.lookAt(0, 0, 0);
       scene.add(g);
@@ -1310,6 +1347,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       };
       furnish.current(live.current.homeItems);
     }
+    if (dungeon) {
+      places[DUNGEON_KEY] = dungeon;
+      scene.add(dungeon.group);
+      mark(EXIT_KEY, { x: dungeon.exit.x, z: dungeon.exit.z + 0.5 }, 2.2, DUNGEON_KEY);
+    }
     const inObstacles = places[PRACTICE_KEY].obstacles;
     const inside = () => zone.current !== 'village';
     const here = () => places[zone.current];
@@ -1346,6 +1388,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     wellRoof.scale.z = 0.8;
     const lampM = new THREE.MeshStandardMaterial({ color: 0xfff1b8, emissive: 0xffc35a, emissiveIntensity: 1.6 });
     const lamps: THREE.Sprite[] = [];
+    // The light of the torches below ground, which goes with the hero there.
+    const torchLight = new THREE.PointLight(0xffa860, 60, 22, 1.4);
+    torchLight.visible = false;
+    scene.add(torchLight);
+    const UNDER_BG = new THREE.Color(0x07050a);
     for (let i = 0; i < 4; i++) {
       const a = Math.PI / 4 + (i * Math.PI) / 2;
       const x = Math.cos(a) * (SQ + 0.3);
@@ -1472,6 +1519,136 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         scene.add(mark);
         anchors.push({ id: `zone:${zn.key}`, obj: mark, y: 2.6 });
         zoneDoors.set(`zone:${zn.key}`, { x: zn.x - (zn.x / toward) * (zn.r - 1.2), z: zn.z - (zn.z / toward) * (zn.r - 1.2) });
+      }
+      // The Shadow valley: dark ground, dead trees and violet wisps, and at its far end the cave mouth
+      // down to the dungeon.
+      const vale = ZONES.find((zn) => zn.key === 'shadowvale');
+      if (vale && dungeon) {
+        const edge = document.createElement('canvas');
+        edge.width = edge.height = 128;
+        const ec = edge.getContext('2d');
+        if (ec) {
+          const gr = ec.createRadialGradient(64, 64, 30, 64, 64, 64);
+          gr.addColorStop(0, '#fff');
+          gr.addColorStop(1, '#000');
+          ec.fillStyle = gr;
+          ec.fillRect(0, 0, 128, 128);
+        }
+        const dusk = new THREE.Mesh(new THREE.CircleGeometry(vale.r + 2.5, 40), new THREE.MeshStandardMaterial({ color: 0x2a2232, roughness: 1, alphaMap: new THREE.CanvasTexture(edge), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+        dusk.rotation.x = -Math.PI / 2;
+        dusk.position.set(vale.x, 0.02, vale.z);
+        scene.add(dusk);
+        const deadM = mat(0x3a3036);
+        const VR = rng(77);
+        for (let i = 0; i < 9; i++) {
+          const a = VR() * Math.PI * 2;
+          const r = 2.5 + VR() * (vale.r - 1);
+          const tx = vale.x + Math.cos(a) * r;
+          const tz = vale.z + Math.sin(a) * r;
+          if (Math.hypot(tx - SPOTS.cave.x, tz - SPOTS.cave.z) < 3) continue;
+          const tree = new THREE.Group();
+          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.16, 2.4, 5), deadM);
+          trunk.position.y = 1.2;
+          tree.add(trunk);
+          for (let k = 0; k < 4; k++) {
+            const br = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.05, 0.9, 4), deadM);
+            br.position.set(0, 1.4 + k * 0.25, 0);
+            br.rotation.set(0.9, k * 1.7, 0);
+            br.translateY(0.4);
+            tree.add(br);
+          }
+          tree.position.set(tx, 0, tz);
+          tree.traverse((o) => { o.castShadow = true; });
+          scene.add(tree);
+          obstacles.push({ x: tx, z: tz, r: 0.3 });
+        }
+        for (let i = 0; i < 10; i++) {
+          const wisp = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot(), color: 0xa070ff, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.45 }));
+          wisp.position.set(vale.x + (VR() - 0.5) * vale.r * 1.6, 0.6 + VR() * 1.8, vale.z + (VR() - 0.5) * vale.r * 1.6);
+          wisp.scale.setScalar(0.6 + VR() * 0.6);
+          scene.add(wisp);
+          lamps.push(wisp);
+        }
+        // The cave mouth: a dark opening in a heap of rocks, facing the town.
+        const cave = new THREE.Group();
+        const rockM = mat(0x55505a, { map: painted('stone', 1, 1), flatShading: true });
+        for (let i = 0; i < 9; i++) {
+          const a = Math.PI * (0.15 + (i / 8) * 0.7);
+          const rk = new THREE.Mesh(new THREE.DodecahedronGeometry(0.75 + (i % 3) * 0.25, 0), rockM);
+          rk.position.set(Math.cos(a) * 1.6, 0.5 + Math.sin(a) * 1.3, -0.3 - (i % 2) * 0.3);
+          cave.add(rk);
+        }
+        const hole = new THREE.Mesh(new THREE.CircleGeometry(1.15, 16, 0, Math.PI), new THREE.MeshBasicMaterial({ color: 0x050308 }));
+        hole.position.set(0, 0.02, 0.05);
+        cave.add(hole);
+        for (const sd of [-1, 1]) {
+          const torch = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.25, 0.12), new THREE.MeshStandardMaterial({ color: 0xffc070, emissive: 0xff7a1e, emissiveIntensity: 2 }));
+          torch.position.set(sd * 1.5, 1.4, 0.35);
+          cave.add(torch);
+          const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot(), color: 0xff9a3c, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.55 }));
+          halo.scale.setScalar(1.3);
+          halo.position.set(SPOTS.cave.x, 1.4, SPOTS.cave.z);
+          lamps.push(halo);
+          scene.add(halo);
+        }
+        cave.position.set(SPOTS.cave.x, 0, SPOTS.cave.z);
+        cave.lookAt(0, 0, 0);
+        cave.traverse((o) => { o.castShadow = true; });
+        scene.add(cave);
+        obstacles.push({ x: SPOTS.cave.x, z: SPOTS.cave.z, r: 1.4 });
+        const len = Math.hypot(SPOTS.cave.x, SPOTS.cave.z);
+        spots.push({ key: DUNGEON_KEY, door: { x: SPOTS.cave.x * (1 - 1.9 / len), z: SPOTS.cave.z * (1 - 1.9 / len) } });
+        anchors.push({ id: DUNGEON_KEY, obj: cave, y: 3.2 });
+
+        // Down below: a long hall of dark stone with low walls, pillars and torches, the Shame lord's
+        // arena at the far (north) end with a glowing ring on the floor.
+        const D = dungeon.group;
+        const ax = DUNGEON_AT.x;
+        const az = DUNGEON_AT.z;
+        const floorM = mat(0x3a3440, { map: painted('stone', 4, 12), flatShading: false });
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(DUNGEON_HALF.w * 2, DUNGEON_HALF.l * 2), floorM);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.set(ax, 0, az);
+        floor.receiveShadow = true;
+        D.add(floor);
+        const wallM = mat(0x4a4450, { map: painted('stone', 6, 1), flatShading: false });
+        for (const sd of [-1, 1]) {
+          const w = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.5, DUNGEON_HALF.l * 2), wallM);
+          w.position.set(ax + sd * (DUNGEON_HALF.w + 0.3), 0.75, az);
+          D.add(w);
+        }
+        const back = new THREE.Mesh(new THREE.BoxGeometry(DUNGEON_HALF.w * 2 + 1.2, 3.2, 0.6), wallM);
+        back.position.set(ax, 1.6, az - DUNGEON_HALF.l - 0.3);
+        D.add(back);
+        const pillarM = mat(0x5a5260, { map: painted('stone', 1, 2), flatShading: false });
+        for (let z = -14; z <= 14; z += 7) {
+          for (const sd of [-1, 1]) {
+            const pl = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.45, 2.6, 8), pillarM);
+            pl.position.set(ax + sd * 4.2, 1.3, az + z);
+            pl.castShadow = true;
+            D.add(pl);
+            dungeon.obstacles.push({ x: ax + sd * 4.2, z: az + z, r: 0.5 });
+            const torch = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.25, 0.12), new THREE.MeshStandardMaterial({ color: 0xffc070, emissive: 0xff7a1e, emissiveIntensity: 2 }));
+            torch.position.set(ax + sd * (DUNGEON_HALF.w - 0.05), 1.6, az + z + 3.5);
+            torch.userData.dynamic = true;
+            D.add(torch);
+            const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot(), color: 0xff9a3c, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.55 }));
+            halo.scale.setScalar(1.6);
+            halo.position.copy(torch.position);
+            D.add(halo);
+            lamps.push(halo);
+          }
+        }
+        const ring = new THREE.Mesh(new THREE.RingGeometry(3, 3.4, 40), new THREE.MeshBasicMaterial({ color: 0xa02040, transparent: true, opacity: 0.7 }));
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(ax, 0.03, az - 16);
+        D.add(ring);
+        // The way back up: steps at the south end.
+        for (let k = 0; k < 3; k++) {
+          const step = new THREE.Mesh(new THREE.BoxGeometry(3, 0.2 + k * 0.2, 0.6), wallM);
+          step.position.set(ax, 0.1 + k * 0.1, az + DUNGEON_HALF.l - 0.3 - k * 0.6 + 1.2);
+          D.add(step);
+        }
       }
       // The market south of the square: stalls with striped awnings.
       const stripeA = mat(0xc8463c);
@@ -2125,7 +2302,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       const i = buildings.findIndex((b) => b.key === k);
       const mob = mobs.find((x) => x.key === k);
-      if (mob) walkTo.current(mob.door, k);
+      if (mob && dungeon && mob.x > 300) walkTo.current(spots.find((sp) => sp.key === DUNGEON_KEY)!.door, DUNGEON_KEY, k);
+      else if (mob) walkTo.current(mob.door, k);
+      else if (k === DUNGEON_KEY && dungeon) walkTo.current(spots.find((sp) => sp.key === DUNGEON_KEY)!.door, DUNGEON_KEY);
       else if (k === BOXING_KEY && boxing) walkTo.current(spots.find((sp) => sp.key === BOXING_KEY)!.door, BOXING_KEY);
       else if (k === CAMP_KEY && boxing) walkTo.current(spots.find((sp) => sp.key === CAMP_KEY)!.door, CAMP_KEY);
       else if (zoneDoors.has(k)) walkTo.current(zoneDoors.get(k)!, k);
@@ -2553,6 +2732,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           if (c === hero || c.userData.place) continue;
           if (c.position.z > 300) {
             c.visible = indoor && Math.hypot(c.position.x - here().at.x, c.position.z - here().at.z) < 30;
+            if (c.userData.mob) c.userData.far = !c.visible;
             continue;
           }
           if (!plan || !(c as THREE.Group).isGroup || indoor) continue;
@@ -2727,7 +2907,25 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           cl.position.z = Math.sin(a) * cl.userData.radius;
         });
       }
-      if (!indoor) {
+      if (indoor && here().under) {
+        // Underground: no sky and no village round it, a warm torch light that goes with the hero.
+        sky.visible = glow.visible = disc.visible = false;
+        skyLight.intensity = 1.15;
+        sun.intensity = 0.55;
+        torchLight.visible = true;
+        torchLight.position.set(p.x, 2.6, p.z);
+        scene.background = UNDER_BG;
+        renderer.autoClear = true;
+        const far = camera.far;
+        camera.far = 70;
+        camera.updateProjectionMatrix();
+        renderer.render(scene, camera);
+        camera.far = far;
+        camera.updateProjectionMatrix();
+        scene.background = null;
+        torchLight.visible = false;
+        sky.visible = glow.visible = disc.visible = true;
+      } else if (!indoor) {
         renderer.autoClear = true;
         renderer.render(scene, camera);
       } else {
@@ -2800,9 +2998,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         const inFront = place(node, a.obj.position.x, a.y, a.obj.position.z);
         // Indoors every name in the room shows. In the village a name shows within its reach, and
         // always for where the hero is going or standing, and for a building with something waiting.
-        const wanted = indoor || d < reachOf(a.id) || goal?.key === a.id || near === a.id || alerts.has(a.id);
+        // Underground the hall is long: names show nearby only, as in the town.
+        const below = indoor && !!here().under;
+        const wanted = (indoor && !below) || d < (below ? 12 : reachOf(a.id)) || goal?.key === a.id || near === a.id || alerts.has(a.id);
         let show = inFront && Math.abs(v.x) < 1.05 && v.y < 1.1 && d < 19 && wanted;
-        if (show && !indoor) {
+        if (show && (!indoor || here().under)) {
           const r = { ...placed };
           const clash = shown.some((o) => Math.abs(o.x - r.x) < (o.w + r.w) / 2 - 6 && Math.abs(o.y - r.y) < (o.h + r.h) / 2 - 4);
           if (clash && goal?.key !== a.id && near !== a.id) show = false;
@@ -2949,6 +3149,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             <button ref={setLabel(BOXING_KEY)} type="button" data-spot={BOXING_KEY} onClick={() => go(BOXING_KEY)} aria-label={t('Loop naar de boksschool', 'Walk to the boxing school')}
               className={cn(plate, 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
               {t('Boksschool', 'Boxing school')}
+            </button>
+          )}
+          {plan && creatures && (
+            <button ref={setLabel(DUNGEON_KEY)} type="button" data-spot={DUNGEON_KEY} onClick={() => go(DUNGEON_KEY)}
+              aria-label={t('Loop naar de kerker van de onderwereld, level 10', 'Walk to the dungeon of the underworld, level 10')}
+              className={cn(plate, 'flex-col !items-center gap-0.5 leading-none text-[#d8c4ff]')} style={{ transform: 'translate(-9999px,0)' }}>
+              <span>🕳️ {t('Onderwereld', 'Underworld')}</span>
+              <span className="text-[10.5px] font-bold text-[#ffe08a]">{t('level 10+', 'level 10+')}</span>
             </button>
           )}
           {plan && creatures && ZONES.map((zn) => (
