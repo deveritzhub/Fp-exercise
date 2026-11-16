@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LIGHT, isShadow, lightFrom, CREATURES, ZONES, zoneAt, COOKING, DAILY_QUESTS, dailyQuest, adventureLevel, blow, boxingXp, CREATURE_KINDS, DROPS, LOOT, rollDrops, weaponAt, weaponByKey } from './adventure';
+import { BOSSES, bossOfWeek, LIGHT, isShadow, lightFrom, CREATURES, ZONES, zoneAt, COOKING, DAILY_QUESTS, dailyQuest, adventureLevel, blow, boxingXp, CREATURE_KINDS, DROPS, LOOT, rollDrops, weaponAt, weaponByKey } from './adventure';
 
 describe('adventure', () => {
   it('levels: 60 XP for the first, 30 more for each next', () => {
@@ -112,5 +112,14 @@ describe('the light side', () => {
     expect(lightFrom('cow')).toBeNull();
     expect(isShadow('guilt')).toBe(true);
     expect(isShadow('wolf')).toBe(false);
+  });
+});
+
+describe('the boss board', () => {
+  it('has the same boss all week and a different one the next week', () => {
+    expect(bossOfWeek('2026-11-16')).toBe(bossOfWeek('2026-11-22'));
+    expect(bossOfWeek('2026-11-23')).not.toBe(bossOfWeek('2026-11-16'));
+    const seen = new Set(Array.from({ length: BOSSES.length }, (_, i) => bossOfWeek(new Date(Date.UTC(2026, 10, 16 + i * 7)).toISOString().slice(0, 10))));
+    expect(seen.size).toBe(BOSSES.length);
   });
 });
