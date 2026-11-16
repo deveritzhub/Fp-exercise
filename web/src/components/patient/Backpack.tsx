@@ -118,7 +118,7 @@ export function BackpackCard({ d }: { d: HeroState }) {
           const on = a?.armour === ar.key;
           return (
             <li key={ar.key} data-armour={ar.key} data-state={on ? 'on' : 'owned'} className={cn('flex items-center gap-3 rounded-xl border p-2.5', on ? 'border-[#b8892a] bg-[#fbf0d9]' : 'border-line bg-white')}>
-              <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">{RECIPES.find((r) => r.key === ar.key)?.icon}</span>
+              <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]"><ItemIcon k={ar.key} emoji={RECIPES.find((r) => r.key === ar.key)?.icon ?? '🛡️'} /></span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[14.5px] font-semibold text-ink-950">{name}</span>
                 <span className="block text-[12.5px] text-ink-700">{t(`${Math.round(ar.guard * 100)}% minder schade`, `${Math.round(ar.guard * 100)}% less damage`)}</span>

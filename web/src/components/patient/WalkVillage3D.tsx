@@ -358,7 +358,7 @@ function groundTexture(roads: Road[], R: () => number, S: number, bare = false, 
 /** The five painted ground pictures (web/public/village/ground), in the order of GROUNDS. Loaded once. */
 const GROUND_FILES = ['gras', 'hoog-gras', 'droog-gras', 'klaver', 'aarde', 'zand', 'plein'] as const;
 /** Bump when the pictures change, so phones fetch the new ones. */
-const GROUND_VERSION = 1;
+const GROUND_VERSION = 2;
 /** How much ground one picture covers, in world units (about two metres). */
 const GROUND_TILE = 4.4;
 let groundTiles: Promise<THREE.Texture[]> | null = null;
@@ -765,6 +765,9 @@ function standIn(color: string) {
   g.traverse((o) => { o.castShadow = true; });
   return g;
 }
+
+/** The model file of each helper of the light side (public/village/light). */
+const LIGHT_FILE: Record<string, string> = { courage: 'moed', neutrality: 'neutraliteit', willingness: 'bereidheid', acceptance: 'acceptatie', reason: 'rede', love: 'liefde', joy: 'vreugde', enlightenment: 'verlichting' };
 
 export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, shrines, glow = false, ride = null, startAt = null, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
   const { t } = useI18n();
@@ -1461,6 +1464,34 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     wellRoof.scale.z = 0.8;
     const lampM = new THREE.MeshStandardMaterial({ color: 0xfff1b8, emissive: 0xffc35a, emissiveIntensity: 1.6 });
     const lamps: THREE.Sprite[] = [];
+    // The helpers of the light side floating over their shrines (and the Enlightenment by the hero).
+    const helpers: { obj: THREE.Object3D; y: number; i: number }[] = [];
+    const loadHelper = (key: string, color: THREE.Color, onto: THREE.Object3D, y: number, scale: number, standIn?: THREE.Object3D, x = 0, glowOf = 0.9) => {
+      const file = LIGHT_FILE[key];
+      if (!file) return;
+      loadModel(`/village/light/${file}.glb?v=1`).then((gltf) => {
+        if (cancelled) return;
+        const model = gltf.scene.clone(true);
+        model.scale.setScalar(scale);
+        model.traverse((o) => {
+          const mm = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+          if (!mm?.isMeshStandardMaterial) return;
+          const own = mm.clone();
+          if (own.name.startsWith('licht')) {
+            own.color = color.clone().lerp(new THREE.Color(0xffffff), 0.35);
+            own.emissive = color.clone();
+            own.emissiveIntensity = glowOf;
+          }
+          (o as THREE.Mesh).material = own;
+          o.castShadow = true;
+        });
+        model.position.set(x, y, 0);
+        model.userData.dynamic = true;
+        if (standIn) standIn.visible = false;
+        onto.add(model);
+        helpers.push({ obj: model, y, i: helpers.length });
+      }).catch(() => undefined);
+    };
     // The light of the torches below ground, which goes with the hero there.
     const torchLight = new THREE.PointLight(0xffa860, 26, 20, 1.6);
     torchLight.visible = false;
@@ -1774,6 +1805,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         orb.position.y = 2.05;
         orb.userData.dynamic = true;
         shrine.add(base, pillar, orb);
+        loadHelper(sh.key, col, shrine, 2.15, 1.35, orb);
         shrine.position.set(sh.x, 0, sh.z);
         shrine.traverse((o) => { o.castShadow = true; });
         scene.add(shrine);
@@ -1866,6 +1898,58 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       });
       posts.castShadow = rails.castShadow = true;
       scene.add(posts, rails);
+
+      // Lantern posts along the main roads, every so many metres, on alternating sides.
+      const lanterns: { x: number; z: number }[] = [];
+      for (const tr of trunk) {
+        const dx = tr.b.x - tr.a.x;
+        const dz = tr.b.z - tr.a.z;
+        const len = Math.hypot(dx, dz);
+        const ux = dx / len;
+        const uz = dz / len;
+        let side = 1;
+        for (let d = 5; d < len - 2; d += 9) {
+          const off = tr.w / 2 + 0.9;
+          const x = tr.a.x + ux * d - uz * off * side;
+          const z = tr.a.z + uz * d + ux * off * side;
+          side = -side;
+          const r = Math.hypot(x, z);
+          if (r < SQ + 1.5 || r > TOWN.wall - 1.5) continue;
+          if (gaps.some((g) => Math.hypot(g.x - x, g.z - z) < 1.6)) continue;
+          if (obstacles.some((o) => o.r > 0.35 && Math.hypot(o.x - x, o.z - z) < o.r + 0.5)) continue;
+          lanterns.push({ x, z });
+          obstacles.push({ x, z, r: 0.25 });
+        }
+      }
+      loadModel('/village/buildings/lantaarnpaal.glb?v=1')
+        .then((gltf) => {
+          if (cancelled || !lanterns.length) return;
+          gltf.scene.updateMatrixWorld(true);
+          const LM = new THREE.Matrix4();
+          gltf.scene.traverse((o) => {
+            const lm = o as THREE.Mesh;
+            if (!lm.isMesh) return;
+            const geo = lm.geometry.clone().applyMatrix4(lm.matrixWorld);
+            const mm = (lm.material as THREE.MeshStandardMaterial).clone();
+            mm.metalness = Math.min(mm.metalness, 0.3);
+            if (mm.name.startsWith('lamp')) {
+              mm.emissive = new THREE.Color(0xffc870);
+              mm.emissiveIntensity = 2.2;
+            }
+            const inst = new THREE.InstancedMesh(geo, mm, lanterns.length);
+            lanterns.forEach((l, i) => inst.setMatrixAt(i, LM.makeTranslation(l.x, 0, l.z)));
+            inst.castShadow = !mm.name.startsWith('lamp');
+            scene.add(inst);
+          });
+          for (const l of lanterns) {
+            const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot(), color: 0xffc35a, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.45 }));
+            halo.position.set(l.x, 3.15, l.z);
+            halo.scale.setScalar(1.3);
+            scene.add(halo);
+            lamps.push(halo);
+          }
+        })
+        .catch(() => undefined);
     }
     const groundGeo = new THREE.PlaneGeometry(GROUND, GROUND, 110, 110);
     groundGeo.rotateX(-Math.PI / 2);
@@ -1992,7 +2076,27 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
     };
 
-    // Blue mountains on the horizon.
+    // Blue mountains on the horizon (the town gets a painted mountain ring once it has loaded).
+    const cones: THREE.Mesh[] = [];
+    if (plan) {
+      loadModel('/village/buildings/bergen_achtergrond.glb?v=1')
+        .then((gltf) => {
+          if (cancelled) return;
+          const ring = gltf.scene.clone(true);
+          ring.scale.set(1.25, 1.15, 1.25);
+          ring.position.y = -2;
+          ring.traverse((o) => {
+            const mm = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+            if (mm?.isMeshStandardMaterial) {
+              mm.metalness = 0;
+              mm.roughness = 0.95;
+            }
+          });
+          scene.add(ring);
+          for (const c of cones) c.visible = false;
+        })
+        .catch(() => undefined);
+    }
     for (let i = 0; i < 16; i++) {
       const a = (i / 16) * Math.PI * 2 + R() * 0.3;
       const d = 135 + R() * 45;
@@ -2001,6 +2105,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       m.position.set(Math.cos(a) * d, hgt / 2 - 3, Math.sin(a) * d);
       m.rotation.y = R() * Math.PI;
       scene.add(m);
+      cones.push(m);
     }
 
     // Grass: tens of thousands of fine, curved blades in one draw call. Each blade is dark at the root
@@ -2146,6 +2251,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       heroGlow.position.y = 0.035;
       heroGlow.userData.dynamic = true;
       hero.add(heroGlow);
+      // And the Enlightenment itself floats along by the hero's shoulder.
+      loadHelper('enlightenment', new THREE.Color(0xf2c060), hero, 1.95, 0.6, undefined, 0.6, 0.35);
     }
     const figure = new THREE.Group();
     figure.add(standIn(heroColor));
@@ -3190,6 +3297,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         }
         flags.forEach((f, i) => (f.rotation.y = Math.sin(tt * 2.2 + i) * 0.22));
         lamps.forEach((l, i) => ((l.material as THREE.SpriteMaterial).opacity = 0.5 + Math.sin(tt * 5 + i * 2) * 0.07));
+        for (const h of helpers) {
+          h.obj.position.y = h.y + Math.sin(tt * 1.6 + h.i) * 0.12;
+          h.obj.rotation.y = Math.sin(tt * 0.7 + h.i) * 0.6;
+        }
         if (heroGlow) {
           (heroGlow.material as THREE.MeshBasicMaterial).opacity = 0.26 + Math.sin(tt * 2) * 0.08;
           heroGlow.scale.setScalar(1 + Math.sin(tt * 1.3) * 0.08);
