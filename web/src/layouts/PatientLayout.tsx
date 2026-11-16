@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { TestBanner } from '@/components/app/TestBanner';
 import { WelcomeTour } from '@/components/patient/WelcomeTour';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, CalendarCheck2, CloudOff, Dumbbell, HeartPulse, Move, RefreshCw, Settings, Trophy } from 'lucide-react';
+import { Apple, Bell, CalendarCheck2, CloudOff, Dumbbell, HeartPulse, Move, RefreshCw, Settings, Trophy } from 'lucide-react';
 import type { PatientHomeData } from '@/pages/patient/PatientHome';
 import { isClinical } from '@shared/accountKind';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -154,13 +154,16 @@ export function PatientLayout() {
     ...(clinical ? [{ to: '/p/revalidatie', end: false, icon: HeartPulse, label: t('Revalidatie', 'Rehab'), dot: openIn('revalidatie') }] : []),
     { to: '/p/kracht', end: false, icon: Dumbbell, label: t('Kracht', 'Strength'), dot: openIn('kracht') },
     { to: '/p/mobiliteit', end: false, icon: Move, label: t('Mobiliteit', 'Mobility'), dot: openIn('mobiliteit') },
+    { to: '/p/voeding', end: false, icon: Apple, label: t('Voeding', 'Food'), dot: false },
     // Plain view: no hero, and only the parts that have a programme; progress takes the hero's place.
     ...(simple ? [{ to: '/p/voortgang', end: false, icon: Trophy, label: t('Voortgang', 'Progress'), dot: false }] : [{ to: '/p/held', end: false, icon: Trophy, label: t('Held', 'Hero'), dot: false, also: '/p/dorp' }]),
   ].filter((tab) => !simple || !['/p/kracht', '/p/mobiliteit'].includes(tab.to) || hasPart(tab.to.slice(3)));
-  // The hero tab opens the 3D world; the hero's own pages count as that tab too.
+  // The + sits in the middle: as many tabs on its left as fit evenly, the rest on its right.
+  const half = Math.floor(tabs.length / 2);
+  // The hero tab opens the hero page; the 3D world counts as that tab too.
   const tabOn = (tab: (typeof tabs)[number], isActive: boolean) => isActive || ('also' in tab && !!tab.also && loc.pathname.startsWith(tab.also));
   const renderTab = (tab: (typeof tabs)[number]) => (
-    <NavLink key={tab.to} to={tab.to} end={tab.end} data-testid={'also' in tab && tab.also ? 'tab-hero' : undefined} aria-label={tab.dot ? t(`${tab.label} (nog open)`, `${tab.label} (still open)`) : undefined} className={({ isActive: navActive }) => { const isActive = tabOn(tab, navActive); return cn('tap group flex min-h-[60px] min-w-0 flex-col items-center justify-center gap-1 py-2', tabs.length === 5 ? 'text-[10.5px] tracking-[-0.01em]' : 'text-[12.5px]', isActive ? 'font-semibold text-accent' : 'font-medium text-ink-500 hover:text-ink-800'); }}>
+    <NavLink key={tab.to} to={tab.to} end={tab.end} data-testid={'also' in tab && tab.also ? 'tab-hero' : undefined} aria-label={tab.dot ? t(`${tab.label} (nog open)`, `${tab.label} (still open)`) : undefined} className={({ isActive: navActive }) => { const isActive = tabOn(tab, navActive); return cn('tap group flex min-h-[60px] min-w-0 flex-col items-center justify-center gap-1 py-2', tabs.length >= 6 ? 'text-[10px] tracking-[-0.02em]' : tabs.length === 5 ? 'text-[10.5px] tracking-[-0.01em]' : 'text-[12.5px]', isActive ? 'font-semibold text-accent' : 'font-medium text-ink-500 hover:text-ink-800'); }}>
       {({ isActive: navActive }) => { const isActive = tabOn(tab, navActive); return (
         <>
           {/* Active tab: filled sage pill behind the icon plus bold label, not colour alone. */}
@@ -220,9 +223,9 @@ export function PatientLayout() {
             <div className="mx-auto grid max-w-xl" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>{tabs.map(renderTab)}</div>
           ) : (
           <div className="mx-auto flex max-w-xl">
-            <div className="grid min-w-0 flex-1 grid-cols-2">{tabs.slice(0, 2).map(renderTab)}</div>
-            <div className="flex w-[60px] shrink-0 items-start justify-center">{!inSetup && <QuickLogButton />}</div>
-            <div className={cn('grid min-w-0 flex-1', tabs.length - 2 === 3 ? 'grid-cols-3' : 'grid-cols-2')}>{tabs.slice(2).map(renderTab)}</div>
+            <div className="grid min-w-0" style={{ flex: half, gridTemplateColumns: `repeat(${half}, minmax(0, 1fr))` }}>{tabs.slice(0, half).map(renderTab)}</div>
+            <div className="flex w-[56px] shrink-0 items-start justify-center">{!inSetup && <QuickLogButton />}</div>
+            <div className="grid min-w-0" style={{ flex: tabs.length - half, gridTemplateColumns: `repeat(${tabs.length - half}, minmax(0, 1fr))` }}>{tabs.slice(half).map(renderTab)}</div>
           </div>
           )}
         </nav>

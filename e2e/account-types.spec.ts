@@ -42,9 +42,9 @@ test('someone signs up to train for themselves: hero, fitness modes, self-check 
   await expect(page).toHaveURL(/\/p$/);
   await expect(page.getByText('Persoonlijk account')).toBeVisible();
 
-  // Only strength and mobility; no sharing with a practice.
+  // Only strength, mobility, food and the hero; no sharing with a practice.
   const nav = page.getByRole('navigation', { name: 'Navigatie' });
-  await expect(nav.getByRole('link')).toHaveCount(4);
+  await expect(nav.getByRole('link')).toHaveCount(5);
   await expect(nav.getByRole('link', { name: /Revalidatie/ })).toHaveCount(0);
   await nav.getByRole('link', { name: /^Kracht/ }).click();
   await expect(page.getByText('Delen met mijn fysiotherapeut')).toHaveCount(0);
