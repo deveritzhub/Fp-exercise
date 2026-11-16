@@ -110,7 +110,7 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   await login(page, 'patient@praktijk-a.test');
   // The village remembers where the hero stood (another test may have left it outside the wall):
   // start on the square.
-  expect((await page.request.put('/api/patient/hero/adventure/position', { data: { x: 0, z: 7 } })).status()).toBe(200);
+  expect((await page.request.put('/api/patient/hero/adventure/position', { data: { x: 0, z: 7 }, headers: { 'x-requested-with': 'fp' } })).status()).toBe(200);
   const coach = page.waitForResponse((r) => r.url().endsWith('/api/patient/hero/coach'));
   await page.goto('/p/dorp');
   expect((await (await coach).json()).look).toMatchObject({ frame: 'm', outfit: 'ridder', beard: 'beard', skin: 's7' });
