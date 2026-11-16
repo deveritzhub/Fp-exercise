@@ -103,6 +103,14 @@ const LABEL: Record<string, [string, string]> = {
 };
 
 /** The sign of each building on the maps: an icon and the colour of its roof. */
+/** What each armour looks like on the hero: parts of the hero model (gear_<key>). */
+const ARMOUR_LOOK: Record<string, string[]> = {
+  leather: ['belt', 'shin_guards'],
+  wolf_cloak: ['wind_cape', 'shin_guards'],
+  bear_armour: ['wind_cape', 'shin_guards', 'gloves'],
+  alpha_armour: ['champion_helm', 'wind_cape', 'shin_guards', 'gloves'],
+};
+
 const SIGN: Record<string, [string, string]> = {
   smithy: ['⚒️', '#b5532c'],
   library: ['📚', '#2759a0'],
@@ -374,8 +382,15 @@ export function VillageWalkPage() {
     toast(w.level > was ? t(`Avonturier ${now}! Nieuw bij de wapensmid: ${w.nl}.`, `Adventurer ${now}! New at the armourer: ${w.en}.`) : t(`Avonturier ${now}!`, `Adventurer ${now}!`));
   };
   const look = useMemo(
-    () => (d?.hero ? { ...d.hero, gear: [...d.gear.equipped.filter((g) => weapon.key === 'fists' || GEAR_SLOT[g] !== 'held'), ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null } : null),
-    [d, weapon.key],
+    () => {
+      if (!d?.hero) return null;
+      // The armour worn shows on the hero, in place of what it wears in the same spots.
+      const worn: string[] = ARMOUR_LOOK[adventure.data?.armour ?? ''] ?? [];
+      const taken = new Set(worn.map((g) => GEAR_SLOT[g as keyof typeof GEAR_SLOT]));
+      const gear = d.gear.equipped.filter((g) => (weapon.key === 'fists' || GEAR_SLOT[g] !== 'held') && !taken.has(GEAR_SLOT[g]));
+      return { ...d.hero, gear: [...gear, ...worn, ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null };
+    },
+    [d, weapon.key, adventure.data?.armour],
   );
   const todo = useMemo(() => (home.data?.programs ?? []).filter(openToday), [home.data]);
   const waiting = { kracht: todo.some((p) => moduleOf(p) === 'kracht'), mobiliteit: todo.some((p) => moduleOf(p) === 'mobiliteit') };
