@@ -1,5 +1,6 @@
 import { weaponMesh } from './weapons3d';
 import { creature, habitat, pond } from './creatures3d';
+import { mergeStatic } from './mergeStatic';
 import { ALPHA_ADVISED_LEVEL, ZONES } from '@shared/adventure';
 import { MARKET, RESIDENTS, SPOTS, TOWN } from './townPlan';
 import { ATTACKS, CREATURES, isAlpha, isFriendly, isHarvest, type CreatureKind } from '@shared/adventure';
@@ -1035,6 +1036,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       // Animals graze: they wander a little round where they live, slowly, and stop when the hero comes.
       const grazer = c.kind === 'cow' || c.kind === 'chicken' || c.kind === 'boar' || c.kind === 'wolf';
       const roam = grazer ? { home: { x: c.x, z: c.z }, r: c.kind === 'chicken' ? 1.5 : c.kind === 'wolf' ? 1.8 : 1.2, speed: c.kind === 'chicken' ? 0.55 : c.kind === 'wolf' ? 0.6 : 0.3, to: null, wait: 1 + (c.x * 7.31 - Math.floor(c.x * 7.31)) * 4, ob } : null;
+      g.userData.mob = true;
       mobs.push({ key: c.key, kind: c.kind, g, door, hurtAt: 0, lungeAt: 0, x: c.x, z: c.z, still: isHarvest(c.kind), roam });
     }
     if (boxing) {
@@ -1094,6 +1096,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       flames = [[0.22, 0.55, 0xff9a3c], [0.14, 0.42, 0xffd36a]].map(([r, h, c]) => {
         const f = new THREE.Mesh(new THREE.ConeGeometry(r, h, 7), new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 1.8, transparent: true, opacity: 0.92 }));
         f.position.y = 0.12 + h / 2;
+        f.userData.dynamic = true;
         camp.add(f);
         return f;
       });
@@ -1332,6 +1335,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       m.rotation.y = ry;
       m.castShadow = true;
       m.receiveShadow = true;
+      m.userData.prop = true;
       scene.add(m);
       return m;
     };
@@ -1887,6 +1891,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             g.scale.setScalar(kk);
             g.position.set(x, -own.min.y * kk, z);
             g.rotation.y = face;
+            // Staff in a room show only while the hero is in that room (see the frame loop).
+            g.visible = !(z > 300) || (inside() && Math.hypot(x - here().at.x, z - here().at.z) < 30);
             scene.add(g);
             const still = src.animations.find((c) => c.name === 'idle') ?? breathe;
             if (still) {
@@ -1936,7 +1942,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
                     dress(mm, base, v.tint[base], v.fabric ?? null);
                     m.material = mm;
                   }
-                  m.castShadow = true;
+                  // Villagers cast no shadow: on a phone that would draw every one of them twice.
+                  m.castShadow = false;
                   m.frustumCulled = false;
                 }
               });
@@ -1955,6 +1962,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               const walk = clip('walk') ? mx.clipAction(clip('walk')!) : null;
               const idle = clip('idle') ? mx.clipAction(clip('idle')!) : null;
               idle?.play();
+              g.userData.npc = true;
               npcs.push({ g, mixer: mx, walk, idle, path, at: 0, rest: v.rest, wait: 1 + n * 1.7, moving: false });
               anchors.push({ id: `npc:${v.key}`, obj: g, y: HERO_HEIGHT + 0.3 });
               el.dataset.villagers = String(npcs.length);
@@ -2334,6 +2342,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const camPos = new THREE.Vector3();
     let first = true;
     let frameNo = 0;
+    let wasIndoor = false;
     let near: string | null = null;
     let raf = 0;
     let visible = true;
@@ -2349,6 +2358,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const nowMs = performance.now();
       if (nowMs - fpsSince >= 1000) {
         el.dataset.fps = String(Math.round((fpsFrames * 1000) / (nowMs - fpsSince)));
+        el.dataset.calls = String(renderer.info.render.calls);
+        el.dataset.tris = String(renderer.info.render.triangles);
         fpsFrames = 0;
         fpsSince = nowMs;
       }
@@ -2509,7 +2520,35 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       else camera.position.lerp(camPos, Math.min(1, dt * 6));
       first = false;
       camera.lookAt(p.x, indoor ? 1.0 : 1.5, p.z);
-      if (!indoor && (frameNo++ & 3) === 0) {
+      // Every few frames: the rooms (far off, at z > 300) only show while the hero is in one of them;
+      // in the town what is far from the camera is not drawn (the fog hides it there anyway).
+      frameNo++;
+      if ((frameNo & 7) === 0 || indoor !== wasIndoor) {
+        wasIndoor = indoor;
+        for (const c of scene.children) {
+          if (c === hero || c.userData.place) continue;
+          if (c.position.z > 300) {
+            c.visible = indoor && Math.hypot(c.position.x - here().at.x, c.position.z - here().at.z) < 30;
+            continue;
+          }
+          if (!plan || !(c as THREE.Group).isGroup || indoor) continue;
+          let mid = c.userData.mid as THREE.Vector3 | undefined;
+          if (!mid) {
+            const bx = new THREE.Box3().setFromObject(c);
+            if (bx.isEmpty()) continue;
+            mid = bx.getCenter(new THREE.Vector3());
+            c.userData.mid = mid;
+            c.userData.rad = bx.getSize(new THREE.Vector3()).length() / 2;
+          }
+          // Villagers are many pieces each: they show only near the camera.
+          const reachC = c.userData.npc ? 24 : 52;
+          const live = c.userData.npc ? c.position : mid;
+          const far = Math.hypot(live.x - camera.position.x, live.z - camera.position.z) - (c.userData.npc ? 0 : (c.userData.rad as number)) > reachC;
+          c.userData.far = far;
+          if (!c.userData.mob) c.visible = !far;
+        }
+      }
+      if (!indoor && (frameNo & 3) === 0) {
         clearView?.(camera.position.x, camera.position.z, p.x, p.z);
         clearWall?.(camera.position.x, camera.position.z);
       }
@@ -2542,7 +2581,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         }
         // Creatures hop on the spot; a beaten one is away until it comes back.
         mobs.forEach((mob, i) => {
-          mob.g.visible = !live.current.gone.has(mob.key);
+          mob.g.visible = !live.current.gone.has(mob.key) && !mob.g.userData.far;
           // Grazing: a few steps to a new spot near home, a rest, and on again. Not while the hero is
           // close by, on the way to it, or just after a blow.
           if (mob.roam && !reduce) {
@@ -2767,6 +2806,31 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         cb.current.onNear(spot);
       }
     };
+    // Fewer things to draw: each group's pieces that share a material become one mesh, and the loose
+    // props (lanterns, towers, stalls, signposts) are gathered per block of the town and merged too.
+    for (const f of flags) f.userData.dynamic = true;
+    for (const pl of Object.values(places)) {
+      pl.group.userData.noMerge = true;
+      pl.group.userData.place = true;
+    }
+    for (const child of [...scene.children]) {
+      if (child.userData.noMerge || child === hero) continue;
+      if ((child as THREE.Group).isGroup || child.type === 'Object3D') mergeStatic(child);
+    }
+    const blocks = new Map<string, THREE.Group>();
+    for (const child of [...scene.children]) {
+      const pm = child as THREE.Mesh;
+      if (!pm.isMesh || !pm.userData.prop || pm.userData.dynamic) continue;
+      const key = `${Math.floor(pm.position.x / 16)},${Math.floor(pm.position.z / 16)}`;
+      let blk = blocks.get(key);
+      if (!blk) {
+        blk = new THREE.Group();
+        blocks.set(key, blk);
+        scene.add(blk);
+      }
+      blk.attach(pm);
+    }
+    for (const blk of blocks.values()) mergeStatic(blk);
     loop();
     el.dataset.state = 'ready';
 
