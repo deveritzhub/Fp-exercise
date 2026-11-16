@@ -32,11 +32,13 @@ Dezelfde productie-renderer, gebouwen en dorpsindeling worden gebruikt.
 | --- | --- | --- |
 | ![Dorpsplein](polished-desktop.png) | ![Mobiel dorp](polished-mobile.png) | ![Waterput](polished-well-detail.png) |
 
-![Bloemenbak en bank bij de herberg](polished-doorstep.png)
+![Bloemenbak en bank bij de stallen](polished-doorstep.png)
 
 ![Normale kleurcorrectie](polished-graded.png)
 
 De oorspronkelijke beelden van vóór deze wijziging staan in het artefact van
 [de nulmeting](https://github.com/deveritzhub/Fp-exercise/actions/runs/43930065700).
+De nulmeting is gemaakt op `b75b6ce`; de uiteindelijke beelden bevatten ook de inmiddels
+verschenen bomen en poorten uit PR #91 (`db3c303`). Die assets behoren tot die eerdere wijziging.
 Lokaal herhalen: `FP_VILLAGE_REVIEW_LABEL=polished npx playwright test -c playwright.village-review.config.ts`.
 De statische decoratie voegt zelf geen beweging toe; de browsercontrole gebruikt reduced motion.

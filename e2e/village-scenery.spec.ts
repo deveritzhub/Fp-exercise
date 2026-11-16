@@ -45,11 +45,14 @@ test('a street corner shows the bench and flowers in their existing footprint',a
   await page.route('**/api/**',route=>route.fulfill({json:{}}));
   await page.addInitScript(()=>localStorage.setItem('fp.village.fx','off'));
   await page.setViewportSize({width:1100,height:760});
-  await page.goto('/village-review.html?view=inn');
+  await page.goto('/village-review.html?view=stables');
   const village=page.getByTestId('walk-village');
   await expect(village).toHaveAttribute('data-hero','model',{timeout:60000});
   await expect(village).toHaveAttribute('data-ground','painted',{timeout:60000});
   await page.waitForLoadState('networkidle');
+  // Use the real camera control to see the bench beside the hero instead of directly behind her.
+  await page.getByRole('button',{name:'Draai naar links',exact:true}).press('Enter');
+  await expect(village).toHaveAttribute('data-cam','-0.79',{timeout:20000});
   await capture(page,(process.env.FP_VILLAGE_REVIEW_LABEL??'review')+'-doorstep');
 });
 
