@@ -82,4 +82,17 @@ describe('campfire, task of the day and the chest at home', () => {
     expect((await P.put('/patient/hero/adventure/armour', { key: 'bear_armour' })).body.error).toBe('gear_not_owned');
     expect((await P.put('/patient/hero/adventure/armour', { key: 'leather' })).body.armour).toBe('leather');
   });
+
+  it('the shadow creatures show themselves from their level on, and drop their own loot', async () => {
+    const P = await login('patientA');
+    const [me] = await sql(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`);
+    await sql('INSERT INTO hero_adventure(patient_id, xp) VALUES ($1, 0) ON CONFLICT (patient_id) DO UPDATE SET xp = 0', [me.id]);
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'pride' })).status).toBe(400);
+    await sql('UPDATE hero_adventure SET xp = 6000, wins_today = 0 WHERE patient_id = $1', [me.id]);
+    const win = await P.post('/patient/hero/adventure/win', { kind: 'fright' });
+    expect(win.body.gained).toBe(120);
+    expect(win.body.loot.shiver_crystal).toBeGreaterThan(0);
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'shame_lord' })).body.loot.crown_of_light).toBe(1);
+    await sql('UPDATE hero_adventure SET xp = 0 WHERE patient_id = $1', [me.id]);
+  });
 });
