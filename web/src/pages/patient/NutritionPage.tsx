@@ -682,7 +682,7 @@ function RecipesTab({ plan, base }: { plan: Plan; base: DayData }) {
           return (
             <li key={r.key} data-recipe={r.key} className="rounded-2xl border border-line bg-white shadow-card">
               <button type="button" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : r.key)} className="flex w-full items-start gap-3 p-3 text-left sm:p-4">
-                {!isOpen && <RecipePhoto k={r.key} className="h-[72px] w-[72px] shrink-0 rounded-xl" />}
+                {!isOpen && <RecipePhoto k={r.key} small className="h-[72px] w-[72px] shrink-0 rounded-xl" />}
                 <span className="min-w-0 flex-1">
                   <span className="block text-[16px] font-semibold leading-snug text-ink-950">{nl ? r.nl : r.en}</span>
                   <span className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[13.5px] text-ink-700">
@@ -706,10 +706,10 @@ function RecipesTab({ plan, base }: { plan: Plan; base: DayData }) {
 }
 
 /** The photo of a dish (public/recipes/<key>.webp); a soft tile with a cooking pot when it is missing. */
-function RecipePhoto({ k, className }: { k: string; className?: string }) {
+function RecipePhoto({ k, className, small }: { k: string; className?: string; small?: boolean }) {
   const [gone, setGone] = useState(false);
   if (gone) return <span aria-hidden className={cn('grid place-items-center bg-sage/70 text-ink-500', className)}><ChefHat className="h-6 w-6" /></span>;
-  return <img src={`/recipes/${k}.webp`} alt="" loading="lazy" decoding="async" data-testid="recipe-photo" onError={() => setGone(true)} className={cn('bg-sage/60 object-cover', className)} />;
+  return <img src={`/recipes/${k}${small ? '-sm' : ''}.webp`} alt="" loading="lazy" decoding="async" data-testid="recipe-photo" onError={() => setGone(true)} className={cn('bg-sage/60 object-cover', className)} />;
 }
 
 function RecipeDetail({ r, hide, onAdd, onAte, onCook }: { r: Recipe; hide: boolean; onAdd: (day: number, servings: number) => void; onAte: () => void; onCook: (servings: number) => void }) {
@@ -720,7 +720,7 @@ function RecipeDetail({ r, hide, onAdd, onAte, onCook }: { r: Recipe; hide: bool
   const m = recipeMacros(r);
   return (
     <div className="space-y-3 border-t border-line px-4 pb-4 pt-3">
-      <RecipePhoto k={r.key} className="mx-auto aspect-square w-full max-w-[220px] rounded-xl" />
+      <RecipePhoto k={r.key} className="aspect-[4/3] w-full rounded-xl" />
       <p className="text-[13.5px] text-ink-700">{t('Per portie', 'Per serving')}: {!hide && `${m.kcal} kcal · `}{n1(m.protein)} g {t('eiwit', 'protein')} · {n1(m.carbs)} g {t('koolhydraten', 'carbs')} · {n1(m.fat)} g {t('vet', 'fat')}</p>
       <div>
         <div className="flex flex-wrap items-end justify-between gap-2">
