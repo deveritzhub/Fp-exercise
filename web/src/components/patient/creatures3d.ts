@@ -36,8 +36,18 @@ const MODEL: Partial<Record<CreatureKind, { file: string; scale: number }>> = {
   chicken: { file: 'kip', scale: 1 },
   cow: { file: 'koe', scale: 0.92 },
   boar: { file: 'zwijn', scale: 1 },
+  // The hunting grounds and their bosses, and what grows and lies about.
+  wolf: { file: 'wolf', scale: 0.62 },
+  alpha_wolf: { file: 'alfawolf', scale: 1 },
+  bear: { file: 'beer', scale: 0.85 },
+  alpha_bear: { file: 'alfabeer', scale: 1.3 },
+  alpha_boar: { file: 'alfazwijn', scale: 1.15 },
+  rock: { file: 'rots', scale: 1 },
+  bush: { file: 'bessenstruik', scale: 0.95 },
+  pebble: { file: 'steentjes', scale: 1 },
+  twigs: { file: 'takjes', scale: 1.1 },
 };
-const CREATURES_VERSION = 2;
+const CREATURES_VERSION = 3;
 
 /**
  * A creature for the village: the sculpted model, with the simple one made here standing in until

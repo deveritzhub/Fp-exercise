@@ -148,6 +148,12 @@ const SIGN: Record<string, [string, string]> = {
   stables: ['🚲', '#8a5a3a'],
 };
 
+/** The half-timbered house for a building of the town, by its size. */
+const townHouseModel = (scale: number) =>
+  scale >= 1.2 ? { url: '/village/buildings/huis_vakwerk_groot.glb?v=1', scale: 0.72 }
+  : scale >= 1.1 ? { url: '/village/buildings/huis_vakwerk_middel.glb?v=1', scale: 0.8 }
+  : { url: '/village/buildings/huis_vakwerk_klein.glb?v=1', scale: 0.85 };
+
 const PLACE_HINT: Record<string, [string, string]> = {
   weaponshop: ['Wapens en gereedschap kopen', 'Buy weapons and tools'],
   armourer: ['Je uitrusting', 'Your gear'],
@@ -430,7 +436,7 @@ export function VillageWalkPage() {
       // The Kyokushin dojo, behind the houses in the north-west: its door opens the belt list.
       { key: 'dojo', to: '/p/held', label: 'Dojo', site: SITES.dojo as Site, roof: 0x1d1f1e, keeper: 'Sensei', model: { url: '/village/buildings/dojo.glb?v=1', scale: 0.8 } },
       // The rest of the town plan: shops and houses that open a part of the app, and some that come later.
-      ...TOWN_HOUSES.map((h) => ({ key: h.key, to: h.to ?? '', label: nl ? h.nl : h.en, site: placeAt(h.at.x, h.at.z, 2.1 * (h.scale ?? 1)) as Site, roof: h.roof, scale: h.scale, soon: !!h.soon })),
+      ...TOWN_HOUSES.map((h) => ({ key: h.key, to: h.to ?? '', label: nl ? h.nl : h.en, site: placeAt(h.at.x, h.at.z, 2.1 * (h.scale ?? 1)) as Site, roof: h.roof, scale: h.scale, soon: !!h.soon, model: townHouseModel(h.scale ?? 1) })),
     ],
     [nl, waiting.kracht, waiting.mobiliteit],
   );
