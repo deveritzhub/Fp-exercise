@@ -31,3 +31,30 @@ services:
       # owner switches it to smtp in the dashboard once a mail provider is set up.
       - key: STORAGE_DIR     # on the disk above; the library videos and hero pictures are put back at every start
         value: /var/data/storage
+      # --- WhatsApp/phone assistant (server/src/agents, docs/AGENTS.md). Leave empty to keep it off. ---
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        generateValue: true
+      - key: WHATSAPP_APP_SECRET
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+      - key: OWNER_WHATSAPP
+        sync: false
+      - key: OWNER_PHONE
+        sync: false
+      - key: PRACTICE_HOURS          # outside these hours: "de praktijk is nu gesloten" + callback, no transfer
+        value: "ma-vr 09:00-18:00"
+      - key: RING_OWNER_FIRST        # "1" only when the Twilio number is the number customers call (docs/AGENTS.md)
+        value: "0"
+      - key: AGENT_ADMIN_KEY
+        generateValue: true
