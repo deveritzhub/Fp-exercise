@@ -335,3 +335,34 @@ export const ARMOURS = [
 ] as const;
 export type Armour = (typeof ARMOURS)[number];
 export const armourByKey = (key: string | null | undefined): Armour | null => ARMOURS.find((a) => a.key === key) ?? null;
+
+/**
+ * The light side: helpers set free by beating a shadow creature for the first time (what overcomes
+ * pride is courage, what overcomes fright is acceptance, and so on). Each stands as a shrine in the
+ * town and gives the hero a lasting advantage. The last, the light itself, comes with the Crown of
+ * light from the Shame lord.
+ */
+export const LIGHT = [
+  { key: 'courage', from: 'pride', nl: 'Moed', en: 'Courage', icon: '🔥', color: '#ffb347', x: 8.6, z: 11,
+    doesNl: 'Je eerste klap op elk monster telt dubbel.', doesEn: 'Your first blow on every creature counts double.' },
+  { key: 'neutrality', from: 'rage', nl: 'Neutraliteit', en: 'Neutrality', icon: '⚖️', color: '#9fd8ff', x: -20.6, z: 24.6,
+    doesNl: 'Je ziet bij elk monster waar het zwak tegen is.', doesEn: 'You see what every creature is weak against.' },
+  { key: 'willingness', from: 'craving', nl: 'Bereidheid', en: 'Willingness', icon: '🤝', color: '#9fe39a', x: 3.6, z: -4.4,
+    doesNl: 'Dubbele avonturen-XP voor je taak van vandaag.', doesEn: 'Double adventure XP for today’s task.' },
+  { key: 'acceptance', from: 'fright', nl: 'Acceptatie', en: 'Acceptance', icon: '🕊️', color: '#e6f2ff', x: 10.8, z: 19.6,
+    doesNl: 'Eén keer per dag weer helemaal fit.', doesEn: 'Fully fit again, once a day.' },
+  { key: 'reason', from: 'sorrow', nl: 'Rede', en: 'Reason', icon: '🦉', color: '#d4b5ff', x: 11.6, z: -5.2,
+    doesNl: 'Een monsterboek met alles wat je tegenkwam.', doesEn: 'A book of every creature you met.' },
+  { key: 'love', from: 'apathy', nl: 'Liefde', en: 'Love', icon: '💗', color: '#ff9ac2', x: 19.4, z: 25.8,
+    doesNl: 'Je held heeft een kwart meer leven.', doesEn: 'Your hero has a quarter more life.' },
+  { key: 'joy', from: 'guilt', nl: 'Vreugde en Vrede', en: 'Joy and Peace', icon: '🌅', color: '#ffe08a', x: -26.6, z: 31.4,
+    doesNl: 'Schaduwmonsters doen 20% minder schade.', doesEn: 'Shadow creatures do 20% less damage.' },
+  { key: 'enlightenment', from: 'shame_lord', nl: 'Verlichting', en: 'Enlightenment', icon: '✨', color: '#fff6c8', x: 0, z: -2.6,
+    doesNl: 'De Kroon van het Licht: een gouden gloed om je held, voor altijd.', doesEn: 'The Crown of light: a golden glow round your hero, for good.' },
+] as const;
+export type Light = (typeof LIGHT)[number];
+export const lightItem = (key: string) => `light_${key}`;
+/** The helper a first win over this creature sets free, if any. */
+export const lightFrom = (kind: CreatureKind): Light | null => LIGHT.find((l) => l.from === kind) ?? null;
+/** The shadow creatures (their blows are softened by Joy and Peace). */
+export const isShadow = (kind: CreatureKind) => LIGHT.some((l) => l.from === kind);

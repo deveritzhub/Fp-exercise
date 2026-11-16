@@ -2,6 +2,7 @@ import { BELTS, itemKey } from '@shared/karate';
 import { BeltMark, KarateSheet, useKarate } from '@/components/patient/Karate';
 import { weaponAt, weaponByKey } from '@shared/adventure';
 import { BackpackCard } from '@/components/patient/Backpack';
+import { LightCard } from '@/components/patient/LightSide';
 import { PhotoGearThumbnail } from '../../components/hero/PhotoEquipment';
 import { HeirloomMark } from '@/components/hero/HeirloomMark';
 import { ACL_REWARDS, ACL_SPORTS } from '@shared/aclRewards';
@@ -1861,7 +1862,7 @@ export function InventoryPage() {
       <h1 className="t-page">{t('Inventaris', 'Inventory')}</h1>
       <HeirloomPicker />
       <AclJourneyCard />
-      {q.data.hero ? <><BackpackCard d={q.data} /><GearCard d={q.data} /><TrophyCabinet d={q.data} /></> : <Notice tone="info">{t('Maak eerst je held.', 'Create your hero first.')}</Notice>}
+      {q.data.hero ? <><BackpackCard d={q.data} /><LightCard /><GearCard d={q.data} /><TrophyCabinet d={q.data} /></> : <Notice tone="info">{t('Maak eerst je held.', 'Create your hero first.')}</Notice>}
     </div>
   );
 }
