@@ -126,6 +126,8 @@ type Props = {
   shrines?: { key: string; label: string; color: string; x: number; z: number }[];
   /** The Crown of light: a golden glow round the hero. */
   glow?: boolean;
+  /** Where the hero stood last time (from the server): the walk starts there instead of at the well. */
+  startAt?: Vec | null;
   /** How fast the hero moves, 1 = normal. Lower when thirsty or stiff. */
   pace?: number;
   /** How the figure by the TV looks: the patient's own therapist. Without it: the practice colours. */
@@ -760,7 +762,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, shrines, glow = false, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, shrines, glow = false, startAt = null, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
   const { t } = useI18n();
   const coachName = coachLabel ?? t('Fysiotherapeut', 'Physiotherapist');
   const host = useRef<HTMLDivElement>(null);
@@ -776,7 +778,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const camZoom = useRef(1);
   const camTilt = useRef(1);
   const zoomBy = (f: number) => { camZoom.current = Math.min(2.2, Math.max(0.45, camZoom.current * f)); };
-  const pos = useRef<Vec>(startAtTv ? { ...TV_SPOT } : { ...VILLAGE_LAYOUT.spawn });
+  const pos = useRef<Vec>(startAtTv ? { ...TV_SPOT } : startAt ? { ...startAt } : { ...VILLAGE_LAYOUT.spawn });
   const facing = useRef(startAtTv ? Math.PI : 0);
   const camAngle = useRef(0);
   const cb = useRef<{ onNear: Props["onNear"]; onArrive: Props["onArrive"]; onZone?: Props["onZone"]; onTalk?: Props["onTalk"]; onDestination?: Props["onDestination"] }>({ onNear, onArrive, onZone, onTalk, onDestination });
@@ -3140,6 +3142,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       blk.attach(pm);
     }
     for (const blk of blocks.values()) mergeStatic(blk);
+    // Back where the hero stood last time: on free ground (a tree or a fence may stand there now).
+    if (!inside() && !startAtTv) {
+      const free = reachable(pos.current, obstacles, B);
+      pos.current.x = free.x;
+      pos.current.z = free.z;
+    }
     loop();
     el.dataset.state = 'ready';
 

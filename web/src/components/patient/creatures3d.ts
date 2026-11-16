@@ -82,6 +82,30 @@ function simpleCreature(kind: CreatureKind): THREE.Group {
   if (kind === 'alpha_boar') return alphaBoar();
   if (kind === 'wolf' || kind === 'bear') return beast(kind);
   if (SHADOWS.has(kind)) return shadowCreature(kind);
+  if (kind === 'pebble' || kind === 'twigs') {
+    // A little heap on the ground: a few grey pebbles, or a bundle of twigs.
+    const g = new THREE.Group();
+    if (kind === 'pebble') {
+      for (const [x, z, r] of [[0, 0, 0.14], [0.18, 0.08, 0.1], [-0.15, 0.1, 0.11], [0.05, -0.17, 0.09], [-0.08, -0.06, 0.08]] as const) {
+        const st = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 0), m(0x8a8d8f, { flatShading: true, roughness: 0.9 }));
+        st.position.set(x, r * 0.6, z);
+        st.rotation.set(x * 9, z * 7, 0);
+        g.add(st);
+      }
+    } else {
+      for (let i = 0; i < 6; i++) {
+        const st = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, 0.6 + (i % 3) * 0.12, 5), m(0x6a4a2c, { roughness: 0.95 }));
+        st.rotation.set(Math.PI / 2, 0, -0.6 + i * 0.25);
+        st.position.set(0, 0.04 + (i % 2) * 0.04, (i - 2.5) * 0.03);
+        g.add(st);
+      }
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.015, 5, 10), m(0xb8963a));
+      band.position.set(0, 0.07, 0);
+      g.add(band);
+    }
+    g.traverse((o) => { o.castShadow = true; });
+    return g;
+  }
   if (kind === 'alpha_wolf' || kind === 'alpha_bear') {
     // The pack leader: the same animal, much bigger and darker, with glowing eyes.
     const g = new THREE.Group();

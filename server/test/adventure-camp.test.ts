@@ -46,7 +46,6 @@ describe('campfire, task of the day and the chest at home', () => {
     const quest = dailyQuest(d, me.id);
     const start = (await P.get('/patient/hero/adventure')).body;
     expect(start.quest).toMatchObject({ key: quest.key, n: quest.n, progress: 0, done: false });
-    if (quest.kind === 'oak') await sql("INSERT INTO hero_purchases(patient_id, item, price) VALUES ($1, 'tool_hatchet', 0) ON CONFLICT DO NOTHING", [me.id]);
     let last = start;
     let bonus = 0;
     for (let i = 0; i < quest.n; i++) {
@@ -105,5 +104,29 @@ describe('campfire, task of the day and the chest at home', () => {
     // An ordinary creature frees nothing.
     expect((await P.post('/patient/hero/adventure/win', { kind: 'cow' })).body.unlocked).toBeNull();
     await sql('UPDATE hero_adventure SET xp = 0 WHERE patient_id = $1', [me.id]);
+  });
+
+  it('a big rock asks for a pickaxe; pebbles and twigs are picked up by hand', async () => {
+    const P = await login('patientA');
+    const [me] = await sql(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`);
+    await sql("DELETE FROM hero_purchases WHERE patient_id = $1 AND item = 'tool_pickaxe'", [me.id]);
+    await sql('UPDATE hero_adventure SET wins_today = 0 WHERE patient_id = $1', [me.id]);
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'rock' })).body.error).toBe('tool_required');
+    const pebble = (await P.post('/patient/hero/adventure/win', { kind: 'pebble' })).body;
+    expect(pebble.drops).toEqual([{ item: 'stone', n: 1 }]);
+    const twigs = (await P.post('/patient/hero/adventure/win', { kind: 'twigs' })).body;
+    expect(twigs.drops).toEqual([{ item: 'wood', n: 1 }]);
+    await sql("INSERT INTO hero_purchases(patient_id, item, price) VALUES ($1, 'tool_pickaxe', 0) ON CONFLICT DO NOTHING", [me.id]);
+    const rock = (await P.post('/patient/hero/adventure/win', { kind: 'rock' })).body;
+    // With the pickaxe: doubled, so 2 to 6 stone.
+    expect(rock.drops[0].item).toBe('stone');
+    expect(rock.drops[0].n % 2).toBe(0);
+  });
+
+  it('remembers where the hero stood in the village', async () => {
+    const P = await login('patientA');
+    expect((await P.put('/patient/hero/adventure/position', { x: 12.5, z: -7.25 })).status).toBe(200);
+    expect((await P.get('/patient/hero/adventure')).body.pos).toEqual({ x: 12.5, z: -7.25 });
+    expect((await P.put('/patient/hero/adventure/position', { x: 999, z: 0 })).status).toBe(400);
   });
 });
