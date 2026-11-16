@@ -241,3 +241,25 @@
 @keyframes hr-beat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.22); } 30% { transform: scale(1); } }
 .hr-beat { animation: hr-beat 1s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .hr-beat { animation: none; } }
+
+/* ---- The games (Speelhal): premium motion. Off for reduced motion. ---- */
+@keyframes game-orb { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(6%, -8%) scale(1.08); } 66% { transform: translate(-7%, 5%) scale(0.95); } }
+@keyframes game-float { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
+@keyframes game-star-in { 0% { transform: translateY(-40px) scale(0.2) rotate(-60deg); opacity: 0; } 60% { transform: translateY(4px) scale(1.25) rotate(8deg); opacity: 1; } 100% { transform: translateY(0) scale(1) rotate(0); opacity: 1; } }
+@keyframes game-pop { 0% { transform: scale(0.6); opacity: 0; } 70% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes game-shine { 0% { transform: translateX(-120%) skewX(-20deg); } 60%, 100% { transform: translateX(220%) skewX(-20deg); } }
+@keyframes game-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+@keyframes game-glow { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes game-rise { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.game-orb { animation: game-orb 14s ease-in-out infinite; }
+.game-float { animation: game-float 4.5s ease-in-out infinite; }
+.game-star-in { animation: game-star-in 0.7s cubic-bezier(.2,.9,.3,1.3) both; }
+.game-pop { animation: game-pop 0.45s cubic-bezier(.2,.9,.3,1.2) both; }
+.game-shine::after { content: ''; position: absolute; inset: 0; width: 40%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); animation: game-shine 3.2s ease-in-out infinite; pointer-events: none; }
+.game-shake { animation: game-shake 0.4s ease-in-out; }
+.game-glow { animation: game-glow 2.4s ease-in-out infinite; }
+.game-rise { animation: game-rise 0.5s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .game-orb, .game-float, .game-glow, .game-shine::after { animation: none; }
+  .game-star-in, .game-pop, .game-rise, .game-shake { animation-duration: 1ms; }
+}

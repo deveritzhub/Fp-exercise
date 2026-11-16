@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { useI18n } from '@/lib/i18n';
-import { Button } from '@/components/ui';
+import { GAME_THEME, GlowBar, Hud, HudPill, Stage, StopButton, haptic, sfx } from './kit';
 import type { GameProps } from './types';
 
 const ROUND = 30;
@@ -15,6 +15,13 @@ const FIRST_AT = 800;
 const LAMPS = 9;
 
 type Flash = { idx: number; kind: 'hit' | 'missed' | 'wrong'; until: number };
+
+const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+/** A ring that bursts outwards once when it appears (skipped for reduced motion). Stable, so React calls it once per ring. */
+const burst = (el: HTMLElement | null) => {
+  if (!el || reducedMotion()) return;
+  el.animate?.([{ transform: 'scale(.9)', opacity: 1 }, { transform: 'scale(1.7)', opacity: 0 }], { duration: 260, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
+};
 
 /**
  * Reaction lights: a 3×3 grid of round lamps. One lights up at a time in a random spot; tap it before it
@@ -73,6 +80,7 @@ export default function ReactionGame({ onDone }: GameProps) {
         lamp.current = null;
         setLit(null);
         showFlash({ idx: on.idx, kind: 'missed', until: now + 250 });
+        sfx.bad();
         nextAt.current = now + gap();
       }
       if (!lamp.current && now >= nextAt.current) {
@@ -100,8 +108,12 @@ export default function ReactionGame({ onDone }: GameProps) {
       setScore(scoreRef.current);
       showFlash({ idx, kind: 'hit', until: now + 220 });
       nextAt.current = now + gap();
+      sfx.good();
+      haptic(12);
     } else {
       showFlash({ idx, kind: 'wrong', until: now + 180 });
+      sfx.bad();
+      haptic([20, 30, 20]);
     }
   };
 
@@ -120,46 +132,86 @@ export default function ReactionGame({ onDone }: GameProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const lampClass = (i: number) => {
-    if (lit === i) return 'border-[#e0a400] bg-[#ffd75e] shadow-[0_0_24px_6px_rgba(255,200,60,0.65)]';
-    if (flash?.idx === i && flash.kind === 'hit') return 'border-ok bg-ok';
-    if (flash?.idx === i && flash.kind === 'wrong') return 'border-ink-300 bg-ink-200';
-    return 'border-line bg-canvas';
+  // The start, and a tick for each of the last three seconds.
+  useEffect(() => {
+    sfx.start();
+  }, []);
+  useEffect(() => {
+    if (left > 0 && left <= 3 && !done.current) sfx.tick();
+  }, [left]);
+
+  const th = GAME_THEME.reaction;
+  /** Each lamp is a glass dome: dark when off, blazing amber when lit, a bright flash on a hit. */
+  const lampStyle = (i: number): React.CSSProperties => {
+    if (lit === i)
+      return {
+        background: `radial-gradient(circle at 50% 36%, #fffbe8 0%, ${th.soft} 26%, ${th.glow} 60%, #b45f00 100%)`,
+        boxShadow: `0 0 0 2px ${th.soft}, 0 0 28px 6px ${th.glow}cc, 0 0 70px 14px ${th.glow}55, inset 0 -8px 16px rgba(120,50,0,.45), inset 0 3px 0 rgba(255,255,255,.6)`,
+        transform: 'scale(1.06)',
+      };
+    if (flash?.idx === i && flash.kind === 'hit')
+      return {
+        background: 'radial-gradient(circle at 50% 36%, #ffffff 0%, #fff3d0 40%, #ffd98a 100%)',
+        boxShadow: `0 0 0 2px #fff3d0, 0 0 40px 10px ${th.glow}aa, inset 0 -6px 14px rgba(150,90,0,.3)`,
+      };
+    if (flash?.idx === i && flash.kind === 'wrong')
+      return {
+        background: 'radial-gradient(circle at 50% 36%, rgba(255,140,140,.28) 0%, rgba(120,30,30,.35) 70%, rgba(0,0,0,.35) 100%)',
+        boxShadow: '0 0 0 1px rgba(255,140,140,.45), 0 0 18px rgba(255,90,90,.35), inset 0 -8px 16px rgba(0,0,0,.4)',
+      };
+    if (flash?.idx === i && flash.kind === 'missed')
+      return {
+        background: `radial-gradient(circle at 50% 36%, ${th.glow}33 0%, rgba(255,255,255,.05) 60%, rgba(0,0,0,.3) 100%)`,
+        boxShadow: `0 0 0 1px ${th.glow}44, inset 0 -8px 16px rgba(0,0,0,.4)`,
+      };
+    return {
+      background: 'radial-gradient(circle at 50% 34%, rgba(255,255,255,.16) 0%, rgba(255,255,255,.05) 55%, rgba(0,0,0,.3) 100%)',
+      boxShadow: '0 0 0 1px rgba(255,255,255,.12), inset 0 3px 0 rgba(255,255,255,.1), inset 0 -10px 18px rgba(0,0,0,.4), 0 8px 18px -8px rgba(0,0,0,.7)',
+    };
   };
 
   return (
-    <div className="flex select-none flex-col items-center gap-3 py-2" data-testid="reaction-game">
-      <div className="flex w-full max-w-sm items-center justify-between text-[14px] text-ink-600">
-        <span>{t(`Nog ${left} s`, `${left} s left`)}</span>
-        <span className="font-semibold text-ink-900" data-testid="reaction-score" aria-live="polite">{t(`${score} lampjes`, `${score} lights`)}</span>
+    <Stage game="reaction" testId="reaction-game" className="select-none">
+      <Hud>
+        <HudPill label={t('Tijd', 'Time')} value={`${left}s`} />
+        <div className="flex" aria-live="polite">
+          <HudPill testId="reaction-score" label={t('Lampjes', 'Lights')} value={score} accent={th.soft} />
+        </div>
+      </Hud>
+      <GlowBar game="reaction" value={left / ROUND} />
+      <div className="mx-auto mt-5 grid w-full max-w-[330px] touch-none grid-cols-3 gap-3.5 p-1" style={{ touchAction: 'none' }}>
+        {Array.from({ length: LAMPS }, (_, i) => {
+          const on = lit === i;
+          const kind = flash?.idx === i ? flash.kind : null;
+          return (
+            <button
+              key={i}
+              type="button"
+              data-testid={`reaction-lamp-${i + 1}`}
+              data-lit={on ? 'true' : undefined}
+              aria-label={on ? t(`Lampje ${i + 1}, aan`, `Light ${i + 1}, on`) : t(`Lampje ${i + 1}`, `Light ${i + 1}`)}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                press(i);
+              }}
+              // Keyboard activation (Enter/Space) only; a tap was already handled on pointer down.
+              onClick={(e: ReactMouseEvent<HTMLButtonElement>) => {
+                if (e.detail === 0) press(i);
+              }}
+              className={`relative aspect-square min-h-[64px] w-full rounded-full transition-[transform,box-shadow,background] duration-150 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/80 ${kind === 'wrong' ? 'game-shake' : ''}`}
+              style={lampStyle(i)}
+            >
+              {/* The glass highlight on top of the dome. */}
+              <span aria-hidden className="pointer-events-none absolute left-[22%] top-[10%] h-[24%] w-[56%] rounded-full bg-gradient-to-b from-white/45 to-white/0" />
+              {on && <span aria-hidden className="game-glow pointer-events-none absolute -inset-2 rounded-full border-2" style={{ borderColor: `${th.soft}aa` }} />}
+              {kind === 'hit' && <span ref={burst} aria-hidden className="pointer-events-none absolute inset-0 rounded-full border-[3px]" style={{ borderColor: th.soft, boxShadow: `0 0 20px ${th.glow}` }} />}
+              <span aria-hidden className={`absolute bottom-1.5 left-0 right-0 text-center text-[11px] font-bold tabular-nums ${on ? 'text-[#5a2c00]/70' : 'text-white/35'}`}>{i + 1}</span>
+            </button>
+          );
+        })}
       </div>
-      <div className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-ink-100" aria-hidden>
-        <div className="h-full rounded-full bg-accent" style={{ width: `${(left / ROUND) * 100}%` }} />
-      </div>
-      <div className="grid w-full max-w-[330px] touch-none grid-cols-3 gap-3 p-1" style={{ touchAction: 'none' }}>
-        {Array.from({ length: LAMPS }, (_, i) => (
-          <button
-            key={i}
-            type="button"
-            data-testid={`reaction-lamp-${i + 1}`}
-            data-lit={lit === i ? 'true' : undefined}
-            aria-label={lit === i ? t(`Lampje ${i + 1}, aan`, `Light ${i + 1}, on`) : t(`Lampje ${i + 1}`, `Light ${i + 1}`)}
-            onPointerDown={(e) => {
-              e.preventDefault();
-              press(i);
-            }}
-            // Keyboard activation (Enter/Space) only; a tap was already handled on pointer down.
-            onClick={(e: ReactMouseEvent<HTMLButtonElement>) => {
-              if (e.detail === 0) press(i);
-            }}
-            className={`relative aspect-square min-h-[64px] w-full rounded-full border-4 transition-[background,box-shadow] duration-100 ${lampClass(i)}`}
-          >
-            <span aria-hidden className="absolute bottom-1.5 right-0 left-0 text-center text-[11px] font-semibold text-ink-400">{i + 1}</span>
-          </button>
-        ))}
-      </div>
-      <p className="max-w-sm text-center text-[13.5px] text-ink-600">{t('Tik het gele lampje zo snel als je kunt. Doe het staand, of in een uitvalspas voor een extra uitdaging.', 'Tap the yellow light as fast as you can. Do it standing, or in a lunge for an extra challenge.')}</p>
-      <Button variant="ghost" size="sm" className="min-h-[44px] px-4" data-testid="game-stop" onClick={finish}>{t('Stoppen', 'Stop')}</Button>
-    </div>
+      <p className="mx-auto mt-4 max-w-sm text-center text-[13px] leading-snug text-white/60">{t('Tik het gele lampje zo snel als je kunt. Doe het staand, of in een uitvalspas voor een extra uitdaging.', 'Tap the yellow light as fast as you can. Do it standing, or in a lunge for an extra challenge.')}</p>
+      <StopButton onClick={finish} label={t('Stoppen', 'Stop')} />
+    </Stage>
   );
 }

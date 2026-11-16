@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FOOD_BY_KEY, macrosOf, sumMacros, type Food } from '@shared/foods';
 import { useI18n } from '@/lib/i18n';
-import { Button } from '@/components/ui';
+import { GAME_THEME, GOLD, GameButton, Hud, HudPill, Stage, StopButton, haptic, sfx } from './kit';
 import type { GameProps } from './types';
 
 type Role = 'protein' | 'carb' | 'veg' | 'fat' | 'treat';
@@ -38,6 +38,22 @@ const FULL_HI = 700;
 const MAX_ON_PLATE = 10;
 const TIP_MS = 2200;
 
+const TH = GAME_THEME.plate;
+/** A dark walnut table: grain, a soft sheen and depth. */
+const TABLE =
+  'radial-gradient(120% 80% at 50% 0%, rgba(255,214,160,.10), transparent 60%), repeating-linear-gradient(91deg, rgba(255,255,255,.028) 0 2px, transparent 2px 11px), repeating-linear-gradient(89deg, rgba(0,0,0,.2) 0 1px, transparent 1px 27px), linear-gradient(180deg, #3d2818 0%, #2b1b10 55%, #1a100a 100%)';
+/** Fine white porcelain: the rim and the well. */
+const PLATE_RIM = 'radial-gradient(circle at 42% 30%, #ffffff 0%, #f7f3ec 46%, #e7e0d3 74%, #cbc1ae 100%)';
+const PLATE_WELL = 'radial-gradient(circle at 44% 34%, #ffffff 0%, #faf7f1 52%, #ede7dc 100%)';
+
+/** Replays the kit's shake on an element (the CSS keeps it still under reduced motion). */
+function shake(el: HTMLElement | null) {
+  if (!el) return;
+  el.classList.remove('game-shake');
+  void el.offsetWidth;
+  el.classList.add('game-shake');
+}
+
 type Totals = { protein: number; veg: number; energy: number };
 
 function totalsOf(keys: string[]): Totals {
@@ -73,6 +89,7 @@ export default function PlateGame({ onDone }: GameProps) {
   const nextId = useRef(1);
   const done = useRef(false);
   const timer = useRef<number | null>(null);
+  const plateRef = useRef<HTMLDivElement>(null);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
 
@@ -91,13 +108,20 @@ export default function PlateGame({ onDone }: GameProps) {
     if (result) return;
     if (plate.length >= MAX_ON_PLATE) {
       setNotice(t('Je bord is vol. Tik op iets op je bord om het weg te halen.', 'Your plate is full. Tap something on your plate to take it off.'));
+      sfx.bad();
+      haptic([20, 30, 20]);
+      shake(plateRef.current);
       return;
     }
+    sfx.good();
+    haptic(12);
     setNotice(null);
     setPlate((p) => [...p, { id: nextId.current++, key }]);
   };
   const remove = (id: number) => {
     if (result) return;
+    sfx.tap();
+    haptic(8);
     setNotice(null);
     setPlate((p) => p.filter((x) => x.id !== id));
   };
@@ -107,54 +131,74 @@ export default function PlateGame({ onDone }: GameProps) {
     const score = scoreOf(totals);
     const tip = tipFor(totals, plate.map((p) => p.key));
     setResult({ score, tipNl: tip[0], tipEn: tip[1] });
+    if (score >= 50) { sfx.good(); haptic(12); }
+    else sfx.tap();
     timer.current = window.setTimeout(() => finish(score), TIP_MS);
   };
 
   const fullness = totals.energy < FULL_LO ? 'low' : totals.energy <= FULL_HI ? 'ok' : 'high';
+  const proteinOk = totals.protein >= PROTEIN_LO && totals.protein <= PROTEIN_HI;
+  const vegOk = totals.veg >= VEG_AIM;
+  const goals = [proteinOk, vegOk, fullness === 'ok'].filter(Boolean).length;
 
   return (
-    <div className="flex flex-col gap-4 select-none" data-testid="plate-game">
-      <p className="text-center text-[14px] text-ink-600">{t('Maak een hoofdmaaltijd: tik op een product om een portie op je bord te leggen.', 'Make a main meal: tap a product to put a portion on your plate.')}</p>
+    <Stage game="plate" testId="plate-game" className="select-none">
+      <Hud>
+        <HudPill label={t('Op je bord', 'On plate')} value={`${plate.length}/${MAX_ON_PLATE}`} />
+        <HudPill label={t('Doelen', 'Goals')} value={`${goals}/3`} accent={goals === 3 ? TH.glow : undefined} />
+      </Hud>
+      <p className="mx-auto max-w-sm text-center text-[13.5px] leading-snug text-white/65">{t('Maak een hoofdmaaltijd: tik op een product om een portie op je bord te leggen.', 'Make a main meal: tap a product to put a portion on your plate.')}</p>
 
-      {/* The plate */}
-      <div className="mx-auto grid aspect-square w-full max-w-[280px] place-items-center rounded-full border-[10px] border-[#e9e4da] bg-white p-5 shadow-[inset_0_0_0_2px_#f3efe8,0_8px_20px_-10px_rgba(0,0,0,0.25)]" data-testid="plate">
-        {plate.length === 0 ? (
-          <p className="px-6 text-center text-[13.5px] text-ink-500">{t('Je bord is nog leeg', 'Your plate is still empty')}</p>
-        ) : (
-          <ul className="flex flex-wrap content-center justify-center gap-1.5">
-            {plate.map((p) => {
-              const s = BY_KEY[p.key];
-              if (!s) return null;
-              const name = nl ? s.food.nl : s.food.en;
-              return (
-                <li key={p.id}>
-                  <button
-                    type="button"
-                    onClick={() => remove(p.id)}
-                    disabled={!!result}
-                    aria-label={t(`${name}, ${s.food.portion.g} gram. Tik om weg te halen.`, `${name}, ${s.food.portion.g} grams. Tap to take off.`)}
-                    className="flex min-h-[44px] min-w-[44px] flex-col items-center justify-center rounded-xl bg-canvas px-1.5 py-1 leading-none hover:bg-bad-soft"
-                  >
-                    <span aria-hidden className="text-[22px]">{s.icon}</span>
-                    <span className="mt-0.5 text-[11px] font-semibold text-ink-700">{s.food.portion.g} g</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+      {/* The table, with the plate on it */}
+      <div className="relative mx-auto mt-3 w-full max-w-[380px] overflow-hidden rounded-[26px] px-5 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_18px_40px_-18px_rgba(0,0,0,.85)] ring-1 ring-white/10" style={{ background: TABLE }}>
+        <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(62% 58% at 50% 46%, ${TH.glow}2e, transparent 72%)` }} />
+        <div
+          ref={plateRef}
+          className="relative mx-auto grid aspect-square w-full max-w-[280px] place-items-center rounded-full p-[15%]"
+          style={{ background: PLATE_RIM, boxShadow: '0 24px 34px -14px rgba(0,0,0,.8), 0 6px 12px rgba(0,0,0,.35), inset 0 2px 0 rgba(255,255,255,.95), inset 0 -4px 10px rgba(110,90,60,.28)' }}
+          data-testid="plate"
+        >
+          <div aria-hidden className="absolute inset-[3.5%] rounded-full border border-[#d6ad55]/55" />
+          <div aria-hidden className="absolute inset-[12%] rounded-full" style={{ background: PLATE_WELL, boxShadow: 'inset 0 4px 12px rgba(90,70,40,.24), inset 0 -1px 0 rgba(255,255,255,.9), 0 1px 0 rgba(255,255,255,.7)' }} />
+          <div aria-hidden className="absolute left-[22%] top-[14%] h-[18%] w-[34%] -rotate-[24deg] rounded-full bg-white/70 blur-md" />
+          {plate.length === 0 ? (
+            <p className="relative px-4 text-center text-[13.5px] font-semibold text-[#8b8170]">{t('Je bord is nog leeg', 'Your plate is still empty')}</p>
+          ) : (
+            <ul className="relative flex flex-wrap content-center justify-center gap-0.5">
+              {plate.map((p) => {
+                const s = BY_KEY[p.key];
+                if (!s) return null;
+                const name = nl ? s.food.nl : s.food.en;
+                return (
+                  <li key={p.id} className="game-pop">
+                    <button
+                      type="button"
+                      onClick={() => remove(p.id)}
+                      disabled={!!result}
+                      aria-label={t(`${name}, ${s.food.portion.g} gram. Tik om weg te halen.`, `${name}, ${s.food.portion.g} grams. Tap to take off.`)}
+                      className="flex min-h-[48px] min-w-[46px] flex-col items-center justify-center rounded-2xl px-1 py-0.5 leading-none transition duration-150 hover:bg-[#d4553f]/10 hover:ring-1 hover:ring-[#d4553f]/40 active:scale-90 disabled:hover:bg-transparent disabled:hover:ring-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3f7a4c]"
+                    >
+                      <span aria-hidden className="text-[28px] drop-shadow-[0_3px_3px_rgba(60,40,20,.35)]">{s.icon}</span>
+                      <span className="mt-0.5 text-[10.5px] font-bold tabular-nums text-[#6d6352]">{s.food.portion.g} g</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </div>
-      {plate.length > 0 && !result && <p className="-mt-2 text-center text-[12.5px] text-ink-500">{t('Tik op iets op je bord om het weg te halen.', 'Tap something on your plate to take it off.')}</p>}
+      {plate.length > 0 && !result && <p className="mt-2 text-center text-[12.5px] text-white/55">{t('Tik op iets op je bord om het weg te halen.', 'Tap something on your plate to take it off.')}</p>}
 
       {/* Meters */}
-      <div className="grid gap-2.5" aria-live="polite">
+      <div className="mt-3 grid gap-3.5 rounded-2xl border border-white/10 bg-white/[.05] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,.06)] backdrop-blur-md" aria-live="polite">
         <Meter
           label={t('Eiwit', 'Protein')}
           value={`${Math.round(totals.protein)} g`}
           aim={t('doel 25–40 g', 'aim 25–40 g')}
           pct={totals.protein / 60}
           band={[PROTEIN_LO / 60, PROTEIN_HI / 60]}
-          good={totals.protein >= PROTEIN_LO && totals.protein <= PROTEIN_HI}
+          good={proteinOk}
           testId="plate-protein"
         />
         <Meter
@@ -163,7 +207,7 @@ export default function PlateGame({ onDone }: GameProps) {
           aim={t('doel 150 g of meer', 'aim 150 g or more')}
           pct={totals.veg / 300}
           band={[VEG_AIM / 300, 1]}
-          good={totals.veg >= VEG_AIM}
+          good={vegOk}
           testId="plate-veg"
         />
         <Meter
@@ -178,8 +222,8 @@ export default function PlateGame({ onDone }: GameProps) {
       </div>
 
       {/* The shelf */}
-      <div>
-        <p className="mb-1.5 text-[13.5px] font-semibold text-ink-800">{t('Kies uit het schap', 'Pick from the shelf')}</p>
+      <div className="mt-4">
+        <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-[.14em] text-white/55">{t('Kies uit het schap', 'Pick from the shelf')}</p>
         <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {SHELF.map((s) => {
             const name = nl ? s.food.nl : s.food.en;
@@ -191,11 +235,12 @@ export default function PlateGame({ onDone }: GameProps) {
                   disabled={!!result}
                   data-testid={`plate-food-${s.food.key}`}
                   aria-label={t(`${name} toevoegen, ${s.food.portion.g} gram`, `Add ${name}, ${s.food.portion.g} grams`)}
-                  className="flex min-h-[76px] w-full flex-col items-center justify-center gap-0.5 rounded-xl border border-line bg-white px-1 py-1.5 text-center hover:border-ink-300 active:bg-canvas disabled:opacity-50"
+                  className="group relative flex min-h-[88px] w-full flex-col items-center justify-center overflow-hidden rounded-2xl border border-white/12 bg-gradient-to-b from-white/[.13] to-white/[.04] px-1 py-2 text-center shadow-[inset_0_1px_0_rgba(255,255,255,.14),0_10px_20px_-14px_rgba(0,0,0,.9)] backdrop-blur-md transition duration-150 hover:border-white/25 hover:from-white/[.18] active:scale-[.94] disabled:opacity-40 disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
                 >
-                  <span aria-hidden className="text-[26px] leading-none">{s.icon}</span>
-                  <span className="text-[12px] font-medium leading-tight text-ink-800">{name}</span>
-                  <span className="text-[11px] text-ink-500">{s.food.portion.g} g</span>
+                  <span aria-hidden className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                  <span aria-hidden className="text-[32px] leading-none drop-shadow-[0_5px_8px_rgba(0,0,0,.5)] transition-transform duration-200 group-hover:-translate-y-0.5 group-active:scale-110">{s.icon}</span>
+                  <span className="mt-1.5 text-[12px] font-semibold leading-tight text-white/90">{name}</span>
+                  <span className="text-[11px] font-medium tabular-nums text-white/45">{s.food.portion.g} g</span>
                 </button>
               </li>
             );
@@ -203,34 +248,45 @@ export default function PlateGame({ onDone }: GameProps) {
         </ul>
       </div>
 
-      {notice && <p className="text-center text-[13.5px] font-medium text-warn" role="status">{notice}</p>}
+      {notice && <p className="game-rise mx-auto mt-3 max-w-sm rounded-xl border border-[#ffcf7a]/30 bg-[#ffcf7a]/10 px-3 py-2 text-center text-[13.5px] font-semibold text-[#ffd99a]" role="status">{notice}</p>}
 
       {result ? (
-        <div className="rounded-xl border border-line bg-canvas p-3 text-center animate-fade-in" role="status" data-testid="plate-tip">
-          <p className="text-[15px] font-semibold text-ink-900">{t(`${result.score} punten`, `${result.score} points`)}</p>
-          <p className="mt-0.5 text-[14px] text-ink-700">{nl ? result.tipNl : result.tipEn}</p>
+        <div className="game-rise mt-4 rounded-2xl border border-white/15 bg-white/[.08] p-4 text-center backdrop-blur-md" style={{ boxShadow: `0 0 44px -14px ${TH.glow}, inset 0 1px 0 rgba(255,255,255,.1)` }} role="status" data-testid="plate-tip">
+          <p className="flex items-baseline justify-center gap-2">
+            <span className="bg-clip-text text-[44px] font-black leading-none tabular-nums text-transparent" style={{ backgroundImage: GOLD }}>{result.score}</span>
+            <span className="text-[15px] font-bold text-white/70">{t('punten', 'points')}</span>
+          </p>
+          <p className="mt-2 text-[14.5px] leading-snug text-white/85">{nl ? result.tipNl : result.tipEn}</p>
         </div>
       ) : (
-        <Button size="xl" className="w-full" data-testid="plate-ready" onClick={ready}>{t('Klaar', 'Done')}</Button>
+        <GameButton className="mt-4 w-full text-[18px]" data-testid="plate-ready" onClick={ready}>{t('Klaar', 'Done')}</GameButton>
       )}
-      <div className="flex justify-center">
-        <Button variant="ghost" size="sm" className="min-h-[44px] px-4" data-testid="game-stop" onClick={() => finish(result ? result.score : scoreOf(totals))}>{t('Stoppen', 'Stop')}</Button>
-      </div>
-    </div>
+      <StopButton onClick={() => finish(result ? result.score : scoreOf(totals))} label={t('Stoppen', 'Stop')} />
+    </Stage>
   );
 }
 
+/** A glowing bar with the target zone between two gold markers. */
 function Meter({ label, value, aim, pct, band, good, testId }: { label: string; value: string; aim: string; pct: number; band: [number, number]; good: boolean; testId: string }) {
   const w = Math.max(0, Math.min(1, pct)) * 100;
+  const tone = good ? TH.glow : '#ffb35c';
   return (
     <div data-testid={testId}>
-      <div className="flex items-baseline justify-between gap-2 text-[13.5px]">
-        <span className="font-semibold text-ink-900">{label} <span className="font-normal text-ink-500">· {aim}</span></span>
-        <span className={good ? 'font-semibold text-ok' : 'font-semibold text-ink-700'}>{value}</span>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[13.5px] font-bold text-white">
+          {label} <span className="font-medium text-white/50">· {aim}</span>
+        </span>
+        <span className="shrink-0 text-[14px] font-extrabold tabular-nums transition-colors duration-300" style={{ color: good ? TH.glow : '#ffcf7a' }}>{value}</span>
       </div>
-      <div className="relative mt-1 h-3 overflow-hidden rounded-full bg-ink-100" aria-hidden>
-        <div className="absolute inset-y-0 bg-ok/20" style={{ left: `${band[0] * 100}%`, width: `${(band[1] - band[0]) * 100}%` }} />
-        <div className={`absolute inset-y-0 left-0 rounded-full transition-[width] duration-300 ${good ? 'bg-ok' : 'bg-warn'}`} style={{ width: `${w}%` }} />
+      <div className="relative mt-1.5 h-3 rounded-full bg-black/30 shadow-[inset_0_1px_3px_rgba(0,0,0,.6)] ring-1 ring-white/[.06]" aria-hidden>
+        <div className="absolute inset-y-0 bg-[#f3cf6b]/[.14]" style={{ left: `${band[0] * 100}%`, width: `${(band[1] - band[0]) * 100}%` }} />
+        <div
+          className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-500 ease-out"
+          style={{ width: `${w}%`, background: good ? `linear-gradient(90deg, ${TH.soft}, ${TH.glow})` : 'linear-gradient(90deg, #ffe2a8, #ff9f43)', boxShadow: w > 0 ? `0 0 12px ${tone}b3` : undefined }}
+        />
+        {band.filter((b) => b > 0 && b < 1).map((b) => (
+          <span key={b} className="absolute -inset-y-1 w-[3px] -translate-x-1/2 rounded-full" style={{ left: `${b * 100}%`, background: GOLD, boxShadow: '0 0 6px rgba(243,207,107,.9)' }} />
+        ))}
       </div>
     </div>
   );
