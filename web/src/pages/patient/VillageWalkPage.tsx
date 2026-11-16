@@ -794,6 +794,13 @@ export function VillageWalkPage() {
       ...(d?.hero ? ZONES.map((zn) => ({ key: `zone:${zn.key}`, label: `${nl ? zn.nl : zn.en} · lvl ${zn.level}+`, x: zn.x, z: zn.z, icon: zn.icon, color: (adventure.data?.level ?? 1) >= zn.level ? '#5a7a3a' : '#7a3a2a' })) : []),
     ];
 
+  // Fast travel: the hero stands there at once. Walking stays the way to see the town.
+  const jumpTo = (key: string) => {
+    setPlacesOpen(false);
+    hideTip();
+    setErrand(null);
+    world.current?.jump(key);
+  };
   const toPlace = (key: string) => {
     setPlacesOpen(false);
     hideTip();
@@ -810,6 +817,11 @@ export function VillageWalkPage() {
     { key: TV_KEY, label: practiceName, hint: t('Oefenzaal, coach en de tv met je oefeningen', 'Exercise room, coach and the TV with your exercises'), alert: todo.some((p) => moduleOf(p) === 'revalidatie') },
     ...buildings.map((b) => ({ key: 'kind' in b ? boardKey(b.key) : b.key, label: b.label, hint: PLACE_HINT[b.key] ? (nl ? PLACE_HINT[b.key][0] : PLACE_HINT[b.key][1]) : '', alert: 'alert' in b && !!b.alert })),
     ...(own ? [{ key: HOME_KEY, label: homeLabel, hint: t(`${nl ? HOME_STAGES[stage].nl : HOME_STAGES[stage].en} · richt het in met je muntjes`, `${HOME_STAGES[stage].en} · furnish it with your coins`), alert: false }] : []),
+    ...(d?.hero ? [
+      { key: CAMP_KEY, label: t('Kampvuur', 'Campfire'), hint: t('Koken van je buit', 'Cook your loot'), alert: false },
+      { key: BOXING_KEY, label: t('Boksschool', 'Boxing school'), hint: t('Een ronde op de bokszak', 'A round on the bag'), alert: false },
+      ...ZONES.map((zn) => ({ key: `zone:${zn.key}`, label: `${zn.icon} ${nl ? zn.nl : zn.en}`, hint: t(`Jachtgebied · avonturier ${zn.level}+`, `Hunting ground · adventurer ${zn.level}+`), alert: false })),
+    ] : []),
   ];
   // The link a task brought along wins over the building's own, once the hero stands there.
   const errandHere = errand && errand.link && (near === errand.dest || (errand.dest.startsWith('in:') ? false : near === errand.dest)) ? errand : null;
@@ -1243,19 +1255,23 @@ export function VillageWalkPage() {
         footer={<Button variant="secondary" onClick={() => setRoundNo((n) => n + 1)} data-testid="next-round">{t('Nog een ronde', 'Another round')}</Button>}>
         <BoxingRound key={roundNo} onDone={(hits) => void roundDone(hits)} />
       </Dialog>
-      <Dialog open={placesOpen} onClose={() => setPlacesOpen(false)} title={t('Wereldkaart', 'World map')} description={t('Kies een plek: je held loopt er vanzelf heen.', 'Pick a place: your hero walks there by itself.')} size="md" sheet>
+      <Dialog open={placesOpen} onClose={() => setPlacesOpen(false)} title={t('Wereldkaart', 'World map')} description={t('Kies een plek: je held loopt er vanzelf heen, of reist er direct heen met de knop rechts.', 'Pick a place: your hero walks there by itself, or travels straight there with the button on the right.')} size="md" sheet>
         <WorldMap track={track} landmarks={landmarks} onPlace={toPlace} onWalk={toPoint} label={t('Wereldkaart van het dorp, noorden boven. Tik op een gebouw of een plek om erheen te lopen.', 'World map of the village, north up. Tap a building or a spot to walk there.')} />
         <p className="mb-2 mt-2 text-[13px] text-ink-600">{t('Tik op de kaart, of kies hieronder een plek.', 'Tap the map, or pick a place below.')}</p>
         <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line" data-testid="places">
           {places.map((pl) => (
-            <li key={pl.key}>
-              <button type="button" className="flex min-h-[56px] w-full items-center gap-3 px-3 py-2 text-left hover:bg-[#F3F7F1]" onClick={() => toPlace(pl.key)}>
+            <li key={pl.key} className="flex items-stretch">
+              <button type="button" className="flex min-h-[56px] min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left hover:bg-[#F3F7F1]" onClick={() => toPlace(pl.key)}>
                 <span aria-hidden className={`grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-[18px] font-black ${pl.alert ? 'bg-[#fbf0d9] text-[#b07a00]' : 'bg-[#E7EFE3] text-ink-600'}`}>{pl.alert ? '!' : <MapIcon className="h-4 w-4" />}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[15px] font-semibold text-ink-900">{pl.label}{pl.alert && <span className="sr-only">{t(' (hier wacht iets)', ' (something waits here)')}</span>}</span>
                   {pl.hint && <span className="block text-[13px] text-ink-600">{pl.hint}</span>}
                 </span>
                 <ChevronRight className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
+              </button>
+              <button type="button" data-testid={`jump-${pl.key}`} onClick={() => jumpTo(pl.key)} aria-label={t(`Reis direct naar ${pl.label}`, `Travel straight to ${pl.label}`)}
+                className="flex w-[64px] shrink-0 flex-col items-center justify-center gap-0.5 border-l border-line text-[11.5px] font-semibold text-accent hover:bg-[#F3F7F1]">
+                <Sparkles className="h-4 w-4" aria-hidden />{t('Direct', 'Travel')}
               </button>
             </li>
           ))}

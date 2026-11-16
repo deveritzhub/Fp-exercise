@@ -47,7 +47,7 @@ const HOME_REACH = [1.3, 1.5, 1.8, 2.2, 2.8, 3.1];
 const STREET_HOME = 0.85;
 /** A room behind a door in the village. */
 type Place = { group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[] };
-export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key`: the hero turns to it and it flinches. */ strike: (key: string) => void; /** The creature `key` lunges at the hero. */ lunge: (key: string) => void; /** Beaten: the hero stands up at the well at once, without walking. */ respawn: () => void };
+export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key`: the hero turns to it and it flinches. */ strike: (key: string) => void; /** The creature `key` lunges at the hero. */ lunge: (key: string) => void; /** Beaten: the hero stands up at the well at once, without walking. */ respawn: () => void; /** Fast travel: the hero stands at the place `key` at once (after a short fade). */ jump: (key: string) => void };
 /** The bag of the boxing school in the village. */
 export const BOXING_KEY = 'boxing';
 /** The campfire by the meadow: raw loot is cooked there. Shown with the boxing school (the adventure). */
@@ -2022,6 +2022,24 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     let stuck = 0;
     walkTo.current = (p, k, then) => {
       const target = inside() ? clampRect(reachable(p, here().obstacles, 1e6), here().rect) : reachable(p, obstacles, B);
+      // Fast travel: no walk, the hero is there (the next frame arrives, as at the end of a walk).
+      if (jumpNext && !inside()) {
+        jumpNext = false;
+        pos.current.x = target.x;
+        pos.current.z = target.z;
+        first = true;
+        goal = { target, path: [], key: k, then, run: false };
+        stuck = 0;
+        clearTrail();
+        el.dataset.walking = '1';
+        announce(k ? then ?? k : null);
+        const veil = fade.current;
+        if (veil && !reduce) {
+          veil.style.opacity = '1';
+          window.setTimeout(() => { veil.style.opacity = '0'; }, 180);
+        }
+        return;
+      }
       // A few steps are walked; anything further is a run.
       // Round the buildings, not into them: corner points first, the target last.
       const path = findPath(pos.current, target, inside() ? here().obstacles : obstacles, inside() ? { rect: here().rect } : { bound: B });
@@ -2040,6 +2058,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       announce(k ? then ?? k : null);
     };
     turn.current = (deg) => { camAngle.current += THREE.MathUtils.degToRad(deg); };
+    let jumpNext = false;
     // Through the practice door: a short fade, then the hero stands in the other place.
     let switching = 0;
     const travel = (to: string, then?: string) => {
@@ -2120,6 +2139,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     if (api) {
       api.current = {
         goTo: (k) => goTo.current(k),
+        jump: (k) => {
+          jumpNext = true;
+          goTo.current(k);
+          jumpNext = false;
+        },
         walk: (pt) => {
           // A tap on the map: only in the village itself, where the map is of.
           if (!inside()) walkTo.current(pt, null);
