@@ -135,7 +135,10 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   await expect(adv).toContainText('Avonturier');
   await page.getByRole('button', { name: 'Loop naar Stijfheidsslijm' }).last().press('Enter');
   const strike = page.getByTestId('strike');
-  await expect(strike).toBeVisible({ timeout: 200_000 });
+  // On the way the hero may pass pebbles or twigs (the strike button shows for them too): wait until it
+  // stands by the slime itself.
+  await expect(village).toHaveAttribute('data-near', 'mob:1', { timeout: 200_000 });
+  await expect(strike).toBeVisible({ timeout: 30_000 });
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/mob.png' });
   // A life bar above the creature: full at first, lower after a blow.
   const life = page.getByTestId('hp-mob:1');
