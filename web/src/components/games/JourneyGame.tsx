@@ -30,7 +30,16 @@ function splitCubic([p0, p1, p2, p3]: [Pt, Pt, Pt, Pt], t: number): [Pt, Pt, Pt,
   const p123 = lerp(p12, p23, t);
   return [p0, p01, p012, lerp(p012, p123, t)];
 }
+/** The part (t0..t1) of a cubic curve. */
+function subCubic(c: [Pt, Pt, Pt, Pt], t0: number, t1: number): [Pt, Pt, Pt, Pt] {
+  const head = splitCubic(c, t1);
+  // Reverse the head, cut off its last part, and turn it back.
+  const rev = splitCubic([head[3], head[2], head[1], head[0]], 1 - t0 / t1);
+  return [rev[3], rev[2], rev[1], rev[0]];
+}
 const seg = (c: [Pt, Pt, Pt, Pt]) => `C ${c[1].x} ${c[1].y} ${c[2].x} ${c[2].y} ${c[3].x} ${c[3].y}`;
+/** Where the road crosses the river, just below stop 4. */
+const BRIDGE = subCubic(controls(3), 0.66, 0.93);
 const FULL_ROAD = `M ${STOPS[0]?.x} ${STOPS[0]?.y} ` + STOPS.slice(1).map((_, i) => seg(controls(i))).join(' ');
 
 /** Where the hero stands for these steps: the segment and how far along it. */
@@ -292,11 +301,10 @@ function Scenery({ reduced }: { reduced: boolean }) {
       <ellipse cx={346} cy={590} rx={52} ry={20} fill="#bfdea4" />
       <ellipse cx={40} cy={612} rx={50} ry={16} fill="#a6cf8a" />
 
-      {/* River (between the forest and stop 4), with a bridge where the road crosses */}
-      <path d="M 0 662 C 60 650 110 684 180 670 C 250 656 300 684 360 668 L 360 688 C 300 704 250 676 180 690 C 110 704 60 670 0 682 Z" fill="#8cc6e3" />
-      <path d="M 30 670 q 6 -3 12 0 M 250 668 q 6 -3 12 0" fill="none" stroke="#ffffff" strokeWidth={1.2} />
-      <rect x={166} y={664} width={30} height={32} rx={3} fill="#b98a5c" />
-      <path d="M 166 668 L 196 668 M 166 692 L 196 692" stroke="#7b5a3a" strokeWidth={2} />
+      {/* River at stop 4, with a bridge where the road crosses it */}
+      <path d="M 0 640 C 80 628 140 656 220 644 C 280 636 320 652 360 642 L 360 658 C 320 668 280 652 220 660 C 140 672 80 644 0 656 Z" fill="#8cc6e3" />
+      <path d="M 40 646 q 6 -3 12 0 M 150 654 q 6 -3 12 0 M 316 652 q 6 -3 12 0" fill="none" stroke="#ffffff" strokeWidth={1.2} />
+      <path d={`M ${BRIDGE[0].x} ${BRIDGE[0].y} ${seg(BRIDGE)}`} fill="none" stroke="#9a6f45" strokeWidth={22} />
 
       {/* Forest (stop 3) */}
       <Tree x={22} y={726} />
