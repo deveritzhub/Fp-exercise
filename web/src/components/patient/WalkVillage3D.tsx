@@ -2539,17 +2539,25 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const [a2, b2] = [...fingers.values()];
       return Math.hypot(a2.x - b2.x, a2.y - b2.y);
     };
+    // Played sideways on a phone held upright, the view is turned a quarter (see the page): a point on
+    // the screen is turned back into the view's own frame before anything is done with it.
+    const sideways = () => document.documentElement.dataset.sideways === '1';
+    const P = (e: { clientX: number; clientY: number }) => (sideways() ? { x: e.clientY, y: window.innerWidth - e.clientX } : { x: e.clientX, y: e.clientY });
+    const R2 = () => {
+      const r = canvas.getBoundingClientRect();
+      return sideways() ? { left: r.top, top: window.innerWidth - r.right, width: r.height, height: r.width } : { left: r.left, top: r.top, width: r.width, height: r.height };
+    };
     const onDown = (e: PointerEvent) => {
-      fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      fingers.set(e.pointerId, P(e));
       if (fingers.size === 2) {
         pinch = spread();
         down = null;
         return;
       }
-      down = { x: e.clientX, y: e.clientY, moved: false };
+      down = { ...P(e), moved: false };
     };
     const onMove = (e: PointerEvent) => {
-      if (fingers.has(e.pointerId)) fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (fingers.has(e.pointerId)) fingers.set(e.pointerId, P(e));
       if (fingers.size === 2 && pinch > 0) {
         const now = spread();
         if (now > 0) zoomBy(pinch / now);
@@ -2557,11 +2565,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         return;
       }
       if (!down) return;
-      if (!down.moved && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 9) down.moved = true;
+      const at = P(e);
+      if (!down.moved && Math.hypot(at.x - down.x, at.y - down.y) > 9) down.moved = true;
       if (down.moved) {
         // Sideways turns all the way round; up and down tips the view between low and from above.
-        camAngle.current -= e.movementX * 0.008;
-        camTilt.current = Math.min(2.4, Math.max(0.35, camTilt.current + e.movementY * 0.006));
+        const mx = sideways() ? e.movementY : e.movementX;
+        const my = sideways() ? -e.movementX : e.movementY;
+        camAngle.current -= mx * 0.008;
+        camTilt.current = Math.min(2.4, Math.max(0.35, camTilt.current + my * 0.006));
       }
     };
     const onWheel = (e: WheelEvent) => {
@@ -2572,12 +2583,13 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const onUp = (e: PointerEvent) => {
       fingers.delete(e.pointerId);
       if (fingers.size < 2) pinch = 0;
+      const tap = P(e);
       const d = down;
       down = null;
       if (!d || d.moved) return;
       // A tap on a figure itself (anywhere from feet to head): talk to it.
       if (!live.current.placing) {
-        const box = canvas.getBoundingClientRect();
+        const box = R2();
         let best: (typeof talkers)[number] | null = null;
         let bd = 46;
         for (const tk of talkers) {
@@ -2585,7 +2597,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           for (const y of [0.25, 0.7, 1.15]) {
             proj.set(tk.x, y, tk.z).project(camera);
             if (proj.z > 1) continue;
-            const dist = Math.hypot((proj.x * 0.5 + 0.5) * box.width + box.left - e.clientX, (-proj.y * 0.5 + 0.5) * box.height + box.top - e.clientY);
+            const dist = Math.hypot((proj.x * 0.5 + 0.5) * box.width + box.left - tap.x, (-proj.y * 0.5 + 0.5) * box.height + box.top - tap.y);
             if (dist < bd) {
               bd = dist;
               best = tk;
@@ -2601,7 +2613,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       // A tap on a creature (its body or close to it): walk up to it; the fight then goes on its own.
       if (!live.current.placing) {
-        const box = canvas.getBoundingClientRect();
+        const box = R2();
         let pick: (typeof mobs)[number] | null = null;
         let pd = 52;
         for (const mob of mobs) {
@@ -2610,7 +2622,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           for (const y of [0.3, 0.8, 1.4]) {
             proj.set(mob.g.position.x, y * mob.g.scale.y, mob.g.position.z).project(camera);
             if (proj.z > 1) continue;
-            const dist = Math.hypot((proj.x * 0.5 + 0.5) * box.width + box.left - e.clientX, (-proj.y * 0.5 + 0.5) * box.height + box.top - e.clientY);
+            const dist = Math.hypot((proj.x * 0.5 + 0.5) * box.width + box.left - tap.x, (-proj.y * 0.5 + 0.5) * box.height + box.top - tap.y);
             if (dist < pd) {
               pd = dist;
               pick = mob;
@@ -2624,14 +2636,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       // Placing furniture: the tap is a spot on the floor of the home, not somewhere to walk to.
       if (live.current.placing && zone.current === HOME_KEY) {
-        const rect = canvas.getBoundingClientRect();
-        ray.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), camera);
+        const rect = R2();
+        ray.setFromCamera(new THREE.Vector2(((tap.x - rect.left) / rect.width) * 2 - 1, -((tap.y - rect.top) / rect.height) * 2 + 1), camera);
         const floor = new THREE.Vector3();
         if (ray.ray.intersectPlane(ground, floor)) live.current.onFloor?.({ x: floor.x - places[HOME_KEY].at.x, z: floor.z - places[HOME_KEY].at.z });
         return;
       }
-      const rect = canvas.getBoundingClientRect();
-      ray.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), camera);
+      const rect = R2();
+      ray.setFromCamera(new THREE.Vector2(((tap.x - rect.left) / rect.width) * 2 - 1, -((tap.y - rect.top) / rect.height) * 2 + 1), camera);
       const hit = new THREE.Vector3();
       // A tap on the sky or far hills: walk in that direction, as far as the village goes.
       if (!ray.ray.intersectPlane(ground, hit)) hit.copy(limit.copy(ray.ray.direction).setY(0).normalize().multiplyScalar(B * 2).add(camera.position)).setY(0);
@@ -3286,10 +3298,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             </button>
           ))}
           {(creatures ?? []).map((c) => (
-            <button key={c.key} ref={setLabel(c.key)} type="button" data-spot={c.key} hidden={gone.has(c.key)} onClick={() => go(c.key)}
+            <button key={c.key} ref={setLabel(c.key)} type="button" data-spot={c.key} hidden={gone.has(c.key)} data-gone={gone.has(c.key) ? '1' : undefined} onClick={() => go(c.key)}
               aria-label={ATTACKS[c.kind].aggressive ? t(`Loop naar ${c.label}, agressief`, `Walk to ${c.label}, aggressive`) : isFriendly(c.kind) && !isHarvest(c.kind) ? t(`Loop naar ${c.label}, vriendelijk`, `Walk to ${c.label}, friendly`) : t(`Loop naar ${c.label}`, `Walk to ${c.label}`)}
               data-aggressive={ATTACKS[c.kind].aggressive ? '1' : undefined}
-              className={cn(plate, '!min-h-[34px] flex-col !items-stretch gap-1 text-[12.5px] leading-none', ATTACKS[c.kind].aggressive ? 'border-[#ff6b4a] text-[#ffb3a1]' : isFriendly(c.kind) ? 'text-[#c9f2c0]' : 'text-[#ffd9a8]')} style={{ transform: 'translate(-9999px,0)' }}>
+              className={cn(plate, '!min-h-[34px] flex-col !items-stretch gap-1 text-[12.5px] leading-none', gone.has(c.key) && '!hidden', ATTACKS[c.kind].aggressive ? 'border-[#ff6b4a] text-[#ffb3a1]' : isFriendly(c.kind) ? 'text-[#c9f2c0]' : 'text-[#ffd9a8]')} style={{ transform: 'translate(-9999px,0)' }}>
               <span className="text-center">{!isHarvest(c.kind) && <span data-level className="mr-1 rounded bg-black/45 px-1 text-[10px] font-bold tabular-nums text-[#ffe08a]">{t('lvl', 'lvl')} {isAlpha(c.kind) ? alphaAdvised(c.kind) : CREATURES[c.kind].level}</span>}{c.label}{ATTACKS[c.kind].aggressive ? <span className="ml-1 text-[10px] font-bold uppercase text-[#ff8a6e]">{t('agressief', 'aggressive')}</span> : isFriendly(c.kind) && !isHarvest(c.kind) ? <span className="ml-1 text-[10px] font-semibold text-[#9fe39a]">{t('vriendelijk', 'friendly')}</span> : null}</span>
               {(() => {
                 const max = CREATURES[c.kind].hp;

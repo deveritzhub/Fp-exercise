@@ -24,7 +24,7 @@ test('patient furnishes the own home with coins', async ({ browser }) => {
 
   // The home is a place in the village like the others: pick it and the hero walks there.
   await page.getByTestId('slot-places').click();
-  await page.getByTestId('places').getByRole('button', { name: /^Jouw huis/ }).click();
+  await page.getByTestId('jump-home').click();
   await page.getByTestId('enter-home').click({ timeout: 90_000 });
   await expect(village).toHaveAttribute('data-zone', 'home', { timeout: 200_000 });
 

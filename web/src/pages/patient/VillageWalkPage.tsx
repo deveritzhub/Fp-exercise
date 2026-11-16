@@ -1,7 +1,7 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Armchair, Backpack, Beef, Flame, Utensils, Package, Droplets, Heart, Sparkles, ChevronRight, Coins, DoorOpen, Footprints, Gamepad2, Gauge, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
+import { Armchair, Backpack, Beef, Flame, Utensils, Package, Droplets, Heart, Sparkles, ChevronRight, Coins, DoorOpen, Footprints, Gamepad2, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
 import { ApiError, api, mediaUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -13,6 +13,7 @@ import { GEAR_SLOT, SKILLS, bodyShape, levelTier } from '@shared/hero';
 import { villageBuildings } from '@shared/worldMap';
 import { ItemIcon } from '@/components/patient/ItemIcon';
 import { BossBoard } from '@/components/patient/BossBoard';
+import { GamePage } from '@/components/patient/GamePage';
 import { BackpackCard } from '@/components/patient/Backpack';
 import { LightCard } from '@/components/patient/LightSide';
 import { clearFromGame, markFromGame } from '@/components/patient/BackToGame';
@@ -198,32 +199,6 @@ const STICK_KEY = 'fp.village.joystick';
  * How smoothly the world runs on this device: frames per second, read from the scene once a second.
  * Off until asked for; a help for tuning, not a part of the game.
  */
-function FpsMeter() {
-  const { t } = useI18n();
-  const [on, setOn] = useState(false);
-  const [fps, setFps] = useState<number | null>(null);
-  useEffect(() => {
-    if (!on) return;
-    const id = window.setInterval(() => {
-      const v = Number(document.querySelector<HTMLElement>('[data-testid="walk-village"]')?.dataset.fps);
-      setFps(Number.isFinite(v) && v > 0 ? v : null);
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [on]);
-  // In the action bar of the world itself, so it is in reach in full screen too; the number sits just above the bar.
-  return (
-    <>
-      <button type="button" data-testid="fps-toggle" aria-pressed={on} onClick={() => setOn((v) => !v)} aria-label={on ? t('Verberg de snelheid', 'Hide the speed') : t('Toon hoe vloeiend het dorp loopt', 'Show how smoothly the village runs')}
-        className={`${SLOT} aria-pressed:border-[#ffd76a] aria-pressed:bg-[linear-gradient(180deg,#5a4a1c,#2a2410)]`}><Gauge className="h-5 w-5" aria-hidden /></button>
-      {on && (
-        <p role="status" data-testid="fps" className="pointer-events-none absolute bottom-[54px] left-0 whitespace-nowrap rounded-md border border-black/60 bg-[#141c18]/90 px-2 py-1 text-[12.5px] font-semibold tabular-nums text-white shadow-lift">
-          {fps === null ? t('meten…', 'measuring…') : t(`${fps} beelden per seconde`, `${fps} frames per second`)}
-          {fps !== null && <span className="ml-1 font-normal text-white/80">{fps >= 30 ? t('· goed', '· good') : fps >= 20 ? t('· matig', '· fair') : t('· traag', '· slow')}</span>}
-        </p>
-      )}
-    </>
-  );
-}
 
 /** Thumb stick: drag the knob and the hero walks that way; push it to the rim to run. */
 export function Joystick({ stick, label }: { stick: RefObject<{ x: number; y: number }>; label: string }) {
@@ -239,8 +214,12 @@ export function Joystick({ stick, label }: { stick: RefObject<{ x: number; y: nu
   useEffect(() => () => set(0, 0), []); // eslint-disable-line react-hooks/exhaustive-deps
   const move = (e: React.PointerEvent<HTMLDivElement>) => {
     const box = e.currentTarget.getBoundingClientRect();
-    let x = e.clientX - (box.left + box.width / 2);
-    let y = e.clientY - (box.top + box.height / 2);
+    const sx = e.clientX - (box.left + box.width / 2);
+    const sy = e.clientY - (box.top + box.height / 2);
+    // Turned a quarter for sideways play: the push is turned back with it.
+    const turned = document.documentElement.dataset.sideways === '1';
+    let x = turned ? sy : sx;
+    let y = turned ? -sx : sy;
     const d = Math.hypot(x, y);
     if (d > R) {
       x = (x / d) * R;
@@ -289,6 +268,42 @@ export function VillageWalkPage() {
   // Full screen: the village over the whole screen. Where the browser can, its own bars go too
   // (not on an iPhone, where the page simply fills the screen).
   const [full, setFull] = useState(false);
+  // Sideways play without turning the phone (its own turning may be locked): where the browser can,
+  // the screen is held sideways; otherwise the view itself is turned a quarter.
+  const [sideways, setSideways] = useState(false);
+  const [screenSize, setScreenSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+  const playSideways = async () => {
+    setFull(true);
+    try {
+      await document.documentElement.requestFullscreen?.();
+      const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+      if (!o?.lock) throw new Error('no lock');
+      await o.lock('landscape');
+    } catch {
+      if (window.innerHeight > window.innerWidth) setSideways(true);
+    }
+  };
+  useEffect(() => {
+    if (!full) setSideways(false);
+  }, [full]);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (sideways) root.dataset.sideways = '1';
+    else delete root.dataset.sideways;
+    const fit = () => {
+      setScreenSize({ w: window.innerWidth, h: window.innerHeight });
+      // Turned upright-to-sideways by hand after all: the turned view is no longer needed.
+      if (window.innerWidth > window.innerHeight) setSideways(false);
+    };
+    if (sideways) window.addEventListener('resize', fit);
+    return () => {
+      window.removeEventListener('resize', fit);
+      delete root.dataset.sideways;
+    };
+  }, [sideways]);
+  useEffect(() => () => {
+    try { (screen.orientation as ScreenOrientation & { unlock?: () => void })?.unlock?.(); } catch { /* not locked */ }
+  }, []);
   useEffect(() => {
     if (!full) return;
     const root = document.documentElement;
@@ -619,6 +634,12 @@ export function VillageWalkPage() {
   const [campOpen, setCampOpen] = useState(false);
   const [bossOpen, setBossOpen] = useState(false);
   const [packOpen, setPackOpen] = useState(false);
+  // A page of the app shown over the world (see GamePage); on closing, what it changed is fetched anew.
+  const [gamePage, setGamePage] = useState<string | null>(null);
+  const closeGamePage = useCallback(() => {
+    setGamePage(null);
+    void qc.invalidateQueries();
+  }, [qc]);
   const [chestOpen, setChestOpen] = useState(false);
   const [zone, setZone] = useState('village');
   const [cooking, setCooking] = useState<string | null>(null);
@@ -934,12 +955,26 @@ export function VillageWalkPage() {
       // A link from the game to a page of the app: that page then offers the way back to the game.
       const a = (e.target as HTMLElement).closest?.('a[href]');
       const href = a?.getAttribute('href') ?? '';
-      if (href.startsWith('/p') && !href.startsWith('/p/dorp')) markFromGame();
+      if (!href.startsWith('/p') || href.startsWith('/p/dorp')) return;
+      // A workout opens as itself; everything else is shown over the world, so the hero stays in it.
+      if (/^\/p\/(sessie|programma)\//.test(href)) {
+        markFromGame();
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      setTalk(null);
+      setPackOpen(false);
+      setBossOpen(false);
+      setPlacesOpen(false);
+      setGamePage(href);
     }}>
       <h1 className="sr-only">{t('Je dorp', 'Your village')}</h1>
       <p className="mb-1 text-[13px] text-ink-600">{t('Tip: draai je telefoon om liggend te spelen.', 'Tip: turn your phone to play sideways.')}</p>
       <Button size="md" variant="secondary" className="mb-2 w-full" data-testid="play-full" icon={<Maximize2 className="h-4 w-4" />} onClick={() => setFull(true)}>{t('Speel in volledig scherm', 'Play full screen')}</Button>
-      <section aria-label={t('Je dorp in 3D. Tik op de grond om te lopen, of kies een gebouw.', 'Your village in 3D. Tap the ground to walk, or pick a building.')} data-full={full ? '1' : undefined}
+      <Button size="md" variant="secondary" className="mb-2 w-full" data-testid="play-sideways" icon={<RotateCw className="h-4 w-4" />} onClick={() => void playSideways()}>{t('Speel liggend', 'Play sideways')}</Button>
+      <section aria-label={t('Je dorp in 3D. Tik op de grond om te lopen, of kies een gebouw.', 'Your village in 3D. Tap the ground to walk, or pick a building.')} data-full={full ? '1' : undefined} data-sideways={sideways ? '1' : undefined}
+        style={sideways ? { width: screenSize.h, height: screenSize.w, left: screenSize.w, top: 0, right: 'auto', bottom: 'auto', transform: 'rotate(90deg)', transformOrigin: 'top left' } : undefined}
         className={full ? 'fixed inset-0 z-50 !mt-0 bg-[#1b2a22] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pt-[env(safe-area-inset-top)]' : 'relative'}>
         <div className={full ? 'relative h-full' : 'relative'}>
         <Suspense fallback={<div className="h-[calc(100dvh-13.5rem)] min-h-[440px] animate-pulse rounded-2xl bg-[#26342c]" />}>
@@ -1238,7 +1273,6 @@ export function VillageWalkPage() {
           <Link to="/p/held" className={SLOT} aria-label={t('Skills en je held', 'Skills and your hero')}><Swords className="h-5 w-5" aria-hidden /></Link>
           <button type="button" data-testid="slot-places" className={SLOT} aria-label={t('Plekken: kies waar je heen wilt', 'Places: pick where to go')} onClick={() => setPlacesOpen(true)}><MapIcon className="h-5 w-5" aria-hidden /></button>
           <button type="button" data-testid="slot-joystick" aria-pressed={joystick} className={`${SLOT} aria-pressed:border-[#ffd76a] aria-pressed:bg-[linear-gradient(180deg,#5a4a1c,#2a2410)]`} aria-label={t('Joystick aan of uit', 'Joystick on or off')} onClick={toggleJoystick}><Gamepad2 className="h-5 w-5" aria-hidden /></button>
-          <FpsMeter />
         </nav>
         </div>
       </section>
@@ -1342,6 +1376,7 @@ export function VillageWalkPage() {
         )}
       </Dialog>
       <KarateSheet open={dojoOpen} onClose={() => setDojoOpen(false)} />
+      {gamePage && <GamePage href={gamePage} onClose={closeGamePage} />}
       <Dialog open={packOpen} onClose={() => setPackOpen(false)} size="md" sheet title={t('Rugzak', 'Backpack')}
         description={t('Je spullen, wapens, harnas, buit en de lichtkant, hier in het spel.', 'Your things, weapons, armour, loot and the light side, right here in the game.')}>
         <div className="space-y-4" data-testid="game-backpack">
@@ -1396,23 +1431,19 @@ export function VillageWalkPage() {
         footer={<Button variant="secondary" onClick={() => setRoundNo((n) => n + 1)} data-testid="next-round">{t('Nog een ronde', 'Another round')}</Button>}>
         <BoxingRound key={roundNo} onDone={(hits) => void roundDone(hits)} />
       </Dialog>
-      <Dialog open={placesOpen} onClose={() => setPlacesOpen(false)} title={t('Wereldkaart', 'World map')} description={t('Kies een plek: je held loopt er vanzelf heen, of reist er direct heen met de knop rechts.', 'Pick a place: your hero walks there by itself, or travels straight there with the button on the right.')} size="md" sheet>
+      <Dialog open={placesOpen} onClose={() => setPlacesOpen(false)} title={t('Wereldkaart', 'World map')} description={t('Tik op een plek in de lijst: je held staat er meteen. Tik op de kaart: je held loopt erheen.', 'Tap a place in the list: your hero is there at once. Tap the map: your hero walks there.')} size="md" sheet>
         <WorldMap track={track} landmarks={landmarks} onPlace={toPlace} onWalk={toPoint} label={t('Wereldkaart van het dorp, noorden boven. Tik op een gebouw of een plek om erheen te lopen.', 'World map of the village, north up. Tap a building or a spot to walk there.')} />
         <p className="mb-2 mt-2 text-[13px] text-ink-600">{t('Tik op de kaart, of kies hieronder een plek.', 'Tap the map, or pick a place below.')}</p>
         <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line" data-testid="places">
           {places.map((pl) => (
-            <li key={pl.key} className="flex items-stretch">
-              <button type="button" className="flex min-h-[56px] min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left hover:bg-[#F3F7F1]" onClick={() => toPlace(pl.key)}>
+            <li key={pl.key}>
+              <button type="button" data-testid={`jump-${pl.key}`} className="flex min-h-[56px] w-full items-center gap-3 px-3 py-2 text-left hover:bg-[#F3F7F1]" onClick={() => jumpTo(pl.key)} aria-label={t(`Reis naar ${pl.label}`, `Travel to ${pl.label}`)}>
                 <span aria-hidden className={`grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-[18px] font-black ${pl.alert ? 'bg-[#fbf0d9] text-[#b07a00]' : 'bg-[#E7EFE3] text-ink-600'}`}>{pl.alert ? '!' : <MapIcon className="h-4 w-4" />}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[15px] font-semibold text-ink-900">{pl.label}{pl.alert && <span className="sr-only">{t(' (hier wacht iets)', ' (something waits here)')}</span>}</span>
                   {pl.hint && <span className="block text-[13px] text-ink-600">{pl.hint}</span>}
                 </span>
                 <ChevronRight className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
-              </button>
-              <button type="button" data-testid={`jump-${pl.key}`} onClick={() => jumpTo(pl.key)} aria-label={t(`Reis direct naar ${pl.label}`, `Travel straight to ${pl.label}`)}
-                className="flex w-[64px] shrink-0 flex-col items-center justify-center gap-0.5 border-l border-line text-[11.5px] font-semibold text-accent hover:bg-[#F3F7F1]">
-                <Sparkles className="h-4 w-4" aria-hidden />{t('Direct', 'Travel')}
               </button>
             </li>
           ))}
