@@ -13,6 +13,9 @@ import { GEAR_SLOT, SKILLS, bodyShape, levelTier } from '@shared/hero';
 import { villageBuildings } from '@shared/worldMap';
 import { ItemIcon } from '@/components/patient/ItemIcon';
 import { BossBoard } from '@/components/patient/BossBoard';
+import { BackpackCard } from '@/components/patient/Backpack';
+import { LightCard } from '@/components/patient/LightSide';
+import { clearFromGame, markFromGame } from '@/components/patient/BackToGame';
 import { BOSSBOARD_KEY, BOXING_KEY, CAMP_KEY, DUNGEON_KEY, EXIT_KEY, HOME_KEY, PRACTICE_KEY, TV_KEY, WELL_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
 import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@shared/homeDecor';
 import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
@@ -615,6 +618,7 @@ export function VillageWalkPage() {
   // The campfire, the chest at home, and where the hero is (the village or a room).
   const [campOpen, setCampOpen] = useState(false);
   const [bossOpen, setBossOpen] = useState(false);
+  const [packOpen, setPackOpen] = useState(false);
   const [chestOpen, setChestOpen] = useState(false);
   const [zone, setZone] = useState('village');
   const [cooking, setCooking] = useState<string | null>(null);
@@ -674,6 +678,7 @@ export function VillageWalkPage() {
   };
   // The server keeps where the hero stands in the village: a next visit starts there. Saved now and
   // then while walking, and when the app is put away or the page is left.
+  useEffect(() => clearFromGame(), []);
   const savedAt = useRef<{ x: number; z: number } | null>(null);
   const zoneNow = useRef('village');
   useEffect(() => {
@@ -925,7 +930,12 @@ export function VillageWalkPage() {
   const pct = L ? Math.max(0, Math.min(100, Math.round(((L.xp - L.from) / Math.max(1, L.to - L.from)) * 100))) : 0;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" onClickCapture={(e) => {
+      // A link from the game to a page of the app: that page then offers the way back to the game.
+      const a = (e.target as HTMLElement).closest?.('a[href]');
+      const href = a?.getAttribute('href') ?? '';
+      if (href.startsWith('/p') && !href.startsWith('/p/dorp')) markFromGame();
+    }}>
       <h1 className="sr-only">{t('Je dorp', 'Your village')}</h1>
       <p className="mb-1 text-[13px] text-ink-600">{t('Tip: draai je telefoon om liggend te spelen.', 'Tip: turn your phone to play sideways.')}</p>
       <Button size="md" variant="secondary" className="mb-2 w-full" data-testid="play-full" icon={<Maximize2 className="h-4 w-4" />} onClick={() => setFull(true)}>{t('Speel in volledig scherm', 'Play full screen')}</Button>
@@ -1224,7 +1234,7 @@ export function VillageWalkPage() {
         </button>
         <nav aria-label={t('Snelbalk', 'Action bar')} className="absolute bottom-2 left-2 flex gap-1.5">
           <button type="button" className={SLOT} aria-label={t('Naar de tv met je oefeningen', 'To the TV with your exercises')} onClick={() => (near === TV_KEY ? setTvOpen(true) : world.current?.goTo(TV_KEY))} data-testid="slot-tv"><Tv className="h-5 w-5" aria-hidden /></button>
-          <Link to="/p/held/inventaris" className={SLOT} aria-label={t('Rugzak: je uitrusting', 'Backpack: your gear')}><Backpack className="h-5 w-5" aria-hidden /></Link>
+          <button type="button" data-testid="slot-backpack" className={SLOT} aria-label={t('Rugzak: je spullen, wapens en buit', 'Backpack: your things, weapons and loot')} onClick={() => setPackOpen(true)}><Backpack className="h-5 w-5" aria-hidden /></button>
           <Link to="/p/held" className={SLOT} aria-label={t('Skills en je held', 'Skills and your hero')}><Swords className="h-5 w-5" aria-hidden /></Link>
           <button type="button" data-testid="slot-places" className={SLOT} aria-label={t('Plekken: kies waar je heen wilt', 'Places: pick where to go')} onClick={() => setPlacesOpen(true)}><MapIcon className="h-5 w-5" aria-hidden /></button>
           <button type="button" data-testid="slot-joystick" aria-pressed={joystick} className={`${SLOT} aria-pressed:border-[#ffd76a] aria-pressed:bg-[linear-gradient(180deg,#5a4a1c,#2a2410)]`} aria-label={t('Joystick aan of uit', 'Joystick on or off')} onClick={toggleJoystick}><Gamepad2 className="h-5 w-5" aria-hidden /></button>
@@ -1332,6 +1342,14 @@ export function VillageWalkPage() {
         )}
       </Dialog>
       <KarateSheet open={dojoOpen} onClose={() => setDojoOpen(false)} />
+      <Dialog open={packOpen} onClose={() => setPackOpen(false)} size="md" sheet title={t('Rugzak', 'Backpack')}
+        description={t('Je spullen, wapens, harnas, buit en de lichtkant, hier in het spel.', 'Your things, weapons, armour, loot and the light side, right here in the game.')}>
+        <div className="space-y-4" data-testid="game-backpack">
+          {d?.hero && <BackpackCard d={d} />}
+          <LightCard />
+          <Link to="/p/held/inventaris" className="inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">{t('Alles van je held, met trofeeën en uitrusting', 'Everything of your hero, with trophies and gear')}<ChevronRight className="h-4 w-4" aria-hidden /></Link>
+        </div>
+      </Dialog>
       <Dialog open={bossOpen} onClose={() => setBossOpen(false)} size="md" sheet title={t('Bazenbord', 'Boss board')}
         description={t('Alle bazen van de stad en de landen eromheen. Verslagen bazen krijgen een stempel.', 'Every boss of the town and the lands round it. Bosses beaten get a stamp.')}>
         <BossBoard level={adventure.data?.level ?? 1} slain={adventure.data?.slain ?? []} weekly={adventure.data?.bossOfWeek ?? null}

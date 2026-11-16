@@ -16,6 +16,7 @@ import { usePracticeAccent } from '@/lib/accent';
 import { useTextSize } from '@/lib/textSize';
 import { useSession } from '@/lib/session';
 import { QuickLogButton } from '@/components/patient/QuickLog';
+import { BackToGame } from '@/components/patient/BackToGame';
 import { PhaseCelebration } from '@/components/patient/PhaseCelebration';
 import { UpdateNotice } from '@/components/app/WhatsNew';
 import { cn } from '@/lib/cn';
@@ -191,6 +192,7 @@ export function PatientLayout() {
       {!inPlayer && !inSetup && <PhaseCelebration />}
       <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : 'px-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-5')}>
         {!inPlayer && <UpdateNotice audience="patient" clinical={isClinical(user?.patient?.kind)} />}
+        {!inPlayer && <BackToGame />}
         <Outlet />
       </main>
       {!inPlayer && !inSetup && (
