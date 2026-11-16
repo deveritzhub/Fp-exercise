@@ -65,6 +65,7 @@ export const TOWN_HOUSES: TownHouse[] = [
   { key: 'weaponshop', nl: 'Wapenwinkel', en: 'Weapon shop', at: { x: -22, z: 3.8 }, to: '/p/held/inventaris#backpack-title', roof: 0x8a3a2a },
   { key: 'armourer', nl: 'Pantsermaker', en: 'Armourer', at: { x: -15.5, z: 4.6 }, to: '/p/held/inventaris#gear-title', roof: 0x5c6a7a },
   { key: 'tailor', nl: 'Kleermaker', en: 'Tailor', at: { x: -14.5, z: 10.5 }, to: '/p/held/uiterlijk', roof: 0x9a4a6a },
+  { key: 'toolshop', nl: 'Gereedschapswinkel', en: 'Tool shop', at: { x: -18.4, z: 8.8 }, to: '/p/held/inventaris#tools-title', roof: 0x6a7a3a },
   { key: 'workshop', nl: 'Werkplaats', en: 'Workshop', at: { x: -23.5, z: 9 }, to: '/p/held/inventaris#craft-title', roof: 0x3d5a8a },
   { key: 'carpenter', nl: 'Timmerwerkplaats', en: 'Carpenter', at: { x: -19.5, z: 14.5 }, to: '/p/held/inventaris#craft-title', roof: 0xa0522d },
   // Wellbeing, north-east.
@@ -159,4 +160,15 @@ export const WILD: { kind: string; x: number; z: number; zone?: 'dungeon' }[] = 
   { kind: 'apathy', x: 2.6, z: -5, zone: 'dungeon' },
   { kind: 'guilt', x: -2.6, z: -10, zone: 'dungeon' },
   { kind: 'shame_lord', x: 0, z: -16.4, zone: 'dungeon' },
+  // Pebbles and twigs to pick up by hand, by the woods, the quarry and the paths.
+  { kind: 'pebble', x: -24, z: -5.4 },
+  { kind: 'pebble', x: -23.2, z: 1.9 },
+  { kind: 'pebble', x: -3.2, z: -35.6 },
+  { kind: 'pebble', x: 3.2, z: -40.4 },
+  { kind: 'pebble', x: 10, z: 13.8 },
+  { kind: 'twigs', x: -24.2, z: 11.8 },
+  { kind: 'twigs', x: -34.8, z: 3.6 },
+  { kind: 'twigs', x: -38.6, z: -3.6 },
+  { kind: 'twigs', x: -22.6, z: 17.4 },
+  { kind: 'twigs', x: 9, z: 27 },
 ];

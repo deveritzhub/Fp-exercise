@@ -21,6 +21,9 @@ export const CREATURES = {
   rock: { nl: 'Rots', en: 'Rock', hp: 7, xp: 4, weakTo: 'trained', level: 1 },
   // A berry bush: picked by hand, for those who would rather not hunt.
   bush: { nl: 'Bessenstruik', en: 'Berry bush', hp: 2, xp: 3, weakTo: 'moving', level: 1 },
+  // Small things picked up by hand, no tool needed: a little at a time.
+  pebble: { nl: 'Steentjes', en: 'Pebbles', hp: 1, xp: 1, weakTo: 'moving', level: 1 },
+  twigs: { nl: 'Takken', en: 'Twigs', hp: 1, xp: 1, weakTo: 'moving', level: 1 },
   // Outside the town wall, each in its own hunting ground: they show themselves from their level on.
   wolf: { nl: 'Wolf', en: 'Wolf', hp: 26, xp: 70, weakTo: 'trained', level: 6 },
   bear: { nl: 'Beer', en: 'Bear', hp: 50, xp: 140, weakTo: 'trained', level: 10 },
@@ -60,6 +63,8 @@ export const ATTACKS: Record<CreatureKind, { damage: number; everyMs: number; ag
   oak: { damage: 0, everyMs: 1500, aggressive: false },
   rock: { damage: 0, everyMs: 1500, aggressive: false },
   bush: { damage: 0, everyMs: 1500, aggressive: false },
+  pebble: { damage: 0, everyMs: 1500, aggressive: false },
+  twigs: { damage: 0, everyMs: 1500, aggressive: false },
   wolf: { damage: 5, everyMs: 1400, aggressive: true },
   bear: { damage: 9, everyMs: 1700, aggressive: true },
   alpha_wolf: { damage: 12, everyMs: 1500, aggressive: true },
@@ -74,7 +79,9 @@ export const ATTACKS: Record<CreatureKind, { damage: number; everyMs: number; ag
   shame_lord: { damage: 22, everyMs: 1800, aggressive: true },
 };
 /** Trees and rocks: you chop them for wood and stone; they never fight back. */
-export const isHarvest = (kind: CreatureKind) => kind === 'oak' || kind === 'rock' || kind === 'bush';
+export const isHarvest = (kind: CreatureKind) => kind === 'oak' || kind === 'rock' || kind === 'bush' || kind === 'pebble' || kind === 'twigs';
+/** Picked up by hand (no blow): pebbles and twigs. */
+export const isPickup = (kind: CreatureKind) => kind === 'pebble' || kind === 'twigs';
 /** Friendly: never hits the hero (prey, trees and rocks). */
 export const isFriendly = (kind: CreatureKind) => ATTACKS[kind].damage === 0;
 /** An Alpha: a big, dangerous one with its own warning; worth fighting with a good weapon. */
@@ -206,7 +213,9 @@ export const DROPS: Record<CreatureKind, { item: LootKey; chance: number; max: n
   boar: [{ item: 'bone', chance: 1, max: 2 }, { item: 'meat', chance: 0.8, max: 2 }, { item: 'tusk', chance: 0.4, max: 1 }],
   alpha_boar: [{ item: 'alpha_tusk', chance: 1, max: 1 }, { item: 'tusk', chance: 1, max: 2 }, { item: 'meat', chance: 1, max: 3 }],
   oak: [{ item: 'wood', chance: 1, max: 3 }],
-  rock: [{ item: 'stone', chance: 1, max: 2 }],
+  rock: [{ item: 'stone', chance: 1, max: 3 }],
+  pebble: [{ item: 'stone', chance: 1, max: 1 }],
+  twigs: [{ item: 'wood', chance: 1, max: 1 }],
   bush: [{ item: 'berries', chance: 1, max: 3 }],
   wolf: [{ item: 'wolf_pelt', chance: 1, max: 1 }, { item: 'bone', chance: 1, max: 2 }, { item: 'fang', chance: 0.4, max: 1 }],
   bear: [{ item: 'bear_pelt', chance: 1, max: 1 }, { item: 'meat', chance: 1, max: 3 }, { item: 'claw', chance: 0.5, max: 2 }],
@@ -233,9 +242,9 @@ export function rollDrops(kind: CreatureKind, rnd: () => number): { item: LootKe
 }
 
 /**
- * Tools from the smith, bought with coins. The hatchet is what a tree asks for: without it an oak
- * cannot be chopped. The pickaxe is for rocks: by hand a rock breaks too, slowly. With the right tool
- * every blow counts three times and the yield is doubled.
+ * Tools from the tool shop, bought with coins. A big oak asks for a hatchet and a big rock for a
+ * pickaxe: without one they cannot be worked at all. With it every blow counts three times and the
+ * yield is doubled. Twigs and pebbles are picked up by hand, one at a time.
  */
 export const TOOLS = [
   { key: 'hatchet', for: 'oak', price: 25, nl: 'Hakbijl', en: 'Hatchet', icon: '🪓' },
@@ -246,7 +255,7 @@ export const toolItem = (key: string) => `tool_${key}`;
 export const toolFor = (kind: CreatureKind): Tool | null => TOOLS.find((t) => t.for === kind) ?? null;
 export const TOOL_BONUS = { blows: 3, yield: 2 } as const;
 /** What a creature asks for before it can be beaten at all. */
-export const NEEDS_TOOL: Partial<Record<CreatureKind, string>> = { oak: 'hatchet' };
+export const NEEDS_TOOL: Partial<Record<CreatureKind, string>> = { oak: 'hatchet', rock: 'pickaxe' };
 
 /**
  * Plant-based: loot that comes from animals can always be paid with berries instead. How many berries
@@ -289,8 +298,8 @@ export const dishByKey = (key: string): Dish | null => COOKING.find((d) => d.key
  * Done, it gives a bonus of adventure XP once.
  */
 export const DAILY_QUESTS = [
-  { key: 'oak', kind: 'oak', n: 3, nl: 'Hak 3 eiken', en: 'Chop 3 oaks' },
-  { key: 'rock', kind: 'rock', n: 2, nl: 'Breek 2 rotsen', en: 'Break 2 rocks' },
+  { key: 'twigs', kind: 'twigs', n: 4, nl: 'Raap 4 bosjes takken', en: 'Pick up 4 bundles of twigs' },
+  { key: 'pebble', kind: 'pebble', n: 4, nl: 'Raap 4 hoopjes steentjes', en: 'Pick up 4 heaps of pebbles' },
   { key: 'bush', kind: 'bush', n: 3, nl: 'Pluk 3 bessenstruiken', en: 'Pick 3 berry bushes' },
   { key: 'slime', kind: 'slime', n: 3, nl: 'Versla 3 stijfheidsslijmen', en: 'Beat 3 stiffness slimes' },
   { key: 'imp', kind: 'imp', n: 2, nl: 'Versla 2 dorstduiveltjes', en: 'Beat 2 thirst imps' },

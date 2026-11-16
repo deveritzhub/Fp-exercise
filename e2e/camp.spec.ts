@@ -49,7 +49,7 @@ test('the patient cooks at the campfire, eats, sees the task of the day and open
 
   // Home: the loot chest stands in the room and opens.
   await page.getByTestId('slot-places').click();
-  await page.getByTestId('places').getByRole('button', { name: /Jouw huis/ }).click();
+  await page.getByTestId('places').getByRole('button', { name: /^Jouw huis/ }).click();
   await page.getByTestId('enter-home').click({ timeout: 90_000 });
   await expect(village).toHaveAttribute('data-zone', 'home', { timeout: 30_000 });
   await page.getByTestId('open-lootchest').click({ timeout: 30_000 });

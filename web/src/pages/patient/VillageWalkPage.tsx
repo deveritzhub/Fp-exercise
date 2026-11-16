@@ -128,6 +128,7 @@ const SIGN: Record<string, [string, string]> = {
   weaponshop: ['⚔️', '#8a3a2a'],
   armourer: ['🛡️', '#5c6a7a'],
   tailor: ['🧵', '#9a4a6a'],
+  toolshop: ['🛠️', '#6a7a3a'],
   workshop: ['⚙️', '#3d5a8a'],
   carpenter: ['🔨', '#a0522d'],
   rehab: ['➕', '#3d6a8a'],
@@ -147,6 +148,7 @@ const PLACE_HINT: Record<string, [string, string]> = {
   weaponshop: ['Wapens en gereedschap kopen', 'Buy weapons and tools'],
   armourer: ['Je uitrusting', 'Your gear'],
   tailor: ['Je uiterlijk aanpassen', 'Change your look'],
+  toolshop: ['Hakbijl en pikhouweel kopen', 'Buy a hatchet and a pickaxe'],
   workshop: ['Maken van je buit', 'Make things from your loot'],
   carpenter: ['Een kist of wapen maken', 'Make a chest or a weapon'],
   rehab: ['Je revalidatie', 'Your rehabilitation'],
@@ -375,7 +377,7 @@ export function VillageWalkPage() {
 
   const d = heroQ.data;
   // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
-  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string | null;
+  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string | null; pos?: { x: number; z: number } | null;
     quest?: { key: string; kind: CreatureKind; n: number; nl: string; en: string; progress: number; done: boolean; xp: number } | null };
   const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
   // The weapon in hand is the one bought and put on in the backpack; none means bare fists.
@@ -670,6 +672,37 @@ export function VillageWalkPage() {
       say(e);
     }
   };
+  // The server keeps where the hero stands in the village: a next visit starts there. Saved now and
+  // then while walking, and when the app is put away or the page is left.
+  const savedAt = useRef<{ x: number; z: number } | null>(null);
+  const zoneNow = useRef('village');
+  useEffect(() => {
+    if (!d?.hero) return;
+    const save = (leaving: boolean) => {
+      // Not before the village stands (the tracked point is still the origin then), and only outside.
+      if (!world.current || zoneNow.current !== 'village') return;
+      const { x, z } = track.current;
+      if (!Number.isFinite(x) || !Number.isFinite(z)) return;
+      const last = savedAt.current;
+      if (last && Math.hypot(last.x - x, last.z - z) < 0.8) return;
+      savedAt.current = { x, z };
+      const body = JSON.stringify({ x: Math.round(x * 100) / 100, z: Math.round(z * 100) / 100 });
+      if (leaving) {
+        void fetch('/api/patient/hero/adventure/position', { method: 'PUT', headers: { 'content-type': 'application/json', 'x-requested-with': 'fp' }, body, credentials: 'same-origin', keepalive: true }).catch(() => undefined);
+      } else void api.put('/patient/hero/adventure/position', JSON.parse(body)).catch(() => undefined);
+    };
+    const id = window.setInterval(() => save(false), 8000);
+    const hide = () => { if (document.visibilityState === 'hidden') save(true); };
+    const leave = () => save(true);
+    document.addEventListener('visibilitychange', hide);
+    window.addEventListener('pagehide', leave);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', hide);
+      window.removeEventListener('pagehide', leave);
+      save(true);
+    };
+  }, [d?.hero]);
   // Walking into a hunting ground: its name and level once, with a word of warning when it is too soon.
   const lastZone = useRef<string | null>(null);
   useEffect(() => {
@@ -765,11 +798,8 @@ export function VillageWalkPage() {
   const hasTool = !!mobTool && (adventure.data?.tools ?? []).includes(mobTool.key);
   const strike = async () => {
     if (!mob || downBy) return;
-    // An oak asks for a hatchet.
-    if (mob.kind === 'oak' && !adventure.data?.tools?.includes('hatchet')) {
-      toast(t('Hier heb je een hakbijl voor nodig. Koop er een bij de wapensmid.', 'You need a hatchet for this. Buy one at the armourer.'));
-      return;
-    }
+    // A big oak asks for a hatchet, a big rock for a pickaxe (from the tool shop).
+    if (NEEDS_TOOL[mob.kind] && !hasTool) return;
     world.current?.strike(mob.key);
     if (!provoked.includes(mob.key)) setProvoked((p) => [...p, mob.key]);
     const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, isHarvest(mob.kind) ? 0 : weapon.power) * (supply.fed ? SUPPLY.fedPower : 1) * (hasTool ? TOOL_BONUS.blows : 1) * (light.has('courage') && !isHarvest(mob.kind) && !(hurt[mob.key] ?? 0) ? 2 : 1);
@@ -888,6 +918,7 @@ export function VillageWalkPage() {
             className={full ? 'h-full !rounded-none !border-0' : 'h-[calc(100dvh-13.5rem)] min-h-[440px]'}
             buildings={buildings}
             plan
+            startAt={adventure.data?.pos ?? null}
             shrines={LIGHT.filter((l) => light.has(l.key) && l.key !== 'enlightenment').map((l) => ({ key: l.key, label: nl ? l.nl : l.en, color: l.color, x: l.x, z: l.z }))}
             glow={light.has('enlightenment')}
             tvLabel={t('Oefenzaal · tv', 'Gym · TV')}
@@ -918,7 +949,7 @@ export function VillageWalkPage() {
             track={track}
             stick={stick}
             onNear={setNear}
-            onZone={(z) => { setZone(z); if (z === DUNGEON_KEY) toast((adventure.data?.level ?? 1) >= 10 ? t('🕳️ De onderwereld. Hoe dieper, hoe zwaarder. Achterin wacht de Schaamtevorst.', '🕳️ The underworld. The deeper, the heavier. The Shame lord waits at the far end.') : t('🕳️ De onderwereld is voor avonturier 10 en hoger. Nu is het hier nog stil.', '🕳️ The underworld is for adventurer 10 and up. For now it is quiet down here.')); if (z === 'village') leftBy.current = true; }}
+            onZone={(z) => { setZone(z); zoneNow.current = z; if (z === DUNGEON_KEY) toast((adventure.data?.level ?? 1) >= 10 ? t('🕳️ De onderwereld. Hoe dieper, hoe zwaarder. Achterin wacht de Schaamtevorst.', '🕳️ The underworld. The deeper, the heavier. The Shame lord waits at the far end.') : t('🕳️ De onderwereld is voor avonturier 10 en hoger. Nu is het hier nog stil.', '🕳️ The underworld is for adventurer 10 and up. For now it is quiet down here.')); if (z === 'village') leftBy.current = true; }}
             onTalk={setTalk}
             onDestination={(k) => { setDest(k); if (!k) return; hideTip(); }}
             onArrive={(k) => { if (k === TV_KEY) setTvOpen(true); }}
@@ -1030,12 +1061,12 @@ export function VillageWalkPage() {
               </p>
             )}
             {NEEDS_TOOL[mob.kind] && !hasTool ? (
-              <Link to="/p/held/inventaris#backpack-title" data-testid="tool-needed" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15px] font-semibold text-white shadow-lift">
-                {t(`Hier heb je een ${mobTool?.nl.toLowerCase() ?? 'gereedschap'} voor nodig. Koop hem in je rugzak (${mobTool?.price ?? ''} muntjes).`, `You need a ${mobTool?.en.toLowerCase() ?? 'tool'} for this. Buy it in your backpack (${mobTool?.price ?? ''} coins).`)}
+              <Link to="/p/held/inventaris#tools-title" data-testid="tool-needed" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15px] font-semibold text-white shadow-lift">
+                {t(`Hier heb je een ${mobTool?.nl.toLowerCase() ?? 'gereedschap'} voor nodig. Koop hem in de gereedschapswinkel (${mobTool?.price ?? ''} muntjes).`, `You need a ${mobTool?.en.toLowerCase() ?? 'tool'} for this. Buy it at the tool shop (${mobTool?.price ?? ''} coins).`)}
               </Link>
             ) : (
             <Button size="lg" data-testid="strike" className="pointer-events-auto border border-[#ffb3a1] shadow-lift" icon={<Swords className="h-5 w-5" />} onClick={() => void strike()}>
-              {mob.kind === 'bush' ? t('Pluk bessen', 'Pick berries') : isHarvest(mob.kind) ? t(`Hak de ${mob.label.toLowerCase()}${hasTool && mobTool ? ` met je ${mobTool.nl.toLowerCase()}` : ''}`, `Chop the ${mob.label.toLowerCase()}${hasTool && mobTool ? ` with your ${mobTool.en.toLowerCase()}` : ''}`) : t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : light.has('neutrality') && !isHarvest(mob.kind) ? t(` · zwak tegen ${WEAK_NL[CREATURES[mob.kind].weakTo] ?? ''}`, ` · weak to ${WEAK_EN[CREATURES[mob.kind].weakTo] ?? ''}`) : ''}
+              {mob.kind === 'bush' ? t('Pluk bessen', 'Pick berries') : mob.kind === 'pebble' ? t('Raap de steentjes op', 'Pick up the pebbles') : mob.kind === 'twigs' ? t('Raap de takken op', 'Pick up the twigs') : isHarvest(mob.kind) ? t(`Hak de ${mob.label.toLowerCase()}${hasTool && mobTool ? ` met je ${mobTool.nl.toLowerCase()}` : ''}`, `Chop the ${mob.label.toLowerCase()}${hasTool && mobTool ? ` with your ${mobTool.en.toLowerCase()}` : ''}`) : t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : light.has('neutrality') && !isHarvest(mob.kind) ? t(` · zwak tegen ${WEAK_NL[CREATURES[mob.kind].weakTo] ?? ''}`, ` · weak to ${WEAK_EN[CREATURES[mob.kind].weakTo] ?? ''}`) : ''}
             </Button>
             )}
             </span>

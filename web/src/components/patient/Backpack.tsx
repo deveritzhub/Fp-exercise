@@ -133,7 +133,8 @@ export function BackpackCard({ d }: { d: HeroState }) {
       </ul>
       {!ARMOURS.some((ar) => a?.built?.includes(ar.key)) && <p className="mt-2 text-[13px] text-ink-600" data-testid="no-armour">{t('Nog geen harnas. Het eerste, een leren harnas, maak je van 3 koeienhuiden.', 'No armour yet. The first, leather armour, takes 3 cowhides.')}</p>}
 
-      <h3 className="mt-5 flex items-center gap-1.5 text-[15px] font-semibold text-ink-950"><Axe className="h-4 w-4" aria-hidden />{t('Gereedschap', 'Tools')}</h3>
+      <h3 id="tools-title" className="mt-5 flex scroll-mt-20 items-center gap-1.5 text-[15px] font-semibold text-ink-950"><Axe className="h-4 w-4" aria-hidden />{t('Gereedschapswinkel', 'Tool shop')}</h3>
+      <p className="mt-1 text-[13.5px] text-ink-700">{t('Grote eiken hak je alleen met een hakbijl, grote rotsen breek je alleen met een pikhouweel; die geven veel meer. Takken en steentjes raap je met de hand op.', 'Big oaks are chopped only with a hatchet, big rocks broken only with a pickaxe; they give much more. Twigs and pebbles are picked up by hand.')}</p>
       <ul className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="tools">
         {TOOLS.map((tool) => {
           const name = nl ? tool.nl : tool.en;

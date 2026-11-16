@@ -752,7 +752,7 @@ heroPatient.get('/hero/coach', async (c) => {
   return c.json({ look: readStaffLook(row?.look) });
 });
 
-const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number; weapon?: string | null; owned?: string[]; coins?: number; loot?: Record<string, number>; tools?: string[]; built?: string[]; strength?: number; quest?: { key: string; kind: string; n: number; nl: string; en: string; progress: number; done: boolean; xp: number }; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string } | undefined) => {
+const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number; weapon?: string | null; owned?: string[]; coins?: number; loot?: Record<string, number>; tools?: string[]; built?: string[]; strength?: number; quest?: { key: string; kind: string; n: number; nl: string; en: string; progress: number; done: boolean; xp: number }; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string; pos_x?: number | null; pos_z?: number | null } | undefined) => {
   const xp = Number(r?.xp ?? 0);
   const owned = r?.owned ?? [];
   // Only a weapon that was bought can be worn.
@@ -760,7 +760,7 @@ const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds
   const chest = (r?.built ?? []).includes('chest');
   // Only armour that was made can be worn.
   const armour = r?.armour && (r?.built ?? []).includes(r.armour) ? r.armour : null;
-  return { slain: r?.slain ?? [], bossOfWeek: r?.bossOfWeek ?? null, light: r?.light ?? [], armour, quest: r?.quest ?? null, weapon, owned, coins: r?.coins ?? 0, loot: r?.loot ?? {}, tools: r?.tools ?? [], built: r?.built ?? [], strength: r?.strength ?? 1, lootCap: chest ? LOOT_CAP.chest : LOOT_CAP.backpack, xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...adventureLevel(xp) };
+  return { pos: r?.pos_x != null && r?.pos_z != null ? { x: Number(r.pos_x), z: Number(r.pos_z) } : null, slain: r?.slain ?? [], bossOfWeek: r?.bossOfWeek ?? null, light: r?.light ?? [], armour, quest: r?.quest ?? null, weapon, owned, coins: r?.coins ?? 0, loot: r?.loot ?? {}, tools: r?.tools ?? [], built: r?.built ?? [], strength: r?.strength ?? 1, lootCap: chest ? LOOT_CAP.chest : LOOT_CAP.backpack, xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...adventureLevel(xp) };
 };
 /** Today's adventure task for this patient, and how far it got. */
 const questView = (today: string, patientId: string, row: { quest_day?: string | null; quest_n?: number; quest_done?: boolean } | undefined) => {
@@ -770,7 +770,7 @@ const questView = (today: string, patientId: string, row: { quest_day?: string |
 };
 const adventureRow = async (tx: Tx, patientId: string) => {
   const today = (await tx.query('SELECT CURRENT_DATE::text AS d')).rows[0].d as string;
-  const row = (await tx.query('SELECT xp, wins, weapon, armour, quest_day::text AS quest_day, quest_n, quest_done, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today, CASE WHEN day = CURRENT_DATE THEN rounds_today ELSE 0 END AS rounds_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
+  const row = (await tx.query('SELECT xp, wins, weapon, armour, pos_x, pos_z, quest_day::text AS quest_day, quest_n, quest_done, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today, CASE WHEN day = CURRENT_DATE THEN rounds_today ELSE 0 END AS rounds_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
   const bought = (await tx.query("SELECT item FROM hero_purchases WHERE patient_id = $1 AND (item LIKE 'wpn\\_%' OR item LIKE 'tool\\_%' OR item LIKE 'built\\_%' OR item LIKE 'light\\_%' OR item LIKE 'slain\\_%')", [patientId])).rows.map((r) => r.item as string);
   const owned = bought.filter((x) => x.startsWith('wpn_')).map((x) => x.slice(4));
   const tools = bought.filter((x) => x.startsWith('tool_')).map((x) => x.slice(5));
@@ -1069,6 +1069,17 @@ heroPatient.post('/hero/adventure/eat', async (c) => {
       return { heals: dish.heals, ...adventureView(await adventureRow(tx, patient.id)) };
     }),
   );
+});
+
+/** Where the hero stands in the village now: the next visit starts there. */
+heroPatient.put('/hero/adventure/position', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ x: z.number().finite().min(-60).max(60), z: z.number().finite().min(-60).max(60) }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) throw badRequest('invalid_input');
+  await withUser(user.id, (tx) =>
+    tx.query('INSERT INTO hero_adventure(patient_id, pos_x, pos_z) VALUES ($1, $2, $3) ON CONFLICT (patient_id) DO UPDATE SET pos_x = EXCLUDED.pos_x, pos_z = EXCLUDED.pos_z', [patient.id, body.data.x, body.data.z]),
+  );
+  return c.json({ ok: true });
 });
 
 /** Put made armour on, or take it off (null: none). */
