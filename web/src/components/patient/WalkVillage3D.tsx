@@ -56,6 +56,9 @@ const CAMP_AT: Vec = { x: Math.cos((50 * Math.PI) / 180) * 4.6, z: Math.sin((50 
 const BOXING_AT: Vec = { x: -3.1, z: 5.4 };
 /** The dungeon of the underworld: a long hall under the Shadow valley, its door a cave mouth there. */
 export const DUNGEON_KEY = 'dungeon';
+/** The boss board on the square: the adventure guide with the big ones. */
+export const BOSSBOARD_KEY = 'bossboard';
+const BOSSBOARD_AT: Vec = { x: -4.1, z: -3.9 };
 const DUNGEON_AT: Vec = { x: 420, z: 420 };
 const DUNGEON_HALF = { w: 6, l: 20 };
 type Props = {
@@ -1654,6 +1657,45 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           D.add(step);
         }
       }
+      // The boss board: two posts, a roof, a dark board with notices pinned on it, facing the well.
+      if (creatures?.length) {
+        const bb = new THREE.Group();
+        for (const sd of [-1, 1]) {
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, 2.6, 0.16), darkWood);
+          post.position.set(sd * 1.05, 1.3, 0);
+          bb.add(post);
+        }
+        const board = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.3, 0.1), mat(0x3a2a1c));
+        board.position.set(0, 1.55, 0);
+        bb.add(board);
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.12, 0.6), mat(0x7a2f24));
+        roof.position.set(0, 2.62, 0.05);
+        roof.rotation.x = -0.15;
+        bb.add(roof);
+        const papers = [0xf2e6cf, 0xe8d8b0, 0xf6efe0, 0xeadcc0, 0xf2e6cf, 0xd9c79e];
+        papers.forEach((c, i) => {
+          const sheet = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.42, 0.02), mat(c));
+          sheet.position.set(-0.68 + (i % 3) * 0.68, 1.85 - Math.floor(i / 3) * 0.55, 0.07);
+          sheet.rotation.z = (i % 2 ? 1 : -1) * 0.05;
+          bb.add(sheet);
+          const pin = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 4), mat(i === 3 ? 0xd4a62a : 0xb8332c));
+          pin.position.set(sheet.position.x, sheet.position.y + 0.17, 0.09);
+          bb.add(pin);
+        });
+        // A red seal on the boss of the week.
+        const seal = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.02, 12), new THREE.MeshStandardMaterial({ color: 0xc8321e, emissive: 0x6a0a00, emissiveIntensity: 0.6 }));
+        seal.rotation.x = Math.PI / 2;
+        seal.position.set(0.15, 1.27, 0.09);
+        bb.add(seal);
+        bb.position.set(BOSSBOARD_AT.x, 0, BOSSBOARD_AT.z);
+        bb.lookAt(0, 0, 0);
+        bb.traverse((o) => { o.castShadow = true; });
+        scene.add(bb);
+        obstacles.push({ x: BOSSBOARD_AT.x - 0.6, z: BOSSBOARD_AT.z, r: 0.4 }, { x: BOSSBOARD_AT.x + 0.6, z: BOSSBOARD_AT.z, r: 0.4 });
+        const len = Math.hypot(BOSSBOARD_AT.x, BOSSBOARD_AT.z);
+        spots.push({ key: BOSSBOARD_KEY, door: { x: BOSSBOARD_AT.x * (1 - 1.3 / len), z: BOSSBOARD_AT.z * (1 - 1.3 / len) } });
+        anchors.push({ id: BOSSBOARD_KEY, obj: bb, y: 3.2 });
+      }
       // The shrines of the light side: a white stone pillar with a glowing orb in the helper's colour.
       for (const sh of shrines ?? []) {
         const col = new THREE.Color(sh.color);
@@ -2345,6 +2387,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       else if (k === BOXING_KEY && boxing) walkTo.current(spots.find((sp) => sp.key === BOXING_KEY)!.door, BOXING_KEY);
       else if (k === CAMP_KEY && boxing) walkTo.current(spots.find((sp) => sp.key === CAMP_KEY)!.door, CAMP_KEY);
       else if (zoneDoors.has(k)) walkTo.current(zoneDoors.get(k)!, k);
+      else if (k === BOSSBOARD_KEY) { const sp = spots.find((x) => x.key === k); if (sp) walkTo.current(sp.door, k); }
       else if (k.startsWith('light:')) { const sp = spots.find((x) => x.key === k); if (sp) walkTo.current(sp.door, k); }
       else if (k === WELL_KEY && well) walkTo.current(WELL_SPOT, WELL_KEY);
       else if (k === TV_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY, TV_KEY);
@@ -3191,6 +3234,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             <button ref={setLabel(BOXING_KEY)} type="button" data-spot={BOXING_KEY} onClick={() => go(BOXING_KEY)} aria-label={t('Loop naar de boksschool', 'Walk to the boxing school')}
               className={cn(plate, 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
               {t('Boksschool', 'Boxing school')}
+            </button>
+          )}
+          {plan && creatures && (
+            <button ref={setLabel(BOSSBOARD_KEY)} type="button" data-spot={BOSSBOARD_KEY} onClick={() => go(BOSSBOARD_KEY)} aria-label={t('Loop naar het bazenbord', 'Walk to the boss board')}
+              className={cn(plate, 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
+              📜 {t('Bazenbord', 'Boss board')}
             </button>
           )}
           {(shrines ?? []).map((sh) => (

@@ -366,3 +366,32 @@ export const lightItem = (key: string) => `light_${key}`;
 export const lightFrom = (kind: CreatureKind): Light | null => LIGHT.find((l) => l.from === kind) ?? null;
 /** The shadow creatures (their blows are softened by Joy and Peace). */
 export const isShadow = (kind: CreatureKind) => LIGHT.some((l) => l.from === kind);
+
+/**
+ * The boss board on the square: the big ones of the town and the lands round it, as in an adventure
+ * guide. Small bosses first, the raid bosses last. One of them is the boss of the week: worth half as
+ * much adventure XP again.
+ */
+export const BOSSES = [
+  { kind: 'giant_slime', tier: 'small', zoneNl: 'Stadspark, bij de vijver', zoneEn: 'Town park, by the pond',
+    tipNl: 'Wie vandaag bewogen heeft, slaat dubbel hard.', tipEn: 'Moved today? You hit twice as hard.' },
+  { kind: 'couch_king', tier: 'small', zoneNl: 'Achter de woonwijk', zoneEn: 'Behind the homes',
+    tipNl: 'Hij valt zelf aan. Train eerst: dan slaat hij minder hard en raak jij dubbel.', tipEn: 'It attacks by itself. Train first: it hits softer and you hit double.' },
+  { kind: 'alpha_boar', tier: 'raid', zoneNl: 'Zwijnenbos, oostrand', zoneEn: 'Boar wood, east edge',
+    tipNl: 'Neem een knots of beter mee, en gebraden vlees om te herstellen.', tipEn: 'Bring a club or better, and roast meat to heal.' },
+  { kind: 'alpha_wolf', tier: 'raid', zoneNl: 'Wolvenwoud, buiten de zuidpoort', zoneEn: 'Wolf wood, outside the south gate',
+    tipNl: 'Hij komt met zijn roedel. Een leren harnas of wolvenmantel scheelt veel.', tipEn: 'It comes with its pack. Leather armour or a wolf cloak helps a lot.' },
+  { kind: 'alpha_bear', tier: 'raid', zoneNl: 'Berenheuvel, buiten de oostpoort', zoneEn: 'Bear hill, outside the east gate',
+    tipNl: 'De zwaarste klappen boven de grond. Berenharnas aan en volle buik.', tipEn: 'The heaviest blows above ground. Bear armour on and a full belly.' },
+  { kind: 'shame_lord', tier: 'raid', zoneNl: 'Onderwereld, achterin de kerker', zoneEn: 'Underworld, at the end of the dungeon',
+    tipNl: 'Alles telt: trainen, water, goed eten, slapen. Liefde en Vreugde van de lichtkant helpen.', tipEn: 'Everything counts: training, water, eating and sleeping well. Love and Joy from the light side help.' },
+] as const satisfies readonly { kind: CreatureKind; tier: 'small' | 'raid'; zoneNl: string; zoneEn: string; tipNl: string; tipEn: string }[];
+export const slainItem = (kind: string) => `slain_${kind}`;
+export const isBoss = (kind: CreatureKind) => BOSSES.some((b) => b.kind === kind);
+/** The boss of the week (the same for everyone, from Monday): its wins give half as much XP again. */
+export function bossOfWeek(day: string): CreatureKind {
+  const d = new Date(`${day}T12:00:00Z`);
+  const monday = Math.floor((d.getTime() / 86_400_000 + 3) / 7);
+  return BOSSES[monday % BOSSES.length].kind;
+}
+export const BOSS_WEEK_BONUS = 1.5;

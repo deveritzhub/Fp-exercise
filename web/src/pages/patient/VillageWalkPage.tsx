@@ -12,7 +12,8 @@ import { MODULE_PATH, moduleOf, openToday, type PatientHomeData } from '@/pages/
 import { GEAR_SLOT, SKILLS, bodyShape, levelTier } from '@shared/hero';
 import { villageBuildings } from '@shared/worldMap';
 import { ItemIcon } from '@/components/patient/ItemIcon';
-import { BOXING_KEY, CAMP_KEY, DUNGEON_KEY, EXIT_KEY, HOME_KEY, PRACTICE_KEY, TV_KEY, WELL_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
+import { BossBoard } from '@/components/patient/BossBoard';
+import { BOSSBOARD_KEY, BOXING_KEY, CAMP_KEY, DUNGEON_KEY, EXIT_KEY, HOME_KEY, PRACTICE_KEY, TV_KEY, WELL_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
 import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@shared/homeDecor';
 import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
 import { VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
@@ -374,7 +375,7 @@ export function VillageWalkPage() {
 
   const d = heroQ.data;
   // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
-  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null; light?: string[];
+  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string | null;
     quest?: { key: string; kind: CreatureKind; n: number; nl: string; en: string; progress: number; done: boolean; xp: number } | null };
   const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
   // The weapon in hand is the one bought and put on in the backpack; none means bare fists.
@@ -611,6 +612,7 @@ export function VillageWalkPage() {
   const [boxingOpen, setBoxingOpen] = useState(false);
   // The campfire, the chest at home, and where the hero is (the village or a room).
   const [campOpen, setCampOpen] = useState(false);
+  const [bossOpen, setBossOpen] = useState(false);
   const [chestOpen, setChestOpen] = useState(false);
   const [zone, setZone] = useState('village');
   const [cooking, setCooking] = useState<string | null>(null);
@@ -825,6 +827,7 @@ export function VillageWalkPage() {
       : k === BOXING_KEY ? t('de boksschool', 'the boxing school')
       : k === CAMP_KEY ? t('het kampvuur', 'the campfire')
       : k === DUNGEON_KEY ? t('de onderwereld', 'the underworld')
+      : k === BOSSBOARD_KEY ? t('het bazenbord', 'the boss board')
       : k.startsWith('mob:') ? creatures.find((c) => c.key === k)?.label ?? t('het kwaaltje', 'the ailment')
       : buildings.find((b) => b.key === k)?.label ?? k;
   // Landmarks for the maps: every building with its own sign, and the practice.
@@ -862,6 +865,7 @@ export function VillageWalkPage() {
     ...(d?.hero ? [
       { key: CAMP_KEY, label: t('Kampvuur', 'Campfire'), hint: t('Koken van je buit', 'Cook your loot'), alert: false },
       { key: BOXING_KEY, label: t('Boksschool', 'Boxing school'), hint: t('Een ronde op de bokszak', 'A round on the bag'), alert: false },
+      { key: BOSSBOARD_KEY, label: t('📜 Bazenbord', '📜 Boss board'), hint: t('Alle bazen, hun buit en de baas van de week', 'Every boss, its loot and the boss of the week'), alert: false },
       { key: DUNGEON_KEY, label: t('🕳️ Onderwereld', '🕳️ Underworld'), hint: t('Kerker onder het Schaduwdal · avonturier 10+', 'Dungeon under the Shadow valley · adventurer 10+'), alert: false },
       ...ZONES.map((zn) => ({ key: `zone:${zn.key}`, label: `${zn.icon} ${nl ? zn.nl : zn.en}`, hint: t(`Jachtgebied · avonturier ${zn.level}+`, `Hunting ground · adventurer ${zn.level}+`), alert: false })),
     ] : []),
@@ -1042,6 +1046,8 @@ export function VillageWalkPage() {
             <Button size="lg" data-testid="open-camp" className="pointer-events-auto border border-[#ffc078] shadow-lift" icon={<Flame className="h-5 w-5" />} onClick={() => setCampOpen(true)}>{t('Koken op het vuur', 'Cook on the fire')}</Button>
           ) : zone === HOME_KEY && own?.layout.some((i) => i.key === 'home_lootchest') && !near ? (
             <Button size="lg" data-testid="open-lootchest" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<Package className="h-5 w-5" />} onClick={() => setChestOpen(true)}>{t('Open je buitkist', 'Open your loot chest')}</Button>
+          ) : near === BOSSBOARD_KEY ? (
+            <Button size="lg" data-testid="open-bossboard" className="pointer-events-auto border border-[#ffd76a] shadow-lift" icon={<ScrollText className="h-5 w-5" />} onClick={() => setBossOpen(true)}>{t('Bekijk het bazenbord', 'Read the boss board')}</Button>
           ) : near === DUNGEON_KEY ? (
             <Button size="lg" data-testid="enter-dungeon" className="pointer-events-auto border border-[#a070ff] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(DUNGEON_KEY)}>{t('Daal af naar de onderwereld', 'Go down to the underworld')}</Button>
           ) : near === BOXING_KEY ? (
@@ -1275,6 +1281,15 @@ export function VillageWalkPage() {
         )}
       </Dialog>
       <KarateSheet open={dojoOpen} onClose={() => setDojoOpen(false)} />
+      <Dialog open={bossOpen} onClose={() => setBossOpen(false)} size="md" sheet title={t('Bazenbord', 'Boss board')}
+        description={t('Alle bazen van de stad en de landen eromheen. Verslagen bazen krijgen een stempel.', 'Every boss of the town and the lands round it. Bosses beaten get a stamp.')}>
+        <BossBoard level={adventure.data?.level ?? 1} slain={adventure.data?.slain ?? []} weekly={adventure.data?.bossOfWeek ?? null}
+          onGo={(kind) => {
+            setBossOpen(false);
+            const c = creatures.find((x) => x.kind === kind);
+            if (c) world.current?.jump(c.key);
+          }} />
+      </Dialog>
       <Dialog open={campOpen} onClose={() => setCampOpen(false)} size="md" sheet title={t('Kampvuur', 'Campfire')}
         description={t('Kook je buit: gekookt eten brengt het leven van je held terug in het dorp.', 'Cook your loot: cooked food brings your hero’s life back in the village.')}>
         <ul className="space-y-2" data-testid="cook-list">
