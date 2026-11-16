@@ -50,3 +50,56 @@ test('every little game starts, stops and shows its result', async ({ browser })
   expect(errors).toEqual([]);
   await sql('DELETE FROM hero_minigames WHERE patient_id = $1', [emma.id]);
 });
+
+/** A few games played for real: a balanced plate scores well, a pain card explains itself, lit lamps can be tapped, the beat can be tapped. */
+test('the games can be played, not only started', async ({ page }) => {
+  test.setTimeout(240_000);
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await login(page, 'patient@praktijk-a.test');
+
+  // Fill the plate: chicken, potatoes and two portions of vegetables make a good meal.
+  await page.goto('/p/spellen/plate');
+  await page.getByTestId('game-start').click();
+  for (const f of ['kipfilet', 'aardappel', 'broccoli', 'sperziebonen']) await page.getByTestId(`plate-food-${f}`).click();
+  await page.getByTestId('plate-ready').click();
+  await expect(page.getByTestId('plate-tip')).toBeVisible();
+  const plate = page.getByTestId('game-score');
+  await expect(plate).toBeVisible({ timeout: 15_000 });
+  expect(Number(await plate.textContent())).toBeGreaterThanOrEqual(50);
+
+  // Pain: myth or fact? An answer shows whether it was right and why.
+  await page.goto('/p/spellen/pain_facts');
+  await page.getByTestId('game-start').click();
+  await page.getByTestId('pain-myth').click();
+  await expect(page.getByTestId('pain-feedback')).toBeVisible();
+  await page.getByTestId('pain-next').click();
+  await expect(page.getByTestId('pain-card')).toBeVisible();
+
+  // Reaction: tap the lit lamp a few times.
+  await page.goto('/p/spellen/reaction');
+  await page.getByTestId('game-start').click();
+  let hits = 0;
+  for (let i = 0; i < 40 && hits < 3; i++) {
+    const lit = page.locator('[data-testid^="reaction-lamp-"][data-lit="true"]');
+    if (await lit.count()) {
+      await lit.first().click({ timeout: 2000 }).then(() => hits++).catch(() => undefined);
+    } else await page.waitForTimeout(150);
+  }
+  await expect.poll(async () => Number((await page.getByTestId('reaction-score').textContent())?.match(/\d+/)?.[0] ?? 0)).toBeGreaterThan(0);
+  await page.getByTestId('game-stop').click();
+  await expect(page.getByTestId('game-score')).toBeVisible({ timeout: 15_000 });
+
+  // Rhythm: choose, start the beat, tap along.
+  await page.goto('/p/spellen/rhythm');
+  await page.getByTestId('game-start').click();
+  await page.getByTestId('rhythm-begin').click();
+  await expect(page.getByTestId('rhythm-tap')).toBeVisible();
+  for (let i = 0; i < 4; i++) {
+    await page.getByTestId('rhythm-tap').click();
+    await page.waitForTimeout(600);
+  }
+  await page.getByTestId('game-stop').click();
+  await expect(page.getByTestId('game-score')).toBeVisible({ timeout: 15_000 });
+  expect(errors).toEqual([]);
+});
