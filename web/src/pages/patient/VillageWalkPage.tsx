@@ -21,7 +21,7 @@ import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
 import { SUPPLY } from '@shared/supplies';
 import { useSupplies } from '@/lib/supplies';
-import { alphaAdvised, armourByKey, ZONES, zoneAt, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
+import { alphaAdvised, armourByKey, isShadow, LIGHT, ZONES, zoneAt, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
@@ -104,6 +104,10 @@ const LABEL: Record<string, [string, string]> = {
 
 /** The sign of each building on the maps: an icon and the colour of its roof. */
 /** What each armour looks like on the hero: parts of the hero model (gear_<key>). */
+/** What a creature is weak against, in words (the real thing done today). */
+const WEAK_NL: Record<string, string> = { trained: 'trainen', hydrated: 'water drinken', moving: 'bewegen', rested: 'goed slapen', fed: 'goed eten' };
+const WEAK_EN: Record<string, string> = { trained: 'training', hydrated: 'drinking water', moving: 'moving', rested: 'sleeping well', fed: 'eating well' };
+
 const ARMOUR_LOOK: Record<string, string[]> = {
   leather: ['belt', 'shin_guards'],
   wolf_cloak: ['wind_cape', 'shin_guards'],
@@ -370,11 +374,13 @@ export function VillageWalkPage() {
 
   const d = heroQ.data;
   // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
-  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null;
+  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null; light?: string[];
     quest?: { key: string; kind: CreatureKind; n: number; nl: string; en: string; progress: number; done: boolean; xp: number } | null };
   const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
   // The weapon in hand is the one bought and put on in the backpack; none means bare fists.
   const weapon = weaponByKey(adventure.data?.weapon);
+  // The helpers of the light side that are free (set free by beating their shadow creature).
+  const light = useMemo(() => new Set(adventure.data?.light ?? []), [adventure.data?.light]);
   /** A new adventurer level: say which weapon the smith now sells, if one came with it. */
   const levelUp = (was: number, now: number) => {
     if (now <= was) return;
@@ -385,12 +391,12 @@ export function VillageWalkPage() {
     () => {
       if (!d?.hero) return null;
       // The armour worn shows on the hero, in place of what it wears in the same spots.
-      const worn: string[] = ARMOUR_LOOK[adventure.data?.armour ?? ''] ?? [];
+      const worn: string[] = [...(ARMOUR_LOOK[adventure.data?.armour ?? ''] ?? []), ...(light.has('enlightenment') ? ['crown'] : [])];
       const taken = new Set(worn.map((g) => GEAR_SLOT[g as keyof typeof GEAR_SLOT]));
       const gear = d.gear.equipped.filter((g) => (weapon.key === 'fists' || GEAR_SLOT[g] !== 'held') && !taken.has(GEAR_SLOT[g]));
       return { ...d.hero, gear: [...gear, ...worn, ...(d.aids ?? [])], body: d.metrics ? bodyShape(d.metrics, d.hero.frame) : null };
     },
-    [d, weapon.key, adventure.data?.armour],
+    [d, weapon.key, adventure.data?.armour, light],
   );
   const todo = useMemo(() => (home.data?.programs ?? []).filter(openToday), [home.data]);
   const waiting = { kracht: todo.some((p) => moduleOf(p) === 'kracht'), mobiliteit: todo.some((p) => moduleOf(p) === 'mobiliteit') };
@@ -622,6 +628,22 @@ export function VillageWalkPage() {
   // A cooked dish from the pack: the one that heals most first.
   const dishes = COOKING.filter((x) => (adventure.data?.loot?.[x.key] ?? 0) > 0).sort((a, b) => b.heals - a.heals);
   const dishCount = COOKING.reduce((n, x) => n + (adventure.data?.loot?.[x.key] ?? 0), 0);
+  // Acceptance (from the light side): fully fit again, once a day (kept in this browser).
+  const ACCEPT = 'fp.village.accept';
+  const [acceptedToday, setAcceptedToday] = useState(() => {
+    try {
+      return localStorage.getItem(ACCEPT) === new Date().toDateString();
+    } catch {
+      return false;
+    }
+  });
+  const accept = () => {
+    if (acceptedToday) return;
+    setHeroHp(null);
+    setAcceptedToday(true);
+    try { localStorage.setItem(ACCEPT, new Date().toDateString()); } catch { /* storage optional */ }
+    toast(t('🕊️ Acceptatie: je held is weer helemaal fit.', '🕊️ Acceptance: your hero is fully fit again.'));
+  };
   const eatDish = async () => {
     const dish = dishes[0];
     if (!dish) return;
@@ -682,7 +704,8 @@ export function VillageWalkPage() {
   const strong = useMemo(() => new Set([...states.filter((x) => x.kind === 'buff').map((x) => x.key), ...(doneToday ? ['trained'] : []), ...(supply.fed ? ['fed'] : [])]), [states, doneToday, supply.fed]);
   // The hero's life: monsters hit back once struck, an Alpha attacks by itself. Play only: losing
   // sends the hero back to the well with full life, nothing is lost.
-  const maxHp = heroMaxHp(adventure.data?.level ?? 1, doneToday);
+  // Love (from the light side): a quarter more life.
+  const maxHp = Math.round(heroMaxHp(adventure.data?.level ?? 1, doneToday) * (light.has('love') ? 1.25 : 1));
   const [heroHp, setHeroHp] = useState<number | null>(null);
   const hp = Math.min(maxHp, heroHp ?? maxHp);
   const [provoked, setProvoked] = useState<string[]>([]);
@@ -704,7 +727,8 @@ export function VillageWalkPage() {
           lastHit.current = now;
           world.current?.lunge(mob.key);
           setHitAt(now);
-          const dmg = hitOnHero(mob.kind, doneToday, armourByKey(adventure.data?.armour)?.guard ?? 0);
+          // Joy and Peace soften the blows of the shadow creatures.
+          const dmg = hitOnHero(mob.kind, doneToday, Math.min(0.8, (armourByKey(adventure.data?.armour)?.guard ?? 0) + (light.has('joy') && isShadow(mob.kind) ? 0.2 : 0)));
           setHeroHp((h) => {
             const left = Math.max(0, Math.min(maxHp, h ?? maxHp) - dmg);
             if (left === 0) setDownBy(mob.label);
@@ -746,7 +770,7 @@ export function VillageWalkPage() {
     }
     world.current?.strike(mob.key);
     if (!provoked.includes(mob.key)) setProvoked((p) => [...p, mob.key]);
-    const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, isHarvest(mob.kind) ? 0 : weapon.power) * (supply.fed ? SUPPLY.fedPower : 1) * (hasTool ? TOOL_BONUS.blows : 1);
+    const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, isHarvest(mob.kind) ? 0 : weapon.power) * (supply.fed ? SUPPLY.fedPower : 1) * (hasTool ? TOOL_BONUS.blows : 1) * (light.has('courage') && !isHarvest(mob.kind) && !(hurt[mob.key] ?? 0) ? 2 : 1);
     if (left > 0) {
       setHurt((h) => ({ ...h, [mob.key]: CREATURES[mob.kind].hp - left }));
       return;
@@ -757,7 +781,9 @@ export function VillageWalkPage() {
     // It comes back after a while, somewhere to return to.
     window.setTimeout(() => setBeaten((b) => b.filter((k) => k !== key)), 45_000);
     try {
-      const r = await api.post<Adventure & { gained: number; questXp?: number; drops?: { item: LootKey; n: number }[] }>('/patient/hero/adventure/win', { kind: mob.kind });
+      const r = await api.post<Adventure & { gained: number; questXp?: number; unlocked?: string | null; drops?: { item: LootKey; n: number }[] }>('/patient/hero/adventure/win', { kind: mob.kind });
+      const freed = r.unlocked ? LIGHT.find((l) => l.key === r.unlocked) : null;
+      if (freed) toast(t(`${freed.icon} Je hebt ${freed.nl} bevrijd! ${freed.doesNl}`, `${freed.icon} You set ${freed.en} free! ${freed.doesEn}`));
       if (r.questXp) toast(t(`Taak van vandaag klaar: ${r.quest?.nl.toLowerCase() ?? ''}! +${r.questXp} avonturen-XP`, `Today’s task done: ${r.quest?.en.toLowerCase() ?? ''}! +${r.questXp} adventure XP`));
       const was = adventure.data?.level ?? 1;
       qc.setQueryData(['patient-adventure'], r);
@@ -858,6 +884,8 @@ export function VillageWalkPage() {
             className={full ? 'h-full !rounded-none !border-0' : 'h-[calc(100dvh-13.5rem)] min-h-[440px]'}
             buildings={buildings}
             plan
+            shrines={LIGHT.filter((l) => light.has(l.key) && l.key !== 'enlightenment').map((l) => ({ key: l.key, label: nl ? l.nl : l.en, color: l.color, x: l.x, z: l.z }))}
+            glow={light.has('enlightenment')}
             tvLabel={t('Oefenzaal · tv', 'Gym · TV')}
             tvTitle={t('Vandaag', 'Today')}
             tvLines={tvLines}
@@ -1003,11 +1031,14 @@ export function VillageWalkPage() {
               </Link>
             ) : (
             <Button size="lg" data-testid="strike" className="pointer-events-auto border border-[#ffb3a1] shadow-lift" icon={<Swords className="h-5 w-5" />} onClick={() => void strike()}>
-              {mob.kind === 'bush' ? t('Pluk bessen', 'Pick berries') : isHarvest(mob.kind) ? t(`Hak de ${mob.label.toLowerCase()}${hasTool && mobTool ? ` met je ${mobTool.nl.toLowerCase()}` : ''}`, `Chop the ${mob.label.toLowerCase()}${hasTool && mobTool ? ` with your ${mobTool.en.toLowerCase()}` : ''}`) : t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : ''}
+              {mob.kind === 'bush' ? t('Pluk bessen', 'Pick berries') : isHarvest(mob.kind) ? t(`Hak de ${mob.label.toLowerCase()}${hasTool && mobTool ? ` met je ${mobTool.nl.toLowerCase()}` : ''}`, `Chop the ${mob.label.toLowerCase()}${hasTool && mobTool ? ` with your ${mobTool.en.toLowerCase()}` : ''}`) : t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : light.has('neutrality') && !isHarvest(mob.kind) ? t(` · zwak tegen ${WEAK_NL[CREATURES[mob.kind].weakTo] ?? ''}`, ` · weak to ${WEAK_EN[CREATURES[mob.kind].weakTo] ?? ''}`) : ''}
             </Button>
             )}
             </span>
-          ) : near === CAMP_KEY ? (
+          ) : near?.startsWith('light:') ? (() => {
+            const l = LIGHT.find((x) => `light:${x.key}` === near);
+            return l ? <p role="status" data-testid="shrine-info" className={`${PANEL} px-3 py-2 text-[13.5px]`}>{l.icon} <strong>{nl ? l.nl : l.en}</strong>: {nl ? l.doesNl : l.doesEn}</p> : null;
+          })() : near === CAMP_KEY ? (
             <Button size="lg" data-testid="open-camp" className="pointer-events-auto border border-[#ffc078] shadow-lift" icon={<Flame className="h-5 w-5" />} onClick={() => setCampOpen(true)}>{t('Koken op het vuur', 'Cook on the fire')}</Button>
           ) : zone === HOME_KEY && own?.layout.some((i) => i.key === 'home_lootchest') && !near ? (
             <Button size="lg" data-testid="open-lootchest" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<Package className="h-5 w-5" />} onClick={() => setChestOpen(true)}>{t('Open je buitkist', 'Open your loot chest')}</Button>
@@ -1099,6 +1130,11 @@ export function VillageWalkPage() {
             <li><button type="button" data-testid="flask" data-n={supply.glasses} disabled={supply.glasses <= 0 || hp >= maxHp} onClick={sip}
               aria-label={supply.glasses > 0 ? t(`Veldfles: ${supply.glasses} ${supply.glasses === 1 ? 'glas' : 'glazen'}. Tik om te drinken: +50% leven.`, `Flask: ${supply.glasses} ${supply.glasses === 1 ? 'glass' : 'glasses'}. Tap to drink: +50% life.`) : t('Veldfles leeg. Log een glas water dat je echt drinkt, dan krijgt je held er een.', 'Flask empty. Log a glass of water you really drink, and your hero gets one.')}
               className="flex min-h-[28px] items-center gap-1 rounded-full border bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none shadow-lift disabled:opacity-60 border-[#9fd8ff]/70 text-[#cfeaff]"><Droplets className="h-3.5 w-3.5" aria-hidden />{supply.glasses}</button></li>
+            {light.has('acceptance') && (
+              <li><button type="button" data-testid="acceptance-heal" disabled={acceptedToday || hp >= maxHp} onClick={accept}
+                aria-label={acceptedToday ? t('Acceptatie: vandaag al gebruikt. Morgen weer.', 'Acceptance: used today. Again tomorrow.') : t('Acceptatie: weer helemaal fit, één keer per dag.', 'Acceptance: fully fit again, once a day.')}
+                className="flex min-h-[28px] items-center gap-1 rounded-full border bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none shadow-lift disabled:opacity-60 border-[#e6f2ff]/70 text-[#f4f8ff]">🕊️</button></li>
+            )}
             <li><button type="button" data-testid="eat-dish" data-n={dishCount} disabled={dishCount <= 0 || hp >= maxHp} onClick={() => void eatDish()}
               aria-label={dishCount > 0 ? t(`Gekookt eten: ${dishCount}. Tik om te eten: ${LOOT[dishes[0].key].nl.toLowerCase()}.`, `Cooked food: ${dishCount}. Tap to eat: ${LOOT[dishes[0].key].en.toLowerCase()}.`) : t('Geen gekookt eten. Kook vlees, een ei of bessen bij het kampvuur.', 'No cooked food. Cook meat, an egg or berries at the campfire.')}
               className="flex min-h-[28px] items-center gap-1 rounded-full border bg-[#141c18]/85 px-2 text-[11.5px] font-semibold leading-none shadow-lift disabled:opacity-60 border-[#ffc078]/70 text-[#ffe0bd]"><Utensils className="h-3.5 w-3.5" aria-hidden />{dishCount}</button></li>

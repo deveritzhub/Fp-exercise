@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CREATURES, ZONES, zoneAt, COOKING, DAILY_QUESTS, dailyQuest, adventureLevel, blow, boxingXp, CREATURE_KINDS, DROPS, LOOT, rollDrops, weaponAt, weaponByKey } from './adventure';
+import { LIGHT, isShadow, lightFrom, CREATURES, ZONES, zoneAt, COOKING, DAILY_QUESTS, dailyQuest, adventureLevel, blow, boxingXp, CREATURE_KINDS, DROPS, LOOT, rollDrops, weaponAt, weaponByKey } from './adventure';
 
 describe('adventure', () => {
   it('levels: 60 XP for the first, 30 more for each next', () => {
@@ -101,5 +101,16 @@ describe('hunting grounds', () => {
     expect(ZONES.find((z) => z.key === 'wolfwood')?.level).toBe(CREATURES.wolf.level);
     expect(ZONES.find((z) => z.key === 'bearhill')?.level).toBe(CREATURES.bear.level);
     for (const k of ['wolf', 'bear'] as const) expect(DROPS[k].length).toBeGreaterThan(0);
+  });
+});
+
+describe('the light side', () => {
+  it('each helper comes from one shadow creature, the Shame lord gives the light itself', () => {
+    expect(new Set(LIGHT.map((l) => l.from)).size).toBe(LIGHT.length);
+    for (const l of LIGHT) expect(CREATURES[l.from]).toBeTruthy();
+    expect(lightFrom('shame_lord')?.key).toBe('enlightenment');
+    expect(lightFrom('cow')).toBeNull();
+    expect(isShadow('guilt')).toBe(true);
+    expect(isShadow('wolf')).toBe(false);
   });
 });

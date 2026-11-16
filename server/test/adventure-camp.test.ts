@@ -92,7 +92,15 @@ describe('campfire, task of the day and the chest at home', () => {
     const win = await P.post('/patient/hero/adventure/win', { kind: 'fright' });
     expect(win.body.gained).toBe(120);
     expect(win.body.loot.shiver_crystal).toBeGreaterThan(0);
-    expect((await P.post('/patient/hero/adventure/win', { kind: 'shame_lord' })).body.loot.crown_of_light).toBe(1);
+    // The first win over fright sets Acceptance free, once.
+    expect(win.body.unlocked).toBe('acceptance');
+    expect(win.body.light).toContain('acceptance');
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'fright' })).body.unlocked).toBeNull();
+    const lord = (await P.post('/patient/hero/adventure/win', { kind: 'shame_lord' })).body;
+    expect(lord.loot.crown_of_light).toBe(1);
+    expect(lord.unlocked).toBe('enlightenment');
+    // An ordinary creature frees nothing.
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'cow' })).body.unlocked).toBeNull();
     await sql('UPDATE hero_adventure SET xp = 0 WHERE patient_id = $1', [me.id]);
   });
 });

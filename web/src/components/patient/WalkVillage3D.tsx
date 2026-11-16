@@ -119,6 +119,10 @@ type Props = {
   tools?: string[];
   /** The patient's village as a town (townPlan.ts): a bigger square, main roads, a wall and more houses. */
   plan?: boolean;
+  /** Shrines of the light side that are set free: where they stand, their name and colour. */
+  shrines?: { key: string; label: string; color: string; x: number; z: number }[];
+  /** The Crown of light: a golden glow round the hero. */
+  glow?: boolean;
   /** How fast the hero moves, 1 = normal. Lower when thirsty or stiff. */
   pace?: number;
   /** How the figure by the TV looks: the patient's own therapist. Without it: the practice colours. */
@@ -753,7 +757,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, shrines, glow = false, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
   const { t } = useI18n();
   const coachName = coachLabel ?? t('Fysiotherapeut', 'Physiotherapist');
   const host = useRef<HTMLDivElement>(null);
@@ -780,7 +784,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
   const heroScene = look ? hero3dScene(look) : null;
   const heroKey = heroScene ? JSON.stringify([heroScene.url, [...heroScene.visible].sort(), heroScene.tints, heroScene.fabric]) : '';
-  const key = JSON.stringify([buildings.map((b) => [b.key, b.stage ?? -1]), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1, bound ?? 0, people, visitRoom, coachLook ?? null, (creatures ?? []).map((c) => [c.key, c.kind, c.x, c.z]), boxing, plan]);
+  const key = JSON.stringify([buildings.map((b) => [b.key, b.stage ?? -1]), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1, bound ?? 0, people, visitRoom, coachLook ?? null, (creatures ?? []).map((c) => [c.key, c.kind, c.x, c.z]), boxing, plan, (shrines ?? []).map((sh) => sh.key), glow]);
   // Read at the moment of use, so new furniture or a new mode never rebuilds the whole village.
   const slow = Math.min(1, Math.max(0.5, paceProp));
   const gone = useMemo(() => new Set(creaturesGone ?? []), [creaturesGone]);
@@ -1650,6 +1654,31 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           D.add(step);
         }
       }
+      // The shrines of the light side: a white stone pillar with a glowing orb in the helper's colour.
+      for (const sh of shrines ?? []) {
+        const col = new THREE.Color(sh.color);
+        const shrine = new THREE.Group();
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.7, 0.3, 10), mat(0xe9e4da));
+        base.position.y = 0.15;
+        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 1.5, 10), mat(0xf4f0e8));
+        pillar.position.y = 1.05;
+        const orb = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1.8 }));
+        orb.position.y = 2.05;
+        orb.userData.dynamic = true;
+        shrine.add(base, pillar, orb);
+        shrine.position.set(sh.x, 0, sh.z);
+        shrine.traverse((o) => { o.castShadow = true; });
+        scene.add(shrine);
+        const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot(), color: col, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.6 }));
+        halo.scale.setScalar(2.2);
+        halo.position.set(sh.x, 2.05, sh.z);
+        scene.add(halo);
+        lamps.push(halo);
+        obstacles.push({ x: sh.x, z: sh.z, r: 0.6 });
+        const len = Math.hypot(sh.x, sh.z) || 1;
+        spots.push({ key: `light:${sh.key}`, door: { x: sh.x - (sh.x / len) * 1.2, z: sh.z - (sh.z / len) * 1.2 } });
+        anchors.push({ id: `light:${sh.key}`, obj: shrine, y: 2.8 });
+      }
       // The market south of the square: stalls with striped awnings.
       const stripeA = mat(0xc8463c);
       const stripeB = mat(0xf2e6cf);
@@ -1959,6 +1988,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
 
     // The hero: a stand-in at once, the real model with the worn gear when it has loaded.
     const hero = new THREE.Group();
+    // The Crown of light: a soft golden glow that stays with the hero.
+    let heroGlow: THREE.Sprite | null = null;
+    if (glow) {
+      heroGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot(), color: 0xffe08a, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.55 }));
+      heroGlow.scale.setScalar(2.6);
+      heroGlow.position.y = 1.0;
+      hero.add(heroGlow);
+    }
     const figure = new THREE.Group();
     figure.add(standIn(heroColor));
     hero.add(figure);
@@ -2308,6 +2345,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       else if (k === BOXING_KEY && boxing) walkTo.current(spots.find((sp) => sp.key === BOXING_KEY)!.door, BOXING_KEY);
       else if (k === CAMP_KEY && boxing) walkTo.current(spots.find((sp) => sp.key === CAMP_KEY)!.door, CAMP_KEY);
       else if (zoneDoors.has(k)) walkTo.current(zoneDoors.get(k)!, k);
+      else if (k.startsWith('light:')) { const sp = spots.find((x) => x.key === k); if (sp) walkTo.current(sp.door, k); }
       else if (k === WELL_KEY && well) walkTo.current(WELL_SPOT, WELL_KEY);
       else if (k === TV_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY, TV_KEY);
       else if (k === PRACTICE_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY);
@@ -2872,6 +2910,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         }
         flags.forEach((f, i) => (f.rotation.y = Math.sin(tt * 2.2 + i) * 0.22));
         lamps.forEach((l, i) => ((l.material as THREE.SpriteMaterial).opacity = 0.5 + Math.sin(tt * 5 + i * 2) * 0.07));
+        if (heroGlow) {
+          (heroGlow.material as THREE.SpriteMaterial).opacity = 0.45 + Math.sin(tt * 2) * 0.12;
+          heroGlow.scale.setScalar(2.5 + Math.sin(tt * 1.3) * 0.25);
+        }
         for (const sp of smoke) {
           const u = (tt * 0.11 + sp.userData.off) % 1;
           sp.position.set(sp.userData.x + u * 0.9, 3.3 + u * 2.8, sp.userData.z + u * 0.3);
@@ -3151,6 +3193,13 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               {t('Boksschool', 'Boxing school')}
             </button>
           )}
+          {(shrines ?? []).map((sh) => (
+            <button key={sh.key} ref={setLabel(`light:${sh.key}`)} type="button" data-spot={`light:${sh.key}`} onClick={() => go(`light:${sh.key}`)}
+              aria-label={t(`Loop naar de schrijn van ${sh.label}`, `Walk to the shrine of ${sh.label}`)}
+              className={cn(plate, 'text-[#fff6c8]')} style={{ transform: 'translate(-9999px,0)', borderColor: sh.color }}>
+              ✦ {sh.label}
+            </button>
+          ))}
           {plan && creatures && (
             <button ref={setLabel(DUNGEON_KEY)} type="button" data-spot={DUNGEON_KEY} onClick={() => go(DUNGEON_KEY)}
               aria-label={t('Loop naar de kerker van de onderwereld, level 10', 'Walk to the dungeon of the underworld, level 10')}
