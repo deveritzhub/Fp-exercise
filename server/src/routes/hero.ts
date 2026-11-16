@@ -9,7 +9,7 @@ import { aclJourneyFor } from '../lib/aclJourney';
 import { teamWeekSummary } from '../../../shared/teamQuest';
 import { quizXpFor } from './atlas';
 import { mobilityMoments } from '../../../shared/mobilityTests';
-import { MINIGAMES, MINIGAME_REWARDED_PER_DAY, minigameByKey, minigameXp, starsFor } from '../../../shared/minigames';
+import { GAME_OF_DAY_BONUS, MINIGAMES, MINIGAME_REWARDED_PER_DAY, minigameByKey, minigameOfDay, minigameXp, starsFor } from '../../../shared/minigames';
 import { Hono } from 'hono';
 import { config } from '../config';
 import { z } from 'zod';
@@ -1109,7 +1109,9 @@ const minigamesView = async (tx: Tx, patientId: string) => {
   const rows = (await tx.query("SELECT game, best, plays, CASE WHEN day = CURRENT_DATE THEN rewarded_today ELSE 0 END AS today FROM hero_minigames WHERE patient_id = $1", [patientId])).rows as { game: string; best: number; plays: number; today: number }[];
   const steps = (await tx.query('SELECT COALESCE(SUM(steps), 0)::int AS total, COALESCE(SUM(steps) FILTER (WHERE day = CURRENT_DATE), 0)::int AS today FROM step_days WHERE patient_id = $1', [patientId])).rows[0] as { total: number; today: number };
   const by = new Map(rows.map((r) => [r.game, r]));
+  const date = (await tx.query("SELECT to_char(CURRENT_DATE, 'YYYY-MM-DD') AS d")).rows[0].d as string;
   return {
+    gameOfDay: minigameOfDay(date),
     games: MINIGAMES.map((g) => {
       const r = by.get(g.key);
       return { key: g.key, best: r?.best ?? 0, plays: r?.plays ?? 0, rewardsLeft: Math.max(0, MINIGAME_REWARDED_PER_DAY - (r?.today ?? 0)) };
@@ -1136,7 +1138,8 @@ heroPatient.post('/hero/minigames/:game', rateLimit('minigame', 40, 60_000), asy
     await withUser(user.id, async (tx) => {
       const before = (await tx.query('SELECT best, CASE WHEN day = CURRENT_DATE THEN rewarded_today ELSE 0 END AS today FROM hero_minigames WHERE patient_id = $1 AND game = $2 FOR UPDATE', [patient.id, game.key])).rows[0] as { best: number; today: number } | undefined;
       const rewarded = (before?.today ?? 0) < MINIGAME_REWARDED_PER_DAY;
-      const xp = rewarded ? minigameXp(stars) : 0;
+      const date = (await tx.query("SELECT to_char(CURRENT_DATE, 'YYYY-MM-DD') AS d")).rows[0].d as string;
+      const xp = rewarded ? minigameXp(stars) * (minigameOfDay(date) === game.key ? GAME_OF_DAY_BONUS : 1) : 0;
       await tx.query(
         `INSERT INTO hero_minigames(patient_id, game, best, plays, day, rewarded_today) VALUES ($1, $2, $3, 1, CURRENT_DATE, $4)
          ON CONFLICT (patient_id, game) DO UPDATE SET best = GREATEST(hero_minigames.best, EXCLUDED.best), plays = hero_minigames.plays + 1,

@@ -28,6 +28,8 @@ test('every little game starts, stops and shows its result', async ({ browser })
   await page.getByTestId('hero-games').click();
   await expect(page).toHaveURL(/\/p\/spellen$/);
   for (const g of MINIGAMES) await expect(page.getByTestId(`game-${g.key}`)).toBeVisible();
+  // One game a day gives double XP.
+  await expect(page.getByTestId('game-of-day')).toContainText('Spel van de dag');
   await expectAccessible(page, 'games hub');
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/games-hub.png', fullPage: true });
 

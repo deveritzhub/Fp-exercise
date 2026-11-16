@@ -49,6 +49,12 @@ export function starsFor(game: Minigame, score: number): number {
 
 /** Adventure XP for a rewarded round: a little for playing, more per star. */
 export const minigameXp = (stars: number) => 4 + stars * 6;
+/** The game of the day (by date, the same for everyone): its rewarded rounds give double XP. */
+export function minigameOfDay(date: string): MinigameKey {
+  const days = Math.floor(Date.parse(`${date}T12:00:00Z`) / 86_400_000);
+  return MINIGAME_KEYS[((days % MINIGAME_KEYS.length) + MINIGAME_KEYS.length) % MINIGAME_KEYS.length];
+}
+export const GAME_OF_DAY_BONUS = 2;
 /** Rounds of each game a day that give XP (more rounds can be played for fun and a best score). */
 export const MINIGAME_REWARDED_PER_DAY = 3;
 
