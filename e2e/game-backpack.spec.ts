@@ -21,12 +21,11 @@ test('backpack in the game, the way back to the game, and the 3D world button by
   await expect(pack.getByTestId('light')).toBeVisible();
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/game-backpack.png' });
   await expectAccessible(page, 'game backpack');
-  // A page opened from the game: the bar back to the game is there, and takes the hero back.
+  // A page opened from the game opens over the world; closing it is back in the game.
   await pack.getByRole('link', { name: /Alles van je held/ }).click();
-  await expect(page).toHaveURL(/\/p\/held\/inventaris/);
-  await page.getByTestId('back-to-game').click();
+  await expect(page.getByTestId('game-page')).toBeVisible();
+  await page.getByTestId('game-page-close').click();
   await expect(page).toHaveURL(/\/p\/dorp$/);
-  await expect(village).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
   // Opened from elsewhere, a page has no such bar.
   await page.goto('/p/held/inventaris');
   await expect(page.getByTestId('back-to-game')).toHaveCount(0);

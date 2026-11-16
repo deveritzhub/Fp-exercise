@@ -44,7 +44,7 @@ test('the patient chops wood and builds the next home with loot', async ({ brows
   await page.reload();
   await expect(village).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await page.getByTestId('slot-places').click();
-  await page.getByTestId('places').getByRole('button', { name: /^Jouw huis/ }).click();
+  await page.getByTestId('jump-home').click();
   await page.getByTestId('enter-home').click({ timeout: 90_000 });
   await expect(village).toHaveAttribute('data-zone', 'home', { timeout: 30_000 });
   await page.getByRole('button', { name: 'Loop naar de inrichtingstafel' }).press('Enter');

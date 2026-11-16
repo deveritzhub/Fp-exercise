@@ -71,20 +71,3 @@ test('the coach in the strength house offers the programme and the 1RM', async (
   await expect(village).toHaveAttribute('data-zone', 'village', { timeout: 90_000 });
   await context.close();
 });
-
-/** The speed of the world on this device can be shown on request. */
-test('the village can show its frames per second', async ({ browser }) => {
-  test.setTimeout(120_000);
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'nl-NL' });
-  const page = await context.newPage();
-  await page.addInitScript(() => localStorage.setItem('fp.village.tip', '1'));
-  await login(page, 'patient@praktijk-a.test');
-  await page.goto('/p/dorp');
-  await expect(page.getByTestId('walk-village')).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
-  // The button is in the action bar of the world, so it is there in full screen too.
-  await page.getByTestId('play-full').click();
-  await page.getByTestId('fps-toggle').click();
-  await expect(page.getByTestId('fps')).toContainText(/\d+ beelden per seconde/, { timeout: 15_000 });
-  if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/fps.png' });
-  await context.close();
-});

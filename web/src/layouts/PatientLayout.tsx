@@ -17,6 +17,7 @@ import { useTextSize } from '@/lib/textSize';
 import { useSession } from '@/lib/session';
 import { QuickLogButton } from '@/components/patient/QuickLog';
 import { BackToGame } from '@/components/patient/BackToGame';
+import { closeGameFrame, inGameFrame } from '@/components/patient/GamePage';
 import { PhaseCelebration } from '@/components/patient/PhaseCelebration';
 import { UpdateNotice } from '@/components/app/WhatsNew';
 import { cn } from '@/lib/cn';
@@ -127,6 +128,20 @@ export function PatientLayout() {
   const { simple: simpleView } = useView();
   const simple = simpleView === true;
   if (!user?.patient) return null;
+  // Shown in the game's panel: only the page itself, no header and no tabs. The village itself never
+  // opens inside the panel: a way back to it closes the panel instead.
+  if (inGameFrame()) {
+    // The way back to the village, or to Today (where most pages lead back to), closes the panel.
+    if (loc.pathname.startsWith('/p/dorp') || loc.pathname === '/p' || loc.pathname === '/p/') {
+      closeGameFrame();
+      return null;
+    }
+    return (
+      <div className="patient-app min-h-screen bg-canvas text-[16px]">
+        <main className="mx-auto max-w-xl px-4 pb-10 pt-4"><Outlet /></main>
+      </div>
+    );
+  }
   // Today always opens on today's training. Someone without a hero gets an invitation there, not the
   // character creator in the way (a new account still starts with it, straight after signing up).
   // Tabs: today's overview, one per part (rehabilitation only with a physiotherapist), and the hero
@@ -140,11 +155,13 @@ export function PatientLayout() {
     { to: '/p/kracht', end: false, icon: Dumbbell, label: t('Kracht', 'Strength'), dot: openIn('kracht') },
     { to: '/p/mobiliteit', end: false, icon: Move, label: t('Mobiliteit', 'Mobility'), dot: openIn('mobiliteit') },
     // Plain view: no hero, and only the parts that have a programme; progress takes the hero's place.
-    ...(simple ? [{ to: '/p/voortgang', end: false, icon: Trophy, label: t('Voortgang', 'Progress'), dot: false }] : [{ to: '/p/held', end: false, icon: Trophy, label: t('Held', 'Hero'), dot: false }]),
+    ...(simple ? [{ to: '/p/voortgang', end: false, icon: Trophy, label: t('Voortgang', 'Progress'), dot: false }] : [{ to: '/p/dorp', end: false, icon: Trophy, label: t('Held', 'Hero'), dot: false, also: '/p/held' }]),
   ].filter((tab) => !simple || !['/p/kracht', '/p/mobiliteit'].includes(tab.to) || hasPart(tab.to.slice(3)));
+  // The hero tab opens the 3D world; the hero's own pages count as that tab too.
+  const tabOn = (tab: (typeof tabs)[number], isActive: boolean) => isActive || ('also' in tab && !!tab.also && loc.pathname.startsWith(tab.also));
   const renderTab = (tab: (typeof tabs)[number]) => (
-    <NavLink key={tab.to} to={tab.to} end={tab.end} aria-label={tab.dot ? t(`${tab.label} (nog open)`, `${tab.label} (still open)`) : undefined} className={({ isActive }) => cn('tap group flex min-h-[60px] min-w-0 flex-col items-center justify-center gap-1 py-2', tabs.length === 5 ? 'text-[10.5px] tracking-[-0.01em]' : 'text-[12.5px]', isActive ? 'font-semibold text-accent' : 'font-medium text-ink-500 hover:text-ink-800')}>
-      {({ isActive }) => (
+    <NavLink key={tab.to} to={tab.to} end={tab.end} data-testid={'also' in tab && tab.also ? 'tab-hero' : undefined} aria-label={tab.dot ? t(`${tab.label} (nog open)`, `${tab.label} (still open)`) : undefined} className={({ isActive: navActive }) => { const isActive = tabOn(tab, navActive); return cn('tap group flex min-h-[60px] min-w-0 flex-col items-center justify-center gap-1 py-2', tabs.length === 5 ? 'text-[10.5px] tracking-[-0.01em]' : 'text-[12.5px]', isActive ? 'font-semibold text-accent' : 'font-medium text-ink-500 hover:text-ink-800'); }}>
+      {({ isActive: navActive }) => { const isActive = tabOn(tab, navActive); return (
         <>
           {/* Active tab: filled sage pill behind the icon plus bold label, not colour alone. */}
           <span className={cn('relative flex h-8 w-11 items-center justify-center rounded-full transition-colors', isActive ? 'bg-accent-soft' : 'group-hover:bg-ink-100')}>
@@ -153,7 +170,7 @@ export function PatientLayout() {
           </span>
           <span className="max-w-full truncate">{tab.label}</span>
         </>
-      )}
+      ); }}
     </NavLink>
   );
   return (
