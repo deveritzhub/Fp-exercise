@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeStatic } from './mergeStatic';
 import type { CreatureKind } from '@shared/adventure';
 import { loadModel } from '@/components/hero/Hero3D';
 
@@ -36,6 +37,8 @@ const CREATURES_VERSION = 2;
 export function creature(kind: CreatureKind): THREE.Group {
   const g = new THREE.Group();
   const simple = simpleCreature(kind);
+  // The stand-in is taken out whole when the sculpted model arrives: it is merged on its own.
+  simple.userData.mergeRoot = true;
   g.add(simple);
   const m3 = MODEL[kind];
   // What has no sculpted file (the tree to chop) stays as made here.
@@ -55,6 +58,7 @@ export function creature(kind: CreatureKind): THREE.Group {
       });
       g.remove(simple);
       g.add(model);
+      mergeStatic(model);
     })
     .catch(() => undefined);
   return g;
