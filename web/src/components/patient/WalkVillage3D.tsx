@@ -1,6 +1,7 @@
 import { weaponMesh } from './weapons3d';
 import { creature, habitat, pond } from './creatures3d';
 import { mergeStatic } from './mergeStatic';
+import { filmLook } from './filmLook';
 import { alphaAdvised, ZONES } from '@shared/adventure';
 import { MARKET, RESIDENTS, SPOTS, TOWN } from './townPlan';
 import { ATTACKS, CREATURES, isAlpha, isFriendly, isHarvest, type CreatureKind } from '@shared/adventure';
@@ -777,6 +778,19 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   // How far the camera stands off (1 = normal) and how steeply it looks down (1 = normal).
   const camZoom = useRef(1);
   const camTilt = useRef(1);
+  // The camera: from above and behind (the overview), or low behind the hero, turning with it (as in a
+  // game seen over the shoulder). The choice is kept in this browser.
+  const [chase, setChase] = useState(() => {
+    try { return localStorage.getItem('fp.village.cam') === 'chase'; } catch { return false; }
+  });
+  const chaseRef = useRef(chase);
+  chaseRef.current = chase;
+  const toggleChase = () => {
+    setChase((c) => {
+      try { localStorage.setItem('fp.village.cam', c ? 'over' : 'chase'); } catch { /* storage optional */ }
+      return !c;
+    });
+  };
   const zoomBy = (f: number) => { camZoom.current = Math.min(2.2, Math.max(0.45, camZoom.current * f)); };
   const pos = useRef<Vec>(startAtTv ? { ...TV_SPOT } : startAt ? { ...startAt } : { ...VILLAGE_LAYOUT.spawn });
   const facing = useRef(startAtTv ? Math.PI : 0);
@@ -835,7 +849,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     el.prepend(canvas);
 
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
+    renderer.toneMappingExposure = plan ? 1.18 : 1.1;
+    // Glow, a warm grade and a vignette over the town (off by itself on a device that is too slow).
+    const film = filmLook(renderer, (el.clientWidth || 400) < 900 && 'ontouchstart' in window);
     const scene = new THREE.Scene();
     scene.fog = new THREE.Fog(HORIZON, plan ? 42 : 28, plan ? 170 : 140);
     const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 420);
@@ -843,9 +859,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const outCam = camera.clone();
     const outTurn = new THREE.Quaternion();
     const UP = new THREE.Vector3(0, 1, 0);
-    const skyLight = new THREE.HemisphereLight(0xd6e6ff, 0x7d8c46, 1.55);
+    // Warm late-afternoon light in the town: a golden sun, a soft blue sky and warm light off the grass.
+    const skyLight = new THREE.HemisphereLight(plan ? 0xcfe0ff : 0xd6e6ff, plan ? 0x7a7a3c : 0x7d8c46, 1.55);
     scene.add(skyLight);
-    const sun = new THREE.DirectionalLight(0xffdca8, 3.1);
+    const sun = new THREE.DirectionalLight(plan ? 0xffcf94 : 0xffdca8, 3.1);
     sun.position.set(-15, 17, 10);
     sun.castShadow = true;
     sun.shadow.mapSize.setScalar((el.clientWidth || 400) < 520 ? 1024 : 2048);
@@ -1807,6 +1824,44 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const motes = new THREE.Points(moteGeo, new THREE.PointsMaterial({ map: softDot(), color: 0xffe9a8, size: 0.14, transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending }));
     scene.add(motes);
 
+    // Wooden fences along the town's main roads, open where a path turns off to a door.
+    if (plan) {
+      const gaps = roads.filter((r) => r.w <= 1.35).map((r) => r.a);
+      const segs: { x: number; z: number; ry: number }[] = [];
+      for (const tr of trunk) {
+        const dx = tr.b.x - tr.a.x;
+        const dz = tr.b.z - tr.a.z;
+        const len = Math.hypot(dx, dz);
+        const ux = dx / len;
+        const uz = dz / len;
+        for (let d = 3; d < len - 1.5; d += 2) {
+          for (const side of [-1, 1]) {
+            const off = tr.w / 2 + 0.45;
+            const x = tr.a.x + ux * d - uz * off * side;
+            const z = tr.a.z + uz * d + ux * off * side;
+            const r = Math.hypot(x, z);
+            // Not across a path, not at the gates or in the square, and not through a building or a tree.
+            if (gaps.some((g) => Math.hypot(g.x - x, g.z - z) < 2.2) || r > TOWN.wall - 2.2 || r < SQ + 2) continue;
+            if (obstacles.some((o) => o.r > 0.35 && Math.hypot(o.x - x, o.z - z) < o.r + 0.6)) continue;
+            segs.push({ x, z, ry: Math.atan2(ux, uz) });
+          }
+        }
+      }
+      const fenceM = mat(0x8a6038, { map: painted('wood'), flatShading: false });
+      const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.1, 0.9, 0.1), fenceM, segs.length);
+      const rails = new THREE.InstancedMesh(new THREE.BoxGeometry(0.06, 0.07, 2.0), fenceM, segs.length * 2);
+      const FM = new THREE.Matrix4();
+      const FQ = new THREE.Quaternion();
+      const one = new THREE.Vector3(1, 1, 1);
+      segs.forEach((sg, i) => {
+        FQ.setFromAxisAngle(new THREE.Vector3(0, 1, 0), sg.ry);
+        posts.setMatrixAt(i, FM.compose(new THREE.Vector3(sg.x, 0.45, sg.z), FQ, one));
+        rails.setMatrixAt(i * 2, FM.compose(new THREE.Vector3(sg.x + Math.sin(sg.ry), 0.62, sg.z + Math.cos(sg.ry)), FQ, one));
+        rails.setMatrixAt(i * 2 + 1, FM.compose(new THREE.Vector3(sg.x + Math.sin(sg.ry), 0.32, sg.z + Math.cos(sg.ry)), FQ, one));
+      });
+      posts.castShadow = rails.castShadow = true;
+      scene.add(posts, rails);
+    }
     const groundGeo = new THREE.PlaneGeometry(GROUND, GROUND, 110, 110);
     groundGeo.rotateX(-Math.PI / 2);
     const gp = groundGeo.attributes.position;
@@ -1978,7 +2033,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     };
     // Only tufts: clumps of taller grass where the ground picture shows tall or lush grass. A whole
     // field of loose blades cost a lot of drawing for little; the patches on the ground do that work now.
-    const blades = phone ? 5000 : 12000;
+    const blades = plan ? (phone ? 8000 : 18000) : phone ? 5000 : 12000;
     const grass = new THREE.InstancedMesh(bladeGeo, bladeMat, blades);
     grass.frustumCulled = false; // its bounds are those of one blade
     const TALL = new THREE.Color(0x4f9a3a);
@@ -1995,7 +2050,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     };
     for (let i = 0; i < blades * 6 && made < blades - 6; i++) {
       const a = R() * Math.PI * 2;
-      const r = Math.sqrt(R()) * 26;
+      const r = Math.sqrt(R()) * (plan ? B - 1 : 26);
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
       if (onDirt(x, z) || obstacles.some((o) => o.r > 0.9 && Math.hypot(x - o.x, z - o.z) < o.r - 0.3)) continue;
@@ -2666,6 +2721,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const w = el.clientWidth || 1;
       const h = el.clientHeight || 1;
       renderer.setSize(w, h, false);
+      film.setSize(w, h);
       canvas.style.width = '100%';
       canvas.style.height = '100%';
       camera.aspect = w / h;
@@ -2716,6 +2772,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const loop = () => {
       raf = requestAnimationFrame(loop);
       const dt = Math.min(clock.getDelta(), 0.2);
+      film.frame(dt);
       // Frames per second, averaged over a second, for whoever wants to see how the world runs on this device.
       fpsFrames++;
       const nowMs = performance.now();
@@ -2877,12 +2934,32 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const zoom = narrow ? 1.08 : 1;
       // In the room the camera looks down from higher up, over the wall that is left out.
       const indoor = inside();
-      const far2 = 6.6 * zoom * camZoom.current;
-      camPos.set(p.x + Math.sin(camAngle.current) * far2, Math.max(0.9, (indoor ? 5.6 : 3.5) * zoom * camZoom.current * camTilt.current), p.z + Math.cos(camAngle.current) * far2);
+      const low = chaseRef.current && !indoor;
+      if (low && walking && !reduce) {
+        // Behind the hero: the view swings round after the way the hero walks.
+        const want = facing.current + Math.PI;
+        camAngle.current += Math.atan2(Math.sin(want - camAngle.current), Math.cos(want - camAngle.current)) * Math.min(1, dt * 2.2);
+      }
+      const far2 = (low ? 4.6 : 6.6) * zoom * camZoom.current;
+      const camY = low ? Math.max(1.2, 2.0 * camZoom.current * camTilt.current) : Math.max(0.9, (indoor ? 5.6 : 3.5) * zoom * camZoom.current * camTilt.current);
+      camPos.set(p.x + Math.sin(camAngle.current) * far2, camY, p.z + Math.cos(camAngle.current) * far2);
       if (first || reduce) camera.position.copy(camPos);
       else camera.position.lerp(camPos, Math.min(1, dt * 6));
       first = false;
-      camera.lookAt(p.x, indoor ? 1.0 : 1.5, p.z);
+      if (low) {
+        // Looking over the hero's shoulder, a little way down the road ahead.
+        camera.lookAt(p.x - Math.sin(camAngle.current) * 3.5, 1.35, p.z - Math.cos(camAngle.current) * 3.5);
+        if (camera.fov !== 54) {
+          camera.fov = 54;
+          camera.updateProjectionMatrix();
+        }
+      } else {
+        camera.lookAt(p.x, indoor ? 1.0 : 1.5, p.z);
+        if (camera.fov !== 46) {
+          camera.fov = 46;
+          camera.updateProjectionMatrix();
+        }
+      }
       // Every few frames: the rooms (far off, at z > 300) only show while the hero is in one of them;
       // in the town what is far from the camera is not drawn (the fog hides it there anyway).
       frameNo++;
@@ -2923,7 +3000,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       // White walls and ceiling spots: the room is brighter and more even than the evening outside.
       skyLight.intensity = indoor ? 2.5 : 1.55;
-      sun.intensity = indoor ? 1.6 : 3.1;
+      sun.intensity = indoor ? 1.6 : plan ? 3.35 : 3.1;
       // In the town the shadows go with the hero (in steps, so they do not shimmer).
       sun.target.position.set(indoor ? here().at.x : plan ? Math.round(p.x / 4) * 4 : 0, 0, indoor ? here().at.z : plan ? Math.round(p.z / 4) * 4 : 0);
       sun.position.copy(sunBase).add(sun.target.position);
@@ -3083,7 +3160,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         const far = camera.far;
         camera.far = 70;
         camera.updateProjectionMatrix();
-        renderer.render(scene, camera);
+        film.render(scene, camera);
         camera.far = far;
         camera.updateProjectionMatrix();
         scene.background = null;
@@ -3091,7 +3168,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         sky.visible = glow.visible = disc.visible = true;
       } else if (!indoor) {
         renderer.autoClear = true;
-        renderer.render(scene, camera);
+        film.render(scene, camera);
       } else {
         // Inside, the room stands where its building stands: the village is drawn round it first, seen
         // from where the camera would be if the room were at that door, and the room goes on top.
@@ -3255,6 +3332,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           });
         }
       });
+      film.dispose();
       renderer.dispose();
       canvas.remove();
       delete el.dataset.state;
@@ -3429,6 +3507,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       </div>
       {/* Stacked on the right edge, clear of the action bar. */}
       <div className="absolute bottom-2 right-2 flex flex-col gap-1.5 land:grid land:grid-cols-2">
+        <button type="button" data-testid="cam-chase" aria-pressed={chase} onClick={toggleChase} aria-label={chase ? t('Camera: van bovenaf', 'Camera: from above') : t('Camera: achter je held', 'Camera: behind your hero')}
+          className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[18px] text-[#f6e2a6] aria-pressed:bg-[#5a4a1c]"><span aria-hidden>{chase ? '🦅' : '🎥'}</span></button>
         <button type="button" data-testid="zoom-in" onClick={() => zoomBy(1 / 1.25)} aria-label={t('Inzoomen', 'Zoom in')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[20px] font-bold leading-none text-[#f6e2a6]">+</button>
         <button type="button" data-testid="zoom-out" onClick={() => zoomBy(1.25)} aria-label={t('Uitzoomen', 'Zoom out')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[22px] font-bold leading-none text-[#f6e2a6]">−</button>
         <button type="button" onClick={() => turn.current(-45)} aria-label={t('Draai naar links', 'Turn left')} className="tap grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[#f6e2a6]"><RotateCcw size={18} aria-hidden /></button>
