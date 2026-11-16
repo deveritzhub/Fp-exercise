@@ -54,8 +54,8 @@ export const SPOTS = {
 } as const;
 
 /**
- * The other buildings of the town plan. Most open a part of the app; `soon` ones are closed for now
- * (a later part of the town). `look` picks the roof colour.
+ * The other buildings of the town plan. Most open a part of the app (`to`: a page, or `log:<tab>` for
+ * the quick log); `soon` ones are closed for now (a later part of the town). `look` picks the roof colour.
  */
 export type TownHouse = { key: string; nl: string; en: string; at: Vec; to?: string; roof: number; soon?: boolean; scale?: number };
 export const TOWN_HOUSES: TownHouse[] = [
@@ -68,9 +68,9 @@ export const TOWN_HOUSES: TownHouse[] = [
   // Wellbeing, north-east.
   { key: 'rehab', nl: 'Revalidatiecentrum', en: 'Rehab centre', at: { x: 13.5, z: -15 }, to: '/p/revalidatie', roof: 0x3d6a8a, scale: 1.15 },
   { key: 'healer', nl: 'Genezershuis', en: 'Healer’s house', at: { x: 15.5, z: -9.5 }, to: '/p/held/pijn', roof: 0xa83a3a },
-  { key: 'physio', nl: 'Fysio Praktijk', en: 'Physio practice', at: { x: 21.5, z: -13 }, roof: 0x7a4a8a, soon: true },
-  { key: 'massage', nl: 'Massagehuis', en: 'Massage house', at: { x: 25.5, z: -8.5 }, roof: 0x6a8a5a, soon: true },
-  { key: 'pool', nl: 'Zwemhuis', en: 'Swimming house', at: { x: 22, z: -3.6 }, roof: 0x3a7ab8, soon: true, scale: 1.15 },
+  { key: 'physio', nl: 'Fysio Praktijk', en: 'Physio practice', at: { x: 21.5, z: -13 }, to: '/p/berichten', roof: 0x7a4a8a },
+  { key: 'massage', nl: 'Massagehuis', en: 'Massage house', at: { x: 25.5, z: -8.5 }, to: 'log:sleep', roof: 0x6a8a5a },
+  { key: 'pool', nl: 'Zwemhuis', en: 'Swimming house', at: { x: 22, z: -3.6 }, to: 'log:water', roof: 0x3a7ab8, scale: 1.15 },
   // Market, east of the square.
   { key: 'grocer', nl: 'Kruidenier', en: 'Grocer', at: { x: 10.5, z: 3.8 }, to: '/p/voeding', roof: 0x5a8a3a },
   { key: 'baker', nl: 'Bakker', en: 'Baker', at: { x: 12, z: 7.8 }, to: '/p/voeding', roof: 0xb8782a },

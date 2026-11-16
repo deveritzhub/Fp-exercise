@@ -150,9 +150,9 @@ const PLACE_HINT: Record<string, [string, string]> = {
   baker: ['Recepten', 'Recipes'],
   inn: ['Je vrienden', 'Your friends'],
   townhall: ['Je instellingen', 'Your settings'],
-  physio: ['Komt later', 'Comes later'],
-  massage: ['Komt later', 'Comes later'],
-  pool: ['Komt later', 'Comes later'],
+  physio: ['Een bericht aan je fysiotherapeut', 'A message to your physio'],
+  massage: ['Herstel: je slaap bijhouden', 'Recovery: log your sleep'],
+  pool: ['Water drinken en bijhouden', 'Drink water and log it'],
   tradepost: ['Komt later', 'Comes later'],
   stables: ['Komt later', 'Comes later'],
   smithy: ['Je uitrusting en de winkel', 'Your gear and the shop'],
@@ -1038,6 +1038,8 @@ export function VillageWalkPage() {
             <Button size="lg" data-testid="enter-house" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(nearBuilding.key)}>{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}</Button>
           ) : nearBuilding && 'soon' in nearBuilding && nearBuilding.soon ? (
             <p role="status" data-testid="building-soon" className={`${PANEL} px-3 py-2 text-[13.5px]`}>{t(`${nearBuilding.label}: nog dicht. Dit deel van het dorp komt later.`, `${nearBuilding.label}: closed for now. This part of the village comes later.`)}</p>
+          ) : nearBuilding && nearBuilding.to.startsWith('log:') ? (
+            <Button size="lg" data-testid="enter-building" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => openQuickLog(nearBuilding.to.slice(4) as 'water' | 'sleep')}>{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}</Button>
           ) : nearBuilding ? (
             <Link to={nearBuilding.to} data-testid="enter-building" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">
               <DoorOpen className="h-5 w-5" aria-hidden />{t(`Naar binnen: ${nearBuilding.label}`, `Go in: ${nearBuilding.label}`)}
