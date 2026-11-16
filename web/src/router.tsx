@@ -56,6 +56,8 @@ const PainCheckinPage = named(() => import('@/pages/patient/HeroPages'), 'PainCh
 const FriendsPage = named(() => import('@/pages/patient/FriendsPage'), 'FriendsPage');
 const LogbookPage = named(() => import('@/pages/patient/LogbookPage'), 'LogbookPage');
 const NutritionPage = named(() => import('@/pages/patient/NutritionPage'), 'NutritionPage');
+const GamesPage = named(() => import('@/pages/patient/GamesPage'), 'GamesPage');
+const GamePlayPage = named(() => import('@/pages/patient/GamesPage'), 'GamePlayPage');
 const GymLogPage = named(() => import('@/pages/patient/GymLogPage'), 'GymLogPage');
 const MessagesPage = named(() => import('@/pages/patient/MessagesPage'), 'MessagesPage');
 const ComplaintExplanationPage = named(() => import('@/pages/patient/ComplaintExplanationPage'), 'ComplaintExplanationPage');
@@ -196,6 +198,8 @@ export const router = createBrowserRouter([
           { path: 'held/vrienden', element: <S><FriendsPage /></S> },
           { path: 'logboek', element: <S><LogbookPage /></S> },
           { path: 'voeding', element: <S><NutritionPage /></S> },
+          { path: 'spellen', element: <S><GamesPage /></S> },
+          { path: 'spellen/:game', element: <S><GamePlayPage /></S> },
           { path: 'revalidatie', element: <S><ModulePage key="revalidatie" module="revalidatie" /></S> },
           { path: 'kracht', element: <S><ModulePage key="kracht" module="kracht" /></S> },
           { path: 'mobiliteit', element: <S><ModulePage key="mobiliteit" module="mobiliteit" /></S> },
