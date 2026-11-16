@@ -18,7 +18,7 @@ const eye = (g: THREE.Group, x: number, y: number, z: number, r = 0.055) => {
 
 /** The sculpted models (web/public/village/creatures). Bump the version when a file changes. */
 const MODEL: Partial<Record<CreatureKind, { file: string; scale: number }>> = {
-  oak: { file: 'eik', scale: 1 },
+  oak: { file: 'boom_eik', scale: 0.42 },
   // The shadow side, sculpted (each at its own height in the file).
   pride: { file: 'pronkpauw', scale: 1 },
   rage: { file: 'vuurkop', scale: 1 },
@@ -37,17 +37,17 @@ const MODEL: Partial<Record<CreatureKind, { file: string; scale: number }>> = {
   cow: { file: 'koe', scale: 0.92 },
   boar: { file: 'zwijn', scale: 1 },
   // The hunting grounds and their bosses, and what grows and lies about.
-  wolf: { file: 'wolf', scale: 0.62 },
-  alpha_wolf: { file: 'alfawolf', scale: 1 },
+  wolf: { file: 'wolf', scale: 0.88 },
+  alpha_wolf: { file: 'alfawolf', scale: 1.2 },
   bear: { file: 'beer', scale: 0.85 },
-  alpha_bear: { file: 'alfabeer', scale: 1.3 },
-  alpha_boar: { file: 'alfazwijn', scale: 1.15 },
+  alpha_bear: { file: 'alfabeer', scale: 1.05 },
+  alpha_boar: { file: 'alfazwijn', scale: 1.05 },
   rock: { file: 'rots', scale: 1 },
   bush: { file: 'bessenstruik', scale: 0.95 },
   pebble: { file: 'steentjes', scale: 1 },
   twigs: { file: 'takjes', scale: 1.1 },
 };
-const CREATURES_VERSION = 3;
+const CREATURES_VERSION = 4;
 
 /**
  * A creature for the village: the sculpted model, with the simple one made here standing in until

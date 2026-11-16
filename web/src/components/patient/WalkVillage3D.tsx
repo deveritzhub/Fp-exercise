@@ -1469,7 +1469,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const loadHelper = (key: string, color: THREE.Color, onto: THREE.Object3D, y: number, scale: number, standIn?: THREE.Object3D, x = 0, glowOf = 0.9) => {
       const file = LIGHT_FILE[key];
       if (!file) return;
-      loadModel(`/village/light/${file}.glb?v=1`).then((gltf) => {
+      loadModel(`/village/light/${file}.glb?v=2`).then((gltf) => {
         if (cancelled) return;
         const model = gltf.scene.clone(true);
         model.scale.setScalar(scale);
@@ -1594,6 +1594,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       wallMesh.receiveShadow = true;
       scene.add(wallMesh, crenM);
       // Towers, two of them by the gate, with a red pennant.
+      const gateParts: THREE.Object3D[] = [];
       const towerM = mat(0x8d877d, { map: painted('stone', 2, 2), flatShading: false });
       const capM = mat(0x8e3b3b, { map: painted('shingle', 2, 1), flatShading: false });
       for (const deg of [...TOWN.gates.flatMap((g) => [g - 8, g + 8]), 45, 135, 225, 315]) {
@@ -1602,12 +1603,48 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         const tz = Math.sin(a) * W;
         const gate = TOWN.gates.some((g) => Math.abs(((deg - g + 540) % 360) - 180) === 8);
         obstacles.push({ x: tx, z: tz, r: gate ? 1.25 : 1.1 });
-        prop(new THREE.CylinderGeometry(gate ? 1.1 : 0.95, gate ? 1.2 : 1.05, gate ? 4.2 : 3.6, 10), towerM, tx, gate ? 2.1 : 1.8, tz);
-        prop(new THREE.ConeGeometry(gate ? 1.35 : 1.2, 1.5, 10), capM, tx, (gate ? 4.2 : 3.6) + 0.75, tz);
+        const tower = prop(new THREE.CylinderGeometry(gate ? 1.1 : 0.95, gate ? 1.2 : 1.05, gate ? 4.2 : 3.6, 10), towerM, tx, gate ? 2.1 : 1.8, tz);
+        const cap = prop(new THREE.ConeGeometry(gate ? 1.35 : 1.2, 1.5, 10), capM, tx, (gate ? 4.2 : 3.6) + 0.75, tz);
         const pole = prop(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 5), darkWood, tx, (gate ? 4.2 : 3.6) + 1.9, tz);
         pole.castShadow = false;
-        flags.push(prop(new THREE.BoxGeometry(0.02, 0.36, 0.6), mat(0xb8332c), tx, (gate ? 4.2 : 3.6) + 2.25, tz + 0.3));
+        const flag = prop(new THREE.BoxGeometry(0.02, 0.36, 0.6), mat(0xb8332c), tx, (gate ? 4.2 : 3.6) + 2.25, tz + 0.3);
+        flags.push(flag);
+        if (gate) {
+          // Kept apart (not merged with the rest), so they can give way to the painted gatehouse.
+          for (const part of [tower, cap, pole, flag]) part.userData.dynamic = true;
+          gateParts.push(tower, cap, pole, flag);
+        }
       }
+      // The gates themselves: a painted gatehouse with two towers and a walkway over the road, in place
+      // of the towers made here once it has loaded. Its side walls stop the hero; the road stays open.
+      for (const g of TOWN.gates) {
+        const a = (g * Math.PI) / 180;
+        const tx = -Math.sin(a);
+        const tz = Math.cos(a);
+        for (const side of [-1, 1]) for (const d of [1.95, 2.75]) obstacles.push({ x: Math.cos(a) * W + tx * d * side, z: Math.sin(a) * W + tz * d * side, r: 0.5 });
+      }
+      loadModel('/village/buildings/poort_torens.glb?v=1')
+        .then((gltf) => {
+          if (cancelled) return;
+          for (const g of TOWN.gates) {
+            const a = (g * Math.PI) / 180;
+            const gh = gltf.scene.clone(true);
+            gh.scale.setScalar(0.62);
+            gh.position.set(Math.cos(a) * W, 0, Math.sin(a) * W);
+            gh.rotation.y = Math.atan2(-Math.cos(a), -Math.sin(a));
+            gh.traverse((o) => {
+              const gm = o as THREE.Mesh;
+              if (!gm.isMesh) return;
+              gm.castShadow = true;
+              const mm = gm.material as THREE.MeshStandardMaterial;
+              mm.metalness = 0;
+              mm.roughness = 0.9;
+            });
+            scene.add(gh);
+          }
+          for (const part of gateParts) part.visible = false;
+        })
+        .catch(() => undefined);
       // The hunting grounds outside the wall (and the ones in town): a signpost with the name and the
       // level, and for the wolves and the bears a den. Their names show as labels.
       for (const zn of ZONES) {
@@ -2010,6 +2047,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     // In the town: more trees between the districts, in the same two meshes (no extra cost to draw).
     let townN = 0;
     const townAt: { x: number; z: number; sc: number; crown: THREE.Matrix4[]; hidden: boolean }[] = [];
+    // Every tree (town first, then the hills), for the painted tree models that take their place.
+    const allTrees: { x: number; y: number; z: number; sc: number; town: boolean }[] = [];
     for (let i = 0; i < 3000 && townN < townTrees; i++) {
       const a = R() * Math.PI * 2;
       const r = SQ + 3 + R() * (B - SQ - 3.5);
@@ -2025,6 +2064,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       obstacles.push({ x, z, r: 0.45 });
       villageTrees.push({ x, z });
+      allTrees.push({ x, y: 0, z, sc, town: true });
       townAt.push({ x, z, sc, crown: [0, 1, 2].map((k) => { const cm = new THREE.Matrix4(); crowns.getMatrixAt(townN * 3 + k, cm); return cm; }), hidden: false });
       townN++;
     }
@@ -2044,6 +2084,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         crowns.setMatrixAt(n * 3 + k, M.compose(new THREE.Vector3(x + (k - 1) * 0.55 * sc * (R() + 0.4), y + (2.1 + (k === 1 ? 0.6 : R() * 0.4)) * sc, z + (R() - 0.5) * 0.9 * sc), Q, new THREE.Vector3(br, br * 0.85, br)));
         crowns.setColorAt(n * 3 + k, col.setHex(LEAVES[Math.floor(R() * LEAVES.length)]));
       }
+      allTrees.push({ x, y, z, sc, town: false });
       n++;
       trunks.count = n;
       crowns.count = n * 3;
@@ -2051,6 +2092,54 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     trunks.castShadow = true;
     crowns.castShadow = true;
     scene.add(trunks, crowns);
+    // In the town the painted trees (oak, pine, birch) take the place of the ones made here, once loaded.
+    let treeSlots: { mesh: THREE.InstancedMesh; idx: number; m: THREE.Matrix4 }[] | null = null;
+    if (plan && allTrees.length) {
+      Promise.all(['boom_eik', 'boom_den', 'boom_berk'].map((f) => loadModel(`/village/buildings/${f}.glb?v=1`)))
+        .then((models) => {
+          if (cancelled) return;
+          const parts = models.map((gltf) => {
+            gltf.scene.updateMatrixWorld(true);
+            let geo: THREE.BufferGeometry | null = null;
+            let mtl: THREE.Material | null = null;
+            gltf.scene.traverse((o) => {
+              const tm = o as THREE.Mesh;
+              if (tm.isMesh && !geo) {
+                geo = tm.geometry.clone().applyMatrix4(tm.matrixWorld);
+                const mm = (tm.material as THREE.MeshStandardMaterial).clone();
+                mm.metalness = 0;
+                mm.roughness = 0.9;
+                mtl = mm;
+              }
+            });
+            return { geo, mtl } as { geo: THREE.BufferGeometry | null; mtl: THREE.Material | null };
+          });
+          if (parts.some((pt) => !pt.geo)) return;
+          const TR = rng(77);
+          // Oaks and birches in the town, mostly pines on the hills.
+          const kindOf = allTrees.map((t) => { const u = TR(); return t.town ? (u < 0.55 ? 0 : u < 0.8 ? 2 : 1) : (u < 0.55 ? 1 : u < 0.8 ? 0 : 2); });
+          const meshes = parts.map((pt, k) => {
+            const im = new THREE.InstancedMesh(pt.geo!, pt.mtl!, Math.max(1, kindOf.filter((x) => x === k).length));
+            im.castShadow = true;
+            im.receiveShadow = false;
+            im.count = 0;
+            return im;
+          });
+          const up = new THREE.Vector3(0, 1, 0);
+          treeSlots = allTrees.map((t, i) => {
+            const mesh = meshes[kindOf[i]];
+            const idx = mesh.count++;
+            const s3 = 0.5 * t.sc;
+            const m = new THREE.Matrix4().compose(new THREE.Vector3(t.x, t.y, t.z), new THREE.Quaternion().setFromAxisAngle(up, TR() * Math.PI * 2), new THREE.Vector3(s3, s3 * (0.9 + TR() * 0.2), s3));
+            mesh.setMatrixAt(idx, townAt[i]?.hidden ? zero : m);
+            return { mesh, idx, m };
+          });
+          for (const im of meshes) scene.add(im);
+          trunks.visible = crowns.visible = false;
+          el.dataset.trees = 'painted';
+        })
+        .catch(() => undefined);
+    }
     // A town tree between the camera and the hero is taken away while it stands in the way.
     const zero = new THREE.Matrix4().makeScale(0, 0, 0);
     const trunkM = new THREE.Matrix4();
@@ -2069,6 +2158,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         changed = true;
         trunks.setMatrixAt(i, block ? zero : trunkM.compose(new THREE.Vector3(tr.x, 0.8 * tr.sc, tr.z), Q.identity(), new THREE.Vector3(tr.sc, tr.sc, tr.sc)));
         for (let k = 0; k < 3; k++) crowns.setMatrixAt(i * 3 + k, block ? zero : tr.crown[k]);
+        const slot = treeSlots?.[i];
+        if (slot) {
+          slot.mesh.setMatrixAt(slot.idx, block ? zero : slot.m);
+          slot.mesh.instanceMatrix.needsUpdate = true;
+        }
       });
       if (changed) {
         trunks.instanceMatrix.needsUpdate = true;
