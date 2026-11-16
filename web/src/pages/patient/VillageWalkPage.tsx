@@ -22,7 +22,7 @@ import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
 import { SUPPLY } from '@shared/supplies';
 import { useSupplies } from '@/lib/supplies';
-import { alphaAdvised, armourByKey, isShadow, LIGHT, ZONES, zoneAt, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
+import { swingMs, alphaAdvised, armourByKey, isShadow, LIGHT, ZONES, zoneAt, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
@@ -796,10 +796,18 @@ export function VillageWalkPage() {
   // The right tool for what stands here: the hatchet for an oak, the pickaxe for a rock.
   const mobTool = mob ? toolFor(mob.kind) : null;
   const hasTool = !!mobTool && (adventure.data?.tools ?? []).includes(mobTool.key);
+  // Fighting goes on its own once started (a tap on the creature, or the button): a blow at the pace
+  // of the weapon, until the creature is beaten or the hero walks away. Tapping faster does nothing.
+  const [engaged, setEngaged] = useState<string | null>(null);
+  const lastSwing = useRef(0);
   const strike = async () => {
     if (!mob || downBy) return;
     // A big oak asks for a hatchet, a big rock for a pickaxe (from the tool shop).
     if (NEEDS_TOOL[mob.kind] && !hasTool) return;
+    if (engaged !== mob.key) setEngaged(mob.key);
+    const now = Date.now();
+    if (now - lastSwing.current < swingMs(mob.kind, weapon)) return;
+    lastSwing.current = now;
     world.current?.strike(mob.key);
     if (!provoked.includes(mob.key)) setProvoked((p) => [...p, mob.key]);
     const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, isHarvest(mob.kind) ? 0 : weapon.power) * (supply.fed ? SUPPLY.fedPower : 1) * (hasTool ? TOOL_BONUS.blows : 1) * (light.has('courage') && !isHarvest(mob.kind) && !(hurt[mob.key] ?? 0) ? 2 : 1);
@@ -808,6 +816,7 @@ export function VillageWalkPage() {
       return;
     }
     const key = mob.key;
+    setEngaged(null);
     setBeaten((b) => [...b, key]);
     setHurt((h) => ({ ...h, [key]: 0 }));
     // It comes back after a while, somewhere to return to.
@@ -828,6 +837,17 @@ export function VillageWalkPage() {
       say(e);
     }
   };
+  // The fight runs on by itself while the hero stands by the creature it took on.
+  const strikeRef = useRef(strike);
+  strikeRef.current = strike;
+  useEffect(() => {
+    if (!mob || engaged !== mob.key || downBy) return;
+    const id = window.setInterval(() => void strikeRef.current(), 120);
+    return () => window.clearInterval(id);
+  }, [mob, engaged, downBy]);
+  useEffect(() => {
+    if (!mob) setEngaged(null);
+  }, [mob]);
 
   const run = (task: Task) => {
     hideTip();
@@ -952,7 +972,7 @@ export function VillageWalkPage() {
             onZone={(z) => { setZone(z); zoneNow.current = z; if (z === DUNGEON_KEY) toast((adventure.data?.level ?? 1) >= 10 ? t('🕳️ De onderwereld. Hoe dieper, hoe zwaarder. Achterin wacht de Schaamtevorst.', '🕳️ The underworld. The deeper, the heavier. The Shame lord waits at the far end.') : t('🕳️ De onderwereld is voor avonturier 10 en hoger. Nu is het hier nog stil.', '🕳️ The underworld is for adventurer 10 and up. For now it is quiet down here.')); if (z === 'village') leftBy.current = true; }}
             onTalk={setTalk}
             onDestination={(k) => { setDest(k); if (!k) return; hideTip(); }}
-            onArrive={(k) => { if (k === TV_KEY) setTvOpen(true); }}
+            onArrive={(k) => { if (k === TV_KEY) setTvOpen(true); if (k.startsWith('mob:')) setEngaged(k); }}
           />}
         </Suspense>
 
@@ -1066,7 +1086,7 @@ export function VillageWalkPage() {
               </Link>
             ) : (
             <Button size="lg" data-testid="strike" className="pointer-events-auto border border-[#ffb3a1] shadow-lift" icon={<Swords className="h-5 w-5" />} onClick={() => void strike()}>
-              {mob.kind === 'bush' ? t('Pluk bessen', 'Pick berries') : mob.kind === 'pebble' ? t('Raap de steentjes op', 'Pick up the pebbles') : mob.kind === 'twigs' ? t('Raap de takken op', 'Pick up the twigs') : isHarvest(mob.kind) ? t(`Hak de ${mob.label.toLowerCase()}${hasTool && mobTool ? ` met je ${mobTool.nl.toLowerCase()}` : ''}`, `Chop the ${mob.label.toLowerCase()}${hasTool && mobTool ? ` with your ${mobTool.en.toLowerCase()}` : ''}`) : t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : light.has('neutrality') && !isHarvest(mob.kind) ? t(` · zwak tegen ${WEAK_NL[CREATURES[mob.kind].weakTo] ?? ''}`, ` · weak to ${WEAK_EN[CREATURES[mob.kind].weakTo] ?? ''}`) : ''}
+              {engaged === mob.key && !isHarvest(mob.kind) ? t(`Vecht met ${mob.label}…`, `Fighting ${mob.label}…`) : mob.kind === 'bush' ? t('Pluk bessen', 'Pick berries') : mob.kind === 'pebble' ? t('Raap de steentjes op', 'Pick up the pebbles') : mob.kind === 'twigs' ? t('Raap de takken op', 'Pick up the twigs') : isHarvest(mob.kind) ? t(`Hak de ${mob.label.toLowerCase()}${hasTool && mobTool ? ` met je ${mobTool.nl.toLowerCase()}` : ''}`, `Chop the ${mob.label.toLowerCase()}${hasTool && mobTool ? ` with your ${mobTool.en.toLowerCase()}` : ''}`) : t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : light.has('neutrality') && !isHarvest(mob.kind) ? t(` · zwak tegen ${WEAK_NL[CREATURES[mob.kind].weakTo] ?? ''}`, ` · weak to ${WEAK_EN[CREATURES[mob.kind].weakTo] ?? ''}`) : ''}
             </Button>
             )}
             </span>

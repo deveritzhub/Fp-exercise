@@ -56,8 +56,8 @@ export const ATTACKS: Record<CreatureKind, { damage: number; everyMs: number; ag
   couch: { damage: 2, everyMs: 1800, aggressive: false },
   giant_slime: { damage: 3, everyMs: 1700, aggressive: false },
   couch_king: { damage: 5, everyMs: 1800, aggressive: true },
-  chicken: { damage: 0, everyMs: 1500, aggressive: false },
-  cow: { damage: 0, everyMs: 1500, aggressive: false },
+  chicken: { damage: 1, everyMs: 1500, aggressive: false },
+  cow: { damage: 2, everyMs: 1800, aggressive: false },
   boar: { damage: 3, everyMs: 1500, aggressive: true },
   alpha_boar: { damage: 8, everyMs: 1600, aggressive: true },
   oak: { damage: 0, everyMs: 1500, aggressive: false },
@@ -131,15 +131,15 @@ export function adventureLevel(xp: number): { level: number; from: number; to: n
  * The village shows it in the hero's hand (web/src/components/patient/weapons3d.ts).
  */
 export const WEAPONS = [
-  { key: 'fists', level: 1, power: 0, price: 0, strength: 0, nl: 'Vuisten', en: 'Fists' },
-  { key: 'staff', level: 2, power: 1, price: 30, strength: 0, nl: 'Wandelstaf', en: 'Walking staff' },
-  { key: 'gloves', level: 3, power: 1.5, price: 60, strength: 0, nl: 'Bokshandschoenen', en: 'Boxing gloves' },
-  { key: 'club', level: 4, power: 2, price: 90, strength: 0, nl: 'Knots', en: 'Club' },
-  { key: 'hammer', level: 6, power: 3, price: 140, strength: 2, nl: 'Smidshamer', en: 'Smith’s hammer' },
-  { key: 'sword', level: 8, power: 4, price: 200, strength: 3, nl: 'IJzeren zwaard', en: 'Iron sword' },
-  { key: 'axe', level: 10, power: 5, price: 280, strength: 4, nl: 'Strijdbijl', en: 'Battle axe' },
-  { key: 'spear', level: 13, power: 6.5, price: 380, strength: 5, nl: 'Speer', en: 'Spear' },
-  { key: 'hero_sword', level: 16, power: 9, price: 600, strength: 6, nl: 'Heldenzwaard', en: 'Hero’s sword' },
+  { key: 'fists', level: 1, power: 0, speedMs: 800, price: 0, strength: 0, nl: 'Vuisten', en: 'Fists' },
+  { key: 'staff', level: 2, power: 1, speedMs: 1000, price: 30, strength: 0, nl: 'Wandelstaf', en: 'Walking staff' },
+  { key: 'gloves', level: 3, power: 1.5, speedMs: 750, price: 60, strength: 0, nl: 'Bokshandschoenen', en: 'Boxing gloves' },
+  { key: 'club', level: 4, power: 2, speedMs: 1300, price: 90, strength: 0, nl: 'Knots', en: 'Club' },
+  { key: 'hammer', level: 6, power: 3, speedMs: 1500, price: 140, strength: 2, nl: 'Smidshamer', en: 'Smith’s hammer' },
+  { key: 'sword', level: 8, power: 4, speedMs: 1050, price: 200, strength: 3, nl: 'IJzeren zwaard', en: 'Iron sword' },
+  { key: 'axe', level: 10, power: 5, speedMs: 1400, price: 280, strength: 4, nl: 'Strijdbijl', en: 'Battle axe' },
+  { key: 'spear', level: 13, power: 6.5, speedMs: 1150, price: 380, strength: 5, nl: 'Speer', en: 'Spear' },
+  { key: 'hero_sword', level: 16, power: 9, speedMs: 950, price: 600, strength: 6, nl: 'Heldenzwaard', en: 'Hero’s sword' },
 ] as const;
 export type Weapon = (typeof WEAPONS)[number];
 /** The best weapon earned at this level, and the next one to come (null at the last). */
@@ -404,3 +404,15 @@ export function bossOfWeek(day: string): CreatureKind {
   return BOSSES[monday % BOSSES.length].kind;
 }
 export const BOSS_WEEK_BONUS = 1.5;
+
+/**
+ * How often a blow lands when the hero fights on its own (it keeps swinging until the creature is
+ * beaten or the hero walks away): each weapon has its pace, so tapping faster does not hit harder.
+ * Fists are quick and light, a hammer or an axe slow and heavy. A tool works at its own pace, and
+ * picking something up is quick.
+ */
+export function swingMs(kind: CreatureKind, weapon: Weapon): number {
+  if (isPickup(kind)) return 650;
+  if (isHarvest(kind)) return 1000;
+  return weapon.speedMs;
+}

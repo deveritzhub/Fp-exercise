@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { BOSSES, bossOfWeek, LIGHT, isShadow, lightFrom, CREATURES, ZONES, zoneAt, COOKING, DAILY_QUESTS, dailyQuest, adventureLevel, blow, boxingXp, CREATURE_KINDS, DROPS, LOOT, rollDrops, weaponAt, weaponByKey } from './adventure';
+import { swingMs, WEAPONS, BOSSES, bossOfWeek, LIGHT, isShadow, lightFrom, CREATURES, ZONES, zoneAt, COOKING, DAILY_QUESTS, dailyQuest, adventureLevel, blow, boxingXp, CREATURE_KINDS, DROPS, LOOT, rollDrops, weaponAt, weaponByKey } from './adventure';
 
 describe('adventure', () => {
   it('levels: 60 XP for the first, 30 more for each next', () => {
@@ -48,9 +48,11 @@ describe('fighting back and the hero life', async () => {
     expect(heroMaxHp(5, false)).toBe(80);
     expect(heroMaxHp(1, true)).toBe(50);
   });
-  it('prey never hits back; the Alpha attacks by itself, hits hardest and can beat a new hero', () => {
-    expect(hitOnHero('chicken', false)).toBe(0);
-    expect(hitOnHero('cow', false)).toBe(0);
+  it('prey only hits back once struck, and softly; the Alpha attacks by itself, hits hardest and can beat a new hero', () => {
+    expect(ATTACKS.chicken.aggressive).toBe(false);
+    expect(ATTACKS.cow.aggressive).toBe(false);
+    expect(hitOnHero('cow', false)).toBeLessThanOrEqual(2);
+    expect(hitOnHero('oak', false)).toBe(0);
     expect(isAlpha('alpha_boar')).toBe(true);
     expect(ATTACKS.alpha_boar.aggressive).toBe(true);
     // Hardest of everything in town; the wolves and bears outside the wall are for stronger adventurers.
@@ -121,5 +123,13 @@ describe('the boss board', () => {
     expect(bossOfWeek('2026-11-23')).not.toBe(bossOfWeek('2026-11-16'));
     const seen = new Set(Array.from({ length: BOSSES.length }, (_, i) => bossOfWeek(new Date(Date.UTC(2026, 10, 16 + i * 7)).toISOString().slice(0, 10))));
     expect(seen.size).toBe(BOSSES.length);
+  });
+});
+
+describe('fighting on its own', () => {
+  it('each weapon has its pace: tapping faster does not hit harder', () => {
+    for (const w of WEAPONS) expect(w.speedMs).toBeGreaterThanOrEqual(700);
+    expect(swingMs('cow', WEAPONS[0])).toBe(WEAPONS[0].speedMs);
+    expect(swingMs('pebble', WEAPONS[5])).toBeLessThan(swingMs('oak', WEAPONS[5]));
   });
 });
