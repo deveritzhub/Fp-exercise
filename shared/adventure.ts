@@ -24,6 +24,9 @@ export const CREATURES = {
   // Outside the town wall, each in its own hunting ground: they show themselves from their level on.
   wolf: { nl: 'Wolf', en: 'Wolf', hp: 26, xp: 70, weakTo: 'trained', level: 6 },
   bear: { nl: 'Beer', en: 'Bear', hp: 50, xp: 140, weakTo: 'trained', level: 10 },
+  // The boss of each hunting ground: shows itself with its pack, a fair fight only later (alphaAdvised).
+  alpha_wolf: { nl: 'Alfawolf', en: 'Alpha wolf', hp: 120, xp: 400, weakTo: 'trained', level: 6 },
+  alpha_bear: { nl: 'Alfabeer', en: 'Alpha bear', hp: 220, xp: 800, weakTo: 'trained', level: 10 },
 } as const;
 export type CreatureKind = keyof typeof CREATURES;
 export const CREATURE_KINDS = Object.keys(CREATURES) as CreatureKind[];
@@ -48,6 +51,8 @@ export const ATTACKS: Record<CreatureKind, { damage: number; everyMs: number; ag
   bush: { damage: 0, everyMs: 1500, aggressive: false },
   wolf: { damage: 5, everyMs: 1400, aggressive: true },
   bear: { damage: 9, everyMs: 1700, aggressive: true },
+  alpha_wolf: { damage: 12, everyMs: 1500, aggressive: true },
+  alpha_bear: { damage: 18, everyMs: 1800, aggressive: true },
 };
 /** Trees and rocks: you chop them for wood and stone; they never fight back. */
 export const isHarvest = (kind: CreatureKind) => kind === 'oak' || kind === 'rock' || kind === 'bush';
@@ -57,6 +62,8 @@ export const isFriendly = (kind: CreatureKind) => ATTACKS[kind].damage === 0;
 export const isAlpha = (kind: CreatureKind) => kind.startsWith('alpha_');
 /** The adventurer level at which an Alpha is a fair fight (it shows itself earlier, as a warning). */
 export const ALPHA_ADVISED_LEVEL = 5;
+/** The adventurer level at which each Alpha is a fair fight. */
+export const alphaAdvised = (kind: CreatureKind): number => (kind === 'alpha_wolf' ? 9 : kind === 'alpha_bear' ? 13 : ALPHA_ADVISED_LEVEL);
 
 /**
  * The hero's life in the village: it grows with the adventure level, and a real workout today gives
@@ -69,9 +76,9 @@ export function heroMaxHp(level: number, trainedToday: boolean): number {
 /** Life that comes back by itself out of a fight, per second; after a while without being hit. */
 export const HERO_REGEN = { perSecond: 2, afterMs: 5000 } as const;
 /** Damage a creature does after the hero's armour: a real workout today takes the edge off by a fifth. */
-export const hitOnHero = (kind: CreatureKind, trainedToday: boolean) => {
+export const hitOnHero = (kind: CreatureKind, trainedToday: boolean, guard = 0) => {
   const d = ATTACKS[kind].damage;
-  return d <= 0 ? 0 : Math.max(1, Math.round(d * (trainedToday ? 0.8 : 1)));
+  return d <= 0 ? 0 : Math.max(1, Math.round(d * (trainedToday ? 0.8 : 1) * (1 - guard)));
 };
 
 /** Wins that count per day; after that the creatures can still be beaten, for nothing. */
@@ -147,6 +154,8 @@ export const LOOT = {
   fang: { nl: 'Wolventand', en: 'Wolf fang', icon: '🦷' },
   bear_pelt: { nl: 'Berenvacht', en: 'Bear pelt', icon: '🐻' },
   claw: { nl: 'Berenklauw', en: 'Bear claw', icon: '🐾' },
+  alpha_fang: { nl: 'Alfawolventand', en: 'Alpha wolf fang', icon: '🌙' },
+  alpha_claw: { nl: 'Alfaberenklauw', en: 'Alpha bear claw', icon: '💥' },
   wood: { nl: 'Hout', en: 'Wood', icon: '🪵' },
   stone: { nl: 'Steen', en: 'Stone', icon: '🪨' },
   berries: { nl: 'Bessen', en: 'Berries', icon: '🫐' },
@@ -174,6 +183,8 @@ export const DROPS: Record<CreatureKind, { item: LootKey; chance: number; max: n
   bush: [{ item: 'berries', chance: 1, max: 3 }],
   wolf: [{ item: 'wolf_pelt', chance: 1, max: 1 }, { item: 'bone', chance: 1, max: 2 }, { item: 'fang', chance: 0.4, max: 1 }],
   bear: [{ item: 'bear_pelt', chance: 1, max: 1 }, { item: 'meat', chance: 1, max: 3 }, { item: 'claw', chance: 0.5, max: 2 }],
+  alpha_wolf: [{ item: 'alpha_fang', chance: 1, max: 1 }, { item: 'wolf_pelt', chance: 1, max: 2 }, { item: 'fang', chance: 1, max: 2 }],
+  alpha_bear: [{ item: 'alpha_claw', chance: 1, max: 1 }, { item: 'bear_pelt', chance: 1, max: 2 }, { item: 'claw', chance: 1, max: 3 }],
 };
 
 /** The drops of one win. `rnd` gives numbers in [0, 1), as Math.random does. */
@@ -206,7 +217,7 @@ export const NEEDS_TOOL: Partial<Record<CreatureKind, string>> = { oak: 'hatchet
  * Plant-based: loot that comes from animals can always be paid with berries instead. How many berries
  * one piece is worth. Nobody has to hunt to build a home.
  */
-export const BERRIES_FOR: Partial<Record<LootKey, number>> = { hide: 3, bone: 3, meat: 2, feather: 1, egg: 2, tusk: 5, alpha_tusk: 25, wolf_pelt: 4, fang: 3, bear_pelt: 6, claw: 4 };
+export const BERRIES_FOR: Partial<Record<LootKey, number>> = { hide: 3, bone: 3, meat: 2, feather: 1, egg: 2, tusk: 5, alpha_tusk: 25, wolf_pelt: 4, fang: 3, bear_pelt: 6, claw: 4, alpha_fang: 30, alpha_claw: 40 };
 
 /**
  * Things to make from loot: the weaker weapons (a second way next to buying), and a chest.
@@ -217,7 +228,12 @@ export const RECIPES = [
   { key: 'gloves', kind: 'weapon', nl: 'Bokshandschoenen', en: 'Boxing gloves', icon: '🥊', needs: { hide: 2, feather: 2 } },
   { key: 'club', kind: 'weapon', nl: 'Knots', en: 'Club', icon: '🏏', needs: { wood: 4, bone: 2 } },
   { key: 'chest', kind: 'build', nl: 'Kist', en: 'Chest', icon: '🧰', needs: { wood: 6, hide: 1 } },
-] as const satisfies readonly { key: string; kind: 'weapon' | 'build'; nl: string; en: string; icon: string; needs: Partial<Record<LootKey, number>> }[];
+  // Armour, made from what the creatures leave: it softens their blows (ARMOURS).
+  { key: 'leather', kind: 'armour', nl: 'Leren harnas', en: 'Leather armour', icon: '🦺', needs: { hide: 3 } },
+  { key: 'wolf_cloak', kind: 'armour', nl: 'Wolvenmantel', en: 'Wolf cloak', icon: '🧥', needs: { wolf_pelt: 3, fang: 1 } },
+  { key: 'bear_armour', kind: 'armour', nl: 'Berenharnas', en: 'Bear armour', icon: '🛡️', needs: { bear_pelt: 2, claw: 2 } },
+  { key: 'alpha_armour', kind: 'armour', nl: 'Alfaharnas', en: 'Alpha armour', icon: '👑', needs: { alpha_fang: 1, alpha_claw: 1, bear_pelt: 2 } },
+] as const satisfies readonly { key: string; kind: 'weapon' | 'build' | 'armour'; nl: string; en: string; icon: string; needs: Partial<Record<LootKey, number>> }[];
 export type Recipe = (typeof RECIPES)[number];
 export const builtItem = (key: string) => `built_${key}`;
 /** How many of one kind of loot the backpack holds; a chest holds far more. */
@@ -273,3 +289,13 @@ export const ZONES = [
 export type Zone = (typeof ZONES)[number];
 /** The hunting ground a point lies in, if any. */
 export const zoneAt = (x: number, z: number): Zone | null => ZONES.find((zn) => Math.hypot(x - zn.x, z - zn.z) <= zn.r) ?? null;
+
+/** Armour: how much of each blow it takes away, and the adventurer level it asks for. Made from loot. */
+export const ARMOURS = [
+  { key: 'leather', nl: 'Leren harnas', en: 'Leather armour', guard: 0.15, level: 2 },
+  { key: 'wolf_cloak', nl: 'Wolvenmantel', en: 'Wolf cloak', guard: 0.25, level: 6 },
+  { key: 'bear_armour', nl: 'Berenharnas', en: 'Bear armour', guard: 0.4, level: 10 },
+  { key: 'alpha_armour', nl: 'Alfaharnas', en: 'Alpha armour', guard: 0.55, level: 13 },
+] as const;
+export type Armour = (typeof ARMOURS)[number];
+export const armourByKey = (key: string | null | undefined): Armour | null => ARMOURS.find((a) => a.key === key) ?? null;

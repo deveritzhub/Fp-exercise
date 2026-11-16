@@ -128,9 +128,12 @@ export const WILD: { kind: string; x: number; z: number }[] = [
   { kind: 'wolf', x: 0.5, z: 37.6 },
   { kind: 'wolf', x: 6.2, z: 40.6 },
   { kind: 'wolf', x: -1.8, z: 42.4 },
+  { kind: 'alpha_wolf', x: 7.6, z: 44.2 },
   // The bear hill, east.
   { kind: 'bear', x: 38.6, z: -6.6 },
   { kind: 'bear', x: 41.8, z: -1.2 },
+  // The boss of each ground, further in.
+  { kind: 'alpha_bear', x: 44, z: -9.4 },
   // The woodcutters' wood, west: oaks for everyone.
   { kind: 'oak', x: -36.8, z: 0.6 },
   { kind: 'oak', x: -40.2, z: 5.6 },

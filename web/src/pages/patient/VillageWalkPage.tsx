@@ -21,7 +21,7 @@ import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
 import { SUPPLY } from '@shared/supplies';
 import { useSupplies } from '@/lib/supplies';
-import { ALPHA_ADVISED_LEVEL, ZONES, zoneAt, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
+import { alphaAdvised, armourByKey, ZONES, zoneAt, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
@@ -362,7 +362,7 @@ export function VillageWalkPage() {
 
   const d = heroQ.data;
   // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
-  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number;
+  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null;
     quest?: { key: string; kind: CreatureKind; n: number; nl: string; en: string; progress: number; done: boolean; xp: number } | null };
   const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
   // The weapon in hand is the one bought and put on in the backpack; none means bare fists.
@@ -689,7 +689,7 @@ export function VillageWalkPage() {
           lastHit.current = now;
           world.current?.lunge(mob.key);
           setHitAt(now);
-          const dmg = hitOnHero(mob.kind, doneToday);
+          const dmg = hitOnHero(mob.kind, doneToday, armourByKey(adventure.data?.armour)?.guard ?? 0);
           setHeroHp((h) => {
             const left = Math.max(0, Math.min(maxHp, h ?? maxHp) - dmg);
             if (left === 0) setDownBy(mob.label);
@@ -965,7 +965,7 @@ export function VillageWalkPage() {
             <span className="flex flex-col items-center gap-1.5">
             {isAlpha(mob.kind) && (
               <p role="status" data-testid="alpha-warning" className={`${PANEL} max-w-[300px] border-[#ff8a6e] px-3 py-1.5 text-center text-[13px] leading-snug`}>
-                {t(`Alfa! Hij valt zelf aan en slaat hard. Eerlijk gevecht vanaf avonturier ${ALPHA_ADVISED_LEVEL}, met een goed wapen.`, `Alpha! It attacks by itself and hits hard. A fair fight from adventurer ${ALPHA_ADVISED_LEVEL}, with a good weapon.`)}
+                {t(`Alfa! Hij valt zelf aan en slaat hard. Eerlijk gevecht vanaf avonturier ${alphaAdvised(mob.kind)}, met een goed wapen.`, `Alpha! It attacks by itself and hits hard. A fair fight from adventurer ${alphaAdvised(mob.kind)}, with a good weapon.`)}
               </p>
             )}
             {NEEDS_TOOL[mob.kind] && !hasTool ? (

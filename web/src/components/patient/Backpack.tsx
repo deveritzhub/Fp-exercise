@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Axe, Beef, Coins, Droplets, Footprints, Gem, Hammer, Lock, Swords } from 'lucide-react';
-import { BERRIES_FOR, LOOT, LOOT_KEYS, RECIPES, TOOLS, WEAPONS, weaponByKey, type LootKey } from '@shared/adventure';
+import { Axe, Shield, Beef, Coins, Droplets, Footprints, Gem, Hammer, Lock, Swords } from 'lucide-react';
+import { ARMOURS, armourByKey, BERRIES_FOR, LOOT, LOOT_KEYS, RECIPES, TOOLS, WEAPONS, weaponByKey, type LootKey } from '@shared/adventure';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
@@ -10,7 +10,7 @@ import type { HeroState } from '@/lib/types';
 import { ItemIcon } from './ItemIcon';
 import { useSupplies } from '@/lib/supplies';
 
-type Adventure = { level: number; weapon: string | null; owned: string[]; coins: number; loot?: Record<string, number>; tools?: string[]; built?: string[]; strength?: number; lootCap?: number };
+type Adventure = { level: number; weapon: string | null; owned: string[]; coins: number; loot?: Record<string, number>; tools?: string[]; built?: string[]; strength?: number; lootCap?: number; armour?: string | null };
 
 const ICON: Record<string, string> = { fists: '✊', staff: '🦯', gloves: '🥊', club: '🏏', hammer: '🔨', sword: '🗡️', axe: '🪓', spear: '🔱', hero_sword: '⚔️' };
 /**
@@ -42,6 +42,8 @@ export function BackpackCard({ d }: { d: HeroState }) {
   };
   const wear = (key: string | null, name: string) =>
     act(key ?? 'off', () => api.put<Adventure>('/patient/hero/adventure/weapon', { key }), key ? t(`${name} in de hand.`, `${name} in hand.`) : t('Wapen opgeborgen. Je vecht met je vuisten.', 'Weapon put away. You fight with your fists.'));
+  const wearArmour = (key: string | null, name: string) =>
+    act(key ? `armour:${key}` : 'armour-off', () => api.put<Adventure>('/patient/hero/adventure/armour', { key }), key ? t(`${name} aan.`, `${name} on.`) : t(`${name} uit.`, `${name} off.`));
   const buyTool = (key: string, name: string) => act(`tool:${key}`, () => api.post<Adventure>('/patient/hero/adventure/tool/buy', { key }), t(`${name} gekocht!`, `${name} bought!`));
   const craft = (key: string, name: string) => act(`craft:${key}`, () => api.post<Adventure>('/patient/hero/adventure/craft', { key }), t(`${name} gemaakt!`, `${name} made!`));
   const buy = (key: string, name: string) => act(key, () => api.post<Adventure>('/patient/hero/adventure/weapon/buy', { key }), t(`${name} gekocht en in de hand!`, `${name} bought and in hand!`));
@@ -107,6 +109,30 @@ export function BackpackCard({ d }: { d: HeroState }) {
         })}
       </ul>
 
+      <h3 className="mt-5 flex items-center gap-1.5 text-[15px] font-semibold text-ink-950"><Shield className="h-4 w-4" aria-hidden />{t('Harnas', 'Armour')}</h3>
+      <p className="mt-1 text-[13.5px] text-ink-700">{t('Een harnas dempt de klappen van wezens. Je maakt het van vachten en huiden onder “Maken”.', 'Armour softens the blows of creatures. You make it from pelts and hides under “Make”.')}</p>
+      <ul className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="armours">
+        {ARMOURS.filter((ar) => a?.built?.includes(ar.key)).map((ar) => {
+          const name = nl ? ar.nl : ar.en;
+          const on = a?.armour === ar.key;
+          return (
+            <li key={ar.key} data-armour={ar.key} data-state={on ? 'on' : 'owned'} className={cn('flex items-center gap-3 rounded-xl border p-2.5', on ? 'border-[#b8892a] bg-[#fbf0d9]' : 'border-line bg-white')}>
+              <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">{RECIPES.find((r) => r.key === ar.key)?.icon}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14.5px] font-semibold text-ink-950">{name}</span>
+                <span className="block text-[12.5px] text-ink-700">{t(`${Math.round(ar.guard * 100)}% minder schade`, `${Math.round(ar.guard * 100)}% less damage`)}</span>
+              </span>
+              {on ? (
+                <Button size="sm" variant="secondary" loading={busy === 'armour-off'} onClick={() => void wearArmour(null, name)} aria-label={t(`Doe ${name} uit`, `Take ${name} off`)}>{t('Uit', 'Off')}</Button>
+              ) : (
+                <Button size="sm" loading={busy === `armour:${ar.key}`} onClick={() => void wearArmour(ar.key, name)} aria-label={t(`Doe ${name} aan`, `Put ${name} on`)}>{t('Aan', 'On')}</Button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {!ARMOURS.some((ar) => a?.built?.includes(ar.key)) && <p className="mt-2 text-[13px] text-ink-600" data-testid="no-armour">{t('Nog geen harnas. Het eerste, een leren harnas, maak je van 3 koeienhuiden.', 'No armour yet. The first, leather armour, takes 3 cowhides.')}</p>}
+
       <h3 className="mt-5 flex items-center gap-1.5 text-[15px] font-semibold text-ink-950"><Axe className="h-4 w-4" aria-hidden />{t('Gereedschap', 'Tools')}</h3>
       <ul className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="tools">
         {TOOLS.map((tool) => {
@@ -135,7 +161,9 @@ export function BackpackCard({ d }: { d: HeroState }) {
           const name = nl ? r.nl : r.en;
           const weapon = r.kind === 'weapon' ? WEAPONS.find((w) => w.key === r.key) : undefined;
           const have = weapon ? !!a?.owned.includes(r.key) : !!a?.built?.includes(r.key);
-          const low = !!weapon && (a?.level ?? 1) < weapon.level;
+          const armourRow = r.kind === 'armour' ? armourByKey(r.key) : null;
+          const needLevel = weapon?.level ?? armourRow?.level ?? 1;
+          const low = (a?.level ?? 1) < needLevel;
           const needs = Object.entries(r.needs) as [LootKey, number][];
           // Animal loot that is short can be paid with berries (the server decides in the end).
           let berries = a?.loot?.berries ?? 0;
@@ -151,13 +179,13 @@ export function BackpackCard({ d }: { d: HeroState }) {
             <li key={r.key} data-recipe={r.key} data-state={have ? 'made' : low ? 'locked' : enough ? 'ready' : 'short'} className={cn('flex items-center gap-3 rounded-xl border p-2.5', have ? 'border-[#b8892a] bg-[#fbf0d9]' : 'border-line bg-white')}>
               <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]"><ItemIcon k={r.key} emoji={r.icon} /></span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[14.5px] font-semibold text-ink-950">{name}</span>
+                <span className="block text-[14.5px] font-semibold text-ink-950">{name}{armourRow && <span className="font-normal text-ink-700"> · {t(`${Math.round(armourRow.guard * 100)}% minder schade`, `${Math.round(armourRow.guard * 100)}% less damage`)}</span>}</span>
                 <span className="block text-[12.5px] text-ink-700">
                   {needs.map(([k, n], i) => <span key={k}>{i > 0 && ' · '}<span className="inline-grid h-4 w-4 place-items-center align-[-3px]"><ItemIcon k={k} emoji={LOOT[k].icon} className="!h-4 !w-4" /></span> {(nl ? LOOT[k].nl : LOOT[k].en).toLowerCase()} {Math.min(a?.loot?.[k] ?? 0, n)}/{n}</span>)}
                 </span>
               </span>
               {have ? <span className="shrink-0 text-[12.5px] font-semibold text-[#6b4705]">{t('Heb je', 'Owned')}</span>
-                : low ? <span className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-ink-600"><Lock className="h-3.5 w-3.5" aria-hidden />{t(`Level ${weapon!.level}`, `Level ${weapon!.level}`)}</span>
+                : low ? <span className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-ink-600"><Lock className="h-3.5 w-3.5" aria-hidden />{t(`Level ${needLevel}`, `Level ${needLevel}`)}</span>
                 : <Button size="sm" disabled={!enough || !a} loading={busy === `craft:${r.key}`} onClick={() => void craft(r.key, name)} aria-label={t(`Maak ${name}`, `Make ${name}`)}>{t('Maak', 'Make')}</Button>}
             </li>
           );
