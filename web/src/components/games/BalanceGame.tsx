@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useI18n } from '@/lib/i18n';
-import { Button } from '@/components/ui';
+import { GAME_THEME, GOLD, GameButton, GlowBar, Hud, HudPill, Stage, StopButton, haptic, sfx } from './kit';
 import type { GameProps } from './types';
 
 /** Seconds of play, and the moment to switch legs. */
@@ -45,6 +45,13 @@ const screenAngle = () => {
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
+/** The ball's short glowing trail (drawn only): how many ghosts, and how many frames apart. */
+const TRAIL = 5;
+const TRAIL_STEP = 3;
+/** Sounds for entering and leaving the ring are at most this often (ms), so a ball on the edge stays quiet. */
+const RING_SOUND_MS = 700;
+const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
 /**
  * Balance ball: stand on one leg and hold the phone flat in front of the chest. Tilting the phone rolls
  * the ball over a round plate; keep it in the centre ring. 30 seconds, switch legs halfway. The score
@@ -80,6 +87,9 @@ export default function BalanceGame({ onDone }: GameProps) {
   const drift = useRef({ x: 0, y: 0, tx: 0, ty: 0, next: 0 });
   const plateEl = useRef<HTMLDivElement>(null);
   const ballEl = useRef<HTMLDivElement>(null);
+  const trailEls = useRef<(HTMLDivElement | null)[]>([]);
+  const trailPath = useRef<{ x: number; y: number }[]>([]);
+  const [showTrail] = useState(() => !reducedMotion());
   const stopListening = useRef<(() => void) | null>(null);
   const done = useRef(false);
 
@@ -247,6 +257,14 @@ export default function BalanceGame({ onDone }: GameProps) {
       if (!plate || !ball) return;
       const radius = plate.clientWidth / 2;
       ball.style.transform = `translate(${pos.current.x * radius}px, ${pos.current.y * radius}px)`;
+      // The trail: a few fading ghosts where the ball just was.
+      const path = trailPath.current;
+      path.unshift({ x: pos.current.x, y: pos.current.y });
+      if (path.length > TRAIL * TRAIL_STEP + 1) path.length = TRAIL * TRAIL_STEP + 1;
+      trailEls.current.forEach((el, i) => {
+        const p = path[Math.min(path.length - 1, (i + 1) * TRAIL_STEP)];
+        if (el && p) el.style.transform = `translate(${p.x * radius}px, ${p.y * radius}px) scale(${1 - (i + 1) * 0.12})`;
+      });
     };
 
     const tick = (now: number) => {
@@ -330,73 +348,157 @@ export default function BalanceGame({ onDone }: GameProps) {
         ? t('Je speelt zonder sensor: sleep het balletje of gebruik de pijltjestoetsen, tegen de wind in.', 'You play without the sensor: drag the ball or use the arrow keys, against the wind.')
         : t('Geen bewegingssensor gevonden. Sleep het balletje of gebruik de pijltjestoetsen, tegen de wind in.', 'No motion sensor found. Drag the ball or use the arrow keys, against the wind.');
 
+  // Sounds and touch: the countdown ticks, the start, the switch, the ring, and the last seconds.
+  const lastRingSound = useRef(0);
+  useEffect(() => {
+    if (phase === 'ready') sfx.tick();
+  }, [phase, readyLeft]);
+  useEffect(() => {
+    if (phase !== 'play') return;
+    sfx.start();
+    haptic(12);
+  }, [phase]);
+  useEffect(() => {
+    if (secondHalf) sfx.start();
+  }, [secondHalf]);
+  useEffect(() => {
+    if (phaseRef.current !== 'play' || done.current) return;
+    const now = performance.now();
+    if (now - lastRingSound.current < RING_SOUND_MS) return;
+    lastRingSound.current = now;
+    if (inside) {
+      sfx.good();
+      haptic(12);
+    } else {
+      sfx.bad();
+      haptic([20, 30, 20]);
+    }
+  }, [inside]);
+  useEffect(() => {
+    if (phase === 'play' && left > 0 && left <= 3) sfx.tick();
+  }, [phase, left]);
+
+  const th = GAME_THEME.balance;
+  const tone = inside ? { glow: th.glow, soft: th.soft, deep: '#0a6b5d' } : { glow: '#ffb238', soft: '#ffd98a', deep: '#8a4a00' };
+  const sphere = (c: { glow: string; soft: string; deep: string }) => `radial-gradient(circle at 34% 30%, #ffffff 0%, ${c.soft} 22%, ${c.glow} 58%, ${c.deep} 100%)`;
+  const plateBg = `radial-gradient(circle at 50% 36%, rgba(255,255,255,.14) 0%, rgba(255,255,255,.05) 45%, rgba(0,0,0,.3) 100%), radial-gradient(circle, ${th.to}, ${th.from})`;
+  const playing = phase === 'play';
+
   return (
-    <div className="flex select-none flex-col items-center gap-3 py-2" data-testid="balance-game" data-mode={mode ?? 'detecting'}>
-      {phase === 'permission' ? (
-        <div className="flex w-full max-w-sm flex-col items-center gap-3 py-6 text-center">
-          <p className="text-[15px] text-ink-800">{t('Je telefoon vraagt eerst toestemming voor de bewegingssensor. Daarmee stuur je het balletje door je telefoon te kantelen.', 'Your phone first asks permission for the motion sensor. With it you steer the ball by tilting your phone.')}</p>
-          <Button size="xl" className="w-full" data-testid="balance-sensor" loading={asking} onClick={() => void askSensor()}>{t('Sensor aanzetten', 'Turn on sensor')}</Button>
-          <Button variant="secondary" size="lg" className="w-full" onClick={withoutSensor}>{t('Zonder sensor spelen', 'Play without sensor')}</Button>
-        </div>
-      ) : (
-        <>
-          <div className="flex w-full max-w-sm items-center justify-between text-[14px] text-ink-600" aria-live="off">
-            <span>{phase === 'play' ? t(`Nog ${left} s`, `${left} s left`) : t('Klaarmaken…', 'Get ready…')}</span>
-            <span className="font-semibold text-ink-900" data-testid="balance-points">{t(`${points} punten`, `${points} points`)}</span>
-          </div>
-          <p className="text-center text-[15px] font-semibold text-ink-900" aria-live="polite">
-            {secondHalf ? t('Nu op je andere been', 'Now on your other leg') : t('Sta op één been', 'Stand on one leg')}
-          </p>
-          <div
-            ref={plateEl}
-            className="relative aspect-square w-full max-w-[300px] touch-none rounded-full border-4 border-line bg-canvas shadow-inner"
-            style={{ touchAction: 'none', cursor: mode === 'manual' ? 'grab' : undefined }}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
-            role="img"
-            aria-label={t('Een rond plateau met een balletje. Houd het balletje in de middelste ring.', 'A round plate with a ball. Keep the ball in the middle ring.')}
-          >
-            <div
-              aria-hidden
-              className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-dashed ${inside ? 'border-ok bg-ok-soft/60' : 'border-ink-300 bg-white/40'}`}
-              style={{ width: `${ZONE * 100}%`, height: `${ZONE * 100}%` }}
-            />
-            <div className="pointer-events-none absolute left-1/2 top-1/2" style={{ width: `${BALL * 100}%`, height: `${BALL * 100}%`, marginLeft: `${-BALL * 50}%`, marginTop: `${-BALL * 50}%` }}>
-              <div
-                ref={ballEl}
-                aria-hidden
-                className="h-full w-full rounded-full shadow-md"
-                style={{ background: inside ? 'radial-gradient(circle at 35% 35%, #e9f8ee, #3f9a68 70%)' : 'radial-gradient(circle at 35% 35%, #fff1df, #d9822b 70%)' }}
-              />
+    <Stage game="balance" testId="balance-game" className="select-none">
+      <div className="flex flex-col items-center" data-mode={mode ?? 'detecting'}>
+        {phase === 'permission' ? (
+          <div className="game-rise flex w-full max-w-sm flex-col items-center gap-3 py-4 text-center">
+            <div aria-hidden className="relative mb-1 grid h-28 w-28 place-items-center rounded-full" style={{ background: plateBg, boxShadow: `inset 0 2px 0 rgba(255,255,255,.14), 0 0 0 1px rgba(255,255,255,.12), 0 0 44px -6px ${th.glow}99` }}>
+              <div className="h-12 w-12 rounded-full border-2" style={{ borderColor: th.glow, boxShadow: `0 0 16px ${th.glow}, inset 0 0 12px ${th.glow}66` }} />
+              <div className="game-float absolute h-6 w-6 rounded-full" style={{ background: sphere({ glow: th.glow, soft: th.soft, deep: '#0a6b5d' }), boxShadow: `0 0 14px ${th.glow}` }} />
             </div>
-            {phase === 'ready' && (
-              <div className="absolute inset-0 grid place-items-center rounded-full bg-white/70">
-                <div className="text-center">
-                  <p className="text-[56px] font-extrabold leading-none text-ink-950" aria-live="assertive">{readyLeft}</p>
-                  <p className="mt-1 px-6 text-[14px] text-ink-700">{t('Ga op één been staan', 'Stand on one leg')}</p>
+            <h2 className="text-[21px] font-black tracking-wide text-white">{t('Kantel om te sturen', 'Tilt to steer')}</h2>
+            <p className="text-[15px] leading-snug text-white/75">{t('Je telefoon vraagt eerst toestemming voor de bewegingssensor. Daarmee stuur je het balletje door je telefoon te kantelen.', 'Your phone first asks permission for the motion sensor. With it you steer the ball by tilting your phone.')}</p>
+            <GameButton data-testid="balance-sensor" className="mt-2 w-full" disabled={asking} aria-busy={asking} onClick={() => void askSensor()}>
+              {asking && <span aria-hidden className="h-4 w-4 animate-spin rounded-full border-2 border-[#2b1d03]/25 border-t-[#2b1d03]" />}
+              {t('Sensor aanzetten', 'Turn on sensor')}
+            </GameButton>
+            <GameButton tone="glass" className="w-full" onClick={withoutSensor}>{t('Zonder sensor spelen', 'Play without sensor')}</GameButton>
+          </div>
+        ) : (
+          <>
+            <Hud>
+              <HudPill label={t('Tijd', 'Time')} value={`${playing ? left : ROUND}s`} />
+              <HudPill testId="balance-points" label={t('Punten', 'Points')} value={points} accent={th.soft} />
+              <HudPill label={t('Been', 'Leg')} value={secondHalf ? '2/2' : '1/2'} />
+            </Hud>
+            <GlowBar game="balance" value={playing ? left / ROUND : 1} />
+            <p className="mt-3 text-center text-[17px] font-black tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,.5)]" aria-live="polite">
+              {secondHalf ? t('Nu op je andere been', 'Now on your other leg') : t('Sta op één been', 'Stand on one leg')}
+            </p>
+            <div
+              ref={plateEl}
+              className="relative mt-3 aspect-square w-full max-w-[300px] touch-none rounded-full"
+              style={{
+                touchAction: 'none',
+                cursor: mode === 'manual' ? 'grab' : undefined,
+                background: plateBg,
+                boxShadow: `inset 0 2px 0 rgba(255,255,255,.16), inset 0 -18px 40px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.12), 0 0 0 8px rgba(255,255,255,.03), 0 26px 50px -18px rgba(0,0,0,.85), 0 0 60px -12px ${th.glow}${inside ? 'aa' : '55'}`,
+                transition: 'box-shadow 400ms ease',
+              }}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
+              role="img"
+              aria-label={t('Een rond plateau met een balletje. Houd het balletje in de middelste ring.', 'A round plate with a ball. Keep the ball in the middle ring.')}
+            >
+              {/* Fine concentric rings and a faint crosshair, like an instrument. */}
+              {[0.9, 0.7, 0.5].map((f) => (
+                <div key={f} aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[.08]" style={{ width: `${f * 100}%`, height: `${f * 100}%` }} />
+              ))}
+              <div aria-hidden className="pointer-events-none absolute bottom-[7%] left-1/2 top-[7%] w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+              <div aria-hidden className="pointer-events-none absolute left-[7%] right-[7%] top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              {/* The target ring: glows brighter while the ball is inside. */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-[box-shadow,border-color,opacity] duration-300"
+                style={{
+                  width: `${ZONE * 100}%`,
+                  height: `${ZONE * 100}%`,
+                  border: `2px solid ${inside ? th.glow : 'rgba(255,255,255,.3)'}`,
+                  background: `radial-gradient(circle, ${th.glow}${inside ? '44' : '12'} 0%, ${th.glow}${inside ? '18' : '06'} 60%, transparent 76%)`,
+                  boxShadow: inside ? `0 0 28px ${th.glow}aa, inset 0 0 24px ${th.glow}77` : 'inset 0 0 14px rgba(0,0,0,.4)',
+                }}
+              >
+                {inside && playing && <div className="game-glow absolute -inset-2.5 rounded-full border" style={{ borderColor: `${th.soft}88`, boxShadow: `0 0 18px ${th.glow}88` }} />}
+                <div className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/40" />
+              </div>
+              {/* The ball: a glossy sphere with a highlight, a soft shadow and a short fading trail. */}
+              <div className="pointer-events-none absolute left-1/2 top-1/2" style={{ width: `${BALL * 100}%`, height: `${BALL * 100}%`, marginLeft: `${-BALL * 50}%`, marginTop: `${-BALL * 50}%` }}>
+                {showTrail &&
+                  Array.from({ length: TRAIL }, (_, i) => (
+                    <div
+                      key={i}
+                      ref={(el) => {
+                        trailEls.current[i] = el;
+                      }}
+                      aria-hidden
+                      className="absolute inset-0 rounded-full blur-[2px] transition-[background-color] duration-300"
+                      style={{ backgroundColor: tone.glow, opacity: 0.34 - i * 0.06 }}
+                    />
+                  ))}
+                <div ref={ballEl} aria-hidden className="relative h-full w-full">
+                  <div className="absolute inset-0 translate-x-[14%] translate-y-[36%] scale-90 rounded-full bg-black/60 blur-[5px]" />
+                  <div className="absolute inset-0 rounded-full transition-[box-shadow] duration-300" style={{ background: sphere(tone), boxShadow: `0 0 18px ${tone.glow}cc, 0 0 4px ${tone.soft}, inset -3px -5px 10px rgba(0,0,0,.35)` }} />
+                  <div className="absolute left-[20%] top-[14%] h-[30%] w-[38%] rounded-full bg-white/85 blur-[1.5px]" />
                 </div>
               </div>
+              {phase === 'ready' && (
+                <div className="absolute inset-0 grid place-items-center rounded-full bg-[#031615]/70 backdrop-blur-[3px]">
+                  <div className="text-center" aria-live="assertive">
+                    <p key={readyLeft} className="game-pop text-[76px] font-black leading-none tabular-nums" style={{ color: th.soft, textShadow: `0 0 30px ${th.glow}, 0 0 8px ${th.glow}` }}>{readyLeft}</p>
+                    <p className="mt-2 px-6 text-[15px] font-semibold text-white/80">{t('Ga op één been staan', 'Stand on one leg')}</p>
+                  </div>
+                </div>
+              )}
+              {switchBanner && (
+                <div className="pointer-events-none absolute inset-x-0 top-[36%] flex justify-center px-6" role="status">
+                  <div className="game-pop rounded-2xl px-5 py-2.5 text-center text-[19px] font-black tracking-wide text-[#2b1d03] shadow-[0_10px_30px_-6px_rgba(243,207,107,.85)]" style={{ background: GOLD }}>
+                    {t('Wissel van been!', 'Switch legs!')}
+                  </div>
+                </div>
+              )}
+            </div>
+            <p className="mt-4 max-w-sm text-center text-[13.5px] leading-snug text-white/70">
+              {mode === 'manual'
+                ? noteText
+                : t('Houd je telefoon plat voor je borst. Kantel heel licht om het balletje in de ring te houden.', 'Hold your phone flat in front of your chest. Tilt very gently to keep the ball in the ring.')}
+            </p>
+            <p className="mt-1 max-w-sm text-center text-[12.5px] text-white/50">{t('Houd je zo nodig vast aan een stoel of aanrecht.', 'Hold on to a chair or counter if you need to.')}</p>
+            {mode === 'sensor' && playing && (
+              <GameButton tone="glass" className="mt-3 min-h-[44px] px-4 text-[14px]" onClick={recenter}>{t('Midden opnieuw instellen', 'Reset the middle')}</GameButton>
             )}
-            {switchBanner && (
-              <div className="absolute inset-x-0 top-[38%] mx-auto w-[80%] rounded-xl bg-[#1f5677] px-3 py-2 text-center text-[17px] font-bold text-white shadow-lg" role="status">
-                {t('Wissel van been!', 'Switch legs!')}
-              </div>
-            )}
-          </div>
-          <p className="max-w-sm text-center text-[13.5px] text-ink-600">
-            {mode === 'manual'
-              ? noteText
-              : t('Houd je telefoon plat voor je borst. Kantel heel licht om het balletje in de ring te houden.', 'Hold your phone flat in front of your chest. Tilt very gently to keep the ball in the ring.')}
-          </p>
-          <p className="max-w-sm text-center text-[12.5px] text-ink-500">{t('Houd je zo nodig vast aan een stoel of aanrecht.', 'Hold on to a chair or counter if you need to.')}</p>
-          {mode === 'sensor' && phase === 'play' && (
-            <Button variant="secondary" size="sm" className="min-h-[44px] px-4" onClick={recenter}>{t('Midden opnieuw instellen', 'Reset the middle')}</Button>
-          )}
-        </>
-      )}
-      <Button variant="ghost" size="sm" className="min-h-[44px] px-4" data-testid="game-stop" onClick={finish}>{t('Stoppen', 'Stop')}</Button>
-    </div>
+          </>
+        )}
+      </div>
+      <StopButton onClick={finish} label={t('Stoppen', 'Stop')} />
+    </Stage>
   );
 }

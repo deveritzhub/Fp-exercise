@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { useI18n } from '@/lib/i18n';
-import { Button } from '@/components/ui';
+import { GAME_THEME, GOLD, GlowBar, Hud, HudPill, Stage, StopButton, haptic, sfx } from './kit';
 import type { GameProps } from './types';
 
 const ROUND = 45;
@@ -37,6 +37,13 @@ const ZONES: { x: [number, number]; y: [number, number] }[] = [
 type Phase = 'camera' | 'ready' | 'play';
 type Mode = 'camera' | 'tap';
 type Target = { x: number; y: number; id: number };
+
+const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+/** A ring that bursts outwards once when it appears (skipped for reduced motion). Stable, so React calls it once per ring. */
+const burst = (el: HTMLElement | null) => {
+  if (!el || reducedMotion()) return;
+  el.animate?.([{ transform: 'scale(.8)', opacity: 1 }, { transform: 'scale(1.9)', opacity: 0 }], { duration: 400, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
+};
 
 const pickTarget = (prev: Target | null): Target => {
   let best: Target | null = null;
@@ -120,6 +127,8 @@ export default function MirrorGame({ onDone }: GameProps) {
     setScore(scoreRef.current);
     popUntil.current = now + 400;
     setPop(tg);
+    sfx.good();
+    haptic(12);
     const next = pickTarget(tg);
     targetRef.current = next;
     setTarget(next);
@@ -316,87 +325,134 @@ export default function MirrorGame({ onDone }: GameProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Sounds: a tick for each second of the countdown, the start, and the last three seconds.
+  useEffect(() => {
+    if (phase === 'ready') sfx.tick();
+  }, [phase, readyLeft]);
+  useEffect(() => {
+    if (phase === 'play') sfx.start();
+  }, [phase]);
+  useEffect(() => {
+    if (phase === 'play' && left > 0 && left <= 3 && !done.current) sfx.tick();
+  }, [phase, left]);
+
   const radiusPx = Math.max(32, TARGET_R * Math.min(size.w, size.h));
   const camera = mode === 'camera';
+  const th = GAME_THEME.mirror;
+  const at = (p: Target, r: number) => ({ left: `calc(${p.x * 100}% - ${r}px)`, top: `calc(${p.y * 100}% - ${r}px)`, width: r * 2, height: r * 2 });
+  /** Glowing corner brackets around the mirror. */
+  const corners = [
+    'left-3 top-3 border-l-[3px] border-t-[3px] rounded-tl-[14px]',
+    'right-3 top-3 border-r-[3px] border-t-[3px] rounded-tr-[14px]',
+    'bottom-3 left-3 border-b-[3px] border-l-[3px] rounded-bl-[14px]',
+    'bottom-3 right-3 border-b-[3px] border-r-[3px] rounded-br-[14px]',
+  ];
 
   return (
-    <div className="flex select-none flex-col items-center gap-3 py-2" data-testid="mirror-game" data-mode={mode ?? 'starting'}>
-      <div className="flex w-full items-center justify-between text-[14px] text-ink-600">
-        <span>{phase === 'play' ? t(`Nog ${left} s`, `${left} s left`) : t('Klaarmaken…', 'Get ready…')}</span>
-        <span className="font-semibold text-ink-900" data-testid="mirror-score" aria-live="polite">{t(`${score} doelen`, `${score} targets`)}</span>
-      </div>
-      <div
-        ref={areaEl}
-        className={`relative w-full touch-none overflow-hidden rounded-2xl ${camera ? 'bg-ink-950' : 'border border-line bg-canvas'}`}
-        style={{ height: 'min(64vh, 560px)', minHeight: 300, touchAction: 'none' }}
-      >
-        <video
-          ref={videoEl}
-          className={`absolute inset-0 h-full w-full object-cover ${camera ? '' : 'hidden'}`}
-          style={{ transform: 'scaleX(-1)' }}
-          playsInline
-          muted
-          autoPlay
-          aria-hidden
-        />
-        {phase === 'play' && target && (
-          <button
-            key={target.id}
-            type="button"
-            data-testid="mirror-target"
-            aria-label={t('Doel', 'Target')}
-            onPointerDown={(e) => {
-              e.preventDefault();
-              hit();
-            }}
-            onClick={(e: ReactMouseEvent<HTMLButtonElement>) => {
-              if (e.detail === 0) hit();
-            }}
-            className="absolute grid place-items-center rounded-full border-4 border-white bg-[#ffb02e]/80 shadow-[0_0_0_4px_rgba(255,176,46,0.45)]"
-            style={{ left: `calc(${target.x * 100}% - ${radiusPx}px)`, top: `calc(${target.y * 100}% - ${radiusPx}px)`, width: radiusPx * 2, height: radiusPx * 2 }}
-          >
-            <span aria-hidden className="h-1/3 w-1/3 rounded-full bg-white/90" />
-          </button>
-        )}
-        {pop && (
-          <span
+    <Stage game="mirror" testId="mirror-game" className="select-none">
+      <div className="flex flex-col items-center" data-mode={mode ?? 'starting'}>
+        <Hud>
+          <HudPill label={t('Tijd', 'Time')} value={`${phase === 'play' ? left : ROUND}s`} />
+          <div className="flex" aria-live="polite">
+            <HudPill testId="mirror-score" label={t('Doelen', 'Targets')} value={score} accent={th.soft} />
+          </div>
+        </Hud>
+        <GlowBar game="mirror" value={phase === 'play' ? left / ROUND : 1} />
+        <div
+          ref={areaEl}
+          className="relative mt-3 w-full touch-none overflow-hidden rounded-[22px]"
+          style={{
+            height: 'min(64vh, 560px)',
+            minHeight: 300,
+            touchAction: 'none',
+            background: camera ? '#05030b' : `radial-gradient(120% 80% at 50% 0%, ${th.to} 0%, ${th.from} 70%, #07050f 100%)`,
+            boxShadow: `0 0 0 1px rgba(255,255,255,.12), 0 0 0 6px rgba(255,255,255,.035), 0 24px 50px -20px rgba(0,0,0,.85), 0 0 50px -12px ${th.glow}99`,
+          }}
+        >
+          <video
+            ref={videoEl}
+            className={`absolute inset-0 h-full w-full object-cover ${camera ? '' : 'hidden'}`}
+            style={{ transform: 'scaleX(-1)' }}
+            playsInline
+            muted
+            autoPlay
             aria-hidden
-            className="pointer-events-none absolute rounded-full border-4 border-ok bg-ok/40"
-            style={{ left: `calc(${pop.x * 100}% - ${radiusPx}px)`, top: `calc(${pop.y * 100}% - ${radiusPx}px)`, width: radiusPx * 2, height: radiusPx * 2 }}
           />
-        )}
-        {phase === 'camera' && (
-          <div className="absolute inset-0 grid place-items-center p-6 text-center">
-            <p className="text-[15px] text-ink-700">{t('Camera starten… Geef toestemming als je telefoon erom vraagt.', 'Starting the camera… Allow it when your phone asks.')}</p>
-          </div>
-        )}
-        {phase === 'ready' && (
-          <div className={`absolute inset-0 grid place-items-center p-6 text-center ${camera ? 'bg-black/45 text-white' : 'text-ink-900'}`}>
-            <div>
-              <p className="text-[56px] font-extrabold leading-none" aria-live="assertive">{readyLeft}</p>
-              <p className="mt-2 text-[15px] font-semibold">
-                {camera
-                  ? t('Zet je telefoon rechtop neer en stap naar achteren tot je armen in beeld zijn.', 'Stand your phone upright and step back until your arms are in view.')
-                  : t('Tik de doelen aan zodra ze verschijnen.', 'Tap the targets as soon as they appear.')}
-              </p>
+          {!camera && (
+            <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[.12]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)', backgroundSize: '36px 36px', maskImage: 'radial-gradient(ellipse at center, #000 30%, transparent 80%)', WebkitMaskImage: 'radial-gradient(ellipse at center, #000 30%, transparent 80%)' }} />
+          )}
+          {/* The mirror's frame: a soft violet vignette, a sheen and glowing corners. */}
+          <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(ellipse at center, transparent 52%, ${th.from}cc 100%)`, boxShadow: `inset 0 0 70px ${th.glow}40, inset 0 0 0 1px rgba(255,255,255,.08)` }} />
+          <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[.08] via-transparent to-transparent" />
+          {corners.map((c) => (
+            <span key={c} aria-hidden className={`pointer-events-none absolute h-9 w-9 ${c}`} style={{ borderColor: th.soft, filter: `drop-shadow(0 0 6px ${th.glow})` }} />
+          ))}
+          {phase === 'play' && target && (
+            <button
+              key={target.id}
+              type="button"
+              data-testid="mirror-target"
+              aria-label={t('Doel', 'Target')}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                hit();
+              }}
+              onClick={(e: ReactMouseEvent<HTMLButtonElement>) => {
+                if (e.detail === 0) hit();
+              }}
+              className="game-pop absolute grid place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90"
+              style={at(target, radiusPx)}
+            >
+              <span aria-hidden className="pointer-events-none absolute inset-0 rounded-full border-2 motion-safe:animate-ping" style={{ borderColor: `${th.soft}aa`, animationDuration: '1.6s' }} />
+              <span aria-hidden className="game-glow pointer-events-none absolute -inset-1.5 rounded-full border-2" style={{ borderColor: th.soft, boxShadow: `0 0 22px ${th.glow}, inset 0 0 12px ${th.glow}88` }} />
+              <span aria-hidden className="pointer-events-none absolute inset-[10%] rounded-full" style={{ background: `radial-gradient(circle at 36% 30%, #ffffff 0%, ${th.soft} 22%, ${th.glow} 58%, #3b1f8f 100%)`, boxShadow: `0 0 30px ${th.glow}cc, inset 0 -6px 14px rgba(30,10,80,.5)` }} />
+              <span aria-hidden className="pointer-events-none relative h-[26%] w-[26%] rounded-full bg-white/95 shadow-[0_0_12px_rgba(255,255,255,.9)]" />
+            </button>
+          )}
+          {pop && (
+            <span key={pop.id} aria-hidden className="pointer-events-none absolute" style={at(pop, radiusPx)}>
+              <span ref={burst} className="absolute inset-0 rounded-full border-[3px]" style={{ borderColor: th.soft, boxShadow: `0 0 24px ${th.glow}, inset 0 0 18px ${th.glow}` }} />
+              <span className="game-rise absolute inset-0 grid place-items-center text-[26px] font-black text-transparent" style={{ backgroundImage: GOLD, WebkitBackgroundClip: 'text', backgroundClip: 'text', filter: 'drop-shadow(0 2px 6px rgba(0,0,0,.5))' }}>+1</span>
+            </span>
+          )}
+          {phase === 'camera' && (
+            <div className="absolute inset-0 grid place-items-center p-6 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <span aria-hidden className="h-12 w-12 animate-spin rounded-full border-[3px] border-white/15" style={{ borderTopColor: th.glow, filter: `drop-shadow(0 0 8px ${th.glow})` }} />
+                <p className="max-w-[260px] text-[15px] font-semibold text-white/85">{t('Camera starten… Geef toestemming als je telefoon erom vraagt.', 'Starting the camera… Allow it when your phone asks.')}</p>
+              </div>
             </div>
-          </div>
+          )}
+          {phase === 'ready' && (
+            <div className="absolute inset-0 grid place-items-center bg-[#0b0618]/55 p-6 text-center backdrop-blur-[2px]">
+              <div className="flex flex-col items-center" aria-live="assertive">
+                <div className="grid h-32 w-32 place-items-center rounded-full border-2" style={{ borderColor: `${th.soft}aa`, background: `radial-gradient(circle, ${th.glow}33, transparent 70%)`, boxShadow: `0 0 40px ${th.glow}88, inset 0 0 24px ${th.glow}55` }}>
+                  <span key={readyLeft} className="game-pop text-[68px] font-black leading-none tabular-nums" style={{ color: '#fff', textShadow: `0 0 24px ${th.glow}` }}>{readyLeft}</span>
+                </div>
+                <p className="mt-4 max-w-[280px] text-[15px] font-semibold leading-snug text-white/90 drop-shadow-[0_2px_8px_rgba(0,0,0,.6)]">
+                  {camera
+                    ? t('Zet je telefoon rechtop neer en stap naar achteren tot je armen in beeld zijn.', 'Stand your phone upright and step back until your arms are in view.')
+                    : t('Tik de doelen aan zodra ze verschijnen.', 'Tap the targets as soon as they appear.')}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+        {problem && (
+          <p className="mt-3 w-full rounded-2xl border border-[#ffd98a]/30 bg-[#ffb238]/10 px-3 py-2 text-[13.5px] leading-snug text-white/85 backdrop-blur-md" role="status">
+            {problem === 'denied'
+              ? t('De camera mag niet meedoen. Je kunt toch spelen: tik de doelen aan en strek je arm er ver naar uit.', 'The camera is not allowed. You can still play: tap the targets and reach far out for them.')
+              : t('Geen camera beschikbaar. Je kunt toch spelen: tik de doelen aan en strek je arm er ver naar uit.', 'No camera available. You can still play: tap the targets and reach far out for them.')}
+          </p>
         )}
-      </div>
-      {problem && (
-        <p className="w-full rounded-lg bg-warn-soft px-3 py-2 text-[13.5px] text-ink-800" role="status">
-          {problem === 'denied'
-            ? t('De camera mag niet meedoen. Je kunt toch spelen: tik de doelen aan en strek je arm er ver naar uit.', 'The camera is not allowed. You can still play: tap the targets and reach far out for them.')
-            : t('Geen camera beschikbaar. Je kunt toch spelen: tik de doelen aan en strek je arm er ver naar uit.', 'No camera available. You can still play: tap the targets and reach far out for them.')}
+        <p className="mt-3 max-w-sm text-center text-[13.5px] leading-snug text-white/70">
+          {camera
+            ? t('Raak de doelen aan met je hand: boven je hoofd en ver opzij. Beweeg rustig en blijf stevig staan.', 'Touch the targets with your hand: above your head and far to the side. Move calmly and stand firmly.')
+            : t('Tik de doelen zo snel als je kunt.', 'Tap the targets as fast as you can.')}
         </p>
-      )}
-      <p className="max-w-sm text-center text-[13.5px] text-ink-600">
-        {camera
-          ? t('Raak de doelen aan met je hand: boven je hoofd en ver opzij. Beweeg rustig en blijf stevig staan.', 'Touch the targets with your hand: above your head and far to the side. Move calmly and stand firmly.')
-          : t('Tik de doelen zo snel als je kunt.', 'Tap the targets as fast as you can.')}
-      </p>
-      {camera && <p className="text-center text-[12.5px] text-ink-500">{t('Het beeld blijft op je telefoon: er wordt niets opgeslagen of verstuurd.', 'The picture stays on your phone: nothing is stored or sent.')}</p>}
-      <Button variant="ghost" size="sm" className="min-h-[44px] px-4" data-testid="game-stop" onClick={finish}>{t('Stoppen', 'Stop')}</Button>
-    </div>
+        {camera && <p className="mt-1 text-center text-[12.5px] text-white/50">{t('Het beeld blijft op je telefoon: er wordt niets opgeslagen of verstuurd.', 'The picture stays on your phone: nothing is stored or sent.')}</p>}
+      </div>
+      <StopButton onClick={finish} label={t('Stoppen', 'Stop')} />
+    </Stage>
   );
 }

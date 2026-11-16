@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { useI18n } from '@/lib/i18n';
-import { Button } from '@/components/ui';
+import { Check, X } from 'lucide-react';
+import { GAME_THEME, GameButton, Hud, HudPill, Stage, StopButton, haptic, sfx } from './kit';
 import type { GameProps } from './types';
 
 type Card = { nl: string; en: string; fact: boolean; whyNl: string; whyEn: string };
@@ -102,6 +103,13 @@ const DECK: Card[] = [
   },
 ];
 
+const TH = GAME_THEME.pain_facts;
+const GREEN = 'linear-gradient(135deg, #b8f5d2, #3fcf86)';
+const RED = 'linear-gradient(135deg, #ffc2b8, #ff6b5b)';
+/** Myth: warm red glass. Fact: cool green glass. */
+const MYTH_STYLE = { background: 'linear-gradient(160deg, rgba(255,120,100,.26), rgba(255,80,60,.10))', borderColor: 'rgba(255,140,120,.5)', color: '#ffd3ca', boxShadow: '0 12px 28px -14px rgba(255,90,70,.75), inset 0 1px 0 rgba(255,255,255,.14)' };
+const FACT_STYLE = { background: 'linear-gradient(160deg, rgba(110,230,170,.24), rgba(60,200,130,.09))', borderColor: 'rgba(120,230,170,.5)', color: '#c9f7dd', boxShadow: '0 12px 28px -14px rgba(60,210,140,.7), inset 0 1px 0 rgba(255,255,255,.14)' };
+
 const ROUND = 10;
 const SWIPE = 70;
 
@@ -128,7 +136,9 @@ export default function PainFactsGame({ onDone }: GameProps) {
   const [dx, setDx] = useState(0);
   const rightRef = useRef(0);
   const drag = useRef<{ id: number; x: number } | null>(null);
-  const nextBtn = useRef<HTMLButtonElement>(null);
+  const nextWrap = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [results, setResults] = useState<boolean[]>([]);
   const done = useRef(false);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
@@ -148,16 +158,24 @@ export default function PainFactsGame({ onDone }: GameProps) {
     if (ok) {
       rightRef.current += 1;
       setRight(rightRef.current);
+      sfx.good();
+      haptic(12);
+    } else {
+      sfx.bad();
+      haptic([20, 30, 20]);
     }
+    setResults((r) => [...r, ok]);
     setAnswer({ fact, right: ok });
     setDx(0);
   };
   const next = () => {
     if (!answer) return;
     if (last) {
+      if (rightRef.current >= 7) sfx.win();
       finish();
       return;
     }
+    sfx.tap();
     setAnswer(null);
     setIdx((i) => i + 1);
   };
@@ -178,7 +196,7 @@ export default function PainFactsGame({ onDone }: GameProps) {
   }, []);
 
   useEffect(() => {
-    if (answer) nextBtn.current?.focus();
+    if (answer) nextWrap.current?.querySelector('button')?.focus();
   }, [answer]);
 
   const onDown = (e: PointerEvent<HTMLDivElement>) => {
@@ -205,58 +223,131 @@ export default function PainFactsGame({ onDone }: GameProps) {
 
   if (!card) return null;
   const tilt = Math.max(-1, Math.min(1, dx / 160));
+  const lean = Math.min(1, Math.abs(dx) / SWIPE);
+  const dragging = !!drag.current;
 
   return (
-    <div className="flex flex-col gap-4 select-none" data-testid="pain_facts-game">
-      <p className="text-center text-[14px] text-ink-600">
-        {t(`Vraag ${idx + 1} van ${deck.length}`, `Question ${idx + 1} of ${deck.length}`)} · <span className="font-semibold text-ink-900" data-testid="pain-right">{t(`${right} goed`, `${right} right`)}</span>
-      </p>
+    <Stage game="pain_facts" testId="pain_facts-game" className="select-none">
+      <Hud>
+        <HudPill label={t('Vraag', 'Question')} value={`${idx + 1}/${deck.length}`} />
+        <HudPill label={t('Goed', 'Right')} accent={TH.soft} value={<span data-testid="pain-right" aria-label={t(`${right} goed`, `${right} right`)}>{right}</span>} />
+      </Hud>
+      {/* One dot per question: green right, red wrong, the current one ringed. */}
+      <ol className="mb-4 flex items-center justify-center gap-1.5" aria-label={t(`Vraag ${idx + 1} van ${deck.length}`, `Question ${idx + 1} of ${deck.length}`)}>
+        {deck.map((_, k) => {
+          const r = results[k];
+          const current = k === idx;
+          return (
+            <li
+              key={k}
+              aria-hidden
+              className={`rounded-full transition-all duration-300 ${current ? 'h-3 w-3' : 'h-2 w-2'}`}
+              style={
+                r === true
+                  ? { background: GREEN, boxShadow: '0 0 8px rgba(95,211,154,.9)' }
+                  : r === false
+                    ? { background: RED, boxShadow: '0 0 8px rgba(255,107,91,.9)' }
+                    : current
+                      ? { background: 'rgba(255,255,255,.9)', boxShadow: `0 0 0 3px ${TH.glow}55, 0 0 10px ${TH.glow}` }
+                      : { background: 'rgba(255,255,255,.16)' }
+              }
+            />
+          );
+        })}
+      </ol>
 
-      <div
-        onPointerDown={onDown}
-        onPointerMove={onMove}
-        onPointerUp={onUp}
-        onPointerCancel={onCancel}
-        className={`relative mx-auto flex min-h-[200px] w-full max-w-md touch-pan-y flex-col items-center justify-center rounded-2xl border-2 p-5 text-center shadow-card ${
-          answer ? (answer.right ? 'border-ok bg-ok-soft' : 'border-bad bg-bad-soft') : 'border-line bg-white'
-        } ${drag.current ? '' : 'transition-transform duration-200'}`}
-        style={answer ? undefined : { transform: `translateX(${dx}px) rotate(${tilt * 6}deg)` }}
-        data-testid="pain-card"
-      >
-        {!answer && Math.abs(dx) > 20 && (
-          <span aria-hidden className={`absolute top-3 rounded-full px-2.5 py-0.5 text-[13px] font-bold text-white ${dx < 0 ? 'left-3 bg-[#b5674a]' : 'right-3 bg-[#3f8a62]'}`}>{dx < 0 ? t('Mythe', 'Myth') : t('Feit', 'Fact')}</span>
-        )}
-        <p className="text-[19px] font-semibold leading-snug text-ink-950">{nl ? card.nl : card.en}</p>
-        {answer && (
-          <div className="mt-3 animate-fade-in" role="status" aria-live="polite" data-testid="pain-feedback">
-            <p className={`text-[16px] font-bold ${answer.right ? 'text-ok' : 'text-bad'}`}>
-              {answer.right ? t('Goed!', 'Right!') : t('Niet helemaal.', 'Not quite.')} {card.fact ? t('Dit is een feit.', 'This is a fact.') : t('Dit is een mythe.', 'This is a myth.')}
-            </p>
-            <p className="mt-1.5 text-[14.5px] leading-snug text-ink-800">{nl ? card.whyNl : card.whyEn}</p>
+      <div className="[perspective:1000px]">
+        <div
+          ref={cardRef}
+          onPointerDown={onDown}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerCancel={onCancel}
+          className={`relative mx-auto flex min-h-[230px] w-full max-w-md touch-pan-y flex-col items-center justify-center overflow-hidden rounded-[24px] border p-5 text-center backdrop-blur-xl ${dragging ? '' : 'transition-[transform,border-color,box-shadow] duration-300 ease-out'} ${answer && !answer.right ? 'game-shake' : ''}`}
+          style={{
+            background: 'linear-gradient(160deg, rgba(255,255,255,.16) 0%, rgba(255,255,255,.07) 45%, rgba(255,255,255,.03) 100%)',
+            borderColor: answer ? (answer.right ? 'rgba(95,211,154,.75)' : 'rgba(255,107,91,.75)') : 'rgba(255,255,255,.16)',
+            boxShadow: answer
+              ? `0 24px 50px -22px rgba(0,0,0,.9), 0 0 40px -10px ${answer.right ? 'rgba(95,211,154,.7)' : 'rgba(255,107,91,.7)'}, inset 0 1px 0 rgba(255,255,255,.18)`
+              : `0 24px 50px -22px rgba(0,0,0,.9), 0 0 44px -18px ${TH.glow}, inset 0 1px 0 rgba(255,255,255,.18)`,
+            transform: answer ? undefined : `translateX(${dx}px) rotateY(${tilt * 14}deg) rotate(${tilt * 6}deg)`,
+          }}
+          data-testid="pain-card"
+        >
+          {/* Sheen, and a red or green wash while swiping */}
+          <div aria-hidden className="pointer-events-none absolute -left-1/4 -top-1/2 h-full w-[150%] rotate-[-8deg] bg-gradient-to-b from-white/[.10] to-transparent" />
+          {!answer && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0"
+              style={{ opacity: lean * 0.9, background: dx < 0 ? 'linear-gradient(90deg, rgba(255,107,91,.35), transparent 70%)' : 'linear-gradient(270deg, rgba(95,211,154,.35), transparent 70%)' }}
+            />
+          )}
+          {!answer && Math.abs(dx) > 20 && (
+            <span
+              aria-hidden
+              className={`absolute top-3 rounded-full border px-3 py-1 text-[13px] font-black uppercase tracking-[.12em] backdrop-blur-md ${dx < 0 ? 'left-3' : 'right-3'}`}
+              style={dx < 0 ? { ...MYTH_STYLE, opacity: 0.4 + lean * 0.6 } : { ...FACT_STYLE, opacity: 0.4 + lean * 0.6 }}
+            >
+              {dx < 0 ? t('Mythe', 'Myth') : t('Feit', 'Fact')}
+            </span>
+          )}
+          <div key={idx} className="game-rise relative">
+            <p className="text-[11px] font-bold uppercase tracking-[.16em] text-white/45">{t('Mythe of feit?', 'Myth or fact?')}</p>
+            <p className="mt-2 text-[20px] font-bold leading-snug text-white drop-shadow-[0_2px_10px_rgba(0,0,0,.35)]">{nl ? card.nl : card.en}</p>
           </div>
-        )}
+          {answer && (
+            <div className="game-rise relative mt-4 w-full rounded-2xl border border-white/10 bg-black/20 p-3.5 text-left" role="status" aria-live="polite" data-testid="pain-feedback">
+              <div className="flex items-center gap-2.5">
+                <span
+                  aria-hidden
+                  className="game-pop grid h-9 w-9 shrink-0 place-items-center rounded-full"
+                  style={answer.right ? { background: GREEN, boxShadow: '0 0 18px rgba(95,211,154,.8)' } : { background: RED, boxShadow: '0 0 18px rgba(255,107,91,.8)' }}
+                >
+                  {answer.right ? <Check className="h-5 w-5 text-[#06301b]" strokeWidth={3.2} /> : <X className="h-5 w-5 text-[#3a0a05]" strokeWidth={3.2} />}
+                </span>
+                <p className="text-[16px] font-extrabold leading-tight" style={{ color: answer.right ? '#9df0c2' : '#ffb3a6' }}>
+                  {answer.right ? t('Goed!', 'Right!') : t('Niet helemaal.', 'Not quite.')} {card.fact ? t('Dit is een feit.', 'This is a fact.') : t('Dit is een mythe.', 'This is a myth.')}
+                </p>
+              </div>
+              <p className="mt-2 text-[14.5px] leading-snug text-white/85">{nl ? card.whyNl : card.whyEn}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {answer ? (
-        <Button ref={nextBtn} size="xl" className="w-full" data-testid="pain-next" onClick={next}>{last ? t('Klaar', 'Done') : t('Volgende', 'Next')}</Button>
+        <div ref={nextWrap} className="mt-4">
+          <GameButton className="w-full text-[18px]" data-testid="pain-next" onClick={next}>{last ? t('Klaar', 'Done') : t('Volgende', 'Next')}</GameButton>
+        </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3">
-            <button type="button" data-testid="pain-myth" onClick={() => choose(false)} className="min-h-[64px] rounded-2xl border-2 border-[#d9a58f] bg-[#fbeee8] text-[18px] font-bold text-[#8a3f22] active:translate-y-px">
-              ← {t('Mythe', 'Myth')}
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              data-testid="pain-myth"
+              onClick={() => choose(false)}
+              className="relative min-h-[68px] overflow-hidden rounded-2xl border text-[19px] font-extrabold backdrop-blur-md transition duration-150 hover:brightness-110 active:scale-[.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+              style={MYTH_STYLE}
+            >
+              <span aria-hidden>←</span> {t('Mythe', 'Myth')}
             </button>
-            <button type="button" data-testid="pain-fact" onClick={() => choose(true)} className="min-h-[64px] rounded-2xl border-2 border-[#93c7a8] bg-[#e8f5ec] text-[18px] font-bold text-[#245c3d] active:translate-y-px">
-              {t('Feit', 'Fact')} →
+            <button
+              type="button"
+              data-testid="pain-fact"
+              onClick={() => choose(true)}
+              className="relative min-h-[68px] overflow-hidden rounded-2xl border text-[19px] font-extrabold backdrop-blur-md transition duration-150 hover:brightness-110 active:scale-[.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+              style={FACT_STYLE}
+            >
+              {t('Feit', 'Fact')} <span aria-hidden>→</span>
             </button>
           </div>
-          <p className="text-center text-[12.5px] text-ink-500">{t('Je kunt de kaart ook naar links (mythe) of rechts (feit) vegen, of de pijltjestoetsen gebruiken.', 'You can also swipe the card left (myth) or right (fact), or use the arrow keys.')}</p>
+          <p className="mt-3 text-center text-[12.5px] leading-snug text-white/55">{t('Je kunt de kaart ook naar links (mythe) of rechts (feit) vegen, of de pijltjestoetsen gebruiken.', 'You can also swipe the card left (myth) or right (fact), or use the arrow keys.')}</p>
         </>
       )}
 
-      <p className="text-center text-[12.5px] text-ink-500">{t('Algemene uitleg, geen persoonlijk medisch advies. Je fysiotherapeut kan je hier meer over vertellen.', 'General information, not personal medical advice. Your physiotherapist can tell you more about this.')}</p>
-      <div className="flex justify-center">
-        <Button variant="ghost" size="sm" className="min-h-[44px] px-4" data-testid="game-stop" onClick={finish}>{t('Stoppen', 'Stop')}</Button>
-      </div>
-    </div>
+      <p className="mt-3 text-center text-[12px] leading-snug text-white/45">{t('Algemene uitleg, geen persoonlijk medisch advies. Je fysiotherapeut kan je hier meer over vertellen.', 'General information, not personal medical advice. Your physiotherapist can tell you more about this.')}</p>
+      <StopButton onClick={finish} label={t('Stoppen', 'Stop')} />
+    </Stage>
   );
 }
