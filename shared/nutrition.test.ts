@@ -40,9 +40,21 @@ describe('what someone ate, in own words', () => {
     expect(r.items.map((i) => [i.food?.key, i.grams])).toEqual([['havermout', 40], ['melk', 200], ['whey', 30], ['amandelen', 25]]);
   });
   it('peanut butter is not cheese, and an unknown dish is kept apart', () => {
-    const r = parseFoodText('boterham met pindakaas en een bord nasi');
+    const r = parseFoodText('boterham met pindakaas en een bord sushi');
     expect(r.items.map((i) => i.food?.key)).toEqual(['brood_volkoren', 'pindakaas']);
-    expect(r.unknown).toEqual(['nasi']);
+    expect(r.unknown).toEqual(['sushi']);
+  });
+  it('knows everyday Dutch food: lamb chops, stamppot, a kroket and apple juice', () => {
+    expect(items('2 lamskoteletten, een bord stamppot, 1 kroket en een glas appelsap')).toEqual([
+      ['lamskotelet', 160],
+      ['stamppot_boerenkool', 350],
+      ['kroket', 70],
+      ['appelsap', 200],
+    ]);
+  });
+  it('a whole word beats a word that only starts with it', () => {
+    expect(items('broodje met kaas')[0][0]).toBe('bolletje');
+    expect(items('boterham met jam')[1][0]).toBe('jam');
   });
   it('3 eieren and 200ml melk', () => {
     expect(items('3 eieren, 200ml melk')).toEqual([['ei', 165], ['melk', 200]]);

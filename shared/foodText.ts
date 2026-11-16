@@ -41,17 +41,20 @@ const FILLER = new Set(['ik', 'heb', 'had', 'gegeten', 'gedronken', 'vandaag', '
 
 /** The food whose name or alias appears in the words, the longest name winning. */
 export function findFood(words: string[]): { food: Food; used: number } | null {
-  let best: { food: Food; used: number } | null = null;
+  let best: { food: Food; used: number; exact: boolean } | null = null;
   for (const food of FOODS) {
     for (const a of food.alias) {
       const aw = norm(a).split(' ');
       for (let i = 0; i + aw.length <= words.length; i++) {
         const ok = aw.every((w, k) => words[i + k] === w || (w.length >= 4 && words[i + k].startsWith(w) && words[i + k].length - w.length <= 3));
-        if (ok && (!best || aw.length > best.used)) best = { food, used: aw.length };
+        if (!ok) continue;
+        // Longest name wins; at equal length a whole word beats a word that only starts with it ("appelsap" over "appel").
+        const exact = aw.every((w, k) => words[i + k] === w);
+        if (!best || aw.length > best.used || (aw.length === best.used && exact && !best.exact)) best = { food, used: aw.length, exact };
       }
     }
   }
-  return best;
+  return best && { food: best.food, used: best.used };
 }
 
 function piece(raw: string, carry: number | null): { item: ParsedFood | null; count: number | null; unknown: string[] } {
