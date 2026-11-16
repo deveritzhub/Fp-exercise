@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { COOKING, DAILY_QUESTS, dailyQuest, adventureLevel, blow, boxingXp, CREATURE_KINDS, DROPS, LOOT, rollDrops, weaponAt, weaponByKey } from './adventure';
+import { LIGHT, isShadow, lightFrom, CREATURES, ZONES, zoneAt, COOKING, DAILY_QUESTS, dailyQuest, adventureLevel, blow, boxingXp, CREATURE_KINDS, DROPS, LOOT, rollDrops, weaponAt, weaponByKey } from './adventure';
 
 describe('adventure', () => {
   it('levels: 60 XP for the first, 30 more for each next', () => {
@@ -53,7 +53,9 @@ describe('fighting back and the hero life', async () => {
     expect(hitOnHero('cow', false)).toBe(0);
     expect(isAlpha('alpha_boar')).toBe(true);
     expect(ATTACKS.alpha_boar.aggressive).toBe(true);
-    for (const k of Object.keys(ATTACKS) as (keyof typeof ATTACKS)[]) if (k !== 'alpha_boar') expect(ATTACKS[k].damage).toBeLessThan(ATTACKS.alpha_boar.damage);
+    // Hardest of everything in town; the wolves and bears outside the wall are for stronger adventurers.
+    for (const k of Object.keys(ATTACKS) as (keyof typeof ATTACKS)[]) if (k !== 'alpha_boar' && CREATURES[k].level < 6) expect(ATTACKS[k].damage).toBeLessThan(ATTACKS.alpha_boar.damage);
+    expect(ATTACKS.bear.damage).toBeGreaterThan(ATTACKS.wolf.damage);
     // Fists (1 per blow, about one blow a second) cannot finish 60 life before 40 life is gone.
     const secondsToLose = (heroMaxHp(1, false) / hitOnHero('alpha_boar', false)) * (ATTACKS.alpha_boar.everyMs / 1000);
     expect(secondsToLose).toBeLessThan(CREATURES.alpha_boar.hp);
@@ -89,5 +91,26 @@ describe('berries and tools', async () => {
     const seen = new Set(Array.from({ length: 60 }, (_, i) => dailyQuest(`2026-11-${String((i % 28) + 1).padStart(2, '0')}`, `p${i}`).key));
     expect(seen.size).toBeGreaterThan(3);
     for (const q of DAILY_QUESTS) expect(CREATURE_KINDS).toContain(q.kind);
+  });
+});
+
+describe('hunting grounds', () => {
+  it('each creature outside the wall lives in a ground of its level', () => {
+    expect(zoneAt(3, 39.5)?.key).toBe('wolfwood');
+    expect(zoneAt(0, 0)).toBeNull();
+    expect(ZONES.find((z) => z.key === 'wolfwood')?.level).toBe(CREATURES.wolf.level);
+    expect(ZONES.find((z) => z.key === 'bearhill')?.level).toBe(CREATURES.bear.level);
+    for (const k of ['wolf', 'bear'] as const) expect(DROPS[k].length).toBeGreaterThan(0);
+  });
+});
+
+describe('the light side', () => {
+  it('each helper comes from one shadow creature, the Shame lord gives the light itself', () => {
+    expect(new Set(LIGHT.map((l) => l.from)).size).toBe(LIGHT.length);
+    for (const l of LIGHT) expect(CREATURES[l.from]).toBeTruthy();
+    expect(lightFrom('shame_lord')?.key).toBe('enlightenment');
+    expect(lightFrom('cow')).toBeNull();
+    expect(isShadow('guilt')).toBe(true);
+    expect(isShadow('wolf')).toBe(false);
   });
 });

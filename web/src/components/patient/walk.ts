@@ -63,7 +63,7 @@ export const VILLAGE_LAYOUT = {
   /** Building slots around the square; the gym with the TV has the north side. */
   slots: [195, 345, 232, 308, 150, 30],
   ring: 6.6,
-  gym: { x: 0, z: -8.2 },
+  gym: { x: 0, z: -16.5 },
   spawn: { x: 0, z: 2.4 },
 } as const;
 
@@ -114,7 +114,34 @@ export type Area = { bound: number } | { rect: Rect };
  */
 export function findPath(from: Vec, to: Vec, obstacles: readonly Obstacle[], area: Area, cell = 0.4): Vec[] {
   const inArea = (x: number, z: number) => ('rect' in area ? x >= area.rect.x0 && x <= area.rect.x1 && z >= area.rect.z0 && z <= area.rect.z1 : Math.hypot(x, z) <= area.bound + 0.01);
-  const free = (x: number, z: number) => inArea(x, z) && obstacles.every((o) => Math.hypot(x - o.x, z - o.z) >= o.r - 0.02);
+  // Obstacles in buckets of 4 m, so a check looks only at the ones nearby (big ones always).
+  const B4 = 4;
+  const bucket = new Map<string, Obstacle[]>();
+  const big: Obstacle[] = [];
+  for (const o of obstacles) {
+    if (o.r > B4 - 0.5) {
+      big.push(o);
+      continue;
+    }
+    const k = `${Math.floor(o.x / B4)},${Math.floor(o.z / B4)}`;
+    const list = bucket.get(k);
+    if (list) list.push(o);
+    else bucket.set(k, [o]);
+  }
+  const hits = (x: number, z: number, o: Obstacle) => Math.hypot(x - o.x, z - o.z) < o.r - 0.02;
+  const free = (x: number, z: number) => {
+    if (!inArea(x, z)) return false;
+    for (const o of big) if (hits(x, z, o)) return false;
+    const bx = Math.floor(x / B4);
+    const bz = Math.floor(z / B4);
+    for (let dz = -1; dz <= 1; dz++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const list = bucket.get(`${bx + dx},${bz + dz}`);
+        if (list) for (const o of list) if (hits(x, z, o)) return false;
+      }
+    }
+    return true;
+  };
   const clear = (a: Vec, b: Vec) => {
     const n = Math.max(1, Math.ceil(dist(a, b) / 0.12));
     for (let i = 1; i < n; i++) if (!free(a.x + ((b.x - a.x) * i) / n, a.z + ((b.z - a.z) * i) / n)) return false;
@@ -128,8 +155,21 @@ export function findPath(from: Vec, to: Vec, obstacles: readonly Obstacle[], are
   const px = (i: number) => x0 + (i % w) * cell;
   const pz = (i: number) => z0 + Math.floor(i / w) * cell;
   const open = new Uint8Array(w * h);
-  // A little clear of every obstacle, so the hero does not brush along them.
-  for (let i = 0; i < w * h; i++) open[i] = inArea(px(i), pz(i)) && obstacles.every((o) => Math.hypot(px(i) - o.x, pz(i) - o.z) >= o.r + 0.12) ? 1 : 0;
+  for (let i = 0; i < w * h; i++) open[i] = inArea(px(i), pz(i)) ? 1 : 0;
+  // A little clear of every obstacle, so the hero does not brush along them: each obstacle closes
+  // the cells under it (only those, so a big village with many trees stays quick).
+  for (const o of obstacles) {
+    const rr = o.r + 0.12;
+    const i0 = Math.max(0, Math.floor((o.x - rr - x0) / cell));
+    const i1 = Math.min(w - 1, Math.ceil((o.x + rr - x0) / cell));
+    const j0 = Math.max(0, Math.floor((o.z - rr - z0) / cell));
+    const j1 = Math.min(h - 1, Math.ceil((o.z + rr - z0) / cell));
+    for (let j = j0; j <= j1; j++) {
+      for (let i = i0; i <= i1; i++) {
+        if (Math.hypot(x0 + i * cell - o.x, z0 + j * cell - o.z) < rr) open[j * w + i] = 0;
+      }
+    }
+  }
   const nearest = (p: Vec, mustBeOpen: boolean) => {
     let best = -1;
     let bd = Infinity;
@@ -150,12 +190,47 @@ export function findPath(from: Vec, to: Vec, obstacles: readonly Obstacle[], are
   const prev = new Int32Array(w * h).fill(-1);
   const done = new Uint8Array(w * h);
   cost[start] = 0;
-  const queue = [start];
   const est = (i: number) => Math.hypot(px(i) - px(goal), pz(i) - pz(goal));
-  while (queue.length) {
-    let qi = 0;
-    for (let k = 1; k < queue.length; k++) if (cost[queue[k]] + est(queue[k]) < cost[queue[qi]] + est(queue[qi])) qi = k;
-    const cur = queue.splice(qi, 1)[0];
+  // The open cells, cheapest guess first (a binary heap).
+  const heap: number[] = [];
+  const score: number[] = [];
+  const push = (i: number, f: number) => {
+    let k = heap.length;
+    heap.push(i);
+    score.push(f);
+    while (k > 0) {
+      const up = (k - 1) >> 1;
+      if (score[up] <= score[k]) break;
+      [heap[up], heap[k]] = [heap[k], heap[up]];
+      [score[up], score[k]] = [score[k], score[up]];
+      k = up;
+    }
+  };
+  const pop = () => {
+    const top = heap[0];
+    const lastI = heap.pop()!;
+    const lastF = score.pop()!;
+    if (heap.length) {
+      heap[0] = lastI;
+      score[0] = lastF;
+      let k = 0;
+      for (;;) {
+        const l = k * 2 + 1;
+        const r = l + 1;
+        let m = k;
+        if (l < heap.length && score[l] < score[m]) m = l;
+        if (r < heap.length && score[r] < score[m]) m = r;
+        if (m === k) break;
+        [heap[m], heap[k]] = [heap[k], heap[m]];
+        [score[m], score[k]] = [score[k], score[m]];
+        k = m;
+      }
+    }
+    return top;
+  };
+  push(start, est(start));
+  while (heap.length) {
+    const cur = pop();
     if (cur === goal) break;
     if (done[cur]) continue;
     done[cur] = 1;
@@ -174,7 +249,7 @@ export function findPath(from: Vec, to: Vec, obstacles: readonly Obstacle[], are
         if (c < cost[ni]) {
           cost[ni] = c;
           prev[ni] = cur;
-          queue.push(ni);
+          push(ni, c + est(ni));
         }
       }
     }

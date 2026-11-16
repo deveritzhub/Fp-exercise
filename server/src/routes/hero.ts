@@ -1,5 +1,5 @@
 import { BELTS, examReady, nextItems, validItem } from '../../../shared/karate';
-import { ADVENTURE_DAILY_WINS, BERRIES_FOR, BOXING, CREATURES, CREATURE_KINDS, LOOT_CAP, NEEDS_TOOL, ADVENTURE_QUEST_XP, dailyQuest, dishByKey, RECIPES, TOOLS, TOOL_BONUS, WEAPONS, toolFor, adventureLevel, boxingXp, builtItem, rollDrops, toolItem, weaponItem, type CreatureKind, type LootKey } from '../../../shared/adventure';
+import { ADVENTURE_DAILY_WINS, BERRIES_FOR, BOXING, CREATURES, CREATURE_KINDS, LOOT_CAP, NEEDS_TOOL, ADVENTURE_QUEST_XP, armourByKey, lightFrom, lightItem, dailyQuest, dishByKey, RECIPES, TOOLS, TOOL_BONUS, WEAPONS, toolFor, adventureLevel, boxingXp, builtItem, rollDrops, toolItem, weaponItem, type CreatureKind, type LootKey } from '../../../shared/adventure';
 import { homeStage, nextHome } from '../../../shared/practiceVillage';
 import { readStaffLook } from '../lib/staffLook';
 import { HEIRLOOM_KINDS } from '../../../shared/measurementBoss';
@@ -752,13 +752,15 @@ heroPatient.get('/hero/coach', async (c) => {
   return c.json({ look: readStaffLook(row?.look) });
 });
 
-const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number; weapon?: string | null; owned?: string[]; coins?: number; loot?: Record<string, number>; tools?: string[]; built?: string[]; strength?: number; quest?: { key: string; kind: string; n: number; nl: string; en: string; progress: number; done: boolean; xp: number } } | undefined) => {
+const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number; weapon?: string | null; owned?: string[]; coins?: number; loot?: Record<string, number>; tools?: string[]; built?: string[]; strength?: number; quest?: { key: string; kind: string; n: number; nl: string; en: string; progress: number; done: boolean; xp: number }; armour?: string | null; light?: string[] } | undefined) => {
   const xp = Number(r?.xp ?? 0);
   const owned = r?.owned ?? [];
   // Only a weapon that was bought can be worn.
   const weapon = r?.weapon && owned.includes(r.weapon) ? r.weapon : null;
   const chest = (r?.built ?? []).includes('chest');
-  return { quest: r?.quest ?? null, weapon, owned, coins: r?.coins ?? 0, loot: r?.loot ?? {}, tools: r?.tools ?? [], built: r?.built ?? [], strength: r?.strength ?? 1, lootCap: chest ? LOOT_CAP.chest : LOOT_CAP.backpack, xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...adventureLevel(xp) };
+  // Only armour that was made can be worn.
+  const armour = r?.armour && (r?.built ?? []).includes(r.armour) ? r.armour : null;
+  return { light: r?.light ?? [], armour, quest: r?.quest ?? null, weapon, owned, coins: r?.coins ?? 0, loot: r?.loot ?? {}, tools: r?.tools ?? [], built: r?.built ?? [], strength: r?.strength ?? 1, lootCap: chest ? LOOT_CAP.chest : LOOT_CAP.backpack, xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...adventureLevel(xp) };
 };
 /** Today's adventure task for this patient, and how far it got. */
 const questView = (today: string, patientId: string, row: { quest_day?: string | null; quest_n?: number; quest_done?: boolean } | undefined) => {
@@ -768,17 +770,18 @@ const questView = (today: string, patientId: string, row: { quest_day?: string |
 };
 const adventureRow = async (tx: Tx, patientId: string) => {
   const today = (await tx.query('SELECT CURRENT_DATE::text AS d')).rows[0].d as string;
-  const row = (await tx.query('SELECT xp, wins, weapon, quest_day::text AS quest_day, quest_n, quest_done, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today, CASE WHEN day = CURRENT_DATE THEN rounds_today ELSE 0 END AS rounds_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
-  const bought = (await tx.query("SELECT item FROM hero_purchases WHERE patient_id = $1 AND (item LIKE 'wpn\\_%' OR item LIKE 'tool\\_%' OR item LIKE 'built\\_%')", [patientId])).rows.map((r) => r.item as string);
+  const row = (await tx.query('SELECT xp, wins, weapon, armour, quest_day::text AS quest_day, quest_n, quest_done, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today, CASE WHEN day = CURRENT_DATE THEN rounds_today ELSE 0 END AS rounds_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
+  const bought = (await tx.query("SELECT item FROM hero_purchases WHERE patient_id = $1 AND (item LIKE 'wpn\\_%' OR item LIKE 'tool\\_%' OR item LIKE 'built\\_%' OR item LIKE 'light\\_%')", [patientId])).rows.map((r) => r.item as string);
   const owned = bought.filter((x) => x.startsWith('wpn_')).map((x) => x.slice(4));
   const tools = bought.filter((x) => x.startsWith('tool_')).map((x) => x.slice(5));
   const built = bought.filter((x) => x.startsWith('built_')).map((x) => x.slice(6));
+  const light = bought.filter((x) => x.startsWith('light_')).map((x) => x.slice(6));
   const hs = await heroState(tx, patientId);
   const coins = hs.gear.coins;
   // The strength skill comes from real strength training: heavy weapons ask for it.
   const strength = hs.skills.find((k) => k.key === 'strength')?.level ?? 1;
   const loot = Object.fromEntries((await tx.query('SELECT item, n FROM hero_loot WHERE patient_id = $1 AND n > 0', [patientId])).rows.map((r) => [r.item as string, Number(r.n)]));
-  return { xp: 0, wins: 0, wins_today: 0, rounds_today: 0, ...(row ?? {}), owned, coins, loot, tools, built, strength, quest: questView(today, patientId, row) };
+  return { xp: 0, wins: 0, wins_today: 0, rounds_today: 0, ...(row ?? {}), owned, coins, loot, tools, built, strength, light, quest: questView(today, patientId, row) };
 };
 
 heroPatient.get('/hero/adventure', async (c) => {
@@ -827,11 +830,20 @@ heroPatient.post('/hero/adventure/win', async (c) => {
           [patient.id],
         )).rows[0];
         if (q && !q.quest_done && Number(q.quest_n) >= quest.n) {
-          await tx.query('UPDATE hero_adventure SET quest_done = true, xp = xp + $2 WHERE patient_id = $1', [patient.id, ADVENTURE_QUEST_XP]);
-          questXp = ADVENTURE_QUEST_XP;
+          // Willingness (from the light side) doubles the bonus.
+          const bonus = ADVENTURE_QUEST_XP * ((await before).light.includes('willingness') ? 2 : 1);
+          await tx.query('UPDATE hero_adventure SET quest_done = true, xp = xp + $2 WHERE patient_id = $1', [patient.id, bonus]);
+          questXp = bonus;
         }
       }
-      return { gained, questXp, drops, ...adventureView(await adventureRow(tx, patient.id)) };
+      // The first win over a shadow creature sets its helper from the light side free.
+      const freed = lightFrom(body.data.kind);
+      let unlocked: string | null = null;
+      if (freed && !(await before).light.includes(freed.key)) {
+        await tx.query('INSERT INTO hero_purchases (patient_id, item, price) VALUES ($1, $2, 0) ON CONFLICT DO NOTHING', [patient.id, lightItem(freed.key)]);
+        unlocked = freed.key;
+      }
+      return { gained, questXp, unlocked, drops, ...adventureView(await adventureRow(tx, patient.id)) };
     }),
   );
 });
@@ -975,8 +987,9 @@ heroPatient.post('/hero/adventure/craft', async (c) => {
       if (!hero) throw badRequest('hero_required');
       const now = await adventureRow(tx, patient.id);
       const weapon = recipe.kind === 'weapon' ? WEAPONS.find((w) => w.key === recipe.key) : undefined;
+      const armour = recipe.kind === 'armour' ? armourByKey(recipe.key) : null;
       if (weapon ? now.owned.includes(recipe.key) : now.built.includes(recipe.key)) throw badRequest('gear_owned');
-      if (weapon && adventureLevel(Number(now.xp)).level < weapon.level) throw badRequest('level_too_low');
+      if (adventureLevel(Number(now.xp)).level < (weapon?.level ?? armour?.level ?? 1)) throw badRequest('level_too_low');
       const needs = Object.entries(recipe.needs) as [string, number][];
       // Plant-based: animal loot that is short is paid with berries, as with building a home.
       const pay: Record<string, number> = {};
@@ -995,6 +1008,8 @@ heroPatient.post('/hero/adventure/craft', async (c) => {
       for (const [item, n] of Object.entries(pay)) await tx.query('UPDATE hero_loot SET n = n - $3 WHERE patient_id = $1 AND item = $2', [patient.id, item, n]);
       await tx.query('INSERT INTO hero_purchases (patient_id, item, price) VALUES ($1, $2, 0)', [patient.id, weapon ? weaponItem(recipe.key) : builtItem(recipe.key)]);
       if (weapon) await tx.query('INSERT INTO hero_adventure(patient_id, weapon) VALUES ($1, $2) ON CONFLICT (patient_id) DO UPDATE SET weapon = EXCLUDED.weapon, updated_at = now()', [patient.id, weapon.key]);
+      // New armour is put on at once; it can be taken off again.
+      if (armour) await tx.query('INSERT INTO hero_adventure(patient_id, armour) VALUES ($1, $2) ON CONFLICT (patient_id) DO UPDATE SET armour = EXCLUDED.armour, updated_at = now()', [patient.id, armour.key]);
       // The chest is also a piece for the home: it is put down in the room straight away.
       if (recipe.key === 'chest') {
         await tx.query("INSERT INTO hero_purchases (patient_id, item, price) VALUES ($1, 'home_lootchest', 0) ON CONFLICT DO NOTHING", [patient.id]);
@@ -1046,6 +1061,21 @@ heroPatient.post('/hero/adventure/eat', async (c) => {
       const left = (await tx.query('UPDATE hero_loot SET n = n - 1 WHERE patient_id = $1 AND item = $2 AND n > 0 RETURNING n', [patient.id, dish.key])).rows[0];
       if (!left) throw badRequest('not_enough_loot');
       return { heals: dish.heals, ...adventureView(await adventureRow(tx, patient.id)) };
+    }),
+  );
+});
+
+/** Put made armour on, or take it off (null: none). */
+heroPatient.put('/hero/adventure/armour', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ key: z.string().max(24).nullable() }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) throw badRequest('invalid_input');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const now = await adventureRow(tx, patient.id);
+      if (body.data.key !== null && !(armourByKey(body.data.key) && now.built.includes(body.data.key))) throw badRequest('gear_not_owned');
+      await tx.query('INSERT INTO hero_adventure(patient_id, armour) VALUES ($1, $2) ON CONFLICT (patient_id) DO UPDATE SET armour = EXCLUDED.armour, updated_at = now()', [patient.id, body.data.key]);
+      return adventureView(await adventureRow(tx, patient.id));
     }),
   );
 });

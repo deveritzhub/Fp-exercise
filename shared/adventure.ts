@@ -21,6 +21,23 @@ export const CREATURES = {
   rock: { nl: 'Rots', en: 'Rock', hp: 7, xp: 4, weakTo: 'trained', level: 1 },
   // A berry bush: picked by hand, for those who would rather not hunt.
   bush: { nl: 'Bessenstruik', en: 'Berry bush', hp: 2, xp: 3, weakTo: 'moving', level: 1 },
+  // Outside the town wall, each in its own hunting ground: they show themselves from their level on.
+  wolf: { nl: 'Wolf', en: 'Wolf', hp: 26, xp: 70, weakTo: 'trained', level: 6 },
+  bear: { nl: 'Beer', en: 'Bear', hp: 50, xp: 140, weakTo: 'trained', level: 10 },
+  // The boss of each hunting ground: shows itself with its pack, a fair fight only later (alphaAdvised).
+  alpha_wolf: { nl: 'Alfawolf', en: 'Alpha wolf', hp: 120, xp: 400, weakTo: 'trained', level: 6 },
+  alpha_bear: { nl: 'Alfabeer', en: 'Alpha bear', hp: 220, xp: 800, weakTo: 'trained', level: 10 },
+  // The shadow side: heavy feelings as creatures, the heavier the stronger. The milder ones live in
+  // the Shadow valley, the deeper ones in the dungeon of the underworld. What you really did today is
+  // what hits them hardest: you are stronger than this.
+  pride: { nl: 'Pronkpauw', en: 'Peacock of pride', hp: 14, xp: 40, weakTo: 'trained', level: 4 },
+  rage: { nl: 'Vuurkop', en: 'Hothead', hp: 24, xp: 65, weakTo: 'hydrated', level: 6 },
+  craving: { nl: 'Graaigeest', en: 'Grabbing ghost', hp: 30, xp: 90, weakTo: 'fed', level: 8 },
+  fright: { nl: 'Schrikschim', en: 'Fright shade', hp: 40, xp: 120, weakTo: 'moving', level: 10 },
+  sorrow: { nl: 'Tranenslijk', en: 'Tear sludge', hp: 60, xp: 160, weakTo: 'rested', level: 12 },
+  apathy: { nl: 'Grijze Slaper', en: 'Grey sleeper', hp: 70, xp: 200, weakTo: 'trained', level: 14 },
+  guilt: { nl: 'Schuldketter', en: 'Guilt chainer', hp: 90, xp: 260, weakTo: 'hydrated', level: 16 },
+  shame_lord: { nl: 'Schaamtevorst', en: 'Shame lord', hp: 400, xp: 1500, weakTo: 'trained', level: 16 },
 } as const;
 export type CreatureKind = keyof typeof CREATURES;
 export const CREATURE_KINDS = Object.keys(CREATURES) as CreatureKind[];
@@ -43,15 +60,29 @@ export const ATTACKS: Record<CreatureKind, { damage: number; everyMs: number; ag
   oak: { damage: 0, everyMs: 1500, aggressive: false },
   rock: { damage: 0, everyMs: 1500, aggressive: false },
   bush: { damage: 0, everyMs: 1500, aggressive: false },
+  wolf: { damage: 5, everyMs: 1400, aggressive: true },
+  bear: { damage: 9, everyMs: 1700, aggressive: true },
+  alpha_wolf: { damage: 12, everyMs: 1500, aggressive: true },
+  alpha_bear: { damage: 18, everyMs: 1800, aggressive: true },
+  pride: { damage: 3, everyMs: 1500, aggressive: false },
+  rage: { damage: 5, everyMs: 1200, aggressive: true },
+  craving: { damage: 5, everyMs: 1400, aggressive: true },
+  fright: { damage: 7, everyMs: 1500, aggressive: true },
+  sorrow: { damage: 8, everyMs: 1800, aggressive: false },
+  apathy: { damage: 9, everyMs: 2000, aggressive: true },
+  guilt: { damage: 12, everyMs: 1600, aggressive: true },
+  shame_lord: { damage: 22, everyMs: 1800, aggressive: true },
 };
 /** Trees and rocks: you chop them for wood and stone; they never fight back. */
 export const isHarvest = (kind: CreatureKind) => kind === 'oak' || kind === 'rock' || kind === 'bush';
 /** Friendly: never hits the hero (prey, trees and rocks). */
 export const isFriendly = (kind: CreatureKind) => ATTACKS[kind].damage === 0;
 /** An Alpha: a big, dangerous one with its own warning; worth fighting with a good weapon. */
-export const isAlpha = (kind: CreatureKind) => kind.startsWith('alpha_');
+export const isAlpha = (kind: CreatureKind) => kind.startsWith('alpha_') || kind === 'shame_lord';
 /** The adventurer level at which an Alpha is a fair fight (it shows itself earlier, as a warning). */
 export const ALPHA_ADVISED_LEVEL = 5;
+/** The adventurer level at which each Alpha is a fair fight. */
+export const alphaAdvised = (kind: CreatureKind): number => (kind === 'alpha_wolf' ? 9 : kind === 'alpha_bear' ? 13 : kind === 'shame_lord' ? 20 : ALPHA_ADVISED_LEVEL);
 
 /**
  * The hero's life in the village: it grows with the adventure level, and a real workout today gives
@@ -64,9 +95,9 @@ export function heroMaxHp(level: number, trainedToday: boolean): number {
 /** Life that comes back by itself out of a fight, per second; after a while without being hit. */
 export const HERO_REGEN = { perSecond: 2, afterMs: 5000 } as const;
 /** Damage a creature does after the hero's armour: a real workout today takes the edge off by a fifth. */
-export const hitOnHero = (kind: CreatureKind, trainedToday: boolean) => {
+export const hitOnHero = (kind: CreatureKind, trainedToday: boolean, guard = 0) => {
   const d = ATTACKS[kind].damage;
-  return d <= 0 ? 0 : Math.max(1, Math.round(d * (trainedToday ? 0.8 : 1)));
+  return d <= 0 ? 0 : Math.max(1, Math.round(d * (trainedToday ? 0.8 : 1) * (1 - guard)));
 };
 
 /** Wins that count per day; after that the creatures can still be beaten, for nothing. */
@@ -138,6 +169,20 @@ export const LOOT = {
   button: { nl: 'Bankknoop', en: 'Couch button', icon: '🔘' },
   crown: { nl: 'Kroonscherf', en: 'Crown shard', icon: '👑' },
   alpha_tusk: { nl: 'Alfaslagtand', en: 'Alpha tusk', icon: '🐗' },
+  wolf_pelt: { nl: 'Wolvenvacht', en: 'Wolf pelt', icon: '🐺' },
+  fang: { nl: 'Wolventand', en: 'Wolf fang', icon: '🦷' },
+  bear_pelt: { nl: 'Berenvacht', en: 'Bear pelt', icon: '🐻' },
+  claw: { nl: 'Berenklauw', en: 'Bear claw', icon: '🐾' },
+  alpha_fang: { nl: 'Alfawolventand', en: 'Alpha wolf fang', icon: '🌙' },
+  alpha_claw: { nl: 'Alfaberenklauw', en: 'Alpha bear claw', icon: '💥' },
+  mirror_feather: { nl: 'Spiegelveer', en: 'Mirror feather', icon: '🪞' },
+  ember: { nl: 'Gloeiende kool', en: 'Ember', icon: '🔥' },
+  empty_purse: { nl: 'Lege buidel', en: 'Empty purse', icon: '👝' },
+  shiver_crystal: { nl: 'Bibberkristal', en: 'Shiver crystal', icon: '💠' },
+  tear_stone: { nl: 'Traansteen', en: 'Tear stone', icon: '💧' },
+  grey_dust: { nl: 'Grijs stof', en: 'Grey dust', icon: '🌫️' },
+  broken_link: { nl: 'Gebroken schakel', en: 'Broken link', icon: '⛓️' },
+  crown_of_light: { nl: 'Kroon van het Licht', en: 'Crown of light', icon: '✨' },
   wood: { nl: 'Hout', en: 'Wood', icon: '🪵' },
   stone: { nl: 'Steen', en: 'Stone', icon: '🪨' },
   berries: { nl: 'Bessen', en: 'Berries', icon: '🫐' },
@@ -163,6 +208,18 @@ export const DROPS: Record<CreatureKind, { item: LootKey; chance: number; max: n
   oak: [{ item: 'wood', chance: 1, max: 3 }],
   rock: [{ item: 'stone', chance: 1, max: 2 }],
   bush: [{ item: 'berries', chance: 1, max: 3 }],
+  wolf: [{ item: 'wolf_pelt', chance: 1, max: 1 }, { item: 'bone', chance: 1, max: 2 }, { item: 'fang', chance: 0.4, max: 1 }],
+  bear: [{ item: 'bear_pelt', chance: 1, max: 1 }, { item: 'meat', chance: 1, max: 3 }, { item: 'claw', chance: 0.5, max: 2 }],
+  alpha_wolf: [{ item: 'alpha_fang', chance: 1, max: 1 }, { item: 'wolf_pelt', chance: 1, max: 2 }, { item: 'fang', chance: 1, max: 2 }],
+  alpha_bear: [{ item: 'alpha_claw', chance: 1, max: 1 }, { item: 'bear_pelt', chance: 1, max: 2 }, { item: 'claw', chance: 1, max: 3 }],
+  pride: [{ item: 'mirror_feather', chance: 1, max: 2 }],
+  rage: [{ item: 'ember', chance: 1, max: 2 }],
+  craving: [{ item: 'empty_purse', chance: 1, max: 1 }],
+  fright: [{ item: 'shiver_crystal', chance: 1, max: 2 }],
+  sorrow: [{ item: 'tear_stone', chance: 1, max: 2 }],
+  apathy: [{ item: 'grey_dust', chance: 1, max: 3 }],
+  guilt: [{ item: 'broken_link', chance: 1, max: 2 }],
+  shame_lord: [{ item: 'crown_of_light', chance: 1, max: 1 }, { item: 'broken_link', chance: 1, max: 3 }, { item: 'tear_stone', chance: 1, max: 3 }],
 };
 
 /** The drops of one win. `rnd` gives numbers in [0, 1), as Math.random does. */
@@ -195,7 +252,7 @@ export const NEEDS_TOOL: Partial<Record<CreatureKind, string>> = { oak: 'hatchet
  * Plant-based: loot that comes from animals can always be paid with berries instead. How many berries
  * one piece is worth. Nobody has to hunt to build a home.
  */
-export const BERRIES_FOR: Partial<Record<LootKey, number>> = { hide: 3, bone: 3, meat: 2, feather: 1, egg: 2, tusk: 5, alpha_tusk: 25 };
+export const BERRIES_FOR: Partial<Record<LootKey, number>> = { hide: 3, bone: 3, meat: 2, feather: 1, egg: 2, tusk: 5, alpha_tusk: 25, wolf_pelt: 4, fang: 3, bear_pelt: 6, claw: 4, alpha_fang: 30, alpha_claw: 40 };
 
 /**
  * Things to make from loot: the weaker weapons (a second way next to buying), and a chest.
@@ -206,7 +263,12 @@ export const RECIPES = [
   { key: 'gloves', kind: 'weapon', nl: 'Bokshandschoenen', en: 'Boxing gloves', icon: '🥊', needs: { hide: 2, feather: 2 } },
   { key: 'club', kind: 'weapon', nl: 'Knots', en: 'Club', icon: '🏏', needs: { wood: 4, bone: 2 } },
   { key: 'chest', kind: 'build', nl: 'Kist', en: 'Chest', icon: '🧰', needs: { wood: 6, hide: 1 } },
-] as const satisfies readonly { key: string; kind: 'weapon' | 'build'; nl: string; en: string; icon: string; needs: Partial<Record<LootKey, number>> }[];
+  // Armour, made from what the creatures leave: it softens their blows (ARMOURS).
+  { key: 'leather', kind: 'armour', nl: 'Leren harnas', en: 'Leather armour', icon: '🦺', needs: { hide: 3 } },
+  { key: 'wolf_cloak', kind: 'armour', nl: 'Wolvenmantel', en: 'Wolf cloak', icon: '🧥', needs: { wolf_pelt: 3, fang: 1 } },
+  { key: 'bear_armour', kind: 'armour', nl: 'Berenharnas', en: 'Bear armour', icon: '🛡️', needs: { bear_pelt: 2, claw: 2 } },
+  { key: 'alpha_armour', kind: 'armour', nl: 'Alfaharnas', en: 'Alpha armour', icon: '👑', needs: { alpha_fang: 1, alpha_claw: 1, bear_pelt: 2 } },
+] as const satisfies readonly { key: string; kind: 'weapon' | 'build' | 'armour'; nl: string; en: string; icon: string; needs: Partial<Record<LootKey, number>> }[];
 export type Recipe = (typeof RECIPES)[number];
 export const builtItem = (key: string) => `built_${key}`;
 /** How many of one kind of loot the backpack holds; a chest holds far more. */
@@ -244,3 +306,63 @@ export function dailyQuest(day: string, seed: string): DailyQuest {
   for (const ch of `${day}|${seed}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
   return DAILY_QUESTS[h % DAILY_QUESTS.length];
 }
+
+/**
+ * The hunting grounds: the areas where creatures live, each with the adventurer level from which its
+ * creatures show themselves. In the town the meadow, the park and the boar wood; outside the wall the
+ * wolf wood, the bear hill, the woodcutters' wood and the quarry.
+ */
+export const ZONES = [
+  { key: 'meadow', nl: 'Weide', en: 'Meadow', level: 1, x: 18.4, z: 12.6, r: 4.2, icon: '🐄', outside: false },
+  { key: 'park', nl: 'Stadspark', en: 'Town park', level: 1, x: 14.4, z: 22, r: 5, icon: '🫧', outside: false },
+  { key: 'boarwood', nl: 'Zwijnenbos', en: 'Boar wood', level: 4, x: 25.4, z: 9, r: 5, icon: '🐗', outside: false },
+  { key: 'wolfwood', nl: 'Wolvenwoud', en: 'Wolf wood', level: 6, x: 3, z: 39.5, r: 6.5, icon: '🐺', outside: true },
+  { key: 'bearhill', nl: 'Berenheuvel', en: 'Bear hill', level: 10, x: 39.5, z: -4, r: 6.5, icon: '🐻', outside: true },
+  { key: 'woodcut', nl: 'Houthakkersbos', en: 'Woodcutters’ wood', level: 1, x: -39, z: 3, r: 6.5, icon: '🪵', outside: true },
+  { key: 'quarry', nl: 'Steengroeve', en: 'Quarry', level: 1, x: -4, z: -39.5, r: 6, icon: '⛏️', outside: true },
+  { key: 'shadowvale', nl: 'Schaduwdal', en: 'Shadow valley', level: 4, x: -25.5, z: 29, r: 6.5, icon: '🌑', outside: true },
+] as const;
+export type Zone = (typeof ZONES)[number];
+/** The hunting ground a point lies in, if any. */
+export const zoneAt = (x: number, z: number): Zone | null => ZONES.find((zn) => Math.hypot(x - zn.x, z - zn.z) <= zn.r) ?? null;
+
+/** Armour: how much of each blow it takes away, and the adventurer level it asks for. Made from loot. */
+export const ARMOURS = [
+  { key: 'leather', nl: 'Leren harnas', en: 'Leather armour', guard: 0.15, level: 2 },
+  { key: 'wolf_cloak', nl: 'Wolvenmantel', en: 'Wolf cloak', guard: 0.25, level: 6 },
+  { key: 'bear_armour', nl: 'Berenharnas', en: 'Bear armour', guard: 0.4, level: 10 },
+  { key: 'alpha_armour', nl: 'Alfaharnas', en: 'Alpha armour', guard: 0.55, level: 13 },
+] as const;
+export type Armour = (typeof ARMOURS)[number];
+export const armourByKey = (key: string | null | undefined): Armour | null => ARMOURS.find((a) => a.key === key) ?? null;
+
+/**
+ * The light side: helpers set free by beating a shadow creature for the first time (what overcomes
+ * pride is courage, what overcomes fright is acceptance, and so on). Each stands as a shrine in the
+ * town and gives the hero a lasting advantage. The last, the light itself, comes with the Crown of
+ * light from the Shame lord.
+ */
+export const LIGHT = [
+  { key: 'courage', from: 'pride', nl: 'Moed', en: 'Courage', icon: '🔥', color: '#ffb347', x: 8.6, z: 11,
+    doesNl: 'Je eerste klap op elk monster telt dubbel.', doesEn: 'Your first blow on every creature counts double.' },
+  { key: 'neutrality', from: 'rage', nl: 'Neutraliteit', en: 'Neutrality', icon: '⚖️', color: '#9fd8ff', x: -20.6, z: 24.6,
+    doesNl: 'Je ziet bij elk monster waar het zwak tegen is.', doesEn: 'You see what every creature is weak against.' },
+  { key: 'willingness', from: 'craving', nl: 'Bereidheid', en: 'Willingness', icon: '🤝', color: '#9fe39a', x: 3.6, z: -4.4,
+    doesNl: 'Dubbele avonturen-XP voor je taak van vandaag.', doesEn: 'Double adventure XP for today’s task.' },
+  { key: 'acceptance', from: 'fright', nl: 'Acceptatie', en: 'Acceptance', icon: '🕊️', color: '#e6f2ff', x: 10.8, z: 19.6,
+    doesNl: 'Eén keer per dag weer helemaal fit.', doesEn: 'Fully fit again, once a day.' },
+  { key: 'reason', from: 'sorrow', nl: 'Rede', en: 'Reason', icon: '🦉', color: '#d4b5ff', x: 11.6, z: -5.2,
+    doesNl: 'Een monsterboek met alles wat je tegenkwam.', doesEn: 'A book of every creature you met.' },
+  { key: 'love', from: 'apathy', nl: 'Liefde', en: 'Love', icon: '💗', color: '#ff9ac2', x: 19.4, z: 25.8,
+    doesNl: 'Je held heeft een kwart meer leven.', doesEn: 'Your hero has a quarter more life.' },
+  { key: 'joy', from: 'guilt', nl: 'Vreugde en Vrede', en: 'Joy and Peace', icon: '🌅', color: '#ffe08a', x: -26.6, z: 31.4,
+    doesNl: 'Schaduwmonsters doen 20% minder schade.', doesEn: 'Shadow creatures do 20% less damage.' },
+  { key: 'enlightenment', from: 'shame_lord', nl: 'Verlichting', en: 'Enlightenment', icon: '✨', color: '#fff6c8', x: 0, z: -2.6,
+    doesNl: 'De Kroon van het Licht: een gouden gloed om je held, voor altijd.', doesEn: 'The Crown of light: a golden glow round your hero, for good.' },
+] as const;
+export type Light = (typeof LIGHT)[number];
+export const lightItem = (key: string) => `light_${key}`;
+/** The helper a first win over this creature sets free, if any. */
+export const lightFrom = (kind: CreatureKind): Light | null => LIGHT.find((l) => l.from === kind) ?? null;
+/** The shadow creatures (their blows are softened by Joy and Peace). */
+export const isShadow = (kind: CreatureKind) => LIGHT.some((l) => l.from === kind);

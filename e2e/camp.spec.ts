@@ -57,4 +57,7 @@ test('the patient cooks at the campfire, eats, sees the task of the day and open
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/chest.png' });
   await page.keyboard.press('Escape');
   await context.close();
+  // Leave the home as it was: other tests count the furniture in it.
+  await sql("UPDATE hero_homes SET layout = COALESCE((SELECT jsonb_agg(e) FROM jsonb_array_elements(layout) e WHERE e->>'key' <> 'home_lootchest'), '[]'::jsonb) WHERE patient_id = $1", [emma.id]);
+  await sql("DELETE FROM hero_purchases WHERE patient_id = $1 AND item IN ('home_lootchest', 'built_chest')", [emma.id]);
 });

@@ -23,7 +23,7 @@ test('tapping the flow master and the physiotherapist opens a talk with the func
   await page.getByTestId('zoom-out').click();
   await page.getByRole('button', { name: 'Loop naar Mobiliteitsstudio' }).press('Enter');
   // The door opens by itself: no button to press.
-  await expect(village).toHaveAttribute('data-zone', 'mobiliteit', { timeout: 30_000 });
+  await expect(village).toHaveAttribute('data-zone', 'mobiliteit', { timeout: 200_000 });
   // Walk up so the flow master is in view; then the body itself is tapped, a little below the name above the head.
   await page.getByRole('button', { name: 'Loop naar het programmabord van Mobiliteitsstudio' }).press('Enter');
   await expect(page.getByTestId('talk-hint')).toBeVisible({ timeout: 60_000 });
@@ -48,7 +48,7 @@ test('tapping the flow master and the physiotherapist opens a talk with the func
 
 /** The strength house: walk in, tap the coach from across the room, and find the 1RM among the choices. */
 test('the coach in the strength house offers the programme and the 1RM', async ({ browser }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(450_000);
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'nl-NL' });
   const page = await context.newPage();
   await page.addInitScript(() => localStorage.setItem('fp.village.tip', '1'));
@@ -59,7 +59,7 @@ test('the coach in the strength house offers the programme and the 1RM', async (
   // A house can be entered too: the strength house has its own room with the programme board.
   await page.getByRole('button', { name: 'Loop naar Krachthonk' }).press('Enter');
   // The door opens by itself: no button to press.
-  await expect(village).toHaveAttribute('data-zone', 'kracht', { timeout: 30_000 });
+  await expect(village).toHaveAttribute('data-zone', 'kracht', { timeout: 200_000 });
   // The coach is tapped from across the room: the hero walks up and the talk opens, with the 1RM among the choices.
   await page.getByRole('button', { name: 'Praat met Coach' }).press('Enter');
   const talk = page.getByTestId('keeper-talk');

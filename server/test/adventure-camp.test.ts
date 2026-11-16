@@ -67,4 +67,40 @@ describe('campfire, task of the day and the chest at home', () => {
     expect(home.layout.some((p: { key: string }) => p.key === 'home_lootchest')).toBe(true);
     expect((await P.post('/patient/hero/home/buy', { item: 'home_lootchest' })).body.error).toBe('unknown_item');
   });
+
+  it('makes armour from loot (or berries), wears it and takes it off', async () => {
+    const P = await login('patientA');
+    const [me] = await sql(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`);
+    await sql('INSERT INTO hero_adventure(patient_id, xp) VALUES ($1, 200) ON CONFLICT (patient_id) DO UPDATE SET xp = GREATEST(hero_adventure.xp, 200)', [me.id]);
+    await sql('INSERT INTO hero_loot(patient_id, item, n) VALUES ($1, $2, 3) ON CONFLICT (patient_id, item) DO UPDATE SET n = 3', [me.id, 'hide']);
+    // The wolf cloak asks for adventurer 6.
+    expect((await P.post('/patient/hero/adventure/craft', { key: 'wolf_cloak' })).body.error).toBe('level_too_low');
+    const made = await P.post('/patient/hero/adventure/craft', { key: 'leather' });
+    expect(made.body).toMatchObject({ armour: 'leather' });
+    expect(made.body.built).toContain('leather');
+    expect((await P.put('/patient/hero/adventure/armour', { key: null })).body.armour).toBeNull();
+    expect((await P.put('/patient/hero/adventure/armour', { key: 'bear_armour' })).body.error).toBe('gear_not_owned');
+    expect((await P.put('/patient/hero/adventure/armour', { key: 'leather' })).body.armour).toBe('leather');
+  });
+
+  it('the shadow creatures show themselves from their level on, and drop their own loot', async () => {
+    const P = await login('patientA');
+    const [me] = await sql(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`);
+    await sql('INSERT INTO hero_adventure(patient_id, xp) VALUES ($1, 0) ON CONFLICT (patient_id) DO UPDATE SET xp = 0', [me.id]);
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'pride' })).status).toBe(400);
+    await sql('UPDATE hero_adventure SET xp = 6000, wins_today = 0 WHERE patient_id = $1', [me.id]);
+    const win = await P.post('/patient/hero/adventure/win', { kind: 'fright' });
+    expect(win.body.gained).toBe(120);
+    expect(win.body.loot.shiver_crystal).toBeGreaterThan(0);
+    // The first win over fright sets Acceptance free, once.
+    expect(win.body.unlocked).toBe('acceptance');
+    expect(win.body.light).toContain('acceptance');
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'fright' })).body.unlocked).toBeNull();
+    const lord = (await P.post('/patient/hero/adventure/win', { kind: 'shame_lord' })).body;
+    expect(lord.loot.crown_of_light).toBe(1);
+    expect(lord.unlocked).toBe('enlightenment');
+    // An ordinary creature frees nothing.
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'cow' })).body.unlocked).toBeNull();
+    await sql('UPDATE hero_adventure SET xp = 0 WHERE patient_id = $1', [me.id]);
+  });
 });
