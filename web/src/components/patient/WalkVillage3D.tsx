@@ -1,5 +1,6 @@
 import { weaponMesh } from './weapons3d';
 import { creature, habitat, pond } from './creatures3d';
+import { ALPHA_ADVISED_LEVEL, ZONES } from '@shared/adventure';
 import { MARKET, RESIDENTS, SPOTS, TOWN } from './townPlan';
 import { ATTACKS, CREATURES, isAlpha, isFriendly, isHarvest, type CreatureKind } from '@shared/adventure';
 import { dress } from '@/components/hero/fabric3d';
@@ -884,6 +885,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         ]
       : [];
     roads.push(...trunk.slice(2));
+    if (plan) roads.push({ a: { x: GYM.x, z: GYM.z - 4.2 }, b: { x: 0, z: -B }, w: 1.9 });
     const spur = (door: Vec): Road => {
       const len = Math.hypot(door.x, door.z) || 1;
       let best: Vec = { x: (door.x / len) * SQ, z: (door.z / len) * SQ };
@@ -1024,15 +1026,15 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const len = Math.hypot(c.x, c.z) || 1;
       // An Alpha is big: the hero stands further off, and its label floats higher.
       const big = isAlpha(c.kind);
-      const reach = big ? 2.3 : 0.85;
+      const reach = big ? 2.3 : c.kind === 'bear' ? 1.35 : 0.85;
       const door = { x: c.x * (1 - reach / len), z: c.z * (1 - reach / len) };
-      anchors.push({ id: c.key, obj: g, y: big ? 2.9 : c.kind === 'cow' ? 1.45 : c.kind === 'boar' ? 1.1 : 1.0 });
+      anchors.push({ id: c.key, obj: g, y: big ? 2.9 : c.kind === 'cow' ? 1.45 : c.kind === 'boar' ? 1.1 : c.kind === 'bear' ? 1.75 : c.kind === 'wolf' ? 1.2 : 1.0 });
       spots.push({ key: c.key, door });
-      const ob: Obstacle = { x: c.x, z: c.z, r: big ? 1.4 : 0.38 };
+      const ob: Obstacle = { x: c.x, z: c.z, r: big ? 1.4 : c.kind === 'bear' ? 0.7 : 0.38 };
       obstacles.push(ob);
       // Animals graze: they wander a little round where they live, slowly, and stop when the hero comes.
-      const grazer = c.kind === 'cow' || c.kind === 'chicken' || c.kind === 'boar';
-      const roam = grazer ? { home: { x: c.x, z: c.z }, r: c.kind === 'chicken' ? 1.5 : 1.2, speed: c.kind === 'chicken' ? 0.55 : 0.3, to: null, wait: 1 + (c.x * 7.31 - Math.floor(c.x * 7.31)) * 4, ob } : null;
+      const grazer = c.kind === 'cow' || c.kind === 'chicken' || c.kind === 'boar' || c.kind === 'wolf';
+      const roam = grazer ? { home: { x: c.x, z: c.z }, r: c.kind === 'chicken' ? 1.5 : c.kind === 'wolf' ? 1.8 : 1.2, speed: c.kind === 'chicken' ? 0.55 : c.kind === 'wolf' ? 0.6 : 0.3, to: null, wait: 1 + (c.x * 7.31 - Math.floor(c.x * 7.31)) * 4, ob } : null;
       mobs.push({ key: c.key, kind: c.kind, g, door, hurtAt: 0, lungeAt: 0, x: c.x, z: c.z, still: isHarvest(c.kind), roam });
     }
     if (boxing) {
@@ -1375,14 +1377,24 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       flags.push(flag);
       obstacles.push({ x: GYM.x + sx, z: GYM.z + 1.7, r: 0.3 });
     }
+    const zoneDoors = new Map<string, Vec>();
+    const wallAt: { x: number; z: number; m: THREE.Matrix4; c: number[]; hidden: boolean }[] = [];
+    let clearWall: ((cx: number, cz: number) => void) | null = null;
     if (plan) {
       // The town wall: one long ring of stone with towers, and the gate in the south.
       const W = TOWN.wall;
+      const atGate = (a: number) => TOWN.gates.some((g) => Math.abs(Math.atan2(Math.sin(a - (g * Math.PI) / 180), Math.cos(a - (g * Math.PI) / 180))) < 0.075);
+      // The wall stops the hero: a row of round stones to walk around, open at the gates.
+      for (let i = 0; i < 132; i++) {
+        const a = ((i + 0.5) / 132) * Math.PI * 2;
+        if (atGate(a) || TOWN.gates.some((g) => Math.abs(Math.atan2(Math.sin(a - (g * Math.PI) / 180), Math.cos(a - (g * Math.PI) / 180))) < 0.1)) continue;
+        obstacles.push({ x: Math.cos(a) * W, z: Math.sin(a) * W, r: 0.85 });
+      }
       const stone = mat(0x9a948a, { map: painted('stone', 3, 1), flatShading: false });
       const n = 72;
       const seg = (2 * Math.PI * W) / n;
-      const wallMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(seg + 0.08, 2.3, 0.75), stone, n);
-      const crenM = new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 0.45, 0.8), stone, n * 2);
+      const wallMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(seg + 0.08, 1.45, 0.75), stone, n);
+      const crenM = new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 0.35, 0.8), stone, n * 2);
       const M = new THREE.Matrix4();
       const Q = new THREE.Quaternion();
       const S1 = new THREE.Vector3(1, 1, 1);
@@ -1390,38 +1402,73 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       let c = 0;
       for (let i = 0; i < n; i++) {
         const a = ((i + 0.5) / n) * Math.PI * 2;
-        // The opening for the gate, where the south road goes out.
-        if (Math.abs(Math.atan2(Math.sin(a - Math.PI / 2), Math.cos(a - Math.PI / 2))) < 0.075) continue;
+        // The openings for the gates, where the main roads go out.
+        if (atGate(a)) continue;
         Q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -a + Math.PI / 2);
-        M.compose(new THREE.Vector3(Math.cos(a) * W, 1.15, Math.sin(a) * W), Q, S1);
-        wallMesh.setMatrixAt(w++, M);
+        M.compose(new THREE.Vector3(Math.cos(a) * W, 0.72, Math.sin(a) * W), Q, S1);
+        wallMesh.setMatrixAt(w, M);
+        wallAt.push({ x: Math.cos(a) * W, z: Math.sin(a) * W, m: M.clone(), c: [c, c + 1], hidden: false });
+        w++;
         for (const off of [-0.25, 0.25]) {
           const b2 = a + (off * seg) / W;
-          M.compose(new THREE.Vector3(Math.cos(b2) * W, 2.5, Math.sin(b2) * W), Q, S1);
+          M.compose(new THREE.Vector3(Math.cos(b2) * W, 1.6, Math.sin(b2) * W), Q, S1);
           crenM.setMatrixAt(c++, M);
         }
       }
       wallMesh.count = w;
       crenM.count = c;
+      // A piece of wall right by the camera is taken away, so the hero outside stays in view.
+      const none = new THREE.Matrix4().makeScale(0, 0, 0);
+      const crenOf = wallAt.map((wp) => wp.c.map((k) => { const cm = new THREE.Matrix4(); crenM.getMatrixAt(k, cm); return cm; }));
+      clearWall = (cx: number, cz: number) => {
+        let changed = false;
+        wallAt.forEach((wp, i) => {
+          const hide = Math.hypot(wp.x - cx, wp.z - cz) < 3.4;
+          if (hide === wp.hidden) return;
+          wp.hidden = hide;
+          changed = true;
+          wallMesh.setMatrixAt(i, hide ? none : wp.m);
+          wp.c.forEach((k, j) => crenM.setMatrixAt(k, hide ? none : crenOf[i][j]));
+        });
+        if (changed) {
+          wallMesh.instanceMatrix.needsUpdate = true;
+          crenM.instanceMatrix.needsUpdate = true;
+        }
+      };
       wallMesh.castShadow = crenM.castShadow = true;
       wallMesh.receiveShadow = true;
       scene.add(wallMesh, crenM);
       // Towers, two of them by the gate, with a red pennant.
       const towerM = mat(0x8d877d, { map: painted('stone', 2, 2), flatShading: false });
       const capM = mat(0x8e3b3b, { map: painted('shingle', 2, 1), flatShading: false });
-      for (const deg of [82, 98, 30, 150, 210, 270, 330]) {
+      for (const deg of [...TOWN.gates.flatMap((g) => [g - 8, g + 8]), 45, 135, 225, 315]) {
         const a = (deg * Math.PI) / 180;
         const tx = Math.cos(a) * W;
         const tz = Math.sin(a) * W;
-        const gate = deg === 82 || deg === 98;
+        const gate = TOWN.gates.some((g) => Math.abs(((deg - g + 540) % 360) - 180) === 8);
+        obstacles.push({ x: tx, z: tz, r: gate ? 1.25 : 1.1 });
         prop(new THREE.CylinderGeometry(gate ? 1.1 : 0.95, gate ? 1.2 : 1.05, gate ? 4.2 : 3.6, 10), towerM, tx, gate ? 2.1 : 1.8, tz);
         prop(new THREE.ConeGeometry(gate ? 1.35 : 1.2, 1.5, 10), capM, tx, (gate ? 4.2 : 3.6) + 0.75, tz);
         const pole = prop(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 5), darkWood, tx, (gate ? 4.2 : 3.6) + 1.9, tz);
         pole.castShadow = false;
         flags.push(prop(new THREE.BoxGeometry(0.02, 0.36, 0.6), mat(0xb8332c), tx, (gate ? 4.2 : 3.6) + 2.25, tz + 0.3));
       }
-      // The arch over the gate.
-      prop(new THREE.BoxGeometry(3.6, 0.8, 0.9), stone, 0, 3.9, W);
+      // The hunting grounds outside the wall (and the ones in town): a signpost with the name and the
+      // level, and for the wolves and the bears a den. Their names show as labels.
+      for (const zn of ZONES) {
+        const toward = Math.hypot(zn.x, zn.z) || 1;
+        const sx = zn.x - (zn.x / toward) * (zn.r + 0.4);
+        const sz = zn.z - (zn.z / toward) * (zn.r + 0.4);
+        const post = prop(new THREE.CylinderGeometry(0.07, 0.08, 2.2, 6), darkWood, sx, 1.1, sz);
+        post.castShadow = false;
+        prop(new THREE.BoxGeometry(1.3, 0.42, 0.08), woodM, sx, 1.9, sz, Math.atan2(-zn.x, -zn.z));
+        obstacles.push({ x: sx, z: sz, r: 0.25 });
+        const mark = new THREE.Object3D();
+        mark.position.set(sx, 0, sz);
+        scene.add(mark);
+        anchors.push({ id: `zone:${zn.key}`, obj: mark, y: 2.6 });
+        zoneDoors.set(`zone:${zn.key}`, { x: zn.x - (zn.x / toward) * (zn.r - 1.2), z: zn.z - (zn.z / toward) * (zn.r - 1.2) });
+      }
       // The market south of the square: stalls with striped awnings.
       const stripeA = mat(0xc8463c);
       const stripeB = mat(0xf2e6cf);
@@ -1513,7 +1560,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
 
     let clearView: ((cx: number, cz: number, hx: number, hz: number) => void) | null = null;
     // Woods on the hills: two instanced meshes for all of them.
-    const townTrees = plan ? (phone ? 60 : 85) : 0;
+    const townTrees = plan ? (phone ? 110 : 150) : 0;
     const far = (phone ? 110 : 190) + townTrees;
     const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.2, 1.6, 5), mat(0x5d4027), far);
     const crowns = new THREE.InstancedMesh(leafBall(1, rng(31), 1), mat(0xffffff, { vertexColors: true, flatShading: false, map: painted('leaves', 2, 1.5) }), far * 3);
@@ -1545,7 +1592,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     crowns.count = townN * 3;
     for (let i = 0, n = townN; i < 4000 && n < far; i++) {
       const a = R() * Math.PI * 2;
-      const r = B + 3 + R() * 52;
+      const r = B + 3 + R() * (plan ? 24 : 52);
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
       if (roads.some((rd) => segDist(x, z, rd) < 3.2)) continue;
@@ -2054,6 +2101,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       if (mob) walkTo.current(mob.door, k);
       else if (k === BOXING_KEY && boxing) walkTo.current(spots.find((sp) => sp.key === BOXING_KEY)!.door, BOXING_KEY);
       else if (k === CAMP_KEY && boxing) walkTo.current(spots.find((sp) => sp.key === CAMP_KEY)!.door, CAMP_KEY);
+      else if (zoneDoors.has(k)) walkTo.current(zoneDoors.get(k)!, k);
       else if (k === WELL_KEY && well) walkTo.current(WELL_SPOT, WELL_KEY);
       else if (k === TV_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY, TV_KEY);
       else if (k === PRACTICE_KEY) walkTo.current(PRACTICE_DOOR, PRACTICE_KEY);
@@ -2280,7 +2328,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     /** How far off a name still shows in the village: buildings from afar, small things up close. */
     const bigPlaces = new Set<string>([PRACTICE_KEY, HOME_KEY, ...buildings.map((b) => b.key)]);
     const alerts = new Set<string>(buildings.filter((b) => b.alert).map((b) => b.key));
-    const reachOf = (id: string) => (bigPlaces.has(id) ? (plan ? 17 : 14) : id.startsWith('mob:') ? 6 : id === WELL_KEY || id === CAMP_KEY || id === BOXING_KEY ? 7.5 : 8);
+    const reachOf = (id: string) => (bigPlaces.has(id) ? (plan ? 17 : 14) : id.startsWith('zone:') ? 16 : id.startsWith('mob:') ? 6 : id === WELL_KEY || id === CAMP_KEY || id === BOXING_KEY ? 7.5 : 8);
 
     const reduce = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const camPos = new THREE.Vector3();
@@ -2461,7 +2509,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       else camera.position.lerp(camPos, Math.min(1, dt * 6));
       first = false;
       camera.lookAt(p.x, indoor ? 1.0 : 1.5, p.z);
-      if (!indoor && clearView && (frameNo++ & 3) === 0) clearView(camera.position.x, camera.position.z, p.x, p.z);
+      if (!indoor && (frameNo++ & 3) === 0) {
+        clearView?.(camera.position.x, camera.position.z, p.x, p.z);
+        clearWall?.(camera.position.x, camera.position.z);
+      }
       for (const id in places) {
         const pl = places[id];
         pl.group.visible = id === zone.current;
@@ -2793,7 +2844,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               aria-label={ATTACKS[c.kind].aggressive ? t(`Loop naar ${c.label}, agressief`, `Walk to ${c.label}, aggressive`) : isFriendly(c.kind) && !isHarvest(c.kind) ? t(`Loop naar ${c.label}, vriendelijk`, `Walk to ${c.label}, friendly`) : t(`Loop naar ${c.label}`, `Walk to ${c.label}`)}
               data-aggressive={ATTACKS[c.kind].aggressive ? '1' : undefined}
               className={cn(plate, '!min-h-[34px] flex-col !items-stretch gap-1 text-[12.5px] leading-none', ATTACKS[c.kind].aggressive ? 'border-[#ff6b4a] text-[#ffb3a1]' : isFriendly(c.kind) ? 'text-[#c9f2c0]' : 'text-[#ffd9a8]')} style={{ transform: 'translate(-9999px,0)' }}>
-              <span className="text-center">{c.label}{ATTACKS[c.kind].aggressive ? <span className="ml-1 text-[10px] font-bold uppercase text-[#ff8a6e]">{t('agressief', 'aggressive')}</span> : isFriendly(c.kind) && !isHarvest(c.kind) ? <span className="ml-1 text-[10px] font-semibold text-[#9fe39a]">{t('vriendelijk', 'friendly')}</span> : null}</span>
+              <span className="text-center">{!isHarvest(c.kind) && <span data-level className="mr-1 rounded bg-black/45 px-1 text-[10px] font-bold tabular-nums text-[#ffe08a]">{t('lvl', 'lvl')} {isAlpha(c.kind) ? ALPHA_ADVISED_LEVEL : CREATURES[c.kind].level}</span>}{c.label}{ATTACKS[c.kind].aggressive ? <span className="ml-1 text-[10px] font-bold uppercase text-[#ff8a6e]">{t('agressief', 'aggressive')}</span> : isFriendly(c.kind) && !isHarvest(c.kind) ? <span className="ml-1 text-[10px] font-semibold text-[#9fe39a]">{t('vriendelijk', 'friendly')}</span> : null}</span>
               {(() => {
                 const max = CREATURES[c.kind].hp;
                 const hp = Math.max(0, max - (creatureHurt?.[c.key] ?? 0));
@@ -2812,6 +2863,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               {t('Boksschool', 'Boxing school')}
             </button>
           )}
+          {plan && creatures && ZONES.map((zn) => (
+            <button key={zn.key} ref={setLabel(`zone:${zn.key}`)} type="button" data-spot={`zone:${zn.key}`} onClick={() => go(`zone:${zn.key}`)}
+              aria-label={t(`Loop naar ${zn.nl}, level ${zn.level}`, `Walk to ${zn.en}, level ${zn.level}`)}
+              className={cn(plate, 'flex-col !items-center gap-0.5 leading-none text-[#f5e6c4]')} style={{ transform: 'translate(-9999px,0)' }}>
+              <span>{zn.icon} {t(zn.nl, zn.en)}</span>
+              <span className="text-[10.5px] font-bold text-[#ffe08a]">{t(`level ${zn.level}+`, `level ${zn.level}+`)}</span>
+            </button>
+          ))}
           {boxing && (
             <button ref={setLabel(CAMP_KEY)} type="button" data-spot={CAMP_KEY} onClick={() => go(CAMP_KEY)} aria-label={t('Loop naar het kampvuur', 'Walk to the campfire')}
               className={cn(plate, 'text-[#ffc078]')} style={{ transform: 'translate(-9999px,0)' }}>

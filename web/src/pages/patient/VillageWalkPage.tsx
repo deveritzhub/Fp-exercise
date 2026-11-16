@@ -21,7 +21,7 @@ import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
 import { SUPPLY } from '@shared/supplies';
 import { useSupplies } from '@/lib/supplies';
-import { ALPHA_ADVISED_LEVEL, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
+import { ALPHA_ADVISED_LEVEL, ZONES, zoneAt, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
@@ -631,6 +631,22 @@ export function VillageWalkPage() {
       say(e);
     }
   };
+  // Walking into a hunting ground: its name and level once, with a word of warning when it is too soon.
+  const lastZone = useRef<string | null>(null);
+  useEffect(() => {
+    if (!d?.hero) return;
+    const id = window.setInterval(() => {
+      const zn = zoneAt(track.current.x, track.current.z);
+      if ((zn?.key ?? null) === lastZone.current) return;
+      lastZone.current = zn?.key ?? null;
+      if (!zn) return;
+      const lvl = adventure.data?.level ?? 1;
+      toast(lvl >= zn.level
+        ? t(`${zn.icon} ${zn.nl} · level ${zn.level}+`, `${zn.icon} ${zn.en} · level ${zn.level}+`)
+        : t(`${zn.icon} ${zn.nl} is voor avonturier ${zn.level} en hoger. De dieren hier laten zich pas zien als je sterker bent.`, `${zn.icon} ${zn.en} is for adventurer ${zn.level} and up. Its creatures only show themselves once you are stronger.`));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [d?.hero, adventure.data?.level]);
   // Thirsty or stiff, as the day's log says: the hero walks slower until that is put right.
   const states = d?.logs?.survival.status ?? [];
   const thirsty = states.some((x) => x.key === 'thirsty');
@@ -774,6 +790,8 @@ export function VillageWalkPage() {
       { key: TV_KEY, label: practiceName.replace(/\s*\(.*?\)\s*/g, ' ').trim(), x: VILLAGE_LAYOUT.gym.x, z: VILLAGE_LAYOUT.gym.z - 1.6, icon: '🏥', color: '#b4532f', wide: true, alert: todo.some((p) => moduleOf(p) === 'revalidatie') },
       ...buildings.map((b, i) => ({ key: 'kind' in b ? boardKey(b.key) : b.key, label: b.label, x: sites[i].x, z: sites[i].z, icon: SIGN[b.key]?.[0] ?? '🏠', color: SIGN[b.key]?.[1] ?? '#8a6038', alert: 'alert' in b && !!b.alert })),
       ...(own ? [{ key: HOME_KEY, label: homeLabel, x: SPOTS.home.x, z: SPOTS.home.z, icon: '🏡', color: '#3f8f5a' }] : []),
+      // The hunting grounds, with the level from which their creatures show themselves.
+      ...(d?.hero ? ZONES.map((zn) => ({ key: `zone:${zn.key}`, label: `${nl ? zn.nl : zn.en} · lvl ${zn.level}+`, x: zn.x, z: zn.z, icon: zn.icon, color: (adventure.data?.level ?? 1) >= zn.level ? '#5a7a3a' : '#7a3a2a' })) : []),
     ];
 
   const toPlace = (key: string) => {

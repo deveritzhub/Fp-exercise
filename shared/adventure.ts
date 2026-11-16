@@ -21,6 +21,9 @@ export const CREATURES = {
   rock: { nl: 'Rots', en: 'Rock', hp: 7, xp: 4, weakTo: 'trained', level: 1 },
   // A berry bush: picked by hand, for those who would rather not hunt.
   bush: { nl: 'Bessenstruik', en: 'Berry bush', hp: 2, xp: 3, weakTo: 'moving', level: 1 },
+  // Outside the town wall, each in its own hunting ground: they show themselves from their level on.
+  wolf: { nl: 'Wolf', en: 'Wolf', hp: 26, xp: 70, weakTo: 'trained', level: 6 },
+  bear: { nl: 'Beer', en: 'Bear', hp: 50, xp: 140, weakTo: 'trained', level: 10 },
 } as const;
 export type CreatureKind = keyof typeof CREATURES;
 export const CREATURE_KINDS = Object.keys(CREATURES) as CreatureKind[];
@@ -43,6 +46,8 @@ export const ATTACKS: Record<CreatureKind, { damage: number; everyMs: number; ag
   oak: { damage: 0, everyMs: 1500, aggressive: false },
   rock: { damage: 0, everyMs: 1500, aggressive: false },
   bush: { damage: 0, everyMs: 1500, aggressive: false },
+  wolf: { damage: 5, everyMs: 1400, aggressive: true },
+  bear: { damage: 9, everyMs: 1700, aggressive: true },
 };
 /** Trees and rocks: you chop them for wood and stone; they never fight back. */
 export const isHarvest = (kind: CreatureKind) => kind === 'oak' || kind === 'rock' || kind === 'bush';
@@ -138,6 +143,10 @@ export const LOOT = {
   button: { nl: 'Bankknoop', en: 'Couch button', icon: '🔘' },
   crown: { nl: 'Kroonscherf', en: 'Crown shard', icon: '👑' },
   alpha_tusk: { nl: 'Alfaslagtand', en: 'Alpha tusk', icon: '🐗' },
+  wolf_pelt: { nl: 'Wolvenvacht', en: 'Wolf pelt', icon: '🐺' },
+  fang: { nl: 'Wolventand', en: 'Wolf fang', icon: '🦷' },
+  bear_pelt: { nl: 'Berenvacht', en: 'Bear pelt', icon: '🐻' },
+  claw: { nl: 'Berenklauw', en: 'Bear claw', icon: '🐾' },
   wood: { nl: 'Hout', en: 'Wood', icon: '🪵' },
   stone: { nl: 'Steen', en: 'Stone', icon: '🪨' },
   berries: { nl: 'Bessen', en: 'Berries', icon: '🫐' },
@@ -163,6 +172,8 @@ export const DROPS: Record<CreatureKind, { item: LootKey; chance: number; max: n
   oak: [{ item: 'wood', chance: 1, max: 3 }],
   rock: [{ item: 'stone', chance: 1, max: 2 }],
   bush: [{ item: 'berries', chance: 1, max: 3 }],
+  wolf: [{ item: 'wolf_pelt', chance: 1, max: 1 }, { item: 'bone', chance: 1, max: 2 }, { item: 'fang', chance: 0.4, max: 1 }],
+  bear: [{ item: 'bear_pelt', chance: 1, max: 1 }, { item: 'meat', chance: 1, max: 3 }, { item: 'claw', chance: 0.5, max: 2 }],
 };
 
 /** The drops of one win. `rnd` gives numbers in [0, 1), as Math.random does. */
@@ -195,7 +206,7 @@ export const NEEDS_TOOL: Partial<Record<CreatureKind, string>> = { oak: 'hatchet
  * Plant-based: loot that comes from animals can always be paid with berries instead. How many berries
  * one piece is worth. Nobody has to hunt to build a home.
  */
-export const BERRIES_FOR: Partial<Record<LootKey, number>> = { hide: 3, bone: 3, meat: 2, feather: 1, egg: 2, tusk: 5, alpha_tusk: 25 };
+export const BERRIES_FOR: Partial<Record<LootKey, number>> = { hide: 3, bone: 3, meat: 2, feather: 1, egg: 2, tusk: 5, alpha_tusk: 25, wolf_pelt: 4, fang: 3, bear_pelt: 6, claw: 4 };
 
 /**
  * Things to make from loot: the weaker weapons (a second way next to buying), and a chest.
@@ -244,3 +255,21 @@ export function dailyQuest(day: string, seed: string): DailyQuest {
   for (const ch of `${day}|${seed}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
   return DAILY_QUESTS[h % DAILY_QUESTS.length];
 }
+
+/**
+ * The hunting grounds: the areas where creatures live, each with the adventurer level from which its
+ * creatures show themselves. In the town the meadow, the park and the boar wood; outside the wall the
+ * wolf wood, the bear hill, the woodcutters' wood and the quarry.
+ */
+export const ZONES = [
+  { key: 'meadow', nl: 'Weide', en: 'Meadow', level: 1, x: 18.4, z: 12.6, r: 4.2, icon: '🐄', outside: false },
+  { key: 'park', nl: 'Stadspark', en: 'Town park', level: 1, x: 14.4, z: 22, r: 5, icon: '🫧', outside: false },
+  { key: 'boarwood', nl: 'Zwijnenbos', en: 'Boar wood', level: 4, x: 25.4, z: 9, r: 5, icon: '🐗', outside: false },
+  { key: 'wolfwood', nl: 'Wolvenwoud', en: 'Wolf wood', level: 6, x: 3, z: 39.5, r: 6.5, icon: '🐺', outside: true },
+  { key: 'bearhill', nl: 'Berenheuvel', en: 'Bear hill', level: 10, x: 39.5, z: -4, r: 6.5, icon: '🐻', outside: true },
+  { key: 'woodcut', nl: 'Houthakkersbos', en: 'Woodcutters’ wood', level: 1, x: -39, z: 3, r: 6.5, icon: '🪵', outside: true },
+  { key: 'quarry', nl: 'Steengroeve', en: 'Quarry', level: 1, x: -4, z: -39.5, r: 6, icon: '⛏️', outside: true },
+] as const;
+export type Zone = (typeof ZONES)[number];
+/** The hunting ground a point lies in, if any. */
+export const zoneAt = (x: number, z: number): Zone | null => ZONES.find((zn) => Math.hypot(x - zn.x, z - zn.z) <= zn.r) ?? null;

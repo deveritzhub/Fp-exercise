@@ -17,11 +17,13 @@ export function placeAt(x: number, z: number, step = 2.1): Site {
 }
 
 export const TOWN = {
-  /** How far the hero can walk from the square; the wall stands just outside. */
-  bound: 29,
+  /** How far the hero can walk from the square: through the gates out into the hunting grounds. */
+  bound: 46,
   /** The square round the well. */
   square: 5.4,
   wall: 30.5,
+  /** The gates in the wall, in degrees (0 = east, 90 = south). */
+  gates: [0, 90, 180, 270],
 } as const;
 
 /** Where the buildings with a function stand. */
@@ -109,7 +111,8 @@ export const WILD: { kind: string; x: number; z: number }[] = [
   { kind: 'cow', x: 20.2, z: 13.8 },
   { kind: 'chicken', x: 16.8, z: 14.2 },
   { kind: 'chicken', x: 19.6, z: 10.6 },
-  { kind: 'boar', x: 25.6, z: 15.4 },
+  { kind: 'boar', x: 25, z: 10.8 },
+  { kind: 'boar', x: 27.2, z: 7.2 },
   // The first Alpha at the far east edge.
   { kind: 'alpha_boar', x: 26.2, z: -1.6 },
   // Oaks and rocks in the woods west, by the crafts district.
@@ -121,4 +124,21 @@ export const WILD: { kind: string; x: number; z: number }[] = [
   { kind: 'bush', x: 8.4, z: 25.4 },
   { kind: 'bush', x: 21.2, z: 22.6 },
   { kind: 'bush', x: -15, z: 26.4 },
+  // Outside the wall. The wolf wood, south of the gate.
+  { kind: 'wolf', x: 0.5, z: 37.6 },
+  { kind: 'wolf', x: 6.2, z: 40.6 },
+  { kind: 'wolf', x: -1.8, z: 42.4 },
+  // The bear hill, east.
+  { kind: 'bear', x: 38.6, z: -6.6 },
+  { kind: 'bear', x: 41.8, z: -1.2 },
+  // The woodcutters' wood, west: oaks for everyone.
+  { kind: 'oak', x: -36.8, z: 0.6 },
+  { kind: 'oak', x: -40.2, z: 5.6 },
+  { kind: 'oak', x: -41.6, z: -0.8 },
+  { kind: 'oak', x: -37.6, z: 6.8 },
+  // The quarry, north behind the practice.
+  { kind: 'rock', x: -6.4, z: -37.4 },
+  { kind: 'rock', x: -1.6, z: -41.8 },
+  { kind: 'rock', x: -7.6, z: -41.2 },
+  { kind: 'rock', x: 0.4, z: -37.6 },
 ];
