@@ -251,7 +251,191 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     alleen tussen 23:00 en 00:00 UTC (de test gebruikte de UTC-datum, de app terecht de Nederlandse);
     test aangepast. Wisselvallige test bibliotheekfilters opgelost: twee snelle filterwijzigingen (regio + materiaal) overschreven elkaar; nu worden ze samengevoegd. Uitloggen-test blijft wisselvallig (slaagt los).
 
+87. [x] **Held in 3D** (8 nov): eigen figuurtje in stevige fantasy-stijl met sportieve basis (shirt,
+    korte broek, sneakers), man en vrouw. Gemaakt in Blender met een script (`tools/blender/hero.py`):
+    elk uitrustingsstuk, kapsel, baard, bril, outfit en de krukken is een los onderdeel. In de app:
+    Held → Inventaris → "3D-weergave" (three.js, pas geladen als je erop tikt), draaien met slepen
+    of knoppen, huid-, haar-, oog- en tenuekleur uit de held. Model ~0,7 MB gecomprimeerd.
+    Volgende stappen: vrouwfiguur slanker en vrouwelijker, vingers, animatie (zwaaien, juichen).
+
+88. [x] **Held in 3D op een MakeHuman-lichaam** (8 nov): op verzoek van de eigenaar opnieuw gebouwd met
+    MakeHuman (MPFB in Blender 5.2, CC0): echte anatomie, vingers (losse vuisten), ogen met iris.
+    Kleding, schoenen, braces, handschoenen en haar zijn "schillen" van het lichaam zelf, met nette
+    zomen, dus ze passen precies; helmen, kronen, capes en wapens richten zich naar de gewrichten.
+    Script: `tools/blender/mh_hero.py` (uitleg in `tools/blender/README.md`). Model ~1,8 MB
+    gecomprimeerd. Volgende stappen: haar uit MakeHuman-pakketten (download geblokkeerd in de
+    bouwomgeving), lichte animatie.
+
+89. [geparkeerd] **3D-held uit de app gehaald** (9 nov, op verzoek: "erg lelijk"). Code en modellen blijven
+    staan (`tools/blender/mh_hero.py`, `web/src/components/hero/Hero3D.tsx`, `hero3d.ts`,
+    `web/public/hero3d/`); alleen de knop "3D-weergave" en het nieuws-item zijn weg. Terugzetten: de
+    knop en `e2e/hero-3d.spec.ts` uit commit 1025a1b. Later opnieuw: realistisch, 1-op-1 met de avatar,
+    echt haar uit MakeHuman-pakketten.
+
+90. [x] **Gamification, deel 1** (11 nov): rangen per level (Brons 1, Zilver 5, Goud 10, Smaragd 20,
+    Diamant 35, Meester 50) met schild; levend podium voor de held; glanzende XP-balk; beloningsscherm
+    na de training (juichende held, level-up met stralen, tellende XP en muntjes). Wereldkaart: 3D-eiland
+    met dorp, pad, zonevlaggen, mist over vergrendelde zones en een baken bij je held; namen zijn echte
+    knoppen (toetsenbord, schermlezer). Animaties stoppen bij "beweging beperken".
+
+91. [x] **Dorp groeit mee** (11 nov): per 5 afgeronde trainingen een huisje (max 10), per verslagen
+    baas een vlaggetje (max 8), molen bij 15 en akkers bij 30 trainingen, standbeeld van je held vanaf
+    level 10 en een vuurtoren vanaf level 20. Onder het dorp staat wat er al staat en wat de volgende
+    stap is. Alleen cosmetisch; krimpt nooit (`shared/villageGrowth.ts`).
+
+92. [x] **Beginscherm als lobby** (11 nov): bovenaan je held op zijn podium voor je eigen dorp (in code
+    getekend, dezelfde groei als de wereldkaart), lucht per dagdeel (ochtend, dag, avond, nacht met
+    sterren en verlichte ramen), rang en XP-balk; "Missie van vandaag" boven de training; dorpstegels
+    (Prikbord, Smederij, Arena, Bibliotheek, Gildehal, Wereldkaart) met een stip als er iets wacht.
+    De drie falende tests zijn opgelost (11 nov, stap 94).
+
+93. [x] **Lobby leeft** (11 nov): na de training "Terug naar je dorp": je held juicht in de lobby met
+    "Welkom terug in je dorp! +XP verdiend"; Smederij-tegel met stuiterend kistje als de dagkist klaarstaat,
+    Arena-tegel met de HP-balk van de baas, Prikbord met quests x/3. Heldfoto's ook in de testomgeving
+    (fotoserver toegestaan), zodat screenshots gelijk zijn aan live.
+
+94. [x] **Falende tests opgelost** (11 nov): (1) "onlangs gebruikte sjablonen" faalde vóór 17:00 UTC:
+    de demo-seed gaf een concept dat vandaag start een aanmaaktijd van vandaag 18:00 (toekomst), dus dat
+    sjabloon leek altijd het laatst gebruikt; aanmaaktijd is nu nooit later dan nu. (2+3) ACL-route en
+    metingsbaas: in het 3D-dorp overlapten gebouw- en zonelabels bij veel zones (te kleine raakvlakken);
+    labels wijken nu voor elkaar uit. "Je dorp is gegroeid!" op het beloningsscherm.
+
+95. [x] **Donkere modus** (11 nov): Licht, Donker of Automatisch (volgt de telefoon), in Instellingen
+    (patiënt) en Account (therapeut). Kleuren als CSS-variabelen, praktijkkleur krijgt een donkere
+    variant; alle schermen getest op contrast (axe). Alleen een weergavevoorkeur op het apparaat.
+
+96. [x] **Wat is er nieuw + versiegeschiedenis** (11 nov): na een update één keer een melding
+    "FP Flow is bijgewerkt" met de nieuwe punten; vanuit "Wat is er nieuw?" de link "Alle versies sinds
+    de eerste, met datum" naar `/p/versies` of `/app/versies`: elke versie vanaf 22 oktober 2026 met
+    datum en wat er verbeterd is, per doelgroep (`shared/changelog.ts`).
+
+97. [x] **Natuurlijke 3D-held per frame en lichaamsbouw** (13 nov): acht MakeHuman-modellen
+    (`hero_<m/f>_<slim/average/athletic/full>.glb`) met afzonderlijke muscle/weight-macro’s.
+    Vergrote hoofden, handen, voeten en schouders verwijderd; geen horizontale uitrekking meer.
+    Eigen metingen kiezen de best passende van vier representatieve vormen. CC0 MakeHuman-haar,
+    wenkbrauwen en wimpers via MHCLO, met behoud van haar- en huidkleuren. Uitrusting opnieuw
+    passend opgebouwd, schoenneuzen en randen van scheenbeschermers verbeterd. Modelversie 4;
+    idle/walk/run/cheer behouden voor het dorp; inventoryknop blijft verwijderd.
+    Ieder model onder 2,5 MB gzip. Synthetische browsercontrole van acht modellen, voor/zijaanzicht,
+    mobiel, toetsenbord en bestaande RPG-interacties; bewijs in `docs/hero3d-review/`.
+    Visueel nog een technische basis: huid, gezichtsdetails en kledingplooien verdienen verdere
+    verfijning. Geen claim van een exacte lichaamsscan of afgeronde fotorealistische kwaliteit.
+
+98. [x] **Eén beoordeelbare 3D-karakterstudie** (13 nov): aparte vergelijkingspagina
+    `/hero3d-study.html` met één vrouwelijke/average held, natuurlijkere handen, afgewerkt
+    sportshirt, kledingdetails, verfijnde huid en kapsel, warm studiolicht en close-up.
+    Oude en nieuwe versie onder hetzelfde licht te vergelijken; synthetische browserbeelden in
+    `docs/hero3d-study/`. Alle gear-nodes en vier animaties behouden. Visuele beoordeling van deze
+    richting gaat vooraf aan toepassing op de overige lichaamsbouwen en kapsels.
+
+99. [x] **Goedgekeurde 3D-afwerking naar de gewone avatars** (14 nov): modelversie 7,
+    alle acht frame/build-modellen met de goedgekeurde huid-, houding- en kledingafwerking.
+    Alle kapsels, gear-nodes, kleuren en animaties behouden; studiolicht voor de losse 3D-viewer.
+    De vergelijkingspagina bewaart een afzonderlijk origineel model. Native glTF UV/gewichten
+    compact opgeslagen voor mobiel. Vervolgcriteria voor echte premium kwaliteit staan in
+    `docs/HERO-ART-DIRECTION.md`; deze uitrol claimt die eindkwaliteit niet.
+
+100. [x] **Gezicht- en haarstudie 02** (14 nov): afzonderlijke 3D-referentie met originele
+    irisstructuur, op het oogoppervlak passende irissen, rustigere expressie, fijner haarmateriaal
+    en korte haarlokjes bij de slapen. Vergelijkingspagina `/hero3d-face-study.html` en echte
+    browserbeelden in `docs/hero3d-portrait/`. Gewone modellen blijven op versie 7. De preview
+    wacht nu ook op de kledingtextuur, zodat 'gereed' geen tijdelijk zwart shirt meer toont.
+
+101. [x] **Goedgekeurd gezicht naar alle acht avatars** (14 nov): modelversie 8,
+    passende gedetailleerde irissen, rustigere expressie en fijner knotkapsel op alle frame/builds.
+    Alle andere kapselkeuzes, uitrusting, kleuren en animaties behouden. Verliesloze WebP-kaarten
+    en standaard glTF-geometrieopslag houden elk model onder 2,5 MB gzip. De browser controleert
+    echte textuurdecodering en lichaamsafmetingen; geen extra decoder of 3D-engine.
+
+
+102. [x] **3D-kleding, gedragen sportuitrusting en inventarispaskamer** (15 nov): modelversie 9,
+    passende kledingtopologie voor shirt/shorts en drie complete outfits, met eigen stofstructuur,
+    kraag, randen, rits, zakken en FP-merkteken. Vijf originele sneaker-varianten met afzonderlijke
+    zool, hielstuk, veters en bies. Koptelefoon over de oren en boven de pet; doorlopende riem,
+    hartslagband en passende armband/beschermers. Expliciete romp-/armbevestigingen voorkomen
+    uitrekking tijdens juichen. Optionele 3D-inventaris naast Foto/RPG, met dezelfde koop-, equip-,
+    preview- en opslagfuncties. Alle 26 itembeelden uit de gedragen modellen; bestaande tiers,
+    itemlevels en loot-reveal behouden. Acht frame/builds, mobiele interactie, bewegingsbeelden,
+    legacy referenties en dorpsbewoners worden gecontroleerd; bewijs in `docs/hero3d-clothing/`.
+    Vervolg blijft artistieke verfijning van gezichten, haar, plooien en individuele accessoires;
+    geen claim dat de volledige premium art-direction al is afgerond.
+
+103. [x] **Schema's voor spiergroei** (15 nov): vijf hypertrofieschema's in `fp-kracht-v5`
+    (2× minimaal, full body 3×, dumbbells 3×, boven/onder 4×, boven/onder + push/pull/benen 5×).
+    10 tot 16 harde sets per grote spiergroep per week (minimaal schema bewust 5 à 6), elke spiergroep
+    2× per week, grondoefeningen RPE 8 en isolatie RPE 9, blokken van 6 weken met een lichtere week.
+    Zes nieuwe oefeningen (zittende leg curl, Bulgaarse split squat, curl op schuine bank, zittend
+    kuitheffen, kabel-zijwaartse raise, chest press machine). Rust van 1,5/2,5 min telt nu met decimalen.
+
+104. [x] **Kies je schema** (15 nov): op Kracht kiest de patiënt format, dagen per week en doel en
+    ziet de passende schema's, beste eerst (`shared/strengthChooser.ts`); de praktijksjablonen
+    blijven eronder. Migratie 053 geeft bij starttemplates de bron-id en het aantal trainingsdagen mee.
+
+105. [x] **Zonder video de beschrijving** (15 nov): geen leeg videovak meer; startpositie, uitvoering
+    en "Let op" staan meteen open, ook op de tv in het dorp. Krachtoefeningen uit de bibliotheek: de
+    beschrijving onder Uitvoering, herhalingen en rust onder Let op.
+
+106. [x] **Levensbalk, monsters slaan terug, eerste Alfa** (15 nov): je held heeft leven (40 + 10 per
+    avonturiersniveau, een kwart meer na een echte training vandaag; klappen dan een vijfde zachter).
+    Kwaaltjes en het wilde zwijn slaan terug als je ze slaat; prooidieren niet. Het Alfazwijn (60 leven,
+    220 XP, eigen Alfaslagtand) aan de rand van de weide valt zelf aan en kan je verslaan. Verslagen:
+    je verliest niets en staat op bij de waterput. Een echt glas water bij de put geneest volledig.
+    Buiten een gevecht komt leven vanzelf terug. Alles is spel, los van je echte level.
+
+107. [x] **Huis bouwen met buit** (15 nov): eiken (hout) en rotsen (steen) om te hakken; elk volgend huis
+    kost buit (hut 6 hout + 2 steen … villa met de Alfaslagtand), het level moet het toelaten. Bestaande
+    helden houden hun huis (migratie 054, eerste keer vastgelegd). Bouwen in het inrichtingspaneel.
+
+108. [x] **Wezens met een eigen plek** (15 nov): moeras, dorre plek, oud kleed (troon voor de koning),
+    stro, trog, modderpoel en een leger van staande stenen voor het Alfazwijn; een vijver. Agressief:
+    duiveltje, wild zwijn, Bankkoning, Alfazwijn; vriendelijk: kippen en koeien. Verslagen: direct
+    opstaan bij de waterput.
+
+109. [x] **Training snel invoeren** (15 nov): tekstveld in Logboek en Krachtlog; de app leest minuten,
+    sets, herhalingen en kilo's en herkent oefeningen uit de bibliotheek (onbekend wordt een eigen
+    oefening). Eerst controleren, dan opslaan. Snelknoppen: herhaal vorige training, recente oefeningen.
+    Geen externe dienst (`shared/workoutText.ts`). Spraak of AI alleen na akkoord.
+
+110. [x] **Voeding** (15 nov): `/p/voeding` met Vandaag (eten in eigen woorden of zoeken, controleren,
+    opslaan per maaltijd; kcal, eiwit, koolhydraten, vet; eiwit gaat ook in de eiwitmeter), Recepten (17,
+    per doel spiergroei/afvallen/gezond uit de eigen voedingswaarden, filters maaltijd/vega/prep),
+    Weekplan (dag, porties) en Boodschappen (opgeteld per afdeling, afvinken). Privé voor de patiënt,
+    in de AVG-export. Eigen gemiddelde waarden, geen gekopieerde database (`shared/foods.ts`).
+
+111. [x] **De app opent op Vandaag** (15 nov): een nieuw bezoek aan het dorp start op Vandaag; daar
+    staat "Speel in je 3D-dorp" en een Voeding-kaart.
+
+112. [x] **Hartslag tijdens de training** (15 nov): hartje in de trainingsbalk koppelt een
+    Bluetooth-hartslagmeter (of de brug van de app); live hartslag, en gemiddelde/hoogste/laagste en
+    gemeten tijd per training opgeslagen (`session_heart_rates`, privé, in de AVG-export).
+
+114. [x] **Voorraad van je held uit het echte leven** (15 nov): veldfles = ingevulde glazen water van
+    vandaag (max 8, +50% leven per glas), rantsoenen = ingevulde maaltijden (volledig herstel).
+    Ontbijt, lunch en diner ingevuld: "goed gegeten", 15% sneller en 25% sterker. De fles vult niet meer
+    gratis bij de put. Eten geeft nooit een straf (`shared/supplies.ts`).
+
+115. [x] **Dorp liggend spelen** (15 nov): de app mag draaien (manifest `orientation: any`); ligt de
+    telefoon op zijn kant, dan gaat het dorp vanzelf schermvullend en schuiven voorraad, zoomknoppen en
+    actieknop zo dat niets overlapt (getest op 780×360).
+
+116. [x] **Bessen en gereedschap** (15 nov): bessenstruiken om te plukken; dierlijke buit in de
+    huiskosten is ook met bessen te betalen (huid/bot 3, slagtand 5, Alfaslagtand 25), zodat niemand
+    hoeft te jagen. Hakbijl (25 muntjes, nodig voor eiken; van de andere sessie) en pikhouweel (60, rotsen; met de hand kan ook): slag telt 3×, opbrengst 2×
+    (server bepaalt de opbrengst); het gereedschap is in de hand te zien.
+
+117. [x] **Voeding, stap 2** (15 nov): profiel (geslacht, geboortejaar, activiteit, doel, eetpatroon,
+    calorieën verbergen) en richtlijn (Mifflin-St Jeor, ondergrens 1200/1500 kcal); invullen in stuks of
+    grammen; favorieten; eigen producten (per 100 g); tot 6 dagen terug; "zelfde als dag ervoor"; water;
+    weekoverzicht; 7 extra recepten (vegan); porties schalen; kookmodus (scherm blijft aan); "Vul mijn
+    week" met prep-blokken van drie dagen; eigen boodschappen, delen en printen. Nooit rode cijfers.
+    NEVO-tabel: alleen na akkoord, zie de voorwaarden (geen betaalde toegang tot de NEVO-gegevens).
+
+113. [ ] **Echte app met Health Connect en Apple Health**: akkoord eigenaar 15 nov; plan en stappen in
+    `docs/APP_HEALTH.md`. Stap 1 (hartslag) is klaar.
+
 ## Vraagt jouw beslissing (Claude wacht hierop)
+- Apple Developer-account (€99 per jaar) en Google Play-account aanmaken voor de echte app
+  (`docs/APP_HEALTH.md`).
 - Render Starter (betaald) en een vaste schijf voor video's (`STORAGE_DIR`).
 - Testers uitnodigen (zie `docs/TESTERS.md`): sinds 5 nov nog geen logins op de live app.
 - `DEMO_PASSWORD` instellen in Render (zelf doen, niet naar Claude sturen).

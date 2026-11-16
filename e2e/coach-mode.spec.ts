@@ -62,7 +62,7 @@ test('coach client: pain rising gets a non-medical tip, and "What\'s new" has no
     await page.goto('/p/instellingen');
     await page.getByRole('button', { name: /Wat is er nieuw\?/ }).click();
     const dlg = page.getByRole('dialog', { name: 'Wat is er nieuw?' });
-    await expect(dlg.getByText(/Berichten van je praktijk/)).toBeVisible();
+    await expect(dlg.getByText(/Je dorp groeit mee/)).toBeVisible();
     await expect(dlg.getByText(/klacht/i)).toHaveCount(0);
     await ctx.close();
   } finally {

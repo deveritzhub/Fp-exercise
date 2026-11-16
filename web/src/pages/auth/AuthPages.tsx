@@ -17,12 +17,14 @@ export const DEMO_ACCOUNTS = [
   { email: 'therapeut@praktijk-a.test', nl: 'Fysiotherapeut — praktijk A', en: 'Physiotherapist — practice A' },
   { email: 'eigenaar@praktijk-a.test', nl: 'Praktijkeigenaar — praktijk A', en: 'Practice owner — practice A' },
   { email: 'patient@praktijk-a.test', nl: 'Patiënt — praktijk A', en: 'Patient — practice A' },
+  { email: 'vkb@praktijk-a.test', nl: 'Patiënt — VKB-route (synthetisch)', en: 'Patient — ACL route (synthetic)' },
   { email: 'therapeut@praktijk-b.test', nl: 'Fysiotherapeut — praktijk B', en: 'Physiotherapist — practice B' },
   { email: 'patient@praktijk-b.test', nl: 'Patiënt — praktijk B', en: 'Patient — practice B' },
   { email: 'admin@fp-exercise.test', nl: 'Platformbeheerder', en: 'Platform administrator' },
 ];
 export const DEMO_PASSWORD = 'Demo-wachtwoord-1';
-export const showDemoAccounts = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEMO_ACCOUNTS === '1';
+// Only while developing: a hosted site never lists the demo accounts or their password.
+export const showDemoAccounts = import.meta.env.DEV;
 /**
  * The demo accounts and their password are shown only while the server still uses the public seed
  * password (the owner can set an own DEMO_PASSWORD or switch the accounts off).

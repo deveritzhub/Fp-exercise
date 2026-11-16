@@ -48,6 +48,24 @@ export function RpgGear({ item, look, shapes }: { item: string; look: FigureLook
       {item==='crown'?<><path d="M76,26 L72,5 87,14 100,0 113,14 128,5 124,26Z" fill={gold} stroke="#e6cf92"/><path d="M78,22 Q100,18 122,22" fill="none" stroke="#77532d" strokeWidth="3"/>{jewel(100,15,5)}{jewel(83,19,2)}{jewel(117,19,2)}</>:<><path d="M76,27 Q100,19 124,27 L124,34 Q100,27 76,34Z" fill={item==='headband'?'#b4c9b2':teal} stroke="#e0cf96"/>{item!=='headband' && <path d="M85,30 Q104,25 125,31 L140,38 Q113,42 85,30Z" fill={teal} stroke="#b7c8a0"/>}{jewel(100,27,3)}</>}
     </g>}
     {item==='headphones' && <g fill={teal} stroke="#d2b77d" strokeWidth="2"><path d="M74,39 V25 Q100,-4 126,25 V39" fill="none" strokeWidth="4"/><rect x="69" y="33" width="12" height="20" rx="5"/><rect x="119" y="33" width="12" height="20" rx="5"/></g>}
+    {item==='ice_pack' && <g><circle cx="100" cy="40" r="16" fill="#9fd4e8" stroke="#24566a"/><circle cx="100" cy="40" r="6" fill="#e8f7ff"/></g>}
+    {item==='deswell_mantle' && <path d="M70,30 Q100,18 130,30 L140,90 Q100,80 60,90Z" fill="#7eb6d6" stroke="#1e4458"/>}
+    {item==='iron_brace' && <path d="M82,70 h36 v28 h-36Z" fill="#b7c0c4" stroke="#3d474c"/>}
+    {item==='crutch_staff' && <path d="M96,10 h8 v90 h-8Z" fill="#c4a574" stroke="#5c4324"/>}
+    {item==='pilgrim_boots' && <path d="M70,80 h22 v16 h-28Z M108,80 h22 v16 h-8 l-14,-16Z" fill="#6b4a32" stroke="#2c1c12"/>}
+    {item==='golden_hinge' && <path d="M88,40 h24 v8 h-24Z M92,28 h6 v32 h-6Z" fill="#e4bc63" stroke="#6a4a12"/>}
+    {item==='smith_hammer' && <path d="M78,36 h28 v12 h-28Z M90,48 h6 v28 h-6Z" fill="#8d9498" stroke="#2c3134"/>}
+    {item==='rune_guard' && <path d="M80,50 h40 v36 h-40Z" fill="#d9c27a" stroke="#6a5420"/>}
+    {item==='wing_shoes' && <path d="M68,70 h24 v12 h-30Z M112,70 h24 v12 h-6 l-18,-12Z M60,66 h16 l-8,-10Z" fill="#f4f1e8" stroke="#496246"/>}
+    {item==='spring_belt' && <path d="M70,60 h60 v10 h-60Z" fill="#3d6b4f" stroke="#e4bc63"/>}
+    {item==='frog_badge' && <circle cx="100" cy="48" r="14" fill="#7dbe6a" stroke="#24522c"/>}
+    {item==='wind_cape' && <path d="M75,24 Q100,16 125,24 L138,96 Q100,84 62,96Z" fill="#d5e4ea" stroke="#3d6670"/>}
+    {item==='champion_helm' && <path d="M78,36 Q100,8 122,36 V52 H78Z" fill="#e4bc63" stroke="#6a4a12"/>}
+    {item==='vkb_banner' && <path d="M70,16 h8 v70 h-8Z M78,16 h40 v28 h-40Z" fill="#8C3A32" stroke="#343F2A"/>}
+    {item==='guild_banner' && <path d="M70,16 h8 v70 h-8Z M78,16 h40 v28 h-40Z" fill="#496246" stroke="#343F2A"/>}
+    {item==='pet_wolf' && <path d="M86,50 l8,-16 6,10 6,-10 8,16 v18 h-28Z" fill="#c5b8a4" stroke="#4a4034"/>}
+    {item==='pet_horse' && <path d="M78,40 h20 v10 l10,8 v16 h-8 l-4,-8 h-10 l-4,8 h-8Z" fill="#8a5a32" stroke="#3a2414"/>}
+    {item.startsWith('sport_') && <path d="M72,30 h56 v50 h-56Z" fill="#1f4e3a" stroke="#e4bc63"/>}
   </g>;
 }
 

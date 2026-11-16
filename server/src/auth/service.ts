@@ -182,12 +182,13 @@ export async function requestPasswordReset(email: string) {
   if (!rows[0] || !rows[0].id) return;
   const token = await issueToken(rows[0].id, 'reset_password', 1);
   const nl = rows[0].locale === 'nl';
+  // A mail that cannot be sent must look the same from outside as an unknown address.
   await sendMail(
     email,
     nl ? 'Wachtwoord opnieuw instellen' : 'Reset your password',
     `${nl ? 'Stel je nieuwe wachtwoord in via' : 'Set a new password via'}: ${config.appOrigin}/wachtwoord-herstellen?token=${token}\n` +
       (nl ? 'Deze link is 1 uur geldig.' : 'This link is valid for 1 hour.'),
-  );
+  ).catch(() => undefined);
 }
 
 export async function resetPassword(token: string, password: string) {

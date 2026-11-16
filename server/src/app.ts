@@ -3,6 +3,7 @@ import { heroAssetFile, isHeroAsset } from './lib/heroAssets';
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
 import { serveStatic } from '@hono/node-server/serve-static';
+import { compress } from 'hono/compress';
 import { bodyLimit } from 'hono/body-limit';
 import { HTTPException } from 'hono/http-exception';
 import fs from 'node:fs';
@@ -28,10 +29,13 @@ import { patientModules } from './routes/patientModules';
 import { mobilityPatient, mobilityStaff } from './routes/mobilityTests';
 import { heroPatient, heroStaff } from './routes/hero';
 import { patientLogs } from './routes/patientLogs';
+import { nutrition } from './routes/nutrition';
 import { gymPatient, gymStaff } from './routes/gymLog';
 import { atlasPatient, atlasStaff } from './routes/atlas';
 import { stepRoutes } from './routes/steps';
 import { patientCare, redFlags } from './routes/patientCare';
+import { worldPatient, worldStaff } from './routes/world';
+import { bossProgram, bossPatient } from './routes/boss';
 import { agentRoutes } from './agents';
 
 export function createApp() {
@@ -55,7 +59,8 @@ export function createApp() {
       },
       strictTransportSecurity: config.isProd ? 'max-age=63072000; includeSubDomains' : false,
       referrerPolicy: 'strict-origin-when-cross-origin',
-      permissionsPolicy: { camera: [], microphone: [], geolocation: [] },
+      // Bluetooth only on our own pages: the heart rate strap during a workout.
+      permissionsPolicy: { camera: [], microphone: [], geolocation: [], bluetooth: ['self'] },
     }),
   );
 
@@ -93,10 +98,14 @@ export function createApp() {
   api.route('/patients', patientCare);
   api.route('/red-flags', redFlags);
   api.route('/programs', programs);
+  api.route('/programs', bossProgram);
+  api.route('/patients', bossPatient);
   api.route('/patient', patientApp);
+  api.route('/patient', worldPatient);
   api.route('/patient', patientModules);
   api.route('/patient', heroPatient);
   api.route('/patient', patientLogs);
+  api.route('/patient', nutrition);
   api.route('/patient', gymPatient);
   api.route('/patient', atlasPatient);
   api.route('/atlas', atlasStaff);
@@ -107,6 +116,7 @@ export function createApp() {
   api.route('/patients', mobilityStaff);
   api.route('/dashboard', dashboard);
   api.route('/practice', practice);
+  api.route('/practice', worldStaff);
   api.route('/admin', admin);
   api.route('/feedback', feedback);
   api.route('/reminders', reminders);
@@ -152,6 +162,11 @@ export function createApp() {
     app.use('/sw.js', async (c, next) => {
       await next();
       c.header('Cache-Control', 'no-cache');
+    });
+    // 3D hero models: ~2.6 MB each, about a quarter of that compressed. Versioned with ?v= in the app.
+    app.use('/hero3d/*', compress({ contentTypeFilter: () => true }), async (c, next) => {
+      await next();
+      c.header('Cache-Control', 'public, max-age=604800');
     });
     app.use('*', serveStatic({ root }));
     app.get('*', serveStatic({ root, path: 'index.html' }));

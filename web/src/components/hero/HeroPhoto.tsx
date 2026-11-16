@@ -54,7 +54,7 @@ function HeroPhotoContent({ look, className, gearChips = false, fittedGear = fal
         </span>
       )}
       {!failed && aid && (
-        <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-full bg-white/90 py-0.5 pl-0.5 pr-2 text-[11px] font-semibold text-ink-800 shadow-sm">
+        <span data-gear="crutches" aria-hidden className="absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-full bg-white/90 py-0.5 pl-0.5 pr-2 text-[11px] font-semibold text-ink-800 shadow-sm">
           <span className="h-6 w-6 overflow-hidden rounded-full bg-white"><img src="/api/hero-assets/item/crutches" alt="" className="h-full w-full object-cover" /></span>
           {t('Krukken', 'Crutches')}
         </span>

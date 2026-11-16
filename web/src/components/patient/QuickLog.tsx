@@ -29,7 +29,8 @@ export function QuickLogButton() {
     window.addEventListener('fp:quicklog', on);
     return () => window.removeEventListener('fp:quicklog', on);
   }, []);
-  if (!hero.data?.hero) return null;
+  // Logging belongs to the sports hero. Without one the button stays, and says how to get there.
+  const noHero = !!hero.data && !hero.data.hero;
   return (
     <>
       <button
@@ -41,6 +42,15 @@ export function QuickLogButton() {
         <Plus className="h-7 w-7" strokeWidth={2.6} aria-hidden />
       </button>
       <Dialog open={open} onClose={() => setOpen(false)} sheet size="md" title={t('Snel loggen', 'Quick log')}>
+        {noHero ? (
+          <div className="space-y-4" data-testid="quicklog-no-hero">
+            <p className="text-[15.5px] text-ink-800">{t('Met het plusje log je eiwit, water, gewicht, stappen en slaap. Daarvoor maak je eerst je sportheld; dat kost een minuut.', 'With the plus you log protein, water, weight, steps and sleep. For that you first make your sports hero; it takes a minute.')}</p>
+            <Link to="/p/held/nieuw" onClick={() => setOpen(false)} className="flex min-h-[52px] items-center justify-center rounded-xl bg-accent px-4 text-[16px] font-semibold text-accent-ink">{t('Maak je sportheld', 'Make your sports hero')}</Link>
+            <Link to="/p/logboek" onClick={() => setOpen(false)} className="flex min-h-[44px] items-center justify-center gap-2 text-[14.5px] font-medium text-accent">
+              <Dumbbell className="h-4 w-4" aria-hidden />{t('Eigen training loggen', 'Log your own workout')}
+            </Link>
+          </div>
+        ) : (
         <div className="space-y-4">
           <div role="tablist" aria-label={t('Wat wil je loggen?', 'What do you want to log?')} className="grid grid-cols-5 gap-1 rounded-2xl bg-ink-100 p-1">
             {([
@@ -84,6 +94,7 @@ export function QuickLogButton() {
             <Dumbbell className="h-4 w-4" aria-hidden />{t('Eigen training loggen of alles bekijken', 'Log your own workout or see everything')}
           </Link>
         </div>
+        )}
       </Dialog>
     </>
   );

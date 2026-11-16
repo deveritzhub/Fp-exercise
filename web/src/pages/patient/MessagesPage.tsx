@@ -52,7 +52,8 @@ export function MessagesPage() {
               </div>
               {n.body && <p className="mt-1 whitespace-pre-line text-[15px] text-ink-800">{n.body}</p>}
               <div className="mt-1 flex flex-wrap gap-x-4">
-                {n.link && n.link.startsWith('/p') && (
+                {/* Only when the message leads somewhere of its own: the home page is not a destination. */}
+                {n.link && n.link.startsWith('/p/') && (
                   <Link to={n.link} onClick={() => { if (!n.readAt) void read(n.id); }} className="inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">{t('Bekijken', 'View')}<ChevronRight className="h-4 w-4" aria-hidden /></Link>
                 )}
                 {!n.readAt && <button type="button" onClick={() => void read(n.id)} className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-ink-600 hover:text-ink-900">{t('Gelezen', 'Read')}</button>}

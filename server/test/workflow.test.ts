@@ -137,6 +137,8 @@ describe('therapist → patient → therapist workflow', () => {
     expect(home.body.programs).toHaveLength(1);
     expect(home.body.programs[0].today.scheduled).toBe(3);
     expect(home.body.notifications[0].kind).toBe('program_assigned');
+    // "View" on the message opens this programme, not the home page.
+    expect(home.body.notifications[0].link).toBe(`/p/programma/${programId}`);
     const prog = await patient.get(`/patient/programs/${programId}`);
     expect(prog.body.items[0].notes).toBe('Let op volledige strekking');
     // patient cannot read therapist-only clinical notes
@@ -179,6 +181,7 @@ describe('therapist → patient → therapist workflow', () => {
     expect(att.reasons).toContain('new_feedback');
     const notes = await therapist.get('/me/notifications');
     expect(notes.body.items.some((n: any) => n.kind === 'feedback_received')).toBe(true);
+    expect(notes.body.items.find((n: any) => n.kind === 'feedback_received').link).toBe(`/app/patienten/${patientId}?tab=sessies`);
     expect((await therapist.post(`/patients/sessions/${sess.id}/review`)).status).toBe(200);
   });
 
@@ -204,6 +207,7 @@ describe('therapist → patient → therapist workflow', () => {
     const upd = home.body.notifications.find((n: any) => n.kind === 'program_updated');
     expect(upd.body).toContain('“Goed bezig! De squat even wat lichter.”');
     expect(upd.body).not.toContain('Volume squat verlaagd');
+    expect(upd.link).toBe(`/p/programma/${programId}`);
   });
 
   it('templates: list, favorite, instantiate for a patient, save program as template, duplicate', async () => {

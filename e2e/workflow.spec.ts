@@ -67,9 +67,7 @@ test('patient activates account on a phone and completes a session', async ({ br
   await page.getByLabel('Nieuw wachtwoord').fill('Eva-wachtwoord-2026');
   await page.getByLabel('Herhaal wachtwoord').fill('Eva-wachtwoord-2026');
   await page.getByRole('button', { name: 'Account activeren' }).click();
-  // A new patient first sees the sports-hero creator; postpone it.
-  await page.waitForURL(/\/p\/held\/nieuw$/);
-  await page.getByRole('link', { name: 'Later' }).click();
+  // An invited patient lands on Today, with the training first; the hero is an invitation there.
   await page.waitForURL(/\/p$/);
   await expect(page.getByRole('heading', { name: 'E2E — knie basis' })).toBeVisible();
   await expectAccessible(page, 'patient-home');
@@ -97,7 +95,9 @@ test('patient activates account on a phone and completes a session', async ({ br
   await page.getByLabel(/Bericht voor je fysiotherapeut/).fill('Ging redelijk');
   await page.getByRole('button', { name: 'Training afronden' }).click();
   await expect(page.getByRole('heading', { name: 'Training afgerond!' })).toBeVisible();
-  await page.getByRole('button', { name: 'Terug naar overzicht' }).click();
+  await page.getByRole('button', { name: 'Terug naar je dorp' }).click();
+  // Back in the lobby: the hero cheers and the earned XP is named once.
+  await expect(page.getByRole('status').filter({ hasText: /Welkom terug in je dorp! \+\d+ XP verdiend/ })).toBeVisible();
   await expect(page.getByText('Klaar voor vandaag — goed gedaan!')).toBeVisible();
   // The wrap-up card says what comes next.
   const done = page.getByRole('region', { name: 'Klaar voor vandaag' });

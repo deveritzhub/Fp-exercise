@@ -41,6 +41,7 @@ listed as one-click buttons on the login page in development):
 | `therapeut@praktijk-a.test` | Physiotherapist, practice A |
 | `eigenaar@praktijk-a.test` | Practice owner, practice A |
 | `patient@praktijk-a.test` | Patient, practice A |
+| `vkb@praktijk-a.test` | Synthetic ACL-route patient, practice A |
 | `eigenaar@praktijk-b.test` / `therapeut@praktijk-b.test` | Owner / therapist, practice B |
 | `patient@praktijk-b.test` | Patient, practice B |
 | `admin@fp-exercise.test` | Platform administrator |

@@ -8,6 +8,7 @@ import { Badge, Button, Input, Notice, Segmented, Sparkline, Spinner, ErrorState
 import { GYM_LIMITS, PERCENT_TABLE, gymKey, loadFor, setEstimate, type GymExerciseSummary, type GymPlace, type GymSet } from '@shared/gymLog';
 import { parseMetric } from '@shared/hero';
 import { RirPicker, useGymAdvanced } from '@/components/GymRoutines';
+import { QuickWorkout } from '@/components/QuickWorkout';
 
 type GymData = { sets: GymSet[]; exercises: GymExerciseSummary[]; library: { id: string; nameNl: string; nameEn: string }[]; sharedByPatient?: boolean };
 
@@ -90,6 +91,8 @@ export function GymLog({ base, staff = false }: { base: string; staff?: boolean 
             : t('Je ziet alleen wat in de praktijk is gelogd. De patiënt kan de krachtmodule delen om ook de sportschool-log te tonen.', 'You only see what was logged in the practice. The patient can share the strength module to show the gym log too.')}
         </Notice>
       )}
+
+      {!staff && <QuickWorkout gym={data} chips={false} />}
 
       <section className="rounded-2xl border border-line bg-white p-4 shadow-card sm:p-5" aria-labelledby="gym-add">
         <h2 id="gym-add" className="t-section flex items-center gap-2"><Dumbbell className="h-5 w-5 text-accent" aria-hidden />{t('Set loggen', 'Log a set')}</h2>

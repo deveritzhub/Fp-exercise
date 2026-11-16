@@ -403,7 +403,7 @@ programs.post('/', async (c) => {
     }
     await snapshot(tx, id, 'created');
     if (b.patientId && b.status === 'active') {
-      await notifyPatientUser(tx, b.patientId, progPractice, 'program_assigned', b.title);
+      await notifyPatientUser(tx, b.patientId, progPractice, 'program_assigned', { id, title: b.title });
       await notifyPhaseUnlocked(tx, id);
     }
     await audit(tx, user.id, progPractice, 'create', b.isTemplate ? 'template' : 'program', id, { items: b.items.length, status: b.status });
@@ -429,7 +429,7 @@ programs.put('/:id', async (c) => {
     if (!r.rowCount) throw notFound(); // RLS: not editable by this user
     await writeItems(tx, id, p.practice_id, b.items);
     await snapshot(tx, id, b.changeNote);
-    if (p.patient_id && p.status === 'active') await notifyPatientUser(tx, p.patient_id, p.practice_id, 'program_updated', b.title, b.patientMessage);
+    if (p.patient_id && p.status === 'active') await notifyPatientUser(tx, p.patient_id, p.practice_id, 'program_updated', { id, title: b.title }, b.patientMessage);
     await audit(tx, user.id, p.practice_id, 'update', p.is_template ? 'template' : 'program', id, { version: p.version + 1, items: b.items.length });
   });
   return c.json({ ok: true });
@@ -457,7 +457,7 @@ programs.post('/:id/items', async (c) => {
     await writeItems(tx, id, p.practice_id, next);
     const name = (await tx.query('SELECT name_nl FROM exercises WHERE id = $1', [item.exerciseId])).rows[0]?.name_nl ?? '';
     await snapshot(tx, id, `Oefening toegevoegd: ${name}`.slice(0, 300));
-    if (p.patient_id && p.status === 'active') await notifyPatientUser(tx, p.patient_id, p.practice_id, 'program_updated', p.title);
+    if (p.patient_id && p.status === 'active') await notifyPatientUser(tx, p.patient_id, p.practice_id, 'program_updated', { id, title: p.title });
     await audit(tx, user.id, p.practice_id, 'update', p.is_template ? 'template' : 'program', id, { version: p.version + 1, added: item.exerciseId });
     return { items: next.length, notifiedPatient: !!(p.patient_id && p.status === 'active') };
   });
@@ -543,7 +543,7 @@ programs.post('/:id/status', async (c) => {
     );
     if (!r.rowCount) throw notFound();
     if (status === 'active' && p.status !== 'active' && p.patient_id) {
-      await notifyPatientUser(tx, p.patient_id, p.practice_id, 'program_assigned', p.title);
+      await notifyPatientUser(tx, p.patient_id, p.practice_id, 'program_assigned', { id, title: p.title });
       await notifyPhaseUnlocked(tx, id);
     }
     await audit(tx, user.id, p.practice_id, 'status', 'program', id, { from: p.status, to: status });

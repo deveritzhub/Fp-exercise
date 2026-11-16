@@ -1,3 +1,5 @@
+import { useHero } from '@/pages/patient/HeroPages';
+import { NutritionCard, Village3DCard } from '@/components/patient/TodayExtras';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -16,10 +18,13 @@ import type { Adherence, Notification, Program } from '@/lib/types';
 import type { DayState } from '@shared/adherence';
 import { isActionableToday, summarizePatientDay } from '@shared/todayView';
 import { cn } from '@/lib/cn';
-import { BossHomeCard, DayChestHomeCard, HeroHomeCard } from '@/pages/patient/HeroPages';
+import { BossHomeCard, DayChestHomeCard } from '@/pages/patient/HeroPages';
+import { TodayHeader, TodayTiles, VillageTiles } from '@/components/patient/HomeLobby';
+import { XP } from '@shared/hero';
 import { LogbookHomeCard } from '@/pages/patient/LogbookPage';
 import { MobilityDueCard } from '@/components/MobilityTests';
 import { FirstSteps } from '@/components/patient/FirstSteps';
+import { ViewChoiceCard, useView } from '@/components/patient/ViewChoice';
 import { FeedbackNudge } from '@/components/patient/FeedbackNudge';
 import { Check, Flame } from 'lucide-react';
 
@@ -65,57 +70,29 @@ export function PatientHome() {
   const q = useQuery({ queryKey: ['patient-home'], queryFn: () => api.get<PatientHomeData>('/patient/home'), refetchOnMount: 'always' });
   const modes = useModes();
   const qc = useQueryClient();
+  const { simple } = useView();
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
   if (!q.data) return <div className="space-y-4"><Skeleton className="h-8 w-2/3" /><Skeleton className="h-56 rounded-2xl" /><Skeleton className="h-28 rounded-2xl" /></div>;
   const d = q.data;
   const { scheduled: todo, resumeOther, remaining: left, pausedToday, showRestCard } = summarizePatientDay(d.programs);
   const startable = (['mobiliteit', 'kracht'] as const).filter((m) => modes.data?.templates.some((x) => x.module === m) && !d.programs.some((p) => moduleOf(p) === m));
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-[15px] text-ink-500">{new Intl.DateTimeFormat(nl ? 'nl-NL' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</p>
-        <h1 className="mt-0.5 text-[28px] font-bold leading-tight">{greeting(locale)}, {d.patient.firstName}</h1>
-        {todo.length > 0 && (
-          <p className="mt-1 text-[15px] text-ink-600">
-            {left > 0
-              ? t(`Vandaag nog ${left} ${left === 1 ? 'training' : 'trainingen'} te doen.`, `${left} ${left === 1 ? 'workout' : 'workouts'} left today.`)
-              : pausedToday > 0
-                ? t('Je programma staat tijdelijk stil. Volg het advies van je fysiotherapeut.', 'Your programme is temporarily paused. Follow your physiotherapist’s advice.')
-                : t('Alles voor vandaag is gedaan. Lekker bezig!', 'Everything for today is done. Well done!')}
+    <div className="space-y-6" data-view={simple ? 'simple' : 'game'}>
+      {simple ? (
+        // Plain view: the day and what there is to do, large, and nothing of the game.
+        <header>
+          <p className="text-[15px] font-medium text-ink-700">{new Intl.DateTimeFormat(nl ? 'nl-NL' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</p>
+          <h1 className="font-display text-[28px] font-bold leading-tight text-ink-950">{`${greeting(locale)}, ${d.patient.firstName}`}</h1>
+          <p className="mt-1 text-[17px] text-ink-800" data-testid="simple-today">
+            {todo.length > 0 ? (left > 0 ? t(`Vandaag nog ${left} ${left === 1 ? 'training' : 'trainingen'} te doen.`, `${left} ${left === 1 ? 'workout' : 'workouts'} left today.`) : t('Alles voor vandaag is gedaan.', 'Everything for today is done.')) : t('Vandaag staan er geen oefeningen gepland.', 'No exercises are planned for today.')}
           </p>
-        )}
-      </div>
-
-      {d.notifications.length > 0 && (
-        <div className="space-y-2">
-          {d.notifications.slice(0, 2).map((n) => (
-            <div key={n.id} className="flex items-start gap-3 rounded-2xl border border-accent/15 bg-accent-soft px-4 py-3">
-              <Bell className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
-              <div className="min-w-0 flex-1">
-                <div className="font-semibold text-ink-900">{n.title}</div>
-                <div className="text-[14.5px] text-ink-600">{n.body}</div>
-                {n.link && n.link !== '/p' && n.link.startsWith('/p/') && (
-                  <Link to={n.link} onClick={() => { void api.post(`/me/notifications/${n.id}/read`).then(() => qc.invalidateQueries({ queryKey: ['patient-home'] })); }} className="mt-1 inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">
-                    {t('Bekijken', 'View')}<ChevronRight className="h-4 w-4" aria-hidden />
-                  </Link>
-                )}
-              </div>
-              <button
-                type="button"
-                aria-label={t('Melding sluiten', 'Dismiss notification')}
-                className="-mr-2 -mt-2 flex h-11 w-11 items-center justify-center rounded-lg text-ink-500 hover:bg-white/60"
-                onClick={async () => {
-                  await api.post(`/me/notifications/${n.id}/read`);
-                  qc.invalidateQueries({ queryKey: ['patient-home'] });
-                }}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          ))}
-        </div>
+        </header>
+      ) : (
+      <TodayHeader
+        date={new Intl.DateTimeFormat(nl ? 'nl-NL' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}
+        greeting={`${greeting(locale)}, ${d.patient.firstName}`}
+      />
       )}
-
       {/* Everything planned today is done: a short, calm wrap-up with what comes next. */}
       {todo.length > 0 && left === 0 && pausedToday === 0 && resumeOther.length === 0 && (() => {
         const next = d.programs.map((p) => p.nextSession).filter((x): x is string => !!x).sort()[0];
@@ -150,15 +127,18 @@ export function PatientHome() {
           nextSession={d.programs.map((p) => p.nextSession).filter(Boolean).sort()[0] ?? null}
         />
       ) : (
-        todo.map((p) => (
+        todo.map((p, i) => (
           <div key={p.id}>
-            <ModuleTag module={moduleOf(p)} />
+            {(i > 0 || todo.length > 1) && <ModuleTag module={moduleOf(p)} />}
             <TodayProgramCard
               id={p.id}
               title={p.title}
               items={p.today.items}
               done={p.today.done && !p.openSession && !p.paused}
-              action={p.paused ? <PausedNotice /> : <StartOrResume programId={p.id} open={p.openSession} total={p.today.scheduled} />}
+              // One training today: it is the one thing to do, on the dark card with the gold button.
+              // With more than one, the mission card above is that card.
+              lead={i === 0 && todo.length === 1 ? { label: moduleLabel(moduleOf(p), nl), reward: !simple && left > 0 && pausedToday === 0 ? `+${XP.session} XP` : undefined } : undefined}
+              action={p.paused ? <PausedNotice /> : <StartOrResume programId={p.id} open={p.openSession} total={p.today.scheduled} gold={i === 0 && todo.length === 1} />}
             />
           </div>
         ))
@@ -172,6 +152,49 @@ export function PatientHome() {
           </div>
         </div>
       ))}
+
+      {!simple && (
+        <>
+          {/* Strength keeps a fixed place: the own log, with the latest estimate when there is one. */}
+          <StrengthCard />
+          <Village3DCard />
+          <TodayTiles rate={d.stats.adherence7d.rate ?? 0} done={d.stats.adherence7d.completed} planned={d.stats.adherence7d.planned} />
+        </>
+      )}
+      {/* Nutrition in both views: what you ate today, recipes and the shopping list. */}
+      <NutritionCard />
+      {/* Below the training of the day, so "Start training" is in view without scrolling. */}
+      <ViewChoiceCard />
+
+      {d.notifications.length > 0 && (
+        <div className="space-y-2">
+          {d.notifications.slice(0, 2).map((n) => (
+            <div key={n.id} className="flex items-start gap-3 rounded-2xl border border-accent/15 bg-accent-soft px-4 py-3">
+              <Bell className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-ink-900">{n.title}</div>
+                <div className="text-[14.5px] text-ink-600">{n.body}</div>
+                {n.link && n.link !== '/p' && n.link.startsWith('/p/') && (
+                  <Link to={n.link} onClick={() => { void api.post(`/me/notifications/${n.id}/read`).then(() => qc.invalidateQueries({ queryKey: ['patient-home'] })); }} className="mt-1 inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">
+                    {t('Bekijken', 'View')}<ChevronRight className="h-4 w-4" aria-hidden />
+                  </Link>
+                )}
+              </div>
+              <button
+                type="button"
+                aria-label={t('Melding sluiten', 'Dismiss notification')}
+                className="-mr-2 -mt-2 flex h-11 w-11 items-center justify-center rounded-lg text-ink-500 hover:bg-white/60"
+                onClick={async () => {
+                  await api.post(`/me/notifications/${n.id}/read`);
+                  qc.invalidateQueries({ queryKey: ['patient-home'] });
+                }}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {d.programs.some((p) => p.week?.length) && <WeekAhead programs={d.programs} />}
 
@@ -190,11 +213,11 @@ export function PatientHome() {
         </section>
       )}
 
-      <FirstSteps hasProgram={d.programs.length > 0} />
-      <HeroHomeCard />
-      <DayChestHomeCard />
-      <BossHomeCard />
-      <DailyQuizCard />
+      {!simple && <FirstSteps hasProgram={d.programs.length > 0} />}
+      {!simple && <VillageTiles />}
+      {!simple && <DayChestHomeCard />}
+      {!simple && <BossHomeCard />}
+      {!simple && <DailyQuizCard />}
       <MobilityDueCard />
       <LogbookHomeCard />
 
@@ -239,29 +262,60 @@ function ModuleTag({ module }: { module: PatientModule }) {
   );
 }
 
+/** The strength log as a fixed card on Vandaag: one line and one button. */
+function StrengthCard() {
+  const { t, locale } = useI18n();
+  const hero = useHero().data;
+  if (!hero?.hero) return null;
+  const best = [...hero.strengthEstimates].filter((e) => e.latestKg !== null).sort((a, b) => (b.latestKg ?? 0) - (a.latestKg ?? 0))[0];
+  return (
+    <section aria-labelledby="strength-card" className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-card" data-testid="strength-card">
+      <div className="min-w-0 flex-1">
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ink-600">{t('Kracht · jouw schema', 'Strength · your plan')}</p>
+        <h2 id="strength-card" className="mt-0.5 text-[16.5px] font-bold text-ink-950">{t('Krachttraining loggen', 'Log strength training')}</h2>
+        <p className="mt-0.5 text-[13.5px] text-ink-600">
+          {best ? t(`Geschat 1RM ${locale === 'nl' ? best.nameNl : best.nameEn}: ${best.latestKg} kg`, `Estimated 1RM ${best.nameEn}: ${best.latestKg} kg`) : t('Sets in de sportschool, thuis of in de praktijk.', 'Sets at the gym, at home or in the practice.')}
+        </p>
+      </div>
+      <Link to="/p/krachtlog" className="tap inline-flex min-h-[48px] shrink-0 items-center rounded-xl border-2 border-accent px-4 text-[15px] font-semibold text-accent hover:bg-accent-soft">{t('Log set', 'Log set')}</Link>
+    </section>
+  );
+}
+
 /** "Start training", or "Training hervatten" with how far the patient got. */
-export function StartOrResume({ programId, open, total }: { programId: string; open: { logged: number } | null; total: number }) {
+export function StartOrResume({ programId, open, total, gold = false }: { programId: string; open: { logged: number } | null; total: number; gold?: boolean }) {
   const { t } = useI18n();
+  // Gold on the dark card: the one main action of the day.
+  const goldCls = gold ? '!bg-[#E3B655] !text-[#17251F] hover:!bg-[#d9a93f]' : '';
   if (!open) {
     return (
-      <ButtonLink to={`/p/sessie/${programId}`} size="xl" className="w-full" icon={<Play className="h-5 w-5 fill-current" />}>
+      <ButtonLink to={`/p/sessie/${programId}`} size="xl" className={`w-full ${goldCls}`} icon={<Play className="h-5 w-5 fill-current" />}>
         {t('Start training', 'Start workout')}
       </ButtonLink>
     );
   }
   const done = Math.min(open.logged, total);
+  // On the dark card: one line of progress, so the button stays in view.
+  if (gold) {
+    return (
+      <div className="space-y-2">
+        <p className="text-[14px] text-white/85">{t(`Je was al begonnen: ${done} van ${total} oefeningen gedaan.`, `You already started: ${done} of ${total} exercises done.`)}</p>
+        <ButtonLink to={`/p/sessie/${programId}`} size="xl" className={`w-full ${goldCls}`} icon={<Play className="h-5 w-5 fill-current" />}>{t('Training hervatten', 'Resume workout')}</ButtonLink>
+      </div>
+    );
+  }
   return (
     <div className="space-y-3">
       <div>
         <div className="mb-1 flex justify-between text-[14px] text-ink-700">
-          <span>{t('Je was al begonnen', 'You already started')}</span>
+          <span className={gold ? 'text-white/85' : undefined}>{t('Je was al begonnen', 'You already started')}</span>
           <span className="tabular-nums">{t(`${done} van ${total} oefeningen`, `${done} of ${total} exercises`)}</span>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-ink-100" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label={t('Voortgang training', 'Workout progress')}>
           <div className="h-full rounded-full bg-accent" style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
         </div>
       </div>
-      <ButtonLink to={`/p/sessie/${programId}`} size="xl" className="w-full" icon={<Play className="h-5 w-5 fill-current" />}>
+      <ButtonLink to={`/p/sessie/${programId}`} size="xl" className={`w-full ${goldCls}`} icon={<Play className="h-5 w-5 fill-current" />}>
         {t('Training hervatten', 'Resume workout')}
       </ButtonLink>
     </div>

@@ -72,7 +72,7 @@ export function SignupPage() {
   return (
     <AuthLayout
       title={t('Account aanmaken', 'Create account')}
-      description={t('Gratis beginnen. Fysiotherapiepraktijk? Neem contact op voor een praktijkaccount.', 'Start for free. Physiotherapy practice? Contact us for a practice account.')}
+      description={t('Fysiotherapiepraktijk? Neem contact op voor een praktijkaccount.', 'Physiotherapy practice? Contact us for a practice account.')}
       footer={<>{t('Heb je al een account?', 'Already have an account?')} <Link className="link" to="/login">{t('Inloggen', 'Log in')}</Link></>}
     >
       <form onSubmit={submit} className="space-y-4" noValidate>

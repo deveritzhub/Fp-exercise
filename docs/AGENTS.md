@@ -2,7 +2,7 @@
 
 Een AI-assistent (Claude) die in de FP Flow-server meedraait en klanten van de praktijk helpt via
 **WhatsApp** en **telefoon**. Code: `server/src/agents/`, tests: `server/test/agents.test.ts`,
-database: migratie `037_agents.sql`.
+database: migratie `061_agents.sql`.
 
 ```
 WhatsApp ──► Meta Cloud API ──► /agents/whatsapp/webhook ─┐

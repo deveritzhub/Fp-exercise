@@ -15,7 +15,7 @@ export function Avatar({ name, size = 32, className }: { name: string; size?: nu
   const hues = ['#e6eee8', '#dbe6de', '#eef0e8', '#ece6da', '#d9e4dc', '#e8e2d5'];
   return (
     <span
-      className={cn('inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold text-ink-700', className)}
+      className={cn('inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold text-[#34433c]', className)}
       style={{ width: size, height: size, fontSize: size * 0.38, background: hues[hash % hues.length] }}
       aria-hidden
     >

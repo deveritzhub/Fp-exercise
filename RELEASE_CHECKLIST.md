@@ -16,7 +16,7 @@ No real patient data may be imported, and nothing may be published to production
 - [ ] Retention periods and deletion workflow decided and implemented
 - [ ] Incident response & data-breach notification procedure (72 h AP) documented
 - [ ] Access logging reviewed against NEN 7513 expectations; log retention defined
-- [ ] Production mail provider (EU, DPA) configured with SPF/DKIM/DMARC
+- [ ] Production mail provider (EU, DPA) configured with SPF/DKIM/DMARC — *sending over SMTP is implemented (`MAIL_TRANSPORT=smtp`, see DEPLOY.md); choosing the provider and the DNS records remain*
 - [ ] Rate limiting backed by a shared store; upload pipeline streaming + virus scanning
 - [ ] Dependency audit clean; external penetration test passed, findings resolved
 - [ ] Intended-use statement confirmed; MDR qualification documented (see SECURITY.md)

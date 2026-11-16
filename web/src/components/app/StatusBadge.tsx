@@ -29,6 +29,7 @@ export function useReasonLabel() {
       case 'program_ending': return { text: t('Programma eindigt binnenkort', 'Programme ending soon'), tone: 'neutral' };
       case 'not_activated': return { text: t('Account niet geactiveerd', 'Account not activated'), tone: 'neutral' };
       case 'no_active_program': return { text: t('Geen actief programma', 'No active programme'), tone: 'neutral' };
+      case 'boss_met': return { text: t('Fasedoel gehaald', 'Phase goal met'), tone: 'info' };
       default: return { text: r, tone: 'neutral' };
     }
   };

@@ -54,7 +54,8 @@ export const HERO_OPTIONS = {
   eyeColor: ['brown', 'darkbrown', 'blue', 'green', 'hazel', 'grey'],
   beard: ['none', 'stubble', 'moustache', 'beard'],
   glasses: ['none', 'round', 'square'],
-  outfit: ['forest', 'sand', 'ocean', 'berry', 'slate', 'sun'],
+  // Six plain colours, then the patterned cloths (web/public/hero3d/fabric).
+  outfit: ['forest', 'sand', 'ocean', 'berry', 'slate', 'sun', 'flits', 'honing', 'camo', 'ridder', 'ruit', 'tovenaar', 'leer', 'malien'],
   sport: ['running', 'football', 'fitness', 'cycling', 'tennis', 'swimming', 'hockey', 'dance', 'walking', 'other'],
 } as const;
 
@@ -110,6 +111,30 @@ export function levelFor(xp: number) {
   const from = xpForLevel(level);
   const to = xpForLevel(level + 1);
   return { level, xp, from, to, progress: (xp - from) / (to - from) };
+}
+
+/**
+ * The look of a hero level: frame, glow and name of the rank. Purely cosmetic; the colours pass
+ * 4.5:1 as text on white.
+ */
+export const LEVEL_TIERS = [
+  { from: 1, key: 'bronze', nl: 'Brons', en: 'Bronze', color: '#8a5a2b', light: '#e9c9a3', glow: '#d99a5b' },
+  { from: 5, key: 'silver', nl: 'Zilver', en: 'Silver', color: '#5b6670', light: '#dfe5ea', glow: '#aab6c0' },
+  { from: 10, key: 'gold', nl: 'Goud', en: 'Gold', color: '#855806', light: '#f6e2a6', glow: '#e4bc63' },
+  { from: 20, key: 'emerald', nl: 'Smaragd', en: 'Emerald', color: '#1f6a4d', light: '#bfe6d3', glow: '#4fc391' },
+  { from: 35, key: 'diamond', nl: 'Diamant', en: 'Diamond', color: '#1d5f99', light: '#cfe6fa', glow: '#6db7f0' },
+  { from: 50, key: 'master', nl: 'Meester', en: 'Master', color: '#6f35ab', light: '#e6d6f7', glow: '#ad79de' },
+] as const;
+export type LevelTier = (typeof LEVEL_TIERS)[number];
+export function levelTier(level: number): LevelTier {
+  let tier: LevelTier = LEVEL_TIERS[0];
+  for (const t of LEVEL_TIERS) if (level >= t.from) tier = t;
+  return tier;
+}
+/** The next rank and how many levels it is away, or null at the top. */
+export function nextLevelTier(level: number): { tier: LevelTier; levels: number } | null {
+  const next = LEVEL_TIERS.find((t) => t.from > level);
+  return next ? { tier: next, levels: next.from - level } : null;
 }
 
 const TITLES: [number, string, string][] = [
@@ -956,18 +981,19 @@ export const GEAR_SLOTS: { key: GearSlot; nl: string; en: string; side: 'left' |
   { key: 'held', nl: 'In de hand', en: 'Held', side: 'bottom' },
 ];
 export const GEAR_SLOT: Record<string, GearSlot> = {
-  cap: 'head', visor: 'head', headband: 'head', crown: 'head',
-  scarf: 'neck', towel: 'neck', headphones: 'neck', medal: 'neck',
-  pin: 'chest', hr_band: 'chest',
-  yoga_mat: 'back',
+  cap: 'head', visor: 'head', headband: 'head', crown: 'head', champion_helm: 'head',
+  scarf: 'neck', towel: 'neck', headphones: 'neck', medal: 'neck', ice_pack: 'neck',
+  pin: 'chest', hr_band: 'chest', golden_hinge: 'chest', frog_badge: 'chest',
+  yoga_mat: 'back', deswell_mantle: 'back', wind_cape: 'back',
   captain: 'arm',
   watch: 'wrist', wristbands: 'wrist',
   gloves: 'hands',
-  belt: 'waist',
-  sleeve: 'legs', shin_guards: 'legs',
-  gold_shoes: 'feet', balance_shoes: 'feet', spikes: 'feet', crew_socks: 'feet',
-  sport_item: 'held',
+  belt: 'waist', spring_belt: 'waist',
+  sleeve: 'legs', shin_guards: 'legs', iron_brace: 'legs', rune_guard: 'legs',
+  gold_shoes: 'feet', balance_shoes: 'feet', spikes: 'feet', crew_socks: 'feet', pilgrim_boots: 'feet', wing_shoes: 'feet',
+  sport_item: 'held', crutch_staff: 'held', smith_hammer: 'held',
   tracksuit: 'outfit', team_kit: 'outfit', champion: 'outfit',
+  sport_football: 'outfit', sport_basketball: 'outfit', sport_hockey: 'outfit', sport_ski: 'outfit', sport_running: 'outfit', sport_padel: 'outfit',
 };
 /** Keep one piece per slot: the last one in the list wins (newest choice). */
 export function onePerSlot(equipped: string[]): string[] {

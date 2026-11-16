@@ -6,7 +6,8 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # ubuntu-latest is 26.04, and Playwright has no Chromium build for that image yet.
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16

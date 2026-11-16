@@ -1,10 +1,14 @@
 import { Hono } from 'hono';
+import { readStaffLook, staffLook } from '../lib/staffLook';
 import { areaPainRising, progressionSignal, painRising } from '../../../shared/progression';
 import { withUser } from '../db';
 import { requireStaff, type AppEnv } from '../middleware';
 import { mapExercise, OV_COLS, OV_JOIN } from './exercises';
 import { adherenceForPatient, loadAdherenceInputs } from '../lib/progress';
 import { toISODate } from '../../../shared/adherence';
+import { heroState } from './hero';
+import type { VillageHome } from '../../../shared/practiceVillage';
+import { checkLayout, type Placed } from '../../../shared/homeDecor';
 
 export const dashboard = new Hono<AppEnv>();
 
@@ -63,6 +67,21 @@ dashboard.get('/', async (c) => {
       for (const r of areaRows) areasBy.set(r.patient_id, [...(areasBy.get(r.patient_id) ?? []), { area: r.area, score: r.score, at: r.recorded_at }]);
       const soon = new Date();
       soon.setDate(soon.getDate() + 7);
+      const bossRows = ids.length
+        ? (await tx.query(
+            `SELECT g.patient_id, max(g.defeated_at) AS at FROM phase_boss_goals g
+              WHERE g.patient_id = ANY($1) AND g.active AND g.defeated_at IS NOT NULL
+                AND NOT EXISTS (
+                  SELECT 1 FROM phase_boss_goals o
+                   WHERE o.program_id = g.program_id AND o.active AND o.defeated_at IS NULL
+                )
+              GROUP BY g.patient_id
+             HAVING max(g.defeated_at) > now() - interval '21 days'`,
+            [ids],
+          )).rows
+        : [];
+      const bossIds = new Set(bossRows.map((r) => r.patient_id as string));
+      const bossAt = new Map(bossRows.map((r) => [r.patient_id as string, r.at as string]));
       const attention: Attention[] = [];
       let planned = 0;
       let completed = 0;
@@ -93,10 +112,11 @@ dashboard.get('/', async (c) => {
         const worse = areaPainRising(areasBy.get(p.id) ?? [])[0];
         if (worse) signals.push({ reason: 'area_pain_rising', date: null, value: worse.to, planned: worse.from, area: worse.area });
         if (p.next_end && p.next_end <= toISODate(soon)) signals.push({ reason: 'program_ending', date: p.next_end });
+        if (bossIds.has(p.id)) signals.push({ reason: 'boss_met', date: bossAt.get(p.id) ?? null });
         if (p.active_programs === 0) signals.push({ reason: 'no_active_program', date: null });
         if (signals.length) attention.push({ patientId: p.id, name: `${p.first_name} ${p.last_name}`, reasons: signals.map((x) => x.reason), signals });
       }
-      const order = ['high_pain', 'pain_rising', 'area_pain_rising', 'new_feedback', 'too_heavy', 'inactive_long', 'no_registration', 'low_adherence', 'ready_heavier', 'program_ending', 'not_activated', 'no_active_program'];
+      const order = ['high_pain', 'boss_met', 'pain_rising', 'area_pain_rising', 'new_feedback', 'too_heavy', 'inactive_long', 'no_registration', 'low_adherence', 'ready_heavier', 'program_ending', 'not_activated', 'no_active_program'];
       attention.sort((x, y) => order.indexOf(x.reasons[0]) - order.indexOf(y.reasons[0]));
 
       const activity = await tx.query(
@@ -151,7 +171,25 @@ dashboard.get('/', async (c) => {
                   (SELECT count(*)::int FROM patients WHERE created_by = app.uid() AND invited_at IS NOT NULL) AS invited`,
         )
       ).rows[0];
+      const aclRows = clinical
+        ? (await tx.query(
+            `SELECT pt.id, pt.first_name, pt.last_name, p.phase_no, p.phase_name,
+                    count(*) FILTER (WHERE g.active AND g.defeated_at IS NOT NULL)::int AS met,
+                    count(*) FILTER (WHERE g.active)::int AS total
+               FROM programs p
+               JOIN patients pt ON pt.id = p.patient_id
+               LEFT JOIN phase_boss_goals g ON g.program_id = p.id
+              WHERE p.patient_id = ANY($1) AND p.series_key = 'acl_vkb_flagship' AND p.status = 'active' AND NOT p.is_template
+              GROUP BY pt.id, pt.first_name, pt.last_name, p.phase_no, p.phase_name
+              ORDER BY pt.last_name, pt.first_name`,
+            [ids],
+          )).rows
+        : [];
       return {
+        aclPatients: aclRows.map((r) => ({
+          patientId: r.id, name: `${r.first_name} ${r.last_name}`, phaseNo: Number(r.phase_no), phaseName: r.phase_name,
+          met: Number(r.met), total: Number(r.total),
+        })),
         start: { since: start.since, patients: start.patients, programs: start.programs, invited: start.invited },
         alerts: alerts.rows.map((r) => ({ kind: r.kind, createdAt: r.created_at, patientId: r.patient_id, name: `${r.first_name} ${r.last_name}` })),
         daily: daily.rows.map((r) => ({ day: r.day, sessions: r.n, list: r.list })),
@@ -179,4 +217,74 @@ dashboard.get('/', async (c) => {
       };
     }),
   );
+});
+
+/**
+ * The practice village: one home per patient this member may see, with the hero's level. A home has a
+ * number (the order in which patients joined) and the id for the link to the record. Names are left
+ * out unless the member asks for them (`?names=1`): the village is often on a screen others can see.
+ */
+dashboard.get('/village', async (c) => {
+  const { user, practiceId } = requireStaff(c);
+  const names = c.req.query('names') === '1';
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const { rows } = await tx.query(
+        `SELECT pt.id, pt.first_name, pt.last_name,
+                (SELECT count(*)::int FROM workout_sessions s WHERE s.patient_id = pt.id AND s.completed_at > now() - interval '7 days') AS week
+           FROM patients pt
+          WHERE pt.practice_id = $1 AND pt.archived_at IS NULL AND app.can_manage_patient(pt.id)
+          ORDER BY pt.created_at, pt.id
+          LIMIT 80`,
+        [practiceId],
+      );
+      const homes: VillageHome[] = [];
+      for (const [i, r] of rows.entries()) {
+        const level = (await heroState(tx, r.id)).level;
+        homes.push({ id: r.id, no: i + 1, level: level.level, progress: level.progress, week: Number(r.week), ...(names ? { name: `${r.first_name} ${r.last_name}`.trim() } : {}) });
+      }
+      return { homes };
+    }),
+  );
+});
+
+/**
+ * Inside one home of the practice village: where the patient put the furniture. Only for a member who
+ * may manage this patient; what was paid for it and the coins stay the patient's own business.
+ */
+dashboard.get('/village/:patientId/home', async (c) => {
+  const { user, practiceId } = requireStaff(c);
+  const patientId = c.req.param('patientId');
+  if (!/^[0-9a-f-]{36}$/i.test(patientId)) return c.json({ error: 'not_found' }, 404);
+  const out = await withUser(user.id, async (tx) => {
+    const ok = (await tx.query('SELECT 1 FROM patients WHERE id = $1 AND practice_id = $2 AND archived_at IS NULL AND app.can_manage_patient(id)', [patientId, practiceId])).rows[0];
+    if (!ok) return null;
+    const row = (await tx.query('SELECT layout FROM hero_homes WHERE patient_id = $1', [patientId])).rows[0];
+    const stored = (Array.isArray(row?.layout) ? row.layout : []) as Placed[];
+    // The same rules as in the patient's own view; what stands there counts as owned.
+    const owned = new Set(stored.map((it) => it?.key).filter((k): k is string => typeof k === 'string'));
+    const kept: Placed[] = [];
+    for (const it of stored) {
+      const next = checkLayout([...kept, it], owned);
+      if (next.ok) kept.push(next.items[next.items.length - 1]);
+    }
+    return { layout: kept };
+  });
+  return out ? c.json(out) : c.json({ error: 'not_found' }, 404);
+});
+
+dashboard.get('/avatar', async (c) => {
+  const { user } = requireStaff(c);
+  const row = await withUser(user.id, async (tx) => (await tx.query('SELECT look FROM staff_avatars WHERE user_id = $1', [user.id])).rows[0]);
+  return c.json({ look: readStaffLook(row?.look) });
+});
+
+dashboard.put('/avatar', async (c) => {
+  const { user } = requireStaff(c);
+  const parsed = staffLook.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: 'invalid_input' }, 400);
+  await withUser(user.id, (tx) =>
+    tx.query('INSERT INTO staff_avatars(user_id, look) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET look = EXCLUDED.look, updated_at = now()', [user.id, JSON.stringify(parsed.data)]),
+  );
+  return c.json({ look: parsed.data });
 });

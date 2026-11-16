@@ -37,7 +37,7 @@ HTTPS is set up automatically.
 
 ## Using the demo
 
-- On the login page, click one of the demo accounts (therapist, patient, owner, admin).
+- Log in with a demo account (therapist, patient, owner, admin); the hosted login page no longer lists them.
 - Open the patient account on your phone to see the patient app.
 - When you invite a new patient, the invite link is shown on screen (no e-mails are sent in the demo).
 
@@ -49,9 +49,39 @@ HTTPS is set up automatically.
 - Push reminders are sent by the server itself, so while it sleeps none go out (a reminder that is due
   is still sent up to 3 hours late once someone opens the site). Reliable reminders need the paid plan.
 
-## Upgrading to always-on (~$7.25/month)
+## Always on, with a disk for uploads
 
-In `render.yaml`: set `plan: starter` and uncomment the `disk:` block and the `STORAGE_DIR` lines, then push.
-Render applies it automatically (it asks for a payment card). Or ask Claude to do it.
-- Anyone with the link can log in with the demo accounts — fine for fake data, not for real data.
-- Real patient data requires the steps in RELEASE_CHECKLIST.md first.
+`render.yaml` asks for the Starter plan and a 1 GB disk (`STORAGE_DIR=/var/data/storage`), so the site
+does not sleep and uploaded videos and photos survive a restart. With a disk a deploy takes the site
+offline for a few seconds. If the service was not made from the blueprint, add the disk by hand: service → **Disks** → mount path `/var/data`, 1 GB, and set
+`STORAGE_DIR=/var/data/storage` under **Environment**.
+
+## Closing the demo accounts
+
+The hosted site does not list the demo accounts, but they and their password are in the source code,
+so hiding them closes nothing. Under **Environment** set one of:
+
+- `DEMO_PASSWORD` = an own password of 12 characters or more: the demo accounts keep working with that
+  password only;
+- `DEMO_ACCOUNTS` = `off`: no demo account can log in.
+
+## Real e-mail (invitations, password reset, address check)
+
+Until this is set, no mail leaves the server and invite links are shown on screen instead.
+
+1. Take a mail provider that offers SMTP, is hosted in the EU and signs a processor agreement.
+2. At that provider, verify the sending domain (it gives the SPF, DKIM and DMARC records to add where
+   the domain is managed) and create SMTP login details.
+3. In Render under **Environment** set `SMTP_HOST`, `SMTP_PORT` (587, or 465), `SMTP_USER`, `SMTP_PASS`,
+   `MAIL_FROM` (e.g. `FP Flow <no-reply@your-domain.nl>`) and, last, `MAIL_TRANSPORT` = `smtp`.
+
+With `MAIL_TRANSPORT=smtp` the server refuses to start while a setting is missing, and says which.
+A mail that cannot be delivered shows "De e-mail kon niet worden verstuurd" to the person inviting.
+
+## Before real patient data
+
+- Rotate the Neon owner password: Neon console → project → **Roles** → reset the owner's password →
+  copy the new connection string into Render's `DATABASE_ADMIN_URL`.
+- Check the Neon plan's history retention (point-in-time restore) and do one restore to a branch as a drill.
+- Switch on "Verplicht maken voor iedereen" (MFA) under Praktijk → Instellingen for each real practice.
+- Everything else under A in RELEASE_CHECKLIST.md.

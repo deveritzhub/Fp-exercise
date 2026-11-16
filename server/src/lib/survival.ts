@@ -1,5 +1,5 @@
 import type { Tx } from '../db';
-import { SURVIVAL_XP, WATER, energyLevel, sessionLoad, sleepScore, stiffnessLevel, survivalStatus, waterTarget, type SurvivalStatus } from '../../../shared/survival';
+import { SURVIVAL_XP, WATER, energyLevel, sessionLoad, sleepScore, stiffnessLevel, stiffnessWithSteps, survivalStatus, waterTarget, type SurvivalStatus } from '../../../shared/survival';
 
 export type SurvivalView = {
   water: { ml: number; target: number; ratio: number; entries: { id: string; ml: number; createdAt: string }[] };
@@ -12,7 +12,7 @@ export type SurvivalView = {
 const iso = (v: unknown) => (v instanceof Date ? v.toISOString() : new Date(String(v)).toISOString());
 
 /** Today's meters (Europe/Amsterdam) and the XP that water and sleep logs earn over all days. */
-export async function loadSurvival(tx: Tx, patientId: string, weightKg: number | null) {
+export async function loadSurvival(tx: Tx, patientId: string, weightKg: number | null, walked: { steps: number; goal: number } = { steps: 0, goal: 0 }) {
   const target = waterTarget(weightKg);
   const today = (await tx.query("SELECT to_char(now(), 'YYYY-MM-DD') AS d, extract(hour FROM now())::int AS h")).rows[0];
   const waterRows = (await tx.query('SELECT id, day::text AS day, ml, created_at FROM water_logs WHERE patient_id = $1 ORDER BY created_at', [patientId])).rows;
@@ -59,7 +59,7 @@ export async function loadSurvival(tx: Tx, patientId: string, weightKg: number |
   startOfDay.setHours(7, 0, 0, 0);
   const since = last ? new Date(last).getTime() : startOfDay.getTime();
   const hoursSinceMove = Math.max(0, (now - since) / 3_600_000);
-  const stiffness = today.h < 7 ? 0 : stiffnessLevel(hoursSinceMove);
+  const stiffness = today.h < 7 ? 0 : stiffnessWithSteps(stiffnessLevel(hoursSinceMove), walked.steps, walked.goal);
   const ratio = ml / target;
   const energy = energyLevel({ sleepScore: sleep?.score ?? null, loadToday, loadYesterday, restDay: loadToday === 0, waterRatio: ratio });
   const view: SurvivalView = {
@@ -67,7 +67,7 @@ export async function loadSurvival(tx: Tx, patientId: string, weightKg: number |
     sleep,
     energy,
     stiffness,
-    status: survivalStatus({ waterRatio: ratio, sleepScore: sleep?.score ?? null, sleepHours: sleep?.hours ?? null, energy, stiffness, movedToday: !!last, hour: today.h }),
+    status: survivalStatus({ waterRatio: ratio, sleepScore: sleep?.score ?? null, sleepHours: sleep?.hours ?? null, energy, stiffness, movedToday: !!last || (walked.goal > 0 && walked.steps >= walked.goal * 0.3), hour: today.h }),
   };
   const heroXp = waterHitDays * SURVIVAL_XP.waterGoal + sleepRows.length * SURVIVAL_XP.sleepLogged;
   const recoveryXp = waterHitDays * SURVIVAL_XP.waterRecovery + sleepRows.length * SURVIVAL_XP.sleepRecovery;

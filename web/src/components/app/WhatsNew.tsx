@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, X } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { Dialog } from '@/components/ui';
 import { cn } from '@/lib/cn';
@@ -11,6 +11,8 @@ import { cn } from '@/lib/cn';
  */
 type Item = { nl: string; en: string; to?: string; clinical?: true };
 const STAFF: Item[] = [
+  { nl: 'Vijf nieuwe schema’s voor spiergroei (2× tot 5× per week), met zes nieuwe oefeningen zoals zittende leg curl en Bulgaarse split squat. Volume per spiergroep staat bij de onderbouwing.', en: 'Five new muscle growth schedules (2× to 5× a week), with six new exercises such as the seated leg curl and Bulgarian split squat. Volume per muscle group is under the rationale.', to: '/app/programmas' },
+  { clinical: true, nl: 'VKB-route toewijzen in één keer: vijf fases, bazen en standaardcriteria. Testsessie met LSI, fasedoelen en een grafiek in het dossier.', en: 'Assign the ACL route in one go: five phases, bosses and default criteria. A test session with LSI, phase goals and a chart in the record.', to: '/app/patienten?filter=acl' },
   { nl: 'Snelfilters in de patiëntenlijst: vraagt aandacht, nog niet uitgenodigd, uitnodiging open, geen programma.', en: 'Quick filters in the patient list: needs attention, not invited, invitation open, no programme.', to: '/app/patienten' },
   { nl: 'Bij "Kies een sjabloon" staan je laatst gebruikte sjablonen bovenaan.', en: '"Choose a template" shows your recently used templates first.' },
   { nl: 'Patiënten kunnen tijdens een oefening op "Dit doet pijn" tikken; je ziet de reden en pijnscore bij de sessie.', en: 'Patients can tap "This hurts" during an exercise; you see the reason and pain score with the session.' },
@@ -28,6 +30,16 @@ const STAFF: Item[] = [
   { nl: 'Reageren op een training bij "Markeer als gezien"; de patiënt krijgt je reactie.', en: 'Reply to a workout with "Mark as seen"; the patient gets your reply.' },
 ];
 const PATIENT: Item[] = [
+  { nl: 'Voeding: je eigen richtlijn, favorieten, eigen producten, een weekoverzicht, “Vul mijn week” en een kookmodus.', en: 'Nutrition: your own guide, favourites, own products, a week overview, “Fill my week” and a cooking mode.', to: '/p/voeding' },
+  { nl: 'Nieuw: Voeding. Houd bij wat je eet in je eigen woorden, kies recepten voor je doel, plan je week en neem je boodschappenlijst mee.', en: 'New: Nutrition. Track what you eat in your own words, pick recipes for your goal, plan your week and take your shopping list along.', to: '/p/voeding' },
+  { nl: 'Training snel invoeren: typ wat je deed in je eigen woorden, bijvoorbeeld “5 min gefietst, 3 sets chest press, 3x row”. Je controleert het eerst.', en: 'Log a workout quickly: type what you did in your own words, e.g. “5 min cycling, 3 sets chest press, 3x row”. You check it first.', to: '/p/logboek' },
+  { nl: 'In je dorp: een levensbalk voor je held, agressieve en vriendelijke wezens, het Alfazwijn, en je huis bouw je met hout, steen en buit.', en: 'In your village: a life bar for your hero, aggressive and friendly creatures, the Alpha boar, and you build your home with wood, stone and loot.', to: '/p/dorp' },
+  { nl: 'Nog geen video bij een oefening? Dan zie je meteen de hele beschrijving: startpositie, uitvoering en waar je op moet letten.', en: 'No video for an exercise yet? Then you see the whole description at once: starting position, how to do it and what to watch out for.' },
+  { nl: 'Kies je schema: geef op welk format je wilt, hoe vaak per week je traint en wat je doel is, en zie welk krachtschema bij je past. Nieuw: vijf schema’s voor spiergroei.', en: 'Choose your schedule: say which format you want, how often a week you train and what your goal is, and see which strength schedule suits you. New: five muscle growth schedules.', to: '/p/kracht' },
+  { nl: 'Loop zelf door je dorp in 3D: tik op de grond en je held loopt erheen. In de oefenzaal staat een tv met je oefeningen van vandaag; na je training krijgt je held daar de XP.', en: 'Walk through your village in 3D: tap the ground and your hero walks there. The gym has a TV with your exercises for today; after your workout your hero gets the XP there.', to: '/p/dorp' },
+  { nl: 'Je dorp groeit mee: een huisje per 5 trainingen, een vlag per verslagen baas, een molen, akkers, een standbeeld en een vuurtoren.', en: 'Your village grows with you: a cottage per 5 workouts, a pennant per defeated boss, a windmill, fields, a statue and a lighthouse.', to: '/p/wereld' },
+  { nl: 'Je wereldkaart is nu een 3D-eiland met je dorp en je route. Draai rond en tik op een gebouw of zone.', en: 'Your world map is now a 3D island with your village and route. Turn it and tap a building or zone.', to: '/p/wereld' },
+  { nl: 'Na een training: je held juicht, XP en muntjes tellen op, en een level-up krijgt een schild in de kleur van je rang.', en: 'After a workout: your hero cheers, XP and coins count up, and a level-up gets a shield in your rank colour.' },
   { nl: 'Laat een oefening voorlezen met de knop "Lees voor" in de training.', en: 'Have an exercise read aloud with the "Read aloud" button in the workout.' },
   { nl: 'Doet een oefening pijn? Tik op "Dit doet pijn": kies een lichtere variant of sla over.', en: 'Does an exercise hurt? Tap "This hurts": choose a lighter variation or skip it.' },
   { nl: 'Alles gedaan voor vandaag? Je ziet je reeks en wanneer je volgende training is.', en: 'Done for today? You see your streak and when your next workout is.' },
@@ -41,53 +53,112 @@ const PATIENT: Item[] = [
   { nl: 'Op Voortgang zie je hoe zwaar en pijnlijk je trainingen waren, in gewone taal.', en: 'Progress shows how hard and painful your workouts were, in plain words.', to: '/p/voortgang' },
   { nl: 'Nieuwe quizvragen over welke spier het werk overneemt als een andere zwak is.', en: 'New quiz questions on which muscle takes over when another is weak.' },
 ];
-const VERSION = '2026-11-06j';
+const VERSION = '2026-11-15';
 const KEY = 'fp.whatsnew.v1';
 
-function seen() {
+function seenVersion(): string | null | undefined {
   try {
-    return localStorage.getItem(KEY) === VERSION;
+    return localStorage.getItem(KEY);
   } catch {
-    return true;
+    return undefined; // storage blocked: never nag
   }
 }
+function markSeen() {
+  try {
+    localStorage.setItem(KEY, VERSION);
+  } catch {
+    /* storage unavailable */
+  }
+  window.dispatchEvent(new Event('fp-whatsnew-seen'));
+}
+/** "11 november 2026" from the version, so people see which update they have. */
+function versionLabel(nl: boolean) {
+  const d = new Date(VERSION.slice(0, 10) + 'T12:00:00');
+  return d.toLocaleDateString(nl ? 'nl-NL' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+}
 
-export function WhatsNew({ audience, clinical = true, className }: { audience: 'staff' | 'patient'; clinical?: boolean; className?: string }) {
+function WhatsNewDialog({ audience, clinical, onClose }: { audience: 'staff' | 'patient'; clinical: boolean; onClose: () => void }) {
   const { t, locale } = useI18n();
-  const [open, setOpen] = useState(false);
-  const [isNew, setIsNew] = useState(() => !seen());
   const items = (audience === 'staff' ? STAFF : PATIENT).filter((x) => clinical || !x.clinical).slice(0, 8);
-  const show = () => {
-    setOpen(true);
-    setIsNew(false);
-    try {
-      localStorage.setItem(KEY, VERSION);
-    } catch {
-      /* storage unavailable */
-    }
-  };
+  return (
+    <Dialog open onClose={onClose} title={t('Wat is er nieuw?', "What's new?")} description={t(`Versie van ${versionLabel(true)}. Probeer het uit en laat via de feedbackknop weten wat je ervan vindt.`, `Version of ${versionLabel(false)}. Try it and tell us what you think with the feedback button.`)}>
+      <ul className="space-y-3">
+        {items.map((x, i) => (
+          <li key={i} className="flex gap-2 text-[15px] text-ink-800">
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
+            <span>
+              {locale === 'nl' ? x.nl : x.en}
+              {x.to && <> <Link to={x.to} onClick={onClose} className="font-semibold text-accent hover:underline">{t('Bekijken', 'View')}</Link></>}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 border-t border-line pt-3 text-[14.5px]">
+        <Link to={audience === 'staff' ? '/app/versies' : '/p/versies'} onClick={onClose} className="font-semibold text-accent hover:underline">{t('Alle versies sinds de eerste, met datum', 'All versions since the first, with dates')}</Link>
+      </p>
+    </Dialog>
+  );
+}
+
+/** The "What's new?" button (settings, sidebar) with a "New" label until the newest version was opened. */
+export function WhatsNew({ audience, clinical = true, className }: { audience: 'staff' | 'patient'; clinical?: boolean; className?: string }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [isNew, setIsNew] = useState(() => { const v = seenVersion(); return v !== undefined && v !== VERSION; });
+  useEffect(() => {
+    const on = () => setIsNew(false);
+    window.addEventListener('fp-whatsnew-seen', on);
+    return () => window.removeEventListener('fp-whatsnew-seen', on);
+  }, []);
   return (
     <>
-      <button type="button" onClick={show} className={cn('flex min-h-[44px] w-full items-center gap-2 rounded-lg px-3 text-left text-[14px] font-medium text-ink-700 hover:bg-white/70', className)}>
+      <button type="button" onClick={() => { setOpen(true); markSeen(); }} className={cn('flex min-h-[44px] w-full items-center gap-2 rounded-lg px-3 text-left text-[14px] font-medium text-ink-700 hover:bg-white/70', className)}>
         <Sparkles className="h-[18px] w-[18px] shrink-0 text-accent" aria-hidden />
         <span className="flex-1">{t('Wat is er nieuw?', "What's new?")}</span>
         {isNew && <span className="rounded-full bg-accent px-2 py-0.5 text-[11.5px] font-semibold text-accent-ink">{t('Nieuw', 'New')}</span>}
       </button>
-      {open && (
-        <Dialog open onClose={() => setOpen(false)} title={t('Wat is er nieuw?', "What's new?")} description={t('De laatste verbeteringen. Probeer ze uit en laat via de feedbackknop weten wat je ervan vindt.', 'The latest improvements. Try them and tell us what you think with the feedback button.')}>
-          <ul className="space-y-3">
-            {items.map((x, i) => (
-              <li key={i} className="flex gap-2 text-[15px] text-ink-800">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
-                <span>
-                  {locale === 'nl' ? x.nl : x.en}
-                  {x.to && <> <Link to={x.to} onClick={() => setOpen(false)} className="font-semibold text-accent hover:underline">{t('Bekijken', 'View')}</Link></>}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Dialog>
+      {open && <WhatsNewDialog audience={audience} clinical={clinical} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+/**
+ * A notice at the top of the app right after an update: "FP Flow was updated" with the number of new
+ * things and a button to read them. Shown once per version, only to people who used an earlier one.
+ */
+export function UpdateNotice({ audience, clinical = true }: { audience: 'staff' | 'patient'; clinical?: boolean }) {
+  const { t } = useI18n();
+  const [show, setShow] = useState(() => { const v = seenVersion(); return typeof v === 'string' && v !== VERSION; });
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    // First visit ever: remember this version quietly, so the notice only comes with the next update.
+    if (seenVersion() === null) {
+      try { localStorage.setItem(KEY, VERSION); } catch { /* storage unavailable */ }
+    }
+    const on = () => setShow(false);
+    window.addEventListener('fp-whatsnew-seen', on);
+    return () => window.removeEventListener('fp-whatsnew-seen', on);
+  }, []);
+  const count = (audience === 'staff' ? STAFF : PATIENT).filter((x) => clinical || !x.clinical).slice(0, 8).length;
+  if (!show && !open) return null;
+  return (
+    <>
+      {show && (
+        <div role="status" className="mb-4 flex items-center gap-3 rounded-2xl border border-accent/25 bg-accent-soft px-4 py-3 shadow-card">
+          <Sparkles className="h-5 w-5 shrink-0 text-accent" aria-hidden />
+          <p className="min-w-0 flex-1 text-[14.5px] text-ink-900">
+            <strong>{t('FP Flow is bijgewerkt.', 'FP Flow was updated.')}</strong>{' '}
+            {t(`${count} nieuwe dingen sinds je laatste bezoek.`, `${count} new things since your last visit.`)}
+          </p>
+          <button type="button" onClick={() => { setOpen(true); setShow(false); markSeen(); }} className="tap inline-flex min-h-[44px] shrink-0 items-center rounded-xl bg-accent px-3 text-[14px] font-semibold text-accent-ink">
+            {t('Bekijk', 'View')}
+          </button>
+          <button type="button" onClick={() => { setShow(false); markSeen(); }} aria-label={t('Melding sluiten', 'Dismiss notice')} className="-mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-lg text-ink-500 hover:bg-white/60">
+            <X className="h-5 w-5" aria-hidden />
+          </button>
+        </div>
       )}
+      {open && <WhatsNewDialog audience={audience} clinical={clinical} onClose={() => setOpen(false)} />}
     </>
   );
 }

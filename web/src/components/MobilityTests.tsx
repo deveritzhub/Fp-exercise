@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import { useModes } from '@/components/patient/Modules';
 import { MOBILITY_MEASURE_XP, MOBILITY_TESTS, mobilityDue, mobilityTrends, suggestedProgram, sideDifference, validMobilityValue, type MobilityResult, type MobilitySide, type MobilityTest, type MobilityTrend } from '@shared/mobilityTests';
 
-type Row = MobilityResult & { id: string };
+type Row = MobilityResult & { id: string; confirmed?: boolean };
 type Data = { results: Row[]; sharedByPatient?: boolean };
 
 const SIDE: Record<MobilitySide, [string, string]> = { left: ['Links', 'Left'], right: ['Rechts', 'Right'], none: ['', ''] };
@@ -67,6 +67,26 @@ function DueBanner({ days }: { days: string[] }) {
   );
 }
 
+function ConfirmReading({ base, id, day }: { base: string; id: string; day: string }) {
+  const { t, locale } = useI18n();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const confirm = async () => {
+    setBusy(true);
+    try {
+      await api.post(`${base}/mobility-tests/${id}/confirm`, {});
+      await qc.invalidateQueries({ queryKey: ['mobility-tests', base] });
+      toast(t('Meting bevestigd. Alleen dan telt hij voor de baas.', 'Measurement confirmed. Only then does it count toward the boss.'));
+    } catch (e) {
+      toast(describeError(e, locale), 'bad');
+    } finally {
+      setBusy(false);
+    }
+  };
+    return <Button variant="secondary" className="mt-2" loading={busy} onClick={() => void confirm()}>{t(`Bevestig meting van ${day}`, `Confirm measurement of ${day}`)}</Button>;
+}
+
 /** Staff: ask the patient to measure (a notification with a link to the tests). */
 function RequestMeasure({ base, shared }: { base: string; shared: boolean }) {
   const { t, locale } = useI18n();
@@ -106,6 +126,9 @@ function TestCard({ test, results, base, staff }: { test: MobilityTest; results:
         <div className="min-w-0 flex-1">
           <h3 id={`mt-${test.key}`} className="font-semibold text-ink-900">{name}</h3>
           <p className="text-[13.5px] text-ink-600">{nl ? test.measures[0] : test.measures[1]}</p>
+          {staff && results.filter((r) => r.test === test.key && !r.confirmed).map((r) => (
+            <ConfirmReading key={r.id} base={base} id={r.id} day={r.day} />
+          ))}
         </div>
       </div>
       {any ? (

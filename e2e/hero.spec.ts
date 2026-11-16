@@ -28,6 +28,10 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   const ctx = await browser.newContext({ viewport: { width: 360, height: 780 }, hasTouch: true, locale: 'nl-NL', timezoneId: 'Europe/Amsterdam' });
   const pp = await ctx.newPage();
   await login(pp, 'patient@praktijk-a.test');
+  // Today opens on today's training; the hero is an invitation there, not a wall in front of it.
+  await expect(pp).toHaveURL(/\/p$/);
+  await expect(pp.getByRole('link', { name: 'Start training' }).first()).toBeVisible();
+  await pp.getByRole('link', { name: /Maak je sportheld/ }).first().click();
   await expect(pp).toHaveURL(/\/p\/held\/nieuw$/);
   await expect(pp.getByRole('heading', { name: 'Maak je sportheld' })).toBeVisible();
   await expectAccessible(pp, 'hero step 1');
@@ -200,16 +204,18 @@ test('patient creates a sports hero on the first visit and marks where it hurts'
   await page.screenshot({ path: 'screenshots/hero/therapist.png', fullPage: true });
 });
 
-test('"Later" postpones the character creator for this visit', async ({ browser }) => {
+test('without a hero Today still opens, and "Later" in the creator leads back to it', async ({ browser }) => {
   const [p] = await sql(`SELECT id FROM patients WHERE email = 'patient@praktijk-b.test'`);
   await sql('DELETE FROM patient_heroes WHERE patient_id = $1', [p.id]);
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const pp = await ctx.newPage();
   await login(pp, 'patient@praktijk-b.test');
+  await expect(pp).toHaveURL(/\/p$/);
+  await pp.getByRole('link', { name: /Maak je sportheld/ }).first().click();
   await expect(pp).toHaveURL(/\/p\/held\/nieuw$/);
   await pp.getByRole('link', { name: 'Later' }).click();
   await expect(pp).toHaveURL(/\/p$/);
-  await expect(pp.getByRole('link', { name: /Maak je sportheld/ })).toBeVisible();
+  await expect(pp.getByRole('link', { name: /Maak je sportheld/ }).first()).toBeVisible();
   await ctx.close();
 });
 
@@ -219,6 +225,7 @@ test('no label in the hero creator is cut off on a 360 px phone', async ({ brows
   const ctx = await browser.newContext({ viewport: { width: 360, height: 780 } });
   const pp = await ctx.newPage();
   await login(pp, 'patient@praktijk-b.test');
+  await pp.goto('/p/held/nieuw');
   await pp.getByRole('button', { name: 'Volgende' }).click();
   for (let step = 2; step <= 3; step++) {
     const cut = await pp.evaluate(() =>

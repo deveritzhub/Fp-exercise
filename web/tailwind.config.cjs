@@ -1,9 +1,13 @@
 /** FP Exercise design tokens. Accent is a CSS variable so practices can brand it. */
 const path = require('path');
 module.exports = {
+  // Dark mode follows a class on <html> (lib/theme.ts): light, dark or the system setting.
+  darkMode: 'class',
   content: [path.join(__dirname, 'index.html'), path.join(__dirname, 'src/**/*.{ts,tsx}')],
   theme: {
     extend: {
+      // A phone held sideways: wide and low. Used by the village so its controls fit.
+      screens: { land: { raw: '(orientation: landscape) and (max-height: 520px)' } },
       fontFamily: {
         // Inter for body text, labels, tables and numbers; Manrope for headings. Self-hosted (no Google Fonts requests).
         sans: ['"Inter Variable"', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
@@ -11,12 +15,14 @@ module.exports = {
       },
       colors: {
         // Neutrals: dark slate green text (900) down to soft sage surfaces (50). 400 and darker pass AA as text on white and sage.
-        ink: { 950: '#141c18', 900: '#202b26', 800: '#2a3731', 700: '#34433c', 600: '#46554e', 500: '#55635c', 400: '#5d6a64', 300: '#b5c1ba', 200: '#d3dcd6', 100: '#e8eee9', 50: '#f1f5f2' },
-        canvas: '#f7f9f7', // Clinical Off-White page background
-        line: '#e1e8e2', // Soft Sage borders
-        sage: '#e6eee8', // Clinical Sage soft surfaces (selected rows, icon tiles)
-        mist: '#eef3ef', // light sage sidebar
-        sand: { DEFAULT: '#d8ccb6', soft: '#f3efe7', ink: '#5b4a2e' }, // subtle brand accent, never for status
+        // Theme colours are CSS variables (index.css), so dark mode swaps them in one place.
+        ink: { 950: 'rgb(var(--ink-950) / <alpha-value>)', 900: 'rgb(var(--ink-900) / <alpha-value>)', 800: 'rgb(var(--ink-800) / <alpha-value>)', 700: 'rgb(var(--ink-700) / <alpha-value>)', 600: 'rgb(var(--ink-600) / <alpha-value>)', 500: 'rgb(var(--ink-500) / <alpha-value>)', 400: 'rgb(var(--ink-400) / <alpha-value>)', 300: 'rgb(var(--ink-300) / <alpha-value>)', 200: 'rgb(var(--ink-200) / <alpha-value>)', 100: 'rgb(var(--ink-100) / <alpha-value>)', 50: 'rgb(var(--ink-50) / <alpha-value>)' },
+        canvas: 'rgb(var(--canvas) / <alpha-value>)', // Clinical Off-White page background
+        line: 'rgb(var(--line) / <alpha-value>)', // Soft Sage borders
+        sage: 'rgb(var(--sage) / <alpha-value>)', // Clinical Sage soft surfaces (selected rows, icon tiles)
+        mist: 'rgb(var(--mist) / <alpha-value>)', // light sage sidebar
+        surface: 'rgb(var(--surface) / <alpha-value>)', // cards and sheets (white in light mode)
+        sand: { DEFAULT: '#d8ccb6', soft: 'rgb(var(--sand-soft) / <alpha-value>)', ink: 'rgb(var(--sand-ink) / <alpha-value>)' }, // subtle brand accent, never for status
         // Functional Performance brand palette (brand sheet), for brand surfaces only
         brand: { forest: '#29483c', dark: '#1d362d', wood: '#5b432b', army: '#413d28', olive: '#64614d', sand: '#d8ccb6' },
         // Primary interactions; CSS variables so a practice can brand them (see lib/accent.ts).
@@ -27,18 +33,19 @@ module.exports = {
           ink: 'rgb(var(--accent-ink) / <alpha-value>)',
         },
         // Medical/status colours: independent of the brand so success never looks like a button.
-        ok: { DEFAULT: '#1b6e45', soft: '#e5f3ea' },
-        warn: { DEFAULT: '#8a5a00', soft: '#fbf0d9' },
-        bad: { DEFAULT: '#b42318', soft: '#fdebe9' },
-        info: { DEFAULT: '#1d5f99', soft: '#e7f0f9' },
+        ok: { DEFAULT: 'rgb(var(--ok) / <alpha-value>)', soft: 'rgb(var(--ok-soft) / <alpha-value>)' },
+        warn: { DEFAULT: 'rgb(var(--warn) / <alpha-value>)', soft: 'rgb(var(--warn-soft) / <alpha-value>)' },
+        bad: { DEFAULT: 'rgb(var(--bad) / <alpha-value>)', soft: 'rgb(var(--bad-soft) / <alpha-value>)' },
+        info: { DEFAULT: 'rgb(var(--info) / <alpha-value>)', soft: 'rgb(var(--info-soft) / <alpha-value>)' },
       },
       boxShadow: {
         xs: '0 1px 2px rgba(20, 35, 28, 0.05)',
-        card: '0 1px 2px rgba(20, 35, 28, 0.04), 0 2px 6px -2px rgba(20, 35, 28, 0.05)',
+        card: '0 1px 2px rgba(23, 37, 31, 0.04), 0 10px 28px -16px rgba(23, 37, 31, 0.14)',
         lift: '0 2px 4px rgba(20, 35, 28, 0.04), 0 8px 20px -8px rgba(20, 35, 28, 0.12)',
         pop: '0 16px 40px -12px rgba(20, 35, 28, 0.22), 0 2px 6px rgba(20, 35, 28, 0.06)',
       },
-      borderRadius: { lg: '0.625rem', xl: '0.75rem', '2xl': '0.875rem' },
+      // Buttons and fields 14, cards 20, the lead card 24.
+      borderRadius: { lg: '0.625rem', xl: '0.875rem', '2xl': '1.25rem', '3xl': '1.5rem' },
       fontSize: { '2xs': ['0.75rem', { lineHeight: '1rem' }] },
       keyframes: {
         'fade-in': { from: { opacity: 0 }, to: { opacity: 1 } },

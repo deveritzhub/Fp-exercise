@@ -8,6 +8,7 @@ import { Button, ErrorState, Spinner } from '@/components/ui';
 import { MUSCLES } from '@shared/muscleAtlas';
 import { CHAINS, COMPENSATIONS, COMPLAINTS, REGIONS, complaintsIn } from '@shared/complaints';
 import { MOBILITY_TESTS } from '@shared/mobilityTests';
+import { ACL_PHASES, ACL_RED_FLAGS, ACL_REVIEW_BANNER } from '@shared/aclRoute';
 
 type Fn = readonly [string, string];
 
@@ -79,6 +80,28 @@ export function ComplaintReviewPage() {
             <ol className="mt-1 list-decimal pl-5 text-ink-900">{x.steps.map((s, i) => <li key={i}>{nl(s)}</li>)}</ol>
             <p className="mt-1 text-ink-800">Let op: {nl(x.caution)}</p>
             <p className="text-[13px] text-ink-600">Bron: {x.source}{x.realChange ? ` · meetfout ±${x.realChange} cm` : ''}</p>
+            <p className="mt-2 text-[13px] text-ink-500">Akkoord ☐ · Wijziging: ______________________________</p>
+          </article>
+        ))}
+      </section>
+
+      <section aria-labelledby="rv-acl" className="space-y-4">
+        <h2 id="rv-acl" className="t-section">VKB-route: standaardwaarden voor de meting-baas</h2>
+        <p className="text-[14px] text-ink-800">{ACL_REVIEW_BANNER.nl} De patiënt ziet alleen de gewone-taalnaam en hoeveel er nog te gaan is, nooit deze criteriatekst. Een verslagen baas opent de volgende fase niet.</p>
+        <ul className="list-disc pl-5 text-[14px] text-ink-900">{ACL_RED_FLAGS.map((f) => <li key={f}>{f}</li>)}</ul>
+        {ACL_PHASES.map((phase) => (
+          <article key={phase.no} className="break-inside-avoid rounded-xl border border-line bg-white p-4 text-[14px]">
+            <h3 className="font-semibold text-ink-900">Fase {phase.no}. {phase.zoneNl} — baas {phase.bossNl}</h3>
+            <p className="text-[13px] text-ink-600">Indicatieve weken {phase.weeks}. Patiënt ziet als doel: {phase.goalNl}</p>
+            <ul className="mt-2 space-y-2">
+              {phase.criteria.map((c) => (
+                <li key={c.slot}>
+                  <span className="font-medium text-ink-900">{c.clinicalNl}</span>
+                  <span className="block text-ink-800">Standaard: {c.comparator === 'recorded' ? 'een meting is genoeg' : `${c.comparator === 'gte' ? 'minstens' : 'hoogstens'} ${c.target} ${c.unit}`} · patiënt ziet “{c.labelNl}”</span>
+                  <span className="block text-[13px] text-ink-600">{c.methodNl}</span>
+                </li>
+              ))}
+            </ul>
             <p className="mt-2 text-[13px] text-ink-500">Akkoord ☐ · Wijziging: ______________________________</p>
           </article>
         ))}
