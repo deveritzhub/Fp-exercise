@@ -76,6 +76,7 @@ function simpleCreature(kind: CreatureKind): THREE.Group {
   }
   if (kind === 'chicken' || kind === 'cow' || kind === 'boar') return animal(kind);
   if (kind === 'alpha_boar') return alphaBoar();
+  if (kind === 'wolf' || kind === 'bear') return beast(kind);
   if (kind === 'oak') return oak();
   if (kind === 'rock') return rock();
   if (kind === 'bush') return bush();
@@ -396,6 +397,27 @@ export function habitat(kind: CreatureKind): THREE.Group | null {
     const water = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.02, 0.24), m(0x4a90c2, { roughness: 0.15, metalness: 0.2 }));
     water.position.set(0, 0.29, -0.85);
     g.add(flat(1.0, 0x86a656), trough, water, bale(-0.85, -0.3));
+  } else if (kind === 'wolf') {
+    // A den: trampled earth, a few rocks behind it and gnawed bones.
+    g.add(flat(1.3, 0x4a3f33));
+    for (const [x, z, r] of [[-0.9, -0.8, 0.45], [0.2, -1.2, 0.55], [1.0, -0.7, 0.4]] as const) g.add(stone(x, z, r, 0x6d6f70));
+    for (const [x, z, rot] of [[0.7, 0.5, 0.4], [-0.6, 0.3, -1.1]] as const) {
+      const bone = new THREE.Mesh(new THREE.CapsuleGeometry(0.035, 0.28, 4, 8), m(0xece3cf));
+      bone.rotation.set(Math.PI / 2, 0, rot);
+      bone.position.set(x, 0.04, z);
+      g.add(bone);
+    }
+  } else if (kind === 'bear') {
+    // A cave: a dark mouth in a mound of boulders behind the bear.
+    g.add(flat(1.8, 0x3f3428));
+    for (let i = 0; i < 7; i++) {
+      const a = Math.PI + (i - 3) * 0.38;
+      g.add(stone(Math.sin(a) * 1.9, Math.cos(a) * 1.9, 0.6 + (i % 3) * 0.18, 0x6a6560));
+    }
+    const mouth = new THREE.Mesh(new THREE.SphereGeometry(0.75, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), m(0x1a1714, { roughness: 1 }));
+    mouth.scale.set(1.2, 0.9, 0.5);
+    mouth.position.set(0, 0, -1.7);
+    g.add(mouth);
   } else if (kind === 'boar') {
     g.add(flat(0.9, 0x5a4330));
     const log = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.9, 8), m(0x5b432b));
@@ -465,6 +487,55 @@ function bush(): THREE.Group {
     const berry = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), m(i % 4 === 0 ? 0xd62d44 : 0x4a5fe0, { roughness: 0.3 }));
     berry.position.set(Math.cos(a) * rad * 0.9, h, Math.sin(a) * rad * 0.9 + 0.05);
     g.add(berry);
+  }
+  g.traverse((o) => { o.castShadow = true; });
+  return g;
+}
+
+/** The wolf and the bear: four legs, a long head; the wolf lean and grey, the bear big and brown. */
+function beast(kind: 'wolf' | 'bear'): THREE.Group {
+  const g = new THREE.Group();
+  const wolf = kind === 'wolf';
+  const fur = wolf ? 0x8a8d92 : 0x6b4a2f;
+  const dark = wolf ? 0x4d5054 : 0x3d2a1a;
+  const len = wolf ? 0.9 : 1.15;
+  const tall = wolf ? 0.55 : 0.78;
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(wolf ? 0.2 : 0.38, len - (wolf ? 0.4 : 0.6), 6, 14), m(fur, { roughness: 0.9 }));
+  body.rotation.x = Math.PI / 2;
+  body.position.y = tall;
+  g.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(wolf ? 0.18 : 0.3, 12, 10), m(fur, { roughness: 0.9 }));
+  head.position.set(0, tall + (wolf ? 0.16 : 0.12), len / 2 + (wolf ? 0.12 : 0.1));
+  const snout = new THREE.Mesh(new THREE.ConeGeometry(wolf ? 0.08 : 0.14, wolf ? 0.26 : 0.24, 8), m(wolf ? 0xb9bcc0 : 0x8a6440));
+  snout.rotation.x = Math.PI / 2;
+  snout.position.set(0, tall + (wolf ? 0.12 : 0.06), len / 2 + (wolf ? 0.36 : 0.42));
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(wolf ? 0.035 : 0.05, 8, 6), m(0x1a1a1a));
+  nose.position.set(0, tall + (wolf ? 0.12 : 0.07), len / 2 + (wolf ? 0.49 : 0.55));
+  g.add(head, snout, nose);
+  for (const sd of [-1, 1]) {
+    const ear = wolf ? new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.16, 6), m(dark)) : new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), m(dark));
+    ear.position.set(sd * (wolf ? 0.1 : 0.2), tall + (wolf ? 0.34 : 0.4), len / 2 + (wolf ? 0.08 : 0.04));
+    g.add(ear);
+    eye(g, sd * (wolf ? 0.08 : 0.12), tall + (wolf ? 0.2 : 0.2), len / 2 + (wolf ? 0.27 : 0.36), wolf ? 0.03 : 0.04);
+    for (const z of [len / 2 - 0.1, -len / 2 + 0.1]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(wolf ? 0.05 : 0.11, wolf ? 0.045 : 0.1, tall - 0.08, 8), m(fur, { roughness: 0.9 }));
+      leg.position.set(sd * (wolf ? 0.12 : 0.24), (tall - 0.08) / 2, z);
+      const paw = new THREE.Mesh(new THREE.SphereGeometry(wolf ? 0.055 : 0.12, 8, 6), m(dark));
+      paw.scale.y = 0.55;
+      paw.position.set(sd * (wolf ? 0.12 : 0.24), 0.03, z + 0.03);
+      g.add(leg, paw);
+    }
+  }
+  if (wolf) {
+    // A bushy tail, held low.
+    const tail = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.38, 4, 8), m(fur, { roughness: 0.95 }));
+    tail.rotation.x = -0.9;
+    tail.position.set(0, tall - 0.02, -len / 2 - 0.22);
+    g.add(tail);
+  } else {
+    const hump = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 8), m(fur, { roughness: 0.95 }));
+    hump.position.set(0, tall + 0.22, len / 2 - 0.25);
+    g.add(hump);
   }
   g.traverse((o) => { o.castShadow = true; });
   return g;
