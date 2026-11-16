@@ -99,6 +99,9 @@ describe('campfire, task of the day and the chest at home', () => {
     const lord = (await P.post('/patient/hero/adventure/win', { kind: 'shame_lord' })).body;
     expect(lord.loot.crown_of_light).toBe(1);
     expect(lord.unlocked).toBe('enlightenment');
+    // The boss board stamps a boss beaten.
+    expect(lord.slain).toContain('shame_lord');
+    expect(typeof lord.bossOfWeek).toBe('string');
     // An ordinary creature frees nothing.
     expect((await P.post('/patient/hero/adventure/win', { kind: 'cow' })).body.unlocked).toBeNull();
     await sql('UPDATE hero_adventure SET xp = 0 WHERE patient_id = $1', [me.id]);
