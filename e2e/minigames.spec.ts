@@ -66,7 +66,7 @@ test('the games can be played, not only started', async ({ page }) => {
   await expect(page.getByTestId('plate-tip')).toBeVisible();
   const plate = page.getByTestId('game-score');
   await expect(plate).toBeVisible({ timeout: 15_000 });
-  expect(Number(await plate.textContent())).toBeGreaterThanOrEqual(50);
+  expect(Number(await plate.getAttribute("data-value"))).toBeGreaterThanOrEqual(50);
 
   // Pain: myth or fact? An answer shows whether it was right and why.
   await page.goto('/p/spellen/pain_facts');
