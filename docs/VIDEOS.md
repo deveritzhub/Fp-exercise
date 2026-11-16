@@ -25,6 +25,7 @@ are updated the same way. A practice can still show its own file via "Video van 
 | Hielheffen staand | `hielheffen.mp4` | ✅ clinically approved 2026-11-01 (dynamic Grok remake) | ✅ seeded |
 | Eenbeensstand | `eenbeensstand.mp4` | ✅ clinically approved 2026-11-01 (dynamic Grok remake) | ✅ seeded |
 | Opstappen | `opstappen.mp4` | ✅ clinically approved 2026-11-01 (dynamic Grok remake) | ✅ seeded |
+| Gestrekt been heffen | `gestrekt-been-heffen.mp4` | ✅ approved by the owner 2026-11-17 (Kling 4.0) | ✅ seeded |
 
 ## Seedance 2.0 clips (2026-11-01) — live
 

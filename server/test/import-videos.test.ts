@@ -79,6 +79,7 @@ describe('approved library video seed files', () => {
       'Hielheffen staand',
       'Eenbeensstand',
       'Opstappen',
+      'Gestrekt been heffen',
     ]);
     expect(LIBRARY_VIDEOS.map((v) => v.file)).toEqual([
       'bekkenbrug.mp4',
@@ -94,6 +95,7 @@ describe('approved library video seed files', () => {
       'hielheffen.mp4',
       'eenbeensstand.mp4',
       'opstappen.mp4',
+      'gestrekt-been-heffen.mp4',
     ]);
     for (const v of LIBRARY_VIDEOS) {
       expect(v.file.startsWith('http'), v.file).toBe(false);
@@ -207,7 +209,7 @@ describe('importing library videos', () => {
         WHERE e.practice_id IS NULL AND e.name_nl = ANY($1::text[])`,
       [names],
     );
-    expect(rows).toHaveLength(13);
+    expect(rows).toHaveLength(LIBRARY_VIDEOS.length);
     const byName = new Map(rows.map((r) => [r.name_nl, r]));
     for (const v of LIBRARY_VIDEOS) {
       const row = byName.get(v.exercise);

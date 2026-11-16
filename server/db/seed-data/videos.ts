@@ -28,6 +28,8 @@ export const LIBRARY_VIDEOS: LibraryVideo[] = [
   { exercise: 'Hielheffen staand', file: 'hielheffen.mp4' },
   { exercise: 'Eenbeensstand', file: 'eenbeensstand.mp4' },
   { exercise: 'Opstappen', file: 'opstappen.mp4' },
+  // Kling 4.0, made and approved by the owner (2026-11-17).
+  { exercise: 'Gestrekt been heffen', file: 'gestrekt-been-heffen.mp4' },
 ];
 
 /**
