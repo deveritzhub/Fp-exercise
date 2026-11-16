@@ -19,6 +19,15 @@ const eye = (g: THREE.Group, x: number, y: number, z: number, r = 0.055) => {
 /** The sculpted models (web/public/village/creatures). Bump the version when a file changes. */
 const MODEL: Partial<Record<CreatureKind, { file: string; scale: number }>> = {
   oak: { file: 'eik', scale: 1 },
+  // The shadow side, sculpted (each at its own height in the file).
+  pride: { file: 'pronkpauw', scale: 1 },
+  rage: { file: 'vuurkop', scale: 1 },
+  craving: { file: 'graaigeest', scale: 1 },
+  fright: { file: 'schrikschim', scale: 1 },
+  sorrow: { file: 'tranenslijk', scale: 1 },
+  apathy: { file: 'grijze_slaper', scale: 1 },
+  guilt: { file: 'schuldketter', scale: 1 },
+  shame_lord: { file: 'schaamtevorst', scale: 1 },
   slime: { file: 'stijfheidsslijm', scale: 0.9 },
   imp: { file: 'dorstduiveltje', scale: 0.95 },
   couch: { file: 'bankhanger', scale: 1 },

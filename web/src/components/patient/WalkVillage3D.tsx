@@ -1199,6 +1199,38 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             h.clear();
             h.add(model);
             fade.mats = mats;
+            // The dojo carries the Kyokushin sign above its door, lit, on a light board, facing the square.
+            if (b.key === 'dojo') {
+              const box = new THREE.Box3().setFromObject(model);
+              const front = box.max.z + 0.08;
+              const boardM = new THREE.MeshStandardMaterial({ color: 0xf4efe4, roughness: 0.8, transparent: true });
+              const plate = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.7, 0.06), boardM);
+              plate.position.set(0, box.max.y * 0.62, front);
+              h.add(plate);
+              mats.push(boardM);
+              loadModel('/village/dojo/teken.glb?v=1')
+                .then((sign) => {
+                  if (cancelled) return;
+                  const m2 = sign.scene.clone(true);
+                  m2.scale.setScalar(1.55);
+                  m2.position.set(0, box.max.y * 0.62 - 0.74, front + 0.05);
+                  m2.traverse((o) => {
+                    const sm = o as THREE.Mesh;
+                    if (!sm.isMesh) return;
+                    const mm = (sm.material as THREE.MeshStandardMaterial).clone();
+                    mm.side = THREE.DoubleSide;
+                    mm.metalness = 0;
+                    if (mm.map) {
+                      mm.emissive = new THREE.Color(0xffffff);
+                      mm.emissiveMap = mm.map;
+                      mm.emissiveIntensity = 0.5;
+                    }
+                    sm.material = mm;
+                  });
+                  h.add(m2);
+                })
+                .catch(() => undefined);
+            }
           })
           .catch(() => undefined);
       }
@@ -1248,26 +1280,36 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         // The dojo: mats on the floor, and on the north wall the banner and the sign of the school.
         const k2 = kit(h.group);
         for (const [x, z] of [[-1.5, -0.6], [0.3, -0.6], [2.1, -0.6], [-1.5, 0.9], [0.3, 0.9], [2.1, 0.9]]) k2.box(1.74, 0.03, 1.44, (x + z) % 2 ? 0x9bb37a : 0x8aa56b, x, 0.016, z).castShadow = false;
-        const hang = (url: string, x: number, y: number, scale: number) =>
+        const hang = (url: string, x: number, y: number, scale: number, glowing = false) =>
           loadModel(url)
             .then((gltf) => {
               if (cancelled) return;
               const model = gltf.scene.clone(true);
               model.scale.setScalar(scale);
-              model.position.set(x, y, -2.42);
+              model.position.set(x, y, -2.38);
               model.traverse((o) => {
                 const bm = o as THREE.Mesh;
                 if (!bm.isMesh) return;
                 const mm = (bm.material as THREE.MeshStandardMaterial).clone();
                 mm.metalness = 0;
                 mm.roughness = 0.9;
+                // Seen from both sides (a flat sign would vanish from the back), and lit from within
+                // so the sign of the school stands out on the wall.
+                mm.side = THREE.DoubleSide;
+                if (glowing && mm.map) {
+                  mm.emissive = new THREE.Color(0xffffff);
+                  mm.emissiveMap = mm.map;
+                  mm.emissiveIntensity = 0.55;
+                }
                 bm.material = mm;
               });
               h.group.add(model);
             })
             .catch(() => undefined);
         void hang('/village/dojo/banner.glb?v=1', 1.3, 0.75, 0.95);
-        void hang('/village/dojo/teken.glb?v=1', -1.2, 1.0, 1.25);
+        // The Kyokushin sign, large, on a light panel so it reads against the dark wood.
+        k2.box(0.95, 2.0, 0.04, 0xf4efe4, -1.1, 1.5, -2.42);
+        void hang('/village/dojo/teken.glb?v=1', -1.1, 0.62, 1.85, true);
       } else if (!b.kind) {
         // A shop: a counter across the room with a few wares on it, and a rug to stand on.
         const k2 = kit(h.group);
@@ -1398,7 +1440,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const lampM = new THREE.MeshStandardMaterial({ color: 0xfff1b8, emissive: 0xffc35a, emissiveIntensity: 1.6 });
     const lamps: THREE.Sprite[] = [];
     // The light of the torches below ground, which goes with the hero there.
-    const torchLight = new THREE.PointLight(0xffa860, 60, 22, 1.4);
+    const torchLight = new THREE.PointLight(0xffa860, 26, 20, 1.6);
     torchLight.visible = false;
     scene.add(torchLight);
     const UNDER_BG = new THREE.Color(0x07050a);
@@ -2554,6 +2596,29 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           // After this tap's own click has passed: opened at once, that click would land on the dialog's backdrop and close it.
           const { who, spot } = best;
           window.setTimeout(() => talkRef.current(who, spot), 150);
+          return;
+        }
+      }
+      // A tap on a creature (its body or close to it): walk up to it; the fight then goes on its own.
+      if (!live.current.placing) {
+        const box = canvas.getBoundingClientRect();
+        let pick: (typeof mobs)[number] | null = null;
+        let pd = 52;
+        for (const mob of mobs) {
+          if (!mob.g.visible || (mob.x > 300) !== (zone.current === DUNGEON_KEY)) continue;
+          if (mob.x <= 300 && inside()) continue;
+          for (const y of [0.3, 0.8, 1.4]) {
+            proj.set(mob.g.position.x, y * mob.g.scale.y, mob.g.position.z).project(camera);
+            if (proj.z > 1) continue;
+            const dist = Math.hypot((proj.x * 0.5 + 0.5) * box.width + box.left - e.clientX, (-proj.y * 0.5 + 0.5) * box.height + box.top - e.clientY);
+            if (dist < pd) {
+              pd = dist;
+              pick = mob;
+            }
+          }
+        }
+        if (pick) {
+          goTo.current(pick.key);
           return;
         }
       }
