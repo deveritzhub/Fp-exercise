@@ -2774,6 +2774,31 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     io.observe(el);
     const clock = new THREE.Clock();
     let tt = 0;
+    // Keyboard on a computer: W A S D (or Z Q S D) walk relative to the view, Shift runs; the arrow
+    // keys turn (left, right) and tip (up, down) the camera, + and - zoom. Not while typing or with a
+    // dialog open.
+    const keys = new Set<string>();
+    const typing = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      return !!t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || typing(e) || document.querySelector('dialog[open]') || !el.isConnected) return;
+      const k = e.code;
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyZ', 'KeyQ', 'ShiftLeft', 'ShiftRight', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(k)) {
+        keys.add(k);
+        if (k.startsWith('Arrow')) e.preventDefault();
+      } else if (k === 'Equal' || k === 'NumpadAdd') zoomBy(1 / 1.15);
+      else if (k === 'Minus' || k === 'NumpadSubtract') zoomBy(1.15);
+    };
+    const onKeyUp = (e: KeyboardEvent) => keys.delete(e.code);
+    const onBlur = () => keys.clear();
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    const keyPush = { x: 0, y: 0 };
+    let posTick = 0;
+    let keyWalk = false;
     const loop = () => {
       raf = requestAnimationFrame(loop);
       const dt = Math.min(clock.getDelta(), 0.2);
@@ -2793,7 +2818,23 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const p = pos.current;
 
       let walking = false;
-      const push = stick?.current;
+      // The arrow keys turn and tip the view.
+      if (keys.has('ArrowLeft')) camAngle.current += dt * 1.9;
+      if (keys.has('ArrowRight')) camAngle.current -= dt * 1.9;
+      if (keys.has('ArrowUp')) camTilt.current = Math.max(0.35, camTilt.current - dt * 1.2);
+      if (keys.has('ArrowDown')) camTilt.current = Math.min(2.4, camTilt.current + dt * 1.2);
+      // W A S D walk like the joystick: Shift pushes it to the rim (run).
+      keyPush.x = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') || keys.has('KeyQ') ? 1 : 0);
+      keyPush.y = (keys.has('KeyW') || keys.has('KeyZ') ? 1 : 0) - (keys.has('KeyS') ? 1 : 0);
+      const kl = Math.hypot(keyPush.x, keyPush.y);
+      keyWalk = kl > 0;
+      if (keyWalk) {
+        const f = (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 1 : 0.6) / kl;
+        keyPush.x *= f;
+        keyPush.y *= f;
+      }
+      const thumb = stick?.current;
+      const push = keyWalk ? keyPush : thumb;
       const force = push ? Math.min(1, Math.hypot(push.x, push.y)) : 0;
       if (push && force > 0.18) {
         // The joystick steers by hand, relative to the view; it takes over from a tapped target.
@@ -2889,6 +2930,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         }
       }
       hero.position.set(p.x, 0, p.z);
+      // Where the hero stands and where the view looks, for tests and tools (a few times a second).
+      if (tt - posTick > 0.25) {
+        posTick = tt;
+        el.dataset.pos = `${p.x.toFixed(1)},${p.z.toFixed(1)}`;
+        el.dataset.cam = camAngle.current.toFixed(2);
+      }
       // Turn the short way round toward where the hero walks.
       const diff = Math.atan2(Math.sin(facing.current - hero.rotation.y), Math.cos(facing.current - hero.rotation.y));
       hero.rotation.y += diff * Math.min(1, dt * 12);
@@ -2940,7 +2987,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       // In the room the camera looks down from higher up, over the wall that is left out.
       const indoor = inside();
       const low = chaseRef.current && !indoor;
-      if (low && walking && !reduce) {
+      if (low && walking && !keyWalk && !reduce) {
         // Behind the hero: the view swings round after the way the hero walks.
         const want = facing.current + Math.PI;
         camAngle.current += Math.atan2(Math.sin(want - camAngle.current), Math.cos(want - camAngle.current)) * Math.min(1, dt * 2.2);
@@ -3337,6 +3384,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           });
         }
       });
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
       film.dispose();
       renderer.dispose();
       canvas.remove();
