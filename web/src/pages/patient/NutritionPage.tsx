@@ -720,7 +720,7 @@ function RecipeDetail({ r, hide, onAdd, onAte, onCook }: { r: Recipe; hide: bool
   const m = recipeMacros(r);
   return (
     <div className="space-y-3 border-t border-line px-4 pb-4 pt-3">
-      <RecipePhoto k={r.key} className="aspect-[4/3] w-full rounded-xl" />
+      <RecipePhoto k={r.key} className="mx-auto aspect-square w-full max-w-[220px] rounded-xl" />
       <p className="text-[13.5px] text-ink-700">{t('Per portie', 'Per serving')}: {!hide && `${m.kcal} kcal · `}{n1(m.protein)} g {t('eiwit', 'protein')} · {n1(m.carbs)} g {t('koolhydraten', 'carbs')} · {n1(m.fat)} g {t('vet', 'fat')}</p>
       <div>
         <div className="flex flex-wrap items-end justify-between gap-2">
