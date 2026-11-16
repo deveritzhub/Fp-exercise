@@ -1,7 +1,7 @@
 import { weaponMesh } from './weapons3d';
 import { creature, habitat, pond } from './creatures3d';
 import { mergeStatic } from './mergeStatic';
-import { ALPHA_ADVISED_LEVEL, ZONES } from '@shared/adventure';
+import { alphaAdvised, ZONES } from '@shared/adventure';
 import { MARKET, RESIDENTS, SPOTS, TOWN } from './townPlan';
 import { ATTACKS, CREATURES, isAlpha, isFriendly, isHarvest, type CreatureKind } from '@shared/adventure';
 import { dress } from '@/components/hero/fabric3d';
@@ -1029,7 +1029,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const big = isAlpha(c.kind);
       const reach = big ? 2.3 : c.kind === 'bear' ? 1.35 : 0.85;
       const door = { x: c.x * (1 - reach / len), z: c.z * (1 - reach / len) };
-      anchors.push({ id: c.key, obj: g, y: big ? 2.9 : c.kind === 'cow' ? 1.45 : c.kind === 'boar' ? 1.1 : c.kind === 'bear' ? 1.75 : c.kind === 'wolf' ? 1.2 : 1.0 });
+      anchors.push({ id: c.key, obj: g, y: c.kind === 'alpha_bear' ? 3.1 : big ? 2.9 : c.kind === 'cow' ? 1.45 : c.kind === 'boar' ? 1.1 : c.kind === 'bear' ? 1.75 : c.kind === 'wolf' ? 1.2 : 1.0 });
       spots.push({ key: c.key, door });
       const ob: Obstacle = { x: c.x, z: c.z, r: big ? 1.4 : c.kind === 'bear' ? 0.7 : 0.38 };
       obstacles.push(ob);
@@ -2908,7 +2908,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               aria-label={ATTACKS[c.kind].aggressive ? t(`Loop naar ${c.label}, agressief`, `Walk to ${c.label}, aggressive`) : isFriendly(c.kind) && !isHarvest(c.kind) ? t(`Loop naar ${c.label}, vriendelijk`, `Walk to ${c.label}, friendly`) : t(`Loop naar ${c.label}`, `Walk to ${c.label}`)}
               data-aggressive={ATTACKS[c.kind].aggressive ? '1' : undefined}
               className={cn(plate, '!min-h-[34px] flex-col !items-stretch gap-1 text-[12.5px] leading-none', ATTACKS[c.kind].aggressive ? 'border-[#ff6b4a] text-[#ffb3a1]' : isFriendly(c.kind) ? 'text-[#c9f2c0]' : 'text-[#ffd9a8]')} style={{ transform: 'translate(-9999px,0)' }}>
-              <span className="text-center">{!isHarvest(c.kind) && <span data-level className="mr-1 rounded bg-black/45 px-1 text-[10px] font-bold tabular-nums text-[#ffe08a]">{t('lvl', 'lvl')} {isAlpha(c.kind) ? ALPHA_ADVISED_LEVEL : CREATURES[c.kind].level}</span>}{c.label}{ATTACKS[c.kind].aggressive ? <span className="ml-1 text-[10px] font-bold uppercase text-[#ff8a6e]">{t('agressief', 'aggressive')}</span> : isFriendly(c.kind) && !isHarvest(c.kind) ? <span className="ml-1 text-[10px] font-semibold text-[#9fe39a]">{t('vriendelijk', 'friendly')}</span> : null}</span>
+              <span className="text-center">{!isHarvest(c.kind) && <span data-level className="mr-1 rounded bg-black/45 px-1 text-[10px] font-bold tabular-nums text-[#ffe08a]">{t('lvl', 'lvl')} {isAlpha(c.kind) ? alphaAdvised(c.kind) : CREATURES[c.kind].level}</span>}{c.label}{ATTACKS[c.kind].aggressive ? <span className="ml-1 text-[10px] font-bold uppercase text-[#ff8a6e]">{t('agressief', 'aggressive')}</span> : isFriendly(c.kind) && !isHarvest(c.kind) ? <span className="ml-1 text-[10px] font-semibold text-[#9fe39a]">{t('vriendelijk', 'friendly')}</span> : null}</span>
               {(() => {
                 const max = CREATURES[c.kind].hp;
                 const hp = Math.max(0, max - (creatureHurt?.[c.key] ?? 0));

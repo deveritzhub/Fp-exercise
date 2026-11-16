@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { LOOT_KEYS } from '../shared/adventure';
+import { LOOT_KEYS, RECIPES } from '../shared/adventure';
 import { expectAccessible, login } from './helpers';
 
 /** Staff: the practice as a village, one numbered home per patient, growing with the hero's level. */
@@ -181,7 +181,7 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   await expect(page.getByTestId('loot').locator('[data-loot]')).toHaveCount(LOOT_KEYS.length);
   // Tools to buy and things to make: the hatchet is for sale, the recipes wait for loot or level.
   await expect(page.locator('[data-tool="hatchet"]')).toHaveAttribute('data-state', /shop|owned/);
-  await expect(page.getByTestId('recipes').locator('[data-recipe]')).toHaveCount(4);
+  await expect(page.getByTestId('recipes').locator('[data-recipe]')).toHaveCount(RECIPES.length);
   await expect(page.locator('[data-recipe="chest"]')).toHaveAttribute('data-state', /short|ready|made/);
   // Enough adventure XP for the staff: the smith sells it, it goes on at once and comes off again.
   const staffRow = pack.locator('[data-weapon="staff"]');

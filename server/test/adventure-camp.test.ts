@@ -67,4 +67,19 @@ describe('campfire, task of the day and the chest at home', () => {
     expect(home.layout.some((p: { key: string }) => p.key === 'home_lootchest')).toBe(true);
     expect((await P.post('/patient/hero/home/buy', { item: 'home_lootchest' })).body.error).toBe('unknown_item');
   });
+
+  it('makes armour from loot (or berries), wears it and takes it off', async () => {
+    const P = await login('patientA');
+    const [me] = await sql(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`);
+    await sql('INSERT INTO hero_adventure(patient_id, xp) VALUES ($1, 200) ON CONFLICT (patient_id) DO UPDATE SET xp = GREATEST(hero_adventure.xp, 200)', [me.id]);
+    await sql('INSERT INTO hero_loot(patient_id, item, n) VALUES ($1, $2, 3) ON CONFLICT (patient_id, item) DO UPDATE SET n = 3', [me.id, 'hide']);
+    // The wolf cloak asks for adventurer 6.
+    expect((await P.post('/patient/hero/adventure/craft', { key: 'wolf_cloak' })).body.error).toBe('level_too_low');
+    const made = await P.post('/patient/hero/adventure/craft', { key: 'leather' });
+    expect(made.body).toMatchObject({ armour: 'leather' });
+    expect(made.body.built).toContain('leather');
+    expect((await P.put('/patient/hero/adventure/armour', { key: null })).body.armour).toBeNull();
+    expect((await P.put('/patient/hero/adventure/armour', { key: 'bear_armour' })).body.error).toBe('gear_not_owned');
+    expect((await P.put('/patient/hero/adventure/armour', { key: 'leather' })).body.armour).toBe('leather');
+  });
 });

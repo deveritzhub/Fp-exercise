@@ -81,6 +81,14 @@ function simpleCreature(kind: CreatureKind): THREE.Group {
   if (kind === 'chicken' || kind === 'cow' || kind === 'boar') return animal(kind);
   if (kind === 'alpha_boar') return alphaBoar();
   if (kind === 'wolf' || kind === 'bear') return beast(kind);
+  if (kind === 'alpha_wolf' || kind === 'alpha_bear') {
+    // The pack leader: the same animal, much bigger and darker, with glowing eyes.
+    const g = new THREE.Group();
+    const inner = beast(kind === 'alpha_wolf' ? 'wolf' : 'bear', true);
+    inner.scale.setScalar(kind === 'alpha_wolf' ? 1.9 : 1.7);
+    g.add(inner);
+    return g;
+  }
   if (kind === 'oak') return oak();
   if (kind === 'rock') return rock();
   if (kind === 'bush') return bush();
@@ -428,7 +436,7 @@ export function habitat(kind: CreatureKind): THREE.Group | null {
     log.rotation.z = Math.PI / 2;
     log.position.set(0, 0.12, -0.7);
     g.add(log);
-  } else if (kind === 'alpha_boar') {
+  } else if (kind === 'alpha_boar' || kind === 'alpha_wolf' || kind === 'alpha_bear') {
     // The lair: scorched ground, a half ring of standing stones behind it, bones in the dirt.
     g.add(flat(2.6, 0x2b2420), flat(1.6, 0x3a2a22));
     for (let i = 0; i < 7; i++) {
@@ -497,11 +505,11 @@ function bush(): THREE.Group {
 }
 
 /** The wolf and the bear: four legs, a long head; the wolf lean and grey, the bear big and brown. */
-function beast(kind: 'wolf' | 'bear'): THREE.Group {
+function beast(kind: 'wolf' | 'bear', alpha = false): THREE.Group {
   const g = new THREE.Group();
   const wolf = kind === 'wolf';
-  const fur = wolf ? 0x8a8d92 : 0x6b4a2f;
-  const dark = wolf ? 0x4d5054 : 0x3d2a1a;
+  const fur = alpha ? (wolf ? 0x3d4046 : 0x3a2618) : wolf ? 0x8a8d92 : 0x6b4a2f;
+  const dark = alpha ? (wolf ? 0x1c1d20 : 0x1e140c) : wolf ? 0x4d5054 : 0x3d2a1a;
   const len = wolf ? 0.9 : 1.15;
   const tall = wolf ? 0.55 : 0.78;
   const body = new THREE.Mesh(new THREE.CapsuleGeometry(wolf ? 0.2 : 0.38, len - (wolf ? 0.4 : 0.6), 6, 14), m(fur, { roughness: 0.9 }));
@@ -520,7 +528,11 @@ function beast(kind: 'wolf' | 'bear'): THREE.Group {
     const ear = wolf ? new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.16, 6), m(dark)) : new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), m(dark));
     ear.position.set(sd * (wolf ? 0.1 : 0.2), tall + (wolf ? 0.34 : 0.4), len / 2 + (wolf ? 0.08 : 0.04));
     g.add(ear);
-    eye(g, sd * (wolf ? 0.08 : 0.12), tall + (wolf ? 0.2 : 0.2), len / 2 + (wolf ? 0.27 : 0.36), wolf ? 0.03 : 0.04);
+    if (alpha) {
+      const glow = new THREE.Mesh(new THREE.SphereGeometry(wolf ? 0.032 : 0.042, 8, 6), m(0xff3a2a, { emissive: 0xff2a1a, emissiveIntensity: 2 }));
+      glow.position.set(sd * (wolf ? 0.08 : 0.12), tall + 0.2, len / 2 + (wolf ? 0.28 : 0.37));
+      g.add(glow);
+    } else eye(g, sd * (wolf ? 0.08 : 0.12), tall + (wolf ? 0.2 : 0.2), len / 2 + (wolf ? 0.27 : 0.36), wolf ? 0.03 : 0.04);
     for (const z of [len / 2 - 0.1, -len / 2 + 0.1]) {
       const leg = new THREE.Mesh(new THREE.CylinderGeometry(wolf ? 0.05 : 0.11, wolf ? 0.045 : 0.1, tall - 0.08, 8), m(fur, { roughness: 0.9 }));
       leg.position.set(sd * (wolf ? 0.12 : 0.24), (tall - 0.08) / 2, z);
