@@ -212,7 +212,7 @@ export function HomePage() {
           <div className="absolute inset-0 bg-[radial-gradient(50%_80%_at_90%_10%,rgba(187,185,161,0.22),transparent)]" />
           <div className="relative max-w-xl">
             <h2 className="text-[30px] font-bold leading-tight text-white">{t('Zie het in actie in je eigen praktijk', 'See it in action in your own practice')}</h2>
-            <p className="mt-3 text-[16px] text-ink-300">{t('Een persoonlijke demo van 30 minuten. Daarna kun je 30 dagen kosteloos proberen.', 'A personal 30-minute demo. Then try it free for 30 days.')}</p>
+            <p className="mt-3 text-[16px] text-ink-300">{t('Een persoonlijke demo van 30 minuten, waarin we laten zien hoe het werkt voor jouw praktijk.', 'A personal 30-minute demo showing how it works for your practice.')}</p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/contact?onderwerp=demo" className="inline-flex h-11 items-center rounded-lg bg-white px-5 text-[15px] font-medium text-ink-950 hover:bg-ink-100">{t('Plan een demo', 'Book a demo')}</Link>
               <Link to="/prijzen" className="inline-flex h-11 items-center rounded-lg border border-white/20 px-5 text-[15px] font-medium text-white hover:bg-white/10">{t('Bekijk prijzen', 'View pricing')}</Link>

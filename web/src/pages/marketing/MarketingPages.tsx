@@ -106,16 +106,16 @@ type Plan = { code: string; name: string; priceMonthCents: number | null; priceY
 
 export function PricingPage() {
   const { t, locale } = useI18n();
-  useDocumentMeta(t('Prijzen', 'Pricing'), t('Transparante prijzen voor solopraktijken en teams. 30 dagen gratis proberen.', 'Transparent pricing for solo practices and teams. 30-day free trial.'));
+  useDocumentMeta(t('Prijzen', 'Pricing'), t('Transparante prijzen voor solopraktijken en teams.', 'Transparent pricing for solo practices and teams.'));
   const [period, setPeriod] = useState<'month' | 'year'>('month');
   const q = useQuery({ queryKey: ['plans'], queryFn: () => api.get<{ items: Plan[] }>('/public/plans') });
   const eur = (c: number) => new Intl.NumberFormat(locale === 'nl' ? 'nl-NL' : 'en-GB', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(c / 100);
   return (
     <>
-      <Hero eyebrow={t('Prijzen', 'Pricing')} title={t('Eenvoudige prijzen, zonder verrassingen', 'Simple pricing, no surprises')} intro={t('Alle prijzen exclusief btw. Start met 30 dagen gratis, zonder betaalgegevens.', 'All prices excl. VAT. Start with 30 days free, no payment details required.')} />
+      <Hero eyebrow={t('Prijzen', 'Pricing')} title={t('Eenvoudige prijzen, zonder verrassingen', 'Simple pricing, no surprises')} intro={t('Alle prijzen exclusief btw.', 'All prices excl. VAT.')} />
       <section className="mx-auto max-w-6xl px-5 py-16">
         <div className="mb-8 flex justify-center">
-          <Segmented label={t('Facturatieperiode', 'Billing period')} value={period} onChange={setPeriod} options={[{ value: 'month', label: t('Maandelijks', 'Monthly') }, { value: 'year', label: t('Jaarlijks (2 maanden gratis)', 'Yearly (2 months free)') }]} />
+          <Segmented label={t('Facturatieperiode', 'Billing period')} value={period} onChange={setPeriod} options={[{ value: 'month', label: t('Maandelijks', 'Monthly') }, { value: 'year', label: t('Jaarlijks', 'Yearly') }]} />
         </div>
         <div className="grid gap-6 lg:grid-cols-3">
           {(q.data?.items ?? []).map((p) => {
@@ -137,7 +137,7 @@ export function PricingPage() {
                   {p.features.map((f) => <li key={f} className="flex gap-2.5 text-[14.5px] text-ink-700"><Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" />{f}</li>)}
                 </ul>
                 <ButtonLink to={`/contact?onderwerp=${p.code === 'organisatie' ? 'pricing' : 'demo'}`} variant={featured ? 'primary' : 'secondary'} size="lg" className="mt-7 w-full">
-                  {p.priceMonthCents === null ? t('Neem contact op', 'Contact us') : t('Start proefperiode', 'Start free trial')}
+                  {p.priceMonthCents === null ? t('Neem contact op', 'Contact us') : t('Plan een demo', 'Book a demo')}
                 </ButtonLink>
               </div>
             );
@@ -267,7 +267,7 @@ export function TermsPage() {
       <h2>{t('1. Definities', '1. Definitions')}</h2><p>[…]</p>
       <h2>{t('2. Dienst en beoogd gebruik', '2. Service and intended use')}</h2>
       <p>{t('FP Flow is een hulpmiddel om door een zorgprofessional voorgeschreven oefeningen te delen en te registreren. De zorgprofessional blijft verantwoordelijk voor de klinische geschiktheid van elk programma, ook wanneer een sjabloon of bibliotheekoefening wordt gebruikt.', 'FP Flow is a tool to share and log exercises prescribed by a healthcare professional. The professional remains responsible for the clinical appropriateness of every programme, including when using a template or library exercise.')}</p>
-      <h2>{t('3. Abonnement, proefperiode en betaling', '3. Subscription, trial and payment')}</h2><p>[…]</p>
+      <h2>{t('3. Abonnement en betaling', '3. Subscription and payment')}</h2><p>[…]</p>
       <h2>{t('4. Verwerking van persoonsgegevens', '4. Processing of personal data')}</h2><p>{t('Zie verwerkersovereenkomst. […]', 'See data processing agreement. […]')}</p>
       <h2>{t('5. Beschikbaarheid en ondersteuning', '5. Availability and support')}</h2><p>[…]</p>
       <h2>{t('6. Aansprakelijkheid', '6. Liability')}</h2><p>[…]</p>
