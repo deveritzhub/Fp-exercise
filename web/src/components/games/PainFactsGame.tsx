@@ -171,7 +171,6 @@ export default function PainFactsGame({ onDone }: GameProps) {
   const next = () => {
     if (!answer) return;
     if (last) {
-      if (rightRef.current >= 7) sfx.win();
       finish();
       return;
     }

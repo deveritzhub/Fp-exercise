@@ -102,7 +102,6 @@ export function GamesPage() {
                   <Link
                     to={`/p/spellen/${g.key}`}
                     data-testid={`game-${g.key}`}
-                    aria-label={nl ? g.nl : g.en}
                     className="group relative isolate flex h-full min-h-[168px] flex-col overflow-hidden rounded-[22px] p-3.5 text-white shadow-[0_14px_34px_-16px_rgba(0,0,0,.6)] ring-1 ring-white/10 transition-transform duration-200 active:scale-[.98]"
                     style={{ background: `radial-gradient(120% 100% at 50% 0%, ${th.to}, ${th.from} 70%, #05070a)` }}
                   >

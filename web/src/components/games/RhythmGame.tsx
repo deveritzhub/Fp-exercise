@@ -209,8 +209,8 @@ export default function RhythmGame({ onDone }: GameProps) {
       haptic(12);
     } else {
       setFeedback({ kind: diff < 0 ? 'early' : 'late', n });
-      sfx.bad();
-      haptic([20, 30, 20]);
+      // Just off the beat: a soft tap, no buzz (missing is part of learning the rhythm).
+      sfx.tap();
     }
   };
 

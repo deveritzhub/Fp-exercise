@@ -89,7 +89,6 @@ export default function MarketGame({ onDone }: GameProps) {
   const finish = () => {
     if (done.current) return;
     done.current = true;
-    if (scoreRef.current >= 18) sfx.win();
     onDoneRef.current(Math.max(0, Math.min(MAX, Math.round(scoreRef.current))));
   };
 

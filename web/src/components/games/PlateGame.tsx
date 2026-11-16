@@ -131,8 +131,7 @@ export default function PlateGame({ onDone }: GameProps) {
     const score = scoreOf(totals);
     const tip = tipFor(totals, plate.map((p) => p.key));
     setResult({ score, tipNl: tip[0], tipEn: tip[1] });
-    if (score >= 75) { sfx.win(); haptic([10, 40, 10]); }
-    else if (score >= 50) { sfx.good(); haptic(12); }
+    if (score >= 50) { sfx.good(); haptic(12); }
     else sfx.tap();
     timer.current = window.setTimeout(() => finish(score), TIP_MS);
   };
