@@ -8,6 +8,7 @@ import { describeError, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
 import { Button, Spinner, useToast } from '@/components/ui';
 import { GAME_COMPONENTS } from '@/components/games/registry';
+import { inGameFrame } from '@/components/patient/GamePage';
 
 type GameRow = { key: string; best: number; plays: number; rewardsLeft: number };
 type GamesState = { games: GameRow[]; steps: { total: number; today: number }; gameOfDay?: string };
@@ -38,7 +39,8 @@ export function GamesPage() {
   const row = (k: string) => q.data?.games.find((g) => g.key === k);
   return (
     <div className="space-y-5">
-      <Link to="/p/held" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" aria-hidden />{t('Je held', 'Your hero')}</Link>
+      {/* Opened from the village, the way back is the bar above ("back to the game"). */}
+      {!inGameFrame() && <Link to="/p/held" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" aria-hidden />{t('Je held', 'Your hero')}</Link>}
       <header>
         <h1 className="t-page">{t('Spelletjes', 'Games')}</h1>
         <p className="mt-1 text-[15px] text-ink-600">{t(`Korte spelletjes die ook helpen bij je herstel. De eerste ${MINIGAME_REWARDED_PER_DAY} rondes van elk spel per dag geven XP voor je held.`, `Short games that also help your recovery. The first ${MINIGAME_REWARDED_PER_DAY} rounds of each game a day give XP for your hero.`)}</p>
@@ -130,7 +132,7 @@ export function GamePlayPage() {
   };
 
   return (
-    <div className="space-y-4" data-testid="game-page" data-phase={phase}>
+    <div className="space-y-4" data-testid="minigame-page" data-phase={phase}>
       <Link to="/p/spellen" className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-medium text-ink-700"><ArrowLeft className="h-4 w-4" aria-hidden />{t('Spelletjes', 'Games')}</Link>
       <header className="flex items-center gap-3">
         <span aria-hidden className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-canvas text-[30px]">{game.icon}</span>
