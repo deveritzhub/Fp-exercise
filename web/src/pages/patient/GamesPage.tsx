@@ -2,7 +2,7 @@ import { Suspense, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ChevronRight, Play, RotateCcw, Star, Trophy } from 'lucide-react';
-import { MINIGAMES, MINIGAME_REWARDED_PER_DAY, minigameByKey, minigameXp, starsFor, type Minigame, type MinigameKind } from '@shared/minigames';
+import { GAME_OF_DAY_BONUS, MINIGAMES, MINIGAME_REWARDED_PER_DAY, minigameByKey, minigameXp, starsFor, type Minigame, type MinigameKind } from '@shared/minigames';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
@@ -10,7 +10,7 @@ import { Button, Spinner, useToast } from '@/components/ui';
 import { GAME_COMPONENTS } from '@/components/games/registry';
 
 type GameRow = { key: string; best: number; plays: number; rewardsLeft: number };
-type GamesState = { games: GameRow[]; steps: { total: number; today: number } };
+type GamesState = { games: GameRow[]; steps: { total: number; today: number }; gameOfDay?: string };
 type RoundResult = GamesState & { score: number; stars: number; xp: number; newBest: boolean; best: number };
 
 const KIND: Record<MinigameKind, [string, string]> = {
@@ -43,6 +43,21 @@ export function GamesPage() {
         <h1 className="t-page">{t('Spelletjes', 'Games')}</h1>
         <p className="mt-1 text-[15px] text-ink-600">{t(`Korte spelletjes die ook helpen bij je herstel. De eerste ${MINIGAME_REWARDED_PER_DAY} rondes van elk spel per dag geven XP voor je held.`, `Short games that also help your recovery. The first ${MINIGAME_REWARDED_PER_DAY} rounds of each game a day give XP for your hero.`)}</p>
       </header>
+      {(() => {
+        const today = minigameByKey(q.data?.gameOfDay);
+        if (!today) return null;
+        return (
+          <Link to={`/p/spellen/${today.key}`} data-testid="game-of-day" className="flex items-center gap-3 rounded-2xl border border-[#e4bc63] bg-[linear-gradient(135deg,#fff8e6,#fff)] p-4 shadow-card">
+            <span aria-hidden className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white text-[30px] shadow-xs">{today.icon}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[12.5px] font-bold uppercase tracking-wide text-[#8a5a00]">{t('Spel van de dag', 'Game of the day')} · ×{GAME_OF_DAY_BONUS} XP</span>
+              <span className="block text-[17px] font-bold text-ink-950">{nl ? today.nl : today.en}</span>
+              <span className="block text-[13px] text-ink-600">{nl ? today.aboutNl : today.aboutEn}</span>
+            </span>
+            <ChevronRight className="h-5 w-5 shrink-0 text-[#c9a14a]" aria-hidden />
+          </Link>
+        );
+      })()}
       {(Object.keys(KIND) as MinigameKind[]).map((kind) => (
         <section key={kind} aria-labelledby={`games-${kind}`}>
           <h2 id={`games-${kind}`} className="t-section mb-2">{nl ? KIND[kind][0] : KIND[kind][1]}</h2>
@@ -99,7 +114,7 @@ export function GamePlayPage() {
     try {
       const r = await api.post<RoundResult>(`/patient/hero/minigames/${game.key}`, { score: Math.max(0, Math.round(score)) });
       setResult(r);
-      qc.setQueryData(['patient-minigames'], { games: r.games, steps: r.steps });
+      qc.setQueryData(['patient-minigames'], { games: r.games, steps: r.steps, gameOfDay: r.gameOfDay });
       void qc.invalidateQueries({ queryKey: ['patient-adventure'] });
     } catch (e) {
       toast(describeError(e, locale), 'bad');
@@ -153,6 +168,7 @@ export function GamePlayPage() {
               <p className="text-[14px] text-ink-600">{nl ? game.unitNl : game.unitEn}</p>
               <div className="mt-2 flex justify-center"><Stars n={result.stars} size="h-8 w-8" /></div>
               {result.newBest && <p className="mt-2 text-[15px] font-semibold text-[#8a5a00]">{t('Nieuw record!', 'New record!')}</p>}
+              {result.xp > 0 && q.data?.gameOfDay === game.key && <p className="mt-2 text-[13px] font-semibold text-[#8a5a00]">{t(`Spel van de dag: ×${GAME_OF_DAY_BONUS} XP`, `Game of the day: ×${GAME_OF_DAY_BONUS} XP`)}</p>}
               <p className="mt-2 text-[15px] font-semibold text-accent" data-testid="game-xp">{result.xp > 0 ? t(`+${result.xp} XP voor je held`, `+${result.xp} XP for your hero`) : t('Geen XP meer vandaag voor dit spel', 'No more XP today for this game')}</p>
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
                 <Button size="lg" data-testid="game-again" icon={<RotateCcw className="h-4 w-4" />} onClick={again}>{t('Nog een keer', 'Play again')}</Button>

@@ -2,7 +2,7 @@ import pg from 'pg';
 import { describe, it, expect, beforeAll } from 'vitest';
 import { login, seedDb } from './helpers';
 import { resetRateLimits } from '../src/lib/rateLimit';
-import { MINIGAMES, MINIGAME_REWARDED_PER_DAY, minigameXp } from '../../shared/minigames';
+import { GAME_OF_DAY_BONUS, MINIGAMES, MINIGAME_REWARDED_PER_DAY, minigameXp } from '../../shared/minigames';
 
 async function sql(q: string, params: unknown[] = []) {
   const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
@@ -28,12 +28,14 @@ describe('the little games', () => {
     expect(start.games).toHaveLength(MINIGAMES.length);
     expect(start.games.find((g: { key: string }) => g.key === 'breath')).toMatchObject({ best: 0, plays: 0, rewardsLeft: MINIGAME_REWARDED_PER_DAY });
     expect(typeof start.steps.total).toBe('number');
+    // The game of the day gives double XP.
+    const bonus = start.gameOfDay === 'breath' ? GAME_OF_DAY_BONUS : 1;
 
     const xp0 = Number((await P.get('/patient/hero/adventure')).body.xp);
     // Breathing: 6 calm breaths are two stars.
     const r1 = (await P.post('/patient/hero/minigames/breath', { score: 6 })).body;
-    expect(r1).toMatchObject({ score: 6, stars: 2, xp: minigameXp(2), newBest: true, best: 6 });
-    expect(Number((await P.get('/patient/hero/adventure')).body.xp)).toBe(xp0 + minigameXp(2));
+    expect(r1).toMatchObject({ score: 6, stars: 2, xp: minigameXp(2) * bonus, newBest: true, best: 6 });
+    expect(Number((await P.get('/patient/hero/adventure')).body.xp)).toBe(xp0 + minigameXp(2) * bonus);
     // A lower round keeps the best; above the most a round can score is not believed.
     const r2 = (await P.post('/patient/hero/minigames/breath', { score: 2 })).body;
     expect(r2).toMatchObject({ stars: 0, newBest: false, best: 6 });
