@@ -26,6 +26,10 @@ test('an adventurer of level 6 walks out of the gate to the wolves', async ({ br
   const village = page.getByTestId('walk-village');
   await expect(village).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
   await expect(page.locator('[data-spot="zone:wolfwood"]')).toContainText('level 6+');
+  // Fast travel from the world map: the hero stands at the grocer at once.
+  await page.getByTestId('slot-places').click();
+  await page.getByTestId('jump-grocer').click();
+  await expect(village).toHaveAttribute('data-near', 'grocer', { timeout: 20_000 });
   await expect(page.getByRole('button', { name: 'Loop naar Wolf' })).toHaveCount(0);
   // At level 6 they are there, with their level on the label.
   await sql(`UPDATE hero_adventure SET xp = 1100 WHERE patient_id = $1`, [emma.id]);
