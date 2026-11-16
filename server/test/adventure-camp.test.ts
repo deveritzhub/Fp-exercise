@@ -123,6 +123,28 @@ describe('campfire, task of the day and the chest at home', () => {
     expect(rock.drops[0].n % 2).toBe(0);
   });
 
+  it('buys a bike in the stables; faster rides wait for a higher level', async () => {
+    const P = await login('patientA');
+    const [me] = await sql(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`);
+    await sql("DELETE FROM hero_purchases WHERE patient_id = $1 AND item LIKE 'ride\\_%'", [me.id]);
+    // A few old chests' worth of coins, so the purse is known to be enough.
+    for (const day of ['2000-01-01', '2000-01-02', '2000-01-03', '2000-01-04']) await sql('INSERT INTO hero_daily_chests (patient_id, day, coins) VALUES ($1, $2, 50) ON CONFLICT DO NOTHING', [me.id, day]);
+    try {
+      const before = (await P.get('/patient/hero/adventure')).body;
+      expect(before.rides).toEqual([]);
+      const bought = await P.post('/patient/hero/adventure/ride/buy', { key: 'bike' });
+      expect(bought.status).toBe(200);
+      expect(bought.body.rides).toEqual(['bike']);
+      expect(bought.body.coins).toBe(before.coins - 80);
+      expect((await P.post('/patient/hero/adventure/ride/buy', { key: 'bike' })).body.error).toBe('gear_owned');
+      expect((await P.post('/patient/hero/adventure/ride/buy', { key: 'rocket' })).body.error).toBe('unknown_item');
+      if (before.level < 10) expect((await P.post('/patient/hero/adventure/ride/buy', { key: 'car' })).body.error).toBe('level_too_low');
+    } finally {
+      await sql("DELETE FROM hero_purchases WHERE patient_id = $1 AND item LIKE 'ride\\_%'", [me.id]);
+      await sql("DELETE FROM hero_daily_chests WHERE patient_id = $1 AND day < '2001-01-01'", [me.id]);
+    }
+  });
+
   it('remembers where the hero stood in the village', async () => {
     const P = await login('patientA');
     expect((await P.put('/patient/hero/adventure/position', { x: 12.5, z: -7.25 })).status).toBe(200);

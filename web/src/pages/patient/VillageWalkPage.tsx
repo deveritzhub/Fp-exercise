@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Armchair, Backpack, Beef, Flame, Utensils, Package, Droplets, Heart, Sparkles, ChevronRight, Coins, DoorOpen, Footprints, Gamepad2, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
+import { Armchair, Backpack, Beef, Bike, Car, Flame, Utensils, Package, Droplets, Heart, Sparkles, ChevronRight, Coins, DoorOpen, Footprints, Gamepad2, Lock, Maximize2, Minimize2, RotateCw, Trash2, Map as MapIcon, Play, ScrollText, Swords, Tv } from 'lucide-react';
 import { ApiError, api, mediaUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
@@ -26,7 +26,7 @@ import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
 import { SUPPLY } from '@shared/supplies';
 import { useSupplies } from '@/lib/supplies';
-import { swingMs, alphaAdvised, armourByKey, isShadow, LIGHT, ZONES, zoneAt, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
+import { swingMs, RIDES, alphaAdvised, armourByKey, isShadow, LIGHT, ZONES, zoneAt, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
@@ -145,7 +145,7 @@ const SIGN: Record<string, [string, string]> = {
   inn: ['🍺', '#8a3a2a'],
   tradepost: ['⚓', '#7a5a3a'],
   townhall: ['🏛️', '#3a4a8a'],
-  stables: ['🐴', '#8a5a3a'],
+  stables: ['🚲', '#8a5a3a'],
 };
 
 const PLACE_HINT: Record<string, [string, string]> = {
@@ -153,6 +153,7 @@ const PLACE_HINT: Record<string, [string, string]> = {
   armourer: ['Je uitrusting', 'Your gear'],
   tailor: ['Je uiterlijk aanpassen', 'Change your look'],
   toolshop: ['Hakbijl en pikhouweel kopen', 'Buy a hatchet and a pickaxe'],
+  stables: ['Een fiets, scooter of auto kopen', 'Buy a bike, scooter or car'],
   workshop: ['Maken van je buit', 'Make things from your loot'],
   carpenter: ['Een kist of wapen maken', 'Make a chest or a weapon'],
   rehab: ['Je revalidatie', 'Your rehabilitation'],
@@ -165,7 +166,6 @@ const PLACE_HINT: Record<string, [string, string]> = {
   massage: ['Herstel: je slaap bijhouden', 'Recovery: log your sleep'],
   pool: ['Water drinken en bijhouden', 'Drink water and log it'],
   tradepost: ['Komt later', 'Comes later'],
-  stables: ['Komt later', 'Comes later'],
   smithy: ['Je uitrusting en de winkel', 'Your gear and the shop'],
   library: ['Spierenatlas en de quiz', 'Muscle atlas and the quiz'],
   hall: ['Je prijzenkast', 'Your trophy cabinet'],
@@ -395,7 +395,7 @@ export function VillageWalkPage() {
 
   const d = heroQ.data;
   // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
-  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string | null; pos?: { x: number; z: number } | null;
+  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; rides?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string | null; pos?: { x: number; z: number } | null;
     quest?: { key: string; kind: CreatureKind; n: number; nl: string; en: string; progress: number; done: boolean; xp: number } | null };
   const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
   // The weapon in hand is the one bought and put on in the backpack; none means bare fists.
@@ -825,11 +825,22 @@ export function VillageWalkPage() {
   // Fighting goes on its own once started (a tap on the creature, or the button): a blow at the pace
   // of the weapon, until the creature is beaten or the hero walks away. Tapping faster does nothing.
   const [engaged, setEngaged] = useState<string | null>(null);
+  // On a ride from the stables (the fastest one owned): faster round the town. Kept in this browser.
+  const myRide = [...RIDES].reverse().find((r) => (adventure.data?.rides ?? []).includes(r.key)) ?? null;
+  const [riding, setRiding] = useState(() => {
+    try { return localStorage.getItem('fp.village.ride') === '1'; } catch { return false; }
+  });
+  const toggleRide = () => setRiding((v) => {
+    try { localStorage.setItem('fp.village.ride', v ? '0' : '1'); } catch { /* storage optional */ }
+    return !v;
+  });
   const lastSwing = useRef(0);
   const strike = async () => {
     if (!mob || downBy) return;
     // A big oak asks for a hatchet, a big rock for a pickaxe (from the tool shop).
     if (NEEDS_TOOL[mob.kind] && !hasTool) return;
+    // Fighting and picking up are done on foot.
+    if (riding) toggleRide();
     if (engaged !== mob.key) setEngaged(mob.key);
     const now = Date.now();
     if (now - lastSwing.current < swingMs(mob.kind, weapon)) return;
@@ -1003,6 +1014,7 @@ export function VillageWalkPage() {
             boxing={!!d?.hero}
             belt={karate.data && karate.data.belt > 0 ? BELTS[karate.data.belt].color : null}
             tools={adventure.data?.tools}
+            ride={riding && myRide ? myRide.key : null}
             weapon={hasTool && mobTool ? mobTool.key : mob && isHarvest(mob.kind) ? null : weapon.key === 'fists' ? null : weapon.key}
             pace={pace}
             api={world}
@@ -1273,6 +1285,11 @@ export function VillageWalkPage() {
           <Link to="/p/held" className={SLOT} aria-label={t('Skills en je held', 'Skills and your hero')}><Swords className="h-5 w-5" aria-hidden /></Link>
           <button type="button" data-testid="slot-places" className={SLOT} aria-label={t('Plekken: kies waar je heen wilt', 'Places: pick where to go')} onClick={() => setPlacesOpen(true)}><MapIcon className="h-5 w-5" aria-hidden /></button>
           <button type="button" data-testid="slot-joystick" aria-pressed={joystick} className={`${SLOT} aria-pressed:border-[#ffd76a] aria-pressed:bg-[linear-gradient(180deg,#5a4a1c,#2a2410)]`} aria-label={t('Joystick aan of uit', 'Joystick on or off')} onClick={toggleJoystick}><Gamepad2 className="h-5 w-5" aria-hidden /></button>
+          {myRide && (
+            <button type="button" data-testid="slot-ride" aria-pressed={riding} className={`${SLOT} aria-pressed:border-[#ffd76a] aria-pressed:bg-[linear-gradient(180deg,#5a4a1c,#2a2410)]`} aria-label={riding ? t(`Afstappen van je ${myRide.nl.toLowerCase()}`, `Get off your ${myRide.en.toLowerCase()}`) : t(`Opstappen: je ${myRide.nl.toLowerCase()}`, `Get on: your ${myRide.en.toLowerCase()}`)} onClick={toggleRide}>
+              {myRide.key === 'car' ? <Car className="h-5 w-5" aria-hidden /> : <Bike className="h-5 w-5" aria-hidden />}
+            </button>
+          )}
         </nav>
         </div>
       </section>

@@ -1,5 +1,5 @@
 import { BELTS, examReady, nextItems, validItem } from '../../../shared/karate';
-import { ADVENTURE_DAILY_WINS, BERRIES_FOR, BOXING, CREATURES, CREATURE_KINDS, LOOT_CAP, NEEDS_TOOL, ADVENTURE_QUEST_XP, armourByKey, lightFrom, lightItem, BOSS_WEEK_BONUS, bossOfWeek, isBoss, slainItem, dailyQuest, dishByKey, RECIPES, TOOLS, TOOL_BONUS, WEAPONS, toolFor, adventureLevel, boxingXp, builtItem, rollDrops, toolItem, weaponItem, type CreatureKind, type LootKey } from '../../../shared/adventure';
+import { ADVENTURE_DAILY_WINS, BERRIES_FOR, BOXING, CREATURES, CREATURE_KINDS, LOOT_CAP, NEEDS_TOOL, ADVENTURE_QUEST_XP, armourByKey, lightFrom, lightItem, BOSS_WEEK_BONUS, bossOfWeek, isBoss, slainItem, dailyQuest, dishByKey, RECIPES, TOOLS, TOOL_BONUS, RIDES, rideItem, WEAPONS, toolFor, adventureLevel, boxingXp, builtItem, rollDrops, toolItem, weaponItem, type CreatureKind, type LootKey } from '../../../shared/adventure';
 import { homeStage, nextHome } from '../../../shared/practiceVillage';
 import { readStaffLook } from '../lib/staffLook';
 import { HEIRLOOM_KINDS } from '../../../shared/measurementBoss';
@@ -752,7 +752,7 @@ heroPatient.get('/hero/coach', async (c) => {
   return c.json({ look: readStaffLook(row?.look) });
 });
 
-const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number; weapon?: string | null; owned?: string[]; coins?: number; loot?: Record<string, number>; tools?: string[]; built?: string[]; strength?: number; quest?: { key: string; kind: string; n: number; nl: string; en: string; progress: number; done: boolean; xp: number }; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string; pos_x?: number | null; pos_z?: number | null } | undefined) => {
+const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number; weapon?: string | null; owned?: string[]; coins?: number; loot?: Record<string, number>; tools?: string[]; rides?: string[]; built?: string[]; strength?: number; quest?: { key: string; kind: string; n: number; nl: string; en: string; progress: number; done: boolean; xp: number }; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string; pos_x?: number | null; pos_z?: number | null } | undefined) => {
   const xp = Number(r?.xp ?? 0);
   const owned = r?.owned ?? [];
   // Only a weapon that was bought can be worn.
@@ -760,7 +760,7 @@ const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds
   const chest = (r?.built ?? []).includes('chest');
   // Only armour that was made can be worn.
   const armour = r?.armour && (r?.built ?? []).includes(r.armour) ? r.armour : null;
-  return { pos: r?.pos_x != null && r?.pos_z != null ? { x: Number(r.pos_x), z: Number(r.pos_z) } : null, slain: r?.slain ?? [], bossOfWeek: r?.bossOfWeek ?? null, light: r?.light ?? [], armour, quest: r?.quest ?? null, weapon, owned, coins: r?.coins ?? 0, loot: r?.loot ?? {}, tools: r?.tools ?? [], built: r?.built ?? [], strength: r?.strength ?? 1, lootCap: chest ? LOOT_CAP.chest : LOOT_CAP.backpack, xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...adventureLevel(xp) };
+  return { pos: r?.pos_x != null && r?.pos_z != null ? { x: Number(r.pos_x), z: Number(r.pos_z) } : null, slain: r?.slain ?? [], bossOfWeek: r?.bossOfWeek ?? null, light: r?.light ?? [], armour, quest: r?.quest ?? null, weapon, owned, coins: r?.coins ?? 0, loot: r?.loot ?? {}, tools: r?.tools ?? [], rides: r?.rides ?? [], built: r?.built ?? [], strength: r?.strength ?? 1, lootCap: chest ? LOOT_CAP.chest : LOOT_CAP.backpack, xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...adventureLevel(xp) };
 };
 /** Today's adventure task for this patient, and how far it got. */
 const questView = (today: string, patientId: string, row: { quest_day?: string | null; quest_n?: number; quest_done?: boolean } | undefined) => {
@@ -771,9 +771,10 @@ const questView = (today: string, patientId: string, row: { quest_day?: string |
 const adventureRow = async (tx: Tx, patientId: string) => {
   const today = (await tx.query('SELECT CURRENT_DATE::text AS d')).rows[0].d as string;
   const row = (await tx.query('SELECT xp, wins, weapon, armour, pos_x, pos_z, quest_day::text AS quest_day, quest_n, quest_done, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today, CASE WHEN day = CURRENT_DATE THEN rounds_today ELSE 0 END AS rounds_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
-  const bought = (await tx.query("SELECT item FROM hero_purchases WHERE patient_id = $1 AND (item LIKE 'wpn\\_%' OR item LIKE 'tool\\_%' OR item LIKE 'built\\_%' OR item LIKE 'light\\_%' OR item LIKE 'slain\\_%')", [patientId])).rows.map((r) => r.item as string);
+  const bought = (await tx.query("SELECT item FROM hero_purchases WHERE patient_id = $1 AND (item LIKE 'wpn\\_%' OR item LIKE 'tool\\_%' OR item LIKE 'built\\_%' OR item LIKE 'light\\_%' OR item LIKE 'slain\\_%' OR item LIKE 'ride\\_%')", [patientId])).rows.map((r) => r.item as string);
   const owned = bought.filter((x) => x.startsWith('wpn_')).map((x) => x.slice(4));
   const tools = bought.filter((x) => x.startsWith('tool_')).map((x) => x.slice(5));
+  const rides = bought.filter((x) => x.startsWith('ride_')).map((x) => x.slice(5));
   const built = bought.filter((x) => x.startsWith('built_')).map((x) => x.slice(6));
   const light = bought.filter((x) => x.startsWith('light_')).map((x) => x.slice(6));
   const slain = bought.filter((x) => x.startsWith('slain_')).map((x) => x.slice(6));
@@ -782,7 +783,7 @@ const adventureRow = async (tx: Tx, patientId: string) => {
   // The strength skill comes from real strength training: heavy weapons ask for it.
   const strength = hs.skills.find((k) => k.key === 'strength')?.level ?? 1;
   const loot = Object.fromEntries((await tx.query('SELECT item, n FROM hero_loot WHERE patient_id = $1 AND n > 0', [patientId])).rows.map((r) => [r.item as string, Number(r.n)]));
-  return { xp: 0, wins: 0, wins_today: 0, rounds_today: 0, ...(row ?? {}), owned, coins, loot, tools, built, strength, light, slain, bossOfWeek: bossOfWeek(today), quest: questView(today, patientId, row) };
+  return { xp: 0, wins: 0, wins_today: 0, rounds_today: 0, ...(row ?? {}), owned, coins, loot, tools, rides, built, strength, light, slain, bossOfWeek: bossOfWeek(today), quest: questView(today, patientId, row) };
 };
 
 heroPatient.get('/hero/adventure', async (c) => {
@@ -976,6 +977,26 @@ heroPatient.post('/hero/adventure/tool/buy', async (c) => {
       if (now.tools.includes(tool.key)) throw badRequest('gear_owned');
       if (now.coins < tool.price) throw badRequest('not_enough_coins');
       await tx.query('INSERT INTO hero_purchases (patient_id, item, price) VALUES ($1, $2, $3)', [patient.id, toolItem(tool.key), tool.price]);
+      return adventureView(await adventureRow(tx, patient.id));
+    }),
+  );
+});
+
+/** Buy a ride from the stables with coins: a bike first, faster ones from a higher level. */
+heroPatient.post('/hero/adventure/ride/buy', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ key: z.string().max(24) }).safeParse(await c.req.json().catch(() => null));
+  const ride = body.success ? RIDES.find((x) => x.key === body.data.key) : undefined;
+  if (!ride) throw badRequest('unknown_item');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const hero = (await tx.query('SELECT 1 FROM patient_heroes WHERE patient_id = $1 FOR UPDATE', [patient.id])).rows[0];
+      if (!hero) throw badRequest('hero_required');
+      const now = await adventureRow(tx, patient.id);
+      if (now.rides.includes(ride.key)) throw badRequest('gear_owned');
+      if (adventureLevel(Number(now.xp ?? 0)).level < ride.level) throw badRequest('level_too_low');
+      if (now.coins < ride.price) throw badRequest('not_enough_coins');
+      await tx.query('INSERT INTO hero_purchases (patient_id, item, price) VALUES ($1, $2, $3)', [patient.id, rideItem(ride.key), ride.price]);
       return adventureView(await adventureRow(tx, patient.id));
     }),
   );
