@@ -75,6 +75,8 @@ export function PatientLayout() {
     for (const load of pages) void load().catch(() => {});
   }, []);
   const inPlayer = loc.pathname.includes('/sessie');
+  // Playing one of the little games: the play area gets the whole screen, without the tab bar over it.
+  const playingGame = /^\/p\/spellen\/[^/]+$/.test(loc.pathname);
   // Links with a #section (e.g. /p/held#boss) scroll to it once the page has rendered its data.
   useEffect(() => {
     if (!loc.hash) return;
@@ -156,12 +158,12 @@ export function PatientLayout() {
     { to: '/p/mobiliteit', end: false, icon: Move, label: t('Mobiliteit', 'Mobility'), dot: openIn('mobiliteit') },
     { to: '/p/voeding', end: false, icon: Apple, label: t('Voeding', 'Food'), dot: false },
     // Plain view: no hero, and only the parts that have a programme; progress takes the hero's place.
-    ...(simple ? [{ to: '/p/voortgang', end: false, icon: Trophy, label: t('Voortgang', 'Progress'), dot: false }] : [{ to: '/p/held', end: false, icon: Trophy, label: t('Held', 'Hero'), dot: false, also: '/p/dorp' }]),
+    ...(simple ? [{ to: '/p/voortgang', end: false, icon: Trophy, label: t('Voortgang', 'Progress'), dot: false }] : [{ to: '/p/held', end: false, icon: Trophy, label: t('Held', 'Hero'), dot: false, also: ['/p/dorp', '/p/spellen'] }]),
   ].filter((tab) => !simple || !['/p/kracht', '/p/mobiliteit'].includes(tab.to) || hasPart(tab.to.slice(3)));
   // The + sits in the middle: as many tabs on its left as fit evenly, the rest on its right.
   const half = Math.floor(tabs.length / 2);
   // The hero tab opens the hero page; the 3D world counts as that tab too.
-  const tabOn = (tab: (typeof tabs)[number], isActive: boolean) => isActive || ('also' in tab && !!tab.also && loc.pathname.startsWith(tab.also));
+  const tabOn = (tab: (typeof tabs)[number], isActive: boolean) => isActive || ('also' in tab && !!tab.also && tab.also.some((a) => loc.pathname.startsWith(a)));
   const renderTab = (tab: (typeof tabs)[number]) => (
     <NavLink key={tab.to} to={tab.to} end={tab.end} data-testid={'also' in tab && tab.also ? 'tab-hero' : undefined} aria-label={tab.dot ? t(`${tab.label} (nog open)`, `${tab.label} (still open)`) : undefined} className={({ isActive: navActive }) => { const isActive = tabOn(tab, navActive); return cn('tap group flex min-h-[60px] min-w-0 flex-col items-center justify-center gap-1 py-2', tabs.length >= 6 ? 'text-[10px] tracking-[-0.02em]' : tabs.length === 5 ? 'text-[10.5px] tracking-[-0.01em]' : 'text-[12.5px]', isActive ? 'font-semibold text-accent' : 'font-medium text-ink-500 hover:text-ink-800'); }}>
       {({ isActive: navActive }) => { const isActive = tabOn(tab, navActive); return (
@@ -210,12 +212,12 @@ export function PatientLayout() {
       {loc.pathname === '/p' && <WelcomeTour />}
       {/* A released rehabilitation phase: celebrate once (not during a workout or hero setup). */}
       {!inPlayer && !inSetup && <PhaseCelebration />}
-      <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : 'px-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-5')}>
+      <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : playingGame ? 'px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-5' : 'px-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-5')}>
         {!inPlayer && <UpdateNotice audience="patient" clinical={isClinical(user?.patient?.kind)} />}
         {!inPlayer && <BackToGame />}
         <Outlet />
       </main>
-      {!inPlayer && !inSetup && (
+      {!inPlayer && !inSetup && !playingGame && (
         <nav className="fixed inset-x-0 bottom-0 z-30 print:hidden border-t border-line bg-white pb-[env(safe-area-inset-bottom)]" aria-label={t('Navigatie', 'Navigation')}>
           {/* The + (quick log) sits exactly in the middle: two tabs on the left, the rest on the right. */}
           {simple ? (

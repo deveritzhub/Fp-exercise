@@ -78,7 +78,7 @@ export const TOWN_HOUSES: TownHouse[] = [
   { key: 'grocer', nl: 'Kruidenier', en: 'Grocer', at: { x: 10.5, z: 3.8 }, to: '/p/voeding', roof: 0x5a8a3a },
   { key: 'baker', nl: 'Bakker', en: 'Baker', at: { x: 12, z: 7.8 }, to: '/p/voeding', roof: 0xb8782a },
   { key: 'inn', nl: 'Herberg', en: 'Inn', at: { x: 17.5, z: 4.5 }, to: '/p/held/vrienden', roof: 0x8a3a2a, scale: 1.15 },
-  { key: 'tradepost', nl: 'Handelspost', en: 'Trading post', at: { x: 25.5, z: 7.5 }, roof: 0x7a5a3a, soon: true },
+  { key: 'tradepost', nl: 'Speelhal', en: 'Games hall', at: { x: 25.5, z: 7.5 }, to: '/p/spellen', roof: 0x7a5a3a },
   // Middle south: the market and the town hall.
   { key: 'townhall', nl: 'Raadhuis', en: 'Town hall', at: { x: -4.2, z: 14.5 }, to: '/p/instellingen', roof: 0x3a4a8a, scale: 1.25 },
   // Stables, south-east.
