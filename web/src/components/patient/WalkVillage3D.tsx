@@ -1,6 +1,7 @@
 import { weaponMesh } from './weapons3d';
 import { creature, habitat, pond } from './creatures3d';
 import { mergeStatic } from './mergeStatic';
+import { doorstepDecor, villageWell } from './townScenery';
 import { filmLook } from './filmLook';
 import { rideModel, type RideModel } from './rides3d';
 import { alphaAdvised, rideByKey, ZONES } from '@shared/adventure';
@@ -966,12 +967,17 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     };
 
     // Well on the square.
-    const well3d = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.6, 10), mat(0x8d8a82));
-    well3d.position.y = 0.3;
-    well3d.castShadow = true;
-    const wellWater = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.02, 10), mat(PALETTE.water, { roughness: 0.2 }));
-    wellWater.position.y = 0.6;
-    scene.add(well3d, wellWater);
+    const well3d = plan
+      ? villageWell({ wood: painted('wood'), stone: painted('stone') })
+      : new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.6, 10), mat(0x8d8a82));
+    if (!plan) {
+      well3d.position.y = 0.3;
+      well3d.castShadow = true;
+      const wellWater = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.02, 10), mat(PALETTE.water, { roughness: 0.2 }));
+      wellWater.position.y = 0.6;
+      scene.add(wellWater);
+    }
+    scene.add(well3d);
     obstacles.push({ x: 0, z: 0, r: 0.95 });
     // Creatures: each at its spot, with a place beside it to stand and strike from.
     const mobs: { key: string; kind: CreatureKind; g: THREE.Group; door: Vec; hurtAt: number; lungeAt: number; x: number; z: number; still: boolean; roam: { home: Vec; r: number; speed: number; to: Vec | null; wait: number; ob: Obstacle } | null }[] = [];
@@ -1520,8 +1526,22 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const cz = p.z * 0.74 + side.z * 1.5;
       // Never on a road: the way to the houses further out runs between these buildings.
       if (roads.some((r) => segDist(cx + side.x * 0.3, cz + side.z * 0.3, r) < r.w / 2 + 1.0)) return;
-      prop(new THREE.BoxGeometry(0.5, 0.5, 0.5), woodM, cx, 0.25, cz, i);
-      prop(new THREE.CylinderGeometry(0.24, 0.24, 0.6, 10), woodM, cx + side.x * 0.6, 0.3, cz + side.z * 0.6);
+      if (plan) {
+        const garden = doorstepDecor(i, { wood: woodM.map });
+        garden.position.set(cx + side.x * 0.3, 0, cz + side.z * 0.3);
+        garden.lookAt(0, 0, 0);
+        scene.add(garden);
+        garden.updateMatrixWorld(true);
+        // Keep the existing spatial prop batches: a flower is not an extra draw call.
+        for (const mesh of [...garden.children]) {
+          scene.attach(mesh);
+          mesh.userData.prop = true;
+        }
+        scene.remove(garden);
+      } else {
+        prop(new THREE.BoxGeometry(0.5, 0.5, 0.5), woodM, cx, 0.25, cz, i);
+        prop(new THREE.CylinderGeometry(0.24, 0.24, 0.6, 10), woodM, cx + side.x * 0.6, 0.3, cz + side.z * 0.6);
+      }
       obstacles.push({ x: cx + side.x * 0.3, z: cz + side.z * 0.3, r: 0.6 });
     });
     const flags: THREE.Mesh[] = [];
