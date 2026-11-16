@@ -2,7 +2,8 @@ import { weaponMesh } from './weapons3d';
 import { creature, habitat, pond } from './creatures3d';
 import { mergeStatic } from './mergeStatic';
 import { filmLook } from './filmLook';
-import { alphaAdvised, ZONES } from '@shared/adventure';
+import { rideModel, type RideModel } from './rides3d';
+import { alphaAdvised, rideByKey, ZONES } from '@shared/adventure';
 import { MARKET, RESIDENTS, SPOTS, TOWN } from './townPlan';
 import { ATTACKS, CREATURES, isAlpha, isFriendly, isHarvest, type CreatureKind } from '@shared/adventure';
 import { dress } from '@/components/hero/fabric3d';
@@ -127,6 +128,8 @@ type Props = {
   shrines?: { key: string; label: string; color: string; x: number; z: number }[];
   /** The Crown of light: a golden glow round the hero. */
   glow?: boolean;
+  /** The ride the hero is on (bike, scooter, car), or none: on foot. Indoors always on foot. */
+  ride?: string | null;
   /** Where the hero stood last time (from the server): the walk starts there instead of at the well. */
   startAt?: Vec | null;
   /** How fast the hero moves, 1 = normal. Lower when thirsty or stiff. */
@@ -763,7 +766,7 @@ function standIn(color: string) {
   return g;
 }
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, shrines, glow = false, startAt = null, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, shrines, glow = false, ride = null, startAt = null, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
   const { t } = useI18n();
   const coachName = coachLabel ?? t('Fysiotherapeut', 'Physiotherapist');
   const host = useRef<HTMLDivElement>(null);
@@ -784,6 +787,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     try { return localStorage.getItem('fp.village.cam') === 'chase'; } catch { return false; }
   });
   const chaseRef = useRef(chase);
+  const rideRef = useRef(ride);
+  rideRef.current = ride;
   chaseRef.current = chase;
   const toggleChase = () => {
     setChase((c) => {
@@ -2798,6 +2803,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     window.addEventListener('blur', onBlur);
     const keyPush = { x: 0, y: 0 };
     let posTick = 0;
+    // The ride under the hero: built when the hero gets on, taken away again indoors or off.
+    let rideOn: string | null = null;
+    let rideM: RideModel | null = null;
+    let rideK = 1;
     let keyWalk = false;
     const loop = () => {
       raf = requestAnimationFrame(loop);
@@ -2818,6 +2827,19 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const p = pos.current;
 
       let walking = false;
+      const wantRide = inside() ? null : rideRef.current ?? null;
+      if (wantRide !== rideOn) {
+        if (rideM) hero.remove(rideM.group);
+        rideM = wantRide ? rideModel(wantRide) : null;
+        if (rideM) hero.add(rideM.group);
+        rideOn = rideM ? wantRide : null;
+        rideK = rideM ? rideByKey(wantRide)?.speed ?? 1 : 1;
+        figure.visible = !rideM?.hideHero;
+        if (rideOn) el.dataset.ride = rideOn;
+        else delete el.dataset.ride;
+      }
+      const p0x = p.x;
+      const p0z = p.z;
       // The arrow keys turn and tip the view.
       if (keys.has('ArrowLeft')) camAngle.current += dt * 1.9;
       if (keys.has('ArrowRight')) camAngle.current -= dt * 1.9;
@@ -2848,10 +2870,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         const run = force > 0.8;
         // Thirsty or stiff: the same gait, slower, so the feet still fit the ground.
         const pace = (run ? 1.12 : 1.1) * live.current.slow;
-        const speed = motions.walk && motions.run ? GAIT_SPEED[run ? 'run' : 'walk'] * HERO_HEIGHT * pace : SPEED * (run ? 1 : 0.5) * live.current.slow;
+        const speed = (motions.walk && motions.run ? GAIT_SPEED[run ? 'run' : 'walk'] * HERO_HEIGHT * pace : SPEED * (run ? 1 : 0.5) * live.current.slow) * rideK;
         if (mixer) {
-          play(run ? 'run' : 'walk');
-          mixer.timeScale = pace;
+          play(rideM ? 'idle' : run ? 'run' : 'walk');
+          mixer.timeScale = rideM ? 1 : pace;
         }
         const ca = Math.cos(camAngle.current);
         const sa = Math.sin(camAngle.current);
@@ -2868,10 +2890,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       } else if (goal) {
         // With the model the ground speed is the one its gait was made for, so the feet do not slide.
         const pace = (goal.run ? 1.12 : 1.1) * live.current.slow;
-        const speed = motions.walk && motions.run ? GAIT_SPEED[goal.run ? 'run' : 'walk'] * HERO_HEIGHT * pace : SPEED * live.current.slow;
+        const speed = (motions.walk && motions.run ? GAIT_SPEED[goal.run ? 'run' : 'walk'] * HERO_HEIGHT * pace : SPEED * live.current.slow) * rideK;
         if (mixer) {
-          play(goal.run ? 'run' : 'walk');
-          mixer.timeScale = pace;
+          play(rideM ? 'idle' : goal.run ? 'run' : 'walk');
+          mixer.timeScale = rideM ? 1 : pace;
         }
         const indoors = inside();
         const n = indoors ? { ...stepToward(p, goal.target, speed * dt, here().obstacles, 1e6) } : stepToward(p, goal.target, speed * dt, obstacles, B);
@@ -2979,6 +3001,13 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       } else {
         figure.position.y = jump + (walking && !reduce ? Math.abs(Math.sin(tt * 11)) * 0.07 : 0);
         figure.rotation.z = walking && !reduce ? Math.sin(tt * 11) * 0.05 : 0;
+      }
+      if (rideM) {
+        // On a ride: no walking bob; the hero stands on it and the wheels roll with the distance gone.
+        figure.position.y = jump + rideM.seat;
+        figure.rotation.z = 0;
+        const went = Math.hypot(p.x - p0x, p.z - p0z);
+        for (const w of rideM.wheels) w.rotation.x += went / rideM.wheelR;
       }
       if ((marker.material as THREE.MeshBasicMaterial).opacity > 0) marker.scale.setScalar(1 + Math.sin(tt * 6) * 0.12);
 

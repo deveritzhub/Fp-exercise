@@ -254,6 +254,20 @@ export type Tool = (typeof TOOLS)[number];
 export const toolItem = (key: string) => `tool_${key}`;
 export const toolFor = (kind: CreatureKind): Tool | null => TOOLS.find((t) => t.for === kind) ?? null;
 export const TOOL_BONUS = { blows: 3, yield: 2 } as const;
+/**
+ * Rides from the stables, bought with coins: in the 3D world the hero gets on and goes faster
+ * (`speed` times walking). Off again to fight, to pick things up and indoors.
+ */
+export const RIDES = [
+  { key: 'bike', price: 80, level: 1, speed: 1.8, nl: 'Fiets', en: 'Bike', icon: '🚲' },
+  { key: 'scooter', price: 250, level: 5, speed: 2.4, nl: 'Scooter', en: 'Scooter', icon: '🛵' },
+  { key: 'car', price: 600, level: 10, speed: 3, nl: 'Auto', en: 'Car', icon: '🚗' },
+] as const;
+export type Ride = (typeof RIDES)[number];
+export type RideKey = Ride['key'];
+export const rideItem = (key: string) => `ride_${key}`;
+export const rideByKey = (key: string | null | undefined): Ride | null => RIDES.find((r) => r.key === key) ?? null;
+
 /** What a creature asks for before it can be beaten at all. */
 export const NEEDS_TOOL: Partial<Record<CreatureKind, string>> = { oak: 'hatchet', rock: 'pickaxe' };
 

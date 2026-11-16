@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Axe, Shield, Beef, Coins, Droplets, Footprints, Gem, Hammer, Lock, Swords } from 'lucide-react';
-import { ARMOURS, armourByKey, BERRIES_FOR, LOOT, LOOT_KEYS, RECIPES, TOOLS, WEAPONS, weaponByKey, type LootKey } from '@shared/adventure';
+import { Axe, Bike, Shield, Beef, Coins, Droplets, Footprints, Gem, Hammer, Lock, Swords } from 'lucide-react';
+import { ARMOURS, armourByKey, BERRIES_FOR, LOOT, LOOT_KEYS, RECIPES, RIDES, TOOLS, WEAPONS, weaponByKey, type LootKey } from '@shared/adventure';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
@@ -10,7 +10,7 @@ import type { HeroState } from '@/lib/types';
 import { ItemIcon } from './ItemIcon';
 import { useSupplies } from '@/lib/supplies';
 
-type Adventure = { level: number; weapon: string | null; owned: string[]; coins: number; loot?: Record<string, number>; tools?: string[]; built?: string[]; strength?: number; lootCap?: number; armour?: string | null };
+type Adventure = { level: number; weapon: string | null; owned: string[]; coins: number; loot?: Record<string, number>; tools?: string[]; rides?: string[]; built?: string[]; strength?: number; lootCap?: number; armour?: string | null };
 
 const ICON: Record<string, string> = { fists: '✊', staff: '🦯', gloves: '🥊', club: '🏏', hammer: '🔨', sword: '🗡️', axe: '🪓', spear: '🔱', hero_sword: '⚔️' };
 /**
@@ -45,6 +45,7 @@ export function BackpackCard({ d }: { d: HeroState }) {
   const wearArmour = (key: string | null, name: string) =>
     act(key ? `armour:${key}` : 'armour-off', () => api.put<Adventure>('/patient/hero/adventure/armour', { key }), key ? t(`${name} aan.`, `${name} on.`) : t(`${name} uit.`, `${name} off.`));
   const buyTool = (key: string, name: string) => act(`tool:${key}`, () => api.post<Adventure>('/patient/hero/adventure/tool/buy', { key }), t(`${name} gekocht!`, `${name} bought!`));
+  const buyRide = (key: string, name: string) => act(`ride:${key}`, () => api.post<Adventure>('/patient/hero/adventure/ride/buy', { key }), t(`${name} gekocht! Stap op in het dorp.`, `${name} bought! Get on in the village.`));
   const craft = (key: string, name: string) => act(`craft:${key}`, () => api.post<Adventure>('/patient/hero/adventure/craft', { key }), t(`${name} gemaakt!`, `${name} made!`));
   const buy = (key: string, name: string) => act(key, () => api.post<Adventure>('/patient/hero/adventure/weapon/buy', { key }), t(`${name} gekocht en in de hand!`, `${name} bought and in hand!`));
 
@@ -149,6 +150,31 @@ export function BackpackCard({ d }: { d: HeroState }) {
               </span>
               {has ? <span className="shrink-0 text-[12.5px] font-semibold text-[#6b4705]">{t('In je rugzak', 'In your pack')}</span> : (
                 <Button size="sm" disabled={short || !a} loading={busy === `tool:${tool.key}`} onClick={() => void buyTool(tool.key, name)} aria-label={t(`Koop ${name} voor ${tool.price} muntjes`, `Buy ${name} for ${tool.price} coins`)}>{short ? t(`Nog ${tool.price - (a?.coins ?? 0)}`, `${tool.price - (a?.coins ?? 0)} short`) : t('Koop', 'Buy')}</Button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      <h3 id="rides-title" className="mt-5 flex scroll-mt-20 items-center gap-1.5 text-[15px] font-semibold text-ink-950"><Bike className="h-4 w-4" aria-hidden />{t('Stallen: vervoer', 'Stables: rides')}</h3>
+      <p className="mt-1 text-[13.5px] text-ink-700">{t('Sneller door het dorp en de jachtgronden. In de wereld stap je op en af met de knop rechts. Vechten, oprapen en naar binnen gaan doe je te voet.', 'Faster round the village and the hunting grounds. In the world you get on and off with the button on the right. Fighting, picking up and going inside are done on foot.')}</p>
+      <ul className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="rides">
+        {RIDES.map((ride) => {
+          const name = nl ? ride.nl : ride.en;
+          const has = !!a?.rides?.includes(ride.key);
+          const low = !has && (a?.level ?? 1) < ride.level;
+          const short = !has && !low && (a?.coins ?? 0) < ride.price;
+          return (
+            <li key={ride.key} data-ride={ride.key} data-state={has ? 'owned' : low ? 'locked' : 'shop'} className="flex items-center gap-3 rounded-xl border border-line bg-white p-2.5">
+              <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-[24px]">{ride.icon}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14.5px] font-semibold text-ink-950">{name}</span>
+                <span className="block text-[12.5px] text-ink-700">{t(`${String(ride.speed).replace('.', ',')}× zo snel als lopen`, `${ride.speed}× as fast as walking`)}{!has && <> · <span className="inline-flex items-center gap-0.5 font-semibold text-[#855806]"><Coins className="h-3 w-3" aria-hidden />{ride.price}</span></>}</span>
+              </span>
+              {has ? <span className="shrink-0 text-[12.5px] font-semibold text-[#6b4705]">{t('In de stal', 'In the stable')}</span> : low ? (
+                <span className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-semibold text-ink-600"><Lock className="h-3.5 w-3.5" aria-hidden />{t(`Level ${ride.level}`, `Level ${ride.level}`)}</span>
+              ) : (
+                <Button size="sm" disabled={short || !a} loading={busy === `ride:${ride.key}`} onClick={() => void buyRide(ride.key, name)} aria-label={t(`Koop ${name} voor ${ride.price} muntjes`, `Buy ${name} for ${ride.price} coins`)}>{short ? t(`Nog ${ride.price - (a?.coins ?? 0)}`, `${ride.price - (a?.coins ?? 0)} short`) : t('Koop', 'Buy')}</Button>
               )}
             </li>
           );

@@ -82,7 +82,7 @@ export const TOWN_HOUSES: TownHouse[] = [
   // Middle south: the market and the town hall.
   { key: 'townhall', nl: 'Raadhuis', en: 'Town hall', at: { x: -4.2, z: 14.5 }, to: '/p/instellingen', roof: 0x3a4a8a, scale: 1.25 },
   // Stables, south-east.
-  { key: 'stables', nl: 'Stallen', en: 'Stables', at: { x: 12.5, z: 13.5 }, roof: 0x8a5a3a, soon: true },
+  { key: 'stables', nl: 'Stallen', en: 'Stables', at: { x: 12.5, z: 13.5 }, to: '/p/held/inventaris#rides-title', roof: 0x8a5a3a },
 ];
 
 /** The market stalls south of the square: striped awnings, no door. */
