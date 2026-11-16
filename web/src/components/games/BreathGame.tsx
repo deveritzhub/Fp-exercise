@@ -110,7 +110,7 @@ export default function BreathGame({ onDone }: GameProps) {
         {held ? t('Inademen… (laat los bij uitademen)', 'Breathing in… (let go to breathe out)') : t('Houd vast tijdens het inademen', 'Hold while breathing in')}
       </button>
       <p className="max-w-sm text-center text-[13px] text-ink-600">{t('Vier tellen in, zes tellen uit. Langzaam uitademen kalmeert je zenuwstelsel.', 'Four counts in, six counts out. Breathing out slowly calms your nervous system.')}</p>
-      <Button variant="ghost" size="sm" data-testid="game-stop" onClick={finish}>{t('Stoppen', 'Stop')}</Button>
+      <Button variant="ghost" size="sm" className="min-h-[44px] px-4" data-testid="game-stop" onClick={finish}>{t('Stoppen', 'Stop')}</Button>
     </div>
   );
 }

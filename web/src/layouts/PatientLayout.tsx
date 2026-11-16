@@ -75,6 +75,8 @@ export function PatientLayout() {
     for (const load of pages) void load().catch(() => {});
   }, []);
   const inPlayer = loc.pathname.includes('/sessie');
+  // Playing one of the little games: the play area gets the whole screen, without the tab bar over it.
+  const playingGame = /^\/p\/spellen\/[^/]+$/.test(loc.pathname);
   // Links with a #section (e.g. /p/held#boss) scroll to it once the page has rendered its data.
   useEffect(() => {
     if (!loc.hash) return;
@@ -210,12 +212,12 @@ export function PatientLayout() {
       {loc.pathname === '/p' && <WelcomeTour />}
       {/* A released rehabilitation phase: celebrate once (not during a workout or hero setup). */}
       {!inPlayer && !inSetup && <PhaseCelebration />}
-      <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : 'px-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-5')}>
+      <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : playingGame ? 'px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-5' : 'px-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-5')}>
         {!inPlayer && <UpdateNotice audience="patient" clinical={isClinical(user?.patient?.kind)} />}
         {!inPlayer && <BackToGame />}
         <Outlet />
       </main>
-      {!inPlayer && !inSetup && (
+      {!inPlayer && !inSetup && !playingGame && (
         <nav className="fixed inset-x-0 bottom-0 z-30 print:hidden border-t border-line bg-white pb-[env(safe-area-inset-bottom)]" aria-label={t('Navigatie', 'Navigation')}>
           {/* The + (quick log) sits exactly in the middle: two tabs on the left, the rest on the right. */}
           {simple ? (
