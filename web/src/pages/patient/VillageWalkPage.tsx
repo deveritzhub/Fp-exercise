@@ -143,7 +143,7 @@ const SIGN: Record<string, [string, string]> = {
   grocer: ['🧺', '#5a8a3a'],
   baker: ['🥖', '#b8782a'],
   inn: ['🍺', '#8a3a2a'],
-  tradepost: ['⚓', '#7a5a3a'],
+  tradepost: ['🎲', '#7a5a3a'],
   townhall: ['🏛️', '#3a4a8a'],
   stables: ['🚲', '#8a5a3a'],
 };
@@ -171,7 +171,7 @@ const PLACE_HINT: Record<string, [string, string]> = {
   physio: ['Een bericht aan je fysiotherapeut', 'A message to your physio'],
   massage: ['Herstel: je slaap bijhouden', 'Recovery: log your sleep'],
   pool: ['Water drinken en bijhouden', 'Drink water and log it'],
-  tradepost: ['Komt later', 'Comes later'],
+  tradepost: ['Spelletjes: balans, reactie, ademhaling en meer', 'Games: balance, reaction, breathing and more'],
   smithy: ['Je uitrusting en de winkel', 'Your gear and the shop'],
   library: ['Spierenatlas en de quiz', 'Muscle atlas and the quiz'],
   hall: ['Je prijzenkast', 'Your trophy cabinet'],
