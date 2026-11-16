@@ -23,8 +23,11 @@ const buildings:Building[]=[
 function Review(){
   const api=useRef<WorldApi|null>(null);
   const [arrival,setArrival]=useState(''),[zone,setZone]=useState('village');
+  const inn=TOWN_HOUSES.find(h=>h.key==='inn')!;
+  const startAt=new URLSearchParams(window.location.search).get('view')==='inn'
+    ? placeAt(inn.at.x,inn.at.z,2.1*(inn.scale??1)).door : {x:0,z:4.5};
   return <main className="h-dvh w-full bg-[#e9e2d2]"><h1 className="sr-only">Dorpscontrole met synthetische avatar</h1>
-    <WalkVillage3D buildings={buildings} plan startAt={{x:0,z:4.5}} home={{stage:3,label:'Testhuis'}} well people={false}
+    <WalkVillage3D buildings={buildings} plan startAt={startAt} home={{stage:3,label:'Testhuis'}} well people={false}
       look={{...DEFAULT_LOOK,frame:'f',build:'average',hair:'bun',gear:['tracksuit','balance_shoes']}}
       tvLabel="Oefenzaal" tvTitle="Synthetische controle" tvLines={[]} onNear={()=>{}} onArrive={setArrival} onZone={setZone}
       api={api} className="h-full w-full !rounded-none !border-0"/>

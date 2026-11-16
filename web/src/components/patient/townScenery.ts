@@ -19,6 +19,18 @@ function rimGeometry(outer:number,inner:number,depth:number){
   return geo.rotateX(-Math.PI/2);
 }
 
+/** A radial stone closes the outer wall too; rectangular blocks leave wide triangular gaps. */
+function wellStoneGeometry(){
+  const half=Math.PI/12-.009;
+  const shape=new THREE.Shape();
+  shape.absarc(0,0,.645,-half,half,false);
+  shape.lineTo(Math.cos(half)*.445,Math.sin(half)*.445);
+  shape.absarc(0,0,.445,half,-half,true);
+  shape.closePath();
+  return new THREE.ExtrudeGeometry(shape,{depth:.18,steps:1,curveSegments:3,
+    bevelEnabled:true,bevelSegments:1,bevelSize:.003,bevelThickness:.003}).rotateX(-Math.PI/2);
+}
+
 /** Stonework, an inset pool, windlass and bucket beneath the existing square's roof.
  * Everything stays within the existing 0.95 m collision circle. Static: also for reduced motion.
  */
@@ -29,10 +41,12 @@ export function villageWell(textures:Textures={}){
   const iron=material(0x343e3a,{metalness:.42,roughness:.65});
   const rope=material(0xb5a17a);
   put(group,'well-plinth',new THREE.CylinderGeometry(.84,.90,.055,32),stone[2],0,.025,0);
-  const block=new THREE.BoxGeometry(.265,.18,.20);
+  // Recessed mortar seals the narrow joints without hiding the hollow centre.
+  put(group,'well-mortar',rimGeometry(.632,.447,.54),material(0x747469),0,.065,0);
+  const block=wellStoneGeometry();
   for(let row=0;row<3;row++)for(let i=0;i<12;i++){
     const angle=(i+(row%2)*.5)*Math.PI*2/12;
-    const brick=put(group,'well-stone',block,stone[(i+row*2)%stone.length],Math.sin(angle)*.545,.15+row*.185,Math.cos(angle)*.545);
+    const brick=put(group,'well-stone',block,stone[(i+row*2)%stone.length],0,.06+row*.185,0);
     brick.rotation.y=angle;
   }
   put(group,'well-inner-wall',new THREE.CylinderGeometry(.445,.445,.47,32,1,true),material(0x696e62,{side:THREE.DoubleSide}),0,.30,0);
@@ -52,7 +66,8 @@ export function villageWell(textures:Textures={}){
   for(const x of [-.02,0,.02]){
     const turn=put(group,'well-rope-coil',new THREE.TorusGeometry(.052,.009,6,16),rope,x,1.34,0);turn.rotation.y=Math.PI/2;
   }
-  put(group,'well-rope',new THREE.CylinderGeometry(.007,.007,.29,6),rope,0,1.14,.05);
+  // The rope ends at the top of the handle, rather than passing through the bucket.
+  put(group,'well-rope',new THREE.CylinderGeometry(.007,.007,.195,6),rope,0,1.1875,.05);
   put(group,'well-bucket',new THREE.CylinderGeometry(.11,.085,.18,12,1,true),wood,0,.90,.05);
   const bottom=put(group,'well-bucket-bottom',new THREE.CircleGeometry(.085,12),wood,0,.812,.05);bottom.rotation.x=-Math.PI/2;
   for(const y of [.825,.965]){

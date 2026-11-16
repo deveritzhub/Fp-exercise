@@ -430,6 +430,16 @@ Afspraak eigenaar: geen gratis aanbod namens de praktijk (geen gratis tests, pro
     week" met prep-blokken van drie dagen; eigen boodschappen, delen en printen. Nooit rode cijfers.
     NEVO-tabel: alleen na akkoord, zie de voorwaarden (geen betaalde toegang tot de NEVO-gegevens).
 
+118. [x] **Dorpsplein en aankleding verfijnd** (16 nov): de bestaande waterput in het patiëntendorp
+    krijgt rond gemetselde stenen, smalle verzonken voegen, een stenen rand, verdiept water,
+    een windas, touw en houten emmer onder het bestaande dak. Bloemen-/kruidenbakken en kleine
+    bankjes vervangen de kistjes naast huizen. Alles past binnen de bestaande botsingscirkels;
+    wegen, bestemmingen, spelregels en de andere dorpsweergave blijven behouden. Statische
+    geometrie gebruikt de bestaande materiaalkaarten en batching, zonder extra lichtbronnen
+    of animatielussen. Achttien geometrie-/navigatiecontroles en synthetische Playwright-beelden
+    voor desktop, mobiel, detailaanzichten en kleurcorrectie; bewijs in `docs/village-review/`.
+    Dit is een afwerkingsronde van het bestaande dorp, geen claim van afgeronde premiumkwaliteit.
+
 113. [ ] **Echte app met Health Connect en Apple Health**: akkoord eigenaar 15 nov; plan en stappen in
     `docs/APP_HEALTH.md`. Stap 1 (hartslag) is klaar.
 

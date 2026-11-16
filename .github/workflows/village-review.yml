@@ -1,5 +1,6 @@
 name: Village visual review
 on:
+  workflow_dispatch:
   push:
     branches: ['codex/village-square-polish-20261116']
 permissions:
@@ -13,7 +14,6 @@ jobs:
     timeout-minutes: 15
     env:
       CI: '1'
-      FP_VILLAGE_INLINE_PREVIEW: '1'
       FP_VILLAGE_REVIEW_LABEL: polished
     steps:
       - uses: actions/checkout@v4

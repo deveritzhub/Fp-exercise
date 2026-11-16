@@ -23,6 +23,20 @@ function extent(root:THREE.Object3D){
 }
 
 describe('static town scenery inside existing collision footprints',()=>{
+  it('closes the curved masonry at both the stones and their staggered joints',()=>{
+    const well=villageWell();
+    well.updateMatrixWorld(true);
+    const ray=new THREE.Raycaster();
+    for(const y of [.15,.335,.52])for(let i=0;i<24;i++){
+      const angle=i*Math.PI/12;
+      const origin=new THREE.Vector3(Math.cos(angle),y,Math.sin(angle));
+      ray.set(origin,new THREE.Vector3(-origin.x,0,-origin.z));
+      const first=ray.intersectObject(well,true)[0];
+      expect(first,'The outer wall must cover every stone joint').toBeDefined();
+      expect(first.distance).toBeLessThan(.38);
+    }
+  });
+
   it('keeps all well details inside its existing collision circle, with recessed water',()=>{
     const well=villageWell();
     expect(extent(well).radius).toBeLessThanOrEqual(.95);
