@@ -59,7 +59,7 @@ export function filmLook(renderer: THREE.WebGLRenderer, phone: boolean): FilmLoo
   const composer = new EffectComposer(renderer, target);
   const pass = new RenderPass(new THREE.Scene(), new THREE.PerspectiveCamera());
   composer.addPass(pass);
-  const bloom = new UnrealBloomPass(new THREE.Vector2(size.x / 2, size.y / 2), 0.2, 0.35, 0.97);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(size.x / 2, size.y / 2), 0.22, 0.3, 1.25);
   composer.addPass(bloom);
   composer.addPass(new ShaderPass(GRADE));
   composer.addPass(new OutputPass());

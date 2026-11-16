@@ -2129,12 +2129,17 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
 
     // The hero: a stand-in at once, the real model with the worn gear when it has loaded.
     const hero = new THREE.Group();
-    // The Crown of light: a soft golden glow that stays with the hero.
-    let heroGlow: THREE.Sprite | null = null;
+    // The Crown of light: a soft golden ring of light on the ground round the hero's feet (not over
+    // the hero, which washed the figure and a white floor out).
+    let heroGlow: THREE.Mesh | null = null;
     if (glow) {
-      heroGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot(), color: 0xffe08a, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.55 }));
-      heroGlow.scale.setScalar(2.6);
-      heroGlow.position.y = 1.0;
+      heroGlow = new THREE.Mesh(
+        new THREE.CircleGeometry(0.9, 32),
+        new THREE.MeshBasicMaterial({ map: softDot(), color: 0xffd36a, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.32 }),
+      );
+      heroGlow.rotation.x = -Math.PI / 2;
+      heroGlow.position.y = 0.035;
+      heroGlow.userData.dynamic = true;
       hero.add(heroGlow);
     }
     const figure = new THREE.Group();
@@ -3110,8 +3115,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         flags.forEach((f, i) => (f.rotation.y = Math.sin(tt * 2.2 + i) * 0.22));
         lamps.forEach((l, i) => ((l.material as THREE.SpriteMaterial).opacity = 0.5 + Math.sin(tt * 5 + i * 2) * 0.07));
         if (heroGlow) {
-          (heroGlow.material as THREE.SpriteMaterial).opacity = 0.45 + Math.sin(tt * 2) * 0.12;
-          heroGlow.scale.setScalar(2.5 + Math.sin(tt * 1.3) * 0.25);
+          (heroGlow.material as THREE.MeshBasicMaterial).opacity = 0.26 + Math.sin(tt * 2) * 0.08;
+          heroGlow.scale.setScalar(1 + Math.sin(tt * 1.3) * 0.08);
         }
         for (const sp of smoke) {
           const u = (tt * 0.11 + sp.userData.off) % 1;
