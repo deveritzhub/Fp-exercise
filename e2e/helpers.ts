@@ -37,7 +37,10 @@ export async function expectAccessible(page: Page, label: string) {
   // Let fade-ins (toasts, dialogs) finish: a half-transparent element is not a real contrast problem.
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'), undefined, { timeout: 5000 }).catch(() => undefined);
   await page.waitForTimeout(250);
-  const r = await new AxeBuilder({ page: page as unknown as ConstructorParameters<typeof AxeBuilder>[0]['page'] }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
+  const r = await new AxeBuilder({ page: page as unknown as ConstructorParameters<typeof AxeBuilder>[0]['page'] }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    // Zoom is off on purpose (owner's choice, like a native app); the app has its own text-size setting.
+    .disableRules(['meta-viewport'])
+    .analyze();
   const serious = r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
   expect(serious.map((v) => `${label}: ${v.id} — ${v.help} (${v.nodes.length}× e.g. ${v.nodes[0]?.target})`)).toEqual([]);
 }

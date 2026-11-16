@@ -9,6 +9,14 @@ export type Release = { date: string; titleNl: string; titleEn: string; items: C
 
 export const RELEASES: Release[] = [
   {
+    date: '2026-11-17',
+    titleNl: 'Veel meer gewoon Nederlands eten',
+    titleEn: 'Much more everyday Dutch food',
+    items: [
+      { for: 'patient', nl: 'Bij Voeding staan nu ruim 130 gewone Nederlandse dingen extra: van lamskotelet, karbonade en rookworst tot stamppot, nasi, kroket, haring, hagelslag, vla en stroopwafel. Typ het gewoon in, de app herkent het.', en: 'Nutrition now has over 130 extra everyday Dutch foods: from lamb chops, pork chops and smoked sausage to stamppot, nasi, croquettes, herring, chocolate sprinkles, custard and stroopwafels. Just type it, the app recognises it.' },
+    ],
+  },
+  {
     date: '2026-11-15',
     titleNl: 'Schema’s voor spiergroei en kies je schema',
     titleEn: 'Muscle growth schedules and choose your schedule',

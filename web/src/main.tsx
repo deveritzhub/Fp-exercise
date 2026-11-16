@@ -33,6 +33,11 @@ const queryClient = new QueryClient({
   },
 });
 
+// The app always stays at its own size, like a native app: no pinch or double-tap zoom. iOS Safari
+// ignores user-scalable=no in the viewport, so its pinch gesture is stopped here. People who need
+// bigger text use the text-size setting in the app.
+for (const g of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(g, (e) => e.preventDefault(), { passive: false });
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
