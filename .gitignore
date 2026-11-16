@@ -1,0 +1,7 @@
+# Geheimen en je persoonlijke brein blijven lokaal
+.env
+brein/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
