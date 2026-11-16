@@ -1,0 +1,36 @@
+name: Village visual review
+on:
+  push:
+    branches: ['codex/village-square-polish-20261116']
+permissions:
+  contents: read
+concurrency:
+  group: village-review-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  scenery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: '1'
+      FP_VILLAGE_INLINE_PREVIEW: '1'
+      FP_VILLAGE_REVIEW_LABEL: baseline
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npx vitest run -c vitest.rpg.config.ts
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test -c playwright.village-review.config.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: village-visual-review
+          path: |
+            docs/village-review/
+            test-results/
