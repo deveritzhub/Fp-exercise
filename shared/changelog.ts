@@ -13,6 +13,7 @@ export const RELEASES: Release[] = [
     titleNl: 'Veel meer gewoon Nederlands eten',
     titleEn: 'Much more everyday Dutch food',
     items: [
+      { for: 'patient', nl: 'De groene balken boven en onder in beeld zijn weg: de balken van je telefoon nemen nu de rustige achtergrondkleur van de app over, zodat de app van rand tot rand doorloopt.', en: 'The green bars at the top and bottom of the screen are gone: your phone’s bars now take the app’s calm background colour, so the app runs from edge to edge.' },
       { for: 'patient', nl: 'De app heeft een luxere uitstraling: een zwevende glazen menubalk, kaarten met meer diepte, knoppen met een zachte glans, een gouden startknop op je training van vandaag en een rustige overgang als je van pagina wisselt.', en: 'The app looks more luxurious: a floating glass tab bar, cards with more depth, buttons with a soft sheen, a gold start button on today’s workout and a calm transition when you change pages.' },
       { for: 'patient', nl: 'Bij Voeding staan nu ruim 130 gewone Nederlandse dingen extra: van lamskotelet, karbonade en rookworst tot stamppot, nasi, kroket, haring, hagelslag, vla en stroopwafel. Typ het gewoon in, de app herkent het.', en: 'Nutrition now has over 130 extra everyday Dutch foods: from lamb chops, pork chops and smoked sausage to stamppot, nasi, croquettes, herring, chocolate sprinkles, custard and stroopwafels. Just type it, the app recognises it.' },
     ],

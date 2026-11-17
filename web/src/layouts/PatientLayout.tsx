@@ -181,7 +181,7 @@ export function PatientLayout() {
   return (
     <div className="patient-app min-h-screen bg-canvas text-[16px] print:bg-white">
       {!inPlayer && (
-        <header className="sticky top-0 z-20 border-b border-line/60 bg-white/80 shadow-[0_8px_24px_-18px_rgba(20,35,28,.35)] backdrop-blur-xl backdrop-saturate-150 print:hidden">
+        <header className="sticky top-0 z-20 border-b border-line/60 bg-canvas/85 shadow-[0_8px_24px_-18px_rgba(20,35,28,.35)] backdrop-blur-xl backdrop-saturate-150 print:hidden">
           <div className="mx-auto flex h-16 max-w-xl items-center justify-between gap-3 px-4">
             {/* Narrow phones: logo mark only, so the practice name fits in full. */}
             <Logo to="/p" compact className="min-h-[44px] min-w-[44px] justify-center min-[430px]:hidden" />
