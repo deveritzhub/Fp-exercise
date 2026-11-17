@@ -19,12 +19,15 @@ export function TodayProgramCard({ id, title, items, done, action, lead }: { id:
   // The lead card: the one thing to do today, dark with the action inside it.
   if (lead && !done) {
     return (
-      <section className="overflow-hidden rounded-3xl bg-[#1E3A30] p-5 text-white shadow-lift" aria-labelledby={`today-${id}`} data-testid="lead-card">
+      <section className="relative isolate overflow-hidden rounded-[28px] bg-[#1E3A30] bg-[radial-gradient(130%_100%_at_0%_0%,#34604e_0%,#1E3A30_48%,#11231c_100%)] p-5 text-white shadow-[0_0_0_1px_rgba(255,255,255,.06)_inset,0_28px_56px_-24px_rgba(17,35,28,.7),0_8px_18px_-10px_rgba(17,35,28,.4)]" aria-labelledby={`today-${id}`} data-testid="lead-card">
+        {/* Soft light in the corners: gold where the reward is, sage below. */}
+        <div aria-hidden className="pointer-events-none absolute -right-14 -top-16 -z-10 h-44 w-44 rounded-full bg-[#E3B655] opacity-[.16] blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-20 -left-10 -z-10 h-48 w-48 rounded-full bg-[#7fd0aa] opacity-[.12] blur-3xl" />
         <div className="flex items-center justify-between gap-2">
           <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-white/75">{lead.label} · {t('vandaag', 'today')}</p>
-          {lead.reward && <span className="rounded-full bg-[#E3B655] px-2.5 py-0.5 text-[12.5px] font-bold text-[#17251F]">{lead.reward}</span>}
+          {lead.reward && <span className="gold rounded-full bg-[#E3B655] px-2.5 py-0.5 text-[12.5px] font-extrabold shadow-[0_4px_12px_-4px_rgba(227,182,85,.8)]">{lead.reward}</span>}
         </div>
-        <h2 id={`today-${id}`} className="mt-2 font-display text-[22px] font-bold leading-tight !text-white">{title}</h2>
+        <h2 id={`today-${id}`} className="mt-2 font-display text-[24px] font-extrabold leading-[1.15] tracking-[-0.02em] !text-white">{title}</h2>
         <p className="mt-1 text-[15px] text-white/80">{meta}</p>
         <div className="mt-4 [&_.text-ink-700]:text-white/85">{action}</div>
       </section>

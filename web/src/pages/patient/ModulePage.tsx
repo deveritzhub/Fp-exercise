@@ -123,7 +123,7 @@ export function ModulePage({ module }: { module: PatientModule }) {
       )}
 
       {module === 'kracht' && (
-        <Link to="/p/krachtlog" className="tap flex items-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-4 text-white shadow-card">
+        <Link to="/p/krachtlog" className="tap flex items-center gap-3 rounded-2xl lux-dark bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-4 text-white shadow-card">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15"><Dumbbell className="h-6 w-6" aria-hidden /></span>
           <span className="min-w-0 flex-1">
             <span className="block font-semibold">{t('Krachtlog, eigen schema’s en 1RM', 'Strength log, own routines and 1RM')}</span>
@@ -134,7 +134,7 @@ export function ModulePage({ module }: { module: PatientModule }) {
       )}
 
       {module === 'mobiliteit' && (
-        <Link to="/p/mobiliteit/meten" className="tap flex items-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-4 text-white shadow-card">
+        <Link to="/p/mobiliteit/meten" className="tap flex items-center gap-3 rounded-2xl lux-dark bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-4 text-white shadow-card">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15"><Ruler className="h-6 w-6" aria-hidden /></span>
           <span className="min-w-0 flex-1">
             <span className="block font-semibold">{t('Mobiliteit meten', 'Measure mobility')}</span>

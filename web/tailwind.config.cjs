@@ -39,10 +39,16 @@ module.exports = {
         info: { DEFAULT: 'rgb(var(--info) / <alpha-value>)', soft: 'rgb(var(--info-soft) / <alpha-value>)' },
       },
       boxShadow: {
-        xs: '0 1px 2px rgba(20, 35, 28, 0.05)',
-        card: '0 1px 2px rgba(23, 37, 31, 0.04), 0 10px 28px -16px rgba(23, 37, 31, 0.14)',
-        lift: '0 2px 4px rgba(20, 35, 28, 0.04), 0 8px 20px -8px rgba(20, 35, 28, 0.12)',
-        pop: '0 16px 40px -12px rgba(20, 35, 28, 0.22), 0 2px 6px rgba(20, 35, 28, 0.06)',
+        // Layered, soft and deep: a hairline, a contact shadow and a wide ambient one.
+        xs: '0 1px 2px rgba(20, 35, 28, 0.06)',
+        card: '0 0 0 1px rgba(23, 37, 31, 0.025), 0 1px 2px rgba(23, 37, 31, 0.05), 0 8px 18px -10px rgba(23, 37, 31, 0.10), 0 26px 48px -28px rgba(23, 37, 31, 0.22)',
+        lift: '0 0 0 1px rgba(20, 35, 28, 0.03), 0 2px 4px rgba(20, 35, 28, 0.05), 0 14px 28px -12px rgba(20, 35, 28, 0.18), 0 30px 56px -30px rgba(20, 35, 28, 0.24)',
+        pop: '0 0 0 1px rgba(20, 35, 28, 0.04), 0 4px 10px rgba(20, 35, 28, 0.08), 0 24px 56px -16px rgba(20, 35, 28, 0.34)',
+        // The floating tab bar of the patient app.
+        dock: '0 0 0 1px rgba(20, 35, 28, 0.05), 0 2px 6px rgba(20, 35, 28, 0.06), 0 18px 40px -14px rgba(20, 35, 28, 0.30)',
+        // Primary buttons: a lit top edge and a glow in the accent colour underneath.
+        btn: 'inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 1px 2px rgba(20, 35, 28, 0.22), 0 10px 20px -10px rgb(var(--accent) / 0.55)',
+        gold: 'inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 1px 2px rgba(80, 55, 0, 0.25), 0 12px 26px -10px rgba(227, 182, 85, 0.75)',
       },
       // Buttons and fields 14, cards 20, the lead card 24.
       borderRadius: { lg: '0.625rem', xl: '0.875rem', '2xl': '1.25rem', '3xl': '1.5rem' },
