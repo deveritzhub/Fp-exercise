@@ -3056,6 +3056,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         rideOn = rideM ? wantRide : null;
         rideK = rideM ? rideByKey(wantRide)?.speed ?? 1 : 1;
         figure.visible = !rideM?.hideHero;
+        if (!rideM) figure.position.x = figure.position.z = 0;
         if (rideOn) el.dataset.ride = rideOn;
         else delete el.dataset.ride;
       }
@@ -3226,6 +3227,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       if (rideM) {
         // On a ride: no walking bob; the hero stands on it and the wheels roll with the distance gone.
         figure.position.y = jump + rideM.seat;
+        figure.position.x = rideM.heroX ?? 0;
+        figure.position.z = rideM.heroZ ?? 0;
+        figure.visible = !rideM.hideHero;
         figure.rotation.z = 0;
         const went = Math.hypot(p.x - p0x, p.z - p0z);
         for (const w of rideM.wheels) w.rotation.x += went / rideM.wheelR;
