@@ -3,11 +3,12 @@
  * Caching rules
  * - App shell (HTML): network first, last copy used offline.
  * - Built assets (/assets/*, fonts, icons): cache first; file names contain a content hash.
+ * - The install manifest: network first, so new colours and names reach installed apps.
  * - Exercise images: network first, last copy used offline (no personal or health data).
  * - Everything else, including all patient data (API), videos and POSTs: straight to the network.
  *   Health data is never stored on the device (FP rule: no health data in browser storage).
  */
-const VERSION = 'v3'; // v3: new app icons (same file names)
+const VERSION = 'v4'; // v4: the manifest is no longer kept forever (its colours were stuck on old values)
 const SHELL = `fp-shell-${VERSION}`;
 const STATIC = `fp-static-${VERSION}`;
 const MEDIA = 'fp-media';
@@ -26,7 +27,7 @@ self.addEventListener('activate', (event) => {
 });
 
 const isStatic = (url) =>
-  url.pathname.startsWith('/assets/') || /\.(woff2?|png|svg|webmanifest)$/.test(url.pathname);
+  url.pathname.startsWith('/assets/') || /\.(woff2?|png|svg)$/.test(url.pathname);
 
 async function networkFirst(request, cacheName, cacheKey = request) {
   const cache = await caches.open(cacheName);
@@ -72,6 +73,9 @@ self.addEventListener('fetch', (event) => {
   if (req.mode === 'navigate') {
     // Every page is the same single-page app shell.
     event.respondWith(networkFirst(req, SHELL, '/'));
+  } else if (url.pathname.endsWith('.webmanifest')) {
+    // The install manifest (name, colours, icons): always the newest, the last copy only when offline.
+    event.respondWith(networkFirst(req, SHELL));
   } else if (isStatic(url)) {
     event.respondWith(cacheFirst(req));
   } else if (url.pathname.startsWith('/api/media/') && !req.headers.has('range')) {
