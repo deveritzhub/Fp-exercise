@@ -8,7 +8,8 @@ import { useCallback, useEffect, useState } from 'react';
 export type ThemeChoice = 'light' | 'dark' | 'system';
 const KEY = 'fp.theme';
 const CHOICES: ThemeChoice[] = ['light', 'dark', 'system'];
-const META = { light: '#29483c', dark: '#121a16' };
+// The phone's status and navigation bars take the page's own ground colour, so the app runs edge to edge.
+const META = { light: '#f6f4ee', dark: '#141815' };
 
 export function readTheme(): ThemeChoice {
   try {
