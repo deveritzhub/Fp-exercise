@@ -705,11 +705,13 @@ function RecipesTab({ plan, base }: { plan: Plan; base: DayData }) {
   );
 }
 
+/** Bump when a recipe photo changes, so phones fetch the new one. v2: eight photos stood under the wrong dish. */
+const RECIPE_PHOTOS_VERSION = 2;
 /** The photo of a dish (public/recipes/<key>.webp); a soft tile with a cooking pot when it is missing. */
 function RecipePhoto({ k, className, small }: { k: string; className?: string; small?: boolean }) {
   const [gone, setGone] = useState(false);
   if (gone) return <span aria-hidden className={cn('grid place-items-center bg-sage/70 text-ink-500', className)}><ChefHat className="h-6 w-6" /></span>;
-  return <img src={`/recipes/${k}${small ? '-sm' : ''}.webp`} alt="" loading="lazy" decoding="async" data-testid="recipe-photo" onError={() => setGone(true)} className={cn('bg-sage/60 object-cover', className)} />;
+  return <img src={`/recipes/${k}${small ? '-sm' : ''}.webp?v=${RECIPE_PHOTOS_VERSION}`} alt="" loading="lazy" decoding="async" data-testid="recipe-photo" onError={() => setGone(true)} className={cn('bg-sage/60 object-cover', className)} />;
 }
 
 function RecipeDetail({ r, hide, onAdd, onAte, onCook }: { r: Recipe; hide: boolean; onAdd: (day: number, servings: number) => void; onAte: () => void; onCook: (servings: number) => void }) {
