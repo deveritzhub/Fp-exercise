@@ -132,7 +132,7 @@
 
 @layer components {
   /* Cards float on the paper ground: one soft shadow, a line so faint it only shows on white. */
-  .card { @apply rounded-2xl border border-line/50 bg-white shadow-card; }
+  .card { @apply rounded-2xl border border-line/60 bg-white shadow-card; }
   /* The patient app's ground: paper with a soft sage light from above and a warm one from the side. */
   .patient-app {
     background-image:
