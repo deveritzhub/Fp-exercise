@@ -1,11 +1,12 @@
 import * as THREE from 'three';
+import { loadModel } from '@/components/hero/Hero3D';
 
 /**
  * The rides from the stables, built from simple shapes: a bike, a scooter and a small car. Each faces
  * +z with its middle between the wheels on the ground. `seat` is how high the hero stands or sits on
  * it (the car hides the hero inside); `wheels` turn as it goes.
  */
-export type RideModel = { group: THREE.Group; wheels: THREE.Object3D[]; seat: number; hideHero: boolean; wheelR: number };
+export type RideModel = { group: THREE.Group; wheels: THREE.Object3D[]; seat: number; hideHero: boolean; wheelR: number; heroX?: number; heroZ?: number };
 
 const std = (color: number, rough = 0.6, metal = 0) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
 
@@ -134,11 +135,53 @@ function car(): RideModel {
 
 const MAKERS: Record<string, () => RideModel> = { bike, scooter, car };
 
-/** A new model of this ride, or null for an unknown key. */
+/**
+ * The painted models (public/village/rides): each wheel is its own node with its pivot on the axle,
+ * named wiel_*, so it can roll. `seat` is where the hero's feet go; in the open car the hero sits
+ * (stands low) in the driver's seat on the left.
+ */
+const PAINTED: Record<string, { file: string; wheelR: number; seat: number; heroX?: number; heroZ?: number }> = {
+  bike: { file: 'fiets', wheelR: 0.34, seat: 0.4 },
+  scooter: { file: 'scooter', wheelR: 0.25, seat: 0.3 },
+  car: { file: 'auto', wheelR: 0.3, seat: -0.12, heroX: -0.3, heroZ: -0.3 },
+};
+const RIDES_VERSION = 1;
+
+/** A new model of this ride, or null for an unknown key: the simple one at once, the painted one when loaded. */
 export function rideModel(key: string): RideModel | null {
   const make = MAKERS[key];
   if (!make) return null;
   const m = make();
   m.group.userData.noMerge = true;
+  const painted = PAINTED[key];
+  if (painted) {
+    loadModel(`/village/rides/${painted.file}.glb?v=${RIDES_VERSION}`)
+      .then((gltf) => {
+        const model = gltf.scene.clone(true);
+        const wheels: THREE.Object3D[] = [];
+        model.traverse((o) => {
+          if (/^wiel_(voor|achter|lv|rv|la|ra)$/.test(o.name)) wheels.push(o);
+          const mesh = o as THREE.Mesh;
+          if (mesh.isMesh) {
+            mesh.castShadow = true;
+            const mm = mesh.material as THREE.MeshStandardMaterial;
+            if (mm.name === 'lamp') {
+              mm.emissive = new THREE.Color(0xffe2a0);
+              mm.emissiveIntensity = 1.4;
+            }
+          }
+        });
+        m.group.clear();
+        m.group.add(model);
+        m.wheels.splice(0, m.wheels.length, ...wheels);
+        m.wheelR = painted.wheelR;
+        m.seat = painted.seat;
+        m.heroX = painted.heroX;
+        m.heroZ = painted.heroZ;
+        // The open car shows the hero in the driver's seat (left, as in the Netherlands).
+        m.hideHero = false;
+      })
+      .catch(() => undefined);
+  }
   return m;
 }
