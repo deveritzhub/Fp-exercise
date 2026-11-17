@@ -97,7 +97,7 @@ export function PatientHome() {
       {todo.length > 0 && left === 0 && pausedToday === 0 && resumeOther.length === 0 && (() => {
         const next = d.programs.map((p) => p.nextSession).filter((x): x is string => !!x).sort()[0];
         return (
-          <section aria-labelledby="done-today" className="rounded-2xl bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-5 text-white shadow-card">
+          <section aria-labelledby="done-today" className="rounded-2xl lux-dark bg-[linear-gradient(135deg,#29483c_0%,#3d6150_100%)] p-5 text-white shadow-card">
             <h2 id="done-today" className="flex items-center gap-2 text-[20px] font-bold"><PartyPopper className="h-6 w-6" aria-hidden />{t('Klaar voor vandaag', 'Done for today')}</h2>
             <p className="mt-1 text-[15px] text-white/85">
               {d.stats.streak > 1 ? t(`Al ${d.stats.streak} trainingen op rij. `, `${d.stats.streak} workouts in a row. `) : ''}
@@ -286,7 +286,7 @@ function StrengthCard() {
 export function StartOrResume({ programId, open, total, gold = false }: { programId: string; open: { logged: number } | null; total: number; gold?: boolean }) {
   const { t } = useI18n();
   // Gold on the dark card: the one main action of the day.
-  const goldCls = gold ? '!bg-[#E3B655] !text-[#17251F] hover:!bg-[#d9a93f]' : '';
+  const goldCls = gold ? 'gold sheen !bg-[#E3B655] !text-[#2b1d03] !shadow-gold hover:brightness-105' : '';
   if (!open) {
     return (
       <ButtonLink to={`/p/sessie/${programId}`} size="xl" className={`w-full ${goldCls}`} icon={<Play className="h-5 w-5 fill-current" />}>

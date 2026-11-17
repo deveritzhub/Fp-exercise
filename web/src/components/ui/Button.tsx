@@ -7,9 +7,10 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'subtle';
 type Size = 'sm' | 'md' | 'lg' | 'xl';
 
 const base =
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-semibold transition-[background,box-shadow,color,transform] duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 select-none';
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-semibold transition-[background,box-shadow,color,transform] duration-150 active:translate-y-px active:scale-[.985] disabled:pointer-events-none disabled:opacity-50 select-none';
 const variants: Record<Variant, string> = {
-  primary: 'bg-accent text-accent-ink shadow-xs hover:bg-accent-strong',
+  // A lit top edge and a soft glow underneath; the fill itself stays the (brandable) accent.
+  primary: 'bg-accent bg-[linear-gradient(180deg,rgba(255,255,255,.13)_0%,rgba(255,255,255,0)_60%)] text-accent-ink shadow-btn hover:bg-accent-strong',
   secondary: 'border border-line bg-white text-ink-900 shadow-xs hover:bg-canvas hover:border-ink-300',
   ghost: 'text-ink-700 hover:bg-ink-100/70 hover:text-ink-900',
   subtle: 'bg-accent-soft text-accent hover:bg-accent/15',

@@ -38,7 +38,7 @@ export function Village3DCard() {
   const { t } = useI18n();
   return (
     <Link to="/p/dorp" data-testid="open-3d-village"
-      className="tap flex items-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#1f3a5f_0%,#2f5d4a_100%)] p-4 text-white shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2">
+      className="tap flex items-center gap-3 rounded-2xl lux-dark bg-[linear-gradient(135deg,#1f3a5f_0%,#2f5d4a_100%)] p-4 text-white shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2">
       <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/15"><Gamepad2 className="h-6 w-6" aria-hidden /></span>
       <span className="min-w-0 flex-1">
         <span className="block text-[16.5px] font-bold">{t('Speel in je 3D-dorp', 'Play in your 3D village')}</span>

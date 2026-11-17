@@ -169,7 +169,7 @@ export function PatientLayout() {
       {({ isActive: navActive }) => { const isActive = tabOn(tab, navActive); return (
         <>
           {/* Active tab: filled sage pill behind the icon plus bold label, not colour alone. */}
-          <span className={cn('relative flex h-8 w-11 items-center justify-center rounded-full transition-colors', isActive ? 'bg-accent-soft' : 'group-hover:bg-ink-100')}>
+          <span className={cn('relative flex h-8 w-11 items-center justify-center rounded-full transition-all duration-200', isActive ? 'bg-accent bg-[linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0)_60%)] text-accent-ink shadow-btn' : 'group-hover:bg-ink-100')}>
             <tab.icon className="h-[22px] w-[22px]" strokeWidth={isActive ? 2.2 : 1.8} aria-hidden />
             {tab.dot && <span className="absolute right-1 top-0.5 h-2.5 w-2.5 rounded-full bg-[#c2410c] ring-2 ring-white" aria-hidden />}
           </span>
@@ -181,7 +181,7 @@ export function PatientLayout() {
   return (
     <div className="patient-app min-h-screen bg-canvas text-[16px] print:bg-white">
       {!inPlayer && (
-        <header className="sticky top-0 z-20 border-b print:hidden border-line bg-white/90 backdrop-blur">
+        <header className="sticky top-0 z-20 border-b border-line/60 bg-white/80 shadow-[0_8px_24px_-18px_rgba(20,35,28,.35)] backdrop-blur-xl backdrop-saturate-150 print:hidden">
           <div className="mx-auto flex h-16 max-w-xl items-center justify-between gap-3 px-4">
             {/* Narrow phones: logo mark only, so the practice name fits in full. */}
             <Logo to="/p" compact className="min-h-[44px] min-w-[44px] justify-center min-[430px]:hidden" />
@@ -215,10 +215,13 @@ export function PatientLayout() {
       <main className={cn('mx-auto max-w-xl print:max-w-none print:p-0', inPlayer ? '' : playingGame ? 'px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-5' : 'px-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-5')}>
         {!inPlayer && <UpdateNotice audience="patient" clinical={isClinical(user?.patient?.kind)} />}
         {!inPlayer && <BackToGame />}
-        <Outlet />
+        {inPlayer ? <Outlet /> : <div className="page-in"><Outlet /></div>}
       </main>
       {!inPlayer && !inSetup && !playingGame && (
-        <nav className="fixed inset-x-0 bottom-0 z-30 print:hidden border-t border-line bg-white pb-[env(safe-area-inset-bottom)]" aria-label={t('Navigatie', 'Navigation')}>
+        <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-2.5 pb-[calc(env(safe-area-inset-bottom)+8px)] print:hidden" aria-label={t('Navigatie', 'Navigation')}>
+          {/* The page fades out under the bar, which floats above it as a glass dock. */}
+          <div aria-hidden className="absolute inset-x-0 bottom-0 -z-10 h-28 bg-gradient-to-t from-canvas via-canvas/85 to-transparent" />
+          <div className="pointer-events-auto mx-auto max-w-xl rounded-[26px] border border-white/70 bg-white/80 shadow-dock backdrop-blur-xl backdrop-saturate-150 dark:border-white/10">
           {/* The + (quick log) sits exactly in the middle: two tabs on the left, the rest on the right. */}
           {simple ? (
             // Plain view: a few large tabs of equal width, and no quick-log button between them.
@@ -230,6 +233,7 @@ export function PatientLayout() {
             <div className="grid min-w-0" style={{ flex: tabs.length - half, gridTemplateColumns: `repeat(${tabs.length - half}, minmax(0, 1fr))` }}>{tabs.slice(half).map(renderTab)}</div>
           </div>
           )}
+          </div>
         </nav>
       )}
     </div>

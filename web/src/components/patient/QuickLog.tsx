@@ -37,7 +37,7 @@ export function QuickLogButton() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label={t('Snel loggen: eiwit, water, gewicht, stappen of slaap', 'Quick log: protein, water, weight, steps or sleep')}
-        className="tap -mt-6 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-ink shadow-pop ring-4 ring-white transition-transform hover:scale-105 active:scale-95 motion-reduce:transition-none print:hidden"
+        className="tap -mt-6 flex h-14 w-14 items-center justify-center rounded-full bg-accent bg-[linear-gradient(160deg,rgba(255,255,255,.22)_0%,rgba(255,255,255,0)_55%)] text-accent-ink shadow-[inset_0_1px_0_rgba(255,255,255,.25),0_10px_24px_-6px_rgb(var(--accent)/.6),0_2px_6px_rgba(20,35,28,.2)] ring-4 ring-white transition-transform hover:scale-105 active:scale-95 motion-reduce:transition-none print:hidden"
       >
         <Plus className="h-7 w-7" strokeWidth={2.6} aria-hidden />
       </button>

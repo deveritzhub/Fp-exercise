@@ -1605,7 +1605,7 @@ export function HeroPage() {
   return (
     <div className="space-y-5">
       {/* The 3D world, right by the hero. */}
-      <Link to="/p/dorp" data-testid="hero-play" className="flex min-h-[56px] items-center gap-3 rounded-2xl border border-[#e4bc63] bg-[linear-gradient(135deg,#1d3a2e,#29483c)] px-4 py-3 text-white shadow-card">
+      <Link to="/p/dorp" data-testid="hero-play" className="flex min-h-[56px] items-center gap-3 rounded-2xl border border-[#e4bc63] lux-dark bg-[linear-gradient(135deg,#1d3a2e,#29483c)] px-4 py-3 text-white shadow-card">
         <Gamepad2 className="h-6 w-6 shrink-0 text-[#ffd76a]" aria-hidden />
         <span className="min-w-0 flex-1">
           <span className="block text-[16px] font-bold">{t('Speel in de 3D-wereld', 'Play in the 3D world')}</span>
@@ -1614,13 +1614,13 @@ export function HeroPage() {
         <ChevronRight className="h-5 w-5 shrink-0 text-[#ffd76a]" aria-hidden />
       </Link>
       {/* The little games: play that also helps recovery. */}
-      <Link to="/p/spellen" data-testid="hero-games" className="flex min-h-[56px] items-center gap-3 rounded-2xl border border-line bg-white px-4 py-3 shadow-card">
-        <span aria-hidden className="text-[24px]">🎲</span>
+      <Link to="/p/spellen" data-testid="hero-games" className="lux-dark flex min-h-[56px] items-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#1a1338_0%,#2c2466_55%,#143a3a_100%)] px-4 py-3 text-white">
+        <span aria-hidden className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/20 bg-white/10 text-[22px] shadow-[0_0_18px_rgba(169,139,255,.55)]">🎲</span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[16px] font-bold text-ink-950">{t('Spelletjes', 'Games')}</span>
-          <span className="block text-[13px] text-ink-600">{t('Balans, reactie, ademhaling, voeding en meer', 'Balance, reaction, breathing, food and more')}</span>
+          <span className="block bg-[linear-gradient(135deg,#fff1c2,#f3cf6b_45%,#dfae42)] bg-clip-text text-[16px] font-extrabold text-transparent">{t('Speelhal', 'Games hall')}</span>
+          <span className="block text-[13px] text-white/75">{t('Negen spelletjes: balans, reactie, ademhaling, voeding en meer', 'Nine games: balance, reaction, breathing, food and more')}</span>
         </span>
-        <ChevronRight className="h-5 w-5 shrink-0 text-ink-400" aria-hidden />
+        <ChevronRight className="h-5 w-5 shrink-0 text-[#f3cf6b]" aria-hidden />
       </Link>
       <section className={cn('relative overflow-hidden rounded-2xl border border-line bg-white p-5 shadow-card', scene?.key === 'gym' && 'bg-[linear-gradient(180deg,#efe6d4_0%,#fff_46%)]', scene?.key === 'stadium' && 'bg-[linear-gradient(180deg,#1b3a4a_0%,#fff_48%)]')} aria-labelledby="hero-name">
         {scene?.key === 'gym' && <svg aria-hidden className="pointer-events-none absolute right-3 top-3 h-10 w-24"><rect x="4" y="16" width="88" height="6" rx="2" fill="#29483c" opacity=".45" /><rect x="18" y="8" width="6" height="22" fill="#29483c" opacity=".45" /><rect x="72" y="8" width="6" height="22" fill="#29483c" opacity=".45" /></svg>}
