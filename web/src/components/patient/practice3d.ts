@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mirror as liveMirror } from './mirror3d';
 import { mat } from './Village3D';
 import type { Obstacle, Vec } from './walk';
 
@@ -167,8 +168,16 @@ export function practiceBuilding(name: string) {
 export type RoomWall = { group: THREE.Group; point: THREE.Vector3; normal: THREE.Vector3 };
 
 /** The exercise room. Walls are separate, so the one between the camera and the room can be left out. */
-export function practiceRoom(tv: THREE.Texture) {
+export function practiceRoom(tv: THREE.Texture, opts: { mirrors?: boolean } = {}) {
   const group = new THREE.Group();
+  // The mirrors work: the room (and the hero in it) is seen in them. Placed a hair in front of the glass.
+  const glassAt = (wallGroup: THREE.Object3D, w: number, h: number, x: number, y: number, z: number, turn: number) => {
+    if (opts.mirrors === false) return;
+    const m = liveMirror(w, h, { reach: 12 });
+    m.position.set(x, y, z);
+    m.rotation.y = turn;
+    wallGroup.add(m);
+  };
   group.position.set(ROOM_AT.x, 0, ROOM_AT.z);
   const room = kit(group);
   const walls: RoomWall[] = [];
@@ -195,6 +204,7 @@ export function practiceRoom(tv: THREE.Texture) {
   walls[0].group.add(screen);
   n.box(1.0, 2.05, 0.04, WHITE, -1.6, 1.12, -3.19);
   n.box(0.9, 1.95, 0.05, 0xcfd8dc, -1.6, 1.12, -3.185, mirror);
+  glassAt(walls[0].group, 0.86, 1.91, -1.6, 1.12, -3.155, 0);
 
   // East wall: the street door, then the wide window with its frosted band, sill and radiator.
   const e = wall(1, 0);
@@ -224,6 +234,7 @@ export function practiceRoom(tv: THREE.Texture) {
   for (let r = 0; r < 4; r++) for (const dx of [-0.17, 0.17]) s.ball(0.16, BLACK, -1.0 + dx, 0.55 + r * 0.48, 3.08);
   s.box(1.0, 2.0, 0.04, WHITE, 0.25, 1.15, 3.19);
   s.box(0.9, 1.9, 0.05, 0xcfd8dc, 0.25, 1.15, 3.185, mirror);
+  glassAt(walls[2].group, 0.86, 1.86, 0.25, 1.15, 3.155, Math.PI);
   s.box(1.0, 0.75, 0.05, 0xd2b07c, 1.55, 1.62, 3.17);
   [0xb23a2e, 0x2e2e2e, 0xe0a021, 0x2e2e2e, 0x3d7a3a, 0x2e2e2e].forEach((c, i) => s.box(0.05, 0.75 + (i % 2) * 0.2, 0.03, c, 1.15 + i * 0.16, 0.95 - (i % 2) * 0.1, 3.14));
   s.box(0.95, 2.1, 0.7, BLACK, 3.35, 1.05, 2.85);
@@ -244,6 +255,7 @@ export function practiceRoom(tv: THREE.Texture) {
   w.box(0.05, 0.92, 0.66, 0xffffff, -3.975, 1.5, 0.5);
   w.box(0.04, 1.75, 0.64, WHITE, -3.98, 1.25, -0.8);
   w.box(0.05, 1.65, 0.56, 0xcfd8dc, -3.975, 1.25, -0.8, mirror);
+  glassAt(walls[3].group, 0.52, 1.61, -3.945, 1.25, -0.8, Math.PI / 2);
 
   // On the floor. Half rack with the bar, in front of the mirror.
   for (const x of [-2.2, -1.0]) {
