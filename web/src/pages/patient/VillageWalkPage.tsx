@@ -1303,6 +1303,10 @@ export function VillageWalkPage() {
       <p className="text-[13.5px] leading-relaxed text-ink-700">
         {t('Tik op de grond om te lopen. Sleep opzij om helemaal rond te draaien, omhoog of omlaag om te kantelen, en knijp met twee vingers (of gebruik + en −) om in en uit te zoomen. Tik op een poppetje om te praten. Liever een joystick? Zet hem aan met de knop met de gamepad. In de oefenzaal van je praktijk staan de fysiotherapeut en de tv met je oefeningen van vandaag.', 'Tap the ground to walk and drag sideways to look around. Prefer a joystick? Switch it on with the gamepad button. In the exercise room of your practice you find the physiotherapist and the TV with your exercises for today.')}
       </p>
+      {/* On a computer (a fine pointer): the keys. */}
+      <p className="hidden text-[13.5px] leading-relaxed text-ink-700 [@media(pointer:fine)]:block" data-testid="village-keys">
+        {t('Op de computer: W loopt vooruit, S achteruit, A en D (of de pijltjes links en rechts) draaien je held en de camera mee, de pijltjes omhoog en omlaag laten je omhoog en omlaag kijken. Je rent vanzelf; houd Shift ingedrukt om te wandelen. Met + en − zoom je.', 'On a computer: W walks forward, S back, A and D (or the left and right arrows) turn your hero and the camera, the up and down arrows look up and down. You run by default; hold Shift to walk. + and − zoom.')}
+      </p>
 
       <Dialog open={decorOpen} onClose={() => setDecorOpen(false)} title={t('Jouw huis inrichten', 'Furnish your home')} size="md" sheet
         description={L ? t(`${HOME_STAGES[stage].nl}, level ${L.level}.`, `${HOME_STAGES[stage].en}, level ${L.level}.`) : undefined}>

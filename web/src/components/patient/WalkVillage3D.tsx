@@ -3000,9 +3000,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     io.observe(el);
     const clock = new THREE.Clock();
     let tt = 0;
-    // Keyboard on a computer: W A S D (or Z Q S D) walk relative to the view, Shift runs; the arrow
-    // keys turn (left, right) and tip (up, down) the camera, + and - zoom. Not while typing or with a
-    // dialog open.
+    // Keyboard on a computer: W / S forward and back, A / D (Q for AZERTY) and the arrows turn, up / down
+    // look up and down, Shift walks instead of running, + and - zoom. Not while typing or with a dialog open.
     const keys = new Set<string>();
     const typing = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
@@ -3022,7 +3021,6 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
     window.addEventListener('blur', onBlur);
-    const keyPush = { x: 0, y: 0 };
     let posTick = 0;
     // The ride under the hero: built when the hero gets on, taken away again indoors or off.
     let rideOn: string | null = null;
@@ -3062,25 +3060,48 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       const p0x = p.x;
       const p0z = p.z;
-      // The arrow keys turn and tip the view.
-      if (keys.has('ArrowLeft')) camAngle.current += dt * 1.9;
-      if (keys.has('ArrowRight')) camAngle.current -= dt * 1.9;
-      if (keys.has('ArrowUp')) camTilt.current = Math.max(0.35, camTilt.current - dt * 1.2);
-      if (keys.has('ArrowDown')) camTilt.current = Math.min(2.4, camTilt.current + dt * 1.2);
-      // W A S D walk like the joystick: Shift pushes it to the rim (run).
-      keyPush.x = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') || keys.has('KeyQ') ? 1 : 0);
-      keyPush.y = (keys.has('KeyW') || keys.has('KeyZ') ? 1 : 0) - (keys.has('KeyS') ? 1 : 0);
-      const kl = Math.hypot(keyPush.x, keyPush.y);
-      keyWalk = kl > 0;
-      if (keyWalk) {
-        const f = (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 1 : 0.6) / kl;
-        keyPush.x *= f;
-        keyPush.y *= f;
+      // Keyboard, as in most adventure games: W forward where the hero looks (the camera stays behind),
+      // S back, A / D and the left / right arrows turn the hero with the camera; up / down look up and
+      // down. The hero runs; Shift walks.
+      const keyTurn = (keys.has('KeyA') || keys.has('KeyQ') || keys.has('ArrowLeft') ? 1 : 0) - (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0);
+      const keyFwd = (keys.has('KeyW') || keys.has('KeyZ') ? 1 : 0) - (keys.has('KeyS') ? 1 : 0);
+      if (keys.has('ArrowUp')) camTilt.current = Math.min(2.4, camTilt.current + dt * 1.2);
+      if (keys.has('ArrowDown')) camTilt.current = Math.max(0.35, camTilt.current - dt * 1.2);
+      keyWalk = keyTurn !== 0 || keyFwd !== 0;
+      if (keyWalk && goal) {
+        goal = null;
+        (marker.material as THREE.MeshBasicMaterial).opacity = 0;
+        clearTrail();
+        announce(null);
+      }
+      if (keyTurn) {
+        const turn = keyTurn * dt * 2.4;
+        facing.current += turn;
+        camAngle.current += turn;
       }
       const thumb = stick?.current;
-      const push = keyWalk ? keyPush : thumb;
+      const push = thumb;
       const force = push ? Math.min(1, Math.hypot(push.x, push.y)) : 0;
-      if (push && force > 0.18) {
+      if (keyFwd !== 0) {
+        el.dataset.walking = '1';
+        // Forward runs (Shift walks); backwards is a careful walk, still facing forward.
+        const run = keyFwd > 0 && !(keys.has('ShiftLeft') || keys.has('ShiftRight'));
+        const pace = (run ? 1.12 : 1.1) * live.current.slow * (keyFwd < 0 ? 0.7 : 1);
+        const speed = (motions.walk && motions.run ? GAIT_SPEED[run ? 'run' : 'walk'] * HERO_HEIGHT * pace : SPEED * (run ? 1 : 0.5) * live.current.slow) * rideK;
+        if (mixer) {
+          play(rideM ? 'idle' : run ? 'run' : 'walk');
+          mixer.timeScale = rideM ? 1 : keyFwd < 0 ? -pace : pace;
+        }
+        const dx = Math.sin(facing.current) * keyFwd;
+        const dz = Math.cos(facing.current) * keyFwd;
+        const indoors = inside();
+        const ahead = { x: p.x + dx * 2, z: p.z + dz * 2 };
+        const n = indoors ? { ...stepToward(p, ahead, speed * dt, here().obstacles, 1e6) } : stepToward(p, ahead, speed * dt, obstacles, B);
+        if (indoors) Object.assign(n, clampRect({ x: n.x, z: n.z }, here().rect));
+        p.x = n.x;
+        p.z = n.z;
+        walking = true;
+      } else if (!keyWalk && push && force > 0.18) {
         // The joystick steers by hand, relative to the view; it takes over from a tapped target.
         if (goal) {
           goal = null;
