@@ -50,7 +50,8 @@ export function createApp() {
         styleSrc: ["'self'", "'unsafe-inline'"],
         scriptSrc: ["'self'"],
         fontSrc: ["'self'", 'data:'],
-        connectSrc: ["'self'"],
+        // blob: lets the 3D models read the textures packed inside them (three.js fetches them as blob: URLs).
+        connectSrc: ["'self'", 'blob:'],
         frameAncestors: ["'none'"],
         formAction: ["'self'"],
         baseUri: ["'self'"],

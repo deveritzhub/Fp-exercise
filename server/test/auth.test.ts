@@ -107,6 +107,8 @@ describe('authentication', () => {
   it('sets security headers', async () => {
     const res = await app.request('/api/health');
     expect(res.headers.get('content-security-policy')).toContain("frame-ancestors 'none'");
+    // The 3D models read their packed textures as blob: URLs; without this they show up white.
+    expect(res.headers.get('content-security-policy')).toMatch(/connect-src 'self' blob:/);
     expect(res.headers.get('x-content-type-options')).toBe('nosniff');
     expect(res.headers.get('cache-control')).toBe('no-store');
   });
