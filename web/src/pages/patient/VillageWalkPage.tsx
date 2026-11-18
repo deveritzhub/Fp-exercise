@@ -23,6 +23,7 @@ import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
 import { VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { SITES, SPOTS, TOWN_HOUSES, WILD, placeAt } from '@/components/patient/townPlan';
 import { PET_LEVEL } from '@shared/pets';
+import { DOOR_LABEL } from '@/components/patient/practiceFloors';
 import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
 import { SUPPLY } from '@shared/supplies';
@@ -948,6 +949,7 @@ export function VillageWalkPage() {
     k === TV_KEY ? t('de tv in de praktijk', 'the TV in the practice')
       : k === PRACTICE_KEY ? practiceName
       : k === EXIT_KEY ? t('de uitgang', 'the exit')
+      : k.startsWith('door:') ? (() => { const [a1, b1] = DOOR_LABEL[k === 'door:gang' ? 'gang' : k.slice(5)] ?? ['de deur', 'the door']; return t(a1.toLowerCase(), b1.toLowerCase()); })()
       : k === HOME_KEY ? homeLabel.toLowerCase()
       : k === boardKey(HOME_KEY) ? t('je inrichtingstafel', 'your furnishing table')
       : k.startsWith('in:') && KEEPER[k.slice(3)] ? buildings.find((b) => b.key === k.slice(3))?.label ?? k
@@ -1218,6 +1220,13 @@ export function VillageWalkPage() {
               )}
               <Button size="lg" variant="secondary" className="border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(EXIT_KEY)}>{zone === DUNGEON_KEY ? t('Terug naar boven', 'Back up') : t('Naar buiten: het dorp', 'Go out: the village')}</Button>
             </span>
+          ) : near?.startsWith('door:') ? (
+            <Button size="lg" data-testid="use-door" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(near)}>
+              {(() => {
+                const [nlText, enText] = DOOR_LABEL[near === 'door:gang' ? 'gang' : near.slice(5)] ?? ['Door de deur', 'Through the door'];
+                return t(nlText, enText);
+              })()}
+            </Button>
           ) : errandHere ? (
             <Link to={errandHere.link!} data-testid="errand-link" className="tap pointer-events-auto inline-flex min-h-[48px] max-w-full items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15.5px] font-semibold text-white shadow-lift">
               <DoorOpen className="h-5 w-5 shrink-0" aria-hidden /><span className="truncate">{errandHere.label}</span>
