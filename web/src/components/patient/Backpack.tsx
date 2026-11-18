@@ -9,6 +9,7 @@ import { cn } from '@/lib/cn';
 import { Button, Card, Spinner, useToast } from '@/components/ui';
 import type { HeroState } from '@/lib/types';
 import { ItemIcon } from './ItemIcon';
+import { PetCard } from './PetPicker';
 import { useSupplies } from '@/lib/supplies';
 
 type Adventure = { level: number; weapon: string | null; owned: string[]; coins: number; loot?: Record<string, number>; tools?: string[]; rides?: string[]; built?: string[]; strength?: number; lootCap?: number; armour?: string | null };
@@ -102,6 +103,8 @@ export function BackpackCard({ d }: { d: HeroState }) {
           <Coins className="h-4 w-4" aria-hidden />{t(`${a?.coins ?? d.gear.coins} muntjes`, `${a?.coins ?? d.gear.coins} coins`)}
         </span>
       </div>
+
+      <PetCard className="mt-4" />
 
       <h3 className="mt-4 flex items-center gap-1.5 text-[15px] font-semibold text-ink-950"><Swords className="h-4 w-4" aria-hidden />{t('Wapens', 'Weapons')}</h3>
       <p className="mt-1 text-[13.5px] text-ink-700">{t(`In de hand: ${worn.nl}${worn.power > 0 ? ` (+${worn.power} kracht per slag)` : ''}.`, `In hand: ${worn.en}${worn.power > 0 ? ` (+${worn.power} power per blow)` : ''}.`)}</p>

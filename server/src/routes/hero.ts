@@ -1,5 +1,5 @@
 import { BELTS, examReady, nextItems, validItem } from '../../../shared/karate';
-import { ADVENTURE_DAILY_WINS, BERRIES_FOR, BOXING, CREATURES, CREATURE_KINDS, LOOT_CAP, NEEDS_TOOL, ADVENTURE_QUEST_XP, armourByKey, lightFrom, lightItem, BOSS_WEEK_BONUS, bossOfWeek, isBoss, slainItem, dailyQuest, dishByKey, RECIPES, TOOLS, TOOL_BONUS, RIDES, rideItem, WEAPONS, toolFor, adventureLevel, boxingXp, builtItem, rollDrops, toolItem, weaponItem, type CreatureKind, type LootKey } from '../../../shared/adventure';
+import { ADVENTURE_DAILY_WINS, winXp, BERRIES_FOR, BOXING, CREATURES, CREATURE_KINDS, LOOT_CAP, NEEDS_TOOL, ADVENTURE_QUEST_XP, armourByKey, lightFrom, lightItem, BOSS_WEEK_BONUS, bossOfWeek, isBoss, slainItem, dailyQuest, dishByKey, RECIPES, TOOLS, TOOL_BONUS, RIDES, rideItem, WEAPONS, toolFor, adventureLevel, boxingXp, builtItem, rollDrops, toolItem, weaponItem, type CreatureKind, type LootKey } from '../../../shared/adventure';
 import { homeStage, nextHome } from '../../../shared/practiceVillage';
 import { readStaffLook } from '../lib/staffLook';
 import { HEIRLOOM_KINDS } from '../../../shared/measurementBoss';
@@ -10,6 +10,7 @@ import { teamWeekSummary } from '../../../shared/teamQuest';
 import { quizXpFor } from './atlas';
 import { mobilityMoments } from '../../../shared/mobilityTests';
 import { GAME_OF_DAY_BONUS, MINIGAMES, MINIGAME_REWARDED_PER_DAY, minigameByKey, minigameOfDay, minigameXp, starsFor } from '../../../shared/minigames';
+import { PET_LEVEL, cleanPetName, petByKey, petCoat } from '../../../shared/pets';
 import { Hono } from 'hono';
 import { config } from '../config';
 import { z } from 'zod';
@@ -753,7 +754,7 @@ heroPatient.get('/hero/coach', async (c) => {
   return c.json({ look: readStaffLook(row?.look) });
 });
 
-const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number; weapon?: string | null; owned?: string[]; coins?: number; loot?: Record<string, number>; tools?: string[]; rides?: string[]; built?: string[]; strength?: number; quest?: { key: string; kind: string; n: number; nl: string; en: string; progress: number; done: boolean; xp: number }; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string; pos_x?: number | null; pos_z?: number | null } | undefined) => {
+const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number; weapon?: string | null; owned?: string[]; coins?: number; loot?: Record<string, number>; tools?: string[]; rides?: string[]; built?: string[]; strength?: number; quest?: { key: string; kind: string; n: number; nl: string; en: string; progress: number; done: boolean; xp: number }; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string; pos_x?: number | null; pos_z?: number | null; pet?: string | null; pet_coat?: number | null; pet_name?: string | null } | undefined) => {
   const xp = Number(r?.xp ?? 0);
   const owned = r?.owned ?? [];
   // Only a weapon that was bought can be worn.
@@ -761,7 +762,11 @@ const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds
   const chest = (r?.built ?? []).includes('chest');
   // Only armour that was made can be worn.
   const armour = r?.armour && (r?.built ?? []).includes(r.armour) ? r.armour : null;
-  return { pos: r?.pos_x != null && r?.pos_z != null ? { x: Number(r.pos_x), z: Number(r.pos_z) } : null, slain: r?.slain ?? [], bossOfWeek: r?.bossOfWeek ?? null, light: r?.light ?? [], armour, quest: r?.quest ?? null, weapon, owned, coins: r?.coins ?? 0, loot: r?.loot ?? {}, tools: r?.tools ?? [], rides: r?.rides ?? [], built: r?.built ?? [], strength: r?.strength ?? 1, lootCap: chest ? LOOT_CAP.chest : LOOT_CAP.backpack, xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...adventureLevel(xp) };
+  const level = adventureLevel(xp);
+  // The pet walks along only from its level on, and only a breed that exists.
+  const breed = level.level >= PET_LEVEL ? petByKey(r?.pet) : undefined;
+  const pet = breed ? { key: breed.key, coat: breed.coats.indexOf(petCoat(breed, r?.pet_coat)), name: r?.pet_name ?? null } : null;
+  return { pet, petLevel: PET_LEVEL, pos: r?.pos_x != null && r?.pos_z != null ? { x: Number(r.pos_x), z: Number(r.pos_z) } : null, slain: r?.slain ?? [], bossOfWeek: r?.bossOfWeek ?? null, light: r?.light ?? [], armour, quest: r?.quest ?? null, weapon, owned, coins: r?.coins ?? 0, loot: r?.loot ?? {}, tools: r?.tools ?? [], rides: r?.rides ?? [], built: r?.built ?? [], strength: r?.strength ?? 1, lootCap: chest ? LOOT_CAP.chest : LOOT_CAP.backpack, xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...level };
 };
 /** Today's adventure task for this patient, and how far it got. */
 const questView = (today: string, patientId: string, row: { quest_day?: string | null; quest_n?: number; quest_done?: boolean } | undefined) => {
@@ -771,7 +776,7 @@ const questView = (today: string, patientId: string, row: { quest_day?: string |
 };
 const adventureRow = async (tx: Tx, patientId: string) => {
   const today = (await tx.query('SELECT CURRENT_DATE::text AS d')).rows[0].d as string;
-  const row = (await tx.query('SELECT xp, wins, weapon, armour, pos_x, pos_z, quest_day::text AS quest_day, quest_n, quest_done, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today, CASE WHEN day = CURRENT_DATE THEN rounds_today ELSE 0 END AS rounds_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
+  const row = (await tx.query('SELECT xp, wins, weapon, armour, pos_x, pos_z, pet, pet_coat, pet_name, quest_day::text AS quest_day, quest_n, quest_done, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today, CASE WHEN day = CURRENT_DATE THEN rounds_today ELSE 0 END AS rounds_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
   const bought = (await tx.query("SELECT item FROM hero_purchases WHERE patient_id = $1 AND (item LIKE 'wpn\\_%' OR item LIKE 'tool\\_%' OR item LIKE 'built\\_%' OR item LIKE 'light\\_%' OR item LIKE 'slain\\_%' OR item LIKE 'ride\\_%')", [patientId])).rows.map((r) => r.item as string);
   const owned = bought.filter((x) => x.startsWith('wpn_')).map((x) => x.slice(4));
   const tools = bought.filter((x) => x.startsWith('tool_')).map((x) => x.slice(5));
@@ -808,7 +813,8 @@ heroPatient.post('/hero/adventure/win', async (c) => {
       // The boss of the week is worth half as much XP again.
       const weekDay = (await tx.query('SELECT CURRENT_DATE::text AS d')).rows[0].d as string;
       const weekly = bossOfWeek(weekDay) === body.data.kind ? BOSS_WEEK_BONUS : 1;
-      const gained = today < ADVENTURE_DAILY_WINS ? Math.round(CREATURES[body.data.kind].xp * weekly) : 0;
+      // Every win gives XP: full for the first wins of the day, half after that.
+      const gained = winXp(Math.round(CREATURES[body.data.kind].xp * weekly), today);
       await tx.query(
         `INSERT INTO hero_adventure(patient_id, xp, wins, day, wins_today) VALUES ($1, $2, 1, CURRENT_DATE, 1)
          ON CONFLICT (patient_id) DO UPDATE SET xp = hero_adventure.xp + $2, wins = hero_adventure.wins + 1,
@@ -1163,6 +1169,27 @@ heroPatient.put('/hero/adventure/armour', async (c) => {
       const now = await adventureRow(tx, patient.id);
       if (body.data.key !== null && !(armourByKey(body.data.key) && now.built.includes(body.data.key))) throw badRequest('gear_not_owned');
       await tx.query('INSERT INTO hero_adventure(patient_id, armour) VALUES ($1, $2) ON CONFLICT (patient_id) DO UPDATE SET armour = EXCLUDED.armour, updated_at = now()', [patient.id, body.data.key]);
+      return adventureView(await adventureRow(tx, patient.id));
+    }),
+  );
+});
+
+/** Choose a pet (from adventure level 2), its coat and name; null: no pet. */
+heroPatient.put('/hero/adventure/pet', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ key: z.string().max(24).nullable(), coat: z.number().int().min(0).max(9).optional(), name: z.string().max(60).nullable().optional() }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) throw badRequest('invalid_input');
+  const breed = body.data.key === null ? null : petByKey(body.data.key);
+  if (body.data.key !== null && !breed) throw badRequest('invalid_input');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const now = await adventureRow(tx, patient.id);
+      if (breed && adventureLevel(Number(now.xp ?? 0)).level < PET_LEVEL) throw badRequest('level_too_low');
+      const coat = breed ? breed.coats.indexOf(petCoat(breed, body.data.coat)) : 0;
+      await tx.query(
+        'INSERT INTO hero_adventure(patient_id, pet, pet_coat, pet_name) VALUES ($1, $2, $3, $4) ON CONFLICT (patient_id) DO UPDATE SET pet = EXCLUDED.pet, pet_coat = EXCLUDED.pet_coat, pet_name = EXCLUDED.pet_name, updated_at = now()',
+        [patient.id, breed?.key ?? null, coat, breed ? cleanPetName(body.data.name) : null],
+      );
       return adventureView(await adventureRow(tx, patient.id));
     }),
   );

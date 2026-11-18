@@ -145,10 +145,41 @@ describe('campfire, task of the day and the chest at home', () => {
     }
   });
 
+  it('every win gives XP: full for the first 100 of the day, half after that', async () => {
+    const P = await login('patientA');
+    const [me] = await sql(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`);
+    await sql('UPDATE hero_adventure SET wins_today = 0, day = CURRENT_DATE WHERE patient_id = $1', [me.id]);
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'slime' })).body.gained).toBe(12);
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'slime' })).body.gained).toBe(12);
+    await sql('UPDATE hero_adventure SET wins_today = 100 WHERE patient_id = $1', [me.id]);
+    const late = (await P.post('/patient/hero/adventure/win', { kind: 'slime' })).body;
+    expect(late.gained).toBe(6);
+    // Picking up twigs counts for the adventure skill too.
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'twigs' })).body.gained).toBe(1);
+    await sql('UPDATE hero_adventure SET wins_today = 0 WHERE patient_id = $1', [me.id]);
+  });
+
   it('remembers where the hero stood in the village', async () => {
     const P = await login('patientA');
     expect((await P.put('/patient/hero/adventure/position', { x: 12.5, z: -7.25 })).status).toBe(200);
     expect((await P.get('/patient/hero/adventure')).body.pos).toEqual({ x: 12.5, z: -7.25 });
     expect((await P.put('/patient/hero/adventure/position', { x: 999, z: 0 })).status).toBe(400);
+  });
+
+  it('a pet from adventure level 2: breed, coat and a clean name; nothing before that level', async () => {
+    const P = await login('patientA');
+    const [me] = await sql(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`);
+    const [{ xp }] = await sql('SELECT xp FROM hero_adventure WHERE patient_id = $1', [me.id]);
+    await sql('UPDATE hero_adventure SET xp = 0 WHERE patient_id = $1', [me.id]);
+    expect((await P.put('/patient/hero/adventure/pet', { key: 'whippet', coat: 1, name: 'Bolt' })).body.error).toBe('level_too_low');
+    await sql('UPDATE hero_adventure SET xp = 500 WHERE patient_id = $1', [me.id]);
+    const chosen = (await P.put('/patient/hero/adventure/pet', { key: 'whippet', coat: 2, name: '  Bolt <b>!</b> ' })).body;
+    expect(chosen.pet).toEqual({ key: 'whippet', coat: 2, name: 'Bolt bb' });
+    expect((await P.get('/patient/hero/adventure')).body.pet).toMatchObject({ key: 'whippet', coat: 2 });
+    // A coat past the breed's list is kept inside it; an unknown breed is refused.
+    expect((await P.put('/patient/hero/adventure/pet', { key: 'siberian', coat: 9 })).body.pet).toEqual({ key: 'siberian', coat: 4, name: null });
+    expect((await P.put('/patient/hero/adventure/pet', { key: 'dragon' })).status).toBe(400);
+    expect((await P.put('/patient/hero/adventure/pet', { key: null })).body.pet).toBeNull();
+    await sql('UPDATE hero_adventure SET xp = $2 WHERE patient_id = $1', [me.id, xp]);
   });
 });

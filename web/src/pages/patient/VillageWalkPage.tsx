@@ -22,11 +22,12 @@ import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@share
 import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
 import { VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { SITES, SPOTS, TOWN_HOUSES, WILD, placeAt } from '@/components/patient/townPlan';
+import { PET_LEVEL } from '@shared/pets';
 import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
 import { SUPPLY } from '@shared/supplies';
 import { useSupplies } from '@/lib/supplies';
-import { swingMs, RIDES, alphaAdvised, armourByKey, isShadow, LIGHT, ZONES, zoneAt, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
+import { swingMs, respawnSeconds, RIDES, alphaAdvised, armourByKey, isShadow, LIGHT, ZONES, zoneAt, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
@@ -401,16 +402,24 @@ export function VillageWalkPage() {
 
   const d = heroQ.data;
   // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
-  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; rides?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string | null; pos?: { x: number; z: number } | null;
+  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; rides?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string | null; pos?: { x: number; z: number } | null; pet?: { key: string; coat: number; name: string | null } | null;
     quest?: { key: string; kind: CreatureKind; n: number; nl: string; en: string; progress: number; done: boolean; xp: number } | null };
   const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
   // The weapon in hand is the one bought and put on in the backpack; none means bare fists.
   const weapon = weaponByKey(adventure.data?.weapon);
   // The helpers of the light side that are free (set free by beating their shadow creature).
   const light = useMemo(() => new Set(adventure.data?.light ?? []), [adventure.data?.light]);
+  // The pet that walks along (a stable object, so the world only rebuilds it when it changes).
+  const petKey = adventure.data?.pet?.key ?? null;
+  const petCoat = adventure.data?.pet?.coat ?? 0;
+  const myPet = useMemo(() => (petKey ? { key: petKey, coat: petCoat } : null), [petKey, petCoat]);
   /** A new adventurer level: say which weapon the smith now sells, if one came with it. */
   const levelUp = (was: number, now: number) => {
     if (now <= was) return;
+    if (was < PET_LEVEL && now >= PET_LEVEL) {
+      toast(t(`Avonturier ${now}! Je kunt nu een huisdier kiezen: open je rugzak.`, `Adventurer ${now}! You can now choose a pet: open your backpack.`));
+      return;
+    }
     const w = weaponAt(now).weapon;
     toast(w.level > was ? t(`Avonturier ${now}! Nieuw bij de wapensmid: ${w.nl}.`, `Adventurer ${now}! New at the armourer: ${w.en}.`) : t(`Avonturier ${now}!`, `Adventurer ${now}!`));
   };
@@ -765,7 +774,23 @@ export function VillageWalkPage() {
     [nl, adventure.data?.level],
   );
   const [hurt, setHurt] = useState<Record<string, number>>({});
-  const [beaten, setBeaten] = useState<string[]>([]);
+  // Beaten creatures stay away for a while (the stronger, the longer), also over a reload: the time
+  // each comes back is kept in this browser.
+  const BEATEN_KEY = 'fp.village.beaten';
+  const readBeaten = (): Record<string, number> => {
+    try {
+      const all = JSON.parse(localStorage.getItem(BEATEN_KEY) ?? '{}') as Record<string, number>;
+      return Object.fromEntries(Object.entries(all).filter(([, until]) => until > Date.now()));
+    } catch {
+      return {};
+    }
+  };
+  const [beaten, setBeaten] = useState<string[]>(() => Object.keys(readBeaten()));
+  useEffect(() => {
+    const timers = Object.entries(readBeaten()).map(([key, until]) => window.setTimeout(() => setBeaten((b) => b.filter((k) => k !== key)), until - Date.now()));
+    return () => timers.forEach((x) => window.clearTimeout(x));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const mob = near?.startsWith('mob:') && !beaten.includes(near) ? creatures.find((c) => c.key === near) ?? null : null;
   // What was put right in real life today hits its own creature twice as hard.
   const strong = useMemo(() => new Set([...states.filter((x) => x.kind === 'buff').map((x) => x.key), ...(doneToday ? ['trained'] : []), ...(supply.fed ? ['fed'] : [])]), [states, doneToday, supply.fed]);
@@ -862,8 +887,14 @@ export function VillageWalkPage() {
     setEngaged(null);
     setBeaten((b) => [...b, key]);
     setHurt((h) => ({ ...h, [key]: 0 }));
-    // It comes back after a while, somewhere to return to.
-    window.setTimeout(() => setBeaten((b) => b.filter((k) => k !== key)), 45_000);
+    // It comes back after a while: the stronger, the longer.
+    const away = respawnSeconds(mob.kind) * 1000;
+    try {
+      localStorage.setItem(BEATEN_KEY, JSON.stringify({ ...readBeaten(), [key]: Date.now() + away }));
+    } catch {
+      /* storage optional */
+    }
+    window.setTimeout(() => setBeaten((b) => b.filter((k) => k !== key)), away);
     try {
       const r = await api.post<Adventure & { gained: number; questXp?: number; unlocked?: string | null; drops?: { item: LootKey; n: number }[] }>('/patient/hero/adventure/win', { kind: mob.kind });
       const freed = r.unlocked ? LIGHT.find((l) => l.key === r.unlocked) : null;
@@ -872,7 +903,8 @@ export function VillageWalkPage() {
       const was = adventure.data?.level ?? 1;
       qc.setQueryData(['patient-adventure'], r);
       levelUp(was, r.level);
-      if (!isHarvest(mob.kind)) toast(r.gained > 0 ? t(`${mob.label} verslagen! +${r.gained} avonturen-XP`, `${mob.label} beaten! +${r.gained} adventure XP`) : t(`${mob.label} verslagen! Voor vandaag heb je alle avonturen-XP al binnen.`, `${mob.label} beaten! You already have all of today's adventure XP.`));
+      // Every win gives adventure XP, chopping and mining too (half after the first wins of the day).
+      toast(isHarvest(mob.kind) ? t(`${mob.label}: +${r.gained} avonturen-XP`, `${mob.label}: +${r.gained} adventure XP`) : t(`${mob.label} verslagen! +${r.gained} avonturen-XP`, `${mob.label} beaten! +${r.gained} adventure XP`));
       // Loot counts for building the home: refresh what it still needs.
       if (r.drops?.length) void qc.invalidateQueries({ queryKey: ['patient-own-home'] });
       if (r.drops?.length) toast(t(`Buit: ${r.drops.map((x) => `${x.n}× ${LOOT[x.item].nl.toLowerCase()}`).join(', ')}. Het zit in je rugzak.`, `Loot: ${r.drops.map((x) => `${x.n}× ${LOOT[x.item].en.toLowerCase()}`).join(', ')}. It is in your backpack.`));
@@ -1021,6 +1053,7 @@ export function VillageWalkPage() {
             belt={karate.data && karate.data.belt > 0 ? BELTS[karate.data.belt].color : null}
             tools={adventure.data?.tools}
             ride={riding && myRide ? myRide.key : null}
+            pet={d?.hero ? myPet : null}
             weapon={hasTool && mobTool ? mobTool.key : mob && isHarvest(mob.kind) ? null : weapon.key === 'fists' ? null : weapon.key}
             pace={pace}
             api={world}

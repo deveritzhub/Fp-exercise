@@ -2,6 +2,7 @@ import { BELTS, itemKey } from '@shared/karate';
 import { BeltMark, KarateSheet, useKarate } from '@/components/patient/Karate';
 import { ARMOURS, RECIPES, RIDES, WEAPONS, ZONES, weaponAt, weaponByKey } from '@shared/adventure';
 import { BackpackCard } from '@/components/patient/Backpack';
+import { PET_LEVEL } from '@shared/pets';
 import { ItemIcon } from '@/components/patient/ItemIcon';
 import { LightCard } from '@/components/patient/LightSide';
 import { PhotoGearThumbnail } from '../../components/hero/PhotoEquipment';
@@ -139,6 +140,7 @@ function AdventureUnlocks({ level }: { level: number }) {
     ...RIDES.map((r) => ({ key: `r:${r.key}`, level: r.level, icon: r.icon, name: nl ? r.nl : r.en, where: t('Stallen', 'Stables'), extra: '' })),
     ...ARMOURS.map((ar) => ({ key: `a:${ar.key}`, level: ar.level, icon: <ItemIcon k={ar.key} emoji="🛡️" className="!h-6 !w-6" />, name: nl ? ar.nl : ar.en, where: t('Pantsermaker', 'Armourer'), extra: '' })),
     ...RECIPES.filter((r) => r.kind === 'build').map((r) => ({ key: `b:${r.key}`, level: 1, icon: <ItemIcon k={r.key} emoji={r.icon} className="!h-6 !w-6" />, name: nl ? r.nl : r.en, where: t('Werkplaats', 'Workshop'), extra: '' })),
+    { key: 'pet', level: PET_LEVEL, icon: '🐕', name: t('Huisdier: een hond of kat die meeloopt', 'Pet: a dog or cat that walks with you'), where: t('Rugzak', 'Backpack'), extra: '' },
     ...ZONES.filter((z) => z.level > 1).map((z) => ({ key: `z:${z.key}`, level: z.level, icon: z.icon, name: nl ? z.nl : z.en, where: t('Jachtgebied', 'Hunting ground'), extra: '' })),
   ].sort((x, y) => x.level - y.level || x.where.localeCompare(y.where));
   const levels = [...new Set(rows.map((r) => r.level))];

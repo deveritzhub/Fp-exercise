@@ -17,13 +17,13 @@ export const CREATURES = {
   // The first Alpha: a huge boar at the edge of the meadow. It attacks by itself and can beat you.
   alpha_boar: { nl: 'Alfazwijn', en: 'Alpha boar', hp: 60, xp: 220, weakTo: 'trained', level: 1 },
   // Not creatures but things to harvest, the same way: an oak gives wood, a rock gives stone.
-  oak: { nl: 'Eik', en: 'Oak', hp: 5, xp: 3, weakTo: 'moving', level: 1 },
-  rock: { nl: 'Rots', en: 'Rock', hp: 7, xp: 4, weakTo: 'trained', level: 1 },
+  oak: { nl: 'Eik', en: 'Oak', hp: 5, xp: 8, weakTo: 'moving', level: 1 },
+  rock: { nl: 'Rots', en: 'Rock', hp: 7, xp: 10, weakTo: 'trained', level: 1 },
   // A berry bush: picked by hand, for those who would rather not hunt.
-  bush: { nl: 'Bessenstruik', en: 'Berry bush', hp: 2, xp: 3, weakTo: 'moving', level: 1 },
+  bush: { nl: 'Bessenstruik', en: 'Berry bush', hp: 2, xp: 4, weakTo: 'moving', level: 1 },
   // Small things picked up by hand, no tool needed: a little at a time.
-  pebble: { nl: 'Steentjes', en: 'Pebbles', hp: 1, xp: 1, weakTo: 'moving', level: 1 },
-  twigs: { nl: 'Takken', en: 'Twigs', hp: 1, xp: 1, weakTo: 'moving', level: 1 },
+  pebble: { nl: 'Steentjes', en: 'Pebbles', hp: 1, xp: 2, weakTo: 'moving', level: 1 },
+  twigs: { nl: 'Takken', en: 'Twigs', hp: 1, xp: 2, weakTo: 'moving', level: 1 },
   // Outside the town wall, each in its own hunting ground: they show themselves from their level on.
   wolf: { nl: 'Wolf', en: 'Wolf', hp: 26, xp: 70, weakTo: 'trained', level: 6 },
   bear: { nl: 'Beer', en: 'Bear', hp: 50, xp: 140, weakTo: 'trained', level: 10 },
@@ -107,8 +107,20 @@ export const hitOnHero = (kind: CreatureKind, trainedToday: boolean, guard = 0) 
   return d <= 0 ? 0 : Math.max(1, Math.round(d * (trainedToday ? 0.8 : 1) * (1 - guard)));
 };
 
-/** Wins that count per day; after that the creatures can still be beaten, for nothing. */
-export const ADVENTURE_DAILY_WINS = 40;
+/** Wins per day that give full XP; after that every win still gives half (rounded up). */
+export const ADVENTURE_DAILY_WINS = 100;
+/** The XP of a win: full for the first wins of the day, half after that (never nothing). */
+export const winXp = (base: number, winsToday: number) => (winsToday < ADVENTURE_DAILY_WINS ? base : Math.ceil(base / 2));
+/**
+ * How long a beaten creature stays away, in seconds: the stronger, the longer. Bosses and Alphas take
+ * ten minutes, big trees and rocks three, pebbles and twigs a minute and a half.
+ */
+export function respawnSeconds(kind: CreatureKind): number {
+  if (kind === 'pebble' || kind === 'twigs') return 90;
+  if (kind === 'oak' || kind === 'rock' || kind === 'bush') return 180;
+  if (isAlpha(kind) || kind === 'giant_slime' || kind === 'couch_king') return 600;
+  return CREATURES[kind].level >= 6 ? 240 : 150;
+}
 
 /** Level from adventure XP: 1 at the start, each next level asks a little more. */
 export function adventureLevel(xp: number): { level: number; from: number; to: number } {

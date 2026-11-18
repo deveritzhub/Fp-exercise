@@ -52,6 +52,16 @@ test('patient furnishes the own home with coins', async ({ browser }) => {
   await expect(page.getByTestId('placing')).toHaveCount(0, { timeout: 15_000 });
   await expect(village).toHaveAttribute('data-furniture', '1');
 
+  // The chair is a seat: the button walks the hero to it and sits down; walking on stands up again.
+  await expect(village).toHaveAttribute('data-home-seats', '1');
+  await page.keyboard.press('Escape');
+  await expect(village).toHaveAttribute('data-seat', 'near', { timeout: 15_000 });
+  await page.getByTestId('sit').click();
+  await expect(village).toHaveAttribute('data-sitting', '1', { timeout: 60_000 });
+  await expect(page.getByTestId('sit')).toHaveText(/Opstaan/);
+  await page.getByTestId('sit').click();
+  await expect(village).not.toHaveAttribute('data-sitting', '1', { timeout: 15_000 });
+
   // It is still there after coming back.
   await page.reload();
   await expect(page.getByTestId('walk-village')).toHaveAttribute('data-furniture', '1', { timeout: 60_000 });

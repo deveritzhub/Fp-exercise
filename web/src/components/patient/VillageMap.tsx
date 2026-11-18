@@ -1,4 +1,6 @@
-import { useEffect, useRef, type MutableRefObject } from 'react';
+import { useEffect, useRef, useState, type MutableRefObject } from 'react';
+import { Minus, Plus, RotateCcw } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 import { VILLAGE_LAYOUT, type Vec } from './walk';
 
 /**
@@ -234,9 +236,15 @@ type Props = {
   label: string;
 };
 
-function useMap(kind: 'mini' | 'world', { track, landmarks }: Pick<Props, 'track' | 'landmarks'>) {
+/** How far the world map is zoomed in (1 = the whole village) and where it looks. */
+type MapNav = { zoom: number; cx: number; cz: number };
+const MAP_HOME: MapNav = { zoom: 1, cx: 0, cz: -1.2 };
+const MAX_ZOOM = 4;
+
+function useMap(kind: 'mini' | 'world', { track, landmarks }: Pick<Props, 'track' | 'landmarks'>, nav?: MutableRefObject<MapNav>) {
   const ref = useRef<HTMLCanvasElement>(null);
   const view = useRef<View | null>(null);
+  const redraw = useRef<() => void>(() => undefined);
   // The latest landmarks, read at draw time: a new list on every render must not restart the timer.
   const marks = useRef(landmarks);
   marks.current = landmarks;
@@ -249,22 +257,23 @@ function useMap(kind: 'mini' | 'world', { track, landmarks }: Pick<Props, 'track
       const S = c.width;
       const v: View = kind === 'mini'
         ? { size: S, center: { x: t.x, z: t.z }, scale: S / 2 / 10.5, rot: t.cam ?? 0, round: true, labels: false }
-        : { size: S, center: { x: 0, z: -1.2 }, scale: S / 2 / ((t.bound ?? VILLAGE_LAYOUT.bound) + 2.6), rot: 0, round: false, labels: true };
+        : { size: S, center: { x: nav?.current.cx ?? 0, z: nav?.current.cz ?? -1.2 }, scale: (S / 2 / ((t.bound ?? VILLAGE_LAYOUT.bound) + 2.6)) * (nav?.current.zoom ?? 1), rot: 0, round: false, labels: true };
       view.current = v;
       drawVillageMap(g, v, t, marks.current, Date.now());
     };
+    redraw.current = draw;
     draw();
     const id = window.setInterval(draw, kind === 'mini' ? 90 : 160);
     return () => window.clearInterval(id);
-  }, [kind, track]);
-  const pick = (e: React.MouseEvent<HTMLCanvasElement>): { place?: string; point?: Vec } => {
+  }, [kind, track, nav]);
+  const pick = (e: { clientX: number; clientY: number }): { place?: string; point?: Vec } => {
     const c = ref.current;
     const v = view.current;
     if (!c || !v) return {};
     const box = c.getBoundingClientRect();
     const p = toWorld(v, ((e.clientX - box.left) / box.width) * c.width, ((e.clientY - box.top) / box.height) * c.height);
     let best: Landmark | null = null;
-    let bd = kind === 'mini' ? 2.4 : 2.0;
+    let bd = kind === 'mini' ? 2.4 : 2.0 / Math.sqrt(nav?.current.zoom ?? 1);
     for (const l of marks.current) {
       const d = Math.hypot(l.x - p.x, l.z - p.z);
       if (d < bd) {
@@ -274,7 +283,7 @@ function useMap(kind: 'mini' | 'world', { track, landmarks }: Pick<Props, 'track
     }
     return best ? { place: best.key } : { point: p };
   };
-  return { ref, pick };
+  return { ref, pick, view, redraw };
 }
 
 /** Round map in the corner: the hero in the middle, the village turning with the view. */
@@ -298,23 +307,116 @@ export function Minimap(props: Props) {
   );
 }
 
-/** The whole village on one sheet, north up, with every landmark named. */
+/**
+ * The whole village on one sheet, north up, with every landmark named. Zoom with two fingers, the
+ * mouse wheel or the buttons; drag to look around; a tap (without dragging) walks the hero there.
+ */
 export function WorldMap(props: Props) {
-  const { ref, pick } = useMap('world', props);
+  const { t } = useI18n();
+  const nav = useRef<MapNav>({ ...MAP_HOME });
+  const { ref, pick, view, redraw } = useMap('world', props, nav);
+  const [zoom, setZoom] = useState(1);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const gesture = useRef<{ moved: boolean; pinch: number | null }>({ moved: false, pinch: null });
+  const bound = (props.track.current.bound ?? VILLAGE_LAYOUT.bound) + 2.6;
+
+  const apply = (next: MapNav) => {
+    const z = Math.min(MAX_ZOOM, Math.max(1, next.zoom));
+    // Keep the view over the village: the closer in, the further the centre may move.
+    const reach = bound * (1 - 1 / z);
+    nav.current = { zoom: z, cx: Math.max(-reach, Math.min(reach, next.cx)), cz: Math.max(-1.2 - reach, Math.min(-1.2 + reach, next.cz)) };
+    setZoom(z);
+    redraw.current();
+  };
+  /** Zoom by a factor around a point on the canvas (in client pixels), so that point stays put. */
+  const zoomAt = (f: number, clientX?: number, clientY?: number) => {
+    const c = ref.current;
+    const v = view.current;
+    const n = nav.current;
+    const z = Math.min(MAX_ZOOM, Math.max(1, n.zoom * f));
+    if (!c || !v || clientX === undefined || clientY === undefined) return apply({ ...n, zoom: z });
+    const box = c.getBoundingClientRect();
+    const p = toWorld(v, ((clientX - box.left) / box.width) * c.width, ((clientY - box.top) / box.height) * c.height);
+    const k = n.zoom / z;
+    apply({ zoom: z, cx: p.x + (n.cx - p.x) * k, cz: p.z + (n.cz - p.z) * k });
+  };
+  // The wheel zooms the map, not the page (a passive listener cannot stop the page from scrolling).
+  useEffect(() => {
+    const c = ref.current;
+    if (!c) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      zoomAt(e.deltaY < 0 ? 1.18 : 1 / 1.18, e.clientX, e.clientY);
+    };
+    c.addEventListener('wheel', onWheel, { passive: false });
+    return () => c.removeEventListener('wheel', onWheel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.current.size === 1) gesture.current = { moved: false, pinch: null };
+    if (pointers.current.size === 2) {
+      const [a, b] = [...pointers.current.values()];
+      gesture.current.pinch = Math.hypot(a.x - b.x, a.y - b.y);
+      gesture.current.moved = true;
+    }
+  };
+  const onMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const was = pointers.current.get(e.pointerId);
+    if (!was) return;
+    const now = { x: e.clientX, y: e.clientY };
+    pointers.current.set(e.pointerId, now);
+    const c = ref.current;
+    const v = view.current;
+    if (!c || !v) return;
+    if (pointers.current.size === 2 && gesture.current.pinch) {
+      const [a, b] = [...pointers.current.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      zoomAt(d / gesture.current.pinch, (a.x + b.x) / 2, (a.y + b.y) / 2);
+      gesture.current.pinch = d;
+      return;
+    }
+    const dx = now.x - was.x;
+    const dy = now.y - was.y;
+    if (!gesture.current.moved && Math.hypot(dx, dy) < 4) return;
+    gesture.current.moved = true;
+    if (nav.current.zoom <= 1) return;
+    const box = c.getBoundingClientRect();
+    const perPx = c.width / box.width / v.scale;
+    apply({ ...nav.current, cx: nav.current.cx - dx * perPx, cz: nav.current.cz - dy * perPx });
+  };
+  const onUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const tap = pointers.current.size === 1 && !gesture.current.moved;
+    pointers.current.delete(e.pointerId);
+    if (!tap) return;
+    const hit = pick(e);
+    if (hit.place) props.onPlace(hit.place);
+    else if (hit.point && Math.hypot(hit.point.x, hit.point.z) <= (props.track.current.bound ?? VILLAGE_LAYOUT.bound)) props.onWalk(hit.point);
+  };
+  const btn = 'grid h-11 w-11 place-items-center rounded-full border border-[#e4bc63]/70 bg-[#1c2420]/85 text-[#f6e2a6] shadow-lift disabled:opacity-40';
   return (
-    <canvas
-      ref={ref}
-      width={760}
-      height={760}
-      role="img"
-      aria-label={props.label}
-      data-testid="world-map"
-      className="aspect-square w-full cursor-pointer rounded-xl border-4 border-[#6b4a2b] bg-[#3f6a2e] shadow-card"
-      onClick={(e) => {
-        const hit = pick(e);
-        if (hit.place) props.onPlace(hit.place);
-        else if (hit.point && Math.hypot(hit.point.x, hit.point.z) <= (props.track.current.bound ?? VILLAGE_LAYOUT.bound)) props.onWalk(hit.point);
-      }}
-    />
+    <div className="relative">
+      <canvas
+        ref={ref}
+        width={760}
+        height={760}
+        role="img"
+        aria-label={props.label}
+        data-testid="world-map"
+        data-zoom={zoom.toFixed(2)}
+        className="aspect-square w-full cursor-pointer touch-none select-none rounded-xl border-4 border-[#6b4a2b] bg-[#3f6a2e] shadow-card"
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        onPointerCancel={(e) => pointers.current.delete(e.pointerId)}
+      />
+      <div className="absolute bottom-3 right-3 flex flex-col gap-1.5">
+        <button type="button" className={btn} data-testid="map-zoom-in" aria-label={t('Inzoomen op de kaart', 'Zoom in on the map')} disabled={zoom >= MAX_ZOOM} onClick={() => zoomAt(1.5)}><Plus className="h-5 w-5" aria-hidden /></button>
+        <button type="button" className={btn} data-testid="map-zoom-out" aria-label={t('Uitzoomen op de kaart', 'Zoom out of the map')} disabled={zoom <= 1} onClick={() => zoomAt(1 / 1.5)}><Minus className="h-5 w-5" aria-hidden /></button>
+        {zoom > 1 && <button type="button" className={btn} data-testid="map-zoom-reset" aria-label={t('Hele kaart tonen', 'Show the whole map')} onClick={() => apply({ ...MAP_HOME })}><RotateCcw className="h-[18px] w-[18px]" aria-hidden /></button>}
+      </div>
+    </div>
   );
 }
