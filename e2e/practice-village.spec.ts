@@ -180,7 +180,7 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   await page.goto('/p/held/inventaris');
   const pack = page.getByTestId('pack-weapons');
   await expect(pack.locator('[data-weapon="fists"]')).toHaveAttribute('data-state', 'on');
-  await expect(page.getByTestId('pack-shops').locator('[data-shop]')).toHaveCount(5);
+  await expect(page.getByTestId('pack-shops').locator('[data-shop]')).toHaveCount(6);
   await expect(page.getByTestId('backpack-flask')).toContainText(/Veldfles · \d+ glas/);
   await expect(page.getByTestId('backpack-rations')).toContainText('Rantsoenen');
   // The loot of the village: a square per kind, a question mark until it is found.
