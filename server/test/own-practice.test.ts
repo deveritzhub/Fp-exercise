@@ -28,6 +28,13 @@ describe('own practice with the FP library and strength logging', () => {
     const admin = await login('admin');
     const created = await admin.post('/admin/practices', { name: 'Eigen training', slug: 'eigen-training', ownerName: 'Test Eigenaar', ownerEmail: 'eigenaar@eigen-training.test' });
     expect(created.status).toBe(201);
+    // The platform admin changes the practice's details; a slug in use elsewhere is refused.
+    expect((await admin.patch(`/admin/practices/${created.body.id}`, { name: 'Eigen Training BV', slug: 'eigen-training-bv', city: 'Delft', subscriptionStatus: 'active' })).status).toBe(200);
+    const row = (await admin.get('/admin/practices')).body.items.find((p: { id: string }) => p.id === created.body.id);
+    expect(row).toMatchObject({ name: 'Eigen Training BV', slug: 'eigen-training-bv', city: 'Delft', subscriptionStatus: 'active' });
+    expect((await admin.patch(`/admin/practices/${created.body.id}`, { slug: 'functional-performance-demo' })).status).toBe(409);
+    expect((await admin.patch(`/admin/practices/${created.body.id}`, { city: '' })).status).toBe(200);
+    expect((await admin.get('/admin/practices')).body.items.find((p: { id: string }) => p.id === created.body.id).city).toBeNull();
     // MFA is covered elsewhere; switch the requirement off here to reach the staff APIs.
     const db = new pg.Client({ connectionString: process.env.DATABASE_OWNER_URL });
     await db.connect();

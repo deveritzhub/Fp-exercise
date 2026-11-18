@@ -4054,7 +4054,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       </div>
       {seatState !== 'none' && (
         <button type="button" data-testid="sit" onClick={() => seatAction.current()}
-          className="tap absolute bottom-[64px] left-1/2 inline-flex min-h-[44px] -translate-x-1/2 items-center gap-2 rounded-full border border-[#e4bc63] bg-[#1c2420]/90 px-4 text-[15px] font-semibold text-[#f6e2a6] shadow-lift">
+          className="tap absolute bottom-[120px] left-1/2 inline-flex min-h-[44px] -translate-x-1/2 items-center gap-2 rounded-full border border-[#e4bc63] bg-[#1c2420]/90 px-4 text-[15px] font-semibold text-[#f6e2a6] shadow-lift">
           <span aria-hidden>🪑</span>{seatState === 'sitting' ? t('Opstaan', 'Stand up') : t('Zitten', 'Sit down')}
         </button>
       )}
