@@ -6,7 +6,7 @@ import { petModel } from './pets3d';
  * The chosen pet on a small turntable: it trots for a moment, then sits and wags. Loaded on demand,
  * so the hero page does not carry the 3D code until the pet is chosen.
  */
-export default function PetPreview({ k, coat }: { k: string; coat: number }) {
+export default function PetPreview({ k, coat, color = null, wear = null }: { k: string; coat: number; color?: string | null; wear?: string | null }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = ref.current;
@@ -35,7 +35,7 @@ export default function PetPreview({ k, coat }: { k: string; coat: number }) {
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
-    const pet = petModel(k, coat);
+    const pet = petModel(k, coat, { color, wear });
     if (pet) scene.add(pet.group);
     // Frame the pet: small cats and big greyhounds both fill the view.
     const size = pet ? pet.height : 0.5;
@@ -70,6 +70,6 @@ export default function PetPreview({ k, coat }: { k: string; coat: number }) {
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [k, coat]);
+  }, [k, coat, color, wear]);
   return <div ref={ref} aria-hidden className="h-full w-full" />;
 }

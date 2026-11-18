@@ -218,3 +218,34 @@ export const cleanPetName = (s: string | null | undefined): string | null => {
 };
 
 export type PetChoice = { key: string; coat: number; name: string | null };
+
+/**
+ * The grooming salon: a colour for the collar (and whatever the pet wears), free to change, and
+ * things to wear, each bought once with coins and then put on or taken off freely.
+ */
+export const PET_COLORS = [
+  { key: 'red', nl: 'Rood', en: 'Red', hex: 0xc8352e },
+  { key: 'blue', nl: 'Blauw', en: 'Blue', hex: 0x2f6fc4 },
+  { key: 'green', nl: 'Groen', en: 'Green', hex: 0x2f8a52 },
+  { key: 'gold', nl: 'Goud', en: 'Gold', hex: 0xd9a52c },
+  { key: 'pink', nl: 'Roze', en: 'Pink', hex: 0xe07aa6 },
+  { key: 'purple', nl: 'Paars', en: 'Purple', hex: 0x7a4ab8 },
+  { key: 'orange', nl: 'Oranje', en: 'Orange', hex: 0xe8782a },
+  { key: 'black', nl: 'Zwart', en: 'Black', hex: 0x24211e },
+] as const;
+export type PetColor = (typeof PET_COLORS)[number]['key'];
+export const petColor = (key: string | null | undefined) => PET_COLORS.find((c) => c.key === key) ?? PET_COLORS[0];
+
+export const PET_WEAR = [
+  { key: 'bandana', nl: 'Bandana', en: 'Bandana', price: 10, icon: '🧣', aboutNl: 'Een driehoekige sjaal om de hals.', aboutEn: 'A triangular scarf round the neck.' },
+  { key: 'bow', nl: 'Strik', en: 'Bow', price: 10, icon: '🎀', aboutNl: 'Een strik op de halsband.', aboutEn: 'A bow on the collar.' },
+  { key: 'harness', nl: 'Tuigje', en: 'Harness', price: 20, icon: '🦮', aboutNl: 'Een tuigje om de borst, voor lange wandelingen.', aboutEn: 'A harness round the chest, for long walks.' },
+  { key: 'coat', nl: 'Jasje', en: 'Coat', price: 30, icon: '🧥', aboutNl: 'Een warm dekje over de rug. Windhonden hebben het snel koud.', aboutEn: 'A warm coat over the back. Sighthounds feel the cold quickly.' },
+  { key: 'sweater', nl: 'Trui', en: 'Sweater', price: 35, icon: '🧶', aboutNl: 'Een gebreide trui met rolkraag.', aboutEn: 'A knitted sweater with a roll neck.' },
+] as const;
+export type PetWear = (typeof PET_WEAR)[number]['key'];
+export const petWearByKey = (key: string | null | undefined) => PET_WEAR.find((w) => w.key === key);
+export const petWearItem = (key: string) => `petwear_${key}`;
+
+/** How the pet looks: breed and coat, plus the salon's colour and what it wears. */
+export type PetLook = { key: string; coat: number; color?: string | null; wear?: string | null };

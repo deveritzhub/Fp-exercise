@@ -43,7 +43,7 @@ test('a greyhound chosen in the backpack follows the hero through the village', 
     await page.keyboard.press('Escape');
 
     // In the world it walks along: after a walk it is close behind the hero.
-    await expect(village).toHaveAttribute('data-pet', 'greyhound:1', { timeout: 20_000 });
+    await expect(village).toHaveAttribute('data-pet', /^greyhound:1:/, { timeout: 20_000 });
     await page.keyboard.down('KeyW');
     await page.waitForTimeout(3500);
     await page.keyboard.up('KeyW');
@@ -52,6 +52,22 @@ test('a greyhound chosen in the backpack follows the hero through the village', 
     const [px, pz] = ((await village.getAttribute('data-pet-pos')) ?? '99,99').split(',').map(Number);
     expect(Math.hypot(hx - px, hz - pz)).toBeLessThan(2.5);
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/pet-world.png' });
+
+    // The grooming salon: a blue collar for free, and a coat bought with coins; the pet wears it in the world.
+    for (const day of ['2002-01-01', '2002-01-02']) await sql('INSERT INTO hero_daily_chests (patient_id, day, coins) VALUES ($1, $2, 50) ON CONFLICT DO NOTHING', [emma.id, day]);
+    await page.goto('/p/winkel/trimsalon');
+    await expect(page.getByTestId('salon')).toBeVisible();
+    await page.getByTestId('salon-color-blue').click();
+    await expect(page.getByTestId('salon-color-blue')).toHaveAttribute('aria-pressed', 'true');
+    const coat = page.getByTestId('salon-wear').locator('[data-wear="coat"]');
+    await expect(coat).toHaveAttribute('data-state', 'shop');
+    await coat.getByRole('button', { name: /Koop Jasje/ }).click();
+    await expect(coat).toHaveAttribute('data-state', 'on');
+    await page.waitForTimeout(1500);
+    if (process.env.SHOTS) await page.getByTestId('shop-trimsalon').screenshot({ path: process.env.SHOTS + '/salon.png' });
+    await expectAccessible(page, 'grooming salon');
+    await page.goto('/p/dorp');
+    await expect(page.getByTestId('walk-village')).toHaveAttribute('data-pet', 'greyhound:1:blue:coat', { timeout: 90_000 });
 
     // Back to no pet.
     expect((await page.request.put('/api/patient/hero/adventure/pet', { data: { key: null }, headers: { 'x-requested-with': 'fp' } })).status()).toBe(200);

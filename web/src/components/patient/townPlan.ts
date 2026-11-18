@@ -83,6 +83,8 @@ export const TOWN_HOUSES: TownHouse[] = [
   { key: 'townhall', nl: 'Raadhuis', en: 'Town hall', at: { x: -4.2, z: 14.5 }, to: '/p/instellingen', roof: 0x3a4a8a, scale: 1.25 },
   // Stables, south-east.
   { key: 'stables', nl: 'Stallen', en: 'Stables', at: { x: 12.5, z: 13.5 }, to: '/p/winkel/stallen', roof: 0x8a5a3a },
+  // Beside the stables: the grooming salon, where the pet is dressed up.
+  { key: 'groomer', nl: 'Trimsalon', en: 'Grooming salon', at: { x: 7.4, z: 14.6 }, to: '/p/winkel/trimsalon', roof: 0xc0607e },
 ];
 
 /** The market stalls south of the square: striped awnings, no door. */
@@ -171,12 +173,13 @@ export const WILD: { kind: string; x: number; z: number; zone?: 'dungeon' }[] = 
   { kind: 'twigs', x: -38.6, z: -3.6 },
   { kind: 'twigs', x: -22.6, z: 17.4 },
   { kind: 'twigs', x: 9, z: 27 },
-  // More easy animals (added last so the keys above stay the same): a fuller meadow, and chickens
-  // scratching between the homes, close to where a new hero starts out.
+  // More easy animals (added last so the keys above stay the same): a fuller meadow, and chickens on
+  // the open grass south of the square (by the campfire, the stables and the own home), close to
+  // where a new hero starts out and clear of the narrow lanes between houses.
   { kind: 'cow', x: 21.2, z: 11.6 },
   { kind: 'chicken', x: 18.2, z: 15.2 },
   { kind: 'chicken', x: 15.8, z: 12.2 },
-  { kind: 'chicken', x: -10.6, z: 19.4 },
-  { kind: 'chicken', x: -15.4, z: 24.4 },
-  { kind: 'chicken', x: -6.2, z: 18.6 },
+  { kind: 'chicken', x: 3.8, z: 12.4 },
+  { kind: 'chicken', x: 10.8, z: 18.6 },
+  { kind: 'chicken', x: 2.8, z: 17.8 },
 ];

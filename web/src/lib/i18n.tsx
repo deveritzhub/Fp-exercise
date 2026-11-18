@@ -137,6 +137,7 @@ const ERRORS: Record<string, [string, string]> = {
   not_enough_loot: ['Je hebt hier nog niet genoeg buit voor.', 'You do not have enough loot for this yet.'],
   level_too_low: ['Hier is je avonturier nog niet sterk genoeg voor. Versla meer kwaaltjes.', 'Your adventurer is not strong enough for this yet. Beat more ailments.'],
   gear_owned: ['Dit item heb je al.', 'You already own this item.'],
+  pet_required: ['Kies eerst een huisdier (vanaf avonturier level 2).', 'Choose a pet first (from adventurer level 2).'],
   chest_opened: ['Je dagkist is vandaag al open. Morgen weer!', 'You already opened today’s chest. Back tomorrow!'],
   chest_locked: ['Doe eerst je dagcheck of een training, dan gaat je dagkist open.', 'Do your daily check-in or a workout first to open your chest.'],
   not_enough_coins: ['Je hebt nog niet genoeg muntjes. Train verder om er meer te verdienen.', 'Not enough coins yet. Keep training to earn more.'],

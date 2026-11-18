@@ -174,12 +174,28 @@ describe('campfire, task of the day and the chest at home', () => {
     expect((await P.put('/patient/hero/adventure/pet', { key: 'whippet', coat: 1, name: 'Bolt' })).body.error).toBe('level_too_low');
     await sql('UPDATE hero_adventure SET xp = 500 WHERE patient_id = $1', [me.id]);
     const chosen = (await P.put('/patient/hero/adventure/pet', { key: 'whippet', coat: 2, name: '  Bolt <b>!</b> ' })).body;
-    expect(chosen.pet).toEqual({ key: 'whippet', coat: 2, name: 'Bolt bb' });
+    expect(chosen.pet).toMatchObject({ key: 'whippet', coat: 2, name: 'Bolt bb', color: 'red', wear: null });
     expect((await P.get('/patient/hero/adventure')).body.pet).toMatchObject({ key: 'whippet', coat: 2 });
     // A coat past the breed's list is kept inside it; an unknown breed is refused.
-    expect((await P.put('/patient/hero/adventure/pet', { key: 'siberian', coat: 9 })).body.pet).toEqual({ key: 'siberian', coat: 4, name: null });
+    expect((await P.put('/patient/hero/adventure/pet', { key: 'siberian', coat: 9 })).body.pet).toMatchObject({ key: 'siberian', coat: 4, name: null });
     expect((await P.put('/patient/hero/adventure/pet', { key: 'dragon' })).status).toBe(400);
+    // The grooming salon: a free collar colour, things to wear bought once with coins.
+    expect((await P.put('/patient/hero/adventure/pet/look', { color: 'blue' })).body.pet).toMatchObject({ key: 'siberian', color: 'blue', wear: null });
+    expect((await P.put('/patient/hero/adventure/pet/look', { color: 'neon' })).status).toBe(400);
+    expect((await P.put('/patient/hero/adventure/pet/look', { wear: 'coat' })).body.error).toBe('gear_not_owned');
+    for (const day of ['2001-01-01', '2001-01-02']) await sql('INSERT INTO hero_daily_chests (patient_id, day, coins) VALUES ($1, $2, 50) ON CONFLICT DO NOTHING', [me.id, day]);
+    const coins = (await P.get('/patient/hero/adventure')).body.coins;
+    const bought = (await P.post('/patient/hero/adventure/pet/wear/buy', { key: 'coat' })).body;
+    expect(bought.pet).toMatchObject({ wear: 'coat', color: 'blue' });
+    expect(bought.petWear).toEqual(['coat']);
+    expect(bought.coins).toBe(coins - 30);
+    expect((await P.post('/patient/hero/adventure/pet/wear/buy', { key: 'coat' })).body.error).toBe('gear_owned');
+    expect((await P.put('/patient/hero/adventure/pet/look', { wear: null })).body.pet.wear).toBeNull();
+    expect((await P.put('/patient/hero/adventure/pet/look', { wear: 'coat' })).body.pet.wear).toBe('coat');
+    // Another breed keeps the colour and what it wears.
+    expect((await P.put('/patient/hero/adventure/pet', { key: 'whippet', coat: 0 })).body.pet).toMatchObject({ key: 'whippet', color: 'blue', wear: 'coat' });
     expect((await P.put('/patient/hero/adventure/pet', { key: null })).body.pet).toBeNull();
+    expect((await P.post('/patient/hero/adventure/pet/wear/buy', { key: 'bow' })).body.error).toBe('pet_required');
     await sql('UPDATE hero_adventure SET xp = $2 WHERE patient_id = $1', [me.id, xp]);
   });
 });

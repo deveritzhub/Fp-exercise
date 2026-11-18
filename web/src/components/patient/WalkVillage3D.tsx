@@ -133,7 +133,7 @@ type Props = {
   /** The ride the hero is on (bike, scooter, car), or none: on foot. Indoors always on foot. */
   ride?: string | null;
   /** The pet that walks along with the hero (breed and coat), or none. */
-  pet?: { key: string; coat: number } | null;
+  pet?: { key: string; coat: number; color?: string | null; wear?: string | null } | null;
   /** Where the hero stood last time (from the server): the walk starts there instead of at the well. */
   startAt?: Vec | null;
   /** How fast the hero moves, 1 = normal. Lower when thirsty or stiff. */
@@ -3393,13 +3393,13 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       if ((marker.material as THREE.MeshBasicMaterial).opacity > 0) marker.scale.setScalar(1 + Math.sin(tt * 6) * 0.12);
 
-      const wantPet = petRef.current ? `${petRef.current.key}:${petRef.current.coat}` : null;
+      const wantPet = petRef.current ? `${petRef.current.key}:${petRef.current.coat}:${petRef.current.color ?? ''}:${petRef.current.wear ?? ''}` : null;
       if (wantPet !== petOn) {
         if (petM) {
           scene.remove(petM.group);
           petM.dispose();
         }
-        petM = wantPet && petRef.current ? petModel(petRef.current.key, petRef.current.coat) : null;
+        petM = wantPet && petRef.current ? petModel(petRef.current.key, petRef.current.coat, { color: petRef.current.color, wear: petRef.current.wear }) : null;
         petOn = petM ? wantPet : null;
         if (petM) {
           scene.add(petM.group);

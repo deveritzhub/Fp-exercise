@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { petByKey, petCoat, type Breed, type Coat } from '@shared/pets';
+import { petByKey, petCoat, petColor, petWearByKey, type Breed, type Coat } from '@shared/pets';
 
 /**
  * A pet built from simple low-poly shapes, after the breed's proportions (shared/pets): the deep chest
@@ -103,13 +103,14 @@ function coatTexture(coat: Coat, seed: string): THREE.Texture | null {
 
 type Leg = { root: THREE.Group; knee: THREE.Group; paw: THREE.Object3D; front: boolean; side: number; bend: number };
 
-export function petModel(key: string, coatIndex: number): PetModel | null {
+/** `color` and `wear` come from the grooming salon: the collar's colour and what the pet wears. */
+export function petModel(key: string, coatIndex: number, look: { color?: string | null; wear?: string | null } = {}): PetModel | null {
   const b = petByKey(key);
   if (!b) return null;
-  return build(b, petCoat(b, coatIndex), coatIndex);
+  return build(b, petCoat(b, coatIndex), coatIndex, petColor(look.color).hex, petWearByKey(look.wear)?.key ?? null);
 }
 
-function build(b: Breed, coat: Coat, coatIndex: number): PetModel {
+function build(b: Breed, coat: Coat, coatIndex: number, accent: number, wear: string | null): PetModel {
   const cat = b.kind === 'cat';
   const H = b.h;
   const L = H * b.len;
@@ -296,6 +297,85 @@ function build(b: Breed, coat: Coat, coatIndex: number): PetModel {
       ear.rotation.set(-0.5, 0, -s * 0.45);
     }
     head.add(ear);
+  }
+
+  // From the grooming salon: always a collar with a tag, and what the pet wears in the same colour.
+  const accentM = mat(accent, null, 0.55);
+  const goldM = new THREE.MeshStandardMaterial({ color: 0xe8c25a, roughness: 0.3, metalness: 0.8 });
+  mats.push(goldM);
+  const torus = (r: number, tube: number, m: THREE.Material) => {
+    const g = new THREE.TorusGeometry(r, tube, 6, 18);
+    geos.push(g);
+    const t2 = new THREE.Mesh(g, m);
+    t2.castShadow = true;
+    return t2;
+  };
+  const collarY = neckLen * 0.2;
+  const collar = torus(neckR * 1.02, Math.max(neckR * 0.17, 0.006), accentM);
+  collar.rotation.x = Math.PI / 2;
+  collar.position.y = collarY;
+  neck.add(collar);
+  const tag = ell(neckR * 0.22, neckR * 0.22, neckR * 0.08, goldM);
+  tag.position.set(0, collarY - neckR * 0.3, neckR * 1.12);
+  neck.add(tag);
+  if (wear === 'bandana') {
+    const scarf = cone(neckR * 1.25, neckR * 2.1, accentM, 3);
+    scarf.scale.z = 0.3;
+    // Hanging down in front of the chest (straight down in the world, whatever the neck's tilt).
+    scarf.rotation.x = Math.PI - neckTilt;
+    scarf.position.set(0, collarY - Math.cos(neckTilt) * neckR * 0.9, neckR * 0.75 + Math.sin(neckTilt) * neckR * 0.9);
+    neck.add(scarf);
+  } else if (wear === 'bow') {
+    for (const sd of [-1, 1]) {
+      const wing = cone(neckR * 0.5, neckR * 0.95, accentM, 6);
+      wing.rotation.z = sd * Math.PI / 2;
+      wing.position.set(sd * neckR * 0.45, collarY, neckR * 1.15);
+      neck.add(wing);
+    }
+    const knot = ell(neckR * 0.22, neckR * 0.22, neckR * 0.2, accentM);
+    knot.position.set(0, collarY, neckR * 1.2);
+    neck.add(knot);
+  } else if (wear === 'harness') {
+    for (const z of [L * 0.28, L * 0.04]) {
+      const ring = torus(1, 0.075, accentM);
+      const rx = (z > 0.1 * L ? chestRx : loinRy * wide * 0.95) * 1.05;
+      const ry = (z > 0.1 * L ? chestRy : loinRy) * 1.05;
+      ring.scale.set(rx, ry, Math.min(rx, ry));
+      ring.position.set(0, z > 0.1 * L ? chest.position.y : loin.position.y, z);
+      body.add(ring);
+    }
+    const strap = new THREE.Mesh(new THREE.BoxGeometry(chestRx * 0.35, H * 0.025, L * 0.3), accentM);
+    geos.push(strap.geometry);
+    strap.position.set(0, H + H * 0.01, L * 0.16);
+    const ringTop = torus(H * 0.03, H * 0.008, goldM);
+    ringTop.position.set(0, H + H * 0.04, L * 0.1);
+    body.add(strap, ringTop);
+  } else if (wear === 'coat' || wear === 'sweater') {
+    // A coat covers the back and the flanks; a sweater goes all round, with a roll neck.
+    const knit = wear === 'sweater';
+    const capGeo = new THREE.SphereGeometry(1, 14, 9, 0, Math.PI * 2, 0, knit ? Math.PI : Math.PI * 0.56);
+    geos.push(capGeo);
+    const clothM = knit ? mat(accent, null, 1) : accentM;
+    if (!knit) (clothM as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
+    for (const part of [chest, loin]) {
+      const cloth = new THREE.Mesh(capGeo, clothM);
+      cloth.castShadow = true;
+      cloth.scale.set(part.scale.x * 1.1, part.scale.y * 1.08, part.scale.z * 1.04);
+      cloth.position.copy(part.position);
+      body.add(cloth);
+    }
+    if (knit) {
+      const roll = torus(neckR * 1.05, neckR * 0.32, clothM);
+      roll.rotation.x = Math.PI / 2;
+      roll.position.y = collarY * 0.4;
+      neck.add(roll);
+    } else {
+      // The trim along the edge of the coat.
+      const trim = new THREE.Mesh(new THREE.BoxGeometry(chestRx * 0.25, H * 0.02, L * 0.62), goldM);
+      geos.push(trim.geometry);
+      trim.position.set(0, H + H * 0.035, L * 0.04);
+      body.add(trim);
+    }
   }
 
   // Tail: a chain of segments hanging down from the croup, turned back (and up) by its root.

@@ -9,7 +9,7 @@ import { cn } from '@/lib/cn';
 import { Button, Card, Spinner, useToast } from '@/components/ui';
 import type { HeroState } from '@/lib/types';
 import { ItemIcon } from './ItemIcon';
-import { PetCard } from './PetPicker';
+import { PetCard, PetSalon } from './PetPicker';
 import { useSupplies } from '@/lib/supplies';
 
 type Adventure = { level: number; weapon: string | null; owned: string[]; coins: number; loot?: Record<string, number>; tools?: string[]; rides?: string[]; built?: string[]; strength?: number; lootCap?: number; armour?: string | null };
@@ -54,6 +54,7 @@ export const SHOPS = {
   gereedschap: { nl: 'Gereedschapswinkel', en: 'Tool shop', icon: '🛠️', aboutNl: 'Grote eiken hak je alleen met een hakbijl, grote rotsen breek je alleen met een pikhouweel; die geven veel meer. Takken en steentjes raap je met de hand op.', aboutEn: 'Big oaks are chopped only with a hatchet, big rocks broken only with a pickaxe; they give much more. Twigs and pebbles are picked up by hand.' },
   stallen: { nl: 'Stallen', en: 'Stables', icon: '🚲', aboutNl: 'Sneller door het dorp en de jachtgronden. In de wereld stap je op en af met de knop onderin. Vechten, oprapen en naar binnen gaan doe je te voet.', aboutEn: 'Faster round the village and the hunting grounds. In the world you get on and off with the button at the bottom. Fighting, picking up and going inside are done on foot.' },
   werkplaats: { nl: 'Werkplaats', en: 'Workshop', icon: '🔨', aboutNl: 'Maak van je buit een eenvoudig wapen of een kist. In een kist bewaar je tot 99 stuks per soort in plaats van 20. Liever niet jagen? Huid, bot en veren betaal je ook met bessen.', aboutEn: 'Make a simple weapon or a chest from your loot. A chest keeps up to 99 of a kind instead of 20. Rather not hunt? Hide, bone and feathers can be paid with berries too.' },
+  trimsalon: { nl: 'Trimsalon', en: 'Grooming salon', icon: '✂️', aboutNl: 'Maak je huisdier mooi: een halsband in je lievelingskleur, en een bandana, strik, tuigje, jasje of trui. Wat je koopt blijft van jou; aan- en uitdoen is gratis.', aboutEn: 'Make your pet look its best: a collar in your favourite colour, and a bandana, bow, harness, coat or sweater. What you buy stays yours; putting it on and off is free.' },
   pantser: { nl: 'Pantsermaker', en: 'Armourer', icon: '🛡️', aboutNl: 'Een harnas dempt de klappen van wezens. Je laat het maken van vachten en huiden.', aboutEn: 'Armour softens the blows of creatures. You have it made from pelts and hides.' },
 } as const;
 export type ShopKey = keyof typeof SHOPS;
@@ -250,7 +251,9 @@ export function ShopCard({ shop }: { shop: ShopKey }) {
 
   let list: React.ReactNode = null;
   let next: React.ReactNode = null;
-  if (shop === 'smid') {
+  if (shop === 'trimsalon') {
+    list = <PetSalon />;
+  } else if (shop === 'smid') {
     const forSale = WEAPONS.filter((w) => w.key !== 'fists' && !a?.owned.includes(w.key) && level >= w.level);
     const soon = WEAPONS.find((w) => level < w.level);
     list = (

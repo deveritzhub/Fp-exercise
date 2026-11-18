@@ -147,6 +147,7 @@ const SIGN: Record<string, [string, string]> = {
   tradepost: ['🎲', '#7a5a3a'],
   townhall: ['🏛️', '#3a4a8a'],
   stables: ['🚲', '#8a5a3a'],
+  groomer: ['✂️', '#c0607e'],
 };
 
 /** The half-timbered house for a building of the town, by its size. */
@@ -161,6 +162,7 @@ const PLACE_HINT: Record<string, [string, string]> = {
   tailor: ['Je uiterlijk aanpassen', 'Change your look'],
   toolshop: ['Hakbijl en pikhouweel kopen', 'Buy a hatchet and a pickaxe'],
   stables: ['Een fiets, scooter of auto kopen', 'Buy a bike, scooter or car'],
+  groomer: ['Je huisdier aankleden: halsband, bandana, jasje en meer', 'Dress up your pet: collar, bandana, coat and more'],
   workshop: ['Maken van je buit', 'Make things from your loot'],
   carpenter: ['Een kist of wapen maken', 'Make a chest or a weapon'],
   rehab: ['Je revalidatie', 'Your rehabilitation'],
@@ -402,7 +404,7 @@ export function VillageWalkPage() {
 
   const d = heroQ.data;
   // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
-  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; rides?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string | null; pos?: { x: number; z: number } | null; pet?: { key: string; coat: number; name: string | null } | null;
+  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; rides?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string | null; pos?: { x: number; z: number } | null; pet?: { key: string; coat: number; name: string | null; color?: string | null; wear?: string | null } | null;
     quest?: { key: string; kind: CreatureKind; n: number; nl: string; en: string; progress: number; done: boolean; xp: number } | null };
   const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
   // The weapon in hand is the one bought and put on in the backpack; none means bare fists.
@@ -412,7 +414,9 @@ export function VillageWalkPage() {
   // The pet that walks along (a stable object, so the world only rebuilds it when it changes).
   const petKey = adventure.data?.pet?.key ?? null;
   const petCoat = adventure.data?.pet?.coat ?? 0;
-  const myPet = useMemo(() => (petKey ? { key: petKey, coat: petCoat } : null), [petKey, petCoat]);
+  const petColorKey = adventure.data?.pet?.color ?? null;
+  const petWearKey = adventure.data?.pet?.wear ?? null;
+  const myPet = useMemo(() => (petKey ? { key: petKey, coat: petCoat, color: petColorKey, wear: petWearKey } : null), [petKey, petCoat, petColorKey, petWearKey]);
   /** A new adventurer level: say which weapon the smith now sells, if one came with it. */
   const levelUp = (was: number, now: number) => {
     if (now <= was) return;
