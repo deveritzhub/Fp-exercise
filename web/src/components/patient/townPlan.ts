@@ -62,12 +62,12 @@ export const SPOTS = {
 export type TownHouse = { key: string; nl: string; en: string; at: Vec; to?: string; roof: number; soon?: boolean; scale?: number };
 export const TOWN_HOUSES: TownHouse[] = [
   // Crafts, west.
-  { key: 'weaponshop', nl: 'Wapenwinkel', en: 'Weapon shop', at: { x: -22, z: 3.8 }, to: '/p/held/inventaris#backpack-title', roof: 0x8a3a2a },
-  { key: 'armourer', nl: 'Pantsermaker', en: 'Armourer', at: { x: -15.5, z: 4.6 }, to: '/p/held/inventaris#gear-title', roof: 0x5c6a7a },
+  { key: 'weaponshop', nl: 'Wapenwinkel', en: 'Weapon shop', at: { x: -22, z: 3.8 }, to: '/p/winkel/smid', roof: 0x8a3a2a },
+  { key: 'armourer', nl: 'Pantsermaker', en: 'Armourer', at: { x: -15.5, z: 4.6 }, to: '/p/winkel/pantser', roof: 0x5c6a7a },
   { key: 'tailor', nl: 'Kleermaker', en: 'Tailor', at: { x: -14.5, z: 10.5 }, to: '/p/held/uiterlijk', roof: 0x9a4a6a },
-  { key: 'toolshop', nl: 'Gereedschapswinkel', en: 'Tool shop', at: { x: -18.4, z: 8.8 }, to: '/p/held/inventaris#tools-title', roof: 0x6a7a3a },
-  { key: 'workshop', nl: 'Werkplaats', en: 'Workshop', at: { x: -23.5, z: 9 }, to: '/p/held/inventaris#craft-title', roof: 0x3d5a8a },
-  { key: 'carpenter', nl: 'Timmerwerkplaats', en: 'Carpenter', at: { x: -19.5, z: 14.5 }, to: '/p/held/inventaris#craft-title', roof: 0xa0522d },
+  { key: 'toolshop', nl: 'Gereedschapswinkel', en: 'Tool shop', at: { x: -18.4, z: 8.8 }, to: '/p/winkel/gereedschap', roof: 0x6a7a3a },
+  { key: 'workshop', nl: 'Werkplaats', en: 'Workshop', at: { x: -23.5, z: 9 }, to: '/p/winkel/werkplaats', roof: 0x3d5a8a },
+  { key: 'carpenter', nl: 'Timmerwerkplaats', en: 'Carpenter', at: { x: -19.5, z: 14.5 }, to: '/p/winkel/werkplaats', roof: 0xa0522d },
   // Wellbeing, north-east.
   { key: 'rehab', nl: 'Revalidatiecentrum', en: 'Rehab centre', at: { x: 13.5, z: -15 }, to: '/p/revalidatie', roof: 0x3d6a8a, scale: 1.15 },
   { key: 'healer', nl: 'Genezershuis', en: 'Healer’s house', at: { x: 15.5, z: -9.5 }, to: '/p/held/pijn', roof: 0xa83a3a },
@@ -82,7 +82,9 @@ export const TOWN_HOUSES: TownHouse[] = [
   // Middle south: the market and the town hall.
   { key: 'townhall', nl: 'Raadhuis', en: 'Town hall', at: { x: -4.2, z: 14.5 }, to: '/p/instellingen', roof: 0x3a4a8a, scale: 1.25 },
   // Stables, south-east.
-  { key: 'stables', nl: 'Stallen', en: 'Stables', at: { x: 12.5, z: 13.5 }, to: '/p/held/inventaris#rides-title', roof: 0x8a5a3a },
+  { key: 'stables', nl: 'Stallen', en: 'Stables', at: { x: 12.5, z: 13.5 }, to: '/p/winkel/stallen', roof: 0x8a5a3a },
+  // Beside the stables: the grooming salon, where the pet is dressed up.
+  { key: 'groomer', nl: 'Trimsalon', en: 'Grooming salon', at: { x: 7.4, z: 14.6 }, to: '/p/winkel/trimsalon', roof: 0xc0607e },
 ];
 
 /** The market stalls south of the square: striped awnings, no door. */
@@ -118,8 +120,10 @@ export const WILD: { kind: string; x: number; z: number; zone?: 'dungeon' }[] = 
   { kind: 'boar', x: 27.2, z: 7.2 },
   // The first Alpha at the far east edge.
   { kind: 'alpha_boar', x: 26.2, z: -1.6 },
-  // Oaks and rocks in the woods west, by the crafts district.
-  { kind: 'oak', x: -26, z: 4.8 },
+  // Oaks and rocks in the woods west, by the crafts district. (The first oak stands a little further
+  // out, by the road to the west gate: its way in ran into the lane between the workshop and the
+  // weapon shop.)
+  { kind: 'oak', x: -27.5, z: 2.4 },
   { kind: 'oak', x: -26.4, z: 13.6 },
   { kind: 'rock', x: -25.6, z: -2.2 },
   { kind: 'rock', x: -26.2, z: -9.8 },
@@ -171,4 +175,13 @@ export const WILD: { kind: string; x: number; z: number; zone?: 'dungeon' }[] = 
   { kind: 'twigs', x: -38.6, z: -3.6 },
   { kind: 'twigs', x: -22.6, z: 17.4 },
   { kind: 'twigs', x: 9, z: 27 },
+  // More easy animals (added last so the keys above stay the same): a fuller meadow, and chickens on
+  // the open grass south of the square (by the campfire, the stables and the own home), close to
+  // where a new hero starts out and clear of the narrow lanes between houses.
+  { kind: 'cow', x: 21.2, z: 11.6 },
+  { kind: 'chicken', x: 18.2, z: 15.2 },
+  { kind: 'chicken', x: 15.8, z: 12.2 },
+  { kind: 'chicken', x: 3.8, z: 12.4 },
+  { kind: 'chicken', x: 10.8, z: 18.6 },
+  { kind: 'chicken', x: 2.8, z: 17.8 },
 ];

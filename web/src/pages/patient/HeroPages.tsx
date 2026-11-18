@@ -1,7 +1,9 @@
 import { BELTS, itemKey } from '@shared/karate';
 import { BeltMark, KarateSheet, useKarate } from '@/components/patient/Karate';
-import { weaponAt, weaponByKey } from '@shared/adventure';
+import { ARMOURS, RECIPES, RIDES, WEAPONS, ZONES, weaponAt, weaponByKey } from '@shared/adventure';
 import { BackpackCard } from '@/components/patient/Backpack';
+import { PET_LEVEL } from '@shared/pets';
+import { ItemIcon } from '@/components/patient/ItemIcon';
 import { LightCard } from '@/components/patient/LightSide';
 import { PhotoGearThumbnail } from '../../components/hero/PhotoEquipment';
 import { HeirloomMark } from '@/components/hero/HeirloomMark';
@@ -94,12 +96,14 @@ function AdventureSkill() {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const q = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<{ xp: number; level: number; from: number; to: number; wins: number; weapon: string | null; quest?: { nl: string; en: string; n: number; progress: number; done: boolean; xp: number } | null }>('/patient/hero/adventure') });
+  const [guide, setGuide] = useState(false);
   if (!q.data) return null;
   const a = q.data;
   const { next } = weaponAt(a.level);
   const weapon = weaponByKey(a.weapon);
   return (
-    <Link to="/p/dorp" data-testid="adventure-skill" className="tap mt-3 flex items-center gap-3 rounded-xl border border-[#e4bc63] bg-[#fbf0d9] p-3 hover:border-[#b8892a]">
+    <>
+    <button type="button" onClick={() => setGuide(true)} data-testid="adventure-skill" className="tap mt-3 flex w-full items-center gap-3 rounded-xl border border-[#e4bc63] bg-[#fbf0d9] p-3 text-left hover:border-[#b8892a]">
       <Swords className="h-6 w-6 shrink-0 text-[#6b4705]" aria-hidden />
       <span className="min-w-0 flex-1">
         <span className="block text-[14.5px] font-semibold text-ink-950">{t('Avontuur', 'Adventure')} · level {a.level} <span className="font-normal text-ink-700">· {nl ? weapon.nl : weapon.en}</span></span>
@@ -115,7 +119,57 @@ function AdventureSkill() {
         )}
       </span>
       <ChevronRight className="h-5 w-5 shrink-0 text-ink-600" aria-hidden />
-    </Link>
+    </button>
+    <Dialog open={guide} onClose={() => setGuide(false)} size="sm" title={t(`Avontuur · level ${a.level}`, `Adventure · level ${a.level}`)}
+      footer={<><Link to="/p/dorp" className="inline-flex h-9 items-center rounded-lg px-3.5 text-sm font-semibold text-ink-800 hover:bg-ink-100">{t('Naar het dorp', 'To the village')}</Link><Button onClick={() => setGuide(false)}>{t('Sluiten', 'Close')}</Button></>}>
+      <AdventureUnlocks level={a.level} />
+    </Dialog>
+    </>
+  );
+}
+
+/**
+ * What the adventure skill unlocks, level by level, like a skill guide: weapons at the smithy, rides
+ * at the stables, armour at the armourer, things to make at the workshop, and the hunting grounds.
+ */
+function AdventureUnlocks({ level }: { level: number }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const rows = [
+    ...WEAPONS.filter((w) => w.key !== 'fists').map((w) => ({ key: `w:${w.key}`, level: w.level, icon: <ItemIcon k={w.key} emoji="⚔️" className="!h-6 !w-6" />, name: nl ? w.nl : w.en, where: t('Smederij', 'Smithy'), extra: w.strength > 0 ? t(`ook kracht-skill ${w.strength}`, `also strength skill ${w.strength}`) : '' })),
+    ...RIDES.map((r) => ({ key: `r:${r.key}`, level: r.level, icon: r.icon, name: nl ? r.nl : r.en, where: t('Stallen', 'Stables'), extra: '' })),
+    ...ARMOURS.map((ar) => ({ key: `a:${ar.key}`, level: ar.level, icon: <ItemIcon k={ar.key} emoji="🛡️" className="!h-6 !w-6" />, name: nl ? ar.nl : ar.en, where: t('Pantsermaker', 'Armourer'), extra: '' })),
+    ...RECIPES.filter((r) => r.kind === 'build').map((r) => ({ key: `b:${r.key}`, level: 1, icon: <ItemIcon k={r.key} emoji={r.icon} className="!h-6 !w-6" />, name: nl ? r.nl : r.en, where: t('Werkplaats', 'Workshop'), extra: '' })),
+    { key: 'pet', level: PET_LEVEL, icon: '🐕', name: t('Huisdier: een hond of kat die meeloopt', 'Pet: a dog or cat that walks with you'), where: t('Rugzak', 'Backpack'), extra: '' },
+    ...ZONES.filter((z) => z.level > 1).map((z) => ({ key: `z:${z.key}`, level: z.level, icon: z.icon, name: nl ? z.nl : z.en, where: t('Jachtgebied', 'Hunting ground'), extra: '' })),
+  ].sort((x, y) => x.level - y.level || x.where.localeCompare(y.where));
+  const levels = [...new Set(rows.map((r) => r.level))];
+  return (
+    <div data-testid="adventure-unlocks">
+      <p className="text-[14px] text-ink-700">{t('Versla wezens in je dorp en de jachtgebieden voor avontuur-XP. Elk level speelt iets vrij; kopen en maken doe je in de winkels in het dorp.', 'Beat creatures in your village and the hunting grounds for adventure XP. Every level unlocks something; buying and making happen in the shops of the village.')}</p>
+      {/* Its own scroll box, reachable by keyboard, so the dialog itself does not scroll. */}
+      <ol className="mt-3 max-h-[52vh] space-y-3 overflow-y-auto pr-1" tabIndex={0} aria-label={t('Wat je per level vrijspeelt', 'What each level unlocks')}>
+        {levels.map((lv) => {
+          const open = level >= lv;
+          return (
+            <li key={lv} data-level={lv} data-open={open ? '1' : '0'}>
+              <p className={cn('flex items-center gap-1.5 text-[12.5px] font-bold uppercase tracking-[0.08em]', open ? 'text-[#6b4705]' : 'text-ink-600')}>
+                {open ? <Check className="h-4 w-4" aria-hidden /> : <Lock className="h-3.5 w-3.5" aria-hidden />}{t(`Level ${lv}`, `Level ${lv}`)}
+              </p>
+              <ul className="mt-1 space-y-1">
+                {rows.filter((r) => r.level === lv).map((r) => (
+                  <li key={r.key} className={cn('flex items-center gap-2.5 rounded-lg border px-2.5 py-1.5', open ? 'border-[#e4bc63] bg-[#fbf0d9]' : 'border-line bg-canvas')}>
+                    <span aria-hidden className="grid h-7 w-7 shrink-0 place-items-center text-[18px]">{r.icon}</span>
+                    <span className="min-w-0 flex-1 text-[14px] font-semibold text-ink-950">{r.name}{r.extra && <span className="font-normal text-ink-600"> · {r.extra}</span>}</span>
+                    <span className="shrink-0 text-[12px] text-ink-700">{r.where}</span>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }
 
@@ -632,6 +686,19 @@ function Skills({ d }: { d: HeroState }) {
                 {skillTitle(sel.key, sel.level, nl) && <p className="font-semibold text-ink-900">{skillTitle(sel.key, sel.level, nl)}</p>}
                 {sel.key === 'discipline' && d.disciplineStreak > 0 && <p className="text-ink-700">{t(`Reeks: ${d.disciplineStreak} volle weken. Eén vrije week per 8 weken telt niet als breuk.`, `Run: ${d.disciplineStreak} full weeks. One free week per 8 weeks does not break it.`)}</p>}
                 {sel.key === 'strength' && sel.ceiling && <StrengthCeiling c={sel.ceiling} />}
+                {sel.key === 'strength' && (
+                  <div data-testid="strength-unlocks">
+                    <p className="text-[14px] font-semibold text-ink-900">{t('Vrijgespeeld met deze skill', 'Unlocked with this skill')}</p>
+                    <ul className="mt-1 space-y-1">
+                      {WEAPONS.filter((w) => w.strength > 0).map((w) => (
+                        <li key={w.key} className="flex items-center gap-2 text-[14px] text-ink-800">
+                          {sel.level >= w.strength ? <Check className="h-4 w-4 text-ok" aria-hidden /> : <Lock className="h-3.5 w-3.5 text-ink-500" aria-hidden />}
+                          <span className="flex-1">{nl ? w.nl : w.en} <span className="text-ink-600">· {t(`level ${w.strength}`, `level ${w.strength}`)} · {t('Smederij', 'Smithy')}</span></span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 {sel.key === 'strength' && d.strengthEstimates.length > 0 && (
                   <ul className="space-y-1">
                     {d.strengthEstimates.map((e) => (

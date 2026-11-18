@@ -2,7 +2,7 @@ import { FeedbackList } from '@/components/app/Feedback';
 import { IdleGuard } from '@/components/app/IdleGuard';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building2, LogOut, Plus, ShieldCheck, UserRound } from 'lucide-react';
+import { Building2, LogOut, Pencil, Plus, ShieldCheck, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { AccountPage } from '@/pages/AccountPage';
@@ -29,6 +29,7 @@ export function AdminPage() {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [slugTouched, setSlugTouched] = useState(false);
   const [link, setLink] = useState<string | null>(null);
+  const [editing, setEditing] = useState<PracticeRow | null>(null);
   const items = q.data?.items ?? [];
 
   return (
@@ -63,12 +64,13 @@ export function AdminPage() {
                         <Select aria-label={t('Abonnement', 'Plan')} className="h-8 w-36 py-1 text-[13px]" value={p.planCode} onChange={async (e) => { await api.patch(`/admin/practices/${p.id}`, { planCode: e.target.value }); qc.invalidateQueries({ queryKey: ['admin-practices'] }); toast(t('Abonnement gewijzigd', 'Plan changed')); }}>
                           {[{ code: 'trial', name: 'Proefperiode' }, ...(plans.data?.items ?? [])].map((pl) => <option key={pl.code} value={pl.code}>{pl.name}</option>)}
                         </Select>
-                        <div className="mt-1"><Badge tone={p.subscriptionStatus === 'active' ? 'ok' : 'info'}>{p.subscriptionStatus}</Badge></div>
+                        <div className="mt-1"><Badge tone={p.subscriptionStatus === 'active' ? 'ok' : 'info'}>{(() => { const st = STATUSES.find((x) => x.value === p.subscriptionStatus); return st ? (locale === 'nl' ? st.nl : st.en) : p.subscriptionStatus; })()}</Badge></div>
                       </td>
                       <td className="px-3 py-3 tabular-nums">{p.members}</td>
                       <td className="px-3 py-3 tabular-nums">{p.activePatients}</td>
                       <td className="px-3 py-3 text-ink-500">{fmtDate(p.createdAt, locale)}</td>
-                      <td className="px-3 py-3 text-right">
+                      <td className="whitespace-nowrap px-3 py-3 text-right">
+                        <Button size="sm" variant="secondary" data-testid={`edit-practice-${p.slug}`} icon={<Pencil className="h-3.5 w-3.5" />} onClick={() => setEditing(p)}>{t('Wijzigen', 'Edit')}</Button>
                         <Button size="sm" variant="ghost" onClick={async () => { if (!p.archived && !confirm(t('Praktijk archiveren? Leden verliezen toegang.', 'Archive practice? Members lose access.'))) return; await api.patch(`/admin/practices/${p.id}`, { archived: !p.archived }); qc.invalidateQueries({ queryKey: ['admin-practices'] }); }}>
                           {p.archived ? t('Herstellen', 'Restore') : t('Archiveren', 'Archive')}
                         </Button>
@@ -105,7 +107,54 @@ export function AdminPage() {
           <Input label={t('E-mail eigenaar', 'Owner email')} type="email" required error={fields.ownerEmail} value={form.ownerEmail} onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })} />
         </form>
       </Dialog>
+      {editing && <EditPractice practice={editing} onClose={() => setEditing(null)} />}
     </AdminShell>
+  );
+}
+
+const STATUSES = [
+  { value: 'trialing', nl: 'Proefperiode', en: 'Trial' },
+  { value: 'active', nl: 'Actief (betalend)', en: 'Active (paying)' },
+  { value: 'past_due', nl: 'Betaling achterstallig', en: 'Payment overdue' },
+  { value: 'canceled', nl: 'Opgezegd', en: 'Cancelled' },
+  { value: 'none', nl: 'Geen abonnement', en: 'No subscription' },
+] as const;
+
+/** The details of a practice, changed by the platform admin: name, slug, city and subscription status. */
+function EditPractice({ practice, onClose }: { practice: PracticeRow; onClose: () => void }) {
+  const { t, locale } = useI18n();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [form, setForm] = useState({ name: practice.name, slug: practice.slug, city: practice.city ?? '', subscriptionStatus: practice.subscriptionStatus });
+  const [error, setError] = useState<string | null>(null);
+  const [fields, setFields] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  return (
+    <Dialog open onClose={onClose} title={t('Praktijk wijzigen', 'Edit practice')}
+      footer={<><Button variant="ghost" onClick={onClose}>{t('Annuleren', 'Cancel')}</Button><Button type="submit" form="edit-practice-form" loading={busy} data-testid="save-practice">{t('Opslaan', 'Save')}</Button></>}>
+      <form id="edit-practice-form" className="space-y-4" onSubmit={async (e) => {
+        e.preventDefault();
+        setError(null);
+        setFields({});
+        setBusy(true);
+        try {
+          await api.patch(`/admin/practices/${practice.id}`, { name: form.name.trim(), slug: slugify(form.slug, true), city: form.city.trim() || null, subscriptionStatus: form.subscriptionStatus });
+          await qc.invalidateQueries({ queryKey: ['admin-practices'] });
+          toast(t('Praktijkgegevens opgeslagen', 'Practice details saved'));
+          onClose();
+        } catch (err) { setError(describeError(err, locale)); setFields(fieldErrors(err, locale)); } finally { setBusy(false); }
+      }}>
+        {error && <Notice tone="bad">{error}</Notice>}
+        <Input label={t('Praktijknaam', 'Practice name')} required minLength={2} maxLength={160} error={fields.name} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} data-testid="practice-name" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input label="Slug" required minLength={2} hint={t('De korte naam in links: kleine letters, cijfers en streepjes.', 'The short name in links: lowercase letters, numbers and hyphens.')} error={fields.slug} value={form.slug} autoCapitalize="none" autoCorrect="off" spellCheck={false} onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })} />
+          <Input label={t('Plaats', 'City')} error={fields.city} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+        </div>
+        <Select label={t('Status abonnement', 'Subscription status')} value={form.subscriptionStatus} onChange={(e) => setForm({ ...form, subscriptionStatus: e.target.value })}>
+          {STATUSES.map((st) => <option key={st.value} value={st.value}>{locale === 'nl' ? st.nl : st.en}</option>)}
+        </Select>
+      </form>
+    </Dialog>
   );
 }
 

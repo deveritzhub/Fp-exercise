@@ -17,7 +17,8 @@ test('backpack in the game, the way back to the game, and the 3D world button by
   // The backpack, in the game.
   await page.getByTestId('slot-backpack').click();
   const pack = page.getByTestId('game-backpack');
-  await expect(pack.getByTestId('weapons')).toBeVisible();
+  await expect(pack.getByTestId('pack-weapons')).toBeVisible();
+  await expect(pack.getByTestId('pack-shops')).toBeVisible();
   await expect(pack.getByTestId('light')).toBeVisible();
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/game-backpack.png' });
   await expectAccessible(page, 'game backpack');

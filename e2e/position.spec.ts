@@ -21,7 +21,7 @@ test('the hero starts where it was; the tool shop and pebbles picked up by hand'
   // The tool shop sells the tools; a big rock asks for the pickaxe.
   await page.getByTestId('slot-places').click();
   await page.getByTestId('jump-toolshop').click();
-  await expect(page.getByTestId('enter-building')).toHaveAttribute('href', '/p/held/inventaris#tools-title', { timeout: 20_000 });
+  await expect(page.getByTestId('enter-building')).toHaveAttribute('href', '/p/winkel/gereedschap', { timeout: 20_000 });
   await page.getByRole('button', { name: 'Loop naar Steentjes' }).first().press('Enter');
   await expect(page.getByTestId('strike')).toContainText('Raap de steentjes op', { timeout: 120_000 });
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/pebbles.png' });

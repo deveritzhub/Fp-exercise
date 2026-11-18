@@ -57,3 +57,28 @@ test('new practice form: slug becomes lowercase while typing; errors name the fi
   await expect(dlg.getByText('Deze praktijk-URL is al in gebruik.')).toBeVisible();
   await expectAccessible(page, 'new practice error');
 });
+
+test('the platform admin changes the details of a practice', async ({ page }) => {
+  await login(page, 'admin@fp-exercise.test');
+  await page.getByTestId('edit-practice-fysio-noord-demo').click();
+  const dlg = page.getByRole('dialog', { name: 'Praktijk wijzigen' });
+  await expect(dlg.getByLabel('Praktijknaam')).toHaveValue('Fysio Noord (demo)');
+  await dlg.getByLabel('Praktijknaam').fill('Fysio Noord');
+  await dlg.getByLabel('Plaats').fill('Utrecht-Noord');
+  await dlg.getByLabel('Status abonnement').selectOption('active');
+  await expectAccessible(page, 'edit practice');
+  await page.getByTestId('save-practice').click();
+  await expect(page.getByText('Praktijkgegevens opgeslagen')).toBeVisible();
+  const row = page.getByRole('row').filter({ hasText: 'Fysio Noord' });
+  await expect(row).toContainText('Utrecht-Noord');
+  await expect(row).toContainText('Actief (betalend)');
+  await expect(row).not.toContainText('(demo)');
+
+  // Back as it was, for the other specs.
+  await page.getByTestId('edit-practice-fysio-noord-demo').click();
+  await dlg.getByLabel('Praktijknaam').fill('Fysio Noord (demo)');
+  await dlg.getByLabel('Plaats').fill('Utrecht');
+  await dlg.getByLabel('Status abonnement').selectOption('trialing');
+  await page.getByTestId('save-practice').click();
+  await expect(page.getByRole('row').filter({ hasText: 'Fysio Noord (demo)' })).toContainText('Proefperiode');
+});

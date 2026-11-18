@@ -4,6 +4,7 @@ import { mergeStatic } from './mergeStatic';
 import { doorstepDecor, villageWell } from './townScenery';
 import { filmLook } from './filmLook';
 import { rideModel, type RideModel } from './rides3d';
+import { petModel, type PetModel } from './pets3d';
 import { alphaAdvised, rideByKey, ZONES } from '@shared/adventure';
 import { MARKET, RESIDENTS, SPOTS, TOWN } from './townPlan';
 import { ATTACKS, CREATURES, isAlpha, isFriendly, isHarvest, type CreatureKind } from '@shared/adventure';
@@ -131,6 +132,8 @@ type Props = {
   glow?: boolean;
   /** The ride the hero is on (bike, scooter, car), or none: on foot. Indoors always on foot. */
   ride?: string | null;
+  /** The pet that walks along with the hero (breed and coat), or none. */
+  pet?: { key: string; coat: number; color?: string | null; wear?: string | null } | null;
   /** Where the hero stood last time (from the server): the walk starts there instead of at the well. */
   startAt?: Vec | null;
   /** How fast the hero moves, 1 = normal. Lower when thirsty or stiff. */
@@ -770,7 +773,10 @@ function standIn(color: string) {
 /** The model file of each helper of the light side (public/village/light). */
 const LIGHT_FILE: Record<string, string> = { courage: 'moed', neutrality: 'neutraliteit', willingness: 'bereidheid', acceptance: 'acceptatie', reason: 'rede', love: 'liefde', joy: 'vreugde', enlightenment: 'verlichting' };
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, shrines, glow = false, ride = null, startAt = null, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
+/** Below this zoom the view is first person: through the hero's eyes. */
+const FIRST_PERSON_ZOOM = 0.38;
+
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, shrines, glow = false, ride = null, pet = null, startAt = null, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
   const { t } = useI18n();
   const coachName = coachLabel ?? t('Fysiotherapeut', 'Physiotherapist');
   const host = useRef<HTMLDivElement>(null);
@@ -791,8 +797,13 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     try { return localStorage.getItem('fp.village.cam') === 'chase'; } catch { return false; }
   });
   const chaseRef = useRef(chase);
+  // A bench close by ('near'), or the hero sitting on one ('sitting'): shows the Sit / Stand up button.
+  const [seatState, setSeatState] = useState<'none' | 'near' | 'sitting'>('none');
+  const seatAction = useRef<() => void>(() => undefined);
   const rideRef = useRef(ride);
   rideRef.current = ride;
+  const petRef = useRef(pet);
+  petRef.current = pet;
   chaseRef.current = chase;
   const toggleChase = () => {
     setChase((c) => {
@@ -800,7 +811,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       return !c;
     });
   };
-  const zoomBy = (f: number) => { camZoom.current = Math.min(2.2, Math.max(0.45, camZoom.current * f)); };
+  // Zoomed all the way in (below the closest view from behind) the camera goes into the hero's eyes.
+  const zoomBy = (f: number) => { camZoom.current = Math.min(2.2, Math.max(FIRST_PERSON_ZOOM * 0.99, camZoom.current * f)); };
   const pos = useRef<Vec>(startAtTv ? { ...TV_SPOT } : startAt ? { ...startAt } : { ...VILLAGE_LAYOUT.spawn });
   const facing = useRef(startAtTv ? Math.PI : 0);
   const camAngle = useRef(0);
@@ -988,6 +1000,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     let chopWith = 'hatchet';
     let swing = 0;
     let armR: THREE.Object3D | null = null;
+    // The leg bones, for sitting on a bench.
+    let legs: { thigh: THREE.Object3D; calf: THREE.Object3D }[] = [];
     let fpsFrames = 0;
     let fpsSince = performance.now();
     let equip: () => void = () => {};
@@ -1390,6 +1404,13 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const kk = 2.6 / Math.hypot(homeDoor.x, homeDoor.z);
       roads.push(plan ? spur(homeDoor) : { a: { x: homeDoor.x * kk, z: homeDoor.z * kk }, b: homeDoor, w: 1.3 });
     }
+    // Places to sit: the benches in the town, and the chairs, stools and the sofa at home (a tap walks
+    // the hero there and sits down). `front` is how far in front of the seat the hero stands first.
+    type Seat = { x: number; z: number; y: number; face: number; front?: number };
+    const seats: Seat[] = [];
+    const homeSeats: Seat[] = [];
+    let sitOn: Seat | null = null;
+    let sitting: Seat | null = null;
     // The room behind the door: the patient's own, or the one a visitor looks into.
     if (home || visitRoom) {
       const hd: Vec = homeDoor ?? { x: 0, z: 3 };
@@ -1416,6 +1437,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         });
         pieces.clear();
         const blocks: Obstacle[] = [];
+        homeSeats.length = 0;
         for (const it of items) {
           const piece = furniture(it.key);
           piece.position.set(it.x, 0, it.z);
@@ -1423,7 +1445,18 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           pieces.add(piece);
           const r = decorItem(it.key)?.r ?? 0;
           if (r > 0) blocks.push({ x: origin.x + it.x, z: origin.z + it.z, r: r * 0.9 });
+          // Somewhere to sit: the seat faces the way the piece looks (its back behind it); the sofa has two.
+          const ry = piece.rotation.y;
+          const seatAt = (lx: number, lz: number, y: number, front: number) =>
+            homeSeats.push({ x: origin.x + it.x + lx * Math.cos(ry) + lz * Math.sin(ry), z: origin.z + it.z - lx * Math.sin(ry) + lz * Math.cos(ry), y, face: ry, front });
+          if (it.key === 'home_stool') seatAt(0, 0, 0.48, 0.5);
+          else if (it.key === 'home_chair') seatAt(0, 0.02, 0.54, 0.55);
+          else if (it.key === 'home_sofa') {
+            seatAt(-0.36, 0.06, 0.56, 0.85);
+            seatAt(0.36, 0.06, 0.56, 0.85);
+          }
         }
+        el.dataset.homeSeats = String(homeSeats.length);
         places[HOME_KEY].obstacles = [...base, ...blocks];
         el.dataset.furniture = String(items.length);
       };
@@ -1436,6 +1469,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     }
     const inObstacles = places[PRACTICE_KEY].obstacles;
     const inside = () => zone.current !== 'village';
+    /** The seats where the hero is now: the town's benches outside, the furniture in the own room. */
+    const seatsHere = (): Seat[] => (zone.current === 'village' ? seats : zone.current === HOME_KEY ? homeSeats : []);
     const here = () => places[zone.current];
     roads.push({ a: { x: 0, z: plan ? -SQ : -2.6 }, b: { x: GYM.x, z: GYM.z + 1.9 }, w: plan ? 2.1 : 1.6 });
     const staffMixers: THREE.AnimationMixer[] = [];
@@ -1532,6 +1567,15 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         garden.lookAt(0, 0, 0);
         scene.add(garden);
         garden.updateMatrixWorld(true);
+        // The bench (every third garden) faces the square: a seat for the hero.
+        if (i % 3 === 0) {
+          const seatAt = garden.localToWorld(new THREE.Vector3(-0.18, 0.3, 0.02));
+          const ahead = garden.localToWorld(new THREE.Vector3(-0.18, 0, 1)).sub(garden.localToWorld(new THREE.Vector3(-0.18, 0, 0)));
+          seats.push({ x: seatAt.x, z: seatAt.z, y: 0.3, face: Math.atan2(ahead.x, ahead.z) });
+        }
+        // For tests and tools: how many benches, and where the first stands.
+        el.dataset.seats = String(seats.length);
+        if (seats.length === 1) el.dataset.seat0 = `${seats[0].x.toFixed(2)},${seats[0].z.toFixed(2)},${seats[0].face.toFixed(2)}`;
         // Keep the existing spatial prop batches: a flower is not an extra draw call.
         for (const mesh of [...garden.children]) {
           scene.attach(mesh);
@@ -2365,8 +2409,6 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       heroGlow.position.y = 0.035;
       heroGlow.userData.dynamic = true;
       hero.add(heroGlow);
-      // And the Enlightenment itself floats along by the hero's shoulder.
-      loadHelper('enlightenment', new THREE.Color(0xf2c060), hero, 1.95, 0.6, undefined, 0.6, 0.35);
     }
     const figure = new THREE.Group();
     figure.add(standIn(heroColor));
@@ -2420,6 +2462,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           // The karate belt and the adventure weapon change while playing (an exam, a new level):
           // they are put on here and again whenever they change, without building the village anew.
           armR = model.getObjectByName('upperarm_r') ?? null;
+          legs = (['l', 'r'] as const).flatMap((side) => {
+            const thigh = model.getObjectByName(`thigh_${side}`);
+            const calf = model.getObjectByName(`calf_${side}`);
+            return thigh && calf ? [{ thigh, calf }] : [];
+          });
           const waist = model.getObjectByName('gear_belt') ?? null;
           const hand = model.getObjectByName('hand_r') ?? null;
           const leather = new Map<THREE.MeshStandardMaterial, number>();
@@ -2607,6 +2654,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     let goal: { target: Vec; path: Vec[]; key: string | null; run: boolean; then?: string } | null = null;
     let stuck = 0;
     walkTo.current = (p, k, then) => {
+      sitOn = null;
+      if (sitting) {
+        sitting = null;
+        delete el.dataset.sitting;
+      }
       const target = inside() ? clampRect(reachable(p, here().obstacles, 1e6), here().rect) : reachable(p, obstacles, B);
       // Fast travel: no walk, the hero is there (the next frame arrives, as at the end of a walk).
       if (jumpNext && !inside()) {
@@ -2897,7 +2949,28 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           return;
         }
       }
-      // A tap on a creature (its body or close to it): walk up to it; the fight then goes on its own.
+      // A tap on a bench: walk up to it and sit down.
+      if (!live.current.placing && seatsHere().length) {
+        const box = R2();
+        let seat: Seat | null = null;
+        let sd = 34;
+        for (const st of seatsHere()) {
+          proj.set(st.x, st.y + 0.1, st.z).project(camera);
+          if (proj.z > 1) continue;
+          const dist = Math.hypot((proj.x * 0.5 + 0.5) * box.width + box.left - tap.x, (-proj.y * 0.5 + 0.5) * box.height + box.top - tap.y);
+          if (dist < sd) {
+            sd = dist;
+            seat = st;
+          }
+        }
+        if (seat) {
+          const front = { x: seat.x + Math.sin(seat.face) * (seat.front ?? 0.55), z: seat.z + Math.cos(seat.face) * (seat.front ?? 0.55) };
+          walkTo.current(front, null);
+          sitOn = seat;
+          return;
+        }
+      }
+            // A tap on a creature (its body or close to it): walk up to it; the fight then goes on its own.
       if (!live.current.placing) {
         const box = R2();
         let pick: (typeof mobs)[number] | null = null;
@@ -3027,6 +3100,15 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     let rideM: RideModel | null = null;
     let rideK = 1;
     let keyWalk = false;
+    // The pet: it walks the hero's own path (so it goes round walls and houses too), keeps a little
+    // way behind, and sits down when the hero has stood still for a moment.
+    let petOn: string | null = null;
+    let petM: PetModel | null = null;
+    const petPos = { x: 0, z: 0 };
+    let petFace = 0;
+    let petSpeed = 0;
+    let petIdle = 0;
+    const petTrail: { x: number; z: number }[] = [];
     const loop = () => {
       raf = requestAnimationFrame(loop);
       const dt = Math.min(clock.getDelta(), 0.2);
@@ -3068,6 +3150,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       if (keys.has('ArrowUp')) camTilt.current = Math.min(2.4, camTilt.current + dt * 1.2);
       if (keys.has('ArrowDown')) camTilt.current = Math.max(0.35, camTilt.current - dt * 1.2);
       keyWalk = keyTurn !== 0 || keyFwd !== 0;
+      if (sitting && (keyFwd !== 0 || (stick?.current && Math.hypot(stick.current.x, stick.current.y) > 0.18))) {
+        sitting = null;
+        delete el.dataset.sitting;
+      }
       if (keyWalk && goal) {
         goal = null;
         (marker.material as THREE.MeshBasicMaterial).opacity = 0;
@@ -3153,6 +3239,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           const k = goal.key;
           const next = goal.then;
           goal = null;
+          if (sitOn && n.arrived) {
+            sitting = sitOn;
+            facing.current = sitting.face;
+            el.dataset.sitting = '1';
+          }
+          sitOn = null;
           clearTrail();
           if (!next) announce(null);
           walking = false;
@@ -3198,7 +3290,26 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       // Where the hero stands and where the view looks, for tests and tools (a few times a second).
       if (tt - posTick > 0.25) {
         posTick = tt;
+        // Outside a bench close by; in the own room the nearest chair or sofa, wherever it stands.
+        const here2 = seatsHere();
+        const nearSeat = rideM ? null : inside() ? here2.reduce<Seat | null>((best, st) => (!best || Math.hypot(st.x - p.x, st.z - p.z) < Math.hypot(best.x - p.x, best.z - p.z) ? st : best), null) : here2.find((st) => Math.hypot(st.x - p.x, st.z - p.z) < 2.6) ?? null;
+        const state = sitting ? 'sitting' : nearSeat ? 'near' : 'none';
+        if (el.dataset.seat !== state) {
+          el.dataset.seat = state;
+          setSeatState(state);
+        }
+        seatAction.current = () => {
+          if (sitting) {
+            sitting = null;
+            delete el.dataset.sitting;
+            return;
+          }
+          if (!nearSeat) return;
+          walkTo.current({ x: nearSeat.x + Math.sin(nearSeat.face) * (nearSeat.front ?? 0.55), z: nearSeat.z + Math.cos(nearSeat.face) * (nearSeat.front ?? 0.55) }, null);
+          sitOn = nearSeat;
+        };
         el.dataset.pos = `${p.x.toFixed(1)},${p.z.toFixed(1)}`;
+        if (petM) el.dataset.petPos = `${petPos.x.toFixed(1)},${petPos.z.toFixed(1)}`;
         el.dataset.cam = camAngle.current.toFixed(2);
       }
       // Turn the short way round toward where the hero walks.
@@ -3215,8 +3326,24 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           mixer.timeScale = 1;
           play(since < 2.6 ? 'cheer' : 'idle');
         }
-        if (!reduce || walking) mixer.update(dt);
+        if (!reduce || walking || sitting) mixer.update(dt);
         equip();
+        // Sitting: the hips and knees bend over the idle motion (turned in the hero's own frame, so
+        // it works whichever way the bone's axes point).
+        if (sitting && legs.length) {
+          hero.updateMatrixWorld(true);
+          const right = new THREE.Vector3(-Math.cos(hero.rotation.y), 0, Math.sin(hero.rotation.y));
+          const turn = (bone: THREE.Object3D, angle: number) => {
+            const parentQ = bone.parent ? bone.parent.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion();
+            const axis = right.clone().applyQuaternion(parentQ.invert());
+            bone.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(axis, angle));
+            bone.updateMatrixWorld(true);
+          };
+          for (const leg of legs) {
+            turn(leg.thigh, Math.PI * 0.5);
+            turn(leg.calf, -Math.PI * 0.5);
+          }
+        }
         // A blow: the arm swings up and down over the motion that plays.
         if (swing > 0 && armR) {
           swing = Math.max(0, swing - dt);
@@ -3245,6 +3372,15 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         figure.position.y = jump + (walking && !reduce ? Math.abs(Math.sin(tt * 11)) * 0.07 : 0);
         figure.rotation.z = walking && !reduce ? Math.sin(tt * 11) * 0.05 : 0;
       }
+      if (sitting && !rideM) {
+        // On the bench: the hips sink to the seat; facing out over the square.
+        p.x = sitting.x + Math.sin(sitting.face) * 0.04;
+        p.z = sitting.z + Math.cos(sitting.face) * 0.04;
+        hero.position.set(p.x, 0, p.z);
+        hero.rotation.y = sitting.face;
+        figure.position.y = sitting.y - HERO_HEIGHT * 0.5;
+        figure.rotation.z = 0;
+      }
       if (rideM) {
         // On a ride: no walking bob; the hero stands on it and the wheels roll with the distance gone.
         figure.position.y = jump + rideM.seat;
@@ -3257,6 +3393,65 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       if ((marker.material as THREE.MeshBasicMaterial).opacity > 0) marker.scale.setScalar(1 + Math.sin(tt * 6) * 0.12);
 
+      const wantPet = petRef.current ? `${petRef.current.key}:${petRef.current.coat}:${petRef.current.color ?? ''}:${petRef.current.wear ?? ''}` : null;
+      if (wantPet !== petOn) {
+        if (petM) {
+          scene.remove(petM.group);
+          petM.dispose();
+        }
+        petM = wantPet && petRef.current ? petModel(petRef.current.key, petRef.current.coat, { color: petRef.current.color, wear: petRef.current.wear }) : null;
+        petOn = petM ? wantPet : null;
+        if (petM) {
+          scene.add(petM.group);
+          petPos.x = p.x + Math.sin(facing.current + 2.4) * 1.2;
+          petPos.z = p.z + Math.cos(facing.current + 2.4) * 1.2;
+          petTrail.length = 0;
+          el.dataset.pet = petOn ?? '';
+        } else delete el.dataset.pet;
+      }
+      if (petM) {
+        const last = petTrail[petTrail.length - 1];
+        if (!last || Math.hypot(p.x - last.x, p.z - last.z) > 0.35) petTrail.push({ x: p.x, z: p.z });
+        if (petTrail.length > 90) petTrail.shift();
+        let dh = Math.hypot(p.x - petPos.x, p.z - petPos.z);
+        // Far behind (a jump on the map, a door into a room): it is simply there again.
+        if (dh > 14) {
+          petPos.x = p.x + Math.sin(facing.current + 2.4) * 1.2;
+          petPos.z = p.z + Math.cos(facing.current + 2.4) * 1.2;
+          petTrail.length = 0;
+          dh = 1.2;
+        }
+        const keep = sitting ? 0.85 : rideM ? 1.8 : 1.25;
+        let moved = 0;
+        if (dh > keep) {
+          while (petTrail.length > 1 && Math.hypot(petTrail[0].x - petPos.x, petTrail[0].z - petPos.z) < 0.3) petTrail.shift();
+          const tgt = petTrail[0] ?? p;
+          const dx = tgt.x - petPos.x;
+          const dz = tgt.z - petPos.z;
+          const dl = Math.hypot(dx, dz);
+          if (dl > 1e-4) {
+            // Catches up faster the further it is behind; trots along at the hero's pace.
+            const want = Math.min(18, Math.max(1.4, (dh - keep) * 3.4));
+            moved = Math.min(dl, want * dt);
+            petPos.x += (dx / dl) * moved;
+            petPos.z += (dz / dl) * moved;
+            const face = Math.atan2(dx, dz);
+            petFace += Math.atan2(Math.sin(face - petFace), Math.cos(face - petFace)) * Math.min(1, dt * 9);
+          }
+        } else {
+          petTrail.length = 0;
+          // Standing by: it turns to look at the hero.
+          const face = Math.atan2(p.x - petPos.x, p.z - petPos.z);
+          petFace += Math.atan2(Math.sin(face - petFace), Math.cos(face - petFace)) * Math.min(1, dt * 2.5);
+        }
+        const sp = dt > 0 ? moved / dt : 0;
+        petSpeed += (sp - petSpeed) * Math.min(1, dt * 8);
+        petIdle = petSpeed < 0.2 ? petIdle + dt : 0;
+        petM.group.position.set(petPos.x, 0, petPos.z);
+        petM.group.rotation.y = petFace;
+        if (!reduce) petM.update(dt, petSpeed, petIdle > 1.4 || !!sitting);
+      }
+
       // The camera follows from behind and above.
       const zoom = narrow ? 1.08 : 1;
       // In the room the camera looks down from higher up, over the wall that is left out.
@@ -3267,13 +3462,31 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         const want = facing.current + Math.PI;
         camAngle.current += Math.atan2(Math.sin(want - camAngle.current), Math.cos(want - camAngle.current)) * Math.min(1, dt * 2.2);
       }
+      const fpv = camZoom.current < FIRST_PERSON_ZOOM;
+      // First person: the hero (and the ride) are not drawn, the view turns with the way the hero walks.
+      hero.visible = !fpv;
+      if (fpv !== (el.dataset.view === 'first')) el.dataset.view = fpv ? 'first' : 'third';
+      if (fpv && walking && !keyWalk && !reduce) {
+        const want = facing.current + Math.PI;
+        camAngle.current += Math.atan2(Math.sin(want - camAngle.current), Math.cos(want - camAngle.current)) * Math.min(1, dt * 3);
+      }
       const far2 = (low ? 4.6 : 6.6) * zoom * camZoom.current;
       const camY = low ? Math.max(1.2, 2.0 * camZoom.current * camTilt.current) : Math.max(0.9, (indoor ? 5.6 : 3.5) * zoom * camZoom.current * camTilt.current);
-      camPos.set(p.x + Math.sin(camAngle.current) * far2, camY, p.z + Math.cos(camAngle.current) * far2);
-      if (first || reduce) camera.position.copy(camPos);
+      const eye = HERO_HEIGHT * 0.93 + (rideM ? rideM.seat : 0);
+      if (fpv) camPos.set(p.x - Math.sin(camAngle.current) * 0.12, eye, p.z - Math.cos(camAngle.current) * 0.12);
+      else camPos.set(p.x + Math.sin(camAngle.current) * far2, camY, p.z + Math.cos(camAngle.current) * far2);
+      if (first || reduce || fpv) camera.position.copy(camPos);
       else camera.position.lerp(camPos, Math.min(1, dt * 6));
       first = false;
-      if (low) {
+      if (fpv) {
+        // Through the hero's eyes: straight ahead, up or down with the tilt (arrows or a drag).
+        const pitch = (camTilt.current - 1) * 0.55;
+        camera.lookAt(camPos.x - Math.sin(camAngle.current) * 10, eye + Math.tan(pitch) * 10, camPos.z - Math.cos(camAngle.current) * 10);
+        if (camera.fov !== 70) {
+          camera.fov = 70;
+          camera.updateProjectionMatrix();
+        }
+      } else if (low) {
         // Looking over the hero's shoulder, a little way down the road ahead.
         camera.lookAt(p.x - Math.sin(camAngle.current) * 3.5, 1.35, p.z - Math.cos(camAngle.current) * 3.5);
         if (camera.fov !== 54) {
@@ -3839,6 +4052,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           <div ref={xpLabel} aria-hidden className="absolute left-0 top-0 whitespace-nowrap font-display text-[22px] font-extrabold text-[#ffe27a] [text-shadow:0_2px_0_#000,0_-1px_0_#000,1px_0_0_#000,-1px_0_0_#000,0_0_12px_rgba(255,200,60,.8)]" style={{ opacity: 0, transform: 'translate(-9999px,0)' }} />
         </div>
       </div>
+      {seatState !== 'none' && (
+        <button type="button" data-testid="sit" onClick={() => seatAction.current()}
+          className="tap absolute bottom-[120px] left-1/2 inline-flex min-h-[44px] -translate-x-1/2 items-center gap-2 rounded-full border border-[#e4bc63] bg-[#1c2420]/90 px-4 text-[15px] font-semibold text-[#f6e2a6] shadow-lift">
+          <span aria-hidden>🪑</span>{seatState === 'sitting' ? t('Opstaan', 'Stand up') : t('Zitten', 'Sit down')}
+        </button>
+      )}
       {/* Stacked on the right edge, clear of the action bar. */}
       <div className="absolute bottom-2 right-2 flex flex-col gap-1.5 land:grid land:grid-cols-2">
         <button type="button" data-testid="cam-chase" aria-pressed={chase} onClick={toggleChase} aria-label={chase ? t('Camera: van bovenaf', 'Camera: from above') : t('Camera: achter je held', 'Camera: behind your hero')}

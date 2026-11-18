@@ -22,11 +22,12 @@ import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@share
 import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
 import { VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { SITES, SPOTS, TOWN_HOUSES, WILD, placeAt } from '@/components/patient/townPlan';
+import { PET_LEVEL } from '@shared/pets';
 import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
 import { SUPPLY } from '@shared/supplies';
 import { useSupplies } from '@/lib/supplies';
-import { swingMs, RIDES, alphaAdvised, armourByKey, isShadow, LIGHT, ZONES, zoneAt, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
+import { swingMs, respawnSeconds, RIDES, alphaAdvised, armourByKey, isShadow, LIGHT, ZONES, zoneAt, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
@@ -75,7 +76,7 @@ const TALK: Record<string, { name: [string, string]; says: [string, string]; opt
   },
   smithy: {
     name: ['Wapensmid', 'Armourer'], says: ['Welkom in de smederij! Hier ruil je muntjes voor uitrusting.', 'Welcome to the smithy! Here you trade coins for gear.'],
-    options: [{ nl: 'Wapens en gereedschap kopen', en: 'Buy weapons and tools', to: '/p/held/inventaris#backpack-title' }, { nl: 'Iets maken van mijn buit', en: 'Make something from my loot', to: '/p/held/inventaris#craft-title' }, { nl: 'Laat de uitrusting zien', en: 'Show me the gear', to: '/p/held/inventaris#gear-title' }, { nl: 'Mijn uiterlijk aanpassen', en: 'Change my look', to: '/p/held/uiterlijk' }],
+    options: [{ nl: 'Wapens kopen', en: 'Buy weapons', to: '/p/winkel/smid' }, { nl: 'Iets maken van mijn buit', en: 'Make something from my loot', to: '/p/winkel/werkplaats' }, { nl: 'Laat de uitrusting zien', en: 'Show me the gear', to: '/p/held/inventaris#gear-title' }, { nl: 'Mijn uiterlijk aanpassen', en: 'Change my look', to: '/p/held/uiterlijk' }],
   },
   library: {
     name: ['Bibliothecaris', 'Librarian'], says: ['Stil in de bibliotheek… maar vraag gerust.', 'Quiet in the library… but do ask.'],
@@ -146,6 +147,7 @@ const SIGN: Record<string, [string, string]> = {
   tradepost: ['🎲', '#7a5a3a'],
   townhall: ['🏛️', '#3a4a8a'],
   stables: ['🚲', '#8a5a3a'],
+  groomer: ['✂️', '#c0607e'],
 };
 
 /** The half-timbered house for a building of the town, by its size. */
@@ -160,6 +162,7 @@ const PLACE_HINT: Record<string, [string, string]> = {
   tailor: ['Je uiterlijk aanpassen', 'Change your look'],
   toolshop: ['Hakbijl en pikhouweel kopen', 'Buy a hatchet and a pickaxe'],
   stables: ['Een fiets, scooter of auto kopen', 'Buy a bike, scooter or car'],
+  groomer: ['Je huisdier aankleden: halsband, bandana, jasje en meer', 'Dress up your pet: collar, bandana, coat and more'],
   workshop: ['Maken van je buit', 'Make things from your loot'],
   carpenter: ['Een kist of wapen maken', 'Make a chest or a weapon'],
   rehab: ['Je revalidatie', 'Your rehabilitation'],
@@ -401,16 +404,26 @@ export function VillageWalkPage() {
 
   const d = heroQ.data;
   // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
-  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; rides?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string | null; pos?: { x: number; z: number } | null;
+  type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; rides?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string | null; pos?: { x: number; z: number } | null; pet?: { key: string; coat: number; name: string | null; color?: string | null; wear?: string | null } | null;
     quest?: { key: string; kind: CreatureKind; n: number; nl: string; en: string; progress: number; done: boolean; xp: number } | null };
   const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
   // The weapon in hand is the one bought and put on in the backpack; none means bare fists.
   const weapon = weaponByKey(adventure.data?.weapon);
   // The helpers of the light side that are free (set free by beating their shadow creature).
   const light = useMemo(() => new Set(adventure.data?.light ?? []), [adventure.data?.light]);
+  // The pet that walks along (a stable object, so the world only rebuilds it when it changes).
+  const petKey = adventure.data?.pet?.key ?? null;
+  const petCoat = adventure.data?.pet?.coat ?? 0;
+  const petColorKey = adventure.data?.pet?.color ?? null;
+  const petWearKey = adventure.data?.pet?.wear ?? null;
+  const myPet = useMemo(() => (petKey ? { key: petKey, coat: petCoat, color: petColorKey, wear: petWearKey } : null), [petKey, petCoat, petColorKey, petWearKey]);
   /** A new adventurer level: say which weapon the smith now sells, if one came with it. */
   const levelUp = (was: number, now: number) => {
     if (now <= was) return;
+    if (was < PET_LEVEL && now >= PET_LEVEL) {
+      toast(t(`Avonturier ${now}! Je kunt nu een huisdier kiezen: open je rugzak.`, `Adventurer ${now}! You can now choose a pet: open your backpack.`));
+      return;
+    }
     const w = weaponAt(now).weapon;
     toast(w.level > was ? t(`Avonturier ${now}! Nieuw bij de wapensmid: ${w.nl}.`, `Adventurer ${now}! New at the armourer: ${w.en}.`) : t(`Avonturier ${now}!`, `Adventurer ${now}!`));
   };
@@ -485,7 +498,7 @@ export function VillageWalkPage() {
       : link.startsWith('/p/kracht') ? boardKey('kracht')
       : link.startsWith('/p/mobiliteit') ? boardKey('mobiliteit')
       : link.startsWith('/p/spieren') ? 'library'
-      : link.startsWith('/p/held/inventaris') ? 'smithy'
+      : link.startsWith('/p/held/inventaris') || link.startsWith('/p/winkel') ? 'smithy'
       : link.startsWith('/p/held/vrienden') || link.startsWith('/p/wereld') ? 'guild'
       : link.startsWith('/p/held') ? 'board'
       : TV_KEY;
@@ -765,7 +778,23 @@ export function VillageWalkPage() {
     [nl, adventure.data?.level],
   );
   const [hurt, setHurt] = useState<Record<string, number>>({});
-  const [beaten, setBeaten] = useState<string[]>([]);
+  // Beaten creatures stay away for a while (the stronger, the longer), also over a reload: the time
+  // each comes back is kept in this browser.
+  const BEATEN_KEY = 'fp.village.beaten';
+  const readBeaten = (): Record<string, number> => {
+    try {
+      const all = JSON.parse(localStorage.getItem(BEATEN_KEY) ?? '{}') as Record<string, number>;
+      return Object.fromEntries(Object.entries(all).filter(([, until]) => until > Date.now()));
+    } catch {
+      return {};
+    }
+  };
+  const [beaten, setBeaten] = useState<string[]>(() => Object.keys(readBeaten()));
+  useEffect(() => {
+    const timers = Object.entries(readBeaten()).map(([key, until]) => window.setTimeout(() => setBeaten((b) => b.filter((k) => k !== key)), until - Date.now()));
+    return () => timers.forEach((x) => window.clearTimeout(x));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const mob = near?.startsWith('mob:') && !beaten.includes(near) ? creatures.find((c) => c.key === near) ?? null : null;
   // What was put right in real life today hits its own creature twice as hard.
   const strong = useMemo(() => new Set([...states.filter((x) => x.kind === 'buff').map((x) => x.key), ...(doneToday ? ['trained'] : []), ...(supply.fed ? ['fed'] : [])]), [states, doneToday, supply.fed]);
@@ -862,8 +891,14 @@ export function VillageWalkPage() {
     setEngaged(null);
     setBeaten((b) => [...b, key]);
     setHurt((h) => ({ ...h, [key]: 0 }));
-    // It comes back after a while, somewhere to return to.
-    window.setTimeout(() => setBeaten((b) => b.filter((k) => k !== key)), 45_000);
+    // It comes back after a while: the stronger, the longer.
+    const away = respawnSeconds(mob.kind) * 1000;
+    try {
+      localStorage.setItem(BEATEN_KEY, JSON.stringify({ ...readBeaten(), [key]: Date.now() + away }));
+    } catch {
+      /* storage optional */
+    }
+    window.setTimeout(() => setBeaten((b) => b.filter((k) => k !== key)), away);
     try {
       const r = await api.post<Adventure & { gained: number; questXp?: number; unlocked?: string | null; drops?: { item: LootKey; n: number }[] }>('/patient/hero/adventure/win', { kind: mob.kind });
       const freed = r.unlocked ? LIGHT.find((l) => l.key === r.unlocked) : null;
@@ -872,7 +907,8 @@ export function VillageWalkPage() {
       const was = adventure.data?.level ?? 1;
       qc.setQueryData(['patient-adventure'], r);
       levelUp(was, r.level);
-      if (!isHarvest(mob.kind)) toast(r.gained > 0 ? t(`${mob.label} verslagen! +${r.gained} avonturen-XP`, `${mob.label} beaten! +${r.gained} adventure XP`) : t(`${mob.label} verslagen! Voor vandaag heb je alle avonturen-XP al binnen.`, `${mob.label} beaten! You already have all of today's adventure XP.`));
+      // Every win gives adventure XP, chopping and mining too (half after the first wins of the day).
+      toast(isHarvest(mob.kind) ? t(`${mob.label}: +${r.gained} avonturen-XP`, `${mob.label}: +${r.gained} adventure XP`) : t(`${mob.label} verslagen! +${r.gained} avonturen-XP`, `${mob.label} beaten! +${r.gained} adventure XP`));
       // Loot counts for building the home: refresh what it still needs.
       if (r.drops?.length) void qc.invalidateQueries({ queryKey: ['patient-own-home'] });
       if (r.drops?.length) toast(t(`Buit: ${r.drops.map((x) => `${x.n}× ${LOOT[x.item].nl.toLowerCase()}`).join(', ')}. Het zit in je rugzak.`, `Loot: ${r.drops.map((x) => `${x.n}× ${LOOT[x.item].en.toLowerCase()}`).join(', ')}. It is in your backpack.`));
@@ -1021,6 +1057,7 @@ export function VillageWalkPage() {
             belt={karate.data && karate.data.belt > 0 ? BELTS[karate.data.belt].color : null}
             tools={adventure.data?.tools}
             ride={riding && myRide ? myRide.key : null}
+            pet={d?.hero ? myPet : null}
             weapon={hasTool && mobTool ? mobTool.key : mob && isHarvest(mob.kind) ? null : weapon.key === 'fists' ? null : weapon.key}
             pace={pace}
             api={world}
@@ -1144,7 +1181,7 @@ export function VillageWalkPage() {
               </p>
             )}
             {NEEDS_TOOL[mob.kind] && !hasTool ? (
-              <Link to="/p/held/inventaris#tools-title" data-testid="tool-needed" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15px] font-semibold text-white shadow-lift">
+              <Link to="/p/winkel/gereedschap" data-testid="tool-needed" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15px] font-semibold text-white shadow-lift">
                 {t(`Hier heb je een ${mobTool?.nl.toLowerCase() ?? 'gereedschap'} voor nodig. Koop hem in de gereedschapswinkel (${mobTool?.price ?? ''} muntjes).`, `You need a ${mobTool?.en.toLowerCase() ?? 'tool'} for this. Buy it at the tool shop (${mobTool?.price ?? ''} coins).`)}
               </Link>
             ) : (

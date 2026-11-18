@@ -85,6 +85,10 @@ admin.patch('/practices/:id', async (c) => {
   const id = parse(uuidParam, c.req.param('id'));
   const b = parse(
     z.object({
+      // The practice's own details: its name, the short name in links (slug) and the city.
+      name: z.string().trim().min(2).max(160).optional(),
+      slug: z.string().trim().regex(/^[a-z0-9-]{2,60}$/).optional(),
+      city: z.string().trim().max(80).nullable().optional(),
       planCode: z.string().optional(),
       subscriptionStatus: z.enum(['trialing', 'active', 'past_due', 'canceled', 'none']).optional(),
       archived: z.boolean().optional(),
@@ -92,12 +96,20 @@ admin.patch('/practices/:id', async (c) => {
     await c.req.json(),
   );
   await withUser(u.id, async (tx) => {
-    const r = await tx.query(
-      `UPDATE practices SET plan_code = coalesce($2, plan_code), subscription_status = coalesce($3, subscription_status),
-         archived_at = CASE WHEN $4::boolean IS NULL THEN archived_at WHEN $4 THEN now() ELSE NULL END
-       WHERE id = $1`,
-      [id, b.planCode ?? null, b.subscriptionStatus ?? null, b.archived ?? null],
-    );
+    let r;
+    try {
+      r = await tx.query(
+        `UPDATE practices SET plan_code = coalesce($2, plan_code), subscription_status = coalesce($3, subscription_status),
+           archived_at = CASE WHEN $4::boolean IS NULL THEN archived_at WHEN $4 THEN now() ELSE NULL END,
+           name = coalesce($5, name), slug = coalesce($6, slug),
+           city = CASE WHEN $7::boolean THEN nullif($8, '') ELSE city END
+         WHERE id = $1`,
+        [id, b.planCode ?? null, b.subscriptionStatus ?? null, b.archived ?? null, b.name ?? null, b.slug ?? null, b.city !== undefined, b.city ?? null],
+      );
+    } catch (e: any) {
+      if (e.code === '23505') throw new HttpError(409, 'slug_taken');
+      throw e;
+    }
     if (!r.rowCount) throw notFound();
     await audit(tx, u.id, id, 'update', 'practice', id, b);
   });
