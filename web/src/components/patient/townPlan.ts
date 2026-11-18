@@ -121,8 +121,9 @@ export const WILD: { kind: string; x: number; z: number; zone?: 'dungeon' }[] = 
   // The first Alpha at the far east edge.
   { kind: 'alpha_boar', x: 26.2, z: -1.6 },
   // Oaks and rocks in the woods west, by the crafts district. (The first oak stands a little further
-  // out: its way in from the square ran into the lane between the workshop and the weapon shop.)
-  { kind: 'oak', x: -27.6, z: 6.2 },
+  // out, by the road to the west gate: its way in ran into the lane between the workshop and the
+  // weapon shop.)
+  { kind: 'oak', x: -27.5, z: 2.4 },
   { kind: 'oak', x: -26.4, z: 13.6 },
   { kind: 'rock', x: -25.6, z: -2.2 },
   { kind: 'rock', x: -26.2, z: -9.8 },
