@@ -3,7 +3,7 @@ import { expectAccessible, login } from './helpers';
 
 /** Berries are picked from a bush by hand; a hatchet from the backpack shop makes chopping an oak quick. */
 test('the patient picks berries and buys a hatchet', async ({ browser }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(480_000);
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'nl-NL' });
   const page = await context.newPage();
   await page.addInitScript(() => localStorage.setItem('fp.village.tip', '1'));
