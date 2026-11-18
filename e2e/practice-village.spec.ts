@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { LOOT_KEYS, RECIPES } from '../shared/adventure';
+import { LOOT_KEYS } from '../shared/adventure';
 import { expectAccessible, login } from './helpers';
 
 /** Staff: the practice as a village, one numbered home per patient, growing with the hero's level. */
@@ -176,23 +176,31 @@ test('therapist makes a figure and the patient meets it in the practice', async 
     await page.waitForTimeout(9000);
     await page.screenshot({ path: process.env.SHOTS + '/av-1.png' });
   }
-  // The backpack in the inventory: the flask with its glass, and the weapons; fists in hand, the rest to buy.
+  // The backpack holds only what the hero has: the flask with its glass, and the weapons; fists in hand.
   await page.goto('/p/held/inventaris');
-  const pack = page.getByTestId('weapons');
-  await expect(pack.locator('[data-weapon]')).toHaveCount(9);
+  const pack = page.getByTestId('pack-weapons');
   await expect(pack.locator('[data-weapon="fists"]')).toHaveAttribute('data-state', 'on');
+  await expect(page.getByTestId('pack-shops').locator('[data-shop]')).toHaveCount(5);
   await expect(page.getByTestId('backpack-flask')).toContainText(/Veldfles · \d+ glas/);
   await expect(page.getByTestId('backpack-rations')).toContainText('Rantsoenen');
   // The loot of the village: a square per kind, a question mark until it is found.
   await expect(page.getByTestId('loot').locator('[data-loot]')).toHaveCount(LOOT_KEYS.length);
-  // Tools to buy and things to make: the hatchet is for sale, the recipes wait for loot or level.
+  await expectAccessible(page, 'backpack');
+  // Buying and making happen in the shops of the town: the hatchet at the tool shop, the chest at the workshop.
+  await page.goto('/p/winkel/gereedschap');
   await expect(page.locator('[data-tool="hatchet"]')).toHaveAttribute('data-state', /shop|owned/);
-  await expect(page.getByTestId('recipes').locator('[data-recipe]')).toHaveCount(RECIPES.length);
+  await page.goto('/p/winkel/werkplaats');
   await expect(page.locator('[data-recipe="chest"]')).toHaveAttribute('data-state', /short|ready|made/);
-  // Enough adventure XP for the staff: the smith sells it, it goes on at once and comes off again.
+  await page.goto('/p/winkel/pantser');
+  await expect(page.getByTestId('shop-pantser')).toBeVisible();
+  // Enough adventure XP for the staff: the smith sells it, it goes on at once, and in the backpack it comes off again.
+  await page.goto('/p/winkel/smid');
+  const shopStaff = page.getByTestId('weapons').locator('[data-weapon="staff"]');
   const staffRow = pack.locator('[data-weapon="staff"]');
-  if ((await staffRow.getAttribute('data-state')) === 'shop' && await staffRow.getByRole('button', { name: /Koop Wandelstaf/ }).isEnabled()) {
-    await staffRow.getByRole('button', { name: /Koop Wandelstaf/ }).click();
+  if ((await shopStaff.count()) && (await shopStaff.getAttribute('data-state')) === 'shop' && await shopStaff.getByRole('button', { name: /Koop Wandelstaf/ }).isEnabled()) {
+    await shopStaff.getByRole('button', { name: /Koop Wandelstaf/ }).click();
+    await expect(shopStaff).toHaveCount(0);
+    await page.goto('/p/held/inventaris');
     await expect(staffRow).toHaveAttribute('data-state', 'on');
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/pack.png', fullPage: true });
     await staffRow.getByRole('button', { name: 'Doe Wandelstaf uit' }).click();
@@ -201,6 +209,6 @@ test('therapist makes a figure and the patient meets it in the practice', async 
     await staffRow.getByRole('button', { name: 'Doe Wandelstaf aan' }).click();
     await expect(staffRow).toHaveAttribute('data-state', 'on');
   } else if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/pack.png', fullPage: true });
-  await expectAccessible(page, 'backpack');
+  await expectAccessible(page, 'shop');
   await context.close();
 });

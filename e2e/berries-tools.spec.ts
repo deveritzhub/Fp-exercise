@@ -20,18 +20,21 @@ test('the patient picks berries and buys a hatchet', async ({ browser }) => {
   for (let i = 0; i < 4 && (await pick.count()); i++) await pick.click();
   await expect.poll(async () => (await adv()).loot.berries ?? 0, { timeout: 15_000 }).toBeGreaterThan(before.loot.berries ?? 0);
 
-  // The tools in the backpack: the hatchet is bought with coins, once.
+  // The berries are in the backpack; the hatchet is bought at the tool shop with coins, once.
   await page.goto('/p/held/inventaris');
+  await expect(page.getByTestId('loot').locator('[data-loot="berries"]')).toHaveAttribute('data-n', /[1-9]/);
+  await page.goto('/p/winkel/gereedschap');
   const tools = page.getByTestId('tools');
   await expect(tools.locator('[data-tool]')).toHaveCount(2);
-  await expect(page.getByTestId('loot').locator('[data-loot="berries"]')).toHaveAttribute('data-n', /[1-9]/);
   const hatchet = tools.locator('[data-tool="hatchet"]');
   if (!before.tools.includes('hatchet')) {
     test.skip(before.coins < 40, 'not enough coins left in this run');
     await hatchet.getByRole('button', { name: 'Koop' }).click();
   }
   await expect(hatchet).toHaveAttribute('data-state', 'owned');
-  await expectAccessible(page, 'backpack with tools');
+  await expectAccessible(page, 'tool shop');
+  await page.goto('/p/held/inventaris');
+  await expect(page.getByTestId('pack-tools').locator('[data-tool="hatchet"]')).toBeVisible();
 
   // With the hatchet an oak (5 life) falls in two blows.
   await page.goto('/p/dorp');

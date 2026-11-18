@@ -22,7 +22,7 @@ test('the stables sell a bike and the hero rides it in the village', async ({ pa
     await page.addInitScript(() => { localStorage.setItem('fp.village.tip', '1'); localStorage.setItem('fp.village.ride', '0'); });
     await login(page, 'patient@praktijk-a.test');
     // The stables: the bike can be bought, the car waits for a higher level.
-    await page.goto('/p/held/inventaris#rides-title');
+    await page.goto('/p/winkel/stallen');
     const rides = page.getByTestId('rides');
     await expect(rides.locator('[data-ride="bike"]')).toHaveAttribute('data-state', 'shop');
     await rides.locator('[data-ride="bike"]').getByRole('button', { name: /Koop Fiets/ }).click();

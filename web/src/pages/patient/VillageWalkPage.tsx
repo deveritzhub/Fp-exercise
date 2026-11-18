@@ -75,7 +75,7 @@ const TALK: Record<string, { name: [string, string]; says: [string, string]; opt
   },
   smithy: {
     name: ['Wapensmid', 'Armourer'], says: ['Welkom in de smederij! Hier ruil je muntjes voor uitrusting.', 'Welcome to the smithy! Here you trade coins for gear.'],
-    options: [{ nl: 'Wapens en gereedschap kopen', en: 'Buy weapons and tools', to: '/p/held/inventaris#backpack-title' }, { nl: 'Iets maken van mijn buit', en: 'Make something from my loot', to: '/p/held/inventaris#craft-title' }, { nl: 'Laat de uitrusting zien', en: 'Show me the gear', to: '/p/held/inventaris#gear-title' }, { nl: 'Mijn uiterlijk aanpassen', en: 'Change my look', to: '/p/held/uiterlijk' }],
+    options: [{ nl: 'Wapens kopen', en: 'Buy weapons', to: '/p/winkel/smid' }, { nl: 'Iets maken van mijn buit', en: 'Make something from my loot', to: '/p/winkel/werkplaats' }, { nl: 'Laat de uitrusting zien', en: 'Show me the gear', to: '/p/held/inventaris#gear-title' }, { nl: 'Mijn uiterlijk aanpassen', en: 'Change my look', to: '/p/held/uiterlijk' }],
   },
   library: {
     name: ['Bibliothecaris', 'Librarian'], says: ['Stil in de bibliotheek… maar vraag gerust.', 'Quiet in the library… but do ask.'],
@@ -485,7 +485,7 @@ export function VillageWalkPage() {
       : link.startsWith('/p/kracht') ? boardKey('kracht')
       : link.startsWith('/p/mobiliteit') ? boardKey('mobiliteit')
       : link.startsWith('/p/spieren') ? 'library'
-      : link.startsWith('/p/held/inventaris') ? 'smithy'
+      : link.startsWith('/p/held/inventaris') || link.startsWith('/p/winkel') ? 'smithy'
       : link.startsWith('/p/held/vrienden') || link.startsWith('/p/wereld') ? 'guild'
       : link.startsWith('/p/held') ? 'board'
       : TV_KEY;
@@ -1144,7 +1144,7 @@ export function VillageWalkPage() {
               </p>
             )}
             {NEEDS_TOOL[mob.kind] && !hasTool ? (
-              <Link to="/p/held/inventaris#tools-title" data-testid="tool-needed" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15px] font-semibold text-white shadow-lift">
+              <Link to="/p/winkel/gereedschap" data-testid="tool-needed" className="tap pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#e4bc63] bg-accent px-4 text-[15px] font-semibold text-white shadow-lift">
                 {t(`Hier heb je een ${mobTool?.nl.toLowerCase() ?? 'gereedschap'} voor nodig. Koop hem in de gereedschapswinkel (${mobTool?.price ?? ''} muntjes).`, `You need a ${mobTool?.en.toLowerCase() ?? 'tool'} for this. Buy it at the tool shop (${mobTool?.price ?? ''} coins).`)}
               </Link>
             ) : (
