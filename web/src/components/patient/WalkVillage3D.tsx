@@ -21,6 +21,7 @@ import { loadModel, heroBodyBounds } from '@/components/hero/Hero3D';
 import { PALETTE, mat, rng, webglOk } from './Village3D';
 import { VILLAGE_LAYOUT, clampRect, findPath, nearestSpot, reachable, slotPosition, stepToward, type Obstacle, type Rect, type Site, type Vec } from './walk';
 import { PRACTICE_DOOR_X, ROOM, ROOM_AT, kit, practiceBuilding, practiceRoom, type RoomWall } from './practice3d';
+import { DOOR_LABEL, DOWNSTAIRS_KEY, UPSTAIRS_KEY, doorKey, downstairs, upstairs, type Seat as FloorSeat } from './practiceFloors';
 import { houseRoom } from './house3d';
 import { furniture } from './home3d';
 import { DWELLING_TOP, dwelling } from '@/components/app/dwellings3d';
@@ -37,6 +38,10 @@ import type { MapTrack } from './VillageMap';
 export const TV_KEY = 'tv';
 export const PRACTICE_KEY = 'practice';
 export const EXIT_KEY = 'exit';
+/** The door from the exercise room to the hallway upstairs; other doors are `door:<place>`. */
+const HALL_DOOR = 'door:gang';
+const isDoor = (k: string) => k.startsWith('door:');
+const doorTo = (k: string) => (k === HALL_DOOR ? UPSTAIRS_KEY : k.slice(5));
 /** The well on the square: a place to drink. */
 export const WELL_KEY = 'well';
 const WELL_SPOT: Vec = { x: 1.3, z: 0.4 };
@@ -50,7 +55,7 @@ const HOME_REACH = [1.3, 1.5, 1.8, 2.2, 2.8, 3.1];
 /** Homes along the street stand a little smaller than the patient's own, so neighbours fit side by side. */
 const STREET_HOME = 0.85;
 /** A room behind a door in the village. */
-type Place = { under?: boolean; group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[] };
+type Place = { under?: boolean; group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[]; entries?: Record<string, Vec & { face: number }>; seats?: FloorSeat[] };
 export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key`: the hero turns to it and it flinches. */ strike: (key: string) => void; /** The creature `key` lunges at the hero. */ lunge: (key: string) => void; /** Beaten: the hero stands up at the well at once, without walking. */ respawn: () => void; /** Fast travel: the hero stands at the place `key` at once (after a short fade). */ jump: (key: string) => void };
 /** The bag of the boxing school in the village. */
 export const BOXING_KEY = 'boxing';
@@ -1313,6 +1318,21 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     };
     mark(TV_KEY, ROOM.tvWall, 2.75, PRACTICE_KEY);
     mark(EXIT_KEY, { x: ROOM.exit.x + 0.7, z: ROOM.exit.z }, 2.45, PRACTICE_KEY);
+    // The rest of the practice: from the exercise room through the hall door to the landing upstairs,
+    // and down the stairs to the hall, treatment room and strength room (whose street door leads out).
+    for (const fl of [upstairs(), downstairs()]) {
+      scene.add(fl.group);
+      places[fl.key] = {
+        group: fl.group, walls: fl.walls, at: fl.at, rect: fl.rect, entry: fl.entry, entries: fl.entries, face: fl.face, exit: fl.exit,
+        outside: places[PRACTICE_KEY].outside, map: places[PRACTICE_KEY].map, obstacles: fl.obstacles, seats: fl.seats,
+        spots: [...fl.spots, ...(fl.key === DOWNSTAIRS_KEY ? [{ key: EXIT_KEY, door: fl.exit }] : [])],
+      };
+      for (const lb of fl.labels) mark(lb.key === 'exit' ? EXIT_KEY : lb.key, lb.at, lb.y, fl.key);
+    }
+    const hallDoor = { x: ROOM_AT.x - 2.7, z: ROOM_AT.z + 2.45 };
+    places[PRACTICE_KEY].spots.push({ key: HALL_DOOR, door: hallDoor });
+    places[PRACTICE_KEY].entries = { [UPSTAIRS_KEY]: { x: hallDoor.x + 0.6, z: hallDoor.z - 1.1, face: Math.PI } };
+    mark(HALL_DOOR, { x: hallDoor.x, z: hallDoor.z + 0.6 }, 2.4, PRACTICE_KEY);
     // Figures that can be tapped to talk: where they stand, in which room, and the spot the hero talks from.
     const talkers: { x: number; z: number; zone: string; who: string; spot: string }[] = [];
     const trainers: { at: THREE.Vector3; wear: Set<string>; tint: Record<string, string>; face: number; fabric: string | null }[] = [];
@@ -1470,7 +1490,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const inObstacles = places[PRACTICE_KEY].obstacles;
     const inside = () => zone.current !== 'village';
     /** The seats where the hero is now: the town's benches outside, the furniture in the own room. */
-    const seatsHere = (): Seat[] => (zone.current === 'village' ? seats : zone.current === HOME_KEY ? homeSeats : []);
+    const seatsHere = (): Seat[] => (zone.current === 'village' ? seats : zone.current === HOME_KEY ? homeSeats : places[zone.current]?.seats ?? []);
     const here = () => places[zone.current];
     roads.push({ a: { x: 0, z: plan ? -SQ : -2.6 }, b: { x: GYM.x, z: GYM.z + 1.9 }, w: plan ? 2.1 : 1.6 });
     const staffMixers: THREE.AnimationMixer[] = [];
@@ -2707,11 +2727,19 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       (marker.material as THREE.MeshBasicMaterial).opacity = 0;
       window.clearTimeout(switching);
       switching = window.setTimeout(() => {
-        const spot = to === 'village' ? (here()?.outside ?? VILLAGE_LAYOUT.spawn) : places[to].entry;
+        // From one room to the next (the stairs, a door in the practice): in by that door, facing in.
+        const from = zone.current;
+        const through = to !== 'village' && from !== 'village' ? places[to].entries?.[from] : undefined;
+        const spot = to === 'village' ? (here()?.outside ?? VILLAGE_LAYOUT.spawn) : through ?? places[to].entry;
         // The room stands where its building stands (see the render step), so the camera keeps its
         // place in the world: it is carried over to the other frame and glides on from there.
         const pl = to === 'village' ? here() : places[to];
-        if (pl) {
+        const roomToRoom = to !== 'village' && from !== 'village';
+        if (roomToRoom) {
+          // Inside to inside: the camera goes straight to its place behind the hero.
+          camAngle.current = (through?.face ?? places[to].face) + Math.PI;
+          first = true;
+        } else if (pl) {
           const turn = Math.atan2(pl.map.x - pl.outside.x, pl.map.z - pl.outside.z) - pl.face;
           const cs = Math.cos(turn);
           const sn = Math.sin(turn);
@@ -2733,7 +2761,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         pos.current.x = spot.x;
         pos.current.z = spot.z;
         // Into a room: facing in. Out again: facing the square.
-        facing.current = to === 'village' ? Math.atan2(-spot.x, -spot.z) : places[to].face;
+        facing.current = to === 'village' ? Math.atan2(-spot.x, -spot.z) : through?.face ?? places[to].face;
         hero.rotation.y = facing.current;
         el.dataset.zone = to;
         cb.current.onZone?.(to);
@@ -2849,6 +2877,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             places[HOME_KEY].outside = { x: d.x * (1 - 0.85 / len), z: d.z * (1 - 0.85 / len) };
             places[HOME_KEY].map = sites[j];
             travel(HOME_KEY);
+            return;
+          }
+          if (isDoor(k) && inside()) {
+            travel(doorTo(k));
             return;
           }
           if (!inside() && places[k]) travel(k);
@@ -3251,7 +3283,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           delete el.dataset.walking;
           (marker.material as THREE.MeshBasicMaterial).opacity = 0;
           if (k === TV_KEY) facing.current = Math.PI;
-          if (k === PRACTICE_KEY && n.arrived) travel(PRACTICE_KEY, next);
+          if (k && isDoor(k) && n.arrived) travel(doorTo(k), next);
+          else if (k === PRACTICE_KEY && n.arrived) travel(PRACTICE_KEY, next);
           else if (k === EXIT_KEY && n.arrived) travel('village', next);
           else if (k && next && places[k] && n.arrived) travel(k, next);
           else if (k && n.arrived && pendingTalk.current?.spot === k) {
@@ -4020,6 +4053,15 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             className={cn(plate, 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
             {t('Uitgang', 'Exit')}
           </button>
+          {[HALL_DOOR, doorKey(UPSTAIRS_KEY), doorKey(DOWNSTAIRS_KEY), doorKey(PRACTICE_KEY)].map((k) => {
+            const [labelNl, labelEn] = DOOR_LABEL[k.slice(5)] ?? ['Deur', 'Door'];
+            return (
+              <button key={k} ref={setLabel(k)} type="button" data-spot={k} onClick={() => go(k)} aria-label={t(`Loop naar: ${labelNl.toLowerCase()}`, `Walk to: ${labelEn.toLowerCase()}`)}
+                className={cn(plate, 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
+                {t(labelNl, labelEn)}
+              </button>
+            );
+          })}
           {heroKey && people && (
             <button ref={setLabel(COACH_KEY)} type="button" data-spot={COACH_KEY} data-talk="practice" onClick={() => talk('practice', TV_KEY)}
               aria-label={questOpen ? t(`Praat met ${coachName}: je training van vandaag wacht`, `Talk to ${coachName}: today's workout is waiting`) : t(`Praat met ${coachName}`, `Talk to ${coachName}`)}
