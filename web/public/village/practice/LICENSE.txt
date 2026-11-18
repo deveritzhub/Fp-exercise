@@ -1,0 +1,2 @@
+plant.glb: "Potted Plant 02" from Poly Haven (https://polyhaven.com/a/potted_plant_02), CC0 (public domain).
+Textures reduced to 512 px and packed into one GLB.

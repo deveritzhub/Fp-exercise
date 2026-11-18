@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mirror as liveMirror } from './mirror3d';
 import { kit, plant, type RoomWall } from './practice3d';
+import { bananaPlant, powerRack, realPlant, saddleStool, treatmentTable } from './gym3d';
 import type { Obstacle, Rect, Vec } from './walk';
 
 /**
@@ -137,7 +138,7 @@ type Floors = { vinyl: THREE.MeshStandardMaterial; marble: THREE.MeshStandardMat
 const floorMats = (): Floors => {
   const m = (tex: THREE.Texture | null, color: number, rough: number) => new THREE.MeshStandardMaterial(tex ? { map: tex, roughness: rough } : { color, roughness: rough });
   return {
-    vinyl: m(tiles('#d4cfc7', 'rgba(150,145,138,.6)', 1, 1), 0xd4cfc7, 0.8),
+    vinyl: m(tiles('#cdbb9f', 'rgba(150,128,96,.55)', 1, 1), 0xcdbb9f, 0.8),
     marble: m(marble(1, 1), 0xf1f0ed, 0.16),
     beige: m(tiles('#d8cdb9', 'rgba(170,155,130,.7)', 1, 1), 0xd8cdb9, 0.75),
     rubber: m(tiles('#202121', 'rgba(70,70,70,.9)', 1, 1), 0x202121, 0.95),
@@ -360,13 +361,9 @@ function chair(f: ReturnType<typeof planKit>, x: number, z: number, face: number
 
 /** A treatment table lengthwise along x: frame, padded top in `top`, a roll at the head. Not a seat. */
 function table(f: ReturnType<typeof planKit>, x: number, z: number, top: number, base = 0xe7e9ea) {
-  const { room } = f;
-  room.box(1.5, 0.12, 0.42, base, x, 0.12, z);
-  room.box(0.18, 0.45, 0.38, 0xb8bcbf, x - 0.6, 0.4, z, { metalness: 0.4, roughness: 0.4 });
-  room.box(0.18, 0.45, 0.38, 0xb8bcbf, x + 0.6, 0.4, z, { metalness: 0.4, roughness: 0.4 });
-  room.box(1.95, 0.13, 0.72, top, x, 0.69, z, { roughness: 0.92 });
-  const roll = room.cyl(0.09, 0.62, top, x - 0.85, 0.82, z);
-  roll.rotation.x = Math.PI / 2;
+  const t = treatmentTable(top, base, { towel: top !== 0x4f5459 });
+  t.position.set(x, 0, z);
+  f.group.add(t);
   f.block(x, z, 0.55);
   f.block(x - 0.7, z, 0.4);
   f.block(x + 0.7, z, 0.4);
@@ -469,9 +466,10 @@ export function upstairs(): Floor {
 
   // Treatment room 2: grey table, saddle stool, standing mirror, chart over the radiator, bookcase, chair.
   table(f, 2.7, -3.1, 0x4f5459);
-  room.cyl(0.03, 0.55, CHROME, 3.95, 0.3, -2.4, { metalness: 0.8, roughness: 0.3 });
-  room.cyl(0.22, 0.04, BLACK, 3.95, 0.04, -2.4);
-  room.box(0.4, 0.09, 0.32, BLACK, 3.95, 0.62, -2.4);
+  const stool = saddleStool();
+  stool.position.set(3.95, 0, -2.4);
+  stool.rotation.y = Math.PI / 2;
+  f.group.add(stool);
   f.block(3.95, -2.4, 0.25);
   f.seat(3.95, -2.4, 0.62, -Math.PI / 2, 0.45);
   room.cyl(0.3, 0.04, 0xf2f2f2, 4.4, 0.02, -1.85);
@@ -587,21 +585,14 @@ export function downstairs(): Floor {
   f.panel(-4.01, -1.48, -4.01, 0.45, stone);
   for (const z of [-4.3, -3.1, -1.9]) room.box(0.03, 2.0, 0.05, BLACK, 0.78, 1.05, z);
   f.glass(f.group, 3.7, 1.9, 0.78, 1.05, -2.85, -Math.PI / 2);
-  const rack = (x: number, z: number) => {
-    for (const [dx, dz] of [[-0.6, -0.55], [0.6, -0.55], [-0.6, 0.55], [0.6, 0.55]]) room.box(0.07, 2.2, 0.07, BLACK, x + dx, 1.1, z + dz);
-    for (const dz of [-0.55, 0.55]) room.box(1.27, 0.07, 0.07, BLACK, x, 2.2, z + dz);
-    for (const dx of [-0.6, 0.6]) room.box(0.07, 0.07, 1.17, BLACK, x + dx, 2.2, z);
-    for (const dx of [-0.6, 0.6]) room.box(0.07, 0.07, 1.17, BLACK, x + dx, 0.04, z);
-    const bar = room.cyl(0.02, 1.4, CHROME, x, 2.05, z - 0.55, { metalness: 0.8, roughness: 0.3 });
-    bar.rotation.z = Math.PI / 2;
-    room.box(0.32, 0.08, 1.1, BLACK, x, 0.45, z);
-    room.box(0.24, 0.36, 0.24, BLACK, x, 0.22, z);
-  };
-  rack(-2.2, -3.95);
+  const pr = powerRack();
+  pr.position.set(-2.2, 0, -3.95);
+  f.group.add(pr);
   f.block(-2.2, -3.95, 0.95);
-  for (const x of [-0.7, -0.05]) {
-    room.cyl(0.2, 0.32, 0xb08a52, x, 0.16, -4.5);
-    plant(f.group, x, 0.32, -4.5, 9, 0.35, 1.35, 0.36);
+  for (const [x, sd] of [[-0.7, 5], [-0.05, 9]]) {
+    const bp = bananaPlant(1.55, sd);
+    bp.position.set(x, 0, -4.5);
+    f.group.add(bp);
     f.block(x, -4.5, 0.32);
   }
   room.ball(0.33, 0x1d1d1d, -0.6, 0.33, -3.3, { roughness: 0.4 });
@@ -663,7 +654,9 @@ export function downstairs(): Floor {
     }),
   ];
   prints.forEach((tex, i) => f.frame(tn, 0.46, 0.58, 1.55 + i * 1.3, 1.6, -4.52, 0, tex, 0xb89a74));
-  plant(f.group, 1.3, 0.87, -4.25, 7, 0.25, 0.5, 0.22);
+  const pot = realPlant(0.6);
+  pot.position.set(1.35, 0.87, -4.25);
+  f.group.add(pot);
   plant(f.group, 3.5, 0.87, -4.25, 6, 0.12, 0.35, 0.12);
   const ir = room.box(0.6, 0.74, 0.03, 0xf4f4f4, 4.35, 1.3, -4.15);
   ir.rotation.y = -0.4;

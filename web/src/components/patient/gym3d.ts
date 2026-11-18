@@ -304,3 +304,33 @@ export function bananaPlant(height = 1.5, seed = 5): THREE.Group {
   }
   return done(g);
 }
+
+const PLANT_VERSION = 1;
+/**
+ * A real house plant (Poly Haven's "Potted Plant 02", CC0) of about `height` metres: the monstera
+ * made in code stands in at once and is swapped for the real one when it has loaded.
+ */
+export function realPlant(height = 1.1): THREE.Group {
+  const g = new THREE.Group();
+  g.add(monstera(height));
+  void import('@/components/hero/Hero3D')
+    .then(({ loadModel }) => loadModel(`/village/practice/plant.glb?v=${PLANT_VERSION}`))
+    .then((gltf) => {
+      const model = gltf.scene.clone(true);
+      const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
+      model.scale.setScalar(height / Math.max(0.1, size.y));
+      const b = new THREE.Box3().setFromObject(model);
+      model.position.y -= b.min.y;
+      model.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (mesh.isMesh) {
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+        }
+      });
+      g.clear();
+      g.add(model);
+    })
+    .catch(() => undefined);
+  return g;
+}
