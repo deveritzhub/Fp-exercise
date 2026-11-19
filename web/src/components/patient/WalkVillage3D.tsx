@@ -1318,14 +1318,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     };
     mark(TV_KEY, ROOM.tvWall, 2.75, PRACTICE_KEY);
     mark(EXIT_KEY, { x: ROOM.exit.x + 0.7, z: ROOM.exit.z }, 2.45, PRACTICE_KEY);
-    // The rest of the practice: from the exercise room through the hall door to the landing upstairs,
-    // and down the stairs to the hall, treatment room and strength room (whose street door leads out).
+    // The rest of the practice: from the exercise room through the hall door to the landing, and down
+    // the stairs to the lower floor. The only way in and out is the exercise room's street door.
     for (const fl of [upstairs(), downstairs()]) {
       scene.add(fl.group);
       places[fl.key] = {
         group: fl.group, walls: fl.walls, at: fl.at, rect: fl.rect, entry: fl.entry, entries: fl.entries, face: fl.face, exit: fl.exit,
         outside: places[PRACTICE_KEY].outside, map: places[PRACTICE_KEY].map, obstacles: fl.obstacles, seats: fl.seats,
-        spots: [...fl.spots, ...(fl.key === DOWNSTAIRS_KEY ? [{ key: EXIT_KEY, door: fl.exit }] : [])],
+        spots: fl.spots,
       };
       for (const lb of fl.labels) mark(lb.key === 'exit' ? EXIT_KEY : lb.key, lb.at, lb.y, fl.key);
     }
@@ -3323,9 +3323,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       // Where the hero stands and where the view looks, for tests and tools (a few times a second).
       if (tt - posTick > 0.25) {
         posTick = tt;
-        // Outside a bench close by; in the own room the nearest chair or sofa, wherever it stands.
         const here2 = seatsHere();
-        const nearSeat = rideM ? null : inside() ? here2.reduce<Seat | null>((best, st) => (!best || Math.hypot(st.x - p.x, st.z - p.z) < Math.hypot(best.x - p.x, best.z - p.z) ? st : best), null) : here2.find((st) => Math.hypot(st.x - p.x, st.z - p.z) < 2.6) ?? null;
+        // In the own room (one small room) the nearest chair wherever it stands; elsewhere one close by.
+        const nearest = here2.reduce<Seat | null>((best, st) => (!best || Math.hypot(st.x - p.x, st.z - p.z) < Math.hypot(best.x - p.x, best.z - p.z) ? st : best), null);
+        const nearSeat = rideM || !nearest ? null : zone.current === HOME_KEY || Math.hypot(nearest.x - p.x, nearest.z - p.z) < 2.6 ? nearest : null;
         const state = sitting ? 'sitting' : nearSeat ? 'near' : 'none';
         if (el.dataset.seat !== state) {
           el.dataset.seat = state;

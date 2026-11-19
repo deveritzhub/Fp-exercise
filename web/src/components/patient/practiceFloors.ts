@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mirror as liveMirror } from './mirror3d';
 import { kit, plant, type RoomWall } from './practice3d';
+import { bananaPlant, monstera, powerRack, realPlant, saddleStool, treatmentTable } from './gym3d';
 import type { Obstacle, Rect, Vec } from './walk';
 
 /**
@@ -9,7 +10,8 @@ import type { Obstacle, Rect, Vec } from './walk';
  * the stairs line up). Upstairs: the landing round the stairwell, treatment room 2, the toilet and the
  * little kitchen; the exercise room is through the landing's west door. Downstairs: exercise room 2
  * with the stone walls and the mirror wall, treatment room 1 with the marble and the long cabinet,
- * the hall with the stairs, the coat nook, waiting room 2 with the slatted wall, and the front door.
+ * the hall with the stairs, the coat nook and waiting room 2 with the slatted wall. The way in from
+ * the quay is the street door of the exercise room.
  *
  * Inner walls are low, so the camera looks over them into the next room; doors are `door:<place>`
  * spots (walk there and the hero goes through).
@@ -136,7 +138,7 @@ type Floors = { vinyl: THREE.MeshStandardMaterial; marble: THREE.MeshStandardMat
 const floorMats = (): Floors => {
   const m = (tex: THREE.Texture | null, color: number, rough: number) => new THREE.MeshStandardMaterial(tex ? { map: tex, roughness: rough } : { color, roughness: rough });
   return {
-    vinyl: m(tiles('#d4cfc7', 'rgba(150,145,138,.6)', 1, 1), 0xd4cfc7, 0.8),
+    vinyl: m(tiles('#cdbb9f', 'rgba(150,128,96,.55)', 1, 1), 0xcdbb9f, 0.8),
     marble: m(marble(1, 1), 0xf1f0ed, 0.16),
     beige: m(tiles('#d8cdb9', 'rgba(170,155,130,.7)', 1, 1), 0xd8cdb9, 0.75),
     rubber: m(tiles('#202121', 'rgba(70,70,70,.9)', 1, 1), 0x202121, 0.95),
@@ -243,12 +245,12 @@ function planKit(key: string, at: Vec, rooms: PlanRoom[]) {
   const xs = rooms.flatMap((r) => [r.x0, r.x1]);
   const zs = rooms.flatMap((r) => [r.z0, r.z1]);
   const box = { x0: Math.min(...xs), x1: Math.max(...xs), z0: Math.min(...zs), z1: Math.max(...zs) };
-  for (let x = box.x0 + 0.15; x < box.x1; x += 0.3) for (let z = box.z0 + 0.15; z < box.z1; z += 0.3) if (!inRoom(x, z, 0.02)) obstacles.push({ ...W(x, z), r: 0.26 });
+  for (let x = box.x0 + 0.1; x < box.x1; x += 0.2) for (let z = box.z0 + 0.1; z < box.z1; z += 0.2) if (!inRoom(x, z, 0)) obstacles.push({ ...W(x, z), r: 0.14 });
   const block = (x: number, z: number, r: number) => obstacles.push({ ...W(x, z), r });
-  const line = (x0: number, z0: number, x1: number, z1: number, r = 0.2, gaps: [number, number][] = []) => {
+  const line = (x0: number, z0: number, x1: number, z1: number, r = 0.13, gaps: [number, number][] = []) => {
     const len = Math.hypot(x1 - x0, z1 - z0);
-    for (let s2 = 0; s2 <= len + 0.001; s2 += 0.25) {
-      if (gaps.some(([a, b]) => s2 > a - 0.12 && s2 < b + 0.12)) continue;
+    for (let s2 = 0; s2 <= len + 0.001; s2 += 0.2) {
+      if (gaps.some(([a, b]) => s2 > a - 0.05 && s2 < b + 0.05)) continue;
       block(x0 + ((x1 - x0) * s2) / len, z0 + ((z1 - z0) * s2) / len, r);
     }
   };
@@ -267,7 +269,7 @@ function planKit(key: string, at: Vec, rooms: PlanRoom[]) {
       room.box(along ? b - a : 0.12, h, along ? 0.12 : b - a, WHITE, cx, h / 2, cz);
       room.box(along ? b - a : 0.16, 0.04, along ? 0.16 : b - a, OAK, cx, h + 0.02, cz);
     }
-    line(x0, z0, x1, z1, 0.2, gaps);
+    line(x0, z0, x1, z1, 0.13, gaps);
   };
   const seats: Seat[] = [];
   const seat = (x: number, z: number, y: number, face: number, front?: number) => seats.push({ ...W(x, z), y, face, front });
@@ -357,19 +359,14 @@ function chair(f: ReturnType<typeof planKit>, x: number, z: number, face: number
   f.seat(x, z, 0.45, face, 0.5);
 }
 
-/** A treatment table lengthwise along x: frame, padded top in `top`, a roll at the head. */
+/** A treatment table lengthwise along x: frame, padded top in `top`, a roll at the head. Not a seat. */
 function table(f: ReturnType<typeof planKit>, x: number, z: number, top: number, base = 0xe7e9ea) {
-  const { room } = f;
-  room.box(1.5, 0.12, 0.42, base, x, 0.12, z);
-  room.box(0.18, 0.45, 0.38, 0xb8bcbf, x - 0.6, 0.4, z, { metalness: 0.4, roughness: 0.4 });
-  room.box(0.18, 0.45, 0.38, 0xb8bcbf, x + 0.6, 0.4, z, { metalness: 0.4, roughness: 0.4 });
-  room.box(1.95, 0.13, 0.72, top, x, 0.69, z, { roughness: 0.92 });
-  const roll = room.cyl(0.09, 0.62, top, x - 0.85, 0.82, z);
-  roll.rotation.x = Math.PI / 2;
+  const t = treatmentTable(top, base, { towel: top !== 0x4f5459 });
+  t.position.set(x, 0, z);
+  f.group.add(t);
   f.block(x, z, 0.55);
   f.block(x - 0.7, z, 0.4);
   f.block(x + 0.7, z, 0.4);
-  f.seat(x, z + 0.42, 0.68, 0, 0.5);
 }
 
 /**
@@ -390,13 +387,13 @@ export function upstairs(): Floor {
   const { room } = f;
   // Inner walls: treatment room 2 (door to the landing), the toilet (door on its west), the kitchen.
   f.inner(0.58, -1.2, 4.84, -1.2, [[1.4, 2.4]]);
-  f.inner(4.55, -1.2, 4.55, 0.12, [[0.3, 1.1]]);
+  f.inner(4.55, -1.2, 4.55, 0.12, [[0.2, 1.2]]);
   f.inner(4.55, 0.12, 5.54, 0.12);
-  f.inner(2.92, 2.45, 5.54, 2.45, [[0.83, 1.63]]);
+  f.inner(2.92, 2.45, 5.54, 2.45, [[0.7, 1.75]]);
 
-  // The stairs going down, seen through the stairwell, and the white railing (open at the top, east).
+  // The stairs going down, seen through the stairwell, and the white railing (open at the top, west).
   for (let i = 0; i < 9; i++) {
-    const x = hole.x1 - 0.12 - i * 0.19;
+    const x = hole.x0 + 0.12 + i * 0.19;
     room.box(0.19, 0.06, 1.0, WHITE, x, -0.2 - i * 0.18, 1.46);
     room.box(0.15, 0.012, 0.7, 0xc8b493, x, -0.165 - i * 0.18, 1.46);
   }
@@ -417,11 +414,11 @@ export function upstairs(): Floor {
   };
   rail(hole.x0, hole.z0, hole.x1, hole.z0);
   rail(hole.x0, hole.z1, hole.x1, hole.z1);
-  rail(hole.x0, hole.z0, hole.x0, hole.z1);
+  rail(hole.x1, hole.z0, hole.x1, hole.z1);
   room.cyl(0.006, 0.6, 0xffffff, 2.8, 2.4, 1.46);
   const shade = room.cyl(0.3, 0.32, 0xe6c38f, 2.8, 1.95, 1.46, { ...glow(0xffcf8a, 0.55), roughness: 1 });
   shade.castShadow = false;
-  f.door(DOWNSTAIRS_KEY, 4.1, 1.45, 3.2, 1.45, 1.9);
+  f.door(DOWNSTAIRS_KEY, 1.3, 1.45, 2.4, 1.45, 1.9);
 
   // The window with its wooden blinds and the radiator, on the street side of the landing.
   const win = f.wallAt(1.85, 2.45);
@@ -439,7 +436,7 @@ export function upstairs(): Floor {
     const pil = room.box(0.16, 0.5, 0.5, 0xc9a45c, 5.3, 0.68, z);
     pil.rotation.z = -0.25;
   }
-  f.line(5.15, 0.4, 5.15, 2.3, 0.4);
+  f.line(5.25, 0.45, 5.25, 2.3, 0.3);
   f.seat(4.95, 0.9, 0.42, -Math.PI / 2, 0.55);
   f.seat(4.95, 1.9, 0.42, -Math.PI / 2, 0.55);
   const east = f.wallAt(5.54, 1.3);
@@ -449,8 +446,8 @@ export function upstairs(): Floor {
     hex.position.set(5.5, y, z);
     east.add(hex);
   }
-  room.ball(0.34, 0x1b1b1b, 1.25, 0.34, 2.0, { roughness: 0.35 });
-  f.block(1.25, 2.0, 0.38);
+  room.ball(0.3, 0x1b1b1b, 5.1, 0.3, 0.05, { roughness: 0.35 });
+  f.block(5.1, 0.25, 0.3);
   // West wall of the landing: the door to the exercise room (its blue TV seen through it), prints, hooks.
   const west = f.wallAt(0.47, -0.6);
   const wst = kit(west, false);
@@ -469,9 +466,10 @@ export function upstairs(): Floor {
 
   // Treatment room 2: grey table, saddle stool, standing mirror, chart over the radiator, bookcase, chair.
   table(f, 2.7, -3.1, 0x4f5459);
-  room.cyl(0.03, 0.55, CHROME, 3.95, 0.3, -2.4, { metalness: 0.8, roughness: 0.3 });
-  room.cyl(0.22, 0.04, BLACK, 3.95, 0.04, -2.4);
-  room.box(0.4, 0.09, 0.32, BLACK, 3.95, 0.62, -2.4);
+  const stool = saddleStool();
+  stool.position.set(3.95, 0, -2.4);
+  stool.rotation.y = Math.PI / 2;
+  f.group.add(stool);
   f.block(3.95, -2.4, 0.25);
   f.seat(3.95, -2.4, 0.62, -Math.PI / 2, 0.45);
   room.cyl(0.3, 0.04, 0xf2f2f2, 4.4, 0.02, -1.85);
@@ -538,11 +536,11 @@ export function upstairs(): Floor {
     rect: f.rect,
     entries: {
       practice: { ...f.W(1.4, -0.55), face: Math.PI / 2 },
-      [DOWNSTAIRS_KEY]: { ...f.W(4.2, 0.3), face: -Math.PI / 2 },
+      [DOWNSTAIRS_KEY]: { ...f.W(1.3, 0.45), face: Math.PI },
     },
     entry: f.W(1.4, -0.55),
     face: Math.PI / 2,
-    exit: f.W(4.1, 1.45),
+    exit: f.W(1.3, 1.45),
     obstacles: f.obstacles,
     spots: f.spots,
     seats: f.seats,
@@ -553,7 +551,7 @@ export function upstairs(): Floor {
 /**
  * Downstairs, after the scan: exercise room 2 with the stone walls and the mirror wall (the two old
  * rooms on the west side, now one), treatment room 1 with the marble and the long cabinet, the hall
- * with the stairs, the coat nook, waiting room 2 with the slatted wall, and the front door.
+ * with the stairs, the coat nook and waiting room 2 with the slatted wall.
  */
 export function downstairs(): Floor {
   const F = floorMats();
@@ -574,12 +572,12 @@ export function downstairs(): Floor {
   // treatment room's door, waiting room 2 (behind the stairs, door to the hall), the stairs' side.
   f.inner(0.85, -4.84, 0.85, -0.85);
   room.box(0.12, 1.5, 3.99, WHITE, 0.85, 1.85, -2.85);
-  f.inner(-1.28, -0.85, 0.85, -0.85, [[0.4, 1.35]]);
+  f.inner(-1.28, -0.85, 0.85, -0.85, [[0.3, 1.45]]);
   f.inner(-1.28, -0.85, -1.28, 0.47);
-  f.inner(0.88, -0.82, 4.84, -0.82, [[1.75, 2.65]]);
+  f.inner(0.88, -0.82, 4.84, -0.82, [[1.6, 2.7]]);
   f.inner(1.1, 2.1, 3.6, 2.1);
-  f.inner(3.6, 0.76, 3.6, 2.1);
-  f.inner(3.6, 2.1, 3.6, 3.73, [[0.45, 1.35]]);
+  f.inner(0.93, 0.76, 3.6, 0.76);
+  f.inner(3.6, 2.1, 3.6, 3.73, [[0.3, 1.4]]);
 
   // Exercise room 2: stone on its outer walls, the mirror wall, the rack, plants, ball, lamp, stool.
   f.panel(-3.07, -4.82, 0.8, -4.82, stone);
@@ -587,21 +585,14 @@ export function downstairs(): Floor {
   f.panel(-4.01, -1.48, -4.01, 0.45, stone);
   for (const z of [-4.3, -3.1, -1.9]) room.box(0.03, 2.0, 0.05, BLACK, 0.78, 1.05, z);
   f.glass(f.group, 3.7, 1.9, 0.78, 1.05, -2.85, -Math.PI / 2);
-  const rack = (x: number, z: number) => {
-    for (const [dx, dz] of [[-0.6, -0.55], [0.6, -0.55], [-0.6, 0.55], [0.6, 0.55]]) room.box(0.07, 2.2, 0.07, BLACK, x + dx, 1.1, z + dz);
-    for (const dz of [-0.55, 0.55]) room.box(1.27, 0.07, 0.07, BLACK, x, 2.2, z + dz);
-    for (const dx of [-0.6, 0.6]) room.box(0.07, 0.07, 1.17, BLACK, x + dx, 2.2, z);
-    for (const dx of [-0.6, 0.6]) room.box(0.07, 0.07, 1.17, BLACK, x + dx, 0.04, z);
-    const bar = room.cyl(0.02, 1.4, CHROME, x, 2.05, z - 0.55, { metalness: 0.8, roughness: 0.3 });
-    bar.rotation.z = Math.PI / 2;
-    room.box(0.32, 0.08, 1.1, BLACK, x, 0.45, z);
-    room.box(0.24, 0.36, 0.24, BLACK, x, 0.22, z);
-  };
-  rack(-2.2, -3.95);
+  const pr = powerRack();
+  pr.position.set(-2.2, 0, -3.95);
+  f.group.add(pr);
   f.block(-2.2, -3.95, 0.95);
-  for (const x of [-0.7, -0.05]) {
-    room.cyl(0.2, 0.32, 0xb08a52, x, 0.16, -4.5);
-    plant(f.group, x, 0.32, -4.5, 9, 0.35, 1.35, 0.36);
+  for (const [x, sd] of [[-0.7, 5], [-0.05, 9]]) {
+    const bp = bananaPlant(1.55, sd);
+    bp.position.set(x, 0, -4.5);
+    f.group.add(bp);
     f.block(x, -4.5, 0.32);
   }
   room.ball(0.33, 0x1d1d1d, -0.6, 0.33, -3.3, { roughness: 0.4 });
@@ -663,7 +654,9 @@ export function downstairs(): Floor {
     }),
   ];
   prints.forEach((tex, i) => f.frame(tn, 0.46, 0.58, 1.55 + i * 1.3, 1.6, -4.52, 0, tex, 0xb89a74));
-  plant(f.group, 1.3, 0.87, -4.25, 7, 0.25, 0.5, 0.22);
+  const pot = monstera(0.62, 0x2b2b2b, 7);
+  pot.position.set(1.35, 0.87, -4.25);
+  f.group.add(pot);
   plant(f.group, 3.5, 0.87, -4.25, 6, 0.12, 0.35, 0.12);
   const ir = room.box(0.6, 0.74, 0.03, 0xf4f4f4, 4.35, 1.3, -4.15);
   ir.rotation.y = -0.4;
@@ -682,15 +675,15 @@ export function downstairs(): Floor {
   room.box(0.03, 1.9, 0.8, 0xf4f4f4, 0.92, 1.05, -3.4);
   f.glass(f.group, 0.72, 1.82, 0.95, 1.05, -3.4, Math.PI / 2);
 
-  // The hall: the stairs going up eastward from the foot by the hall, the coat nook, the front door.
+  // The hall: the stairs going up westward from the foot on the hall's east side, and the coat nook.
   for (let i = 0; i < 12; i++) {
-    const x = 1.05 + i * 0.215;
+    const x = 3.49 - i * 0.215;
     const h = 0.2 + i * 0.2;
     room.box(0.215, h, 1.2, WHITE, x, h / 2, 1.43);
     room.box(0.17, 0.012, 0.8, 0xc8b493, x, h + 0.006, 1.43);
   }
-  for (let x = 1.2; x < 3.6; x += 0.3) for (const z of [1.05, 1.45, 1.85]) f.block(x, z, 0.22);
-  f.door(UPSTAIRS_KEY, 1.15, 0.4, 2.0, 1.45, 2.0);
+  for (let x = 1.1; x < 3.45; x += 0.25) for (const z of [0.95, 1.25, 1.55, 1.85]) f.block(x, z, 0.15);
+  f.door(UPSTAIRS_KEY, 3.95, 1.45, 2.6, 1.45, 2.0);
   const nook = f.wallAt(-0.88, 1.5);
   for (let i = 0; i < 5; i++) {
     const peg = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.12), new THREE.MeshStandardMaterial({ color: OAK }));
@@ -700,12 +693,8 @@ export function downstairs(): Floor {
   room.box(0.4, 0.42, 1.2, OAK, -0.65, 0.21, 1.6);
   f.block(-0.65, 1.6, 0.35);
   f.seat(-0.6, 1.6, 0.42, Math.PI / 2, 0.5);
-  // The front door to the quay, the moss wall beside it, and two white chairs by the east wall.
-  const front = f.wallAt(4.5, 3.73);
-  const fk = kit(front, false);
-  fk.box(1.05, 2.15, 0.06, 0x2a2c2b, 4.5, 1.07, 3.7);
-  fk.box(0.75, 1.4, 0.03, 0xbcd8e6, 4.5, 1.25, 3.66, { ...glow(0xdfeef5, 0.5), transparent: true, opacity: 0.85 });
-  f.labels.push({ key: 'exit', at: f.W(4.5, 3.5), y: 2.45 });
+  // The moss wall in the hall, and two white chairs by the east wall. (The way in from the quay is
+  // the street door of the exercise room, upstairs on the quay side.)
   const moss = painted(64, 64, (g) => {
     g.fillStyle = '#2d5a26';
     g.fillRect(0, 0, 64, 64);
@@ -733,8 +722,9 @@ export function downstairs(): Floor {
   room.box(2.2, 0.1, 0.05, 0x161616, 2.27, 1.17, 2.2);
   chair(f, 1.5, 3.25, Math.PI * 0.85);
   chair(f, 2.3, 3.3, Math.PI);
-  room.cyl(0.18, 0.34, 0xcfb58c, 3.25, 0.17, 3.4);
-  plant(f.group, 3.25, 0.34, 3.4, 8, 0.28, 1.0, 0.3);
+  const house = realPlant(1.0);
+  house.position.set(3.25, 0, 3.4);
+  f.group.add(house);
   f.block(3.25, 3.4, 0.33);
 
   return {
@@ -743,10 +733,10 @@ export function downstairs(): Floor {
     walls: f.walls,
     at: DOWN_AT,
     rect: f.rect,
-    entries: { [UPSTAIRS_KEY]: { ...f.W(2.3, 0.05), face: Math.PI / 2 } },
-    entry: f.W(2.3, 0.05),
+    entries: { [UPSTAIRS_KEY]: { ...f.W(4.4, 0.3), face: -Math.PI / 2 } },
+    entry: f.W(4.4, 0.3),
     face: Math.PI / 2,
-    exit: f.W(4.5, 3.35),
+    exit: f.W(3.95, 1.45),
     obstacles: f.obstacles,
     spots: f.spots,
     seats: f.seats,

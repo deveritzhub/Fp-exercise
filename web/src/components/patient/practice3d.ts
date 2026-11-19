@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mirror as liveMirror } from './mirror3d';
+import { monstera, powerRack } from './gym3d';
 import { mat } from './Village3D';
 import type { Obstacle, Vec } from './walk';
 
@@ -189,9 +190,9 @@ export function practiceRoom(tv: THREE.Texture, opts: { mirrors?: boolean } = {}
   };
 
   // Floor: light vinyl with faint tile seams, and the door mat.
-  room.box(8.3, 0.1, 6.7, 0xd8cfc1, 0, -0.05, 0).castShadow = false;
-  for (let i = -3; i <= 3; i++) room.box(0.015, 0.012, 6.4, 0xc6bcab, i * 1.1, 0.005, 0).castShadow = false;
-  for (let i = -2; i <= 2; i++) room.box(8, 0.012, 0.015, 0xc6bcab, 0, 0.005, i * 1.1).castShadow = false;
+  room.box(8.3, 0.1, 6.7, 0xcdbb9f, 0, -0.05, 0).castShadow = false;
+  for (let i = -3; i <= 3; i++) room.box(0.015, 0.012, 6.4, 0xb9a688, i * 1.1, 0.005, 0).castShadow = false;
+  for (let i = -2; i <= 2; i++) room.box(8, 0.012, 0.015, 0xb9a688, 0, 0.005, i * 1.1).castShadow = false;
   room.box(0.7, 0.03, 1.0, 0x4a4c4a, 3.3, 0.015, -2.35).castShadow = false;
 
   // North wall: the TV, and the tall mirror behind the rack.
@@ -258,20 +259,11 @@ export function practiceRoom(tv: THREE.Texture, opts: { mirrors?: boolean } = {}
   glassAt(walls[3].group, 0.52, 1.61, -3.945, 1.25, -0.8, Math.PI / 2);
 
   // On the floor. Half rack with the bar, in front of the mirror.
-  for (const x of [-2.2, -1.0]) {
-    room.box(0.09, 2.3, 0.09, BLACK, x, 1.15, -2.85);
-    room.box(0.09, 0.08, 1.1, BLACK, x, 0.04, -2.45);
-    room.box(0.07, 0.07, 0.3, BLACK, x, 1.2, -2.68);
-  }
-  room.box(1.3, 0.08, 0.09, BLACK, -1.6, 2.28, -2.85);
-  const bar = room.cyl(0.022, 2.6, 0xc9cccc, -1.6, 1.26, -2.58, { metalness: 0.8, roughness: 0.3 });
-  bar.rotation.z = Math.PI / 2;
-  for (const x of [-2.72, -0.48]) {
-    const plate = room.cyl(0.24, 0.06, YELLOW, x, 1.26, -2.58);
-    plate.rotation.z = Math.PI / 2;
-  }
+  const rack = powerRack({ bench: false });
+  rack.position.set(-1.6, 0, -2.5);
+  group.add(rack);
   // Balance domes, bumper plates against the wall and the sandbag.
-  for (const [x, y, z] of [[-1.25, 0.02, -2.15], [-1.5, 0.19, -2.5]]) {
+  for (const [x, y, z] of [[-0.55, 0.02, -1.75], [-0.3, 0.19, -2.0]]) {
     room.cyl(0.36, 0.04, YELLOW, x, y, z);
     const dome = room.ball(0.33, 0x2a2c2b, x, y + 0.02, z);
     dome.scale.y = 0.5;
@@ -287,10 +279,10 @@ export function practiceRoom(tv: THREE.Texture, opts: { mirrors?: boolean } = {}
   const step = room.box(0.95, 0.12, 0.36, BLACK, -2.75, 0.22, -1.95);
   step.rotation.y = 0.5;
   for (const dx of [-0.38, 0.38]) room.box(0.14, 0.17, 0.4, YELLOW, -2.75 + dx * Math.cos(0.5), 0.085, -1.95 - dx * Math.sin(0.5)).rotation.y = 0.5;
-  // The monstera by the door.
-  room.cyl(0.2, 0.32, 0xe6dccb, 2.6, 0.16, -2.95, {}, 0.24);
-  room.cyl(0.03, 2.2, 0x7a5a3a, 2.6, 1.3, -2.95);
-  plant(group, 2.6, 0.5, -2.95, 12, 0.24, 1.9, 0.25);
+  // The big monstera by the door, climbing its moss pole.
+  const big = monstera(2.05, 0xe6dccb, 11, { pole: true });
+  big.position.set(2.6, 0, -2.95);
+  group.add(big);
   // Exercise bike in front of the window.
   const bike = new THREE.Group();
   bike.position.set(2.9, 0, 0.5);
