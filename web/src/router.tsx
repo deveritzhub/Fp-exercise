@@ -57,6 +57,7 @@ const FriendsPage = named(() => import('@/pages/patient/FriendsPage'), 'FriendsP
 const LogbookPage = named(() => import('@/pages/patient/LogbookPage'), 'LogbookPage');
 const NutritionPage = named(() => import('@/pages/patient/NutritionPage'), 'NutritionPage');
 const GamesPage = named(() => import('@/pages/patient/GamesPage'), 'GamesPage');
+const ExerciseDemoPage = named(() => import('@/pages/patient/ExerciseDemoPage'), 'ExerciseDemoPage');
 const ShopPage = named(() => import('@/pages/patient/ShopPage'), 'ShopPage');
 const GamePlayPage = named(() => import('@/pages/patient/GamesPage'), 'GamePlayPage');
 const GymLogPage = named(() => import('@/pages/patient/GymLogPage'), 'GymLogPage');
@@ -200,6 +201,7 @@ export const router = createBrowserRouter([
           { path: 'logboek', element: <S><LogbookPage /></S> },
           { path: 'voeding', element: <S><NutritionPage /></S> },
           { path: 'spellen', element: <S><GamesPage /></S> },
+          { path: 'proef/oefeningen', element: <S><ExerciseDemoPage /></S> },
           { path: 'winkel/:shop', element: <S><ShopPage /></S> },
           { path: 'spellen/:game', element: <S><GamePlayPage /></S> },
           { path: 'revalidatie', element: <S><ModulePage key="revalidatie" module="revalidatie" /></S> },
