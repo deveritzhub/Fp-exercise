@@ -23,7 +23,7 @@ import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
 import { VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { SITES, SPOTS, TOWN_HOUSES, WILD, placeAt } from '@/components/patient/townPlan';
 import { PET_LEVEL } from '@shared/pets';
-import { DOOR_LABEL } from '@/components/patient/practiceFloors';
+import { DOOR_LABEL, STAFF_NAMES } from '@/components/patient/practiceFloors';
 import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
 import { SUPPLY } from '@shared/supplies';
@@ -54,10 +54,19 @@ const TALK: Record<string, { name: [string, string]; says: [string, string]; opt
     name: ['Fysiotherapeut', 'Physiotherapist'], says: ['Fijn dat je er bent. Waar kan ik je mee helpen?', 'Good to see you. What can I help you with?'],
     options: [
       { nl: 'Laat mijn oefeningen van vandaag zien', en: 'Show my exercises for today', act: 'tv' },
-      { nl: 'Ik wil mijn pijn doorgeven', en: 'I want to report my pain', to: '/p/held/pijn' },
       { nl: 'Mijn revalidatieprogramma', en: 'My rehab programme', to: '/p/revalidatie' },
+      { nl: 'Mijn krachtprogramma', en: 'My strength programme', to: '/p/kracht' },
       { nl: 'Hoe gaat het met mijn voortgang?', en: 'How is my progress?', to: '/p/voortgang' },
       { nl: 'Een bericht sturen', en: 'Send a message', to: '/p/berichten' },
+    ],
+  },
+  treatment: {
+    name: ['Fysiotherapeut', 'Physiotherapist'], says: ['Kom binnen. Hoe gaat het met je klacht, en wat kan ik voor je doen?', 'Come in. How is your complaint doing, and what can I do for you?'],
+    options: [
+      { nl: 'Ik wil mijn pijn doorgeven', en: 'I want to report my pain', to: '/p/held/pijn' },
+      { nl: 'Hoe gaat het met mijn herstel?', en: 'How is my recovery going?', to: '/p/voortgang' },
+      { nl: 'Mijn revalidatieprogramma', en: 'My rehab programme', to: '/p/revalidatie' },
+      { nl: 'Een vraag stellen of bericht sturen', en: 'Ask a question or send a message', to: '/p/berichten' },
     ],
   },
   kracht: {
@@ -949,6 +958,7 @@ export function VillageWalkPage() {
     k === TV_KEY ? t('de tv in de praktijk', 'the TV in the practice')
       : k === PRACTICE_KEY ? practiceName
       : k === EXIT_KEY ? t('de uitgang', 'the exit')
+      : k.startsWith('talk:') ? STAFF_NAMES[k.slice(5) as keyof typeof STAFF_NAMES] ?? k
       : k.startsWith('door:') ? (() => { const [a1, b1] = DOOR_LABEL[k === 'door:gang' ? 'gang' : k.slice(5)] ?? ['de deur', 'the door']; return t(a1.toLowerCase(), b1.toLowerCase()); })()
       : k === HOME_KEY ? homeLabel.toLowerCase()
       : k === boardKey(HOME_KEY) ? t('je inrichtingstafel', 'your furnishing table')
@@ -1220,6 +1230,10 @@ export function VillageWalkPage() {
               )}
               <Button size="lg" variant="secondary" className="border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(EXIT_KEY)}>{zone === DUNGEON_KEY ? t('Terug naar boven', 'Back up') : t('Naar buiten: het dorp', 'Go out: the village')}</Button>
             </span>
+          ) : near?.startsWith('talk:') && TALK[near.slice(5)] ? (
+            <Button size="lg" data-testid="talk-staff" className="pointer-events-auto border border-[#e4bc63] shadow-lift" onClick={() => setTalk(near.slice(5))}>
+              {t(`Praat met ${STAFF_NAMES[near.slice(5) as keyof typeof STAFF_NAMES] ?? ''}`, `Talk to ${STAFF_NAMES[near.slice(5) as keyof typeof STAFF_NAMES] ?? ''}`)}
+            </Button>
           ) : near?.startsWith('door:') ? (
             <Button size="lg" data-testid="use-door" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<DoorOpen className="h-5 w-5" />} onClick={() => world.current?.use(near)}>
               {(() => {
@@ -1413,7 +1427,7 @@ export function VillageWalkPage() {
         )}
       </Dialog>
 
-      <Dialog open={!!talk && !!TALK[talk]} onClose={() => setTalk(null)} size="md" sheet title={talk && TALK[talk] ? `${talk === 'practice' ? t('Fysiotherapeut', 'Physiotherapist') : TALK[talk].name[nl ? 0 : 1]}${talking ? ` · ${talking.label}` : talk === 'practice' ? ` · ${practiceName}` : ''}` : ''}>
+      <Dialog open={!!talk && !!TALK[talk]} onClose={() => setTalk(null)} size="md" sheet title={talk && TALK[talk] ? `${talk === 'practice' || talk === 'treatment' ? `${STAFF_NAMES[talk]} · ${t('fysiotherapeut', 'physiotherapist')}` : TALK[talk].name[nl ? 0 : 1]}${talking ? ` · ${talking.label}` : talk === 'practice' ? ` · ${practiceName}` : ''}` : ''}>
         {talk && TALK[talk] && (
           <div className="space-y-3" data-testid="keeper-talk">
             <p className="rounded-2xl rounded-tl-sm bg-[#fbf0d9] px-4 py-3 text-[15.5px] leading-snug text-[#3a2a12]">“{TALK[talk].says[nl ? 0 : 1]}”</p>

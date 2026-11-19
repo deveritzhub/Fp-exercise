@@ -30,6 +30,10 @@ export const DOOR_LABEL: Record<string, [string, string]> = {
 const UP_AT: Vec = { x: -220, z: 400 };
 const DOWN_AT: Vec = { x: -320, z: 400 };
 
+/** The physiotherapists of the practice, by where they stand: the exercise room and the treatment room upstairs. */
+export const STAFF_NAMES = { practice: 'Syabend', treatment: 'Dinish' } as const;
+export const talkKey = (who: string) => `talk:${who}`;
+
 export type Seat = { x: number; z: number; y: number; face: number; front?: number };
 export type Floor = {
   key: string;
@@ -47,6 +51,8 @@ export type Floor = {
   seats: Seat[];
   /** Where the door labels float. */
   labels: { key: string; at: Vec; y: number }[];
+  /** Staff who stand on this floor: where, where the hero talks to them from, and which way they look. */
+  people?: { who: string; at: Vec; talkAt: Vec; face: number }[];
 };
 
 const WHITE = 0xf4f2ee;
@@ -508,6 +514,7 @@ export function upstairs(): Floor {
   f.block(0.8, -2.4, 0.3);
   f.block(0.8, -2.0, 0.3);
   chair(f, 1.3, -4.2, 0.4);
+  f.block(3.5, -1.9, 0.36);
   room.cyl(0.02, 0.9, WHITE, 4.4, 0.45, -4.4);
   const fan = room.cyl(0.18, 0.06, 0xf4f4f4, 4.4, 0.95, -4.4);
   fan.rotation.x = Math.PI / 2;
@@ -545,6 +552,8 @@ export function upstairs(): Floor {
     spots: f.spots,
     seats: f.seats,
     labels: f.labels,
+    // The physiotherapist of treatment room 2 stands by the table, looking at whoever comes in.
+    people: [{ who: 'treatment', at: f.W(3.5, -1.9), talkAt: f.W(2.65, -2.0), face: Math.atan2(2.65 - 3.5, -2.0 + 1.9) }],
   };
 }
 
