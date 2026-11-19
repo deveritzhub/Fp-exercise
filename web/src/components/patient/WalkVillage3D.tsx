@@ -21,7 +21,7 @@ import { loadModel, heroBodyBounds } from '@/components/hero/Hero3D';
 import { PALETTE, mat, rng, webglOk } from './Village3D';
 import { VILLAGE_LAYOUT, clampRect, findPath, nearestSpot, reachable, slotPosition, stepToward, type Obstacle, type Rect, type Site, type Vec } from './walk';
 import { PRACTICE_DOOR_X, ROOM, ROOM_AT, kit, practiceBuilding, practiceRoom, type RoomWall } from './practice3d';
-import { DOOR_LABEL, DOWNSTAIRS_KEY, UPSTAIRS_KEY, doorKey, downstairs, upstairs, type Seat as FloorSeat } from './practiceFloors';
+import { DOOR_LABEL, DOWNSTAIRS_KEY, STAFF_NAMES, UPSTAIRS_KEY, doorKey, downstairs, talkKey, upstairs, type Floor, type Seat as FloorSeat } from './practiceFloors';
 import { houseRoom } from './house3d';
 import { furniture } from './home3d';
 import { DWELLING_TOP, dwelling } from '@/components/app/dwellings3d';
@@ -174,6 +174,10 @@ const COACH_AT: Vec = ROOM.coach;
 /** What the coach wears: the same model as the hero, in the practice colours. */
 const COACH_WEAR = new Set(['hair_short', 'outfit_tracksuit', 'gear_cap', 'base_shoes']);
 const COACH_TINT: Record<string, string> = { kit_main: '#29483c', kit_dark: '#1d362d', kit_soft: '#e4bc63', hair: '#3b2a1a', skin: '#c99670' };
+/** The second physiotherapist (treatment room): grey sports kit. */
+const STAFF2_WEAR = new Set(['hair_buzz', 'outfit_sport_running', 'base_shoes']);
+const STAFF2_TINT: Record<string, string> = { kit_main: '#8a9096', kit_dark: '#33373c', kit_soft: '#e9e9e9', hair: '#17120e', skin: '#a8754f' };
+const staffKey = (who: string) => `staff:${who}`;
 
 /** Who waits by the programme board in the two training houses: a coach in the gym, a flow master in the studio. */
 const TRAINERS = {
@@ -783,7 +787,7 @@ const FIRST_PERSON_ZOOM = 0.38;
 
 export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, shrines, glow = false, ride = null, pet = null, startAt = null, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
   const { t } = useI18n();
-  const coachName = coachLabel ?? t('Fysiotherapeut', 'Physiotherapist');
+  const coachName = coachLabel ?? STAFF_NAMES.practice;
   const host = useRef<HTMLDivElement>(null);
   const labels = useRef<Map<string, HTMLElement>>(new Map());
   const xpLabel = useRef<HTMLDivElement>(null);
@@ -1320,8 +1324,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     mark(EXIT_KEY, { x: ROOM.exit.x + 0.7, z: ROOM.exit.z }, 2.45, PRACTICE_KEY);
     // The rest of the practice: from the exercise room through the hall door to the landing, and down
     // the stairs to the lower floor. The only way in and out is the exercise room's street door.
+    const floorPeople: (NonNullable<Floor['people']>[number] & { zone: string })[] = [];
     for (const fl of [upstairs(), downstairs()]) {
       scene.add(fl.group);
+      for (const pp of fl.people ?? []) floorPeople.push({ ...pp, zone: fl.key });
       places[fl.key] = {
         group: fl.group, walls: fl.walls, at: fl.at, rect: fl.rect, entry: fl.entry, entries: fl.entries, face: fl.face, exit: fl.exit,
         outside: places[PRACTICE_KEY].outside, map: places[PRACTICE_KEY].map, obstacles: fl.obstacles, seats: fl.seats,
@@ -1504,6 +1510,15 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       anchors.push({ id: COACH_KEY, obj: stand, y: HERO_HEIGHT + 0.55, zone: PRACTICE_KEY });
       talkers.push({ x: COACH_AT.x, z: COACH_AT.z, zone: PRACTICE_KEY, who: 'practice', spot: TV_KEY });
       inObstacles.push({ x: COACH_AT.x, z: COACH_AT.z, r: 0.42 });
+      // The other staff of the practice (the physiotherapist in the treatment room upstairs).
+      for (const pp of floorPeople) {
+        const st = new THREE.Object3D();
+        st.position.set(pp.at.x, 0, pp.at.z);
+        scene.add(st);
+        anchors.push({ id: staffKey(pp.who), obj: st, y: HERO_HEIGHT + 0.55, zone: pp.zone });
+        talkers.push({ x: pp.at.x, z: pp.at.z, zone: pp.zone, who: pp.who, spot: talkKey(pp.who) });
+        places[pp.zone].spots.push({ key: talkKey(pp.who), door: pp.talkAt });
+      }
     }
     roads.push({ a: { x: 0, z: plan ? SQ : 2.6 }, b: { x: 0, z: GROUND / 2 }, w: 2.3 });
 
@@ -2567,6 +2582,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
                 .catch(() => { if (!cancelled) plain(); });
             } else plain();
           }
+          // The physiotherapist in the treatment room upstairs, in the practice's grey.
+          if (people) for (const pp of floorPeople) staff(pp.at.x, pp.at.z, STAFF2_WEAR, STAFF2_TINT, pp.face);
           // And one by the programme board in each training house.
           for (const tr of trainers) staff(tr.at.x, tr.at.z, tr.wear, tr.tint, tr.face, tr.fabric);
           // Villagers. Their own model when they have one; until then this model in other clothes.
@@ -4069,6 +4086,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               className={cn(plate, 'flex-col !items-center leading-none text-[#b8f0a8]')} style={{ transform: 'translate(-9999px,0)' }}>
               {questOpen && <span aria-hidden className="quest-mark text-[26px] leading-none text-[#ffd21f]">!</span>}
               <span>{coachName}</span>
+            </button>
+          )}
+          {heroKey && people && (
+            <button ref={setLabel(staffKey('treatment'))} type="button" data-spot={staffKey('treatment')} data-talk="treatment" onClick={() => talk('treatment', talkKey('treatment'))}
+              aria-label={t(`Praat met ${STAFF_NAMES.treatment}`, `Talk to ${STAFF_NAMES.treatment}`)} className={cn(plate, 'text-[#b8f0a8]')} style={{ transform: 'translate(-9999px,0)' }}>
+              {STAFF_NAMES.treatment}
             </button>
           )}
           {heroKey && buildings.filter((b) => !b.kind && b.keeper).map((b) => (

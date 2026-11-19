@@ -25,6 +25,15 @@ test('the practice has an upstairs and a downstairs to walk through', async ({ b
   await expect(page.getByTestId('sit')).toHaveCount(0);
   if (process.env.SHOTS) await village.screenshot({ path: process.env.SHOTS + '/practice-upstairs.png' });
 
+  // Dinish, the physiotherapist in the treatment room: walk up and talk; pain can be reported there.
+  await page.getByRole('button', { name: /^Praat met Dinish/ }).press('Enter');
+  const talk = page.getByTestId('keeper-talk');
+  await expect(talk).toBeVisible({ timeout: 120_000 });
+  await expect(page.getByRole('dialog', { name: /Dinish/ })).toBeVisible();
+  await expect(talk).toContainText('Ik wil mijn pijn doorgeven');
+  await page.keyboard.press('Escape');
+  await expect(talk).toHaveCount(0);
+
   // Down the stairs.
   await page.locator('[data-spot="door:beneden"]').press('Enter');
   await expect(village).toHaveAttribute('data-zone', 'beneden', { timeout: 150_000 });

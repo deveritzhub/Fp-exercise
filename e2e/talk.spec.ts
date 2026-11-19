@@ -39,7 +39,7 @@ test('tapping the flow master and the physiotherapist opens a talk with the func
   // The physiotherapist in the practice: tapped from outside the room is not possible, so go in first.
   await page.getByRole('button', { name: /^Loop naar Functional/ }).press('Enter');
   await expect(village).toHaveAttribute('data-zone', 'practice', { timeout: 120_000 });
-  await page.getByRole('button', { name: /^Praat met Fysiotherapeut/ }).press('Enter');
+  await page.getByRole('button', { name: /^Praat met Syabend/ }).press('Enter');
   await expect(page.getByTestId('keeper-talk')).toBeVisible({ timeout: 90_000 });
   await page.getByTestId('talk-first').click();
   await expect(page.getByRole('dialog', { name: 'Je oefeningen van vandaag' })).toBeVisible();
