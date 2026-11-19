@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mirror as liveMirror } from './mirror3d';
 import { kit, plant, type RoomWall } from './practice3d';
-import { bananaPlant, powerRack, realPlant, saddleStool, treatmentTable } from './gym3d';
+import { bananaPlant, monstera, powerRack, realPlant, saddleStool, treatmentTable } from './gym3d';
 import type { Obstacle, Rect, Vec } from './walk';
 
 /**
@@ -654,7 +654,7 @@ export function downstairs(): Floor {
     }),
   ];
   prints.forEach((tex, i) => f.frame(tn, 0.46, 0.58, 1.55 + i * 1.3, 1.6, -4.52, 0, tex, 0xb89a74));
-  const pot = realPlant(0.6);
+  const pot = monstera(0.62, 0x2b2b2b, 7);
   pot.position.set(1.35, 0.87, -4.25);
   f.group.add(pot);
   plant(f.group, 3.5, 0.87, -4.25, 6, 0.12, 0.35, 0.12);
@@ -722,8 +722,9 @@ export function downstairs(): Floor {
   room.box(2.2, 0.1, 0.05, 0x161616, 2.27, 1.17, 2.2);
   chair(f, 1.5, 3.25, Math.PI * 0.85);
   chair(f, 2.3, 3.3, Math.PI);
-  room.cyl(0.18, 0.34, 0xcfb58c, 3.25, 0.17, 3.4);
-  plant(f.group, 3.25, 0.34, 3.4, 8, 0.28, 1.0, 0.3);
+  const house = realPlant(1.0);
+  house.position.set(3.25, 0, 3.4);
+  f.group.add(house);
   f.block(3.25, 3.4, 0.33);
 
   return {

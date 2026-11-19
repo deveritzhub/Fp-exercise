@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mirror as liveMirror } from './mirror3d';
-import { powerRack, realPlant } from './gym3d';
+import { monstera, powerRack } from './gym3d';
 import { mat } from './Village3D';
 import type { Obstacle, Vec } from './walk';
 
@@ -279,8 +279,8 @@ export function practiceRoom(tv: THREE.Texture, opts: { mirrors?: boolean } = {}
   const step = room.box(0.95, 0.12, 0.36, BLACK, -2.75, 0.22, -1.95);
   step.rotation.y = 0.5;
   for (const dx of [-0.38, 0.38]) room.box(0.14, 0.17, 0.4, YELLOW, -2.75 + dx * Math.cos(0.5), 0.085, -1.95 - dx * Math.sin(0.5)).rotation.y = 0.5;
-  // The monstera by the door.
-  const big = realPlant(1.35);
+  // The big monstera by the door, climbing its moss pole.
+  const big = monstera(2.05, 0xe6dccb, 11, { pole: true });
   big.position.set(2.6, 0, -2.95);
   group.add(big);
   // Exercise bike in front of the window.

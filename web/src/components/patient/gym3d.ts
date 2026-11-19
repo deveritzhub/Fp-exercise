@@ -205,13 +205,21 @@ export function kettlebell(kg: number, band = 0xd9a52c): THREE.Group {
  * A monstera in a pot: big heart-shaped leaves with their splits, each on a long stalk bending out
  * from the soil, in shades of deep green.
  */
-export function monstera(height = 1.1, potColor = 0xb08a52, seed = 3): THREE.Group {
+export function monstera(height = 1.1, potColor = 0xb08a52, seed = 3, opts: { pole?: boolean } = {}): THREE.Group {
   const g = new THREE.Group();
   let s = seed;
   const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  const big = height > 1.5;
+  const pr = big ? 0.26 : 0.17;
   // The pot (a basket or ceramic), with soil.
-  cyl(g, 0.17, 0.13, 0.3, m(potColor, 0.9), 0, 0.15, 0, 20);
-  cyl(g, 0.155, 0.155, 0.02, m(0x3b2a1e, 1), 0, 0.29, 0, 18);
+  cyl(g, pr, pr * 0.78, big ? 0.42 : 0.3, m(potColor, 0.9), 0, big ? 0.21 : 0.15, 0, 24);
+  const soil = big ? 0.41 : 0.29;
+  cyl(g, pr * 0.92, pr * 0.92, 0.02, m(0x3b2a1e, 1), 0, soil, 0, 18);
+  // A tall one climbs a moss pole.
+  if (opts.pole) {
+    cyl(g, 0.045, 0.05, height * 0.92, m(0x5b4a2e, 1), 0, soil + height * 0.46, 0, 10);
+    for (let y = soil + 0.1; y < soil + height * 0.9; y += 0.12) cyl(g, 0.052, 0.052, 0.05, m(0x4f6b34, 1), 0, y, 0, 10);
+  }
   // One leaf shape: a heart with deep splits from the edge towards the midrib.
   const leafShape = () => {
     const sh = new THREE.Shape();
@@ -245,15 +253,16 @@ export function monstera(height = 1.1, potColor = 0xb08a52, seed = 3): THREE.Gro
   const geo = new THREE.ShapeGeometry(leafShape(), 2);
   geo.translate(0, -0.02, 0);
   const greens = [0x2f7a3c, 0x3a8a45, 0x2a6e36, 0x358240];
-  const n = 9;
+  const n = big ? 15 : 9;
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2 + rnd() * 0.5;
-    const tilt = 0.45 + rnd() * 0.5;
-    const len = height * (0.55 + rnd() * 0.45);
-    const leafSize = height * (0.32 + rnd() * 0.18);
+    // On a pole the stalks rise steeply at every height; a small one fans out from the soil.
+    const tilt = opts.pole ? 0.25 + rnd() * 0.45 : 0.45 + rnd() * 0.5;
+    const len = height * (opts.pole ? 0.35 + (i / n) * 0.55 + rnd() * 0.1 : 0.55 + rnd() * 0.45);
+    const leafSize = height * (big ? 0.2 + rnd() * 0.1 : 0.32 + rnd() * 0.18);
     // The stalk: from the soil, out and up.
     const stalk = new THREE.Group();
-    stalk.position.set(0, 0.3, 0);
+    stalk.position.set(0, soil + 0.01, 0);
     stalk.rotation.set(0, a, 0);
     const lean = new THREE.Group();
     lean.rotation.x = tilt;
