@@ -37,6 +37,8 @@ export const FP_BUNDLES = [
   { name: 'fp-ketens-v3', file: 'fp-ketens-v3.json' },
   // Hand and elbow in daily life: functional work for tennis elbow and carpal tunnel complaints.
   { name: 'fp-ketens-v4', file: 'fp-ketens-v4.json' },
+  // Mobility goals by chain: toe touch, front and side splits, open hips, neck, getting up from the floor, reaching behind.
+  { name: 'fp-mobiliteit-v3', file: 'fp-mobiliteit-v3.json' },
 ] as const;
 
 const DIR = path.join(import.meta.dirname, '../../db/seed-data');

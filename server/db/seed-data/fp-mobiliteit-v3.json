@@ -1,0 +1,526 @@
+{
+ "_meta": {
+  "versie": "fp-mobiliteit-v3",
+  "toelichting": "Mobiliteitsdoelen per keten: tenen aantikken, spagaat voorwaarts en zijwaarts, heupen open, nek, van de grond opstaan en achter je rug reiken. Eigen tekst. Statisch rekken 30 seconden (Behm 2023, Medeiros 2016). Nog niet individueel klinisch getoetst."
+ },
+ "seed_data": {
+  "mobiliteit": {
+   "_toelichting": {
+    "dosering_richtlijn": "Statisch rekken: 30 seconden vasthouden geeft vergelijkbare winst als 60 seconden (Medeiros 2016); rekken vergroot het bewegingsbereik (Behm 2023). Rek de hele keten: stijfheid op één plek komt vaak ook van de spieren erboven en eronder."
+   },
+   "oefeningen": [
+    {
+     "id": "mb3_kuitrek_muur",
+     "naam": "Kuitrek tegen de muur (gestrekte knie)",
+     "regio": "enkel_voet",
+     "dosering": "2 sets van 30 sec per kant, dagelijks",
+     "cues": "Sta met je handen tegen de muur, één been ver naar achteren. Achterste knie gestrekt, hiel op de grond, tenen recht naar voren. Breng je heup rustig naar de muur tot je rek voelt in de kuit. Rustig doorademen; rek mag, pijn niet",
+     "tags": [
+      "kuit",
+      "gastrocnemius",
+      "achterste keten"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb3_soleus_rek",
+     "naam": "Kuitrek met gebogen knie (soleus)",
+     "regio": "enkel_voet",
+     "dosering": "2 sets van 30 sec per kant, dagelijks",
+     "cues": "Zelfde stand als de kuitrek, maar zet het achterste been dichterbij en buig de knie. Hiel blijft op de grond. Zak met de knie naar beneden tot je rek laag in de kuit voelt, vlak boven de hiel",
+     "tags": [
+      "kuit",
+      "soleus",
+      "achterste keten"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb3_figuur4",
+     "naam": "Bilspier rekken op de rug (figuur 4)",
+     "regio": "heup",
+     "dosering": "2 sets van 30 sec per kant, dagelijks",
+     "cues": "Lig op je rug, beide knieën gebogen. Leg je rechterenkel op je linkerknie. Pak achter je linkerbovenbeen en trek het rustig naar je toe tot je rek voelt in de rechterbil. Hoofd en schouders blijven ontspannen op de grond",
+     "tags": [
+      "bil",
+      "gluteus",
+      "piriformis",
+      "achterste keten"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb3_afrollen",
+     "naam": "Staand afrollen naar je tenen",
+     "regio": "rug",
+     "dosering": "2 sets van 6 herhalingen, dagelijks",
+     "cues": "Sta met je voeten op heupbreedte, knieën licht gebogen. Laat je kin naar je borst zakken en rol rustig wervel voor wervel naar beneden, armen hangen ontspannen richting je tenen. Blijf 2 ademhalingen hangen en rol wervel voor wervel weer op. Bij uitstralende pijn in een been: stoppen",
+     "tags": [
+      "rug",
+      "erector spinae",
+      "hamstrings",
+      "achterste keten",
+      "tenen aantikken"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb3_couch_stretch",
+     "naam": "Couch stretch (voorkant bovenbeen en heup)",
+     "regio": "heup",
+     "dosering": "2 sets van 30 sec per kant, 4-5 keer per week",
+     "cues": "Kniel met je rechterknie op een kussen tegen de muur of bank, het onderbeen omhoog tegen de muur. Linkervoet plat voor je. Span je bil aan en kom rustig rechtop tot je rek voelt aan de voorkant van je rechterbovenbeen en heup. Geen holle rug. Te veel? Blijf voorovergebogen met je handen op je voorste knie",
+     "tags": [
+      "quadriceps",
+      "heupbuigers",
+      "iliopsoas",
+      "spagaat"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "gevorderd"
+    },
+    {
+     "id": "mb3_halve_spagaat",
+     "naam": "Halve spagaat (achterkant been)",
+     "regio": "heup",
+     "dosering": "2 sets van 30 sec per kant, 4-5 keer per week",
+     "cues": "Kniel op je linkerknie, rechterbeen gestrekt voor je met de hiel op de grond en de tenen omhoog. Schuif je heup naar achteren boven je linkerknie en kantel met een lange rug vanuit je heup naar voren tot je rek voelt aan de achterkant van je rechterbeen. Handen naast je voorste been of op blokken",
+     "tags": [
+      "hamstrings",
+      "spagaat",
+      "achterste keten"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb3_spagaat_voor",
+     "naam": "Spagaat voorwaarts met steun",
+     "regio": "heup",
+     "dosering": "3 sets van 30 sec per kant, 3-4 keer per week",
+     "cues": "Begin in de halve spagaat met een blok of stapel boeken aan elke kant. Schuif je voorste hiel langzaam naar voren en je achterste knie naar achteren, alleen zover als je met je handen op de steun ontspannen kunt blijven ademen. Heupen recht naar voren. Kom er gecontroleerd uit via de handen. Nooit doorveren",
+     "tags": [
+      "spagaat",
+      "hamstrings",
+      "heupbuigers"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "gevorderd"
+    },
+    {
+     "id": "mb3_cossack",
+     "naam": "Cossack squat (zijwaarts zakken)",
+     "regio": "heup",
+     "dosering": "2 sets van 6 per kant",
+     "cues": "Sta met je voeten ver uit elkaar, tenen iets naar buiten. Zak rustig naar rechts door je rechterknie te buigen, het linkerbeen blijft gestrekt met de tenen omhoog. Rechterhiel blijft op de grond. Houd je aan iets vast als dat nodig is. Duw je terug naar het midden en wissel",
+     "tags": [
+      "adductoren",
+      "lies",
+      "spagaat zijwaarts",
+      "heup"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb3_vlinder",
+     "naam": "Vlinderhouding (binnenkant bovenbeen)",
+     "regio": "heup",
+     "dosering": "2 sets van 30 sec, dagelijks",
+     "cues": "Zit rechtop met je voetzolen tegen elkaar en je knieën naar buiten. Pak je enkels vast en kantel met een lange rug vanuit je heupen iets naar voren tot je rek voelt aan de binnenkant van je bovenbenen. Duw niet met je ellebogen op je knieën",
+     "tags": [
+      "adductoren",
+      "lies",
+      "heupen open"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb3_kikker",
+     "naam": "Kikkerhouding (frog stretch)",
+     "regio": "heup",
+     "dosering": "2 sets van 30 sec, 3-4 keer per week",
+     "cues": "Ga op handen en knieën op een zachte ondergrond staan. Schuif je knieën rustig uit elkaar, onderbenen en voeten in lijn met de knieën, enkels gebogen. Zak op je onderarmen en schuif je heupen langzaam naar achteren tot je rek voelt aan de binnenkant van je bovenbenen. Geen pijn in de knieën of lies",
+     "tags": [
+      "adductoren",
+      "lies",
+      "spagaat zijwaarts"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "gevorderd"
+    },
+    {
+     "id": "mb3_v_muur",
+     "naam": "Benen in een V tegen de muur",
+     "regio": "heup",
+     "dosering": "2 sets van 30 sec, dagelijks",
+     "cues": "Lig op je rug met je billen tegen de muur en je benen gestrekt omhoog tegen de muur. Laat je benen rustig en ontspannen in een V uit elkaar zakken tot je rek voelt aan de binnenkant van je bovenbenen. De zwaartekracht doet het werk; niet duwen",
+     "tags": [
+      "adductoren",
+      "spagaat zijwaarts",
+      "ontspannen"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb3_pancake",
+     "naam": "Zittend in spreidzit vooroverbuigen (pancake)",
+     "regio": "heup",
+     "dosering": "2 sets van 30 sec, 3-4 keer per week",
+     "cues": "Zit met je benen gestrekt en wijd uit elkaar, knieën en tenen naar het plafond. Zit eventueel op een kussen. Kantel met een lange rug vanuit je heupen naar voren en loop met je handen over de grond tot je rek voelt aan de binnen- en achterkant van je benen",
+     "tags": [
+      "adductoren",
+      "hamstrings",
+      "spagaat zijwaarts"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "gevorderd"
+    },
+    {
+     "id": "mb3_duif",
+     "naam": "Duifhouding (pigeon)",
+     "regio": "heup",
+     "dosering": "2 sets van 30 sec per kant, 4-5 keer per week",
+     "cues": "Begin op handen en knieën. Breng je rechterknie naar voren achter je rechterpols, het onderbeen schuin onder je. Schuif je linkerbeen gestrekt naar achteren. Houd je heupen recht en zak rustig tot je rek voelt in je rechterbil. Te zwaar of pijn in de knie? Doe de figuur 4 op je rug",
+     "tags": [
+      "bil",
+      "heupen open",
+      "externe rotatie"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "gevorderd"
+    },
+    {
+     "id": "mb3_nek_rotatie",
+     "naam": "Actief nek draaien",
+     "regio": "nek",
+     "dosering": "2 sets van 8 per kant, dagelijks",
+     "cues": "Zit rechtop, schouders laag en ontspannen. Trek je kin iets in en draai je hoofd rustig zo ver als comfortabel naar rechts, alsof je over je schouder kijkt. Houd 2 seconden vast, terug naar het midden en naar links. Bij duizeligheid of tintelingen in de arm: stoppen",
+     "tags": [
+      "nek",
+      "rotatie",
+      "over je schouder kijken"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb3_levator_rek",
+     "naam": "Rek schouderbladheffer (nek schuin voor)",
+     "regio": "nek",
+     "dosering": "2 sets van 30 sec per kant, dagelijks",
+     "cues": "Zit rechtop en houd met je rechterhand de zitting vast. Draai je hoofd een kwartslag naar links en kijk naar je linkeroksel. Leg je linkerhand licht op je achterhoofd en laat je hoofd rustig zakken tot je rek voelt tussen nek en rechterschouderblad. Niet trekken",
+     "tags": [
+      "nek",
+      "levator scapulae",
+      "schouder"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb3_kniel_naar_stand",
+     "naam": "Van halve kniestand opstaan",
+     "regio": "totaal",
+     "dosering": "2 sets van 5 per kant",
+     "cues": "Begin in halve kniestand: rechterknie op een kussen, linkervoet plat voor je. Duw je met het voorste been omhoog tot staan, zonder je handen als dat lukt. Zak gecontroleerd terug naar de kniestand. Houd je vast aan een stoel als dat nodig is",
+     "tags": [
+      "opstaan",
+      "been",
+      "balans",
+      "van de grond opstaan"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb3_opstaan_vloer",
+     "naam": "Van de grond opstaan oefenen",
+     "regio": "totaal",
+     "dosering": "2 sets van 3 herhalingen",
+     "cues": "Ga rustig op de grond zitten via een knie. Sta weer op op de manier die lukt: via handen en knieën, dan halve kniestand, dan staan. Gebruik eerst een stoel als steun; op den duur met minder handen. Neem de tijd en kom niet met een ruk overeind",
+     "tags": [
+      "opstaan",
+      "van de grond opstaan",
+      "dagelijks leven"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb3_handdoek_rug",
+     "naam": "Handdoekrek achter de rug",
+     "regio": "schouder",
+     "dosering": "2 sets van 30 sec per kant, dagelijks",
+     "cues": "Houd een handdoek met je rechterhand boven je hoofd zodat hij langs je rug hangt. Pak het andere eind met je linkerhand onder in je rug. Trek met de bovenste hand rustig de onderste hand omhoog tot je rek voelt in de onderste schouder. Wissel van kant",
+     "tags": [
+      "schouder",
+      "endorotatie",
+      "achter de rug reiken"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden), nog niet individueel getoetst",
+     "niveau": "basis"
+    }
+   ],
+   "programmas": [
+    {
+     "id": "mb3_tenen",
+     "naam": "Tenen aantikken: de hele achterkant",
+     "doel": "Voorover buigen en je tenen aantikken. Stijfheid voelt vaak als stijve hamstrings, maar de hele achterste keten trekt mee: kuit, hamstrings, bil en rugstrekkers. Daarom rek je ze allemaal.",
+     "frequentie_per_week": 5,
+     "oefeningen": [
+      {
+       "exercise_id": "mb3_kuitrek_muur",
+       "sets": 2,
+       "hold_sec": 30,
+       "opmerking": "per kant"
+      },
+      {
+       "exercise_id": "mb3_soleus_rek",
+       "sets": 2,
+       "hold_sec": 30,
+       "opmerking": "per kant"
+      },
+      {
+       "exercise_id": "mb_hamstring_stretch",
+       "sets": 2,
+       "hold_sec": 30,
+       "opmerking": "per been"
+      },
+      {
+       "exercise_id": "mb3_figuur4",
+       "sets": 2,
+       "hold_sec": 30,
+       "opmerking": "per kant"
+      },
+      {
+       "exercise_id": "mb_child_pose",
+       "sets": 2,
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb3_afrollen",
+       "sets": 2,
+       "reps": 6,
+       "opmerking": "rustig, wervel voor wervel"
+      }
+     ]
+    },
+    {
+     "id": "mb3_spagaat_voor",
+     "naam": "Spagaat voorwaarts",
+     "doel": "Stap voor stap naar een spagaat voorwaarts: de achterkant van het voorste been (hamstrings en kuit) en de voorkant van het achterste been (heupbuigers en quadriceps) samen.",
+     "frequentie_per_week": 4,
+     "oefeningen": [
+      {
+       "exercise_id": "mb_world_greatest",
+       "sets": 2,
+       "reps": 5,
+       "opmerking": "per kant, als warming-up"
+      },
+      {
+       "exercise_id": "mb3_couch_stretch",
+       "sets": 2,
+       "hold_sec": 30,
+       "opmerking": "per kant"
+      },
+      {
+       "exercise_id": "mb3_halve_spagaat",
+       "sets": 2,
+       "hold_sec": 30,
+       "opmerking": "per kant"
+      },
+      {
+       "exercise_id": "mb_hamstring_stretch",
+       "sets": 2,
+       "hold_sec": 30,
+       "opmerking": "per been"
+      },
+      {
+       "exercise_id": "mb3_spagaat_voor",
+       "sets": 3,
+       "hold_sec": 30,
+       "opmerking": "per kant, alleen zo diep als ontspannen lukt"
+      }
+     ]
+    },
+    {
+     "id": "mb3_spagaat_zij",
+     "naam": "Spagaat zijwaarts",
+     "doel": "Naar een spagaat zijwaarts (spreidzit): de binnenkant van de bovenbenen (adductoren), samen met hamstrings en heupen.",
+     "frequentie_per_week": 4,
+     "oefeningen": [
+      {
+       "exercise_id": "mb3_cossack",
+       "sets": 2,
+       "reps": 6,
+       "opmerking": "per kant, als warming-up"
+      },
+      {
+       "exercise_id": "mb3_vlinder",
+       "sets": 2,
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb3_kikker",
+       "sets": 2,
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb3_v_muur",
+       "sets": 2,
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb3_pancake",
+       "sets": 2,
+       "hold_sec": 30
+      }
+     ]
+    },
+    {
+     "id": "mb3_heupen_open",
+     "naam": "Heupen open",
+     "doel": "Meer draairuimte in de heupen: makkelijker in kleermakerszit, je schoen aantrekken met de voet op je knie, en meer ruimte bij golf, voetbal en vechtsport.",
+     "frequentie_per_week": 5,
+     "oefeningen": [
+      {
+       "exercise_id": "mb_90_90",
+       "sets": 2,
+       "reps": 8,
+       "opmerking": "per kant"
+      },
+      {
+       "exercise_id": "mb3_duif",
+       "sets": 2,
+       "hold_sec": 30,
+       "opmerking": "per kant"
+      },
+      {
+       "exercise_id": "mb3_vlinder",
+       "sets": 2,
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb3_figuur4",
+       "sets": 2,
+       "hold_sec": 30,
+       "opmerking": "per kant"
+      }
+     ]
+    },
+    {
+     "id": "mb3_nek",
+     "naam": "Nek: soepel over je schouder kijken",
+     "doel": "Je hoofd makkelijker draaien, bijvoorbeeld bij autorijden. De nek werkt samen met bovenrug en schouderbladen: die doen hier dus ook mee.",
+     "frequentie_per_week": 5,
+     "oefeningen": [
+      {
+       "exercise_id": "ex_chin_tuck",
+       "sets": 2,
+       "reps": 10
+      },
+      {
+       "exercise_id": "mb3_nek_rotatie",
+       "sets": 2,
+       "reps": 8,
+       "opmerking": "per kant"
+      },
+      {
+       "exercise_id": "kt_bovenste_trapezius_rek",
+       "sets": 2,
+       "hold_sec": 30,
+       "opmerking": "per kant"
+      },
+      {
+       "exercise_id": "mb3_levator_rek",
+       "sets": 2,
+       "hold_sec": 30,
+       "opmerking": "per kant"
+      },
+      {
+       "exercise_id": "mb_thoracic_rotatie",
+       "sets": 2,
+       "reps": 8,
+       "opmerking": "per kant"
+      }
+     ]
+    },
+    {
+     "id": "mb3_opstaan",
+     "naam": "Van de grond opstaan",
+     "doel": "Zelf, makkelijk en veilig van de grond opstaan: enkels, heupen en benen werken samen.",
+     "frequentie_per_week": 3,
+     "oefeningen": [
+      {
+       "exercise_id": "mb_deep_squat_hold",
+       "sets": 3,
+       "hold_sec": 30,
+       "opmerking": "houd je vast als dat nodig is"
+      },
+      {
+       "exercise_id": "mb_hip_flexor_stretch",
+       "sets": 2,
+       "hold_sec": 30,
+       "opmerking": "per kant"
+      },
+      {
+       "exercise_id": "mb_90_90",
+       "sets": 2,
+       "reps": 8,
+       "opmerking": "per kant"
+      },
+      {
+       "exercise_id": "mb3_kniel_naar_stand",
+       "sets": 2,
+       "reps": 5,
+       "opmerking": "per kant"
+      },
+      {
+       "exercise_id": "mb3_opstaan_vloer",
+       "sets": 2,
+       "reps": 3
+      }
+     ]
+    },
+    {
+     "id": "mb3_achter_rug",
+     "naam": "Achter je rug reiken",
+     "doel": "Je hand achter je rug krijgen: jas aantrekken, je rug wassen, iets uit je achterzak pakken. Schouder, borst en bovenrug samen.",
+     "frequentie_per_week": 5,
+     "oefeningen": [
+      {
+       "exercise_id": "mb_sleeper_stretch",
+       "sets": 2,
+       "hold_sec": 30,
+       "opmerking": "per kant"
+      },
+      {
+       "exercise_id": "mb3_handdoek_rug",
+       "sets": 2,
+       "hold_sec": 30,
+       "opmerking": "per kant"
+      },
+      {
+       "exercise_id": "mb_doorway_pec",
+       "sets": 2,
+       "hold_sec": 30
+      },
+      {
+       "exercise_id": "mb_thoracic_rotatie",
+       "sets": 2,
+       "reps": 8,
+       "opmerking": "per kant"
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

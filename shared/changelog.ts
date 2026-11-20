@@ -9,6 +9,15 @@ export type Release = { date: string; titleNl: string; titleEn: string; items: C
 
 export const RELEASES: Release[] = [
   {
+    date: '2026-11-20',
+    titleNl: 'Kies je mobiliteitsdoel',
+    titleEn: 'Choose your mobility goal',
+    items: [
+      { for: 'patient', nl: 'Bij Mobiliteit kies je nu een doel uit een menu: tenen aantikken, spagaat voorwaarts of zijwaarts, heupen open, diep hurken, armen boven je hoofd, achter je rug reiken, over je schouder kijken, van de grond opstaan en meer. Je ziet de hele keten erachter (bijvoorbeeld kuit, hamstrings, bil en rugstrekkers bij tenen aantikken) en het programma dat daarbij past.', en: 'On Mobility you now pick a goal from a menu: touch your toes, front or side split, open hips, deep squat, arms overhead, reach behind your back, look over your shoulder, get up from the floor and more. You see the whole chain behind it (for example calf, hamstrings, buttock and back extensors for touching your toes) and the programme that fits.' },
+      { for: 'all', nl: 'Zeven nieuwe mobiliteitsprogramma’s met 18 nieuwe oefeningen, waaronder couch stretch, halve spagaat, cossack squat, kikkerhouding, duifhouding en van de grond opstaan.', en: 'Seven new mobility programmes with 18 new exercises, including the couch stretch, half split, cossack squat, frog stretch, pigeon pose and getting up from the floor.' },
+    ],
+  },
+  {
     date: '2026-11-17',
     titleNl: 'Veel meer gewoon Nederlands eten',
     titleEn: 'Much more everyday Dutch food',
