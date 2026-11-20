@@ -56,7 +56,7 @@ const HOME_REACH = [1.3, 1.5, 1.8, 2.2, 2.8, 3.1];
 const STREET_HOME = 0.85;
 /** A room behind a door in the village. */
 type Place = { under?: boolean; /** Open to this place (no door between): seen with it, walked into. */ link?: string; group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[]; entries?: Record<string, Vec & { face: number }>; seats?: FloorSeat[] };
-export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key`: the hero turns to it and it flinches. */ strike: (key: string) => void; /** The creature `key` lunges at the hero. */ lunge: (key: string) => void; /** Beaten: the hero stands up at the well at once, without walking. */ respawn: () => void; /** Fast travel: the hero stands at the place `key` at once (after a short fade). */ jump: (key: string) => void };
+export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key` (or shoot, or cast a spell): the hero turns to it and it flinches. With no creature (''), a spell is cast where the hero stands. */ strike: (key: string, style?: 'melee' | 'ranged' | 'magic') => void; /** The creature `key` lunges at the hero. */ lunge: (key: string) => void; /** Beaten: the hero stands up at the well at once, without walking. */ respawn: () => void; /** Fast travel: the hero stands at the place `key` at once (after a short fade). */ jump: (key: string) => void };
 /** The bag of the boxing school in the village. */
 export const BOXING_KEY = 'boxing';
 /** The campfire by the meadow: raw loot is cooked there. Shown with the boxing school (the adventure). */
@@ -1003,7 +1003,45 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     // Creatures: each at its spot, with a place beside it to stand and strike from.
     const mobs: { key: string; kind: CreatureKind; g: THREE.Group; door: Vec; hurtAt: number; lungeAt: number; x: number; z: number; still: boolean; roam: { home: Vec; r: number; speed: number; to: Vec | null; wait: number; ob: Obstacle } | null }[] = [];
     // How the blow in progress is swung, how long it takes, and until when the hatchet is in hand.
-    let swingStyle: 'jab' | 'thrust' | 'slash' | 'overhead' = 'jab';
+    let swingStyle: 'jab' | 'thrust' | 'slash' | 'overhead' | 'shoot' | 'cast' = 'jab';
+    // Arrows and spells on their way to a creature.
+    const flying: { obj: THREE.Object3D; from: THREE.Vector3; to: THREE.Vector3; t: number; dur: number; arc: number }[] = [];
+    const arrowMat = new THREE.MeshStandardMaterial({ color: 0x8a5f38, roughness: 0.6 });
+    const tipMat = new THREE.MeshStandardMaterial({ color: 0xc9cfd3, metalness: 0.7, roughness: 0.3 });
+    const fletchMat = new THREE.MeshStandardMaterial({ color: 0xf2efe8, roughness: 0.8, side: THREE.DoubleSide });
+    const orbMat = new THREE.MeshBasicMaterial({ color: 0xb59cff, transparent: true, opacity: 0.95, toneMapped: false });
+    const orbGlow = new THREE.SpriteMaterial({ map: softDot(), color: 0x9d7dff, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending });
+    const launch = (style: 'ranged' | 'magic', from: THREE.Vector3, to: THREE.Vector3) => {
+      const g = new THREE.Group();
+      if (style === 'ranged') {
+        // An arrow: shaft, steel tip and white fletching, pointing along +z.
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.62, 5), arrowMat);
+        shaft.rotation.x = Math.PI / 2;
+        g.add(shaft);
+        const tip = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.07, 6), tipMat);
+        tip.rotation.x = Math.PI / 2;
+        tip.position.z = 0.34;
+        g.add(tip);
+        for (const r of [0, Math.PI / 2]) {
+          const f = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.1), fletchMat);
+          f.rotation.set(Math.PI / 2, r, 0);
+          f.position.z = -0.27;
+          g.add(f);
+        }
+      } else {
+        // A spell: a bright ball of light with a glow round it.
+        g.add(new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10), orbMat));
+        const halo = new THREE.Sprite(orbGlow);
+        halo.scale.setScalar(0.55);
+        g.add(halo);
+      }
+      g.position.copy(from);
+      scene.add(g);
+      const dist = from.distanceTo(to);
+      const dur = style === 'ranged' ? Math.max(0.18, dist / 22) : Math.max(0.28, dist / 11);
+      flying.push({ obj: g, from: from.clone(), to: to.clone(), t: 0, dur, arc: style === 'ranged' ? Math.min(0.6, dist * 0.05) : 0.15 });
+      return dur;
+    };
     let swingFor = 0.32;
     let chopUntil = 0;
     let chopWith = 'hatchet';
@@ -2858,8 +2896,22 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           // A tap on the map: only in the village itself, where the map is of.
           if (!inside()) walkTo.current(pt, null);
         },
-        strike: (k) => {
+        strike: (k, style = 'melee') => {
           const mob = mobs.find((x) => x.key === k);
+          // A bow or a spell: drawn or raised, and the arrow or the light flies to the creature.
+          if (style !== 'melee') {
+            swingStyle = style === 'ranged' ? 'shoot' : 'cast';
+            swingFor = style === 'ranged' ? 0.5 : 0.45;
+            swing = swingFor;
+            if (!mob) return;
+            facing.current = Math.atan2(mob.g.position.x - pos.current.x, mob.g.position.z - pos.current.z);
+            hero.rotation.y = facing.current;
+            const from = new THREE.Vector3(pos.current.x + Math.sin(facing.current) * 0.35, HERO_HEIGHT * 0.78, pos.current.z + Math.cos(facing.current) * 0.35);
+            const to = mob.g.position.clone().setY(HERO_HEIGHT * 0.35);
+            const dur = launch(style, from, to);
+            mob.hurtAt = performance.now() + (swingFor * 0.55 + dur) * 1000;
+            return;
+          }
           if (!mob) return;
           facing.current = Math.atan2(mob.g.position.x - pos.current.x, mob.g.position.z - pos.current.z);
           hero.rotation.y = facing.current;
@@ -3403,6 +3455,22 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         }
       }
       hero.position.set(p.x, 0, p.z);
+      // Arrows and spells in flight: a low arc for an arrow, nose first; a spell wobbles a little.
+      for (let i = flying.length - 1; i >= 0; i--) {
+        const f = flying[i];
+        f.t = Math.min(1, f.t + dt / f.dur);
+        const at = f.from.clone().lerp(f.to, f.t);
+        at.y += Math.sin(f.t * Math.PI) * f.arc;
+        const ahead = f.from.clone().lerp(f.to, Math.min(1, f.t + 0.05));
+        ahead.y += Math.sin(Math.min(1, f.t + 0.05) * Math.PI) * f.arc;
+        f.obj.position.copy(at);
+        f.obj.lookAt(ahead);
+        if (f.t >= 1) {
+          scene.remove(f.obj);
+          f.obj.traverse((o) => { if ((o as THREE.Mesh).isMesh) (o as THREE.Mesh).geometry.dispose(); });
+          flying.splice(i, 1);
+        }
+      }
       // Where the hero stands and where the view looks, for tests and tools (a few times a second).
       if (tt - posTick > 0.25) {
         posTick = tt;
@@ -3478,6 +3546,17 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           } else if (swingStyle === 'thrust') {
             armR.rotateX(-1.45 * Math.sqrt(arc));
             figure.rotation.x = 0.2 * arc;
+          } else if (swingStyle === 'shoot') {
+            // The bow raised to the eye, the string drawn back, then let go.
+            const hold = Math.min(1, u / 0.3);
+            armR.rotateX(-1.5 * hold * (u < 0.85 ? 1 : (1 - u) / 0.15));
+            armR.rotateZ(0.35 * hold);
+            figure.rotation.y = -0.25 * hold * (u < 0.85 ? 1 : (1 - u) / 0.15);
+          } else if (swingStyle === 'cast') {
+            // The staff raised high, then pointed at the creature.
+            const up = u < 0.45 ? Math.sin((u / 0.45) * Math.PI / 2) : 1 - (u - 0.45) / 0.55 * 0.4;
+            armR.rotateX(-2.2 * up * arc ** 0.3);
+            figure.rotation.x = -0.06 * arc;
           } else {
             armR.rotateX(-1.5 * arc);
             figure.rotation.x = 0.08 * arc;

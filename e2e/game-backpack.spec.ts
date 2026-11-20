@@ -22,6 +22,19 @@ test('backpack in the game, the way back to the game, and the 3D world button by
   await expect(pack.getByTestId('light')).toBeVisible();
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/game-backpack.png' });
   await expectAccessible(page, 'game backpack');
+  await page.keyboard.press('Escape');
+  // The gear screen behind the two swords: the adventurer level, the three ways to fight, and on/off.
+  await page.getByTestId('slot-gear').click();
+  const gear = page.getByTestId('gear-screen');
+  await expect(gear).toBeVisible();
+  await expect(gear.getByTestId('gear-xp')).toContainText('XP');
+  await expect(gear.getByTestId('gear-skills').locator('[data-skill]')).toHaveCount(3);
+  await expect(gear.locator('[data-gear-weapon="fists"]')).toBeVisible();
+  await expect(gear.locator('[data-ammo="arrows"]')).toBeVisible();
+  if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/game-gear.png' });
+  await expectAccessible(page, 'game gear');
+  await page.keyboard.press('Escape');
+  await page.getByTestId('slot-backpack').click();
   // A page opened from the game opens over the world; closing it is back in the game.
   await pack.getByRole('link', { name: /Alles van je held/ }).click();
   await expect(page.getByTestId('game-page')).toBeVisible();

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { petByKey, petCoat, petColor, petWearByKey, type Breed, type Coat } from '@shared/pets';
+import { sighthoundModel } from './sighthound3d';
 
 /**
  * A pet built from simple low-poly shapes, after the breed's proportions (shared/pets): the deep chest
@@ -107,6 +108,8 @@ type Leg = { root: THREE.Group; knee: THREE.Group; paw: THREE.Object3D; front: b
 export function petModel(key: string, coatIndex: number, look: { color?: string | null; wear?: string | null } = {}): PetModel | null {
   const b = petByKey(key);
   if (!b) return null;
+  // The sighthounds have a model of their own, finer than the rest.
+  if (b.ear === 'rose' && b.tail === 'thin') return sighthoundModel(b, petCoat(b, coatIndex), coatIndex, petColor(look.color).hex, petWearByKey(look.wear)?.key ?? null);
   return build(b, petCoat(b, coatIndex), coatIndex, petColor(look.color).hex, petWearByKey(look.wear)?.key ?? null);
 }
 

@@ -22,13 +22,14 @@ import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@share
 import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
 import { VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { SITES, SPOTS, TOWN_HOUSES, WILD, placeAt, townHouseModel } from '@/components/patient/townPlan';
+import { GearScreen } from '@/components/patient/GearScreen';
 import { PET_LEVEL } from '@shared/pets';
 import { DOOR_LABEL, STAFF_NAMES } from '@/components/patient/practiceFloors';
 import { openQuickLog } from '@/components/patient/Survival';
 import { WATER } from '@shared/survival';
 import { SUPPLY } from '@shared/supplies';
 import { useSupplies } from '@/lib/supplies';
-import { swingMs, respawnSeconds, RIDES, alphaAdvised, armourByKey, isShadow, LIGHT, ZONES, zoneAt, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
+import { RANGED_HEADSTART_MS, SPELLS, ammoFor, skillPower, swingMs, respawnSeconds, RIDES, alphaAdvised, armourByKey, isShadow, LIGHT, ZONES, zoneAt, COOKING, LOOT_KEYS, BERRIES_FOR, ATTACKS, BOXING, CREATURES, HERO_REGEN, LOOT, blow, heroMaxHp, hitOnHero, isAlpha, isHarvest, NEEDS_TOOL, TOOL_BONUS, toolFor, weaponAt, weaponByKey, type CreatureKind, type LootKey } from '@shared/adventure';
 import { BoxingRound } from '@/components/patient/BoxingRound';
 import { KarateSheet, useKarate } from '@/components/patient/Karate';
 import { BELTS } from '@shared/karate';
@@ -121,6 +122,8 @@ const LABEL: Record<string, [string, string]> = {
 /** The sign of each building on the maps: an icon and the colour of its roof. */
 /** What each armour looks like on the hero: parts of the hero model (gear_<key>). */
 /** What a creature is weak against, in words (the real thing done today). */
+/** The shield of light: how much of a blow it takes away while it lasts. */
+const SHIELD_GUARD = 0.3;
 const WEAK_NL: Record<string, string> = { trained: 'trainen', hydrated: 'water drinken', moving: 'bewegen', rested: 'goed slapen', fed: 'goed eten' };
 const WEAK_EN: Record<string, string> = { trained: 'training', hydrated: 'drinking water', moving: 'moving', rested: 'sleeping well', fed: 'eating well' };
 
@@ -155,6 +158,7 @@ const SIGN: Record<string, [string, string]> = {
   baker: ['🥖', '#b8782a'],
   inn: ['🍺', '#8a3a2a'],
   tradepost: ['🎲', '#7a5a3a'],
+  magetower: ['🔮', '#4a3a8a'],
   townhall: ['🏛️', '#3a4a8a'],
   stables: ['🚲', '#8a5a3a'],
   groomer: ['✂️', '#c0607e'],
@@ -180,6 +184,7 @@ const PLACE_HINT: Record<string, [string, string]> = {
   massage: ['Herstel: je slaap bijhouden', 'Recovery: log your sleep'],
   pool: ['Water drinken en bijhouden', 'Drink water and log it'],
   tradepost: ['Spelletjes: balans, reactie, ademhaling en meer', 'Games: balance, reaction, breathing and more'],
+  magetower: ['Toverstokjes, staven en runen', 'Wands, staffs and runes'],
   smithy: ['Je uitrusting en de winkel', 'Your gear and the shop'],
   library: ['Spierenatlas en de quiz', 'Muscle atlas and the quiz'],
   hall: ['Je prijzenkast', 'Your trophy cabinet'],
@@ -415,10 +420,19 @@ export function VillageWalkPage() {
   const d = heroQ.data;
   // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
   type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; rides?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string | null; pos?: { x: number; z: number } | null; pet?: { key: string; coat: number; name: string | null; color?: string | null; wear?: string | null } | null;
+    arrows?: number; runes?: number; skills?: Record<'melee' | 'ranged' | 'magic', { xp: number; level: number; from: number; to: number }>;
     quest?: { key: string; kind: CreatureKind; n: number; nl: string; en: string; progress: number; done: boolean; xp: number } | null };
   const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
   // The weapon in hand is the one bought and put on in the backpack; none means bare fists.
-  const weapon = weaponByKey(adventure.data?.weapon);
+  const held = weaponByKey(adventure.data?.weapon);
+  // A bow or magic needs arrows or runes: the ones shot since the last win are counted here, so the
+  // count goes down at once. Out of them, the hero fights with the fists until more are made.
+  const spent = useRef(0);
+  const ammoKey = ammoFor(held.style);
+  const ammoLeft = ammoKey ? Math.max(0, (adventure.data?.[ammoKey] ?? 0) - spent.current) : Infinity;
+  const weapon = ammoLeft > 0 ? held : weaponByKey(null);
+  const styleRef = useRef(weapon.style);
+  styleRef.current = weapon.style;
   // The helpers of the light side that are free (set free by beating their shadow creature).
   const light = useMemo(() => new Set(adventure.data?.light ?? []), [adventure.data?.light]);
   // The pet that walks along (a stable object, so the world only rebuilds it when it changes).
@@ -663,6 +677,7 @@ export function VillageWalkPage() {
   const [campOpen, setCampOpen] = useState(false);
   const [bossOpen, setBossOpen] = useState(false);
   const [packOpen, setPackOpen] = useState(false);
+  const [gearOpen, setGearOpen] = useState(false);
   // A page of the app shown over the world (see GamePage); on closing, what it changed is fetched anew.
   const [gamePage, setGamePage] = useState<string | null>(null);
   const closeGamePage = useCallback(() => {
@@ -827,14 +842,15 @@ export function VillageWalkPage() {
       if (mob && atk && atk.damage > 0 && (atk.aggressive || provoked.includes(mob.key))) {
         const since = now - (lastAttack.current[mob.key] ?? 0);
         // The first blow comes after a short warning, then at the creature's own pace.
-        if (!lastAttack.current[mob.key]) lastAttack.current[mob.key] = now - atk.everyMs + 700;
+        // From a distance (a bow, a spell) the creature needs a moment longer to reach the hero.
+        if (!lastAttack.current[mob.key]) lastAttack.current[mob.key] = now - atk.everyMs + 700 + (styleRef.current === 'melee' ? 0 : RANGED_HEADSTART_MS);
         else if (since >= atk.everyMs) {
           lastAttack.current[mob.key] = now;
           lastHit.current = now;
           world.current?.lunge(mob.key);
           setHitAt(now);
           // Joy and Peace soften the blows of the shadow creatures.
-          const dmg = hitOnHero(mob.kind, doneToday, Math.min(0.8, (armourByKey(adventure.data?.armour)?.guard ?? 0) + (light.has('joy') && isShadow(mob.kind) ? 0.2 : 0)));
+          const dmg = hitOnHero(mob.kind, doneToday, Math.min(0.8, (armourByKey(adventure.data?.armour)?.guard ?? 0) + (light.has('joy') && isShadow(mob.kind) ? 0.2 : 0) + (Date.now() < shieldUntil.current ? SHIELD_GUARD : 0)));
           setHeroHp((h) => {
             const left = Math.max(0, Math.min(maxHp, h ?? maxHp) - dmg);
             if (left === 0) setDownBy(mob.label);
@@ -853,6 +869,26 @@ export function VillageWalkPage() {
   useEffect(() => {
     if (!mob) lastAttack.current = {};
   }, [mob]);
+  const shieldUntil = useRef(0);
+  const [casting, setCasting] = useState<string | null>(null);
+  const castSpell = async (key: string) => {
+    const sp = SPELLS.find((x) => x.key === key);
+    if (!sp || casting) return;
+    setCasting(key);
+    try {
+      const r = await api.post<Adventure>('/patient/hero/adventure/spell', { key });
+      qc.setQueryData(['patient-adventure'], r);
+      spent.current = Object.values(shots.current).reduce((n, x) => n + x, 0);
+      if ('heals' in sp) setHeroHp((h) => Math.min(maxHp, (h ?? maxHp) + Math.round(maxHp * sp.heals)));
+      if ('guard' in sp) shieldUntil.current = Date.now() + sp.seconds * 1000;
+      world.current?.strike('', 'magic');
+      toast(t(`${sp.icon} ${sp.nl}!`, `${sp.icon} ${sp.en}!`));
+    } catch (e) {
+      say(e);
+    } finally {
+      setCasting(null);
+    }
+  };
   const respawn = () => {
     const by = mob?.key;
     setDownBy(null);
@@ -880,6 +916,9 @@ export function VillageWalkPage() {
     return !v;
   });
   const lastSwing = useRef(0);
+  // Shots (arrows or spells) at each creature, sent with the win so the server takes them off.
+  const shots = useRef<Record<string, number>>({});
+  const outOfAmmoSaid = useRef(false);
   const strike = async () => {
     if (!mob || downBy) return;
     // A big oak asks for a hatchet, a big rock for a pickaxe (from the tool shop).
@@ -890,9 +929,20 @@ export function VillageWalkPage() {
     const now = Date.now();
     if (now - lastSwing.current < swingMs(mob.kind, weapon)) return;
     lastSwing.current = now;
-    world.current?.strike(mob.key);
+    const fighting = !isHarvest(mob.kind);
+    if (fighting && ammoKey && ammoLeft <= 0 && !outOfAmmoSaid.current) {
+      outOfAmmoSaid.current = true;
+      toast(ammoKey === 'arrows' ? t('Je pijlen zijn op: je vecht met je vuisten. Maak nieuwe in de werkplaats.', 'Out of arrows: you fight with your fists. Make more in the workshop.') : t('Je runen zijn op: je vecht met je vuisten. Maak nieuwe in de magiërstoren.', 'Out of runes: you fight with your fists. Make more in the mage tower.'));
+    }
+    if (fighting && weapon.style !== 'melee') {
+      spent.current += 1;
+      shots.current[mob.key] = (shots.current[mob.key] ?? 0) + 1;
+    }
+    world.current?.strike(mob.key, fighting ? weapon.style : 'melee');
     if (!provoked.includes(mob.key)) setProvoked((p) => [...p, mob.key]);
-    const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, isHarvest(mob.kind) ? 0 : weapon.power) * (supply.fed ? SUPPLY.fedPower : 1) * (hasTool ? TOOL_BONUS.blows : 1) * (light.has('courage') && !isHarvest(mob.kind) && !(hurt[mob.key] ?? 0) ? 2 : 1);
+    // A higher skill in the way the hero fights hits harder.
+    const skill = fighting ? skillPower(adventure.data?.skills?.[weapon.style]?.level ?? 1) : 1;
+    const left = CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0) - blow(mob.kind, strong, isHarvest(mob.kind) ? 0 : weapon.power) * skill * (supply.fed ? SUPPLY.fedPower : 1) * (hasTool ? TOOL_BONUS.blows : 1) * (light.has('courage') && !isHarvest(mob.kind) && !(hurt[mob.key] ?? 0) ? 2 : 1);
     if (left > 0) {
       setHurt((h) => ({ ...h, [mob.key]: CREATURES[mob.kind].hp - left }));
       return;
@@ -910,7 +960,12 @@ export function VillageWalkPage() {
     }
     window.setTimeout(() => setBeaten((b) => b.filter((k) => k !== key)), away);
     try {
-      const r = await api.post<Adventure & { gained: number; questXp?: number; unlocked?: string | null; drops?: { item: LootKey; n: number }[] }>('/patient/hero/adventure/win', { kind: mob.kind });
+      const fired = shots.current[key] ?? 0;
+      delete shots.current[key];
+      const r = await api.post<Adventure & { gained: number; questXp?: number; unlocked?: string | null; drops?: { item: LootKey; n: number }[] }>('/patient/hero/adventure/win', { kind: mob.kind, ...(fired ? { shots: fired } : {}) });
+      // The server's count of arrows and runes is the one that counts from here.
+      spent.current = Object.values(shots.current).reduce((n, x) => n + x, 0);
+      outOfAmmoSaid.current = false;
       const freed = r.unlocked ? LIGHT.find((l) => l.key === r.unlocked) : null;
       if (freed) toast(t(`${freed.icon} Je hebt ${freed.nl} bevrijd! ${freed.doesNl}`, `${freed.icon} You set ${freed.en} free! ${freed.doesEn}`));
       if (r.questXp) toast(t(`Taak van vandaag klaar: ${r.quest?.nl.toLowerCase() ?? ''}! +${r.questXp} avonturen-XP`, `Today’s task done: ${r.quest?.en.toLowerCase() ?? ''}! +${r.questXp} adventure XP`));
@@ -1201,6 +1256,21 @@ export function VillageWalkPage() {
               {engaged === mob.key && !isHarvest(mob.kind) ? t(`Vecht met ${mob.label}…`, `Fighting ${mob.label}…`) : mob.kind === 'bush' ? t('Pluk bessen', 'Pick berries') : mob.kind === 'pebble' ? t('Raap de steentjes op', 'Pick up the pebbles') : mob.kind === 'twigs' ? t('Raap de takken op', 'Pick up the twigs') : isHarvest(mob.kind) ? t(`Hak de ${mob.label.toLowerCase()}${hasTool && mobTool ? ` met je ${mobTool.nl.toLowerCase()}` : ''}`, `Chop the ${mob.label.toLowerCase()}${hasTool && mobTool ? ` with your ${mobTool.en.toLowerCase()}` : ''}`) : t(`Sla ${mob.label}`, `Strike ${mob.label}`)} · <span aria-label={t(`nog ${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} leven`, `${Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))} life left`)}>♥ {Math.max(1, CREATURES[mob.kind].hp - (hurt[mob.key] ?? 0))}</span>{strong.has(CREATURES[mob.kind].weakTo) ? t(' · dubbele klap', ' · double blow') : light.has('neutrality') && !isHarvest(mob.kind) ? t(` · zwak tegen ${WEAK_NL[CREATURES[mob.kind].weakTo] ?? ''}`, ` · weak to ${WEAK_EN[CREATURES[mob.kind].weakTo] ?? ''}`) : ''}
             </Button>
             )}
+            {!isHarvest(mob.kind) && (held.style !== 'melee' || (adventure.data?.runes ?? 0) > 0) && (
+              <span className="pointer-events-auto flex flex-wrap items-center justify-center gap-1.5" data-testid="fight-extras">
+                {ammoKey && (
+                  <span className={`${PANEL} px-2 py-1 text-[12.5px] font-semibold`} data-testid="ammo-left" data-n={Number.isFinite(ammoLeft) ? ammoLeft : 0}>
+                    {ammoKey === 'arrows' ? '🏹' : '🔮'} {Number.isFinite(ammoLeft) ? ammoLeft : 0} {ammoKey === 'arrows' ? t('pijlen', 'arrows') : t('runen', 'runes')}
+                  </span>
+                )}
+                {SPELLS.filter((sp) => (adventure.data?.skills?.magic.level ?? 1) >= sp.level).map((sp) => (
+                  <Button key={sp.key} size="sm" variant="secondary" data-testid={`spell-${sp.key}`} disabled={(adventure.data?.runes ?? 0) - spent.current < sp.runes || !!casting} loading={casting === sp.key} onClick={() => void castSpell(sp.key)}
+                    aria-label={t(`${sp.nl}: ${sp.runes} runen`, `${sp.en}: ${sp.runes} runes`)}>
+                    <span aria-hidden>{sp.icon}</span> {nl ? sp.nl : sp.en} · {sp.runes}🔮
+                  </Button>
+                ))}
+              </span>
+            )}
             </span>
           ) : near?.startsWith('light:') ? (() => {
             const l = LIGHT.find((x) => `light:${x.key}` === near);
@@ -1348,7 +1418,7 @@ export function VillageWalkPage() {
         <nav aria-label={t('Snelbalk', 'Action bar')} className="absolute bottom-2 left-2 flex gap-1.5">
           <button type="button" className={SLOT} aria-label={t('Naar de tv met je oefeningen', 'To the TV with your exercises')} onClick={() => (near === TV_KEY ? setTvOpen(true) : world.current?.goTo(TV_KEY))} data-testid="slot-tv"><Tv className="h-5 w-5" aria-hidden /></button>
           <button type="button" data-testid="slot-backpack" className={SLOT} aria-label={t('Rugzak: je spullen, wapens en buit', 'Backpack: your things, weapons and loot')} onClick={() => setPackOpen(true)}><Backpack className="h-5 w-5" aria-hidden /></button>
-          <Link to="/p/held" className={SLOT} aria-label={t('Skills en je held', 'Skills and your hero')}><Swords className="h-5 w-5" aria-hidden /></Link>
+          <button type="button" data-testid="slot-gear" className={SLOT} aria-label={t('Uitrusting: je level, vechtstijlen, wapens en harnas', 'Gear: your level, ways to fight, weapons and armour')} onClick={() => setGearOpen(true)}><Swords className="h-5 w-5" aria-hidden /></button>
           <button type="button" data-testid="slot-places" className={SLOT} aria-label={t('Plekken: kies waar je heen wilt', 'Places: pick where to go')} onClick={() => setPlacesOpen(true)}><MapIcon className="h-5 w-5" aria-hidden /></button>
           <button type="button" data-testid="slot-joystick" aria-pressed={joystick} className={`${SLOT} aria-pressed:border-[#ffd76a] aria-pressed:bg-[linear-gradient(180deg,#5a4a1c,#2a2410)]`} aria-label={t('Joystick aan of uit', 'Joystick on or off')} onClick={toggleJoystick}><Gamepad2 className="h-5 w-5" aria-hidden /></button>
           {myRide && (
@@ -1471,6 +1541,11 @@ export function VillageWalkPage() {
           <LightCard />
           <Link to="/p/held/inventaris" className="inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">{t('Alles van je held, met trofeeën en uitrusting', 'Everything of your hero, with trophies and gear')}<ChevronRight className="h-4 w-4" aria-hidden /></Link>
         </div>
+      </Dialog>
+      <Dialog open={gearOpen} onClose={() => setGearOpen(false)} size="md" sheet title={t('Uitrusting', 'Gear')}
+        description={t('Je avonturenlevel, je vechtstijlen en wat je aan hebt. Tik op Aan of Uit om te wisselen.', 'Your adventure level, your ways to fight and what you wear. Tap On or Off to change.')}>
+        {d?.hero ? <GearScreen hp={hp} maxHp={maxHp} /> : <p className="text-[14px] text-ink-700">{t('Maak eerst je held, dan krijg je uitrusting.', 'Make your hero first, then you get gear.')}</p>}
+        <Link to="/p/held" className="mt-3 inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">{t('Alle skills van je held', 'All your hero’s skills')}<ChevronRight className="h-4 w-4" aria-hidden /></Link>
       </Dialog>
       <Dialog open={bossOpen} onClose={() => setBossOpen(false)} size="md" sheet title={t('Bazenbord', 'Boss board')}
         description={t('Alle bazen van de stad en de landen eromheen. Verslagen bazen krijgen een stempel.', 'Every boss of the town and the lands round it. Bosses beaten get a stamp.')}>

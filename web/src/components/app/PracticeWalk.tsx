@@ -140,7 +140,11 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
           stick={stick}
           onNear={(k) => {
             if (k?.startsWith('p:') && heading.current && heading.current !== k) return;
-            if (k && k === heading.current) heading.current = null;
+            // Arrived: the neighbours' doors close by do not take over for a little while.
+            if (k && k === heading.current) {
+              const was = k;
+              window.setTimeout(() => { if (heading.current === was) heading.current = null; }, 8000);
+            }
             setNear(k);
             if (k?.startsWith('p:')) onPick(k.slice(2));
           }}

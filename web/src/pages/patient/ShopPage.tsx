@@ -4,7 +4,7 @@ import { useI18n } from '@/lib/i18n';
 import { ShopCard, isShop } from '@/components/patient/Backpack';
 import { inGameFrame } from '@/components/patient/GamePage';
 
-/** A shop of the town (/p/winkel/:shop): the smithy, tool shop, stables, workshop or armourer. */
+/** A shop of the town (/p/winkel/:shop): the smithy, tool shop, stables, workshop, armourer or mage tower. */
 export function ShopPage() {
   const { shop } = useParams();
   const { t } = useI18n();

@@ -149,25 +149,68 @@ export function adventureLevel(xp: number): { level: number; from: number; to: n
  * The village shows it in the hero's hand (web/src/components/patient/weapons3d.ts).
  */
 export const WEAPONS = [
-  { key: 'fists', level: 1, power: 0, speedMs: 800, price: 0, strength: 0, nl: 'Vuisten', en: 'Fists' },
-  { key: 'staff', level: 2, power: 1, speedMs: 1000, price: 30, strength: 0, nl: 'Wandelstaf', en: 'Walking staff' },
-  { key: 'gloves', level: 3, power: 1.5, speedMs: 750, price: 60, strength: 0, nl: 'Bokshandschoenen', en: 'Boxing gloves' },
-  { key: 'club', level: 4, power: 2, speedMs: 1300, price: 90, strength: 0, nl: 'Knots', en: 'Club' },
-  { key: 'hammer', level: 6, power: 3, speedMs: 1500, price: 140, strength: 2, nl: 'Smidshamer', en: 'Smith’s hammer' },
-  { key: 'sword', level: 8, power: 4, speedMs: 1050, price: 200, strength: 3, nl: 'IJzeren zwaard', en: 'Iron sword' },
-  { key: 'axe', level: 10, power: 5, speedMs: 1400, price: 280, strength: 4, nl: 'Strijdbijl', en: 'Battle axe' },
-  { key: 'spear', level: 13, power: 6.5, speedMs: 1150, price: 380, strength: 5, nl: 'Speer', en: 'Spear' },
-  { key: 'hero_sword', level: 16, power: 9, speedMs: 950, price: 600, strength: 6, nl: 'Heldenzwaard', en: 'Hero’s sword' },
+  { key: 'fists', level: 1, power: 0, speedMs: 800, price: 0, strength: 0, style: 'melee', nl: 'Vuisten', en: 'Fists' },
+  { key: 'staff', level: 2, power: 1, speedMs: 1000, price: 30, strength: 0, style: 'melee', nl: 'Wandelstaf', en: 'Walking staff' },
+  { key: 'gloves', level: 3, power: 1.5, speedMs: 750, price: 60, strength: 0, style: 'melee', nl: 'Bokshandschoenen', en: 'Boxing gloves' },
+  { key: 'club', level: 4, power: 2, speedMs: 1300, price: 90, strength: 0, style: 'melee', nl: 'Knots', en: 'Club' },
+  { key: 'hammer', level: 6, power: 3, speedMs: 1500, price: 140, strength: 2, style: 'melee', nl: 'Smidshamer', en: 'Smith’s hammer' },
+  { key: 'sword', level: 8, power: 4, speedMs: 1050, price: 200, strength: 3, style: 'melee', nl: 'IJzeren zwaard', en: 'Iron sword' },
+  { key: 'axe', level: 10, power: 5, speedMs: 1400, price: 280, strength: 4, style: 'melee', nl: 'Strijdbijl', en: 'Battle axe' },
+  { key: 'spear', level: 13, power: 6.5, speedMs: 1150, price: 380, strength: 5, style: 'melee', nl: 'Speer', en: 'Spear' },
+  { key: 'hero_sword', level: 16, power: 9, speedMs: 950, price: 600, strength: 6, style: 'melee', nl: 'Heldenzwaard', en: 'Hero’s sword' },
+  // Bows (from the smithy): they hit from a distance, so a creature needs a moment longer to reach you.
+  // Every shot takes an arrow, made in the workshop.
+  { key: 'shortbow', level: 2, power: 1, speedMs: 1100, price: 45, strength: 0, style: 'ranged', nl: 'Korte boog', en: 'Short bow' },
+  { key: 'hunting_bow', level: 6, power: 3, speedMs: 1150, price: 160, strength: 0, style: 'ranged', nl: 'Jachtboog', en: 'Hunting bow' },
+  { key: 'longbow', level: 11, power: 5.5, speedMs: 1250, price: 340, strength: 2, style: 'ranged', nl: 'Handboog', en: 'Longbow' },
+  { key: 'elven_bow', level: 16, power: 8.5, speedMs: 1000, price: 650, strength: 3, style: 'ranged', nl: 'Elfenboog', en: 'Elven bow' },
+  // Magic (from the mage tower): a spell flies to the creature. Every spell takes a rune.
+  { key: 'wand', level: 3, power: 1.5, speedMs: 1300, price: 60, strength: 0, style: 'magic', nl: 'Toverstokje', en: 'Wand' },
+  { key: 'mage_staff', level: 7, power: 3.5, speedMs: 1350, price: 190, strength: 0, style: 'magic', nl: 'Magiërsstaf', en: 'Mage staff' },
+  { key: 'crystal_staff', level: 12, power: 6, speedMs: 1350, price: 380, strength: 0, style: 'magic', nl: 'Kristalstaf', en: 'Crystal staff' },
+  { key: 'light_staff', level: 17, power: 9.5, speedMs: 1250, price: 700, strength: 0, style: 'magic', nl: 'Staf van het Licht', en: 'Staff of light' },
 ] as const;
+export type WeaponStyle = 'melee' | 'ranged' | 'magic';
 export type Weapon = (typeof WEAPONS)[number];
 /** The best weapon earned at this level, and the next one to come (null at the last). */
 export function weaponAt(level: number): { weapon: Weapon; next: Weapon | null } {
+  const melee = WEAPONS.filter((w) => w.style === 'melee');
   let i = 0;
-  WEAPONS.forEach((w, k) => {
+  melee.forEach((w, k) => {
     if (level >= w.level) i = k;
   });
-  return { weapon: WEAPONS[i], next: WEAPONS[i + 1] ?? null };
+  return { weapon: melee[i], next: melee[i + 1] ?? null };
 }
+
+/**
+ * Three ways to fight, each a skill of its own that grows with the wins it brings: close by with a
+ * weapon in the hand, from a distance with a bow, or with magic. A higher skill hits harder.
+ */
+export const COMBAT_SKILLS = [
+  { key: 'melee', nl: 'Vechten', en: 'Fighting', icon: '⚔️', ammo: null },
+  { key: 'ranged', nl: 'Boogschieten', en: 'Archery', icon: '🏹', ammo: 'arrows' },
+  { key: 'magic', nl: 'Magie', en: 'Magic', icon: '✨', ammo: 'runes' },
+] as const satisfies readonly { key: WeaponStyle; nl: string; en: string; icon: string; ammo: 'arrows' | 'runes' | null }[];
+/** A fighting skill's level from its XP: the same steps as the adventure level. */
+export const combatLevel = (xp: number) => adventureLevel(xp);
+/** Each level of a fighting skill above the first adds a twentieth to every blow of that style. */
+export const skillPower = (level: number) => 1 + 0.05 * (Math.max(1, Math.floor(level)) - 1);
+/** From a distance (a bow or a spell): an attacking creature needs this much longer to reach you. */
+export const RANGED_HEADSTART_MS = 2500;
+/** Arrows and runes: made in the workshop and the mage tower from loot; one per shot or spell. */
+export const AMMO = {
+  arrows: { nl: 'Pijlen', en: 'Arrows', icon: '🏹', makes: 10, needs: { wood: 1, feather: 1, stone: 1 }, cap: 200 },
+  runes: { nl: 'Runen', en: 'Runes', icon: '🔮', makes: 5, needs: { gel: 1, stone: 1 }, cap: 200 },
+} as const satisfies Record<'arrows' | 'runes', { nl: string; en: string; icon: string; makes: number; needs: Partial<Record<LootKey, number>>; cap: number }>;
+export type AmmoKey = keyof typeof AMMO;
+export const ammoFor = (style: WeaponStyle): AmmoKey | null => (style === 'ranged' ? 'arrows' : style === 'magic' ? 'runes' : null);
+/** Spells besides the attack: from a magic skill level, for runes. Healing gives life back. */
+export const SPELLS = [
+  { key: 'heal', level: 1, runes: 3, heals: 0.4, nl: 'Genezing', en: 'Healing', icon: '💚' },
+  { key: 'shield', level: 5, runes: 4, guard: 0.3, seconds: 12, nl: 'Lichtschild', en: 'Shield of light', icon: '🛡️' },
+] as const;
+export type Spell = (typeof SPELLS)[number];
+export const spellByKey = (key: string): Spell | null => SPELLS.find((x) => x.key === key) ?? null;
 
 /** One blow: the weapon's power on top, and double when what the creature stands for was put right in real life today. */
 export const blow = (kind: CreatureKind, strong: ReadonlySet<string>, power = 0) => (1 + power) * (strong.has(CREATURES[kind].weakTo) ? 2 : 1);

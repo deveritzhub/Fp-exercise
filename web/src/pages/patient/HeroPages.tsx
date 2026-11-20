@@ -136,7 +136,7 @@ function AdventureUnlocks({ level }: { level: number }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   const rows = [
-    ...WEAPONS.filter((w) => w.key !== 'fists').map((w) => ({ key: `w:${w.key}`, level: w.level, icon: <ItemIcon k={w.key} emoji="⚔️" className="!h-6 !w-6" />, name: nl ? w.nl : w.en, where: t('Smederij', 'Smithy'), extra: w.strength > 0 ? t(`ook kracht-skill ${w.strength}`, `also strength skill ${w.strength}`) : '' })),
+    ...WEAPONS.filter((w) => w.key !== 'fists').map((w) => ({ key: `w:${w.key}`, level: w.level, icon: <ItemIcon k={w.key} emoji={w.style === 'ranged' ? '🏹' : w.style === 'magic' ? '🪄' : '⚔️'} className="!h-6 !w-6" />, name: nl ? w.nl : w.en, where: w.style === 'magic' ? t('Magiërstoren', 'Mage tower') : t('Smederij', 'Smithy'), extra: w.strength > 0 ? t(`ook kracht-skill ${w.strength}`, `also strength skill ${w.strength}`) : '' })),
     ...RIDES.map((r) => ({ key: `r:${r.key}`, level: r.level, icon: r.icon, name: nl ? r.nl : r.en, where: t('Stallen', 'Stables'), extra: '' })),
     ...ARMOURS.map((ar) => ({ key: `a:${ar.key}`, level: ar.level, icon: <ItemIcon k={ar.key} emoji="🛡️" className="!h-6 !w-6" />, name: nl ? ar.nl : ar.en, where: t('Pantsermaker', 'Armourer'), extra: '' })),
     ...RECIPES.filter((r) => r.kind === 'build').map((r) => ({ key: `b:${r.key}`, level: 1, icon: <ItemIcon k={r.key} emoji={r.icon} className="!h-6 !w-6" />, name: nl ? r.nl : r.en, where: t('Werkplaats', 'Workshop'), extra: '' })),

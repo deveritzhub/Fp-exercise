@@ -85,6 +85,42 @@ function simpleWeapon(key: string): THREE.Group | null {
   } else if (key === 'spear') {
     part(g, new THREE.CylinderGeometry(0.014, 0.016, 1.5, 8), m(WOOD), 0.4);
     part(g, new THREE.ConeGeometry(0.04, 0.2, 8), m(0xd5dadd, STEEL), 1.25);
+  } else if (key === 'shortbow' || key === 'hunting_bow' || key === 'longbow' || key === 'elven_bow') {
+    // A bow held up by its grip: two curved limbs, a leather wrap and the string.
+    const size = key === 'shortbow' ? 0.5 : key === 'hunting_bow' ? 0.62 : key === 'longbow' ? 0.82 : 0.72;
+    const elven = key === 'elven_bow';
+    const limbMat = m(elven ? 0xe8dcb8 : key === 'longbow' ? 0x6b4422 : key === 'hunting_bow' ? 0x7a5230 : 0x9a6a3c, elven ? { roughness: 0.35, metalness: 0.2 } : {});
+    // The limbs: an arc of a circle, its middle (the grip) at the hand, bulging forward (+z).
+    const holder = new THREE.Group();
+    holder.rotation.y = -Math.PI / 2;
+    holder.position.z = -size;
+    g.add(holder);
+    const limbs = new THREE.Mesh(new THREE.TorusGeometry(size, elven ? 0.016 : 0.018, 6, 28, 1.25), limbMat);
+    limbs.rotation.z = -0.625;
+    limbs.castShadow = true;
+    holder.add(limbs);
+    const half = size * Math.sin(0.625);
+    const back = size * (Math.cos(0.625) - 1);
+    // The string between the two ends, and the leather wrap round the grip.
+    part(g, new THREE.CylinderGeometry(0.0025, 0.0025, half * 2, 4), m(0xf2efe8, { roughness: 0.9 }), 0).position.z = back;
+    part(g, new THREE.CylinderGeometry(0.024, 0.024, 0.12, 8), m(elven ? 0x2d5a46 : 0x3a2418), 0);
+    if (elven) for (const sgn of [-1, 1]) {
+      const th = 0.42 * sgn;
+      const gem = part(g, new THREE.OctahedronGeometry(0.025), m(0xe4bc63, { metalness: 0.8, roughness: 0.25, emissive: 0x7a5a10, emissiveIntensity: 0.4 }), size * Math.sin(th));
+      gem.position.z = size * (Math.cos(th) - 1);
+    }
+  } else if (key === 'wand') {
+    part(g, new THREE.CylinderGeometry(0.008, 0.013, 0.36, 8), m(0x3a2418), 0.12);
+    part(g, new THREE.SphereGeometry(0.022, 10, 8), m(0xd8c6ff, { emissive: 0x9d7dff, emissiveIntensity: 1.4 }), 0.31);
+  } else if (key === 'mage_staff' || key === 'crystal_staff' || key === 'light_staff') {
+    const light = key === 'light_staff';
+    const crystal = key === 'crystal_staff';
+    part(g, new THREE.CylinderGeometry(0.015, 0.02, 1.4, 8), m(light ? 0xf2e6c4 : 0x5a3a22, light ? { metalness: 0.4, roughness: 0.3 } : {}), 0.35);
+    // The head: a ring holding a glowing stone.
+    const ring = part(g, new THREE.TorusGeometry(0.07, 0.012, 6, 16), m(light ? 0xe4bc63 : 0x8c8f8a, { metalness: 0.75, roughness: 0.3 }), 1.1);
+    ring.rotation.y = Math.PI / 2;
+    const stone = crystal ? new THREE.OctahedronGeometry(0.06) : new THREE.SphereGeometry(0.05, 12, 10);
+    part(g, stone, m(light ? 0xfff4c8 : crystal ? 0x9fe3ff : 0xc8b4ff, { emissive: light ? 0xffd76a : crystal ? 0x3ab0ff : 0x9d7dff, emissiveIntensity: 1.6, roughness: 0.2 }), 1.1);
   } else if (key === 'gloves') {
     // Worn, not held: a padded fist round the hand.
     const fist = part(g, new THREE.SphereGeometry(0.075, 14, 12), m(0xc2201f, { roughness: 0.4 }), 0.05);
