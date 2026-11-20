@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useDocumentMeta } from '@/lib/meta';
+import { useSession, homePathFor } from '@/lib/session';
+import { Link } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 import { Card, Notice } from '@/components/ui';
 import { DEFAULT_LOOK } from '@shared/hero';
@@ -14,17 +16,20 @@ const ExerciseDemo = lazy(() => import('@/components/exercise3d/ExerciseDemo'));
 /**
  * A trial: exercises shown as a 3D demonstration by the patient's own hero (/p/proef/oefeningen).
  * Five movements, for the physiotherapist to check before they are shown with a programme.
+ * Also at /proef/oefeningen for anyone (a therapist or admin has no hero: a standard figure shows it).
  */
-export function ExerciseDemoPage() {
+export function ExerciseDemoPage({ standalone = false }: { standalone?: boolean }) {
   const { t, locale } = useI18n();
   const nl = locale === 'nl';
   useDocumentMeta(t('Oefeningen in 3D', 'Exercises in 3D'));
-  const hero = useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero') });
+  const { user, loading } = useSession();
+  const isPatient = !!user?.patient;
+  const hero = useQuery({ queryKey: ['patient-hero'], queryFn: () => api.get<HeroState>('/patient/hero'), enabled: isPatient });
   const [key, setKey] = useState(MOVES[0].key);
   const move = MOVES.find((m) => m.key === key) ?? MOVES[0];
   // The hero in plain sports kit, without gear in the way of the movement.
   const look = { ...(hero.data?.hero ?? DEFAULT_LOOK), gear: [] };
-  return (
+  const page = (
     <div className="space-y-4">
       <div>
         <h1 className="t-page">{t('Oefeningen in 3D', 'Exercises in 3D')}</h1>
@@ -39,7 +44,7 @@ export function ExerciseDemoPage() {
         ))}
       </div>
       <Suspense fallback={<div className="h-[min(50vh,440px)] w-full rounded-2xl bg-canvas" />}>
-        {hero.isLoading ? <div className="h-[min(50vh,440px)] w-full rounded-2xl bg-canvas" /> : <ExerciseDemo move={move} look={look} className="h-[min(50vh,440px)] w-full" />}
+        {loading || (isPatient && hero.isLoading) ? <div className="h-[min(50vh,440px)] w-full rounded-2xl bg-canvas" /> : <ExerciseDemo move={move} look={look} className="h-[min(50vh,440px)] w-full" />}
       </Suspense>
       <Card className="p-5">
         <h2 className="t-section">{nl ? move.nl : move.en}</h2>
@@ -52,5 +57,13 @@ export function ExerciseDemoPage() {
       </Card>
       <Notice tone="info">{t('Dit is een proef met vijf oefeningen. De bewegingen worden eerst door je fysiotherapeut nagekeken.', 'This is a trial with five exercises. The movements are checked by your physiotherapist first.')}</Notice>
     </div>
+  );
+  if (!standalone) return page;
+  // Outside the patient app: the page on its own, with a way back to where the person belongs.
+  return (
+    <main className="mx-auto min-h-screen max-w-2xl bg-canvas px-4 py-6">
+      <Link to={homePathFor(user)} className="mb-3 inline-flex min-h-[44px] items-center text-[15px] font-medium text-ink-700 underline">{user ? t('Terug naar de app', 'Back to the app') : t('Naar inloggen', 'To log in')}</Link>
+      {page}
+    </main>
   );
 }

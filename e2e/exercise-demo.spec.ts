@@ -37,3 +37,13 @@ test('exercises are shown in 3D by the hero', async ({ page }) => {
   expect(await img.getAttribute('data-depth')).toBe(still);
   expect(errors).toEqual([]);
 });
+
+/** The trial page also opens for a therapist (who has no hero), at its own address outside the patient app. */
+test('a therapist can open the 3D exercise trial', async ({ page }) => {
+  test.setTimeout(120_000);
+  await login(page, 'therapeut@praktijk-a.test');
+  await page.goto('/proef/oefeningen');
+  await expect(page).toHaveURL(/\/proef\/oefeningen$/);
+  await expect(page.getByTestId('exercise-demo')).toHaveAttribute('data-state', 'ready', { timeout: 90_000 });
+  await expect(page.getByRole('link', { name: 'Terug naar de app' })).toHaveAttribute('href', '/app');
+});
