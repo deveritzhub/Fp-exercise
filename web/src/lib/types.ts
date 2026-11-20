@@ -89,6 +89,7 @@ export type ProgramItem = {
     trainingCategories: string[];
     movementCategory: string | null;
     tags: string[];
+    sourceKey?: string | null;
   };
 };
 

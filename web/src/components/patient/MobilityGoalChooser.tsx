@@ -4,7 +4,10 @@ import { ChevronRight, Play, Ruler } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { useI18n } from '@/lib/i18n';
-import { GOAL_GROUPS, MOBILITY_GOALS, programsForGoal, type GoalGroup } from '@shared/mobilityGoals';
+import { GOAL_GROUPS, MOBILITY_GOALS, pathKeysForGoal, programsForGoal, type GoalGroup } from '@shared/mobilityGoals';
+import { flexPath } from '@shared/flexibilityPaths';
+import { CHECKS, type CheckGoal } from '@shared/flexibilityCheck';
+import { FlexPathView, LimiterCheck } from './FlexPath';
 import { mobilityTest } from '@shared/mobilityTests';
 
 type Template = { id: string; title: string; sourceKey: string | null; itemCount: number };
@@ -16,13 +19,15 @@ export function MobilityGoalChooser({ templates, onPick }: { templates: Template
   const tx = (x: readonly [string, string]) => (nl ? x[0] : x[1]);
   const id = useId();
   // Only goals this practice has a programme for.
-  const goals = useMemo(() => MOBILITY_GOALS.filter((g) => programsForGoal(g, templates).length > 0), [templates]);
+  const goals = useMemo(() => MOBILITY_GOALS.filter((g) => programsForGoal(g, templates).length > 0 || pathKeysForGoal(g).some((k) => templates.some((x) => x.sourceKey === k))), [templates]);
   const groups = GOAL_GROUPS.filter((gr) => goals.some((g) => g.group === gr.key));
   const [group, setGroup] = useState<GoalGroup>(groups[0]?.key ?? 'lenigheid');
   const [goalKey, setGoalKey] = useState<string | null>(null);
   const goal = goals.find((g) => g.key === goalKey) ?? null;
   const progs = goal ? programsForGoal(goal, templates) : [];
   const test = goal?.test ? mobilityTest(goal.test) : null;
+  const path = goal?.path ? flexPath(goal.path) : null;
+  const checkGoal = goal && goal.key in CHECKS ? (goal.key as CheckGoal) : null;
   if (!goals.length) return null;
 
   return (
@@ -81,12 +86,15 @@ export function MobilityGoalChooser({ templates, onPick }: { templates: Template
             </ol>
             <p className="mt-2 text-[14px] leading-relaxed text-ink-700">{tx(goal.why)}</p>
           </div>
+          {checkGoal && <LimiterCheck key={checkGoal} goal={checkGoal} />}
+          {path && <FlexPathView key={path.key} path={path} templates={templates} onPick={onPick} />}
+          {path && progs.length > 0 && <h4 className="pt-1 text-[15px] font-semibold text-ink-800">{t('Of een los programma dat erbij past', 'Or a single programme that fits')}</h4>}
           <ul className="space-y-2" data-testid="goal-programs">
             {progs.map((p, i) => (
-              <li key={p.id} className={cn('rounded-xl border p-3', i === 0 ? 'border-accent bg-accent/5' : 'border-line')}>
+              <li key={p.id} className={cn('rounded-xl border p-3', i === 0 && !path ? 'border-accent bg-accent/5' : 'border-line')}>
                 <p className="font-semibold leading-snug">{p.title}</p>
-                <p className="mt-0.5 text-[13px] text-ink-700">{p.itemCount} {t('oefeningen', 'exercises')}{i === 0 && progs.length > 1 ? ` · ${t('past het best', 'best fit')}` : ''}</p>
-                <Button className="mt-2 w-full" variant={i === 0 ? 'primary' : 'secondary'} onClick={() => onPick(p.id)} icon={<Play className="h-4 w-4" />}>
+                <p className="mt-0.5 text-[13px] text-ink-700">{p.itemCount} {t('oefeningen', 'exercises')}{i === 0 && progs.length > 1 && !path ? ` · ${t('past het best', 'best fit')}` : ''}</p>
+                <Button className="mt-2 w-full" variant={i === 0 && !path ? 'primary' : 'secondary'} onClick={() => onPick(p.id)} icon={<Play className="h-4 w-4" />}>
                   {t('Bekijken en starten', 'View and start')}
                 </Button>
               </li>

@@ -7,6 +7,7 @@ import { badRequest, notFound } from '../lib/errors';
 import { audit } from '../lib/audit';
 import { notifyPatientMeasure } from '../lib/notify';
 import { MOBILITY_TEST_KEYS, roundCm, validMobilityValue, type MobilityResult } from '../../../shared/mobilityTests';
+import { flexPath } from '../../../shared/flexibilityPaths';
 
 /** Mobility self-tests (migration 033). Patients log their own; staff read them when shared. */
 export const mobilityPatient = new Hono<AppEnv>();
@@ -91,6 +92,50 @@ mobilityStaff.post('/:id/mobility-tests/request', async (c) => {
       const delivered = await notifyPatientMeasure(tx, p.id, p.practice_id, b.note);
       await audit(tx, user.id, p.practice_id, 'create', 'mobility_measure_requested', p.id, {});
       return { ok: true, delivered };
+    }),
+  );
+});
+
+/** Criteria of a flexibility path the patient ticked off (migration 068). Only criteria that exist are accepted. */
+const flexCheck = z.object({ path: z.string().max(30), phase: z.number().int().min(1).max(8), item: z.string().max(30) });
+function validFlexCheck(b: z.infer<typeof flexCheck>) {
+  const p = flexPath(b.path);
+  const phase = p?.phases[b.phase - 1];
+  if (!phase?.criteria.some((c) => c.key === b.item && !c.auto)) throw badRequest('unknown_criterion');
+}
+async function loadFlex(tx: Tx, patientId: string) {
+  const { rows } = await tx.query('SELECT path, phase, item, checked_at FROM flexibility_checks WHERE patient_id = $1 ORDER BY checked_at', [patientId]);
+  return rows.map((r) => ({ path: r.path as string, phase: Number(r.phase), item: r.item as string, checkedAt: r.checked_at as string }));
+}
+
+mobilityPatient.get('/flex-checks', async (c) => {
+  const { user, patient } = requirePatient(c);
+  return c.json(await withUser(user.id, async (tx) => ({ checks: await loadFlex(tx, patient.id) })));
+});
+
+mobilityPatient.put('/flex-checks', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(flexCheck, await c.req.json());
+  validFlexCheck(b);
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      await tx.query(
+        `INSERT INTO flexibility_checks(patient_id, practice_id, path, phase, item) VALUES ($1, app.patient_practice($1), $2, $3, $4)
+         ON CONFLICT (patient_id, path, phase, item) DO NOTHING`,
+        [patient.id, b.path, b.phase, b.item],
+      );
+      return { checks: await loadFlex(tx, patient.id) };
+    }),
+  );
+});
+
+mobilityPatient.delete('/flex-checks', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const b = parse(flexCheck, { path: c.req.query('path'), phase: Number(c.req.query('phase')), item: c.req.query('item') });
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      await tx.query('DELETE FROM flexibility_checks WHERE patient_id = $1 AND path = $2 AND phase = $3 AND item = $4', [patient.id, b.path, b.phase, b.item]);
+      return { checks: await loadFlex(tx, patient.id) };
     }),
   );
 });

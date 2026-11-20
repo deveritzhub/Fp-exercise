@@ -83,7 +83,7 @@ export async function loadItems(tx: Tx, programId: string) {
             coalesce(ov.thumbnail_media_id, e.thumbnail_media_id) AS thumbnail_media_id,
             coalesce(ov.video_media_id, e.video_media_id) AS video_media_id, e.difficulty,
             e.instructions_nl, e.instructions_en, e.starting_position_nl, e.starting_position_en,
-            e.movement_nl, e.movement_en, e.equipment, e.target_muscles, e.training_categories, e.movement_category, e.tags,
+            e.movement_nl, e.movement_en, e.equipment, e.target_muscles, e.training_categories, e.movement_category, e.tags, e.source_key,
             alt.name_nl AS alt_name_nl, alt.name_en AS alt_name_en,
             EXISTS (SELECT 1 FROM exercise_relations r WHERE r.exercise_id = i.exercise_id AND r.related_id = i.alternative_exercise_id
                      AND r.kind = 'progression') AS alt_is_progression
@@ -129,6 +129,8 @@ export async function loadItems(tx: Tx, programId: string) {
       trainingCategories: r.training_categories ?? [],
       movementCategory: r.movement_category ?? null,
       tags: r.tags ?? [],
+      // FP library key, for the exercise's form checklist.
+      sourceKey: r.source_key ?? null,
     },
   }));
 }

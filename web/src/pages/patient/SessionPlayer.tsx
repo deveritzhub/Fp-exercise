@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useHeartRate } from '@/lib/heartRate';
+import { FormChecklist } from '@/components/patient/FlexPath';
 import type { HrSummary } from '@shared/heartRate';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -436,6 +437,7 @@ export function ExerciseInfo({ item }: { item: ProgramItem }) {
         {item.frequency && <p className="mt-2 text-[15px] text-ink-700">{item.frequency}</p>}
       </div>
 
+      <FormChecklist exerciseKey={ex.sourceKey} />
       {item.notes && (
         <div className="rounded-2xl border border-accent/15 bg-accent-soft p-4 text-[16px] leading-relaxed text-ink-800">
           <div className="mb-1 flex items-center gap-2 text-[14px] font-semibold text-accent"><MessageCircle className="h-4 w-4" />{t('Notitie van je fysiotherapeut', 'Note from your physiotherapist')}</div>

@@ -270,6 +270,7 @@ patientModules.get('/export', async (c) => {
       nutritionProfile: await q('SELECT sex, birth_year, activity, goal, hide_kcal, diet, updated_at FROM nutrition_profiles WHERE patient_id = $1'),
       ownFoods: await q('SELECT name, kcal, protein_g, carbs_g, fat_g, portion_g, created_at FROM own_foods WHERE patient_id = $1'),
       mealFavorites: await q('SELECT name, meal, items, created_at FROM meal_favorites WHERE patient_id = $1'),
+      flexibilityChecks: await q('SELECT path, phase, item, checked_at FROM flexibility_checks WHERE patient_id = $1 ORDER BY checked_at'),
       selfTrainings: await q('SELECT day, kind, minutes, pain, stopped_for_pain, note, created_at FROM self_trainings WHERE patient_id = $1 ORDER BY created_at'),
       stepGoal: (await q('SELECT steps, updated_at FROM step_goals WHERE patient_id = $1'))[0] ?? null,
       stepDays: await q('SELECT day, steps, source, updated_at FROM step_days WHERE patient_id = $1 ORDER BY day'),

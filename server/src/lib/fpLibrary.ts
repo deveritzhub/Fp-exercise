@@ -39,6 +39,8 @@ export const FP_BUNDLES = [
   { name: 'fp-ketens-v4', file: 'fp-ketens-v4.json' },
   // Mobility goals by chain: toe touch, front and side splits, open hips, neck, getting up from the floor, reaching behind.
   { name: 'fp-mobiliteit-v3', file: 'fp-mobiliteit-v3.json' },
+  // Phased build-up with criteria per phase: pancake, front split, side split, touching the toes.
+  { name: 'fp-mobiliteit-v4', file: 'fp-mobiliteit-v4.json' },
 ] as const;
 
 const DIR = path.join(import.meta.dirname, '../../db/seed-data');

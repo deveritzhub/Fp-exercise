@@ -7,6 +7,7 @@
  * `test` is a mobility self-test that shows progress. Own texts; to be reviewed clinically.
  */
 import type { MobilityTestKey } from './mobilityTests';
+import { FLEX_PATHS, phaseSourceKey, type FlexPathKey } from './flexibilityPaths';
 
 type Fn = readonly [nl: string, en: string];
 
@@ -30,6 +31,8 @@ export type MobilityGoal = {
   why: Fn;
   test?: MobilityTestKey;
   programs: readonly string[];
+  /** A phased build-up with criteria (shared/flexibilityPaths.ts). */
+  path?: FlexPathKey;
 };
 
 const KUIT: Fn = ['Kuit', 'Calf'];
@@ -56,7 +59,7 @@ export const MOBILITY_GOALS: readonly MobilityGoal[] = [
       'Voelt het als stijve hamstrings? Vaak trekt de hele achterkant mee: van kuit via hamstrings en bil tot de rugstrekkers. Rek je alleen de hamstring, dan blijft de rest stug. Daarom zit de hele keten in dit programma.',
       'Feels like tight hamstrings? Often the whole back line pulls: from the calf through hamstrings and buttock to the back extensors. Stretch only the hamstring and the rest stays stiff. So the whole chain is in this programme.',
     ],
-    test: 'fingertip_floor', programs: ['mb3_tenen', 'mb2_heup_onderrug'],
+    test: 'fingertip_floor', programs: ['mb3_tenen', 'mb2_heup_onderrug'], path: 'tenen',
   },
   {
     key: 'spagaat_voor', group: 'lenigheid', name: ['Spagaat voorwaarts', 'Front split'],
@@ -66,7 +69,7 @@ export const MOBILITY_GOALS: readonly MobilityGoal[] = [
       'Een spagaat vraagt twee kettingen tegelijk: de achterkant van het voorste been en de voorkant van het achterste been. Is één van de twee stug, dan kantelt je bekken en kom je niet verder.',
       'A split asks two chains at once: the back of the front leg and the front of the back leg. If either is stiff, the pelvis tilts and you get no further.',
     ],
-    test: 'chair_sit_reach', programs: ['mb3_spagaat_voor', 'mb3_tenen'],
+    test: 'chair_sit_reach', programs: ['mb3_spagaat_voor', 'mb3_tenen'], path: 'spagaat_voor',
   },
   {
     key: 'spagaat_zij', group: 'lenigheid', name: ['Spagaat zijwaarts (spreidzit)', 'Side split (straddle)'],
@@ -76,7 +79,17 @@ export const MOBILITY_GOALS: readonly MobilityGoal[] = [
       'Hier zit de rek vooral aan de binnenkant van de bovenbenen, maar de hamstrings lopen mee en het heupgewricht moet kunnen draaien. Daarom combineer je spreiden, kantelen en draaien.',
       'The stretch is mostly on the inner thighs, but the hamstrings come along and the hip joint has to rotate. So you combine spreading, tilting and turning.',
     ],
-    programs: ['mb3_spagaat_zij'],
+    programs: ['mb3_spagaat_zij'], path: 'spagaat_zij',
+  },
+  {
+    key: 'pancake', group: 'lenigheid', name: ['Pancake', 'Pancake'],
+    gain: ['In spreidzit met een lange rug naar voren tot je borst de grond raakt.', 'In a straddle, folding forward with a long back until your chest touches the floor.'],
+    chain: [ADD, HAM, HEUP, RUG],
+    why: [
+      'De pancake vraagt de binnenkant én achterkant van je benen, een bekken dat naar voren kantelt en kracht om dat vast te houden. Komt je bekken niet mee, dan buig je alleen je rug: daarom train je eerst rechtop zitten en kantelen.',
+      'The pancake asks the inner and back of your legs, a pelvis that tilts forward and the strength to hold it. If the pelvis does not come along, you only bend your back: so you first train sitting upright and hinging.',
+    ],
+    programs: ['mb3_spagaat_zij'], path: 'pancake',
   },
   {
     key: 'heupen_open', group: 'lenigheid', name: ['Heupen open', 'Open hips'],
@@ -183,6 +196,12 @@ export const MOBILITY_GOALS: readonly MobilityGoal[] = [
     programs: ['mb2_avond'],
   },
 ];
+
+/** Template source keys of the phases of a goal's build-up, in order. */
+export function pathKeysForGoal(goal: MobilityGoal): string[] {
+  const p = goal.path ? FLEX_PATHS.find((x) => x.key === goal.path) : null;
+  return p ? p.phases.map((_, i) => phaseSourceKey(p, i)) : [];
+}
 
 /** The programmes of a goal that this practice has, in the goal's order. */
 export function programsForGoal<T extends { sourceKey: string | null }>(goal: MobilityGoal, templates: readonly T[]): T[] {

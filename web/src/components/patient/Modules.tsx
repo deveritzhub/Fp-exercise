@@ -11,7 +11,7 @@ import { SELF_CHECK, type AccountKind } from '@shared/accountKind';
 import { SCHEDULES } from '@shared/strengthChooser';
 import { ScheduleChooser } from './ScheduleChooser';
 import { MobilityGoalChooser } from './MobilityGoalChooser';
-import { MOBILITY_GOALS } from '@shared/mobilityGoals';
+import { MOBILITY_GOALS, pathKeysForGoal } from '@shared/mobilityGoals';
 
 export type Mode = 'revalidatie' | 'kracht' | 'mobiliteit';
 export type Modes = {
@@ -109,6 +109,10 @@ export function StartTemplates({ modes, module }: { modes: Modes; module: 'krach
   const [busy, setBusy] = useState(false);
   const list = modes.templates.filter((x) => x.module === module);
   const blocked = module === 'kracht' && !modes.strengthCleared;
+  // Phases of a flexibility build-up live in the goal menu; the plain list keeps the single programmes.
+  const phaseKeys = new Set(MOBILITY_GOALS.flatMap((g) => pathKeysForGoal(g)));
+  const goalMenu = module === 'mobiliteit' && list.some((x) => MOBILITY_GOALS.some((g) => x.sourceKey && (g.programs.includes(x.sourceKey) || phaseKeys.has(x.sourceKey))));
+  const plain = goalMenu ? list.filter((x) => !x.sourceKey || !phaseKeys.has(x.sourceKey)) : list;
   if (!list.length) return <p className="text-[15px] text-ink-600">{t('Je praktijk heeft hier nog geen programma’s klaargezet.', 'Your practice has not set up programmes here yet.')}</p>;
   return (
     <div className="space-y-2">
@@ -122,13 +126,13 @@ export function StartTemplates({ modes, module }: { modes: Modes; module: 'krach
           <h3 className="pt-2 text-[15px] font-semibold text-ink-800">{t('Of kies zelf uit alle programma’s', 'Or choose from all programmes yourself')}</h3>
         </>
       )}
-      {module === 'mobiliteit' && list.some((x) => MOBILITY_GOALS.some((g) => x.sourceKey && g.programs.includes(x.sourceKey))) && (
+      {goalMenu && (
         <>
           <MobilityGoalChooser templates={list} onPick={(id) => setConfirm(list.find((x) => x.id === id) ?? null)} />
           <h3 className="pt-2 text-[15px] font-semibold text-ink-800">{t('Of kies zelf uit alle programma’s', 'Or choose from all programmes yourself')}</h3>
         </>
       )}
-      {list.map((x) => (
+      {plain.map((x) => (
         <div key={x.id} className="flex items-center gap-3 rounded-2xl border border-line bg-white p-4 shadow-card">
           <span className="min-w-0 flex-1">
             <span className="block font-semibold">{x.title}</span>

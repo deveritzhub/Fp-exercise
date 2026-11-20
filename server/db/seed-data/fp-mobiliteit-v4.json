@@ -1,0 +1,1164 @@
+{
+ "_meta": {
+  "versie": "fp-mobiliteit-v4",
+  "toelichting": "Opbouw in fases voor pancake, spagaat voorwaarts, spagaat zijwaarts en tenen aantikken, met criteria per fase. Eigen tekst. Statisch 30 seconden (Medeiros 2016), 5 minuten per spiergroep per week (Thomas 2018), aanspannen-ontspannen (Sharman 2006), kracht in de volledige lengte (Afonso 2021). Nog niet individueel klinisch getoetst."
+ },
+ "seed_data": {
+  "mobiliteit": {
+   "_toelichting": {
+    "dosering_richtlijn": "De eerste weken komt de winst vooral uit rektolerantie. 30 seconden vasthouden geeft vergelijkbare winst als 60 seconden (Medeiros 2016); minstens 5 minuten per spiergroep per week, 5 of meer dagen, hangt samen met meer winst (Thomas 2018). Aanspannen-ontspannen geeft evenveel of iets meer (Sharman 2006). Krachttraining door de volledige bewegingsuitslag geeft vergelijkbare winst (Afonso 2021). Ga pas naar de volgende fase als alle criteria gehaald zijn."
+   },
+   "oefeningen": [
+    {
+     "id": "mb4_spreidzit_rechtop",
+     "naam": "Rechtop zitten in spreidzit",
+     "regio": "heup",
+     "dosering": "3 sets van 30 sec, dagelijks",
+     "cues": "Zit op de grond met je benen gestrekt en zo ver uit elkaar als ontspannen lukt, knieschijven naar het plafond. Kantel je bekken naar voren tot je op de voorkant van je zitbotjes zit en je onderrug hol wordt. Handen naast je, niet achter je. Lukt dat niet, zit dan op een opgevouwen handdoek of kussen",
+     "tags": [
+      "spreidzit",
+      "adductoren",
+      "hamstrings",
+      "pancake"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb4_adductor_rock_back",
+     "naam": "Adductor rock-back in kniestand",
+     "regio": "heup",
+     "dosering": "2 sets van 8 per kant",
+     "cues": "Ga op handen en knieën en zet je rechterbeen gestrekt opzij, voet plat op de grond. Schuif met een lange rug je billen rustig naar achteren richting je linkerhiel tot je rek voelt aan de binnenkant van je rechterbovenbeen. Kom terug en herhaal; elke keer iets verder als dat zonder pijn gaat",
+     "tags": [
+      "adductoren",
+      "lies",
+      "pancake",
+      "spagaat zijwaarts"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb4_pancake_pnf",
+     "naam": "Pancake aanspannen-ontspannen (PNF)",
+     "regio": "heup",
+     "dosering": "3 rondes van 3 keer aanspannen",
+     "cues": "Zit in spreidzit en kantel met een lange rug naar voren tot je rek voelt. Duw je hielen en de achterkant van je benen 5 seconden licht in de grond, met ongeveer een kwart van je kracht. Ontspan, adem uit en kantel 5 tot 10 seconden iets verder naar voren. Herhaal 3 keer. Nooit verder dan een rek zonder pijn",
+     "tags": [
+      "pancake",
+      "pnf",
+      "aanspannen-ontspannen",
+      "adductoren",
+      "hamstrings"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "gevorderd"
+    },
+    {
+     "id": "mb4_straddle_good_morning",
+     "naam": "Good morning in brede stand",
+     "regio": "heup",
+     "dosering": "3 sets van 8",
+     "cues": "Sta met je voeten breed, tenen iets naar buiten, een stok of licht gewicht op je schouders. Knieën bijna gestrekt. Schuif je billen naar achteren en kantel met een lange rug naar voren tot je rek voelt aan de binnen- en achterkant van je benen. Kom omhoog door je bilspieren aan te spannen. Langzaam omlaag, rustig omhoog",
+     "tags": [
+      "pancake",
+      "kracht in de lengte",
+      "hamstrings",
+      "adductoren"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb4_spreidzit_beentil",
+     "naam": "Been optillen in spreidzit (actief)",
+     "regio": "heup",
+     "dosering": "3 sets van 8 per been",
+     "cues": "Zit rechtop in spreidzit met je handen naast je heupen. Span de voorkant van je dij aan en til één gestrekt been een paar centimeter van de grond, knieschijf naar boven. Houd 2 seconden vast en zet het rustig neer. Niet achterover leunen; een paar centimeter is genoeg",
+     "tags": [
+      "pancake",
+      "actieve lenigheid",
+      "heupbuigers",
+      "kracht in de eindstand"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "gevorderd"
+    },
+    {
+     "id": "mb4_pancake_gewicht",
+     "naam": "Pancake met licht gewicht",
+     "regio": "heup",
+     "dosering": "3 sets van 30 sec",
+     "cues": "Zit in spreidzit en houd een licht gewicht (bijvoorbeeld 2 tot 5 kilo) tegen je borst. Kantel met een lange rug naar voren en laat het gewicht je bij elke uitademing iets verder helpen. Leg het gewicht weg voordat je weer rechtop komt. Geen scherpe pijn in lies of knieholte",
+     "tags": [
+      "pancake",
+      "rekken onder belasting",
+      "adductoren",
+      "hamstrings"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "gevorderd"
+    },
+    {
+     "id": "mb4_halve_spagaat_pnf",
+     "naam": "Halve spagaat aanspannen-ontspannen (PNF)",
+     "regio": "heup",
+     "dosering": "3 rondes van 3 keer per kant",
+     "cues": "Ga in de halve spagaat met je voorste been gestrekt. Duw je voorste hiel 5 seconden licht in de grond, alsof je je knie wilt buigen, met ongeveer een kwart van je kracht. Ontspan, adem uit en kantel met een lange rug iets verder naar voren. Herhaal 3 keer",
+     "tags": [
+      "spagaat",
+      "pnf",
+      "hamstrings"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "gevorderd"
+    },
+    {
+     "id": "mb4_lunge_diep",
+     "naam": "Diepe uitvalspas met armen omhoog",
+     "regio": "heup",
+     "dosering": "2 sets van 30 sec per kant",
+     "cues": "Kniel met je rechterknie op een kussen, linkervoet ver voor je. Span je rechterbil aan, schuif je heup naar voren en breng beide armen recht omhoog zonder je rug hol te trekken. Je voelt rek voor in je rechterheup tot in je buik. Wissel van kant",
+     "tags": [
+      "heupbuigers",
+      "iliopsoas",
+      "spagaat"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb4_glijdende_spagaat",
+     "naam": "Glijdende spagaat met steun",
+     "regio": "heup",
+     "dosering": "3 sets van 5 per kant",
+     "cues": "Zet een blok of stoel aan elke kant en leg een handdoek onder je voorste hiel op een gladde vloer. Glijd met je handen op de steun langzaam in de spagaat, alleen zo ver als je je gewicht met je handen kunt dragen, en glijd gecontroleerd terug. Bekken recht naar voren. Nooit veren",
+     "tags": [
+      "spagaat",
+      "controle",
+      "hamstrings",
+      "heupbuigers"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "gevorderd"
+    },
+    {
+     "id": "mb4_actief_been_heffen",
+     "naam": "Gestrekt been actief heffen (staand)",
+     "regio": "heup",
+     "dosering": "3 sets van 8 per been",
+     "cues": "Sta rechtop, eventueel met één hand licht aan een stoel. Span je voorste dijspier aan en til je gestrekte been voor je zo hoog als lukt zonder achterover te leunen, tenen omhoog. Houd 2 seconden vast en zet het langzaam neer",
+     "tags": [
+      "actieve lenigheid",
+      "spagaat",
+      "hamstrings",
+      "heupbuigers",
+      "kracht in de eindstand"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb4_paardenstand",
+     "naam": "Paardenstand vasthouden",
+     "regio": "heup",
+     "dosering": "3 sets van 30 sec",
+     "cues": "Zet je voeten breed, tenen iets naar buiten. Zak door je knieën tot je dijen bijna horizontaal zijn, knieën recht boven je tenen en romp rechtop. Houd vast en adem rustig door. Te zwaar? Zak minder diep",
+     "tags": [
+      "adductoren",
+      "spagaat zijwaarts",
+      "kracht in de eindstand"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb4_v_muur_pnf",
+     "naam": "Benen in V tegen de muur, aanspannen-ontspannen",
+     "regio": "heup",
+     "dosering": "3 rondes van 3 keer",
+     "cues": "Lig met je billen tegen de muur en je benen in een V omhoog tegen de muur. Leg je handen aan de binnenkant van je knieën en duw je benen 5 seconden licht naar elkaar toe tegen je handen. Ontspan, adem uit en laat je benen iets verder uit elkaar zakken. Herhaal 3 keer",
+     "tags": [
+      "adductoren",
+      "pnf",
+      "spagaat zijwaarts"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb4_zijspagaat_steun",
+     "naam": "Spagaat zijwaarts met steun",
+     "regio": "heup",
+     "dosering": "3 sets van 30 sec",
+     "cues": "Sta tussen twee stoelen of met je handen op blokken. Schuif je voeten langzaam naar buiten, knieschijven naar voren, en draag je gewicht met je handen. Ga alleen zo ver als je ontspannen kunt ademen. Kom terug door je voeten weer naar elkaar te schuiven. Knellend gevoel in de heup: minder ver",
+     "tags": [
+      "spagaat zijwaarts",
+      "adductoren"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "gevorderd"
+    },
+    {
+     "id": "mb4_cossack_gewicht",
+     "naam": "Cossack squat met gewicht",
+     "regio": "heup",
+     "dosering": "3 sets van 6 per kant",
+     "cues": "Houd een kettlebell of dumbbell tegen je borst. Zak zijwaarts in de cossack squat, hiel van het gebogen been aan de grond, het andere been gestrekt met de tenen omhoog. Zak gecontroleerd zo diep als lukt en duw terug naar het midden",
+     "tags": [
+      "adductoren",
+      "spagaat zijwaarts",
+      "kracht in de lengte"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "gevorderd"
+    },
+    {
+     "id": "mb4_hamstring_pnf",
+     "naam": "Hamstring aanspannen-ontspannen op de rug (PNF)",
+     "regio": "heup",
+     "dosering": "3 rondes van 3 keer per been",
+     "cues": "Lig op je rug met een band om je voet en til je gestrekte been op tot je rek voelt. Duw je hiel 5 seconden licht tegen de band, met ongeveer een kwart van je kracht. Ontspan, adem uit en trek je been rustig iets verder naar je toe. Herhaal 3 keer",
+     "tags": [
+      "hamstrings",
+      "pnf",
+      "tenen aantikken"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "basis"
+    },
+    {
+     "id": "mb4_zittend_vooroverbuigen",
+     "naam": "Zittend vooroverbuigen",
+     "regio": "heup",
+     "dosering": "3 sets van 30 sec",
+     "cues": "Zit met je benen gestrekt voor je, tenen omhoog, eventueel op een kussen. Kantel met een lange rug vanuit je heupen naar voren en schuif je handen langs je benen naar je tenen. Laat op het eind je rug ontspannen rond worden. Rustig uitademen",
+     "tags": [
+      "hamstrings",
+      "rug",
+      "tenen aantikken"
+     ],
+     "dosis_status": "conventie: gangbare dosering (30 seconden vasthouden of rustige herhalingen), nog niet individueel getoetst",
+     "niveau": "basis"
+    }
+   ],
+   "programmas": [
+    {
+     "id": "mb4_pancake",
+     "naam": "Pancake",
+     "doel": "De pancake: in spreidzit met een lange rug naar voren tot je borst de grond raakt. Vraagt lange binnenkant bovenbenen (adductoren), hamstrings, een bekken dat naar voren kan kantelen én kracht om dat vast te houden.",
+     "fases": [
+      {
+       "naam": "Rechtop in spreidzit",
+       "weken": "1-3",
+       "doel": "Ontspannen rechtop zitten in spreidzit met je bekken naar voren gekanteld.",
+       "oefeningen": [
+        {
+         "exercise_id": "mb3_vlinder",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 5
+        },
+        {
+         "exercise_id": "mb3_v_muur",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 5
+        },
+        {
+         "exercise_id": "mb4_adductor_rock_back",
+         "sets": 2,
+         "reps": 8,
+         "frequentie_per_week": 5,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb_hamstring_stretch",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 5,
+         "opmerking": "per been"
+        },
+        {
+         "exercise_id": "mb4_spreidzit_rechtop",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 5
+        }
+       ]
+      },
+      {
+       "naam": "Kantelen vanuit je heupen",
+       "weken": "4-7",
+       "doel": "Met een lange rug vanuit je heupen naar voren kantelen, verder dan alleen je rug kan buigen.",
+       "oefeningen": [
+        {
+         "exercise_id": "mb4_spreidzit_rechtop",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 4
+        },
+        {
+         "exercise_id": "mb3_pancake",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 4
+        },
+        {
+         "exercise_id": "mb4_pancake_pnf",
+         "sets": 3,
+         "reps": 3,
+         "frequentie_per_week": 4,
+         "opmerking": "rondes van aanspannen en ontspannen"
+        },
+        {
+         "exercise_id": "mb4_straddle_good_morning",
+         "sets": 3,
+         "reps": 8,
+         "frequentie_per_week": 4
+        },
+        {
+         "exercise_id": "mb3_cossack",
+         "sets": 2,
+         "reps": 6,
+         "frequentie_per_week": 4,
+         "opmerking": "per kant"
+        }
+       ]
+      },
+      {
+       "naam": "Dieper en sterker",
+       "weken": "8-12",
+       "doel": "Onderarmen op de grond, en kracht om je benen in de spreidzit actief te bewegen.",
+       "oefeningen": [
+        {
+         "exercise_id": "mb3_pancake",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 4
+        },
+        {
+         "exercise_id": "mb4_pancake_gewicht",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 4
+        },
+        {
+         "exercise_id": "mb4_pancake_pnf",
+         "sets": 3,
+         "reps": 3,
+         "frequentie_per_week": 4
+        },
+        {
+         "exercise_id": "mb4_spreidzit_beentil",
+         "sets": 3,
+         "reps": 8,
+         "frequentie_per_week": 4,
+         "opmerking": "per been"
+        },
+        {
+         "exercise_id": "mb4_straddle_good_morning",
+         "sets": 3,
+         "reps": 8,
+         "frequentie_per_week": 4,
+         "opmerking": "iets zwaarder dan in fase 2"
+        },
+        {
+         "exercise_id": "mb3_kikker",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 4
+        }
+       ]
+      },
+      {
+       "naam": "Volledige pancake en onderhoud",
+       "weken": "13+",
+       "doel": "Borst naar de grond, en wat je hebt vasthouden.",
+       "oefeningen": [
+        {
+         "exercise_id": "mb3_pancake",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 3
+        },
+        {
+         "exercise_id": "mb4_pancake_gewicht",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 3
+        },
+        {
+         "exercise_id": "mb4_spreidzit_beentil",
+         "sets": 2,
+         "reps": 8,
+         "frequentie_per_week": 3,
+         "opmerking": "per been"
+        },
+        {
+         "exercise_id": "mb3_vlinder",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 3
+        }
+       ]
+      }
+     ],
+     "criteria_per_fase": [
+      {
+       "van": "Rechtop in spreidzit",
+       "naar": "Kantelen vanuit je heupen",
+       "criteria": [
+        {
+         "criterium": "Je zit 30 seconden rechtop in spreidzit zonder handen achter je: benen minstens een rechte hoek uit elkaar, knieën gestrekt, knieschijven naar het plafond.",
+         "meetmethode": "Een rechte hoek is zoals de wijzers van de klok op half vijf en half acht."
+        },
+        {
+         "criterium": "Je kunt in die spreidzit je bekken naar voren kantelen: je rolt naar de voorkant van je zitbotjes en je onderrug wordt hol in plaats van bol."
+        },
+        {
+         "criterium": "Je voelt rek, geen pijn: hooguit 3 op 10 tijdens het oefenen, en de volgende ochtend is het niet erger dan normaal."
+        },
+        {
+         "criterium": "Geen tintelingen, doof gevoel of schietende pijn in je been."
+        },
+        {
+         "criterium": "Je hebt 3 weken lang minstens 4 keer per week geoefend.",
+         "meetmethode": "Kijk in Voortgang hoe vaak je de training deed."
+        }
+       ]
+      },
+      {
+       "van": "Kantelen vanuit je heupen",
+       "naar": "Dieper en sterker",
+       "criteria": [
+        {
+         "criterium": "Je benen gaan in spreidzit ongeveer 120 graden uit elkaar, knieschijven naar het plafond.",
+         "meetmethode": "120 graden is zoals de wijzers van de klok op 4 en 8 uur."
+        },
+        {
+         "criterium": "Met een lange rug leg je je handen ver voor je op de grond en buig je je ellebogen richting de vloer, 30 seconden ontspannen."
+        },
+        {
+         "criterium": "Je kantelt rechtop in spreidzit, zonder handen, 10 keer langzaam vanuit je heupen naar voren en terug met een lange rug."
+        },
+        {
+         "criterium": "Je voelt rek, geen pijn: hooguit 3 op 10 tijdens het oefenen, en de volgende ochtend is het niet erger dan normaal."
+        },
+        {
+         "criterium": "Geen tintelingen, doof gevoel of schietende pijn in je been."
+        },
+        {
+         "criterium": "Je hebt 4 weken lang minstens 4 keer per week geoefend.",
+         "meetmethode": "Kijk in Voortgang hoe vaak je de training deed."
+        }
+       ]
+      },
+      {
+       "van": "Dieper en sterker",
+       "naar": "Volledige pancake en onderhoud",
+       "criteria": [
+        {
+         "criterium": "Je legt je onderarmen plat op de grond, zonder blok, met een lange rug, en houdt dat 30 seconden ontspannen vol."
+        },
+        {
+         "criterium": "Rechtop in spreidzit til je elk been 5 keer een paar centimeter van de grond, knie gestrekt en knieschijf naar boven."
+        },
+        {
+         "criterium": "Je voelt rek, geen pijn: hooguit 3 op 10 tijdens het oefenen, en de volgende ochtend is het niet erger dan normaal."
+        },
+        {
+         "criterium": "Geen tintelingen, doof gevoel of schietende pijn in je been."
+        },
+        {
+         "criterium": "Je hebt 5 weken lang minstens 4 keer per week geoefend.",
+         "meetmethode": "Kijk in Voortgang hoe vaak je de training deed."
+        }
+       ]
+      },
+      {
+       "van": "Volledige pancake en onderhoud",
+       "naar": "Doel bereikt",
+       "criteria": [
+        {
+         "criterium": "Je borst of buik raakt de grond met een lange rug, benen ongeveer 120 graden uit elkaar."
+        },
+        {
+         "criterium": "Je houdt het vast door 2 à 3 keer per week te blijven oefenen."
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "mb4_spagaat_voor",
+     "naam": "Spagaat voorwaarts",
+     "doel": "Een spagaat voorwaarts vraagt twee kettingen tegelijk: de achterkant van het voorste been (hamstrings, kuit, zenuw) en de voorkant van het achterste been (heupbuigers en voorkant dij). Je bekken blijft recht naar voren.",
+     "fases": [
+      {
+       "naam": "Voor- en achterkant los",
+       "weken": "1-3",
+       "doel": "Halve spagaat en heupbuigerrek met een recht bekken.",
+       "oefeningen": [
+        {
+         "exercise_id": "mb_world_greatest",
+         "sets": 2,
+         "reps": 5,
+         "frequentie_per_week": 5,
+         "opmerking": "per kant, als warming-up"
+        },
+        {
+         "exercise_id": "ex_hip_flexor_stretch",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 5,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb3_halve_spagaat",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 5,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb3_kuitrek_muur",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 5,
+         "opmerking": "per kant"
+        }
+       ]
+      },
+      {
+       "naam": "Lengte en controle",
+       "weken": "4-7",
+       "doel": "Couch stretch rechtop en de borst naar de knie in de halve spagaat; kracht om je been actief op te tillen.",
+       "oefeningen": [
+        {
+         "exercise_id": "mb3_couch_stretch",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 4,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb4_halve_spagaat_pnf",
+         "sets": 3,
+         "reps": 3,
+         "frequentie_per_week": 4,
+         "opmerking": "rondes per kant"
+        },
+        {
+         "exercise_id": "mb4_lunge_diep",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 4,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb4_actief_been_heffen",
+         "sets": 3,
+         "reps": 8,
+         "frequentie_per_week": 4,
+         "opmerking": "per been"
+        },
+        {
+         "exercise_id": "mb3_spagaat_voor",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 4,
+         "opmerking": "per kant, met hoge steun"
+        }
+       ]
+      },
+      {
+       "naam": "Spagaat met steun",
+       "weken": "8-12",
+       "doel": "Met blokken of stoelen steeds lager in de spagaat, gecontroleerd in en uit.",
+       "oefeningen": [
+        {
+         "exercise_id": "mb3_couch_stretch",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 4,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb3_spagaat_voor",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 4,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb4_glijdende_spagaat",
+         "sets": 3,
+         "reps": 5,
+         "frequentie_per_week": 4,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb4_halve_spagaat_pnf",
+         "sets": 2,
+         "reps": 3,
+         "frequentie_per_week": 4,
+         "opmerking": "rondes per kant"
+        },
+        {
+         "exercise_id": "mb4_actief_been_heffen",
+         "sets": 3,
+         "reps": 8,
+         "frequentie_per_week": 4,
+         "opmerking": "per been"
+        }
+       ]
+      },
+      {
+       "naam": "Volledige spagaat en onderhoud",
+       "weken": "13+",
+       "doel": "Heupen op de grond, en vasthouden.",
+       "oefeningen": [
+        {
+         "exercise_id": "mb3_spagaat_voor",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 3,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb3_couch_stretch",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 3,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb4_actief_been_heffen",
+         "sets": 2,
+         "reps": 8,
+         "frequentie_per_week": 3,
+         "opmerking": "per been"
+        }
+       ]
+      }
+     ],
+     "criteria_per_fase": [
+      {
+       "van": "Voor- en achterkant los",
+       "naar": "Lengte en controle",
+       "criteria": [
+        {
+         "criterium": "In de halve spagaat houd je met een lange rug en recht bekken 30 seconden vol, voorste knie gestrekt."
+        },
+        {
+         "criterium": "In de heupbuigerrek span je je bil aan en kom je rechtop zonder holle rug; je voelt de rek voor in de heup van het achterste been."
+        },
+        {
+         "criterium": "Op je rug op de rand van je bed, één knie tegen je borst: het andere bovenbeen blijft plat op het bed liggen.",
+         "meetmethode": "Komt dat bovenbeen omhoog, dan zijn je heupbuigers nog kort (aangepaste Thomastest)."
+        },
+        {
+         "criterium": "Je voelt rek, geen pijn: hooguit 3 op 10 tijdens het oefenen, en de volgende ochtend is het niet erger dan normaal."
+        },
+        {
+         "criterium": "Geen tintelingen, doof gevoel of schietende pijn in je been."
+        },
+        {
+         "criterium": "Je hebt 3 weken lang minstens 4 keer per week geoefend.",
+         "meetmethode": "Kijk in Voortgang hoe vaak je de training deed."
+        }
+       ]
+      },
+      {
+       "van": "Lengte en controle",
+       "naar": "Spagaat met steun",
+       "criteria": [
+        {
+         "criterium": "In de couch stretch kom je met je romp rechtop, zonder holle rug, 30 seconden aan beide kanten."
+        },
+        {
+         "criterium": "In de halve spagaat breng je je borst richting je knie met een lange rug; je handen liggen naast je voet op de grond."
+        },
+        {
+         "criterium": "Staand til je je gestrekte been voor je tot ongeveer heuphoogte en houdt het 5 seconden vast zonder achterover te leunen (lichte steun aan een stoel mag)."
+        },
+        {
+         "criterium": "Je voelt rek, geen pijn: hooguit 3 op 10 tijdens het oefenen, en de volgende ochtend is het niet erger dan normaal."
+        },
+        {
+         "criterium": "Geen tintelingen, doof gevoel of schietende pijn in je been."
+        },
+        {
+         "criterium": "Je hebt 4 weken lang minstens 4 keer per week geoefend.",
+         "meetmethode": "Kijk in Voortgang hoe vaak je de training deed."
+        }
+       ]
+      },
+      {
+       "van": "Spagaat met steun",
+       "naar": "Volledige spagaat en onderhoud",
+       "criteria": [
+        {
+         "criterium": "In de spagaat met steun zakken je heupen tot ongeveer een handbreedte (10 cm) boven de grond, bekken recht naar voren, 30 seconden ontspannen."
+        },
+        {
+         "criterium": "Je glijdt gecontroleerd in en uit de spagaat met steun, zonder te schieten of te veren."
+        },
+        {
+         "criterium": "Je voelt rek, geen pijn: hooguit 3 op 10 tijdens het oefenen, en de volgende ochtend is het niet erger dan normaal."
+        },
+        {
+         "criterium": "Geen tintelingen, doof gevoel of schietende pijn in je been."
+        },
+        {
+         "criterium": "Je hebt 5 weken lang minstens 4 keer per week geoefend.",
+         "meetmethode": "Kijk in Voortgang hoe vaak je de training deed."
+        }
+       ]
+      },
+      {
+       "van": "Volledige spagaat en onderhoud",
+       "naar": "Doel bereikt",
+       "criteria": [
+        {
+         "criterium": "Je zit in een spagaat met je heupen op de grond (of op een dun kussen), bekken recht naar voren."
+        },
+        {
+         "criterium": "Je houdt het vast door 2 à 3 keer per week te blijven oefenen."
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "mb4_spagaat_zij",
+     "naam": "Spagaat zijwaarts",
+     "doel": "Een spagaat zijwaarts vraagt lange adductoren (binnenkant bovenbeen), hamstrings en een heup die ver naar buiten kan. Kracht in de spreidstand (cossack, Copenhagen) beschermt je lies.",
+     "fases": [
+      {
+       "naam": "Binnenkant bovenbeen los",
+       "weken": "1-3",
+       "doel": "Diep in de cossack squat en rechtop in spreidzit.",
+       "oefeningen": [
+        {
+         "exercise_id": "mb3_vlinder",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 5
+        },
+        {
+         "exercise_id": "mb3_v_muur",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 5
+        },
+        {
+         "exercise_id": "mb4_adductor_rock_back",
+         "sets": 2,
+         "reps": 8,
+         "frequentie_per_week": 5,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb3_cossack",
+         "sets": 2,
+         "reps": 6,
+         "frequentie_per_week": 5,
+         "opmerking": "per kant, houvast mag"
+        }
+       ]
+      },
+      {
+       "naam": "Openen en sterker",
+       "weken": "4-7",
+       "doel": "Kikker en paardenstand, plus kracht in de adductoren.",
+       "oefeningen": [
+        {
+         "exercise_id": "mb3_kikker",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 4
+        },
+        {
+         "exercise_id": "mb4_paardenstand",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 4
+        },
+        {
+         "exercise_id": "mb4_v_muur_pnf",
+         "sets": 3,
+         "reps": 3,
+         "frequentie_per_week": 4,
+         "opmerking": "rondes"
+        },
+        {
+         "exercise_id": "mb3_pancake",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 4
+        },
+        {
+         "exercise_id": "kt_copenhagen_kort",
+         "sets": 2,
+         "reps": 8,
+         "frequentie_per_week": 4,
+         "opmerking": "per kant"
+        }
+       ]
+      },
+      {
+       "naam": "Spagaat zijwaarts met steun",
+       "weken": "8-12",
+       "doel": "Met steun steeds verder uit elkaar, met kracht in de lengte.",
+       "oefeningen": [
+        {
+         "exercise_id": "mb4_zijspagaat_steun",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 4
+        },
+        {
+         "exercise_id": "mb4_cossack_gewicht",
+         "sets": 3,
+         "reps": 6,
+         "frequentie_per_week": 4,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb4_v_muur_pnf",
+         "sets": 2,
+         "reps": 3,
+         "frequentie_per_week": 4,
+         "opmerking": "rondes"
+        },
+        {
+         "exercise_id": "mb3_kikker",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 4
+        },
+        {
+         "exercise_id": "kt_copenhagen_kort",
+         "sets": 3,
+         "reps": 8,
+         "frequentie_per_week": 4,
+         "opmerking": "per kant"
+        }
+       ]
+      },
+      {
+       "naam": "Volledige spagaat zijwaarts en onderhoud",
+       "weken": "13+",
+       "doel": "Bekken (bijna) op de grond, en vasthouden.",
+       "oefeningen": [
+        {
+         "exercise_id": "mb4_zijspagaat_steun",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 3
+        },
+        {
+         "exercise_id": "mb3_kikker",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 3
+        },
+        {
+         "exercise_id": "kt_copenhagen_kort",
+         "sets": 2,
+         "reps": 8,
+         "frequentie_per_week": 3,
+         "opmerking": "per kant"
+        }
+       ]
+      }
+     ],
+     "criteria_per_fase": [
+      {
+       "van": "Binnenkant bovenbeen los",
+       "naar": "Openen en sterker",
+       "criteria": [
+        {
+         "criterium": "Je zakt in de cossack squat diep aan beide kanten met de hiel aan de grond en het andere been gestrekt (houvast mag)."
+        },
+        {
+         "criterium": "Je zit rechtop in spreidzit met je benen minstens een rechte hoek uit elkaar, zonder handen."
+        },
+        {
+         "criterium": "Je voelt rek aan de binnenkant van je bovenbenen, geen knellend gevoel diep in de lies."
+        },
+        {
+         "criterium": "Je voelt rek, geen pijn: hooguit 3 op 10 tijdens het oefenen, en de volgende ochtend is het niet erger dan normaal."
+        },
+        {
+         "criterium": "Geen tintelingen, doof gevoel of schietende pijn in je been."
+        },
+        {
+         "criterium": "Je hebt 3 weken lang minstens 4 keer per week geoefend.",
+         "meetmethode": "Kijk in Voortgang hoe vaak je de training deed."
+        }
+       ]
+      },
+      {
+       "van": "Openen en sterker",
+       "naar": "Spagaat zijwaarts met steun",
+       "criteria": [
+        {
+         "criterium": "In de kikkerhouding staan je heupen in lijn met je knieën (niet erachter), 30 seconden ontspannen."
+        },
+        {
+         "criterium": "Je houdt de paardenstand 30 seconden vol met je dijen bijna horizontaal en je knieën boven je tenen."
+        },
+        {
+         "criterium": "Je doet de korte Copenhagen 8 keer per kant zonder pijn in de lies."
+        },
+        {
+         "criterium": "Je voelt rek, geen pijn: hooguit 3 op 10 tijdens het oefenen, en de volgende ochtend is het niet erger dan normaal."
+        },
+        {
+         "criterium": "Geen tintelingen, doof gevoel of schietende pijn in je been."
+        },
+        {
+         "criterium": "Je hebt 4 weken lang minstens 4 keer per week geoefend.",
+         "meetmethode": "Kijk in Voortgang hoe vaak je de training deed."
+        }
+       ]
+      },
+      {
+       "van": "Spagaat zijwaarts met steun",
+       "naar": "Volledige spagaat zijwaarts en onderhoud",
+       "criteria": [
+        {
+         "criterium": "Met je handen op twee stoelen of blokken schuif je je voeten zo ver uit elkaar dat je benen ongeveer 150 graden maken, knieschijven naar voren, 30 seconden ontspannen.",
+         "meetmethode": "150 graden is bijna een rechte lijn: de wijzers van de klok op 4 uur en kwart voor 9 zijn ongeveer zo ver uit elkaar."
+        },
+        {
+         "criterium": "Je doet de cossack squat met gewicht 6 keer per kant diep en gecontroleerd."
+        },
+        {
+         "criterium": "Je voelt rek, geen pijn: hooguit 3 op 10 tijdens het oefenen, en de volgende ochtend is het niet erger dan normaal."
+        },
+        {
+         "criterium": "Geen tintelingen, doof gevoel of schietende pijn in je been."
+        },
+        {
+         "criterium": "Je hebt 5 weken lang minstens 4 keer per week geoefend.",
+         "meetmethode": "Kijk in Voortgang hoe vaak je de training deed."
+        }
+       ]
+      },
+      {
+       "van": "Volledige spagaat zijwaarts en onderhoud",
+       "naar": "Doel bereikt",
+       "criteria": [
+        {
+         "criterium": "Je bekken komt (bijna) op de grond in spagaat zijwaarts, knieschijven naar voren of naar het plafond."
+        },
+        {
+         "criterium": "Je houdt het vast door 2 à 3 keer per week te blijven oefenen."
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "mb4_tenen",
+     "naam": "Tenen aantikken",
+     "doel": "Voorover buigen met gestrekte benen vraagt de hele achterkant: kuit, hamstrings, bil, rugstrekkers en een zenuw die mee kan glijden. Voelt het als stijve hamstrings, kijk dan naar de hele keten.",
+     "fases": [
+      {
+       "naam": "De hele achterkant soepel",
+       "weken": "1-3",
+       "doel": "Alle schakels van de achterkant een voor een losser.",
+       "oefeningen": [
+        {
+         "exercise_id": "mb3_kuitrek_muur",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 5,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb3_soleus_rek",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 5,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb_hamstring_stretch",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 5,
+         "opmerking": "per been"
+        },
+        {
+         "exercise_id": "mb3_figuur4",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 5,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb_child_pose",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 5
+        },
+        {
+         "exercise_id": "mb3_afrollen",
+         "sets": 2,
+         "reps": 6,
+         "frequentie_per_week": 5
+        }
+       ]
+      },
+      {
+       "naam": "Lengte onder controle",
+       "weken": "4-7",
+       "doel": "Vingertoppen op de grond, en kracht in de lengte van de achterkant.",
+       "oefeningen": [
+        {
+         "exercise_id": "mb4_hamstring_pnf",
+         "sets": 3,
+         "reps": 3,
+         "frequentie_per_week": 4,
+         "opmerking": "rondes per been"
+        },
+        {
+         "exercise_id": "kt_heup_hinge",
+         "sets": 3,
+         "reps": 8,
+         "frequentie_per_week": 4
+        },
+        {
+         "exercise_id": "kr_rdl",
+         "sets": 3,
+         "reps": 8,
+         "frequentie_per_week": 4,
+         "opmerking": "licht, tot je rek voelt in je hamstrings"
+        },
+        {
+         "exercise_id": "mb4_zittend_vooroverbuigen",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 4
+        },
+        {
+         "exercise_id": "mb3_kuitrek_muur",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 4,
+         "opmerking": "per kant"
+        },
+        {
+         "exercise_id": "mb3_afrollen",
+         "sets": 2,
+         "reps": 6,
+         "frequentie_per_week": 4
+        }
+       ]
+      },
+      {
+       "naam": "Handpalmen plat en onderhoud",
+       "weken": "8+",
+       "doel": "Handpalmen plat op de grond met gestrekte knieën, en vasthouden.",
+       "oefeningen": [
+        {
+         "exercise_id": "mb4_zittend_vooroverbuigen",
+         "sets": 3,
+         "hold_sec": 30,
+         "frequentie_per_week": 3
+        },
+        {
+         "exercise_id": "kr_rdl",
+         "sets": 3,
+         "reps": 8,
+         "frequentie_per_week": 3
+        },
+        {
+         "exercise_id": "mb3_afrollen",
+         "sets": 2,
+         "reps": 6,
+         "frequentie_per_week": 3
+        },
+        {
+         "exercise_id": "mb_hamstring_stretch",
+         "sets": 2,
+         "hold_sec": 30,
+         "frequentie_per_week": 3,
+         "opmerking": "per been"
+        }
+       ]
+      }
+     ],
+     "criteria_per_fase": [
+      {
+       "van": "De hele achterkant soepel",
+       "naar": "Lengte onder controle",
+       "criteria": [
+        {
+         "criterium": "Met licht gebogen knieën leg je je handpalmen plat op de grond."
+        },
+        {
+         "criterium": "Vinger-vloerafstand 15 cm of minder, met gestrekte knieën.",
+         "meetmethode": "Meet het bij Mobiliteit meten; dan vinkt de app dit zelf af."
+        },
+        {
+         "criterium": "Je voelt rek, geen pijn: hooguit 3 op 10 tijdens het oefenen, en de volgende ochtend is het niet erger dan normaal."
+        },
+        {
+         "criterium": "Geen tintelingen, doof gevoel of schietende pijn in je been."
+        },
+        {
+         "criterium": "Je hebt 3 weken lang minstens 5 keer per week geoefend.",
+         "meetmethode": "Kijk in Voortgang hoe vaak je de training deed."
+        }
+       ]
+      },
+      {
+       "van": "Lengte onder controle",
+       "naar": "Handpalmen plat en onderhoud",
+       "criteria": [
+        {
+         "criterium": "Je vingertoppen raken de grond met gestrekte knieën (vinger-vloerafstand 0)."
+        },
+        {
+         "criterium": "Bij de heup-hinge met de stok houd je drie contactpunten (achterhoofd, bovenrug, staartbeen) tot je romp ongeveer 45 graden voorover is."
+        },
+        {
+         "criterium": "Je voelt rek, geen pijn: hooguit 3 op 10 tijdens het oefenen, en de volgende ochtend is het niet erger dan normaal."
+        },
+        {
+         "criterium": "Geen tintelingen, doof gevoel of schietende pijn in je been."
+        },
+        {
+         "criterium": "Je hebt 4 weken lang minstens 4 keer per week geoefend.",
+         "meetmethode": "Kijk in Voortgang hoe vaak je de training deed."
+        }
+       ]
+      },
+      {
+       "van": "Handpalmen plat en onderhoud",
+       "naar": "Doel bereikt",
+       "criteria": [
+        {
+         "criterium": "Je legt je handpalmen plat op de grond met gestrekte knieën."
+        },
+        {
+         "criterium": "Zittend reik je met gestrekt been tot voorbij je tenen (stoel-zit-en-reiktest 0 of meer)."
+        },
+        {
+         "criterium": "Je houdt het vast door 2 à 3 keer per week te blijven oefenen."
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ }
+}
