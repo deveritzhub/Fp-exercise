@@ -133,3 +133,28 @@ describe('ticking off criteria', () => {
     expect((await (await login('therapistA')).get('/patient/flex-checks')).status).toBe(403);
   });
 });
+
+describe('the therapist’s flexibility exam', () => {
+  it('has a clinical name and reading for every test and limiter', async () => {
+    const { EXAM, LIMITER_CLINICAL } = await import('../../shared/flexibilityExam');
+    for (const [goal, qs] of Object.entries(CHECKS)) {
+      for (const q of qs) expect(EXAM[goal as keyof typeof EXAM][q.key], `${goal}.${q.key}`).toBeTruthy();
+    }
+    for (const k of Object.keys(LIMITERS)) expect(LIMITER_CLINICAL[k as keyof typeof LIMITER_CLINICAL], k).toBeTruthy();
+  });
+
+  it('finds library exercises by their FP key for staff only, the practice copy first', async () => {
+    await seedDb();
+    const staff = await login('therapistA');
+    const any = (await staff.get('/exercises?pageSize=1')).body;
+    const sample = (any.items ?? any)[0];
+    expect((await staff.get('/exercises/by-source?keys=')).body.items).toEqual([]);
+    // Keys with odd characters are ignored, not passed on.
+    expect((await staff.get(`/exercises/by-source?keys=${encodeURIComponent("x'); drop table exercises;--")}`)).body.items).toEqual([]);
+    if (sample?.sourceKey) {
+      const r = (await staff.get(`/exercises/by-source?keys=${sample.sourceKey}`)).body.items;
+      expect(r[0]).toMatchObject({ sourceKey: sample.sourceKey });
+    }
+    expect((await (await login('patientA')).get('/exercises/by-source?keys=mb3_vlinder')).status).toBe(403);
+  });
+});

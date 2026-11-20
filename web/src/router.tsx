@@ -30,6 +30,7 @@ const PatientDetailPage = named(() => import('@/pages/therapist/PatientDetailPag
 const ExercisesPage = named(() => import('@/pages/therapist/ExercisesPage'), 'ExercisesPage');
 const TherapistAtlasPage = named(() => import('@/pages/therapist/TherapistAtlasPage'), 'TherapistAtlasPage');
 const ComplaintGuidePage = named(() => import('@/pages/therapist/ComplaintGuidePage'), 'ComplaintGuidePage');
+const FlexExamPage = named(() => import('@/pages/therapist/FlexExamPage'), 'FlexExamPage');
 const ComplaintReviewPage = named(() => import('@/pages/therapist/ComplaintReviewPage'), 'ComplaintReviewPage');
 const ComplaintHandoutPage = named(() => import('@/pages/therapist/ComplaintHandoutPage'), 'ComplaintHandoutPage');
 const ExerciseDetailPage = named(() => import('@/pages/therapist/ExerciseDetailPage'), 'ExerciseDetailPage');
@@ -167,6 +168,7 @@ export const router = createBrowserRouter([
           { path: 'oefeningen', element: <S><ExercisesPage /></S> },
           { path: 'spieren', element: <S><TherapistAtlasPage /></S> },
           { path: 'klachtwijzer', element: <S><RequireClinical><ComplaintGuidePage /></RequireClinical></S> },
+          { path: 'lenigheid', element: <S><FlexExamPage /></S> },
           { path: 'klachtwijzer/controle', element: <S><RequireClinical><ComplaintReviewPage /></RequireClinical></S> },
           { path: 'klachtwijzer/uitleg', element: <S><RequireClinical><ComplaintHandoutPage /></RequireClinical></S> },
           { path: 'oefeningen/nieuw', element: <S><ExerciseFormPage /></S> },

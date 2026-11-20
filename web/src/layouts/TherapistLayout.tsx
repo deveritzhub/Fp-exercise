@@ -2,7 +2,7 @@ import { isClinical } from '@shared/accountKind';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { TestBanner } from '@/components/app/TestBanner';
 import { useEffect, useState } from 'react';
-import { BookOpen, Brain, Building2, ChevronsUpDown, LayoutDashboard, LogOut, Menu, Plus, Search, Settings, Users, Layers, X, UserRound, Check, Compass, Keyboard, Tent } from 'lucide-react';
+import { BookOpen, Brain, Building2, ChevronsUpDown, LayoutDashboard, LogOut, Menu, Plus, Search, Settings, Users, Layers, X, UserRound, Check, Compass, Keyboard, Tent, Stethoscope } from 'lucide-react';
 import { Logo, LocaleSwitch } from '@/components/app/Brand';
 import { Avatar, Popover, MenuItem, Button, Dialog } from '@/components/ui';
 import { useI18n, useAccountKind } from '@/lib/i18n';
@@ -60,6 +60,7 @@ export function TherapistLayout() {
     // The complaint guide is clinical: only for physiotherapy practices.
     ...(isClinical(practice.kind) ? [{ to: '/app/klachtwijzer', icon: Compass, label: t('Klachtwijzer', 'Complaint guide') }] : []),
     { to: '/app/spieren', icon: Brain, label: t('Spierenatlas', 'Muscle atlas') },
+    { to: '/app/lenigheid', icon: Stethoscope, label: t('Lenigheidsonderzoek', 'Flexibility exam') },
     { to: '/app/programmas', icon: Layers, label: t("Programma's & sjablonen", 'Programmes & templates') },
     { to: '/app/praktijk', icon: Building2, label: t('Praktijk', 'Practice') },
   ];

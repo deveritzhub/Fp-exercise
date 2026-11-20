@@ -142,7 +142,14 @@ export function PatientDetailPage() {
 
       {tab === 'modules' && <PatientModulesTab patientId={pt.id} />}
       {tab === 'kracht' && <GymLog base={`/patients/${pt.id}`} staff />}
-      {tab === 'mobiliteit' && <MobilityTests base={`/patients/${pt.id}`} staff />}
+      {tab === 'mobiliteit' && (
+        <div className="space-y-4">
+          <Link to={`/app/lenigheid?patient=${pt.id}`} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-line bg-white px-3 text-[14.5px] font-semibold text-accent hover:border-accent" data-testid="open-flex-exam">
+            {t('Lenigheid onderzoeken: wat beperkt de beweging?', 'Examine flexibility: what limits the movement?')}
+          </Link>
+          <MobilityTests base={`/patients/${pt.id}`} staff />
+        </div>
+      )}
       {tab === 'overzicht' && <Overview patientId={id} progress={prog.data} programs={pt.programs} />}
       {tab === 'programmas' && <Programs pt={pt} />}
       {tab === 'vkb' && clinical && <AclCriteriaPanel patientId={id} />}

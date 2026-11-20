@@ -101,6 +101,8 @@ export function ComplaintGuidePage() {
 
       <p className="text-[13px] text-ink-600">
         <Link to="/app/klachtwijzer/controle" className="font-medium text-accent hover:underline">{t('Alle teksten nalopen (klinische controle)', 'Review all texts (clinical review)')}</Link>
+        {' · '}
+        <Link to={`/app/lenigheid${patient ? `?patient=${patient}` : ''}`} className="font-medium text-accent hover:underline">{t('Lenigheidsonderzoek: wat beperkt tenen aantikken, pancake of spagaat?', 'Flexibility exam: what limits toe touch, pancake or splits?')}</Link>
       </p>
 
       {!region && (

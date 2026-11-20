@@ -52,6 +52,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       { id: 'n-dash', group: t('Ga naar', 'Go to'), label: t('Dashboard', 'Dashboard'), icon: <LayoutDashboard className="h-4 w-4" />, to: '/app' },
       { id: 'n-patients', group: t('Ga naar', 'Go to'), label: t('Patiënten', 'Patients'), icon: <Users className="h-4 w-4" />, to: '/app/patienten' },
       ...(clinical ? [{ id: 'n-guide', group: t('Ga naar', 'Go to'), label: t('Klachtwijzer', 'Complaint guide'), icon: <Compass className="h-4 w-4" />, to: '/app/klachtwijzer' }] : []),
+      { id: 'n-flex', group: t('Ga naar', 'Go to'), label: t('Lenigheidsonderzoek', 'Flexibility exam'), icon: <Compass className="h-4 w-4" />, to: '/app/lenigheid' },
       { id: 'n-templates', group: t('Ga naar', 'Go to'), label: t('Sjablonen', 'Templates'), icon: <Layers className="h-4 w-4" />, to: '/app/programmas' },
     ];
     const ql = dq.toLowerCase();

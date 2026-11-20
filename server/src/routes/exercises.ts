@@ -210,6 +210,21 @@ async function loadExercise(tx: Tx, id: string, includeNotes: boolean, practiceI
  * and a practice "Dead bug", or "Bilbrug" and "Bekkenbrug" = "Glute bridge"). Shown side by side
  * with their differences; nothing is merged or deleted.
  */
+/** Exercises by FP library key (for tools that propose library exercises, e.g. the flexibility exam). The practice's own copy wins. */
+exercises.get('/by-source', async (c) => {
+  const { user } = requireStaff(c);
+  const keys = [...new Set((c.req.query('keys') ?? '').split(',').filter((k) => /^[a-z0-9_]{2,60}$/.test(k)))].slice(0, 60);
+  if (!keys.length) return c.json({ items: [] });
+  const rows = await withUser(user.id, async (tx) =>
+    (await tx.query(
+      `SELECT DISTINCT ON (source_key) id, source_key, name_nl, name_en FROM exercises
+        WHERE source_key = ANY($1) AND archived_at IS NULL ORDER BY source_key, practice_id NULLS LAST`,
+      [keys],
+    )).rows,
+  );
+  return c.json({ items: rows.map((r) => ({ id: r.id, sourceKey: r.source_key, nameNl: r.name_nl, nameEn: r.name_en })) });
+});
+
 exercises.get('/:id/variants', async (c) => {
   const user = requireUser(c);
   const id = parse(uuidParam, c.req.param('id'));
