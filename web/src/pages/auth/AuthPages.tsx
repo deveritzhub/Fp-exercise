@@ -1,7 +1,7 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Mail, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Fingerprint, Mail, ShieldCheck } from 'lucide-react';
 import { CodeInput, MfaSetup } from '@/components/app/Mfa';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { Button, Input, Notice, Spinner, useToast } from '@/components/ui';
@@ -11,6 +11,8 @@ import { homePathFor, useLogout, useSession } from '@/lib/session';
 import { useDocumentMeta } from '@/lib/meta';
 import type { SessionUser } from '@/lib/types';
 import { SocialButtons } from './SocialLogin';
+import { addPasskey, declinePasskeyOffer, deviceName, passkeyHere, passkeyLogin, shouldOfferPasskey } from './passkeyDevice';
+import { browserSupportsWebAuthnAutofill } from '@simplewebauthn/browser';
 import { useAuthOptions } from './SignupPage';
 
 export const DEMO_ACCOUNTS = [
@@ -67,6 +69,39 @@ export function LoginPage() {
     if (user.locale !== locale) setLocale(user.locale);
     nav(safeNext(params.get('next')) ?? homePathFor(user), { replace: true });
   };
+  // After a login with a password: once per device, offer to log in with the fingerprint next time.
+  const [offer, setOffer] = useState<SessionUser | null>(null);
+  const [adding, setAdding] = useState(false);
+  const afterPassword = async (user: SessionUser) => {
+    if (await shouldOfferPasskey()) setOffer(user);
+    else signedIn(user);
+  };
+  const hasPasskey = passkeyHere() && !!opts.data?.passkeys;
+  const [pkBusy, setPkBusy] = useState(false);
+  const loginWithPasskey = async () => {
+    setPkBusy(true);
+    setError(null);
+    try {
+      signedIn(await passkeyLogin());
+    } catch (e) {
+      if ((e as Error)?.name !== 'NotAllowedError') setError(describeError(e, locale));
+    } finally {
+      setPkBusy(false);
+    }
+  };
+  // The passkey also shows in the email field's suggestions (where the browser supports that).
+  useEffect(() => {
+    if (!opts.data?.passkeys || mfaToken) return;
+    let live = true;
+    browserSupportsWebAuthnAutofill()
+      .then((ok) => (ok && live ? passkeyLogin(true) : null))
+      .then((u) => u && live && signedIn(u))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!opts.data?.passkeys, !!mfaToken]);
 
   const submit = async (e?: FormEvent, creds?: { email: string; password: string }) => {
     e?.preventDefault();
@@ -77,7 +112,7 @@ export function LoginPage() {
       if ('mfaToken' in r) {
         setMfaToken(r.mfaToken);
         setCode('');
-      } else signedIn(r.user);
+      } else await afterPassword(r.user);
     } catch (err) {
       setError(describeError(err, locale));
     } finally {
@@ -94,7 +129,7 @@ export function LoginPage() {
       if (r.recoveryCodesLeft !== undefined) {
         toast(t(`Herstelcode gebruikt — nog ${r.recoveryCodesLeft} over. Maak nieuwe codes via Account.`, `Recovery code used — ${r.recoveryCodesLeft} left. Create new codes under Account.`), r.recoveryCodesLeft < 3 ? 'bad' : undefined);
       }
-      signedIn(r.user);
+      await afterPassword(r.user);
     } catch (err) {
       const c = err instanceof ApiError ? err.code : undefined;
       if (c === 'mfa_session_expired') setMfaToken(null);
@@ -104,6 +139,33 @@ export function LoginPage() {
       setBusy(false);
     }
   };
+
+  if (offer) {
+    const done = () => signedIn(offer);
+    return (
+      <AuthLayout title={t('Volgende keer sneller inloggen?', 'Log in faster next time?')} description={t('Log op dit apparaat in met je vingerafdruk of Face ID, zonder wachtwoord. Je blijft ook gewoon ingelogd zolang je de app gebruikt.', 'Log in on this device with your fingerprint or Face ID, without a password. You also stay logged in as long as you use the app.')}>
+        <div className="space-y-3" data-testid="passkey-offer">
+          <div className="flex justify-center"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-accent-soft text-accent"><Fingerprint className="h-7 w-7" aria-hidden /></span></div>
+          {error && <Notice tone="bad">{error}</Notice>}
+          <Button size="lg" className="w-full" loading={adding} icon={<Fingerprint className="h-5 w-5" aria-hidden />} onClick={async () => {
+            setAdding(true);
+            setError(null);
+            try {
+              await addPasskey(deviceName());
+              toast(t('Klaar: log de volgende keer in met je vingerafdruk of Face ID.', 'Done: next time, log in with your fingerprint or Face ID.'), 'ok');
+              done();
+            } catch (e) {
+              if ((e as Error)?.name !== 'NotAllowedError') setError(describeError(e, locale));
+            } finally {
+              setAdding(false);
+            }
+          }}>{t('Ja, zet aan', 'Yes, turn it on')}</Button>
+          <Button size="lg" variant="secondary" className="w-full" disabled={adding} onClick={() => { declinePasskeyOffer(); done(); }}>{t('Nu niet', 'Not now')}</Button>
+          <p className="text-center text-[13px] text-ink-600">{t('Later aanzetten kan via Account → Inlogmethoden.', 'You can turn it on later under Account → Login methods.')}</p>
+        </div>
+      </AuthLayout>
+    );
+  }
 
   if (mfaToken) {
     return (
@@ -150,6 +212,14 @@ export function LoginPage() {
         </>
       }
     >
+      {hasPasskey && (
+        <div className="mb-5 space-y-3">
+          <Button size="lg" className="w-full" loading={pkBusy} icon={<Fingerprint className="h-5 w-5" aria-hidden />} onClick={loginWithPasskey} data-testid="passkey-first">
+            {t('Inloggen met vingerafdruk of Face ID', 'Log in with fingerprint or Face ID')}
+          </Button>
+          <div className="flex items-center gap-3 text-[13px] text-ink-500" aria-hidden><span className="h-px flex-1 bg-line" />{t('of met je wachtwoord', 'or with your password')}<span className="h-px flex-1 bg-line" /></div>
+        </div>
+      )}
       <form onSubmit={submit} className="space-y-4" noValidate>
         {params.get('reden') === 'inactief' && !error && (
           <Notice tone="info" title={t('Je bent automatisch uitgelogd', 'You were logged out automatically')}>
@@ -158,14 +228,14 @@ export function LoginPage() {
         )}
         {error && <Notice tone="bad">{error}</Notice>}
         {socialError && !error && <Notice tone="bad">{errorMessage(socialError, locale)}</Notice>}
-        <Input label={t('E-mailadres', 'Email address')} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input label={t('E-mailadres', 'Email address')} type="email" autoComplete="username webauthn" required value={email} onChange={(e) => setEmail(e.target.value)} />
         <Input label={t('Wachtwoord', 'Password')} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         <div className="flex justify-end">
           <Link to="/wachtwoord-vergeten" className="text-[13px] font-medium text-accent hover:underline">{t('Wachtwoord vergeten?', 'Forgot password?')}</Link>
         </div>
         <Button type="submit" size="lg" className="w-full" loading={busy}>{t('Inloggen', 'Log in')}</Button>
       </form>
-      <SocialButtons intent="login" next={safeNext(params.get('next'))} onPasskeyLogin={signedIn} />
+      <SocialButtons intent="login" next={safeNext(params.get('next'))} onPasskeyLogin={signedIn} passkeyShown={hasPasskey} />
       {demoVisible && (
         <div className="mt-6 border-t border-line pt-5">
           <p className="mb-2 text-[12.5px] font-medium text-ink-500">{t('Demo-accounts (synthetische gegevens)', 'Demo accounts (synthetic data)')}</p>

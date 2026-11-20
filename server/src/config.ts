@@ -19,7 +19,12 @@ export const config = {
   authDatabaseUrl: required('DATABASE_AUTH_URL'),
   storageDir: path.resolve(process.env.STORAGE_DIR ?? './storage'),
   mailTransport: process.env.MAIL_TRANSPORT ?? 'outbox',
-  sessionTtlHours: Number(process.env.SESSION_TTL_HOURS ?? 12),
+  /**
+   * How long someone stays logged in, in days. Each visit starts the period again, so a patient who
+   * opens the app now and then never has to log in again. Staff keep the idle lock below on top.
+   */
+  sessionDays: Number(process.env.SESSION_DAYS ?? 90),
+  staffSessionDays: Number(process.env.STAFF_SESSION_DAYS ?? 30),
   /** Staff (therapists, admins) are logged out after this many minutes without activity; 0 = off. */
   staffIdleMinutes: Number(process.env.STAFF_IDLE_MINUTES ?? 30),
   /** Public demo deployment with synthetic data: invite links are shown on screen because no real e-mail is sent. */

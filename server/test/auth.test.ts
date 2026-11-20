@@ -148,6 +148,26 @@ describe('idle timeout (staff)', () => {
     expect(Number(after.rows[0].idle)).toBeLessThan(1);
   });
 
+  it('a session is extended on every visit: 90 days for patients, 30 for staff', async () => {
+    const { createHash } = await import('node:crypto');
+    const daysLeft = async (c: Client) => {
+      const token = c.cookie!.split(';')[0].split('=')[1];
+      const { rows } = await authPool.query(`SELECT extract(epoch FROM expires_at - now()) / 86400 AS d FROM auth_sessions WHERE token_hash = $1`, [createHash('sha256').update(token).digest('hex')]);
+      return Number(rows[0].d);
+    };
+    const p = await login('patientA');
+    expect(await daysLeft(p)).toBeGreaterThan(89.9);
+    const token = p.cookie!.split(';')[0].split('=')[1];
+    await authPool.query(`UPDATE auth_sessions SET expires_at = now() + interval '2 days' WHERE token_hash = $1`, [createHash('sha256').update(token).digest('hex')]);
+    await p.get('/me/notifications', { 'x-fp-background': '1' });
+    expect(await daysLeft(p)).toBeLessThan(2.1);
+    expect((await p.get('/auth/me')).body.user).not.toBeNull();
+    expect(await daysLeft(p)).toBeGreaterThan(89.9);
+    const s = await login('therapistA');
+    expect(await daysLeft(s)).toBeGreaterThan(29.9);
+    expect(await daysLeft(s)).toBeLessThan(30.1);
+  });
+
   it('patients have no idle limit (the app on their own phone)', async () => {
     const c = await login('patientA');
     expect((await c.get('/auth/me')).body.user.idleMinutes).toBeNull();
