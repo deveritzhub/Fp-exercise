@@ -128,3 +128,82 @@ export function doorstepDecor(seed:number,textures:Textures={}){
   }
   return group;
 }
+
+/**
+ * The fountain in the middle of the square: a wide octagonal basin, a column with a bowl that spills
+ * over, and the water moving (`tick` each frame; nothing moves with reduced motion). Fits a 2 m circle.
+ */
+export function squareFountain(textures:Textures={}){
+  const group=new THREE.Group();group.name='square-fountain';
+  const stone=STONE.map(c=>material(c,{map:textures.stone??null}));
+  const water=material(0x3f8f93,{roughness:.12,metalness:.15,transparent:true,opacity:.9});
+  // The basin: eight stone sides round a pool.
+  put(group,'fountain-step',new THREE.CylinderGeometry(2.05,2.15,.12,8),stone[2],0,.06,0).rotation.y=Math.PI/8;
+  const rim=put(group,'fountain-rim',new THREE.CylinderGeometry(1.86,1.9,.5,8,1,true),stone[0],0,.37,0);
+  rim.rotation.y=Math.PI/8;(rim.material as THREE.MeshStandardMaterial).side=THREE.DoubleSide;
+  const top=put(group,'fountain-coping',rimGeometry(1.98,1.68,.1),stone[1],0,.6,0);top.rotation.y=Math.PI/8;
+  const pool=put(group,'fountain-pool',new THREE.CircleGeometry(1.75,40),water,0,.5,0);pool.rotation.x=-Math.PI/2;pool.castShadow=false;
+  // The column and the bowl, with a little crown on top.
+  put(group,'fountain-column',new THREE.CylinderGeometry(.18,.26,1.3,12),stone[1],0,1.1,0);
+  put(group,'fountain-bowl',new THREE.CylinderGeometry(.75,.28,.24,20),stone[0],0,1.82,0);
+  const bowlWater=put(group,'fountain-bowl-water',new THREE.CircleGeometry(.66,28),water,0,1.93,0);bowlWater.rotation.x=-Math.PI/2;bowlWater.castShadow=false;
+  put(group,'fountain-spire',new THREE.CylinderGeometry(.06,.12,.6,10),stone[1],0,2.22,0);
+  put(group,'fountain-knob',new THREE.SphereGeometry(.13,14,10),material(0xd9b45a,{metalness:.6,roughness:.35}),0,2.6,0);
+  // Water falling from the bowl's edge: thin see-through sheets that shimmer.
+  const fall=material(0xbfe8ea,{transparent:true,opacity:.42,depthWrite:false,side:THREE.DoubleSide,roughness:.1});
+  const sheet=new THREE.Mesh(new THREE.CylinderGeometry(.74,.92,1.36,28,1,true),fall);
+  sheet.position.y=1.18;sheet.castShadow=false;group.add(sheet);
+  const jet=new THREE.Mesh(new THREE.CylinderGeometry(.025,.05,.5,8,1,true),fall);
+  jet.position.y=2.95;jet.castShadow=false;group.add(jet);
+  const ripples:THREE.Mesh[]=[];
+  const glint=material(0xd4f2ee,{transparent:true,opacity:.35,depthWrite:false});
+  for(let i=0;i<3;i++){
+    const ring=new THREE.Mesh(new THREE.RingGeometry(.9,.93,40),glint.clone());
+    ring.rotation.x=-Math.PI/2;ring.position.y=.51;group.add(ring);ripples.push(ring);
+  }
+  const tick=(t:number)=>{
+    (fall as THREE.MeshStandardMaterial).opacity=.36+Math.sin(t*6)*.06;
+    jet.scale.y=1+Math.sin(t*9)*.12;
+    ripples.forEach((r,i)=>{
+      const u=((t*.45+i/3)%1);
+      r.scale.setScalar(1+u*.9);
+      (r.material as THREE.MeshStandardMaterial).opacity=.4*(1-u);
+    });
+  };
+  return {group,tick};
+}
+
+/** A round stone planter full of flowers, for the edge of the square. */
+export function flowerPlanter(seed:number){
+  const group=new THREE.Group();
+  put(group,'planter',new THREE.CylinderGeometry(.62,.55,.5,14),material(STONE[seed%3]),0,.25,0);
+  put(group,'planter-soil',new THREE.CylinderGeometry(.56,.56,.04,14),material(0x4a3524),0,.5,0);
+  const colours=[0xe04f6a,0xf2c14e,0xf28c38,0xb26cd9,0xffffff,0x5c8ff2];
+  let a=seed*1.7;
+  for(let i=0;i<16;i++){
+    a+=2.399;
+    const r=.12+((i*7+seed)%10)/10*.38;
+    const x=Math.cos(a)*r, z=Math.sin(a)*r;
+    put(group,'planter-stem',new THREE.CylinderGeometry(.012,.012,.28,4),material(0x3f7a35),x,.64,z).castShadow=false;
+    put(group,'planter-flower',new THREE.SphereGeometry(.075,8,6),material(colours[(i+seed)%colours.length],{roughness:.6}),x,.8,z).castShadow=false;
+  }
+  put(group,'planter-leaves',new THREE.SphereGeometry(.42,10,8),material(0x4f8a3c),0,.56,0).scale.set(1,.45,1);
+  return group;
+}
+
+/** A bird: a small body with two wings that beat. `flap` 0..1 is the wing beat. */
+export function birdModel(color:number){
+  const group=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.SphereGeometry(.12,8,6),material(color,{roughness:.7}));
+  body.scale.set(.7,.6,1.6);group.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),material(color));head.position.set(0,.04,.19);group.add(head);
+  const beak=new THREE.Mesh(new THREE.ConeGeometry(.025,.07,5),material(0xe0a030));beak.rotation.x=Math.PI/2;beak.position.set(0,.03,.27);group.add(beak);
+  const wingGeo=new THREE.PlaneGeometry(.42,.16);wingGeo.translate(.21,0,0);
+  const wingMat=material(color,{side:THREE.DoubleSide,roughness:.8});
+  const left=new THREE.Mesh(wingGeo,wingMat);const right=new THREE.Mesh(wingGeo,wingMat);
+  left.rotation.x=right.rotation.x=-Math.PI/2;right.scale.x=-1;
+  const lw=new THREE.Group();lw.add(left);lw.position.x=.05;group.add(lw);
+  const rw=new THREE.Group();rw.add(right);rw.position.x=-.05;group.add(rw);
+  const tail=new THREE.Mesh(new THREE.PlaneGeometry(.12,.16),wingMat);tail.rotation.x=-Math.PI/2;tail.position.z=-.22;group.add(tail);
+  return {group,flap:(u:number)=>{const a=Math.sin(u*Math.PI*2)*.9;lw.rotation.z=a;rw.rotation.z=-a;}};
+}

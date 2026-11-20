@@ -21,8 +21,10 @@ export const ROOM = {
   exit: at(3.1, -2.3),
   entry: at(2.5, -1.6),
   coach: at(1.75, -2.45),
+  /** In front of the desk with the practice computer (under the whiteboard, west wall). */
+  computer: at(-2.55, 0.5),
   obstacles: [
-    [-1.6, -2.75, 0.85], [-3.45, -2.7, 0.6], [-2.75, -1.95, 0.5], [2.6, -2.95, 0.45], [2.9, 0.5, 0.65], [3.35, 2.75, 0.7], [2.5, 1.9, 0.55],
+    [-1.6, -2.75, 0.85], [-3.45, -2.7, 0.6], [-3.45, 0.5, 0.75], [-2.75, -1.95, 0.5], [2.6, -2.95, 0.45], [2.9, 0.5, 0.65], [3.35, 2.75, 0.7], [2.5, 1.9, 0.55],
   ].map(([x, z, r]): Obstacle => ({ ...at(x, z), r })),
 } as const;
 
@@ -166,6 +168,40 @@ export function practiceBuilding(name: string) {
   return g;
 }
 
+/** The practice computer's screen: the programme builder, as a little picture. */
+function deskScreen() {
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 154;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#f4f2ee';
+  g.fillRect(0, 0, 256, 154);
+  g.fillStyle = '#1c2f28';
+  g.fillRect(0, 0, 256, 22);
+  g.fillStyle = '#e4bc63';
+  g.font = 'bold 13px sans-serif';
+  g.fillText('FP Flow · Oefenschema', 8, 15);
+  g.fillStyle = '#2d4a3e';
+  g.fillRect(0, 22, 52, 132);
+  for (let i = 0; i < 5; i++) {
+    g.fillStyle = i === 1 ? '#e4bc63' : '#5f7a6e';
+    g.fillRect(8, 34 + i * 20, 36, 8);
+  }
+  for (let i = 0; i < 4; i++) {
+    g.fillStyle = '#ffffff';
+    g.fillRect(62, 32 + i * 30, 184, 24);
+    g.fillStyle = '#c99a62';
+    g.fillRect(68, 37 + i * 30, 18, 14);
+    g.fillStyle = '#3a3f42';
+    g.fillRect(92, 38 + i * 30, 90 - i * 8, 5);
+    g.fillStyle = '#9aa3a8';
+    g.fillRect(92, 46 + i * 30, 60, 4);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 export type RoomWall = { group: THREE.Group; point: THREE.Vector3; normal: THREE.Vector3 };
 
 /** The exercise room. Walls are separate, so the one between the camera and the room can be left out. */
@@ -260,6 +296,22 @@ export function practiceRoom(tv: THREE.Texture, opts: { mirrors?: boolean } = {}
   w.box(0.04, 1.75, 0.64, WHITE, -3.98, 1.25, -0.8);
   w.box(0.05, 1.65, 0.56, 0xcfd8dc, -3.975, 1.25, -0.8, mirror);
   glassAt(walls[3].group, 0.52, 1.61, -3.945, 1.25, -0.8, Math.PI / 2);
+
+  // The desk under the whiteboard: the practice computer, keyboard, mouse and a chair.
+  room.box(0.7, 0.04, 1.3, 0xd8c3a0, -3.5, 0.74, 0.5);
+  for (const [dx, dz] of [[-0.3, -0.6], [0.3, -0.6], [-0.3, 0.6], [0.3, 0.6]]) room.box(0.04, 0.72, 0.04, 0x3a3f42, -3.5 + dx, 0.36, 0.5 + dz);
+  room.box(0.05, 0.42, 0.66, BLACK, -3.72, 1.12, 0.5);
+  const monitor = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.36), new THREE.MeshBasicMaterial({ map: deskScreen(), toneMapped: false }));
+  monitor.position.set(-3.69, 1.12, 0.5);
+  monitor.rotation.y = Math.PI / 2;
+  group.add(monitor);
+  room.box(0.08, 0.2, 0.06, BLACK, -3.74, 0.86, 0.5);
+  room.box(0.18, 0.02, 0.2, BLACK, -3.72, 0.77, 0.5);
+  room.box(0.16, 0.02, 0.44, 0x2a2c2b, -3.35, 0.77, 0.5);
+  room.box(0.08, 0.025, 0.05, 0x2a2c2b, -3.36, 0.77, 0.9);
+  room.cyl(0.21, 0.06, 0x2d4a3e, -2.85, 0.48, 0.5);
+  room.cyl(0.03, 0.4, 0x3a3f42, -2.85, 0.25, 0.5);
+  room.box(0.06, 0.4, 0.4, 0x2d4a3e, -2.66, 0.75, 0.5);
 
   // On the floor. Half rack with the bar, in front of the mirror.
   const rack = powerRack({ bench: false });

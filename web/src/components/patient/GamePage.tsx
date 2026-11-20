@@ -22,7 +22,7 @@ export const closeGameFrame = () => {
  * building opens (nutrition, the mobility measurement, the muscle atlas...). The page runs in a frame
  * without the app's header and tabs; closing it returns to the game where the hero stood.
  */
-export function GamePage({ href, onClose }: { href: string; onClose: () => void }) {
+export function GamePage({ href, onClose, wide = false }: { href: string; onClose: () => void; /** As wide as the screen allows (the practice computer's pages). */ wide?: boolean }) {
   const { t } = useI18n();
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
@@ -39,7 +39,7 @@ export function GamePage({ href, onClose }: { href: string; onClose: () => void 
   }, [onClose]);
   return (
     <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/55" role="dialog" aria-modal="true" aria-label={t('Pagina in het spel', 'Page in the game')} data-testid="game-page">
-      <div className="flex h-[94dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-2xl border border-[#e4bc63] bg-canvas shadow-lift">
+      <div className={`flex h-[94dvh] w-full ${wide ? 'max-w-6xl' : 'max-w-xl'} flex-col overflow-hidden rounded-t-2xl border border-[#e4bc63] bg-canvas shadow-lift`}>
         <button type="button" onClick={onClose} data-testid="game-page-close"
           className="flex min-h-[52px] shrink-0 items-center gap-2 border-b border-[#e4bc63] bg-[#141c18] px-4 text-left text-[15px] font-semibold text-[#f6e2a6]">
           <ArrowLeft className="h-4 w-4" aria-hidden />{t('Terug naar het spel', 'Back to the game')}

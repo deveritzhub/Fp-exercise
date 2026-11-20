@@ -4,7 +4,8 @@ import { sayingByKey } from '@shared/live';
 import { DEFAULT_LOOK as DEFAULT_FRIEND_LOOK } from '@shared/hero';
 import { creature, habitat, pond } from './creatures3d';
 import { mergeStatic } from './mergeStatic';
-import { doorstepDecor, villageWell } from './townScenery';
+import { birdModel, doorstepDecor, flowerPlanter, squareFountain, villageWell } from './townScenery';
+import { PETS } from '@shared/pets';
 import { filmLook } from './filmLook';
 import { rideModel, type RideModel } from './rides3d';
 import { petModel, type PetModel } from './pets3d';
@@ -47,7 +48,11 @@ const isDoor = (k: string) => k.startsWith('door:');
 const doorTo = (k: string) => (k === HALL_DOOR ? UPSTAIRS_KEY : k.slice(5));
 /** The well on the square: a place to drink. */
 export const WELL_KEY = 'well';
-const WELL_SPOT: Vec = { x: 1.3, z: 0.4 };
+/** The practice computer (the therapist's world): making and giving exercise programmes. */
+export const COMPUTER_KEY = 'computer';
+const WELL_SPOT_OLD: Vec = { x: 1.3, z: 0.4 };
+/** In the town the well stands by the market, south of the square; the fountain is in the middle. */
+const TOWN_WELL: Vec = { x: 2.9, z: 8.4 };
 /** Inside a house: the board with that house's programme (`in:kracht`, `in:mobiliteit`). */
 export const boardKey = (house: string) => `in:${house}`;
 /** The patient's own home: outside in the village, and the room inside (`in:home` is its furnishing table). */
@@ -94,6 +99,8 @@ type Props = {
   people?: boolean;
   /** A room to look into another home: `use('visit:<building key>')` goes in, furnished with `homeItems`. */
   visitRoom?: boolean;
+  /** The practice computer by the whiteboard can be walked to (the therapist's world). */
+  computer?: boolean;
   tvLabel: string;
   /** What the TV in the gym shows: a heading and today's exercises. */
   tvTitle: string;
@@ -790,7 +797,7 @@ const LIGHT_FILE: Record<string, string> = { courage: 'moed', neutrality: 'neutr
 /** Below this zoom the view is first person: through the hero's eyes. */
 const FIRST_PERSON_ZOOM = 0.38;
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, shrines, glow = false, ride = null, pet = null, startAt = null, belt = null, api, track, stick, friends, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, shrines, glow = false, ride = null, pet = null, startAt = null, belt = null, api, track, stick, friends, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, computer = false, className }: Props) {
   const { t, locale } = useI18n();
   const coachName = coachLabel ?? STAFF_NAMES.practice;
   const host = useRef<HTMLDivElement>(null);
@@ -992,7 +999,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       return k * valley * (1.6 + 3.4 * (0.5 + 0.5 * Math.sin(x * 0.13 + 1.7) * Math.cos(z * 0.11 + 0.4)) + 1.1 * Math.sin(x * 0.31 + z * 0.27));
     };
 
-    // Well on the square.
+    // The well: on the old square, or in the town by the market (the square has the fountain).
+    const WELL_AT = plan ? TOWN_WELL : { x: 0, z: 0 };
+    const WELL_SPOT: Vec = plan ? { x: TOWN_WELL.x - 1.15, z: TOWN_WELL.z - 0.35 } : WELL_SPOT_OLD;
     const well3d = plan
       ? villageWell({ wood: painted('wood'), stone: painted('stone') })
       : new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.6, 10), mat(0x8d8a82));
@@ -1003,8 +1012,20 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       wellWater.position.y = 0.6;
       scene.add(wellWater);
     }
+    well3d.position.x = WELL_AT.x;
+    well3d.position.z = WELL_AT.z;
     scene.add(well3d);
-    obstacles.push({ x: 0, z: 0, r: 0.95 });
+    obstacles.push({ x: WELL_AT.x, z: WELL_AT.z, r: 0.95 });
+    // The square of the town: a fountain in the middle, benches round it, flowers in planters.
+    let fountainTick: ((t: number) => void) | null = null;
+    if (plan) {
+      const fountain = squareFountain({ stone: painted('stone') });
+      fountain.group.scale.setScalar(0.85);
+      fountain.group.traverse((o) => { if ((o as THREE.Mesh).isMesh) (o as THREE.Mesh).castShadow = true; });
+      scene.add(fountain.group);
+      fountainTick = fountain.tick;
+      obstacles.push({ x: 0, z: 0, r: 1.85 });
+    }
     // Creatures: each at its spot, with a place beside it to stand and strike from.
     const mobs: { key: string; kind: CreatureKind; g: THREE.Group; door: Vec; hurtAt: number; lungeAt: number; x: number; z: number; still: boolean; roam: { home: Vec; r: number; speed: number; to: Vec | null; wait: number; ob: Obstacle } | null }[] = [];
     // How the blow in progress is swung, how long it takes, and until when the hatchet is in hand.
@@ -1365,6 +1386,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       },
     };
     mark(TV_KEY, ROOM.tvWall, 2.75, PRACTICE_KEY);
+    if (computer) {
+      places[PRACTICE_KEY].spots.push({ key: COMPUTER_KEY, door: ROOM.computer });
+      mark(COMPUTER_KEY, { x: ROOM.computer.x - 0.9, z: ROOM.computer.z }, 1.85, PRACTICE_KEY);
+    }
     mark(EXIT_KEY, { x: ROOM.exit.x + 0.7, z: ROOM.exit.z }, 2.45, PRACTICE_KEY);
     // The rest of the practice: from the exercise room through the hall door to the landing, and down
     // the stairs to the lower floor. The only way in and out is the exercise room's street door.
@@ -1633,8 +1658,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     };
     const woodM = mat(0x8a5f38, { map: painted('wood'), flatShading: false });
     const darkWood = mat(0x4f3520);
-    for (const x of [-0.5, 0.5]) prop(new THREE.BoxGeometry(0.09, 1.5, 0.09), darkWood, x, 0.95, 0);
-    const wellRoof = prop(new THREE.ConeGeometry(0.85, 0.5, 4), mat(0x8e3b5f, { map: painted('shingle', 2, 1), flatShading: false }), 0, 1.92, 0, Math.PI / 4);
+    // The posts and the roof go with the well (by the market in the town).
+    for (const x of [-0.5, 0.5]) prop(new THREE.BoxGeometry(0.09, 1.5, 0.09), darkWood, WELL_AT.x + x, 0.95, WELL_AT.z);
+    const wellRoof = prop(new THREE.ConeGeometry(0.85, 0.5, 4), mat(0x8e3b5f, { map: painted('shingle', 2, 1), flatShading: false }), WELL_AT.x, 1.92, WELL_AT.z, Math.PI / 4);
     wellRoof.scale.z = 0.8;
     const lampM = new THREE.MeshStandardMaterial({ color: 0xfff1b8, emissive: 0xffc35a, emissiveIntensity: 1.6 });
     const lamps: THREE.Sprite[] = [];
@@ -1684,6 +1710,70 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       scene.add(halo);
       lamps.push(halo);
       obstacles.push({ x, z, r: 0.3 });
+    }
+    if (plan) {
+      // Four benches round the fountain, between the roads, each facing the water; planters beside them.
+      const plank = mat(0x8a5f38, { map: woodM.map });
+      for (let i = 0; i < 4; i++) {
+        const a = Math.PI / 4 + (i * Math.PI) / 2;
+        const r = 3.35;
+        const bx = Math.cos(a) * r;
+        const bz = Math.sin(a) * r;
+        const bench = new THREE.Group();
+        const face = Math.atan2(-bx, -bz);
+        bench.position.set(bx, 0, bz);
+        bench.rotation.y = face;
+        const part = (w: number, h: number, d: number, x: number, y: number, z: number, m: THREE.Material) => {
+          const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+          mesh.position.set(x, y, z);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          bench.add(mesh);
+        };
+        part(1.5, 0.07, 0.42, 0, 0.44, 0, plank);
+        part(1.5, 0.32, 0.06, 0, 0.72, -0.2, plank);
+        for (const sx of [-0.62, 0.62]) for (const sz of [-0.15, 0.15]) part(0.07, 0.44, 0.07, sx, 0.22, sz, darkWood);
+        scene.add(bench);
+        obstacles.push({ x: bx, z: bz, r: 0.55 });
+        // Somewhere to sit and look at the fountain.
+        seats.push({ x: bx + Math.sin(face) * 0.02, z: bz + Math.cos(face) * 0.02, y: 0.44, face });
+        for (const side of [-1, 1]) {
+          const pa = a + side * 0.42;
+          const px = Math.cos(pa) * 3.9;
+          const pz = Math.sin(pa) * 3.9;
+          const planter = flowerPlanter(i * 2 + (side > 0 ? 1 : 0));
+          planter.position.set(px, 0, pz);
+          scene.add(planter);
+          obstacles.push({ x: px, z: pz, r: 0.68 });
+        }
+      }
+    }
+    // Animals of the town: dogs and cats of every breed wander the square and the streets, and birds
+    // circle high over the roofs. Only in the town, and still with reduced motion.
+    const calm = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const strays: { m: PetModel; pos: Vec; to: Vec | null; wait: number; speed: number; face: number; sit: boolean }[] = [];
+    const birds: { b: ReturnType<typeof birdModel>; flock: number; slot: number; glide: number }[] = [];
+    if (plan && !calm) {
+      const rnd = rng(31);
+      const kinds = PETS.filter((pb) => pb.key !== 'iggy');
+      for (let i = 0; i < 7; i++) {
+        const breed = kinds[(i * 5 + 2) % kinds.length];
+        const m = petModel(breed.key, i % breed.coats.length);
+        if (!m) continue;
+        const a = rnd() * Math.PI * 2;
+        const r = 4.5 + rnd() * 7;
+        const at = { x: Math.cos(a) * r, z: Math.sin(a) * r };
+        m.group.position.set(at.x, 0, at.z);
+        scene.add(m.group);
+        strays.push({ m, pos: at, to: null, wait: rnd() * 4, speed: 0.7 + rnd() * 0.5, face: rnd() * 6, sit: false });
+      }
+      const colours = [0x3a3f45, 0x6b5a48, 0x2f3a4a, 0x8a7a66];
+      for (let i = 0; i < 12; i++) {
+        const b = birdModel(colours[i % colours.length]);
+        b.group.scale.setScalar(1.3);
+        scene.add(b.group);
+        birds.push({ b, flock: i < 7 ? 0 : 1, slot: i < 7 ? i : i - 7, glide: rnd() * 10 });
+      }
     }
     buildings.forEach((b, i) => {
       if (b.kind) return; // these have their own yard
@@ -3856,6 +3946,53 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       if (!reduce) {
         for (const mx of staffMixers) mx.update(dt);
+        if (!indoor) {
+          fountainTick?.(tt);
+          // Strays: stand a while (and sometimes sit), then wander off somewhere near, round obstacles.
+          for (const st of strays) {
+            if (st.wait > 0) {
+              st.wait -= dt;
+              st.m.update(dt, 0, st.sit);
+              continue;
+            }
+            if (!st.to) {
+              const a = Math.random() * Math.PI * 2;
+              const r = 2 + Math.random() * 6;
+              const want = { x: st.pos.x + Math.cos(a) * r, z: st.pos.z + Math.sin(a) * r };
+              // Not out of the middle of town (towards the square when too far).
+              if (Math.hypot(want.x, want.z) > 15) { want.x *= 0.5; want.z *= 0.5; }
+              st.to = reachable(want, obstacles, B);
+              st.speed = Math.random() < 0.2 ? 2.4 : 0.8 + Math.random() * 0.4;
+            }
+            const n = stepToward(st.pos, st.to, st.speed * dt, obstacles, B);
+            const moved = Math.hypot(n.x - st.pos.x, n.z - st.pos.z);
+            if (moved > 1e-4) st.face = Math.atan2(n.x - st.pos.x, n.z - st.pos.z);
+            st.pos = { x: n.x, z: n.z };
+            st.m.group.position.set(n.x, 0, n.z);
+            const turn = Math.atan2(Math.sin(st.face - st.m.group.rotation.y), Math.cos(st.face - st.m.group.rotation.y));
+            st.m.group.rotation.y += turn * Math.min(1, dt * 6);
+            st.m.update(dt, moved / Math.max(dt, 1e-3), false);
+            if (n.arrived || moved < 1e-4) {
+              st.to = null;
+              st.wait = 2 + Math.random() * 7;
+              st.sit = Math.random() < 0.4;
+            }
+          }
+          // Birds: two flocks circling high over the town, beating their wings and gliding.
+          for (const bd of birds) {
+            const k = bd.flock === 0 ? 1 : -0.8;
+            const ang = tt * 0.06 * k + bd.flock * Math.PI + bd.slot * 0.05;
+            const rad = 20 + bd.flock * 8 + Math.sin(tt * 0.1 + bd.flock) * 5 + (bd.slot % 3) * 1.3;
+            const y = 15 + bd.flock * 4 + Math.sin(tt * 0.35 + bd.slot) * 1.2 + (bd.slot % 2) * 0.8;
+            const x = Math.cos(ang) * rad + Math.sin(bd.slot * 2.1) * 1.5;
+            const z = Math.sin(ang) * rad + Math.cos(bd.slot * 1.7) * 1.5;
+            bd.b.group.position.set(x, y, z);
+            // Facing along the circle, banking into the turn.
+            bd.b.group.rotation.set(0, Math.atan2(-Math.sin(ang) * k, Math.cos(ang) * k), -0.25 * k);
+            const gliding = Math.sin(tt * 0.5 + bd.glide) > 0.55;
+            bd.b.flap(gliding ? 0.08 : tt * 2.6 + bd.slot * 0.13);
+          }
+        }
         // Friends: glide to where they were last heard, turn their way, walk or run or stand.
         if (friends && makeFriend) {
           const now = performance.now();
@@ -4349,6 +4486,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
             <button ref={setLabel(WELL_KEY)} type="button" data-spot={WELL_KEY} onClick={() => go(WELL_KEY)} aria-label={t('Loop naar de waterput', 'Walk to the well')}
               className={cn(plate, 'text-[#9fd8ff]')} style={{ transform: 'translate(-9999px,0)' }}>
               {t('Waterput', 'Well')}
+            </button>
+          )}
+          {computer && (
+            <button ref={setLabel(COMPUTER_KEY)} type="button" data-spot={COMPUTER_KEY} onClick={() => go(COMPUTER_KEY)} aria-label={t('Loop naar de computer: oefenschema’s maken en toewijzen', 'Walk to the computer: make and give exercise programmes')}
+              className={cn(plate, 'text-[#9fe3ff]')} style={{ transform: 'translate(-9999px,0)' }}>
+              {t('💻 Computer', '💻 Computer')}
             </button>
           )}
           <button ref={setLabel(TV_KEY)} type="button" data-spot={TV_KEY} onClick={() => go(TV_KEY)} aria-label={t(`Loop naar ${tvLabel}`, `Walk to ${tvLabel}`)}
