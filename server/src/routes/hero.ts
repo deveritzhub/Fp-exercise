@@ -1,4 +1,5 @@
 import { BELTS, examReady, nextItems, validItem } from '../../../shared/karate';
+import { CRYPT_MAX_DEPTH, buildCrypt, cryptChest, cryptClear, cryptLevel } from '../../../shared/dungeon';
 import { STORY, STORY_STEPS, STORY_TITLE, storyReward, type StoryGoal } from '../../../shared/story';
 import { ADVENTURE_DAILY_WINS, winXp, BERRIES_FOR, BOXING, CREATURES, CREATURE_KINDS, LOOT_CAP, NEEDS_TOOL, ADVENTURE_QUEST_XP, armourByKey, lightFrom, lightItem, BOSS_WEEK_BONUS, bossOfWeek, isBoss, slainItem, dailyQuest, dishByKey, RECIPES, TOOLS, TOOL_BONUS, RIDES, rideItem, WEAPONS, toolFor, adventureLevel, AMMO, COMBAT_SKILLS, ammoFor, combatLevel, isHarvest, spellByKey, weaponByKey, boxingXp, builtItem, rollDrops, toolItem, weaponItem, type CreatureKind, type LootKey } from '../../../shared/adventure';
 import { homeStage, nextHome } from '../../../shared/practiceVillage';
@@ -757,7 +758,7 @@ heroPatient.get('/hero/coach', async (c) => {
   return c.json({ look: readStaffLook(row?.look) });
 });
 
-const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number; weapon?: string | null; owned?: string[]; coins?: number; loot?: Record<string, number>; tools?: string[]; rides?: string[]; built?: string[]; strength?: number; quest?: { key: string; kind: string; n: number; nl: string; en: string; progress: number; done: boolean; xp: number }; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string; pos_x?: number | null; pos_z?: number | null; pet?: string | null; pet_coat?: number | null; pet_name?: string | null; pet_color?: string | null; pet_wear?: string | null; petWear?: string[]; melee_xp?: number; ranged_xp?: number; magic_xp?: number; arrows?: number; runes?: number } | undefined) => {
+const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds_today: number; weapon?: string | null; owned?: string[]; coins?: number; loot?: Record<string, number>; tools?: string[]; rides?: string[]; built?: string[]; strength?: number; quest?: { key: string; kind: string; n: number; nl: string; en: string; progress: number; done: boolean; xp: number }; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string; pos_x?: number | null; pos_z?: number | null; pet?: string | null; pet_coat?: number | null; pet_name?: string | null; pet_color?: string | null; pet_wear?: string | null; petWear?: string[]; melee_xp?: number; ranged_xp?: number; magic_xp?: number; arrows?: number; runes?: number; crypt_best?: number; crypt_seed?: number | null; crypt_depth?: number | null; crypt_chests?: number[] } | undefined) => {
   const xp = Number(r?.xp ?? 0);
   const owned = r?.owned ?? [];
   // Only a weapon that was bought can be worn.
@@ -775,7 +776,8 @@ const adventureView = (r: { xp: number; wins: number; wins_today: number; rounds
     const sx = Number((r as Record<string, unknown> | undefined)?.[`${k.key}_xp`] ?? 0);
     return [k.key, { xp: sx, ...combatLevel(sx) }];
   })) as Record<'melee' | 'ranged' | 'magic', { xp: number; level: number; from: number; to: number }>;
-  return { skills, arrows: Number(r?.arrows ?? 0), runes: Number(r?.runes ?? 0), pet, petLevel: PET_LEVEL, petWear, pos: r?.pos_x != null && r?.pos_z != null ? { x: Number(r.pos_x), z: Number(r.pos_z) } : null, slain: r?.slain ?? [], bossOfWeek: r?.bossOfWeek ?? null, light: r?.light ?? [], armour, quest: r?.quest ?? null, weapon, owned, coins: r?.coins ?? 0, loot: r?.loot ?? {}, tools: r?.tools ?? [], rides: r?.rides ?? [], built: r?.built ?? [], strength: r?.strength ?? 1, lootCap: chest ? LOOT_CAP.chest : LOOT_CAP.backpack, xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...level };
+  const crypt = { best: Number(r?.crypt_best ?? 0), run: r?.crypt_seed != null && r?.crypt_depth != null ? { seed: Number(r.crypt_seed), depth: Number(r.crypt_depth), chests: (r.crypt_chests ?? []).map(Number) } : null };
+  return { crypt, skills, arrows: Number(r?.arrows ?? 0), runes: Number(r?.runes ?? 0), pet, petLevel: PET_LEVEL, petWear, pos: r?.pos_x != null && r?.pos_z != null ? { x: Number(r.pos_x), z: Number(r.pos_z) } : null, slain: r?.slain ?? [], bossOfWeek: r?.bossOfWeek ?? null, light: r?.light ?? [], armour, quest: r?.quest ?? null, weapon, owned, coins: r?.coins ?? 0, loot: r?.loot ?? {}, tools: r?.tools ?? [], rides: r?.rides ?? [], built: r?.built ?? [], strength: r?.strength ?? 1, lootCap: chest ? LOOT_CAP.chest : LOOT_CAP.backpack, xp, wins: Number(r?.wins ?? 0), winsToday: Number(r?.wins_today ?? 0), dailyWins: ADVENTURE_DAILY_WINS, roundsToday: Number(r?.rounds_today ?? 0), dailyRounds: BOXING.roundsPerDay, ...level };
 };
 /** Today's adventure task for this patient, and how far it got. */
 const questView = (today: string, patientId: string, row: { quest_day?: string | null; quest_n?: number; quest_done?: boolean } | undefined) => {
@@ -785,7 +787,7 @@ const questView = (today: string, patientId: string, row: { quest_day?: string |
 };
 const adventureRow = async (tx: Tx, patientId: string) => {
   const today = (await tx.query('SELECT CURRENT_DATE::text AS d')).rows[0].d as string;
-  const row = (await tx.query('SELECT xp, wins, weapon, armour, melee_xp, ranged_xp, magic_xp, arrows, runes, pos_x, pos_z, pet, pet_coat, pet_name, pet_color, pet_wear, quest_day::text AS quest_day, quest_n, quest_done, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today, CASE WHEN day = CURRENT_DATE THEN rounds_today ELSE 0 END AS rounds_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
+  const row = (await tx.query('SELECT xp, wins, weapon, armour, crypt_best, crypt_seed, crypt_depth, crypt_chests, melee_xp, ranged_xp, magic_xp, arrows, runes, pos_x, pos_z, pet, pet_coat, pet_name, pet_color, pet_wear, quest_day::text AS quest_day, quest_n, quest_done, CASE WHEN day = CURRENT_DATE THEN wins_today ELSE 0 END AS wins_today, CASE WHEN day = CURRENT_DATE THEN rounds_today ELSE 0 END AS rounds_today FROM hero_adventure WHERE patient_id = $1', [patientId])).rows[0];
   const bought = (await tx.query("SELECT item FROM hero_purchases WHERE patient_id = $1 AND (item LIKE 'wpn\\_%' OR item LIKE 'tool\\_%' OR item LIKE 'built\\_%' OR item LIKE 'light\\_%' OR item LIKE 'slain\\_%' OR item LIKE 'ride\\_%' OR item LIKE 'petwear\\_%')", [patientId])).rows.map((r) => r.item as string);
   const owned = bought.filter((x) => x.startsWith('wpn_')).map((x) => x.slice(4));
   const tools = bought.filter((x) => x.startsWith('tool_')).map((x) => x.slice(5));
@@ -966,6 +968,87 @@ heroPatient.post('/hero/story/event', async (c) => {
         done.push(await storyAdvance(tx, patient.id, row));
       }
       return storyView(tx, patient.id, done);
+    }),
+  );
+});
+
+// ---- The crypts: a new one each time (from a seed), deeper ones once the one above is cleared. ----
+/** Going down: a depth up to one below the deepest cleared, at its adventure level. A friend's seed joins their crypt. */
+heroPatient.post('/hero/crypt/start', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ depth: z.number().int().min(1).max(CRYPT_MAX_DEPTH), seed: z.number().int().min(1).max(2_000_000_000).optional() }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) throw badRequest('invalid_input');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const hero = (await tx.query('SELECT 1 FROM patient_heroes WHERE patient_id = $1', [patient.id])).rows[0];
+      if (!hero) throw badRequest('hero_required');
+      const now = await adventureRow(tx, patient.id);
+      const best = Number((now as Record<string, unknown>).crypt_best ?? 0);
+      if (body.data.depth > best + 1) throw badRequest('crypt_locked');
+      if (adventureLevel(Number(now.xp)).level < cryptLevel(body.data.depth)) throw badRequest('level_too_low');
+      const seed = body.data.seed ?? 1 + Math.floor(Math.random() * 1_999_999_999);
+      await tx.query(
+        `INSERT INTO hero_adventure(patient_id, crypt_seed, crypt_depth, crypt_started_at, crypt_chests) VALUES ($1, $2, $3, now(), '{}')
+         ON CONFLICT (patient_id) DO UPDATE SET crypt_seed = $2, crypt_depth = $3, crypt_started_at = now(), crypt_chests = '{}', updated_at = now()`,
+        [patient.id, seed, body.data.depth],
+      );
+      return adventureView(await adventureRow(tx, patient.id));
+    }),
+  );
+});
+
+/** A chest in the crypt going on: opened once, coins and loot. */
+heroPatient.post('/hero/crypt/chest', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ index: z.number().int().min(0).max(20) }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) throw badRequest('invalid_input');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const r = (await tx.query('SELECT crypt_seed, crypt_depth, crypt_chests FROM hero_adventure WHERE patient_id = $1 FOR UPDATE', [patient.id])).rows[0];
+      if (!r?.crypt_seed || !r.crypt_depth) throw badRequest('no_crypt');
+      const crypt = buildCrypt(Number(r.crypt_seed), Number(r.crypt_depth));
+      if (body.data.index >= crypt.chests.length) throw badRequest('invalid_input');
+      if ((r.crypt_chests ?? []).map(Number).includes(body.data.index)) throw badRequest('chest_open');
+      const prize = cryptChest(crypt.depth);
+      const item = prize.loot[Math.floor(Math.random() * prize.loot.length)];
+      const n = 1 + Math.floor(Math.random() * 3);
+      const before = await adventureRow(tx, patient.id);
+      const cap = before.built.includes('chest') ? LOOT_CAP.chest : LOOT_CAP.backpack;
+      await tx.query('UPDATE hero_adventure SET crypt_chests = array_append(crypt_chests, $2), updated_at = now() WHERE patient_id = $1', [patient.id, body.data.index]);
+      await tx.query('INSERT INTO hero_loot(patient_id, item, n) VALUES ($1, $2, LEAST($3::int, $4::int)) ON CONFLICT (patient_id, item) DO UPDATE SET n = GREATEST(hero_loot.n, LEAST(hero_loot.n + $3::int, $4::int))', [patient.id, item, n, cap]);
+      await tx.query('INSERT INTO hero_story(patient_id) VALUES ($1) ON CONFLICT (patient_id) DO NOTHING', [patient.id]);
+      await tx.query('UPDATE hero_story SET coins = coins + $2 WHERE patient_id = $1', [patient.id, prize.coins]);
+      return { ...adventureView(await adventureRow(tx, patient.id)), prize: { coins: prize.coins, item, n } };
+    }),
+  );
+});
+
+/** The crypt's boss beaten: the reward, and the next depth opens. Once per run. */
+heroPatient.post('/hero/crypt/clear', async (c) => {
+  const { user, patient } = requirePatient(c);
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const r = (await tx.query("SELECT crypt_seed, crypt_depth, crypt_best, extract(epoch FROM now() - crypt_started_at) AS took FROM hero_adventure WHERE patient_id = $1 FOR UPDATE", [patient.id])).rows[0];
+      if (!r?.crypt_seed || !r.crypt_depth) throw badRequest('no_crypt');
+      // A crypt is not cleared in a few seconds.
+      if (Number(r.took) < 15) throw badRequest('too_fast');
+      const depth = Number(r.crypt_depth);
+      const reward = cryptClear(depth);
+      await tx.query('UPDATE hero_adventure SET crypt_best = GREATEST(crypt_best, $2), crypt_seed = NULL, crypt_depth = NULL, crypt_chests = \'{}\', xp = xp + $3, updated_at = now() WHERE patient_id = $1', [patient.id, depth, reward.xp]);
+      await tx.query('INSERT INTO hero_story(patient_id) VALUES ($1) ON CONFLICT (patient_id) DO NOTHING', [patient.id]);
+      await tx.query('UPDATE hero_story SET coins = coins + $2 WHERE patient_id = $1', [patient.id, reward.coins]);
+      return { ...adventureView(await adventureRow(tx, patient.id)), cleared: { depth, ...reward } };
+    }),
+  );
+});
+
+/** Back up the stairs without clearing: the run ends. */
+heroPatient.post('/hero/crypt/leave', async (c) => {
+  const { user, patient } = requirePatient(c);
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      await tx.query("UPDATE hero_adventure SET crypt_seed = NULL, crypt_depth = NULL, crypt_chests = '{}' WHERE patient_id = $1", [patient.id]);
+      return adventureView(await adventureRow(tx, patient.id));
     }),
   );
 });

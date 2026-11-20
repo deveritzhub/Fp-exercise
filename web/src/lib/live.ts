@@ -17,19 +17,21 @@ export type LiveFriend = {
   /** The last saying, and when. */
   say?: { k: string; at: number };
 };
-export type LiveSend = (msg: { t: 'pos'; x: number; z: number; f: number; zone: string; w: 0 | 1 | 2; act?: string } | { t: 'say'; k: string }) => void;
+export type LiveSend = (msg: { t: 'pos'; x: number; z: number; f: number; zone: string; w: 0 | 1 | 2; act?: string } | { t: 'say'; k: string } | { t: 'invite'; depth: number; seed: number }) => void;
 
 /**
  * The live link to friends who play at the same time (only when sharing with friends is on). The
  * friends' places are kept in a ref (the 3D world reads it every frame); who is online is state.
  */
-export function useLive(enabled: boolean, onSay?: (who: LiveFriend, k: string) => void) {
+export function useLive(enabled: boolean, onSay?: (who: LiveFriend, k: string) => void, onInvite?: (who: LiveFriend, depth: number, seed: number) => void) {
   const friends = useRef(new Map<string, LiveFriend>());
   const [online, setOnline] = useState<{ id: string; name: string }[]>([]);
   const [status, setStatus] = useState<'off' | 'connecting' | 'on'>('off');
   const ws = useRef<WebSocket | null>(null);
   const sayRef = useRef(onSay);
   sayRef.current = onSay;
+  const inviteRef = useRef(onInvite);
+  inviteRef.current = onInvite;
 
   useEffect(() => {
     if (!enabled || typeof WebSocket === 'undefined') return;
@@ -85,6 +87,9 @@ export function useLive(enabled: boolean, onSay?: (who: LiveFriend, k: string) =
         } else if (m.t === 'leave') {
           friends.current.delete(String(m.id));
           list();
+        } else if (m.t === 'invite' && typeof m.depth === 'number' && typeof m.seed === 'number') {
+          const f = friends.current.get(String(m.id));
+          if (f) inviteRef.current?.(f, m.depth, m.seed);
         } else if (m.t === 'say' && typeof m.k === 'string') {
           const f = friends.current.get(String(m.id));
           if (f) {

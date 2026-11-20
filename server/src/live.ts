@@ -87,6 +87,9 @@ function onMessage(c: Client, raw: Buffer) {
     if (!pose) return;
     c.pose = pose;
     for (const { other, fid } of onlineFriends(c)) send(other, { t: 'pos', id: fid, ...pose });
+  } else if (m.t === 'invite' && Number.isInteger(m.depth) && Number.isInteger(m.seed) && (m.depth as number) >= 1 && (m.depth as number) <= 100 && (m.seed as number) >= 1 && (m.seed as number) <= 2_000_000_000) {
+    // An invitation to come down into the same crypt.
+    for (const { other, fid } of onlineFriends(c)) send(other, { t: 'invite', id: fid, depth: m.depth, seed: m.seed });
   } else if (m.t === 'say' && typeof m.k === 'string' && LIVE_SAYINGS.some((s) => s.key === m.k)) {
     for (const { other, fid } of onlineFriends(c)) send(other, { t: 'say', id: fid, k: m.k });
   }

@@ -1,4 +1,6 @@
 import { weaponMesh } from './weapons3d';
+import { cryptModel } from './crypt3d';
+import { CRYPT_KEY, type Crypt } from '@shared/dungeon';
 import type { LiveFriend } from '@/lib/live';
 import { sayingByKey } from '@shared/live';
 import { DEFAULT_LOOK as DEFAULT_FRIEND_LOOK } from '@shared/hero';
@@ -64,7 +66,7 @@ const HOME_REACH = [1.3, 1.5, 1.8, 2.2, 2.8, 3.1];
 const STREET_HOME = 0.85;
 /** A room behind a door in the village. */
 type Place = { under?: boolean; /** Open to this place (no door between): seen with it, walked into. */ link?: string; group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[]; entries?: Record<string, Vec & { face: number }>; seats?: FloorSeat[] };
-export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key` (or shoot, or cast a spell): the hero turns to it and it flinches. With no creature (''), a spell is cast where the hero stands. */ strike: (key: string, style?: 'melee' | 'ranged' | 'magic') => void; /** The creature `key` lunges at the hero. */ lunge: (key: string) => void; /** Beaten: the hero stands up at the well at once, without walking. */ respawn: () => void; /** Fast travel: the hero stands at the place `key` at once (after a short fade). */ jump: (key: string) => void };
+export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key` (or shoot, or cast a spell): the hero turns to it and it flinches. With no creature (''), a spell is cast where the hero stands. */ strike: (key: string, style?: 'melee' | 'ranged' | 'magic') => void; /** The creature `key` lunges at the hero. */ lunge: (key: string) => void; /** Beaten: the hero stands up at the well at once, without walking. */ respawn: () => void; /** Fast travel: the hero stands at the place `key` at once (after a short fade). */ jump: (key: string) => void; /** Into a room or the crypt at once, from wherever the hero is. */ enter: (key: string) => void; /** A chest in the crypt opens. */ openChest: (i: number) => void };
 /** The bag of the boxing school in the village. */
 export const BOXING_KEY = 'boxing';
 /** The campfire by the meadow: raw loot is cooked there. Shown with the boxing school (the adventure). */
@@ -77,6 +79,10 @@ export const DUNGEON_KEY = 'dungeon';
 export const BOSSBOARD_KEY = 'bossboard';
 const BOSSBOARD_AT: Vec = { x: -4.1, z: -3.9 };
 const DUNGEON_AT: Vec = { x: 420, z: 420 };
+/** Where a crypt is built (far from everything else), and its gate in the town. */
+const CRYPT_AT: Vec = { x: -520, z: -520 };
+export const CRYPT_GATE_KEY = 'cryptgate';
+const CRYPT_GATE: Vec = { x: -9.5, z: -17.5 };
 const DUNGEON_HALF = { w: 6, l: 20 };
 type Props = {
   /** Buildings round the square take the next free slot; one with a `site` stands there instead. */
@@ -135,6 +141,10 @@ type Props = {
   boxing?: boolean;
   /** Colour of the karate belt round the hero's waist, if any. */
   belt?: string | null;
+  /** A crypt to go down into (shared/dungeon.ts): its rooms, chests and stairs; its creatures come in `creatures` with zone 'crypt'. */
+  crypt?: Crypt | null;
+  /** Where the hero is for friends: their figures show when they are in the same place (the village, or the same crypt). */
+  liveZone?: string;
   /** Friends playing at the same time (lib/live.ts): drawn walking where they are, in the same place. */
   friends?: MutableRefObject<Map<string, LiveFriend>>;
   /** The adventure weapon in the hero's hand (weapons3d.ts), if any. */
@@ -797,7 +807,7 @@ const LIGHT_FILE: Record<string, string> = { courage: 'moed', neutrality: 'neutr
 /** Below this zoom the view is first person: through the hero's eyes. */
 const FIRST_PERSON_ZOOM = 0.38;
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, shrines, glow = false, ride = null, pet = null, startAt = null, belt = null, api, track, stick, friends, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, computer = false, className }: Props) {
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, shrines, glow = false, ride = null, pet = null, startAt = null, belt = null, api, track, stick, friends, crypt = null, liveZone = 'village', practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, computer = false, className }: Props) {
   const { t, locale } = useI18n();
   const coachName = coachLabel ?? STAFF_NAMES.practice;
   const host = useRef<HTMLDivElement>(null);
@@ -823,6 +833,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const seatAction = useRef<() => void>(() => undefined);
   const rideRef = useRef(ride);
   rideRef.current = ride;
+  const liveZoneRef = useRef(liveZone);
+  liveZoneRef.current = liveZone;
   const petRef = useRef(pet);
   petRef.current = pet;
   chaseRef.current = chase;
@@ -845,7 +857,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
   const [state, setState] = useState<'ready' | 'nogl'>(() => (webglOk() ? 'ready' : 'nogl'));
   const heroScene = look ? hero3dScene(look) : null;
   const heroKey = heroScene ? JSON.stringify([heroScene.url, [...heroScene.visible].sort(), heroScene.tints, heroScene.fabric]) : '';
-  const key = JSON.stringify([buildings.map((b) => [b.key, b.stage ?? -1]), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1, bound ?? 0, people, visitRoom, coachLook ?? null, (creatures ?? []).map((c) => [c.key, c.kind, c.x, c.z]), boxing, plan, (shrines ?? []).map((sh) => sh.key), glow]);
+  const key = JSON.stringify([buildings.map((b) => [b.key, b.stage ?? -1]), tvTitle, tvLines, heroColor, heroKey, practiceLabel, home?.stage ?? -1, bound ?? 0, people, visitRoom, coachLook ?? null, (creatures ?? []).map((c) => [c.key, c.kind, c.x, c.z]), boxing, plan, (shrines ?? []).map((sh) => sh.key), glow, crypt?.seed ?? 0, crypt?.depth ?? 0]);
   // Read at the moment of use, so new furniture or a new mode never rebuilds the whole village.
   const slow = Math.min(1, Math.max(0.5, paceProp));
   const gone = useMemo(() => new Set(creaturesGone ?? []), [creaturesGone]);
@@ -1027,7 +1039,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       obstacles.push({ x: 0, z: 0, r: 1.85 });
     }
     // Creatures: each at its spot, with a place beside it to stand and strike from.
-    const mobs: { key: string; kind: CreatureKind; g: THREE.Group; door: Vec; hurtAt: number; lungeAt: number; x: number; z: number; still: boolean; roam: { home: Vec; r: number; speed: number; to: Vec | null; wait: number; ob: Obstacle } | null }[] = [];
+    const mobs: { zone: string; key: string; kind: CreatureKind; g: THREE.Group; door: Vec; hurtAt: number; lungeAt: number; x: number; z: number; still: boolean; roam: { home: Vec; r: number; speed: number; to: Vec | null; wait: number; ob: Obstacle } | null }[] = [];
     // How the blow in progress is swung, how long it takes, and until when the hatchet is in hand.
     let swingStyle: 'jab' | 'thrust' | 'slash' | 'overhead' | 'shoot' | 'cast' = 'jab';
     // Arrows and spells on their way to a creature.
@@ -1081,7 +1093,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     // Where each creature lives, and a pond by the slimes' swamp: only with the adventure on.
     if (creatures?.length) {
       for (const c of creatures) {
-        if (c.zone === DUNGEON_KEY) continue;
+        if (c.zone === DUNGEON_KEY || c.zone === CRYPT_KEY) continue;
         const h = habitat(c.kind);
         if (!h) continue;
         h.position.set(c.x, 0, c.z);
@@ -1168,8 +1180,40 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           spots: [{ key: EXIT_KEY, door: { x: DUNGEON_AT.x, z: DUNGEON_AT.z + DUNGEON_HALF.l - 0.9 } }],
         }
       : null;
+    // The crypt going on: its rooms far off, entered by the gate in the town.
+    const crypt3d = crypt ? cryptModel(crypt, CRYPT_AT) : null;
+    const cryptPlace: Place | null = crypt && crypt3d
+      ? {
+          under: true,
+          group: crypt3d.group,
+          walls: [],
+          at: CRYPT_AT,
+          rect: crypt3d.rect,
+          entry: { x: CRYPT_AT.x + crypt.entry.x, z: CRYPT_AT.z + crypt.entry.z + 1 },
+          face: 0,
+          exit: { x: CRYPT_AT.x + crypt.entry.x, z: CRYPT_AT.z + crypt.entry.z },
+          outside: { x: CRYPT_GATE.x + 1.2, z: CRYPT_GATE.z + 1.6 },
+          map: CRYPT_GATE,
+          obstacles: [...crypt3d.obstacles],
+          spots: [{ key: EXIT_KEY, door: { x: CRYPT_AT.x + crypt.entry.x, z: CRYPT_AT.z + crypt.entry.z } }, ...crypt.chests.map((ch, i) => ({ key: `chest:${i}`, door: { x: CRYPT_AT.x + ch.x, z: CRYPT_AT.z + ch.z + 0.95 } }))],
+        }
+      : null;
     for (const c of creatures ?? []) {
       const g = creature(c.kind);
+      if (c.zone === CRYPT_KEY && cryptPlace) {
+        // A creature of the crypt, in its room, facing the stairs.
+        g.position.set(CRYPT_AT.x + c.x, 0, CRYPT_AT.z + c.z);
+        g.rotation.y = Math.PI;
+        scene.add(g);
+        const big = isAlpha(c.kind) || c.kind === 'shame_lord';
+        const door = { x: g.position.x, z: g.position.z + (big ? 2.4 : 1.1) };
+        anchors.push({ id: c.key, obj: g, y: big ? 3.0 : 1.7, zone: CRYPT_KEY });
+        cryptPlace.spots.push({ key: c.key, door });
+        cryptPlace.obstacles.push({ x: g.position.x, z: g.position.z, r: big ? 1.3 : 0.5 });
+        g.userData.mob = true;
+        mobs.push({ zone: CRYPT_KEY, key: c.key, kind: c.kind, g, door, hurtAt: 0, lungeAt: 0, x: g.position.x, z: g.position.z, still: false, roam: null });
+        continue;
+      }
       // A creature of the dungeon stands in it, facing the way in (south).
       const below = c.zone === DUNGEON_KEY && dungeon;
       if (below) {
@@ -1182,7 +1226,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         dungeon.spots.push({ key: c.key, door });
         dungeon.obstacles.push({ x: g.position.x, z: g.position.z, r: big ? 1.3 : 0.5 });
         g.userData.mob = true;
-        mobs.push({ key: c.key, kind: c.kind, g, door, hurtAt: 0, lungeAt: 0, x: g.position.x, z: g.position.z, still: false, roam: null });
+        mobs.push({ zone: DUNGEON_KEY, key: c.key, kind: c.kind, g, door, hurtAt: 0, lungeAt: 0, x: g.position.x, z: g.position.z, still: false, roam: null });
         continue;
       }
       g.position.set(c.x, 0, c.z);
@@ -1201,7 +1245,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const grazer = c.kind === 'cow' || c.kind === 'chicken' || c.kind === 'boar' || c.kind === 'wolf';
       const roam = grazer ? { home: { x: c.x, z: c.z }, r: c.kind === 'chicken' ? 1.5 : c.kind === 'wolf' ? 1.8 : 1.2, speed: c.kind === 'chicken' ? 0.55 : c.kind === 'wolf' ? 0.6 : 0.3, to: null, wait: 1 + (c.x * 7.31 - Math.floor(c.x * 7.31)) * 4, ob } : null;
       g.userData.mob = true;
-      mobs.push({ key: c.key, kind: c.kind, g, door, hurtAt: 0, lungeAt: 0, x: c.x, z: c.z, still: isHarvest(c.kind), roam });
+      mobs.push({ zone: 'village', key: c.key, kind: c.kind, g, door, hurtAt: 0, lungeAt: 0, x: c.x, z: c.z, still: isHarvest(c.kind), roam });
     }
     if (boxing) {
       // The boxing school: four posts with ropes, a mat and the heavy bag on its stand.
@@ -1557,6 +1601,40 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         el.dataset.furniture = String(items.length);
       };
       furnish.current(live.current.homeItems);
+    }
+    if (cryptPlace && crypt) {
+      places[CRYPT_KEY] = cryptPlace;
+      scene.add(cryptPlace.group);
+      mark(EXIT_KEY, { x: cryptPlace.exit.x, z: cryptPlace.exit.z - 0.6 }, 2.4, CRYPT_KEY);
+      crypt.chests.forEach((ch, i) => mark(`chest:${i}`, { x: CRYPT_AT.x + ch.x, z: CRYPT_AT.z + ch.z }, 1.2, CRYPT_KEY));
+    }
+    if (plan && creatures) {
+      // The crypt gate: a stone arch over stairs going down, in the north-west of the town.
+      const gate = new THREE.Group();
+      gate.position.set(CRYPT_GATE.x, 0, CRYPT_GATE.z);
+      gate.lookAt(0, 0, 0);
+      const stoneM = mat(0x77716a, { map: painted('stone'), flatShading: false });
+      const darkM = mat(0x141210);
+      const piece = (w: number, h: number, d: number, m2: THREE.Material, x: number, y: number, z: number) => {
+        const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m2);
+        b.position.set(x, y, z);
+        b.castShadow = true;
+        b.receiveShadow = true;
+        gate.add(b);
+      };
+      for (const x of [-1.15, 1.15]) piece(0.55, 2.6, 0.7, stoneM, x, 1.3, 0);
+      piece(2.9, 0.55, 0.8, stoneM, 0, 2.8, 0);
+      piece(1.8, 0.02, 1.6, darkM, 0, 0.012, -0.5);
+      for (let i = 0; i < 4; i++) piece(1.6, 0.06, 0.3, stoneM, 0, -0.02 - i * 0.08, -0.05 - i * 0.35);
+      const skull = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), mat(0xe8e2d0));
+      skull.position.set(0, 2.85, 0.42);
+      gate.add(skull);
+      scene.add(gate);
+      obstacles.push({ x: CRYPT_GATE.x, z: CRYPT_GATE.z, r: 1.3 });
+      const len = Math.hypot(CRYPT_GATE.x, CRYPT_GATE.z);
+      spots.push({ key: CRYPT_GATE_KEY, door: { x: CRYPT_GATE.x * (1 - 1.6 / len), z: CRYPT_GATE.z * (1 - 1.6 / len) } });
+      anchors.push({ id: CRYPT_GATE_KEY, obj: gate, y: 3.4 });
+      roads.push(spur({ x: CRYPT_GATE.x * (1 - 1.6 / len), z: CRYPT_GATE.z * (1 - 1.6 / len) }));
     }
     if (dungeon) {
       places[DUNGEON_KEY] = dungeon;
@@ -3063,7 +3141,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       const i = buildings.findIndex((b) => b.key === k);
       const mob = mobs.find((x) => x.key === k);
-      if (mob && dungeon && mob.x > 300) walkTo.current(spots.find((sp) => sp.key === DUNGEON_KEY)!.door, DUNGEON_KEY, k);
+      if (mob && mob.zone === CRYPT_KEY) return;
+      if (mob && dungeon && mob.zone === DUNGEON_KEY) walkTo.current(spots.find((sp) => sp.key === DUNGEON_KEY)!.door, DUNGEON_KEY, k);
+      else if (k === CRYPT_GATE_KEY) { const sp = spots.find((x) => x.key === k); if (sp) walkTo.current(sp.door, k); }
       else if (mob) walkTo.current(mob.door, k);
       else if (k === DUNGEON_KEY && dungeon) walkTo.current(spots.find((sp) => sp.key === DUNGEON_KEY)!.door, DUNGEON_KEY);
       else if (k === BOXING_KEY && boxing) walkTo.current(spots.find((sp) => sp.key === BOXING_KEY)!.door, BOXING_KEY);
@@ -3080,6 +3160,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     };
     if (api) {
       api.current = {
+        enter: (k) => { if (places[k]) travel(k); },
+        openChest: (i) => crypt3d?.openChest(i),
         goTo: (k) => goTo.current(k),
         jump: (k) => {
           jumpNext = true;
@@ -3294,8 +3376,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         let pick: (typeof mobs)[number] | null = null;
         let pd = 52;
         for (const mob of mobs) {
-          if (!mob.g.visible || (mob.x > 300) !== (zone.current === DUNGEON_KEY)) continue;
-          if (mob.x <= 300 && inside()) continue;
+          if (!mob.g.visible || mob.zone !== (inside() ? zone.current : 'village')) continue;
           for (const y of [0.3, 0.8, 1.4]) {
             proj.set(mob.g.position.x, y * mob.g.scale.y, mob.g.position.z).project(camera);
             if (proj.z > 1) continue;
@@ -3946,6 +4027,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       if (!reduce) {
         for (const mx of staffMixers) mx.update(dt);
+        if (indoor && zone.current === CRYPT_KEY) crypt3d?.tick(tt);
         if (!indoor) {
           fountainTick?.(tt);
           // Strays: stand a while (and sometimes sit), then wander off somewhere near, round obstacles.
@@ -3999,7 +4081,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           for (const id of [...friendFigs.keys()]) if (!friends.current.has(id)) dropFriend(id);
           for (const f of friends.current.values()) {
             // Only where both are: the open village (not each one's own home or practice rooms).
-            const there = f.zone === 'village' && zone.current === 'village';
+            const here2 = zone.current === 'village' ? 'village' : zone.current === CRYPT_KEY ? liveZoneRef.current : '';
+            const there = !!here2 && f.zone === here2;
             let fig = friendFigs.get(f.id);
             if (fig && fig.lookKey !== JSON.stringify(f.look)) {
               dropFriend(f.id);
@@ -4458,6 +4541,19 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
               aria-label={t(`Loop naar de schrijn van ${sh.label}`, `Walk to the shrine of ${sh.label}`)}
               className={cn(plate, 'text-[#fff6c8]')} style={{ transform: 'translate(-9999px,0)', borderColor: sh.color }}>
               ✦ {sh.label}
+            </button>
+          ))}
+          {plan && creatures && (
+            <button ref={setLabel(CRYPT_GATE_KEY)} type="button" data-spot={CRYPT_GATE_KEY} onClick={() => go(CRYPT_GATE_KEY)}
+              aria-label={t('Loop naar de cryptepoort: daal af in een crypte', 'Walk to the crypt gate: go down into a crypt')}
+              className={cn(plate, 'text-[#d8c4ff]')} style={{ transform: 'translate(-9999px,0)' }}>
+              ⚱️ {t('Crypte', 'Crypt')}
+            </button>
+          )}
+          {crypt && crypt.chests.map((_, i) => (
+            <button key={`chest:${i}`} ref={setLabel(`chest:${i}`)} type="button" data-spot={`chest:${i}`} onClick={() => go(`chest:${i}`)}
+              aria-label={t('Loop naar de schatkist', 'Walk to the chest')} className={cn(plate, 'text-[#ffd76a]')} style={{ transform: 'translate(-9999px,0)' }}>
+              🧰 {t('Kist', 'Chest')}
             </button>
           ))}
           {plan && creatures && (
