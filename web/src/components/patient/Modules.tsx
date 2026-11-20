@@ -10,6 +10,8 @@ import { cn } from '@/lib/cn';
 import { SELF_CHECK, type AccountKind } from '@shared/accountKind';
 import { SCHEDULES } from '@shared/strengthChooser';
 import { ScheduleChooser } from './ScheduleChooser';
+import { MobilityGoalChooser } from './MobilityGoalChooser';
+import { MOBILITY_GOALS } from '@shared/mobilityGoals';
 
 export type Mode = 'revalidatie' | 'kracht' | 'mobiliteit';
 export type Modes = {
@@ -117,6 +119,12 @@ export function StartTemplates({ modes, module }: { modes: Modes; module: 'krach
       {module === 'kracht' && list.filter((x) => x.sourceKey && SCHEDULES[x.sourceKey]).length >= 2 && (
         <>
           <ScheduleChooser templates={list} disabled={blocked} onPick={(id) => setConfirm(list.find((x) => x.id === id) ?? null)} />
+          <h3 className="pt-2 text-[15px] font-semibold text-ink-800">{t('Of kies zelf uit alle programma’s', 'Or choose from all programmes yourself')}</h3>
+        </>
+      )}
+      {module === 'mobiliteit' && list.some((x) => MOBILITY_GOALS.some((g) => x.sourceKey && g.programs.includes(x.sourceKey))) && (
+        <>
+          <MobilityGoalChooser templates={list} onPick={(id) => setConfirm(list.find((x) => x.id === id) ?? null)} />
           <h3 className="pt-2 text-[15px] font-semibold text-ink-800">{t('Of kies zelf uit alle programma’s', 'Or choose from all programmes yourself')}</h3>
         </>
       )}
