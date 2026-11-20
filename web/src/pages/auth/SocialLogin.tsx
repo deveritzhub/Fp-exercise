@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { startAuthentication, startRegistration, browserSupportsWebAuthn } from '@simplewebauthn/browser';
+import { browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import { Fingerprint, KeyRound, Link2, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { describeError, errorMessage, useI18n } from '@/lib/i18n';
@@ -8,6 +8,7 @@ import { fmtDate } from '@/lib/format';
 import { Button, Card, CardHeader, Input, Notice, useToast } from '@/components/ui';
 import type { SessionUser } from '@/lib/types';
 import { useAuthOptions } from './SignupPage';
+import { addPasskey as registerPasskey, deviceName, passkeyLogin } from './passkeyDevice';
 
 const LABEL = { google: 'Google', apple: 'Apple' } as const;
 type Provider = keyof typeof LABEL;
@@ -21,22 +22,19 @@ export function startSocial(p: Provider, intent: 'login' | 'signup' | 'link', ki
 }
 
 /** "Continue with Google / Apple" and "Log in with a passkey", when this server offers them. */
-export function SocialButtons({ intent, kind, next, onPasskeyLogin }: { intent: 'login' | 'signup'; kind?: string; next?: string | null; onPasskeyLogin?: (u: SessionUser) => void }) {
+export function SocialButtons({ intent, kind, next, onPasskeyLogin, passkeyShown }: { intent: 'login' | 'signup'; kind?: string; next?: string | null; onPasskeyLogin?: (u: SessionUser) => void; /** The passkey button is already on the page (at the top). */ passkeyShown?: boolean }) {
   const { t, locale } = useI18n();
   const opts = useAuthOptions();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const providers = (['google', 'apple'] as const).filter((p) => opts.data?.[p]);
-  const passkey = intent === 'login' && !!opts.data?.passkeys && browserSupportsWebAuthn() && !!onPasskeyLogin;
+  const passkey = intent === 'login' && !passkeyShown && !!opts.data?.passkeys && browserSupportsWebAuthn() && !!onPasskeyLogin;
   if (!providers.length && !passkey) return null;
   const loginWithPasskey = async () => {
     setBusy(true);
     setError(null);
     try {
-      const { options, handle } = await api.post<{ options: Parameters<typeof startAuthentication>[0]['optionsJSON']; handle: string }>('/auth/passkeys/login/options');
-      const response = await startAuthentication({ optionsJSON: options });
-      const r = await api.post<{ user: SessionUser }>('/auth/passkeys/login', { handle, response });
-      onPasskeyLogin!(r.user);
+      onPasskeyLogin!(await passkeyLogin());
     } catch (e) {
       // Cancelled by the user: say nothing.
       if ((e as Error)?.name !== 'NotAllowedError') setError(describeError(e, locale));
@@ -50,7 +48,7 @@ export function SocialButtons({ intent, kind, next, onPasskeyLogin }: { intent: 
       {error && <Notice tone="bad">{error}</Notice>}
       {passkey && (
         <Button variant="secondary" size="lg" className="w-full" loading={busy} icon={<Fingerprint className="h-5 w-5" aria-hidden />} onClick={loginWithPasskey}>
-          {t('Inloggen met passkey', 'Log in with a passkey')}
+          {t('Inloggen met vingerafdruk of Face ID', 'Log in with fingerprint or Face ID')}
         </Button>
       )}
       {providers.map((p) => (
@@ -97,9 +95,7 @@ export function LoginMethodsCard() {
   };
   const addPasskey = () =>
     run('add', async () => {
-      const { options, handle } = await api.post<{ options: Parameters<typeof startRegistration>[0]['optionsJSON']; handle: string }>('/auth/passkeys/register/options');
-      const response = await startRegistration({ optionsJSON: options });
-      await api.post('/auth/passkeys/register', { handle, response, name: name.trim() || t('Mijn apparaat', 'My device') });
+      await registerPasskey(name.trim() || deviceName());
       setName('');
     }, t('Passkey toegevoegd', 'Passkey added'));
 

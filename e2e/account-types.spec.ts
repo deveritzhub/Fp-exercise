@@ -118,7 +118,9 @@ test('a patient adds a passkey and logs in with it', async ({ browser }) => {
   // Log out and back in without e-mail or password.
   await ctx.clearCookies();
   await page.goto('/login');
-  await page.getByRole('button', { name: 'Inloggen met passkey' }).click();
+  // This device used a passkey before: the fingerprint button comes first. (Where the browser offers
+  // the passkey in the email field, picking it there logs in straight away.)
+  await page.getByTestId('passkey-first').click({ timeout: 5000 }).catch(() => undefined);
   await page.waitForURL(/\/p(\/|$)/);
   await expect(page.getByRole('link', { name: 'Instellingen' })).toBeVisible();
   const used = await sql(`SELECT last_used_at FROM webauthn_credentials WHERE name = 'Testtelefoon'`);

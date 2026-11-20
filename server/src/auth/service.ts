@@ -115,12 +115,19 @@ export async function registerFailure(userId: string, action: string) {
   await authAudit(userId, action);
 }
 
+/** Whether a user (an SQL expression for the id) works at a practice or runs the platform. */
+const IS_STAFF = (id: string) =>
+  `(EXISTS (SELECT 1 FROM users u WHERE u.id = ${id} AND u.is_platform_admin) OR EXISTS (SELECT 1 FROM practice_members m WHERE m.user_id = ${id} AND m.active))`;
+/** How many days a session lasts for that user, counted again from every visit. */
+const SESSION_DAYS = (id: string) =>
+  `(CASE WHEN ${IS_STAFF(id)} THEN ${Math.max(1, Math.floor(config.staffSessionDays))} ELSE ${Math.max(1, Math.floor(config.sessionDays))} END)`;
+
 export async function createSession(userId: string, userAgent?: string) {
   const token = randomToken();
   await authPool.query(
     `INSERT INTO auth_sessions(user_id, token_hash, expires_at, user_agent)
-     VALUES ($1, $2, now() + make_interval(hours => $3), $4)`,
-    [userId, sha256(token), config.sessionTtlHours, userAgent?.slice(0, 200) ?? null],
+     VALUES ($1, $2, now() + make_interval(days => ${SESSION_DAYS('$1')}), $3)`,
+    [userId, sha256(token), userAgent?.slice(0, 200) ?? null],
   );
   return token;
 }
@@ -131,7 +138,8 @@ export async function createSession(userId: string, userAgent?: string) {
  */
 export async function resolveSession(token: string, opts: { background?: boolean } = {}): Promise<SessionUser | null> {
   const { rows } = await authPool.query(
-    `UPDATE auth_sessions s SET last_seen_at = CASE WHEN $2 THEN s.last_seen_at ELSE now() END
+    `UPDATE auth_sessions s SET last_seen_at = CASE WHEN $2 THEN s.last_seen_at ELSE now() END,
+        expires_at = CASE WHEN $2 THEN s.expires_at ELSE greatest(s.expires_at, now() + make_interval(days => ${SESSION_DAYS('s.user_id')})) END
       WHERE s.token_hash = $1 AND s.expires_at > now()
         AND ($3 <= 0 OR s.last_seen_at > now() - make_interval(mins => $3)
              OR NOT EXISTS (SELECT 1 FROM users u WHERE u.id = s.user_id AND u.is_platform_admin)

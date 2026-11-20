@@ -22,7 +22,8 @@ function setSession(c: Context<AppEnv>, token: string) {
     secure: config.isProd,
     sameSite: 'Lax',
     path: '/',
-    maxAge: config.sessionTtlHours * 3600,
+    // The cookie lives as long as the longest session; the server ends shorter ones itself.
+    maxAge: Math.max(config.sessionDays, config.staffSessionDays) * 86400,
   });
 }
 
