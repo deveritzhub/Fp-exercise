@@ -229,8 +229,11 @@ export function practiceRoom(tv: THREE.Texture, opts: { mirrors?: boolean } = {}
 
   // South wall: doorway to the hall, ball rack, mirror, band board and the cable tower in the corner.
   const s = wall(0, 1);
-  s.box(8.3, 2.6, 0.15, WHITE, 0, 1.3, 3.275);
-  s.box(1.0, 2.15, 0.05, 0xf2c27a, -2.7, 1.07, 3.18, { emissive: 0xf2a84a, emissiveIntensity: 0.55 });
+  // The doorway to the landing is open (the landing lies right behind it), with a white frame.
+  s.box(0.95, 2.6, 0.15, WHITE, -3.675, 1.3, 3.275);
+  s.box(6.35, 2.6, 0.15, WHITE, 0.975, 1.3, 3.275);
+  s.box(1.0, 0.45, 0.15, WHITE, -2.7, 2.375, 3.275);
+  for (const x of [-3.2, -2.2]) s.box(0.06, 2.15, 0.2, 0xffffff, x, 1.075, 3.275);
   s.box(0.3, 2.0, 0.06, WOOD, -1.0, 1.25, 3.17);
   for (let r = 0; r < 4; r++) for (const dx of [-0.17, 0.17]) s.ball(0.16, BLACK, -1.0 + dx, 0.55 + r * 0.48, 3.08);
   s.box(1.0, 2.0, 0.04, WHITE, 0.25, 1.15, 3.19);

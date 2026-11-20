@@ -72,7 +72,9 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
     ...homeBuildings.map((b) => ({ key: b.key, label: b.label, x: b.site.x, z: b.site.z, icon: '🏠', color: b.flag ? '#2f9e44' : '#8a6038' })),
   ];
   const active = homes.filter((h) => h.week > 0).length;
-  const atHome = near?.startsWith('p:') ? shown.find((h) => homeKey(h.id) === near) ?? null : null;
+  // The home being walked to (picked in the list): homes passed on the way do not take over.
+  const heading = useRef<string | null>(null);
+  const atHome = near?.startsWith('p:') && (!heading.current || heading.current === near) ? shown.find((h) => homeKey(h.id) === near) ?? null : null;
   // The therapist's own figure when they made one; else a plain one in the practice colours.
   const mine = useQuery({ queryKey: ['staff-avatar'], queryFn: () => api.get<{ look: Record<string, string> | null }>('/dashboard/avatar'), staleTime: 10 * 60_000 });
   const look = useMemo(() => (mine.data?.look ? { ...DEFAULT_LOOK, ...mine.data.look, gear: [] } : { ...DEFAULT_LOOK, hair: 'short', gear: ['tracksuit'] }), [mine.data]);
@@ -104,10 +106,15 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
       setHood(area);
       setInside(null);
       // The other area is built first; the walk starts once it stands.
+      heading.current = homeKey(picked);
       const id = window.setTimeout(() => world.current?.goTo(homeKey(picked)), 1500);
       return () => window.clearTimeout(id);
     }
+    heading.current = homeKey(picked);
+    // Walked elsewhere meanwhile: after a minute the homes on the way count again.
+    const until = window.setTimeout(() => { heading.current = null; }, 60_000);
     world.current?.goTo(homeKey(picked));
+    return () => window.clearTimeout(until);
   }, [picked, homes, hood]);
   const visited = inside ? homes.find((h) => h.id === inside) ?? null : null;
 
@@ -132,6 +139,8 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
           track={track}
           stick={stick}
           onNear={(k) => {
+            if (k?.startsWith('p:') && heading.current && heading.current !== k) return;
+            if (k && k === heading.current) heading.current = null;
             setNear(k);
             if (k?.startsWith('p:')) onPick(k.slice(2));
           }}

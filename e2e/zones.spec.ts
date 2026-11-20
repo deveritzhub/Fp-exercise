@@ -42,7 +42,7 @@ test('an adventurer of level 6 walks out of the gate to the wolves', async ({ br
   await expect(page.getByTestId('enter-building')).toHaveAttribute('href', '/p/berichten', { timeout: 20_000 });
   await expect(page.getByRole('button', { name: 'Loop naar Wolf' })).toHaveCount(0);
   // At level 6 they are there, with their level on the label.
-  await sql(`UPDATE hero_adventure SET xp = 3200 WHERE patient_id = $1`, [emma.id]);
+  await sql(`UPDATE hero_adventure SET xp = 1100 WHERE patient_id = $1`, [emma.id]);
   await page.reload();
   await expect(village).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
   await page.getByRole('button', { name: 'Loop naar Wolf' }).first().press('Enter');
