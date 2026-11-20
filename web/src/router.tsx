@@ -148,6 +148,7 @@ export const router = createBrowserRouter([
         ],
       },
       { path: '/login', element: <LoginPage /> },
+      { path: '/proef/oefeningen', element: <S><ExerciseDemoPage standalone /></S> },
       { path: '/aanmelden', element: <SignupPage /> },
       { path: '/wachtwoord-vergeten', element: <ForgotPasswordPage /> },
       { path: '/wachtwoord-herstellen', element: <ResetPasswordPage /> },

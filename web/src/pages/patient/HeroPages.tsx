@@ -1689,6 +1689,15 @@ export function HeroPage() {
         </span>
         <ChevronRight className="h-5 w-5 shrink-0 text-[#f3cf6b]" aria-hidden />
       </Link>
+      {/* The trial of exercises shown in 3D by the hero. */}
+      <Link to="/p/proef/oefeningen" data-testid="hero-demos" className="tap flex min-h-[56px] items-center gap-3 rounded-2xl border border-line bg-white px-4 py-3 shadow-card hover:border-ink-300">
+        <span aria-hidden className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-soft text-[22px]">🏋️</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[16px] font-extrabold text-ink-950">{t('Oefeningen in 3D (proef)', 'Exercises in 3D (trial)')}</span>
+          <span className="block text-[13px] text-ink-700">{t('Je held doet vijf oefeningen voor', 'Your hero shows five exercises')}</span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-ink-600" aria-hidden />
+      </Link>
       <section className={cn('relative overflow-hidden rounded-2xl border border-line bg-white p-5 shadow-card', scene?.key === 'gym' && 'bg-[linear-gradient(180deg,#efe6d4_0%,#fff_46%)]', scene?.key === 'stadium' && 'bg-[linear-gradient(180deg,#1b3a4a_0%,#fff_48%)]')} aria-labelledby="hero-name">
         {scene?.key === 'gym' && <svg aria-hidden className="pointer-events-none absolute right-3 top-3 h-10 w-24"><rect x="4" y="16" width="88" height="6" rx="2" fill="#29483c" opacity=".45" /><rect x="18" y="8" width="6" height="22" fill="#29483c" opacity=".45" /><rect x="72" y="8" width="6" height="22" fill="#29483c" opacity=".45" /></svg>}
         {scene?.key === 'stadium' && <svg aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-16 w-full"><path d="M0,40 Q100,8 200,40 L200,0 L0,0 Z" fill="#143040" /><path d="M20,34 Q100,14 180,34" fill="none" stroke="#e2b84a" strokeWidth="2" /></svg>}
