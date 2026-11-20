@@ -13,7 +13,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: { '/api': `http://localhost:${process.env.API_PORT ?? 8787}` },
+    proxy: { '/api': { target: `http://localhost:${process.env.API_PORT ?? 8787}`, ws: true } },
   },
   // Dependencies only loaded on demand (dynamic import) are prepared up front, so the dev server
   // does not reload the page the first time one is used.

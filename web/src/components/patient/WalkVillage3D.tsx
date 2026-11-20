@@ -1,4 +1,7 @@
 import { weaponMesh } from './weapons3d';
+import type { LiveFriend } from '@/lib/live';
+import { sayingByKey } from '@shared/live';
+import { DEFAULT_LOOK as DEFAULT_FRIEND_LOOK } from '@shared/hero';
 import { creature, habitat, pond } from './creatures3d';
 import { mergeStatic } from './mergeStatic';
 import { doorstepDecor, villageWell } from './townScenery';
@@ -125,6 +128,8 @@ type Props = {
   boxing?: boolean;
   /** Colour of the karate belt round the hero's waist, if any. */
   belt?: string | null;
+  /** Friends playing at the same time (lib/live.ts): drawn walking where they are, in the same place. */
+  friends?: MutableRefObject<Map<string, LiveFriend>>;
   /** The adventure weapon in the hero's hand (weapons3d.ts), if any. */
   weapon?: string | null;
   /** The tools the patient owns: shown in hand while chopping or mining. */
@@ -785,8 +790,8 @@ const LIGHT_FILE: Record<string, string> = { courage: 'moed', neutrality: 'neutr
 /** Below this zoom the view is first person: through the hero's eyes. */
 const FIRST_PERSON_ZOOM = 0.38;
 
-export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, shrines, glow = false, ride = null, pet = null, startAt = null, belt = null, api, track, stick, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
-  const { t } = useI18n();
+export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, look, heroColor = '#e4bc63', cheer = null, startAtTv = false, onNear, onArrive, onZone, onTalk, onDestination, heroName, questOpen = false, coachLabel, coachLook, well = false, pace: paceProp = 1, creatures, creaturesGone, creatureHurt, boxing = false, weapon = null, tools, plan = false, shrines, glow = false, ride = null, pet = null, startAt = null, belt = null, api, track, stick, friends, practiceLabel = 'Praktijk', home, homeItems, placing = false, onFloor, bound, extraRoads, people = true, visitRoom = false, className }: Props) {
+  const { t, locale } = useI18n();
   const coachName = coachLabel ?? STAFF_NAMES.practice;
   const host = useRef<HTMLDivElement>(null);
   const labels = useRef<Map<string, HTMLElement>>(new Map());
@@ -1540,6 +1545,59 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     const here = () => places[zone.current];
     roads.push({ a: { x: 0, z: plan ? -SQ : -2.6 }, b: { x: GYM.x, z: GYM.z + 1.9 }, w: plan ? 2.1 : 1.6 });
     const staffMixers: THREE.AnimationMixer[] = [];
+    // Friends playing at the same time: a figure per friend, made once their model has loaded.
+    type FriendFig = { g: THREE.Group; mixer: THREE.AnimationMixer | null; walk: THREE.AnimationAction | null; run: THREE.AnimationAction | null; idle: THREE.AnimationAction | null; cur: string; tag: THREE.Sprite; bubble: THREE.Sprite | null; bubbleAt: number; lookKey: string };
+    const friendFigs = new Map<string, FriendFig>();
+    let makeFriend: ((f: LiveFriend) => FriendFig) | null = null;
+    /** A name or a saying on a small canvas, as a sprite that always faces the camera. */
+    const textSprite = (text: string, bubble: boolean) => {
+      const c = document.createElement('canvas');
+      const g2 = c.getContext('2d')!;
+      const font = bubble ? '600 30px system-ui, sans-serif' : '700 30px system-ui, sans-serif';
+      g2.font = font;
+      const w = Math.ceil(g2.measureText(text).width) + 36;
+      c.width = w;
+      c.height = bubble ? 64 : 52;
+      g2.font = font;
+      g2.textBaseline = 'middle';
+      g2.textAlign = 'center';
+      if (bubble) {
+        g2.fillStyle = 'rgba(255,255,255,0.95)';
+        g2.beginPath();
+        g2.roundRect(2, 2, w - 4, 50, 16);
+        g2.fill();
+        g2.beginPath();
+        g2.moveTo(w / 2 - 8, 52);
+        g2.lineTo(w / 2 + 8, 52);
+        g2.lineTo(w / 2, 62);
+        g2.fill();
+        g2.fillStyle = '#1c2420';
+        g2.fillText(text, w / 2, 28);
+      } else {
+        g2.lineWidth = 6;
+        g2.strokeStyle = 'rgba(0,0,0,0.75)';
+        g2.strokeText(text, w / 2, 27);
+        g2.fillStyle = '#9fe3ff';
+        g2.fillText(text, w / 2, 27);
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+      sp.renderOrder = 10;
+      const h = bubble ? 0.42 : 0.3;
+      sp.scale.set((h * c.width) / c.height, h, 1);
+      return sp;
+    };
+    const dropFriend = (id: string) => {
+      const fig = friendFigs.get(id);
+      if (!fig) return;
+      scene.remove(fig.g);
+      fig.g.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (m.isMesh || (o as THREE.Sprite).isSprite) (Array.isArray(m.material) ? m.material : [m.material]).forEach((x) => { (x as THREE.SpriteMaterial).map?.dispose(); x.dispose(); });
+      });
+      friendFigs.delete(id);
+    };
     // The villagers: each walks its own round and rests at its stops.
     type Npc = { g: THREE.Group; mixer: THREE.AnimationMixer; walk: THREE.AnimationAction | null; idle: THREE.AnimationAction | null; path: Vec[]; at: number; rest: number; wait: number; moving: boolean };
     const npcs: Npc[] = [];
@@ -2622,6 +2680,52 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
                 .catch(() => { if (!cancelled) plain(); });
             } else plain();
           }
+          // Friends: their own hero, as they made it, walking and running as the hero does.
+          makeFriend = (f) => {
+            const g = new THREE.Group();
+            g.position.set(f.x, 0, f.z);
+            scene.add(g);
+            const tag = textSprite(f.name || '…', false);
+            tag.position.y = HERO_HEIGHT + 0.35;
+            g.add(tag);
+            const fig: FriendFig = { g, mixer: null, walk: null, run: null, idle: null, cur: '', tag, bubble: null, bubbleAt: 0, lookKey: JSON.stringify(f.look) };
+            const fs = f.look ? hero3dScene({ ...DEFAULT_FRIEND_LOOK, ...f.look }) : null;
+            const place = (src: typeof gltf, scn: ReturnType<typeof hero3dScene> | null) => {
+              if (cancelled || !friendFigs.has(f.id)) return;
+              const cm = cloneSkinned(src.scene);
+              const wear = withBaseKit(scn ? scn.visible : COACH_WEAR);
+              cm.traverse((o) => {
+                if (isToggleNode(o.name)) o.visible = wear.has(o.name);
+                const m = o as THREE.Mesh;
+                if (m.isMesh) {
+                  const mm = (m.material as THREE.MeshStandardMaterial).clone();
+                  const base = mm.name.replace(/\.\d+$/, '');
+                  dress(mm, base, scn ? scn.tints[base as keyof typeof scn.tints] : COACH_TINT[base], scn?.fabric ?? null);
+                  m.material = mm;
+                  m.castShadow = true;
+                  m.frustumCulled = false;
+                }
+              });
+              const own = heroBodyBounds(cm);
+              const kk = HERO_HEIGHT / Math.max(0.5, own.max.y - own.min.y);
+              const inner = new THREE.Group();
+              inner.add(cm);
+              inner.scale.setScalar(kk);
+              inner.position.y = -own.min.y * kk;
+              g.add(inner);
+              const mx = new THREE.AnimationMixer(cm);
+              const clip = (name: string) => src.animations.find((c) => c.name.toLowerCase() === name) ?? src.animations.find((c) => c.name.toLowerCase().includes(name)) ?? null;
+              fig.mixer = mx;
+              fig.walk = clip('walk') ? mx.clipAction(clip('walk')!) : null;
+              fig.run = clip('run') ? mx.clipAction(clip('run')!) : null;
+              fig.idle = clip('idle') ? mx.clipAction(clip('idle')!) : null;
+              fig.idle?.play();
+              fig.cur = 'idle';
+            };
+            if (fs) loadModel(fs.url).then((src) => place(src, fs)).catch(() => place(gltf, null));
+            else place(gltf, null);
+            return fig;
+          };
           // The physiotherapist in the treatment room upstairs, in the practice's grey.
           if (people) for (const pp of floorPeople) staff(pp.at.x, pp.at.z, STAFF2_WEAR, STAFF2_TINT, pp.face);
           // And one by the programme board in each training house.
@@ -3752,6 +3856,69 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       if (!reduce) {
         for (const mx of staffMixers) mx.update(dt);
+        // Friends: glide to where they were last heard, turn their way, walk or run or stand.
+        if (friends && makeFriend) {
+          const now = performance.now();
+          for (const id of [...friendFigs.keys()]) if (!friends.current.has(id)) dropFriend(id);
+          for (const f of friends.current.values()) {
+            // Only where both are: the open village (not each one's own home or practice rooms).
+            const there = f.zone === 'village' && zone.current === 'village';
+            let fig = friendFigs.get(f.id);
+            if (fig && fig.lookKey !== JSON.stringify(f.look)) {
+              dropFriend(f.id);
+              fig = undefined;
+            }
+            if (!fig) {
+              if (!there) continue;
+              friendFigs.set(f.id, makeFriend(f));
+              fig = friendFigs.get(f.id)!;
+              fig.g.position.set(f.x, 0, f.z);
+            }
+            fig.g.visible = there;
+            if (!there) continue;
+            const dx = f.x - fig.g.position.x;
+            const dz = f.z - fig.g.position.z;
+            const far = Math.hypot(dx, dz);
+            // Far behind (a jump on the map): there at once. Else catch up smoothly.
+            if (far > 12) fig.g.position.set(f.x, 0, f.z);
+            else {
+              const k2 = Math.min(1, dt * 8);
+              fig.g.position.x += dx * k2;
+              fig.g.position.z += dz * k2;
+            }
+            const turn = Math.atan2(Math.sin(f.f - fig.g.rotation.y), Math.cos(f.f - fig.g.rotation.y));
+            fig.g.rotation.y += turn * Math.min(1, dt * 10);
+            // Still walking only while steps keep coming in.
+            const moving = f.w > 0 && now - f.at < 600;
+            const want = moving ? (f.w === 2 && fig.run ? 'run' : 'walk') : 'idle';
+            if (want !== fig.cur && fig.mixer) {
+              const next = want === 'run' ? fig.run : want === 'walk' ? fig.walk : fig.idle;
+              const prev = fig.cur === 'run' ? fig.run : fig.cur === 'walk' ? fig.walk : fig.idle;
+              if (next) {
+                next.reset().play();
+                if (prev && prev !== next) prev.crossFadeTo(next, 0.2, false);
+              }
+              fig.cur = want;
+            }
+            fig.mixer?.update(dt);
+            // What they said, for a few seconds over their head.
+            if (f.say && f.say.at !== fig.bubbleAt) {
+              fig.bubbleAt = f.say.at;
+              if (fig.bubble) fig.g.remove(fig.bubble);
+              const saying = sayingByKey(f.say.k);
+              fig.bubble = saying ? textSprite(locale === 'nl' ? saying.nl : saying.en, true) : null;
+              if (fig.bubble) {
+                fig.bubble.position.y = HERO_HEIGHT + 0.85;
+                fig.g.add(fig.bubble);
+              }
+            }
+            if (fig.bubble && now - fig.bubbleAt > 4500) {
+              fig.g.remove(fig.bubble);
+              fig.bubble = null;
+            }
+          }
+          el.dataset.friends = String([...friendFigs.values()].filter((x) => x.g.visible).length);
+        }
         for (const [i, f] of flames.entries()) {
           const fl = reduce ? 1 : 1 + Math.sin(tt * (9 + i * 4) + i) * 0.12 + Math.sin(tt * 23 + i) * 0.05;
           f.scale.set(1 / Math.sqrt(fl), fl, 1 / Math.sqrt(fl));

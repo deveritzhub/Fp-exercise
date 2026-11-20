@@ -3,11 +3,14 @@ import { checkMailConfig } from './auth/mailer';
 import { config } from './config';
 import { createApp } from './app';
 import { startReminderScheduler } from './auth/push';
+import { attachLive } from './live';
 
 const app = createApp();
 checkMailConfig();
-serve({ fetch: app.fetch, port: config.port }, (info) => {
+const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
   console.log(`FP Flow API listening on http://localhost:${info.port} (${config.env})`);
 });
+// Playing together with friends: the live link next to the API.
+attachLive(server as unknown as import('node:http').Server);
 
 if (process.env.DISABLE_REMINDERS !== '1') startReminderScheduler();
