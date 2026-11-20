@@ -4,18 +4,18 @@
  * and nothing done here changes it.
  */
 export const CREATURES = {
-  slime: { nl: 'Stijfheidsslijm', en: 'Stiffness slime', hp: 3, xp: 12, weakTo: 'moving', level: 1 },
-  imp: { nl: 'Dorstduiveltje', en: 'Thirst imp', hp: 3, xp: 12, weakTo: 'hydrated', level: 1 },
-  couch: { nl: 'Bankhanger', en: 'Couch lurker', hp: 4, xp: 18, weakTo: 'trained', level: 1 },
+  slime: { nl: 'Stijfheidsslijm', en: 'Stiffness slime', hp: 5, xp: 24, weakTo: 'moving', level: 1 },
+  imp: { nl: 'Dorstduiveltje', en: 'Thirst imp', hp: 5, xp: 24, weakTo: 'hydrated', level: 1 },
+  couch: { nl: 'Bankhanger', en: 'Couch lurker', hp: 7, xp: 36, weakTo: 'trained', level: 1 },
   // Bigger ones show themselves to an adventurer who has grown: more blows, more XP.
-  giant_slime: { nl: 'Reuzenslijm', en: 'Giant slime', hp: 10, xp: 40, weakTo: 'moving', level: 3 },
-  couch_king: { nl: 'Bankkoning', en: 'Couch king', hp: 24, xp: 75, weakTo: 'trained', level: 5 },
+  giant_slime: { nl: 'Reuzenslijm', en: 'Giant slime', hp: 18, xp: 80, weakTo: 'moving', level: 3 },
+  couch_king: { nl: 'Bankkoning', en: 'Couch king', hp: 42, xp: 150, weakTo: 'trained', level: 5 },
   // Animals in the meadow, as in the old online worlds: beaten for what they drop.
-  chicken: { nl: 'Kip', en: 'Chicken', hp: 2, xp: 6, weakTo: 'moving', level: 1 },
-  cow: { nl: 'Koe', en: 'Cow', hp: 8, xp: 20, weakTo: 'trained', level: 1 },
-  boar: { nl: 'Wild zwijn', en: 'Wild boar', hp: 16, xp: 45, weakTo: 'trained', level: 4 },
+  chicken: { nl: 'Kip', en: 'Chicken', hp: 4, xp: 12, weakTo: 'moving', level: 1 },
+  cow: { nl: 'Koe', en: 'Cow', hp: 14, xp: 40, weakTo: 'trained', level: 1 },
+  boar: { nl: 'Wild zwijn', en: 'Wild boar', hp: 28, xp: 90, weakTo: 'trained', level: 4 },
   // The first Alpha: a huge boar at the edge of the meadow. It attacks by itself and can beat you.
-  alpha_boar: { nl: 'Alfazwijn', en: 'Alpha boar', hp: 60, xp: 220, weakTo: 'trained', level: 1 },
+  alpha_boar: { nl: 'Alfazwijn', en: 'Alpha boar', hp: 105, xp: 440, weakTo: 'trained', level: 1 },
   // Not creatures but things to harvest, the same way: an oak gives wood, a rock gives stone.
   oak: { nl: 'Eik', en: 'Oak', hp: 5, xp: 8, weakTo: 'moving', level: 1 },
   rock: { nl: 'Rots', en: 'Rock', hp: 7, xp: 10, weakTo: 'trained', level: 1 },
@@ -25,22 +25,22 @@ export const CREATURES = {
   pebble: { nl: 'Steentjes', en: 'Pebbles', hp: 1, xp: 2, weakTo: 'moving', level: 1 },
   twigs: { nl: 'Takken', en: 'Twigs', hp: 1, xp: 2, weakTo: 'moving', level: 1 },
   // Outside the town wall, each in its own hunting ground: they show themselves from their level on.
-  wolf: { nl: 'Wolf', en: 'Wolf', hp: 26, xp: 70, weakTo: 'trained', level: 6 },
-  bear: { nl: 'Beer', en: 'Bear', hp: 50, xp: 140, weakTo: 'trained', level: 10 },
+  wolf: { nl: 'Wolf', en: 'Wolf', hp: 46, xp: 140, weakTo: 'trained', level: 6 },
+  bear: { nl: 'Beer', en: 'Bear', hp: 88, xp: 280, weakTo: 'trained', level: 10 },
   // The boss of each hunting ground: shows itself with its pack, a fair fight only later (alphaAdvised).
-  alpha_wolf: { nl: 'Alfawolf', en: 'Alpha wolf', hp: 120, xp: 400, weakTo: 'trained', level: 6 },
-  alpha_bear: { nl: 'Alfabeer', en: 'Alpha bear', hp: 220, xp: 800, weakTo: 'trained', level: 10 },
+  alpha_wolf: { nl: 'Alfawolf', en: 'Alpha wolf', hp: 210, xp: 800, weakTo: 'trained', level: 6 },
+  alpha_bear: { nl: 'Alfabeer', en: 'Alpha bear', hp: 385, xp: 1600, weakTo: 'trained', level: 10 },
   // The shadow side: heavy feelings as creatures, the heavier the stronger. The milder ones live in
   // the Shadow valley, the deeper ones in the dungeon of the underworld. What you really did today is
   // what hits them hardest: you are stronger than this.
-  pride: { nl: 'Pronkpauw', en: 'Peacock of pride', hp: 14, xp: 40, weakTo: 'trained', level: 4 },
-  rage: { nl: 'Vuurkop', en: 'Hothead', hp: 24, xp: 65, weakTo: 'hydrated', level: 6 },
-  craving: { nl: 'Graaigeest', en: 'Grabbing ghost', hp: 30, xp: 90, weakTo: 'fed', level: 8 },
-  fright: { nl: 'Schrikschim', en: 'Fright shade', hp: 40, xp: 120, weakTo: 'moving', level: 10 },
-  sorrow: { nl: 'Tranenslijk', en: 'Tear sludge', hp: 60, xp: 160, weakTo: 'rested', level: 12 },
-  apathy: { nl: 'Grijze Slaper', en: 'Grey sleeper', hp: 70, xp: 200, weakTo: 'trained', level: 14 },
-  guilt: { nl: 'Schuldketter', en: 'Guilt chainer', hp: 90, xp: 260, weakTo: 'hydrated', level: 16 },
-  shame_lord: { nl: 'Schaamtevorst', en: 'Shame lord', hp: 400, xp: 1500, weakTo: 'trained', level: 16 },
+  pride: { nl: 'Pronkpauw', en: 'Peacock of pride', hp: 24, xp: 80, weakTo: 'trained', level: 4 },
+  rage: { nl: 'Vuurkop', en: 'Hothead', hp: 42, xp: 130, weakTo: 'hydrated', level: 6 },
+  craving: { nl: 'Graaigeest', en: 'Grabbing ghost', hp: 52, xp: 180, weakTo: 'fed', level: 8 },
+  fright: { nl: 'Schrikschim', en: 'Fright shade', hp: 70, xp: 240, weakTo: 'moving', level: 10 },
+  sorrow: { nl: 'Tranenslijk', en: 'Tear sludge', hp: 105, xp: 320, weakTo: 'rested', level: 12 },
+  apathy: { nl: 'Grijze Slaper', en: 'Grey sleeper', hp: 122, xp: 400, weakTo: 'trained', level: 14 },
+  guilt: { nl: 'Schuldketter', en: 'Guilt chainer', hp: 158, xp: 520, weakTo: 'hydrated', level: 16 },
+  shame_lord: { nl: 'Schaamtevorst', en: 'Shame lord', hp: 700, xp: 3000, weakTo: 'trained', level: 16 },
 } as const;
 export type CreatureKind = keyof typeof CREATURES;
 export const CREATURE_KINDS = Object.keys(CREATURES) as CreatureKind[];
@@ -53,30 +53,30 @@ export const CREATURE_KINDS = Object.keys(CREATURES) as CreatureKind[];
 export const ATTACKS: Record<CreatureKind, { damage: number; everyMs: number; aggressive: boolean }> = {
   slime: { damage: 1, everyMs: 1600, aggressive: false },
   imp: { damage: 1, everyMs: 1300, aggressive: true },
-  couch: { damage: 2, everyMs: 1800, aggressive: false },
-  giant_slime: { damage: 3, everyMs: 1700, aggressive: false },
-  couch_king: { damage: 5, everyMs: 1800, aggressive: true },
+  couch: { damage: 3, everyMs: 1800, aggressive: false },
+  giant_slime: { damage: 4, everyMs: 1700, aggressive: false },
+  couch_king: { damage: 7, everyMs: 1800, aggressive: true },
   chicken: { damage: 1, everyMs: 1500, aggressive: false },
   cow: { damage: 2, everyMs: 1800, aggressive: false },
-  boar: { damage: 3, everyMs: 1500, aggressive: true },
-  alpha_boar: { damage: 8, everyMs: 1600, aggressive: true },
+  boar: { damage: 4, everyMs: 1500, aggressive: true },
+  alpha_boar: { damage: 11, everyMs: 1600, aggressive: true },
   oak: { damage: 0, everyMs: 1500, aggressive: false },
   rock: { damage: 0, everyMs: 1500, aggressive: false },
   bush: { damage: 0, everyMs: 1500, aggressive: false },
   pebble: { damage: 0, everyMs: 1500, aggressive: false },
   twigs: { damage: 0, everyMs: 1500, aggressive: false },
-  wolf: { damage: 5, everyMs: 1400, aggressive: true },
-  bear: { damage: 9, everyMs: 1700, aggressive: true },
-  alpha_wolf: { damage: 12, everyMs: 1500, aggressive: true },
-  alpha_bear: { damage: 18, everyMs: 1800, aggressive: true },
-  pride: { damage: 3, everyMs: 1500, aggressive: false },
-  rage: { damage: 5, everyMs: 1200, aggressive: true },
-  craving: { damage: 5, everyMs: 1400, aggressive: true },
-  fright: { damage: 7, everyMs: 1500, aggressive: true },
-  sorrow: { damage: 8, everyMs: 1800, aggressive: false },
-  apathy: { damage: 9, everyMs: 2000, aggressive: true },
-  guilt: { damage: 12, everyMs: 1600, aggressive: true },
-  shame_lord: { damage: 22, everyMs: 1800, aggressive: true },
+  wolf: { damage: 7, everyMs: 1400, aggressive: true },
+  bear: { damage: 13, everyMs: 1700, aggressive: true },
+  alpha_wolf: { damage: 17, everyMs: 1500, aggressive: true },
+  alpha_bear: { damage: 25, everyMs: 1800, aggressive: true },
+  pride: { damage: 4, everyMs: 1500, aggressive: false },
+  rage: { damage: 7, everyMs: 1200, aggressive: true },
+  craving: { damage: 7, everyMs: 1400, aggressive: true },
+  fright: { damage: 10, everyMs: 1500, aggressive: true },
+  sorrow: { damage: 11, everyMs: 1800, aggressive: false },
+  apathy: { damage: 13, everyMs: 2000, aggressive: true },
+  guilt: { damage: 17, everyMs: 1600, aggressive: true },
+  shame_lord: { damage: 31, everyMs: 1800, aggressive: true },
 };
 /** Trees and rocks: you chop them for wood and stone; they never fight back. */
 export const isHarvest = (kind: CreatureKind) => kind === 'oak' || kind === 'rock' || kind === 'bush' || kind === 'pebble' || kind === 'twigs';
@@ -96,7 +96,7 @@ export const alphaAdvised = (kind: CreatureKind): number => (kind === 'alpha_wol
  * a quarter more (what you did for real makes your hero tougher). Play only: losing costs nothing.
  */
 export function heroMaxHp(level: number, trainedToday: boolean): number {
-  const base = 40 + 10 * (Math.max(1, Math.floor(level)) - 1);
+  const base = 40 + 12 * (Math.max(1, Math.floor(level)) - 1);
   return Math.round(base * (trainedToday ? 1.25 : 1));
 }
 /** Life that comes back by itself out of a fight, per second; after a while without being hit. */
@@ -122,19 +122,25 @@ export function respawnSeconds(kind: CreatureKind): number {
   return CREATURES[kind].level >= 6 ? 240 : 150;
 }
 
+/** XP needed to go from `level` to the next: 60 for the first, 30 more for each next one. */
+export const adventureStep = (level: number) => 60 + (Math.max(1, Math.floor(level)) - 1) * 30;
+/** The XP at which a level is reached. */
+export function xpForAdventureLevel(level: number): number {
+  let xp = 0;
+  for (let l = 1; l < Math.floor(level); l++) xp += adventureStep(l);
+  return xp;
+}
 /** Level from adventure XP: 1 at the start, each next level asks a little more. */
 export function adventureLevel(xp: number): { level: number; from: number; to: number } {
   let level = 1;
   let from = 0;
-  let need = 60;
   let left = Math.max(0, Math.floor(xp));
-  while (left >= need) {
-    left -= need;
-    from += need;
+  while (left >= adventureStep(level)) {
+    left -= adventureStep(level);
+    from += adventureStep(level);
     level++;
-    need = 60 + (level - 1) * 30;
   }
-  return { level, from, to: from + need };
+  return { level, from, to: from + adventureStep(level) };
 }
 
 /**
@@ -143,25 +149,68 @@ export function adventureLevel(xp: number): { level: number; from: number; to: n
  * The village shows it in the hero's hand (web/src/components/patient/weapons3d.ts).
  */
 export const WEAPONS = [
-  { key: 'fists', level: 1, power: 0, speedMs: 800, price: 0, strength: 0, nl: 'Vuisten', en: 'Fists' },
-  { key: 'staff', level: 2, power: 1, speedMs: 1000, price: 30, strength: 0, nl: 'Wandelstaf', en: 'Walking staff' },
-  { key: 'gloves', level: 3, power: 1.5, speedMs: 750, price: 60, strength: 0, nl: 'Bokshandschoenen', en: 'Boxing gloves' },
-  { key: 'club', level: 4, power: 2, speedMs: 1300, price: 90, strength: 0, nl: 'Knots', en: 'Club' },
-  { key: 'hammer', level: 6, power: 3, speedMs: 1500, price: 140, strength: 2, nl: 'Smidshamer', en: 'Smith’s hammer' },
-  { key: 'sword', level: 8, power: 4, speedMs: 1050, price: 200, strength: 3, nl: 'IJzeren zwaard', en: 'Iron sword' },
-  { key: 'axe', level: 10, power: 5, speedMs: 1400, price: 280, strength: 4, nl: 'Strijdbijl', en: 'Battle axe' },
-  { key: 'spear', level: 13, power: 6.5, speedMs: 1150, price: 380, strength: 5, nl: 'Speer', en: 'Spear' },
-  { key: 'hero_sword', level: 16, power: 9, speedMs: 950, price: 600, strength: 6, nl: 'Heldenzwaard', en: 'Hero’s sword' },
+  { key: 'fists', level: 1, power: 0, speedMs: 800, price: 0, strength: 0, style: 'melee', nl: 'Vuisten', en: 'Fists' },
+  { key: 'staff', level: 2, power: 1, speedMs: 1000, price: 30, strength: 0, style: 'melee', nl: 'Wandelstaf', en: 'Walking staff' },
+  { key: 'gloves', level: 3, power: 1.5, speedMs: 750, price: 60, strength: 0, style: 'melee', nl: 'Bokshandschoenen', en: 'Boxing gloves' },
+  { key: 'club', level: 4, power: 2, speedMs: 1300, price: 90, strength: 0, style: 'melee', nl: 'Knots', en: 'Club' },
+  { key: 'hammer', level: 6, power: 3, speedMs: 1500, price: 140, strength: 2, style: 'melee', nl: 'Smidshamer', en: 'Smith’s hammer' },
+  { key: 'sword', level: 8, power: 4, speedMs: 1050, price: 200, strength: 3, style: 'melee', nl: 'IJzeren zwaard', en: 'Iron sword' },
+  { key: 'axe', level: 10, power: 5, speedMs: 1400, price: 280, strength: 4, style: 'melee', nl: 'Strijdbijl', en: 'Battle axe' },
+  { key: 'spear', level: 13, power: 6.5, speedMs: 1150, price: 380, strength: 5, style: 'melee', nl: 'Speer', en: 'Spear' },
+  { key: 'hero_sword', level: 16, power: 9, speedMs: 950, price: 600, strength: 6, style: 'melee', nl: 'Heldenzwaard', en: 'Hero’s sword' },
+  // Bows (from the smithy): they hit from a distance, so a creature needs a moment longer to reach you.
+  // Every shot takes an arrow, made in the workshop.
+  { key: 'shortbow', level: 2, power: 1, speedMs: 1100, price: 45, strength: 0, style: 'ranged', nl: 'Korte boog', en: 'Short bow' },
+  { key: 'hunting_bow', level: 6, power: 3, speedMs: 1150, price: 160, strength: 0, style: 'ranged', nl: 'Jachtboog', en: 'Hunting bow' },
+  { key: 'longbow', level: 11, power: 5.5, speedMs: 1250, price: 340, strength: 2, style: 'ranged', nl: 'Handboog', en: 'Longbow' },
+  { key: 'elven_bow', level: 16, power: 8.5, speedMs: 1000, price: 650, strength: 3, style: 'ranged', nl: 'Elfenboog', en: 'Elven bow' },
+  // Magic (from the mage tower): a spell flies to the creature. Every spell takes a rune.
+  { key: 'wand', level: 3, power: 1.5, speedMs: 1300, price: 60, strength: 0, style: 'magic', nl: 'Toverstokje', en: 'Wand' },
+  { key: 'mage_staff', level: 7, power: 3.5, speedMs: 1350, price: 190, strength: 0, style: 'magic', nl: 'Magiërsstaf', en: 'Mage staff' },
+  { key: 'crystal_staff', level: 12, power: 6, speedMs: 1350, price: 380, strength: 0, style: 'magic', nl: 'Kristalstaf', en: 'Crystal staff' },
+  { key: 'light_staff', level: 17, power: 9.5, speedMs: 1250, price: 700, strength: 0, style: 'magic', nl: 'Staf van het Licht', en: 'Staff of light' },
 ] as const;
+export type WeaponStyle = 'melee' | 'ranged' | 'magic';
 export type Weapon = (typeof WEAPONS)[number];
 /** The best weapon earned at this level, and the next one to come (null at the last). */
 export function weaponAt(level: number): { weapon: Weapon; next: Weapon | null } {
+  const melee = WEAPONS.filter((w) => w.style === 'melee');
   let i = 0;
-  WEAPONS.forEach((w, k) => {
+  melee.forEach((w, k) => {
     if (level >= w.level) i = k;
   });
-  return { weapon: WEAPONS[i], next: WEAPONS[i + 1] ?? null };
+  return { weapon: melee[i], next: melee[i + 1] ?? null };
 }
+
+/**
+ * Three ways to fight, each a skill of its own that grows with the wins it brings: close by with a
+ * weapon in the hand, from a distance with a bow, or with magic. A higher skill hits harder.
+ */
+export const COMBAT_SKILLS = [
+  { key: 'melee', nl: 'Vechten', en: 'Fighting', icon: '⚔️', ammo: null },
+  { key: 'ranged', nl: 'Boogschieten', en: 'Archery', icon: '🏹', ammo: 'arrows' },
+  { key: 'magic', nl: 'Magie', en: 'Magic', icon: '✨', ammo: 'runes' },
+] as const satisfies readonly { key: WeaponStyle; nl: string; en: string; icon: string; ammo: 'arrows' | 'runes' | null }[];
+/** A fighting skill's level from its XP: the same steps as the adventure level. */
+export const combatLevel = (xp: number) => adventureLevel(xp);
+/** Each level of a fighting skill above the first adds a twentieth to every blow of that style. */
+export const skillPower = (level: number) => 1 + 0.05 * (Math.max(1, Math.floor(level)) - 1);
+/** From a distance (a bow or a spell): an attacking creature needs this much longer to reach you. */
+export const RANGED_HEADSTART_MS = 2500;
+/** Arrows and runes: made in the workshop and the mage tower from loot; one per shot or spell. */
+export const AMMO = {
+  arrows: { nl: 'Pijlen', en: 'Arrows', icon: '🏹', makes: 10, needs: { wood: 1, feather: 1, stone: 1 }, cap: 200 },
+  runes: { nl: 'Runen', en: 'Runes', icon: '🔮', makes: 5, needs: { gel: 1, stone: 1 }, cap: 200 },
+} as const satisfies Record<'arrows' | 'runes', { nl: string; en: string; icon: string; makes: number; needs: Partial<Record<LootKey, number>>; cap: number }>;
+export type AmmoKey = keyof typeof AMMO;
+export const ammoFor = (style: WeaponStyle): AmmoKey | null => (style === 'ranged' ? 'arrows' : style === 'magic' ? 'runes' : null);
+/** Spells besides the attack: from a magic skill level, for runes. Healing gives life back. */
+export const SPELLS = [
+  { key: 'heal', level: 1, runes: 3, heals: 0.4, nl: 'Genezing', en: 'Healing', icon: '💚' },
+  { key: 'shield', level: 5, runes: 4, guard: 0.3, seconds: 12, nl: 'Lichtschild', en: 'Shield of light', icon: '🛡️' },
+] as const;
+export type Spell = (typeof SPELLS)[number];
+export const spellByKey = (key: string): Spell | null => SPELLS.find((x) => x.key === key) ?? null;
 
 /** One blow: the weapon's power on top, and double when what the creature stands for was put right in real life today. */
 export const blow = (kind: CreatureKind, strong: ReadonlySet<string>, power = 0) => (1 + power) * (strong.has(CREATURES[kind].weakTo) ? 2 : 1);

@@ -150,7 +150,8 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   await strike.click();
   await expect.poll(async () => (await strike.count()) === 0 || Number(await life.getAttribute('data-hp')) < full).toBe(true);
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/mob-hit.png' });
-  for (let i = 0; i < 4 && (await strike.count()); i++) await strike.click();
+  // The fight goes on by itself once started; a click that comes just as the creature falls is no matter.
+  for (let i = 0; i < 6 && (await strike.count()); i++) await strike.click({ timeout: 3000 }).catch(() => undefined);
   // Twelve for the slime (and the task of the day's bonus on a day it is about slimes).
   await expect.poll(advXp, { timeout: 15_000 }).toBeGreaterThanOrEqual(xp0 + 12);
   await expect(strike).toHaveCount(0);
@@ -180,7 +181,7 @@ test('therapist makes a figure and the patient meets it in the practice', async 
   await page.goto('/p/held/inventaris');
   const pack = page.getByTestId('pack-weapons');
   await expect(pack.locator('[data-weapon="fists"]')).toHaveAttribute('data-state', 'on');
-  await expect(page.getByTestId('pack-shops').locator('[data-shop]')).toHaveCount(6);
+  await expect(page.getByTestId('pack-shops').locator('[data-shop]')).toHaveCount(7);
   await expect(page.getByTestId('backpack-flask')).toContainText(/Veldfles · \d+ glas/);
   await expect(page.getByTestId('backpack-rations')).toContainText('Rantsoenen');
   // The loot of the village: a square per kind, a question mark until it is found.

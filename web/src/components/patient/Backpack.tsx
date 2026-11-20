@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Axe, Shield, Beef, ChevronRight, Coins, Droplets, Footprints, Gem, Lock, Store, Swords } from 'lucide-react';
-import { ARMOURS, armourByKey, BERRIES_FOR, LOOT, LOOT_KEYS, RECIPES, RIDES, TOOLS, WEAPONS, weaponByKey, type LootKey } from '@shared/adventure';
+import { AMMO, ARMOURS, armourByKey, BERRIES_FOR, LOOT, LOOT_KEYS, RECIPES, RIDES, SPELLS, TOOLS, WEAPONS, weaponByKey, type AmmoKey, type LootKey, type Weapon } from '@shared/adventure';
 import { api } from '@/lib/api';
 import { describeError, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/cn';
@@ -12,11 +12,17 @@ import { ItemIcon } from './ItemIcon';
 import { PetCard, PetSalon } from './PetPicker';
 import { useSupplies } from '@/lib/supplies';
 
-type Adventure = { level: number; weapon: string | null; owned: string[]; coins: number; loot?: Record<string, number>; tools?: string[]; rides?: string[]; built?: string[]; strength?: number; lootCap?: number; armour?: string | null };
+type SkillState = { xp: number; level: number; from: number; to: number };
+export type Adventure = { level: number; xp?: number; from?: number; to?: number; weapon: string | null; owned: string[]; coins: number; loot?: Record<string, number>; tools?: string[]; rides?: string[]; built?: string[]; strength?: number; lootCap?: number; armour?: string | null; arrows?: number; runes?: number; skills?: Record<'melee' | 'ranged' | 'magic', SkillState> };
 
-const ICON: Record<string, string> = { fists: '✊', staff: '🦯', gloves: '🥊', club: '🏏', hammer: '🔨', sword: '🗡️', axe: '🪓', spear: '🔱', hero_sword: '⚔️' };
+export const ICON: Record<string, string> = { fists: '✊', staff: '🦯', gloves: '🥊', club: '🏏', hammer: '🔨', sword: '🗡️', axe: '🪓', spear: '🔱', hero_sword: '⚔️', shortbow: '🏹', hunting_bow: '🏹', longbow: '🏹', elven_bow: '🏹', wand: '🪄', mage_staff: '🪄', crystal_staff: '🔮', light_staff: '✨' };
+/** What a weapon adds, in words: per blow, per arrow or per spell. */
+export const weaponLine = (w: Weapon, nl: boolean) => {
+  const per = w.style === 'ranged' ? (nl ? 'per pijl' : 'per arrow') : w.style === 'magic' ? (nl ? 'per spreuk' : 'per spell') : nl ? 'per slag' : 'per blow';
+  return `+${String(w.power).replace('.', nl ? ',' : '.')} ${per}`;
+};
 /** The adventure state and what can be done with it: put on, buy, make. Shared by the backpack and the shops. */
-function useAdventureActions() {
+export function useAdventureActions() {
   const { t, locale } = useI18n();
   const qc = useQueryClient();
   const toast = useToast();
@@ -45,16 +51,18 @@ function useAdventureActions() {
     buyRide: (key: string, name: string) => act(`ride:${key}`, () => api.post<Adventure>('/patient/hero/adventure/ride/buy', { key }), t(`${name} gekocht! Stap op in het dorp.`, `${name} bought! Get on in the village.`)),
     craft: (key: string, name: string) => act(`craft:${key}`, () => api.post<Adventure>('/patient/hero/adventure/craft', { key }), t(`${name} gemaakt!`, `${name} made!`)),
     buy: (key: string, name: string) => act(key, () => api.post<Adventure>('/patient/hero/adventure/weapon/buy', { key }), t(`${name} gekocht en in de hand!`, `${name} bought and in hand!`)),
+    makeAmmo: (key: AmmoKey, times: number) => act(`ammo:${key}`, () => api.post<Adventure>('/patient/hero/adventure/ammo/make', { key, times }), t(`${AMMO[key].makes * times} ${AMMO[key].nl.toLowerCase()} gemaakt!`, `${AMMO[key].makes * times} ${AMMO[key].en.toLowerCase()} made!`)),
   };
 }
 
 /** The shops of the town and what each sells or makes (the backpack only holds what you have). */
 export const SHOPS = {
-  smid: { nl: 'Smederij', en: 'Smithy', icon: '⚒️', aboutNl: 'Wapens, te koop met muntjes. De smid verkoopt wat bij je avonturier-level past.', aboutEn: 'Weapons, for coins. The smith sells what suits your adventurer level.' },
+  smid: { nl: 'Smederij', en: 'Smithy', icon: '⚒️', aboutNl: 'Wapens en bogen, te koop met muntjes. De smid verkoopt wat bij je avonturier-level past. Pijlen maak je in de werkplaats.', aboutEn: 'Weapons and bows, for coins. The smith sells what suits your adventurer level. Arrows are made in the workshop.' },
   gereedschap: { nl: 'Gereedschapswinkel', en: 'Tool shop', icon: '🛠️', aboutNl: 'Grote eiken hak je alleen met een hakbijl, grote rotsen breek je alleen met een pikhouweel; die geven veel meer. Takken en steentjes raap je met de hand op.', aboutEn: 'Big oaks are chopped only with a hatchet, big rocks broken only with a pickaxe; they give much more. Twigs and pebbles are picked up by hand.' },
   stallen: { nl: 'Stallen', en: 'Stables', icon: '🚲', aboutNl: 'Sneller door het dorp en de jachtgronden. In de wereld stap je op en af met de knop onderin. Vechten, oprapen en naar binnen gaan doe je te voet.', aboutEn: 'Faster round the village and the hunting grounds. In the world you get on and off with the button at the bottom. Fighting, picking up and going inside are done on foot.' },
-  werkplaats: { nl: 'Werkplaats', en: 'Workshop', icon: '🔨', aboutNl: 'Maak van je buit een eenvoudig wapen of een kist. In een kist bewaar je tot 99 stuks per soort in plaats van 20. Liever niet jagen? Huid, bot en veren betaal je ook met bessen.', aboutEn: 'Make a simple weapon or a chest from your loot. A chest keeps up to 99 of a kind instead of 20. Rather not hunt? Hide, bone and feathers can be paid with berries too.' },
+  werkplaats: { nl: 'Werkplaats', en: 'Workshop', icon: '🔨', aboutNl: 'Maak van je buit pijlen, een eenvoudig wapen of een kist. In een kist bewaar je tot 99 stuks per soort in plaats van 20. Liever niet jagen? Huid, bot en veren betaal je ook met bessen.', aboutEn: 'Make a simple weapon or a chest from your loot. A chest keeps up to 99 of a kind instead of 20. Rather not hunt? Hide, bone and feathers can be paid with berries too.' },
   trimsalon: { nl: 'Trimsalon', en: 'Grooming salon', icon: '✂️', aboutNl: 'Maak je huisdier mooi: een halsband in je lievelingskleur, en een bandana, strik, tuigje, jasje of trui. Wat je koopt blijft van jou; aan- en uitdoen is gratis.', aboutEn: 'Make your pet look its best: a collar in your favourite colour, and a bandana, bow, harness, coat or sweater. What you buy stays yours; putting it on and off is free.' },
+  magie: { nl: 'Magiërstoren', en: 'Mage tower', icon: '🔮', aboutNl: 'Toverstokjes en staven, te koop met muntjes. Een spreuk vliegt naar het wezen toe, dus je staat op afstand. Elke spreuk kost een rune; runen maak je hier van slijm en steen.', aboutEn: 'Wands and staffs, for coins. A spell flies to the creature, so you stand at a distance. Every spell takes a rune; runes are made here from slime gel and stone.' },
   pantser: { nl: 'Pantsermaker', en: 'Armourer', icon: '🛡️', aboutNl: 'Een harnas dempt de klappen van wezens. Je laat het maken van vachten en huiden.', aboutEn: 'Armour softens the blows of creatures. You have it made from pelts and hides.' },
 } as const;
 export type ShopKey = keyof typeof SHOPS;
@@ -116,7 +124,7 @@ export function BackpackCard({ d }: { d: HeroState }) {
           const on = worn.key === w.key;
           return (
             <Row key={w.key} testAttr={{ 'data-weapon': w.key }} state={on ? 'on' : 'owned'} on={on} icon={<ItemIcon k={w.key} emoji={ICON[w.key] ?? '⚔️'} />} name={name}
-              line={fists ? t('Altijd bij je', 'Always with you') : t(`+${w.power} per slag`, `+${w.power} per blow`)}
+              line={fists ? t('Altijd bij je', 'Always with you') : weaponLine(w, nl)}
               action={fists ? (on ? <Owned>{t('In de hand', 'In hand')}</Owned> : null)
                 : on ? <Button size="sm" variant="secondary" loading={busy === 'off'} onClick={() => void wear(null, name)} aria-label={t(`Doe ${name} uit`, `Take ${name} off`)}>{t('Uit', 'Off')}</Button>
                 : <Button size="sm" loading={busy === w.key} onClick={() => void wear(w.key, name)} aria-label={t(`Doe ${name} aan`, `Put ${name} on`)}>{t('Aan', 'On')}</Button>} />
@@ -226,6 +234,45 @@ export function BackpackCard({ d }: { d: HeroState }) {
   );
 }
 
+/** Making arrows (the workshop) or runes (the mage tower) from loot: one batch or five at once. */
+function AmmoMaker({ kind }: { kind: AmmoKey }) {
+  const { t, locale } = useI18n();
+  const nl = locale === 'nl';
+  const { a, busy, makeAmmo } = useAdventureActions();
+  const ammo = AMMO[kind];
+  const have = (kind === 'arrows' ? a?.arrows : a?.runes) ?? 0;
+  const needs = Object.entries(ammo.needs) as [LootKey, number][];
+  const can = (times: number) => {
+    let berries = a?.loot?.berries ?? 0;
+    return needs.every(([k, n]) => {
+      const short = n * times - Math.min(n * times, a?.loot?.[k] ?? 0);
+      if (short <= 0) return true;
+      const rate = BERRIES_FOR[k];
+      if (!rate || berries < short * rate) return false;
+      berries -= short * rate;
+      return true;
+    });
+  };
+  const name = nl ? ammo.nl : ammo.en;
+  return (
+    <div className="mt-3 rounded-xl border border-[#e4bc63] bg-[#fbf0d9] p-3" data-testid={`make-${kind}`} data-have={have}>
+      <p className="flex items-center gap-2 text-[14.5px] font-semibold text-ink-950"><span aria-hidden className="text-[20px]">{ammo.icon}</span>{name}: {have}</p>
+      <p className="mt-1 text-[13px] text-ink-700">
+        {t(`${ammo.makes} ${name.toLowerCase()} van `, `${ammo.makes} ${name.toLowerCase()} from `)}
+        {needs.map(([k, n], i) => <span key={k}>{i > 0 && ' + '}{n} {(nl ? LOOT[k].nl : LOOT[k].en).toLowerCase()}</span>)}
+        {kind === 'arrows' ? t('. Een boog schiet er één per schot.', '. A bow shoots one per shot.') : t('. Elke spreuk kost een rune.', '. Every spell takes a rune.')}
+      </p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {[1, 5].map((times) => (
+          <Button key={times} size="sm" disabled={!a || !can(times) || have >= ammo.cap} loading={busy === `ammo:${kind}`} onClick={() => void makeAmmo(kind, times)} data-testid={`make-${kind}-${times}`}>
+            {t(`Maak ${ammo.makes * times}`, `Make ${ammo.makes * times}`)}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /**
  * A shop of the town: what it sells (or makes from loot) at your level. What comes at higher levels
  * is under Skills, as in a skill guide.
@@ -253,9 +300,10 @@ export function ShopCard({ shop }: { shop: ShopKey }) {
   let next: React.ReactNode = null;
   if (shop === 'trimsalon') {
     list = <PetSalon />;
-  } else if (shop === 'smid') {
-    const forSale = WEAPONS.filter((w) => w.key !== 'fists' && !a?.owned.includes(w.key) && level >= w.level);
-    const soon = WEAPONS.find((w) => level < w.level);
+  } else if (shop === 'smid' || shop === 'magie') {
+    const sells = (w: Weapon) => (shop === 'magie' ? w.style === 'magic' : w.style !== 'magic');
+    const forSale = WEAPONS.filter((w) => w.key !== 'fists' && sells(w) && !a?.owned.includes(w.key) && level >= w.level);
+    const soon = WEAPONS.find((w) => sells(w) && level < w.level);
     list = (
       <ul className="mt-3 grid gap-2 sm:grid-cols-2" data-testid="weapons">
         {forSale.map((w) => {
@@ -263,13 +311,31 @@ export function ShopCard({ shop }: { shop: ShopKey }) {
           const weak = (a?.strength ?? 1) < w.strength;
           return (
             <Row key={w.key} testAttr={{ 'data-weapon': w.key }} state={weak ? 'locked' : 'shop'} icon={<ItemIcon k={w.key} emoji={ICON[w.key] ?? '⚔️'} />} name={name}
-              line={<>{t(`+${w.power} per slag`, `+${w.power} per blow`)}{w.strength > 0 ? t(` · kracht-skill ${w.strength}`, ` · strength skill ${w.strength}`) : ''} · <Price n={w.price} /></>}
+              line={<>{weaponLine(w, nl)}{w.strength > 0 ? t(` · kracht-skill ${w.strength}`, ` · strength skill ${w.strength}`) : ''} · <Price n={w.price} /></>}
               action={weak ? <span className="inline-flex items-center gap-1 text-[12.5px] font-medium text-ink-600"><Lock className="h-3.5 w-3.5" aria-hidden />{t(`Kracht ${w.strength}`, `Strength ${w.strength}`)}</span> : buyButton(w.key, name, w.price, () => void buy(w.key, name))} />
           );
         })}
       </ul>
     );
-    if (!forSale.length) list = <p className="mt-3 text-[14px] text-ink-700" data-testid="weapons">{t('Je hebt alles wat de smid nu verkoopt.', 'You have everything the smith sells now.')}</p>;
+    if (!forSale.length) list = <p className="mt-3 text-[14px] text-ink-700" data-testid="weapons">{shop === 'magie' ? t('Je hebt alles wat de magiër nu verkoopt.', 'You have everything the mage sells now.') : t('Je hebt alles wat de smid nu verkoopt.', 'You have everything the smith sells now.')}</p>;
+    // The mage tower also makes runes, and teaches the spells.
+    if (shop === 'magie') list = (
+      <>
+        {list}
+        <AmmoMaker kind="runes" />
+        <h3 className="mt-4 text-[15px] font-semibold text-ink-950">{t('Spreuken', 'Spells')}</h3>
+        <ul className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="spells">
+          {SPELLS.map((sp) => {
+            const open = (a?.skills?.magic.level ?? 1) >= sp.level;
+            return (
+              <Row key={sp.key} testAttr={{ 'data-spell': sp.key }} state={open ? 'owned' : 'locked'} icon={sp.icon} name={nl ? sp.nl : sp.en}
+                line={sp.key === 'heal' ? t(`Geeft ${Math.round(('heals' in sp ? sp.heals : 0) * 100)}% leven terug · ${sp.runes} runen`, `Gives back ${Math.round(('heals' in sp ? sp.heals : 0) * 100)}% life · ${sp.runes} runes`) : t(`${Math.round(('guard' in sp ? sp.guard : 0) * 100)}% minder schade, ${'seconds' in sp ? sp.seconds : 0} tellen · ${sp.runes} runen`, `${Math.round(('guard' in sp ? sp.guard : 0) * 100)}% less damage for ${'seconds' in sp ? sp.seconds : 0} seconds · ${sp.runes} runes`)}
+                action={open ? <Owned>{t('In het gevecht', 'In a fight')}</Owned> : <span className="inline-flex items-center gap-1 text-[12.5px] font-medium text-ink-600"><Lock className="h-3.5 w-3.5" aria-hidden />{t(`Magie ${sp.level}`, `Magic ${sp.level}`)}</span>} />
+            );
+          })}
+        </ul>
+      </>
+    );
     next = later(soon ? (nl ? soon.nl : soon.en) : null, soon?.level ?? null);
   } else if (shop === 'gereedschap') {
     list = (
@@ -336,6 +402,7 @@ export function ShopCard({ shop }: { shop: ShopKey }) {
       </ul>
     );
     next = later(soon ? (nl ? soon.nl : soon.en) : null, soon ? needLevelOf(soon) : null);
+    if (shop === 'werkplaats') list = <><AmmoMaker kind="arrows" />{list}</>;
   }
 
   return (

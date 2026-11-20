@@ -55,8 +55,8 @@ const HOME_REACH = [1.3, 1.5, 1.8, 2.2, 2.8, 3.1];
 /** Homes along the street stand a little smaller than the patient's own, so neighbours fit side by side. */
 const STREET_HOME = 0.85;
 /** A room behind a door in the village. */
-type Place = { under?: boolean; group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[]; entries?: Record<string, Vec & { face: number }>; seats?: FloorSeat[] };
-export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key`: the hero turns to it and it flinches. */ strike: (key: string) => void; /** The creature `key` lunges at the hero. */ lunge: (key: string) => void; /** Beaten: the hero stands up at the well at once, without walking. */ respawn: () => void; /** Fast travel: the hero stands at the place `key` at once (after a short fade). */ jump: (key: string) => void };
+type Place = { under?: boolean; /** Open to this place (no door between): seen with it, walked into. */ link?: string; group: THREE.Group; walls: RoomWall[]; at: Vec; rect: Rect; entry: Vec; face: number; exit: Vec; outside: Vec; map: Vec; obstacles: Obstacle[]; spots: { key: string; door: Vec }[]; entries?: Record<string, Vec & { face: number }>; seats?: FloorSeat[] };
+export type WorldApi = { goTo: (key: string) => void; use: (key: string) => void; stop: () => void; walk: (p: Vec) => void; /** Swing at the creature `key` (or shoot, or cast a spell): the hero turns to it and it flinches. With no creature (''), a spell is cast where the hero stands. */ strike: (key: string, style?: 'melee' | 'ranged' | 'magic') => void; /** The creature `key` lunges at the hero. */ lunge: (key: string) => void; /** Beaten: the hero stands up at the well at once, without walking. */ respawn: () => void; /** Fast travel: the hero stands at the place `key` at once (after a short fade). */ jump: (key: string) => void };
 /** The bag of the boxing school in the village. */
 export const BOXING_KEY = 'boxing';
 /** The campfire by the meadow: raw loot is cooked there. Shown with the boxing school (the adventure). */
@@ -1003,7 +1003,45 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     // Creatures: each at its spot, with a place beside it to stand and strike from.
     const mobs: { key: string; kind: CreatureKind; g: THREE.Group; door: Vec; hurtAt: number; lungeAt: number; x: number; z: number; still: boolean; roam: { home: Vec; r: number; speed: number; to: Vec | null; wait: number; ob: Obstacle } | null }[] = [];
     // How the blow in progress is swung, how long it takes, and until when the hatchet is in hand.
-    let swingStyle: 'jab' | 'thrust' | 'slash' | 'overhead' = 'jab';
+    let swingStyle: 'jab' | 'thrust' | 'slash' | 'overhead' | 'shoot' | 'cast' = 'jab';
+    // Arrows and spells on their way to a creature.
+    const flying: { obj: THREE.Object3D; from: THREE.Vector3; to: THREE.Vector3; t: number; dur: number; arc: number }[] = [];
+    const arrowMat = new THREE.MeshStandardMaterial({ color: 0x8a5f38, roughness: 0.6 });
+    const tipMat = new THREE.MeshStandardMaterial({ color: 0xc9cfd3, metalness: 0.7, roughness: 0.3 });
+    const fletchMat = new THREE.MeshStandardMaterial({ color: 0xf2efe8, roughness: 0.8, side: THREE.DoubleSide });
+    const orbMat = new THREE.MeshBasicMaterial({ color: 0xb59cff, transparent: true, opacity: 0.95, toneMapped: false });
+    const orbGlow = new THREE.SpriteMaterial({ map: softDot(), color: 0x9d7dff, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending });
+    const launch = (style: 'ranged' | 'magic', from: THREE.Vector3, to: THREE.Vector3) => {
+      const g = new THREE.Group();
+      if (style === 'ranged') {
+        // An arrow: shaft, steel tip and white fletching, pointing along +z.
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.62, 5), arrowMat);
+        shaft.rotation.x = Math.PI / 2;
+        g.add(shaft);
+        const tip = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.07, 6), tipMat);
+        tip.rotation.x = Math.PI / 2;
+        tip.position.z = 0.34;
+        g.add(tip);
+        for (const r of [0, Math.PI / 2]) {
+          const f = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.1), fletchMat);
+          f.rotation.set(Math.PI / 2, r, 0);
+          f.position.z = -0.27;
+          g.add(f);
+        }
+      } else {
+        // A spell: a bright ball of light with a glow round it.
+        g.add(new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10), orbMat));
+        const halo = new THREE.Sprite(orbGlow);
+        halo.scale.setScalar(0.55);
+        g.add(halo);
+      }
+      g.position.copy(from);
+      scene.add(g);
+      const dist = from.distanceTo(to);
+      const dur = style === 'ranged' ? Math.max(0.18, dist / 22) : Math.max(0.28, dist / 11);
+      flying.push({ obj: g, from: from.clone(), to: to.clone(), t: 0, dur, arc: style === 'ranged' ? Math.min(0.6, dist * 0.05) : 0.15 });
+      return dur;
+    };
     let swingFor = 0.32;
     let chopUntil = 0;
     let chopWith = 'hatchet';
@@ -1292,7 +1330,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       spots.push({ key: b.key, door: p.door });
       // Homes stand along the street the page lays out; the others get their own path from the square.
       const k = 2.6 / Math.hypot(p.door.x, p.door.z);
-      if (stage < 0) roads.push(plan ? spur(p.door) : { a: { x: p.door.x * k, z: p.door.z * k }, b: p.door, w: 1.3 });
+      if (plan) roads.push(spur(p.door));
+      else if (stage < 0) roads.push({ a: { x: p.door.x * k, z: p.door.z * k }, b: p.door, w: 1.3 });
       if (b.kind) yard(scene, b.kind, p, obstacles);
     });
 
@@ -1331,8 +1370,9 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       places[fl.key] = {
         group: fl.group, walls: fl.walls, at: fl.at, rect: fl.rect, entry: fl.entry, entries: fl.entries, face: fl.face, exit: fl.exit,
         outside: places[PRACTICE_KEY].outside, map: places[PRACTICE_KEY].map, obstacles: fl.obstacles, seats: fl.seats,
-        spots: fl.spots,
+        spots: fl.spots, link: fl.link,
       };
+      if (fl.link && places[fl.link]) places[fl.link].link = fl.key;
       for (const lb of fl.labels) mark(lb.key === 'exit' ? EXIT_KEY : lb.key, lb.at, lb.y, fl.key);
     }
     const hallDoor = { x: ROOM_AT.x - 2.7, z: ROOM_AT.z + 2.45 };
@@ -1964,8 +2004,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         for (let k = 0; k < 4; k++) prop(new THREE.BoxGeometry(0.42, 0.06, 1.1), k % 2 ? stripeB : stripeA, m.x - 0.63 + k * 0.42, 1.95, m.z, i * 0.4);
         obstacles.push({ x: m.x, z: m.z, r: 0.95 });
       });
-      // The homes of the residential district.
-      RESIDENTS.forEach((r, i) => {
+      // The homes of the residential district (in the therapist's town the patients' homes stand there).
+      if (!buildings.some((b) => b.stage != null)) RESIDENTS.forEach((r, i) => {
         const h = dwelling(r.stage, i + 7);
         h.scale.setScalar(STREET_HOME);
         h.position.set(r.at.x, 0, r.at.z);
@@ -2691,6 +2731,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     let goal: { target: Vec; path: Vec[]; key: string | null; run: boolean; then?: string } | null = null;
     let stuck = 0;
     walkTo.current = (p, k, then) => {
+      if (!k || !isDoor(k)) afterDoor = null;
       sitOn = null;
       if (sitting) {
         sitting = null;
@@ -2734,6 +2775,11 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     };
     turn.current = (deg) => { camAngle.current += THREE.MathUtils.degToRad(deg); };
     let jumpNext = false;
+    // Through an open doorway: a few steps on into the next place (then, maybe, on to somewhere there).
+    let glide: { from: Vec; to: Vec; t: number; then?: string; point?: Vec } | null = null;
+    // A spot tapped on the floor of the place next door: walked to once through the doorway.
+    let afterDoor: Vec | null = null;
+    let passedAt = 0;
     // Through the practice door: a short fade, then the hero stands in the other place.
     let switching = 0;
     const travel = (to: string, then?: string) => {
@@ -2752,6 +2798,18 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         // place in the world: it is carried over to the other frame and glides on from there.
         const pl = to === 'village' ? here() : places[to];
         const roomToRoom = to !== 'village' && from !== 'village';
+        const open = roomToRoom && places[from]?.link === to;
+        if (open && through) {
+          zone.current = to;
+          glide = { from: { x: pos.current.x, z: pos.current.z }, to: { x: through.x, z: through.z }, t: 0, then, point: afterDoor ?? undefined };
+          afterDoor = null;
+          facing.current = Math.atan2(through.x - pos.current.x, through.z - pos.current.z);
+          hero.rotation.y = facing.current;
+          el.dataset.zone = to;
+          el.dataset.walking = '1';
+          cb.current.onZone?.(to);
+          return;
+        }
         if (roomToRoom) {
           // Inside to inside: the camera goes straight to its place behind the hero.
           camAngle.current = (through?.face ?? places[to].face) + Math.PI;
@@ -2788,7 +2846,10 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
     goTo.current = (k) => {
       if (inside()) {
         const local = here().spots.find((sp) => sp.key === k);
+        const link = here().link;
+        const through = link && !local ? here().spots.find((sp) => isDoor(sp.key) && doorTo(sp.key) === link) : undefined;
         if (local) walkTo.current(local.door, k);
+        else if (through && link && (places[link].spots.some((sp) => sp.key === k) || k === EXIT_KEY || k === TV_KEY)) walkTo.current(through.door, through.key, k);
         else walkTo.current(here().exit, EXIT_KEY, k === zone.current ? undefined : k);
         return;
       }
@@ -2835,8 +2896,22 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           // A tap on the map: only in the village itself, where the map is of.
           if (!inside()) walkTo.current(pt, null);
         },
-        strike: (k) => {
+        strike: (k, style = 'melee') => {
           const mob = mobs.find((x) => x.key === k);
+          // A bow or a spell: drawn or raised, and the arrow or the light flies to the creature.
+          if (style !== 'melee') {
+            swingStyle = style === 'ranged' ? 'shoot' : 'cast';
+            swingFor = style === 'ranged' ? 0.5 : 0.45;
+            swing = swingFor;
+            if (!mob) return;
+            facing.current = Math.atan2(mob.g.position.x - pos.current.x, mob.g.position.z - pos.current.z);
+            hero.rotation.y = facing.current;
+            const from = new THREE.Vector3(pos.current.x + Math.sin(facing.current) * 0.35, HERO_HEIGHT * 0.78, pos.current.z + Math.cos(facing.current) * 0.35);
+            const to = mob.g.position.clone().setY(HERO_HEIGHT * 0.35);
+            const dur = launch(style, from, to);
+            mob.hurtAt = performance.now() + (swingFor * 0.55 + dur) * 1000;
+            return;
+          }
           if (!mob) return;
           facing.current = Math.atan2(mob.g.position.x - pos.current.x, mob.g.position.z - pos.current.z);
           hero.rotation.y = facing.current;
@@ -2980,7 +3055,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         let best: (typeof talkers)[number] | null = null;
         let bd = 46;
         for (const tk of talkers) {
-          if (tk.zone !== zone.current) continue;
+          if (tk.zone !== zone.current && places[zone.current]?.link !== tk.zone) continue;
           for (const y of [0.25, 0.7, 1.15]) {
             proj.set(tk.x, y, tk.z).project(camera);
             if (proj.z > 1) continue;
@@ -3055,6 +3130,16 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const hit = new THREE.Vector3();
       // A tap on the sky or far hills: walk in that direction, as far as the village goes.
       if (!ray.ray.intersectPlane(ground, hit)) hit.copy(limit.copy(ray.ray.direction).setY(0).normalize().multiplyScalar(B * 2).add(camera.position)).setY(0);
+      const nextDoor = inside() ? here().link : undefined;
+      const inRect = (r: Rect) => hit.x > r.x0 && hit.x < r.x1 && hit.z > r.z0 && hit.z < r.z1;
+      if (nextDoor && !inRect(here().rect) && inRect(places[nextDoor].rect)) {
+        const dw = here().spots.find((sp) => isDoor(sp.key) && doorTo(sp.key) === nextDoor);
+        if (dw) {
+          afterDoor = { x: hit.x, z: hit.z };
+          walkTo.current(dw.door, dw.key);
+          return;
+        }
+      }
       walkTo.current({ x: hit.x, z: hit.z }, null);
     };
     const onCancel = (e: PointerEvent) => {
@@ -3217,7 +3302,27 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       const thumb = stick?.current;
       const push = thumb;
       const force = push ? Math.min(1, Math.hypot(push.x, push.y)) : 0;
-      if (keyFwd !== 0) {
+      if (glide) {
+        // Walking on through the doorway, at a walking pace; then whatever was asked next.
+        const len = Math.max(0.3, Math.hypot(glide.to.x - glide.from.x, glide.to.z - glide.from.z));
+        glide.t = Math.min(1, glide.t + (dt * GAIT_SPEED.walk * HERO_HEIGHT * 1.1) / len);
+        p.x = glide.from.x + (glide.to.x - glide.from.x) * glide.t;
+        p.z = glide.from.z + (glide.to.z - glide.from.z) * glide.t;
+        if (mixer) {
+          play('walk');
+          mixer.timeScale = 1.1;
+        }
+        walking = true;
+        if (glide.t >= 1) {
+          const g2 = glide;
+          glide = null;
+          passedAt = tt;
+          walking = false;
+          delete el.dataset.walking;
+          if (g2.then) goTo.current(g2.then);
+          else if (g2.point) walkTo.current(g2.point, null);
+        }
+      } else if (keyFwd !== 0) {
         el.dataset.walking = '1';
         // Forward runs (Shift walks); backwards is a careful walk, still facing forward.
         const run = keyFwd > 0 && !(keys.has('ShiftLeft') || keys.has('ShiftRight'));
@@ -3265,6 +3370,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         p.x = n.x;
         p.z = n.z;
         walking = true;
+        // As with the keys on a computer, the view comes along behind the hero: the more the push
+        // points ahead, the sooner it swings round (a push sideways leaves it, so a turn stays a turn).
+        const ahead2 = Math.max(0, push.y / force);
+        if (!down && ahead2 > 0) {
+          const want = facing.current + Math.PI;
+          const turnBy = Math.atan2(Math.sin(want - camAngle.current), Math.cos(want - camAngle.current));
+          camAngle.current += turnBy * Math.min(1, dt * 2.2 * ahead2 * ahead2);
+        }
       } else if (goal) {
         // With the model the ground speed is the one its gait was made for, so the feet do not slide.
         const pace = (goal.run ? 1.12 : 1.1) * live.current.slow;
@@ -3311,7 +3424,12 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           } else if (k && n.arrived) cb.current.onArrive(k);
         }
       }
-      if (!walking && !goal && el.dataset.walking) delete el.dataset.walking;
+      if (walking && !goal && !glide && inside() && here().link && tt - passedAt > 1) {
+        const link = here().link!;
+        const dw = here().spots.find((sp) => isDoor(sp.key) && doorTo(sp.key) === link);
+        if (dw && Math.hypot(dw.door.x - p.x, dw.door.z - p.z) < 0.5 && Math.sin(facing.current) * (dw.door.x - p.x) + Math.cos(facing.current) * (dw.door.z - p.z) > -0.05) travel(link);
+      }
+      if (!walking && !goal && !glide && el.dataset.walking) delete el.dataset.walking;
       if (goal?.key && trail.count) {
         // Dots the hero has passed disappear; the beam breathes.
         let changed = false;
@@ -3337,6 +3455,22 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         }
       }
       hero.position.set(p.x, 0, p.z);
+      // Arrows and spells in flight: a low arc for an arrow, nose first; a spell wobbles a little.
+      for (let i = flying.length - 1; i >= 0; i--) {
+        const f = flying[i];
+        f.t = Math.min(1, f.t + dt / f.dur);
+        const at = f.from.clone().lerp(f.to, f.t);
+        at.y += Math.sin(f.t * Math.PI) * f.arc;
+        const ahead = f.from.clone().lerp(f.to, Math.min(1, f.t + 0.05));
+        ahead.y += Math.sin(Math.min(1, f.t + 0.05) * Math.PI) * f.arc;
+        f.obj.position.copy(at);
+        f.obj.lookAt(ahead);
+        if (f.t >= 1) {
+          scene.remove(f.obj);
+          f.obj.traverse((o) => { if ((o as THREE.Mesh).isMesh) (o as THREE.Mesh).geometry.dispose(); });
+          flying.splice(i, 1);
+        }
+      }
       // Where the hero stands and where the view looks, for tests and tools (a few times a second).
       if (tt - posTick > 0.25) {
         posTick = tt;
@@ -3412,6 +3546,17 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
           } else if (swingStyle === 'thrust') {
             armR.rotateX(-1.45 * Math.sqrt(arc));
             figure.rotation.x = 0.2 * arc;
+          } else if (swingStyle === 'shoot') {
+            // The bow raised to the eye, the string drawn back, then let go.
+            const hold = Math.min(1, u / 0.3);
+            armR.rotateX(-1.5 * hold * (u < 0.85 ? 1 : (1 - u) / 0.15));
+            armR.rotateZ(0.35 * hold);
+            figure.rotation.y = -0.25 * hold * (u < 0.85 ? 1 : (1 - u) / 0.15);
+          } else if (swingStyle === 'cast') {
+            // The staff raised high, then pointed at the creature.
+            const up = u < 0.45 ? Math.sin((u / 0.45) * Math.PI / 2) : 1 - (u - 0.45) / 0.55 * 0.4;
+            armR.rotateX(-2.2 * up * arc ** 0.3);
+            figure.rotation.x = -0.06 * arc;
           } else {
             armR.rotateX(-1.5 * arc);
             figure.rotation.x = 0.08 * arc;
@@ -3586,7 +3731,7 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       }
       for (const id in places) {
         const pl = places[id];
-        pl.group.visible = id === zone.current;
+        pl.group.visible = id === zone.current || places[zone.current]?.link === id;
         if (pl.group.visible) for (const wl of pl.walls) wl.group.visible = (camera.position.x - wl.point.x) * wl.normal.x + (camera.position.z - wl.point.z) * wl.normal.z < 0.1;
       }
       // White walls and ceiling spots: the room is brighter and more even than the evening outside.
@@ -3824,7 +3969,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       for (const { a, d } of order) {
         const node = labels.current.get(a.id);
         if (!node || drawn.has(a.id)) continue;
-        if ((a.zone ?? 'village') !== zone.current) {
+        const az = a.zone ?? 'village';
+        if (az !== zone.current && !(az !== 'village' && places[zone.current]?.link === az)) {
           if (anchors.some((o) => o.id === a.id && (o.zone ?? 'village') === zone.current)) continue;
           node.style.opacity = '0';
           node.style.pointerEvents = 'none';

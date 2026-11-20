@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mirror as liveMirror } from './mirror3d';
-import { kit, plant, type RoomWall } from './practice3d';
+import { ROOM_AT, kit, plant, type RoomWall } from './practice3d';
 import { bananaPlant, monstera, powerRack, realPlant, saddleStool, treatmentTable } from './gym3d';
 import type { Obstacle, Rect, Vec } from './walk';
 
@@ -27,7 +27,13 @@ export const DOOR_LABEL: Record<string, [string, string]> = {
   practice: ['Oefenzaal', 'Exercise room'],
   gang: ['Naar de gang', 'To the hallway'],
 };
-const UP_AT: Vec = { x: -220, z: 400 };
+/**
+ * The upstairs lies against the exercise room, as in the building: the landing's west wall is the
+ * exercise room's south wall, and the hall doorway is one opening between them. The plan (in scan
+ * metres) is turned a quarter for that: west in the scan is north in the game.
+ */
+const UP_TURN = -Math.PI / 2;
+const UP_AT: Vec = { x: ROOM_AT.x - 3.3, z: ROOM_AT.z + 2.88 };
 const DOWN_AT: Vec = { x: -320, z: 400 };
 
 /** The physiotherapists of the practice, by where they stand: the exercise room and the treatment room upstairs. */
@@ -53,6 +59,8 @@ export type Floor = {
   labels: { key: string; at: Vec; y: number }[];
   /** Staff who stand on this floor: where, where the hero talks to them from, and which way they look. */
   people?: { who: string; at: Vec; talkAt: Vec; face: number }[];
+  /** The place it is open to (no door between): both are seen at once and walked between. */
+  link?: string;
 };
 
 const WHITE = 0xf4f2ee;
@@ -171,16 +179,22 @@ const slabOf = (parent: THREE.Object3D, mat: THREE.MeshStandardMaterial, x0: num
  * walls found round them (full height, left out when they stand between the camera and the hero),
  * low inner walls with door gaps, and everything outside the rooms kept off limits.
  */
-function planKit(key: string, at: Vec, rooms: PlanRoom[]) {
+function planKit(key: string, at: Vec, rooms: PlanRoom[], opts: { turn?: number; openings?: Rect[] } = {}) {
+  const turn = opts.turn ?? 0;
   const group = new THREE.Group();
   group.position.set(at.x, 0, at.z);
+  group.rotation.y = turn;
   group.userData.noMerge = true;
   const room = kit(group);
   const walls: RoomWall[] = [];
   const obstacles: Obstacle[] = [];
-  const W = (x: number, z: number): Vec => ({ x: at.x + x, z: at.z + z });
+  // Plan metres to the world: turned with the group, then moved to its place.
+  const tc = Math.cos(turn);
+  const ts = Math.sin(turn);
+  const W = (x: number, z: number): Vec => ({ x: at.x + x * tc + z * ts, z: at.z - x * ts + z * tc });
   const inRoom = (x: number, z: number, m = 0) => rooms.some((r) => x > r.x0 + m && x < r.x1 - m && z > r.z0 + m && z < r.z1 - m && !(r.hole && x > r.hole.x0 - m && x < r.hole.x1 + m && z > r.hole.z0 - m && z < r.hole.z1 + m));
-  const inside = (x: number, z: number) => rooms.some((r) => x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1);
+  // An opening (a doorway into a place next door) leaves the wall out there too.
+  const inside = (x: number, z: number) => [...rooms, ...(opts.openings ?? [])].some((r) => x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1);
   // Floors (round a stairwell, four slabs).
   for (const r of rooms) {
     const tile = r.floor.map && r.floor.roughness < 0.3 ? 0.9 : 0.6;
@@ -225,7 +239,8 @@ function planKit(key: string, at: Vec, rooms: PlanRoom[]) {
             const k = kit(g, false);
             const along = nz !== 0;
             k.box(along ? Math.abs(sx1 - sx0) + 0.15 : 0.15, 2.6, along ? 0.15 : Math.abs(sz1 - sz0) + 0.15, WHITE, (sx0 + sx1) / 2 + nx * 0.075, 1.3, (sz0 + sz1) / 2 + nz * 0.075);
-            walls.push({ group: g, point: new THREE.Vector3(at.x + (sx0 + sx1) / 2, 0, at.z + (sz0 + sz1) / 2), normal: new THREE.Vector3(nx, 0, nz) });
+            const wp = W((sx0 + sx1) / 2, (sz0 + sz1) / 2);
+            walls.push({ group: g, point: new THREE.Vector3(wp.x, 0, wp.z), normal: new THREE.Vector3(nx * tc + nz * ts, 0, -nx * ts + nz * tc) });
             segs.push({ x0: sx0, z0: sz0, x1: sx1, z1: sz1, nx, nz, g });
           }
           start = -1;
@@ -278,7 +293,7 @@ function planKit(key: string, at: Vec, rooms: PlanRoom[]) {
     line(x0, z0, x1, z1, 0.13, gaps);
   };
   const seats: Seat[] = [];
-  const seat = (x: number, z: number, y: number, face: number, front?: number) => seats.push({ ...W(x, z), y, face, front });
+  const seat = (x: number, z: number, y: number, face: number, front?: number) => seats.push({ ...W(x, z), y, face: face + turn, front });
   const labels: Floor['labels'] = [];
   const spots: Floor['spots'] = [];
   const door = (to: string, x: number, z: number, lx = x, lz = z, y = 2.3) => {
@@ -315,8 +330,9 @@ function planKit(key: string, at: Vec, rooms: PlanRoom[]) {
     wallAt(mx, mz).add(m);
     return m;
   };
-  const rect: Rect = { x0: at.x + box.x0 + 0.3, x1: at.x + box.x1 - 0.3, z0: at.z + box.z0 + 0.3, z1: at.z + box.z1 - 0.3 };
-  return { key, group, room, walls, obstacles, W, block, line, inner, seat, seats, labels, spots, door, glass, frame, panel, wallAt, rect };
+  const corners = [W(box.x0 + 0.3, box.z0 + 0.3), W(box.x1 - 0.3, box.z1 - 0.3)];
+  const rect: Rect = { x0: Math.min(corners[0].x, corners[1].x), x1: Math.max(corners[0].x, corners[1].x), z0: Math.min(corners[0].z, corners[1].z), z1: Math.max(corners[0].z, corners[1].z) };
+  return { key, group, room, walls, obstacles, W, turn, block, line, inner, seat, seats, labels, spots, door, glass, frame, panel, wallAt, rect };
 }
 
 /** A picture drawn on a little canvas (the prints on the walls). */
@@ -389,7 +405,7 @@ export function upstairs(): Floor {
     { x0: 0.75, x1: 5.54, z0: 0.12, z1: 2.45, floor: F.vinyl, hole },
     { x0: 4.55, x1: 5.54, z0: -1.2, z1: 0.12, floor: F.white },
     { x0: 2.92, x1: 5.54, z0: 2.45, z1: 4.03, floor: F.yellow },
-  ]);
+  ], { turn: UP_TURN, openings: [{ x0: 0.2, x1: 0.6, z0: -1.1, z1: -0.1 }] });
   const { room } = f;
   // Inner walls: treatment room 2 (door to the landing), the toilet (door on its west), the kitchen.
   f.inner(0.58, -1.2, 4.84, -1.2, [[1.4, 2.4]]);
@@ -454,11 +470,9 @@ export function upstairs(): Floor {
   }
   room.ball(0.3, 0x1b1b1b, 5.1, 0.3, 0.05, { roughness: 0.35 });
   f.block(5.1, 0.25, 0.3);
-  // West wall of the landing: the door to the exercise room (its blue TV seen through it), prints, hooks.
-  const west = f.wallAt(0.47, -0.6);
-  const wst = kit(west, false);
-  wst.box(0.04, 2.08, 0.98, 0x9aa3a8, 0.49, 1.04, -0.6);
-  wst.box(0.02, 0.4, 0.7, 0x5aa7e8, 0.52, 1.55, -0.6, glow(0x5aa7e8, 1.1));
+  // West wall of the landing: the open doorway into the exercise room (a white frame round it), prints, hooks.
+  for (const z of [-1.12, -0.08]) room.box(0.3, 2.15, 0.05, WHITE, 0.4, 1.075, z);
+  room.box(0.3, 0.05, 1.09, WHITE, 0.4, 2.15, -0.6);
   f.door('practice', 0.95, -0.6, 0.9, -0.6, 2.45);
   const w2 = f.wallAt(0.75, 1.2);
   f.frame(w2, 0.42, 0.52, 0.78, 1.75, 1.0, Math.PI / 2, sunPrint());
@@ -542,18 +556,19 @@ export function upstairs(): Floor {
     at: UP_AT,
     rect: f.rect,
     entries: {
-      practice: { ...f.W(1.4, -0.55), face: Math.PI / 2 },
-      [DOWNSTAIRS_KEY]: { ...f.W(1.3, 0.45), face: Math.PI },
+      practice: { ...f.W(1.55, -0.6), face: Math.PI / 2 + f.turn },
+      [DOWNSTAIRS_KEY]: { ...f.W(1.3, 0.45), face: Math.PI + f.turn },
     },
-    entry: f.W(1.4, -0.55),
-    face: Math.PI / 2,
+    entry: f.W(1.55, -0.6),
+    face: Math.PI / 2 + f.turn,
     exit: f.W(1.3, 1.45),
+    link: 'practice',
     obstacles: f.obstacles,
     spots: f.spots,
     seats: f.seats,
     labels: f.labels,
     // The physiotherapist of treatment room 2 stands by the table, looking at whoever comes in.
-    people: [{ who: 'treatment', at: f.W(3.5, -1.9), talkAt: f.W(2.65, -2.0), face: Math.atan2(2.65 - 3.5, -2.0 + 1.9) }],
+    people: [{ who: 'treatment', at: f.W(3.5, -1.9), talkAt: f.W(2.65, -2.0), face: Math.atan2(2.65 - 3.5, -2.0 + 1.9) + f.turn }],
   };
 }
 

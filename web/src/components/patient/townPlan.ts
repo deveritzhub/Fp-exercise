@@ -7,7 +7,7 @@ import type { Site, Vec } from './walk';
  * the square, a wall with towers and a gate in the south.
  *
  * Units are metres in the 3D village: x to the east, z to the south (north is away from the camera).
- * The therapist's village of homes does not use this: it keeps its own streets.
+ * The therapist walks the same town; there the patients' homes stand on HOME_PLOTS.
  */
 
 /** A building that stands here, its door on the side that faces the square. */
@@ -73,6 +73,8 @@ export const TOWN_HOUSES: TownHouse[] = [
   { key: 'healer', nl: 'Genezershuis', en: 'Healer’s house', at: { x: 15.5, z: -9.5 }, to: '/p/held/pijn', roof: 0xa83a3a },
   { key: 'physio', nl: 'Fysio Praktijk', en: 'Physio practice', at: { x: 21.5, z: -13 }, to: '/p/berichten', roof: 0x7a4a8a },
   { key: 'massage', nl: 'Massagehuis', en: 'Massage house', at: { x: 25.5, z: -8.5 }, to: 'log:sleep', roof: 0x6a8a5a },
+  // The mage tower, behind the rehab centre: wands, staffs and runes.
+  { key: 'magetower', nl: 'Magiërstoren', en: 'Mage tower', at: { x: 18.5, z: -17.5 }, to: '/p/winkel/magie', roof: 0x4a3a8a, scale: 1.15 },
   { key: 'pool', nl: 'Zwemhuis', en: 'Swimming house', at: { x: 22, z: -3.6 }, to: 'log:water', roof: 0x3a7ab8, scale: 1.15 },
   // Market, east of the square.
   { key: 'grocer', nl: 'Kruidenier', en: 'Grocer', at: { x: 10.5, z: 3.8 }, to: '/p/voeding', roof: 0x5a8a3a },
@@ -85,6 +87,24 @@ export const TOWN_HOUSES: TownHouse[] = [
   { key: 'stables', nl: 'Stallen', en: 'Stables', at: { x: 12.5, z: 13.5 }, to: '/p/winkel/stallen', roof: 0x8a5a3a },
   // Beside the stables: the grooming salon, where the pet is dressed up.
   { key: 'groomer', nl: 'Trimsalon', en: 'Grooming salon', at: { x: 7.4, z: 14.6 }, to: '/p/winkel/trimsalon', roof: 0xc0607e },
+];
+
+/** The half-timbered house for a building of the town, by its size. */
+export const townHouseModel = (scale: number) =>
+  scale >= 1.2 ? { url: '/village/buildings/huis_vakwerk_groot.glb?v=1', scale: 0.72 }
+  : scale >= 1.1 ? { url: '/village/buildings/huis_vakwerk_middel.glb?v=1', scale: 0.8 }
+  : { url: '/village/buildings/huis_vakwerk_klein.glb?v=1', scale: 0.85 };
+
+/**
+ * The therapist's town: where the patients' homes stand, the residential district in the south-west
+ * first, then free plots inside the wall (south, then north behind the practice). Each plot keeps
+ * clear of the buildings, the market, the meadow and the pond, and of its neighbours.
+ */
+export const HOME_PLOTS: Vec[] = [
+  { x: -12, z: 20 }, { x: -10.5, z: 15 }, { x: -7, z: 21.5 }, { x: -17.5, z: 20 }, { x: -5, z: 26.5 },
+  { x: 4, z: 20 }, { x: 4, z: 25.5 }, { x: -8, z: -6 }, { x: -26.5, z: -4 }, { x: -9.5, z: -17 },
+  { x: -18, z: -19 }, { x: -13, z: -21 }, { x: -5.5, z: -20.5 }, { x: -9, z: -24.5 }, { x: -4, z: -26 },
+  { x: 6.5, z: -17.5 }, { x: 4, z: -22.5 }, { x: 11, z: -20.5 },
 ];
 
 /** The market stalls south of the square: striped awnings, no door. */

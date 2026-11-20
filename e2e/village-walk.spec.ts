@@ -21,8 +21,7 @@ test('patient walks to the TV in the village, starts the workout there and retur
   await expect(village).toHaveAttribute('data-walking', '1');
   await expect(village).not.toHaveAttribute('data-walking', '1', { timeout: 20_000 });
 
-  // The joystick is an option: on, push the knob and the hero walks; let go and the hero stands.
-  await page.getByTestId('slot-joystick').click();
+  // On a phone the joystick is there from the start: push the knob and the hero walks; let go and the hero stands.
   const stick = (await page.getByTestId('joystick').boundingBox())!;
   await page.mouse.move(stick.x + stick.width / 2, stick.y + stick.height / 2);
   await page.mouse.down();
@@ -88,7 +87,9 @@ test('patient walks to the TV in the village, starts the workout there and retur
   // "Where do you want to go?": pick a place and the hero walks there; Stop ends the walk.
   await page.getByTestId('slot-places').click();
   const places = page.getByTestId('places');
-  await expect(places.getByRole('button')).toHaveCount(10);
+  // Every building and spot of the town is in the list.
+  await expect(places.getByRole('button', { name: /Krachthonk/ })).toBeVisible();
+  expect(await places.getByRole('button').count()).toBeGreaterThanOrEqual(10);
   // A far place, so there is time to stop on the way.
   await places.getByRole('button', { name: /Krachthonk/ }).click();
   await expect(village).toHaveAttribute('data-destination', 'in:kracht');

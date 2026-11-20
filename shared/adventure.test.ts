@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { swingMs, WEAPONS, BOSSES, bossOfWeek, LIGHT, isShadow, lightFrom, CREATURES, ZONES, zoneAt, COOKING, DAILY_QUESTS, dailyQuest, adventureLevel, blow, boxingXp, CREATURE_KINDS, DROPS, LOOT, rollDrops, weaponAt, weaponByKey } from './adventure';
+import { swingMs, WEAPONS, BOSSES, bossOfWeek, LIGHT, isShadow, lightFrom, CREATURES, ZONES, zoneAt, COOKING, DAILY_QUESTS, dailyQuest, adventureLevel, blow, boxingXp, CREATURE_KINDS, DROPS, LOOT, rollDrops, weaponAt, weaponByKey, xpForAdventureLevel } from './adventure';
 
 describe('adventure', () => {
   it('levels: 60 XP for the first, 30 more for each next', () => {
@@ -8,6 +8,7 @@ describe('adventure', () => {
     expect(adventureLevel(60)).toEqual({ level: 2, from: 60, to: 150 });
     expect(adventureLevel(150).level).toBe(3);
     expect(adventureLevel(-5).level).toBe(1);
+    for (const l of [2, 5, 10, 16]) expect(adventureLevel(xpForAdventureLevel(l)).level).toBe(l);
   });
   it('a creature takes a double blow when its ailment was put right today', () => {
     expect(blow('imp', new Set())).toBe(1);
@@ -45,7 +46,7 @@ describe('fighting back and the hero life', async () => {
   const { ATTACKS, CREATURES, heroMaxHp, hitOnHero, isAlpha, rollDrops } = await import('./adventure');
   it('the hero has more life with a higher adventure level and after a real workout', () => {
     expect(heroMaxHp(1, false)).toBe(40);
-    expect(heroMaxHp(5, false)).toBe(80);
+    expect(heroMaxHp(5, false)).toBe(88);
     expect(heroMaxHp(1, true)).toBe(50);
   });
   it('prey only hits back once struck, and softly; the Alpha attacks by itself, hits hardest and can beat a new hero', () => {

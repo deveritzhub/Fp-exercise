@@ -89,7 +89,7 @@ describe('campfire, task of the day and the chest at home', () => {
     expect((await P.post('/patient/hero/adventure/win', { kind: 'pride' })).status).toBe(400);
     await sql('UPDATE hero_adventure SET xp = 6000, wins_today = 0 WHERE patient_id = $1', [me.id]);
     const win = await P.post('/patient/hero/adventure/win', { kind: 'fright' });
-    expect(win.body.gained).toBe(120);
+    expect(win.body.gained).toBe(240);
     expect(win.body.loot.shiver_crystal).toBeGreaterThan(0);
     // The first win over fright sets Acceptance free, once.
     expect(win.body.unlocked).toBe('acceptance');
@@ -149,11 +149,11 @@ describe('campfire, task of the day and the chest at home', () => {
     const P = await login('patientA');
     const [me] = await sql(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`);
     await sql('UPDATE hero_adventure SET wins_today = 0, day = CURRENT_DATE WHERE patient_id = $1', [me.id]);
-    expect((await P.post('/patient/hero/adventure/win', { kind: 'slime' })).body.gained).toBe(12);
-    expect((await P.post('/patient/hero/adventure/win', { kind: 'slime' })).body.gained).toBe(12);
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'slime' })).body.gained).toBe(24);
+    expect((await P.post('/patient/hero/adventure/win', { kind: 'slime' })).body.gained).toBe(24);
     await sql('UPDATE hero_adventure SET wins_today = 100 WHERE patient_id = $1', [me.id]);
     const late = (await P.post('/patient/hero/adventure/win', { kind: 'slime' })).body;
-    expect(late.gained).toBe(6);
+    expect(late.gained).toBe(12);
     // Picking up twigs counts for the adventure skill too.
     expect((await P.post('/patient/hero/adventure/win', { kind: 'twigs' })).body.gained).toBe(1);
     await sql('UPDATE hero_adventure SET wins_today = 0 WHERE patient_id = $1', [me.id]);
