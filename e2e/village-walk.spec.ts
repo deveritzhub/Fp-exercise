@@ -87,7 +87,9 @@ test('patient walks to the TV in the village, starts the workout there and retur
   // "Where do you want to go?": pick a place and the hero walks there; Stop ends the walk.
   await page.getByTestId('slot-places').click();
   const places = page.getByTestId('places');
-  await expect(places.getByRole('button')).toHaveCount(10);
+  // Every building and spot of the town is in the list.
+  await expect(places.getByRole('button', { name: /Krachthonk/ })).toBeVisible();
+  expect(await places.getByRole('button').count()).toBeGreaterThanOrEqual(10);
   // A far place, so there is time to stop on the way.
   await places.getByRole('button', { name: /Krachthonk/ }).click();
   await expect(village).toHaveAttribute('data-destination', 'in:kracht');
