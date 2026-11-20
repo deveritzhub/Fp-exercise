@@ -323,7 +323,7 @@ export function prizesForZones(input: {
 
 export type VillageNeed = 'hero' | 'atlas' | 'mission' | 'guild';
 export const VILLAGE = [
-  { key: 'smithy', to: '/p/held/inventaris#gear-title', needs: 'hero' },
+  { key: 'smithy', to: '/p/winkel/smid', needs: 'hero' },
   { key: 'library', to: '/p/spieren', needs: 'atlas' },
   { key: 'hall', to: '/p/held/inventaris#trophies-title', needs: 'hero' },
   { key: 'board', to: '/p', needs: 'mission' },

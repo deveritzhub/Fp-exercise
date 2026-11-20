@@ -51,8 +51,10 @@ export function createApp() {
         scriptSrc: ["'self'"],
         fontSrc: ["'self'", 'data:'],
         // blob: lets the 3D models read the textures packed inside them (three.js fetches them as blob: URLs).
-        connectSrc: ["'self'", 'blob:'],
-        frameAncestors: ["'none'"],
+        // The live link to friends (WebSocket) on this same host.
+        connectSrc: ["'self'", 'blob:', config.appOrigin.replace(/^http/, 'ws')],
+        // Only the app itself may show its pages in a frame: the shops and pages opened inside the game.
+        frameAncestors: ["'self'"],
         formAction: ["'self'"],
         baseUri: ["'self'"],
         objectSrc: ["'none'"],

@@ -317,7 +317,9 @@ export function ShopCard({ shop }: { shop: ShopKey }) {
         })}
       </ul>
     );
-    if (!forSale.length) list = <p className="mt-3 text-[14px] text-ink-700" data-testid="weapons">{shop === 'magie' ? t('Je hebt alles wat de magiër nu verkoopt.', 'You have everything the mage sells now.') : t('Je hebt alles wat de smid nu verkoopt.', 'You have everything the smith sells now.')}</p>;
+    const ownsSome = WEAPONS.some((w) => w.key !== 'fists' && sells(w) && a?.owned.includes(w.key));
+    if (!forSale.length && !ownsSome) list = <p className="mt-3 text-[14px] text-ink-700" data-testid="weapons">{t('Nog niets voor jouw level. Versla wezens en hak hout om avonturen-XP te verdienen; hieronder zie je wanneer het eerste komt.', 'Nothing for your level yet. Beat creatures and chop wood to earn adventure XP; below you see when the first one comes.')}</p>;
+    else if (!forSale.length) list = <p className="mt-3 text-[14px] text-ink-700" data-testid="weapons">{shop === 'magie' ? t('Je hebt alles wat de magiër nu verkoopt.', 'You have everything the mage sells now.') : t('Je hebt alles wat de smid nu verkoopt.', 'You have everything the smith sells now.')}</p>;
     // The mage tower also makes runes, and teaches the spells.
     if (shop === 'magie') list = (
       <>

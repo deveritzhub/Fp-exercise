@@ -23,6 +23,9 @@ import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
 import { VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { SITES, SPOTS, TOWN_HOUSES, WILD, placeAt, townHouseModel } from '@/components/patient/townPlan';
 import { GearScreen } from '@/components/patient/GearScreen';
+import { useLive } from '@/lib/live';
+import { LIVE_SAYINGS, sayingByKey } from '@shared/live';
+import { useFriends } from '@/pages/patient/FriendsPage';
 import { PET_LEVEL } from '@shared/pets';
 import { DOOR_LABEL, STAFF_NAMES } from '@/components/patient/practiceFloors';
 import { openQuickLog } from '@/components/patient/Survival';
@@ -40,7 +43,7 @@ const WalkVillage3D = lazy(() => import('@/components/patient/WalkVillage3D'));
 
 /** Who keeps each building, and what they say when you step up to the counter. */
 const KEEPER: Record<string, { name: [string, string]; says: [string, string]; open: [string, string] }> = {
-  smithy: { name: ['Wapensmid', 'Armourer'], says: ['Welkom in de smederij! Hier ruil je muntjes voor uitrusting. Verdien ze met trainen en je dagkist.', 'Welcome to the smithy! Here you trade coins for gear. Earn them by training and your day chest.'], open: ['Bekijk de uitrusting', 'See the gear'] },
+  smithy: { name: ['Wapensmid', 'Weaponsmith'], says: ['Welkom in de smederij! Hier koop je wapens en bogen met muntjes. Verdien ze met trainen en je dagkist.', 'Welcome to the smithy! Here you buy weapons and bows with coins. Earn them by training and your day chest.'], open: ['Naar de wapens', 'To the weapons'] },
   library: { name: ['Bibliothecaris', 'Librarian'], says: ['Stil in de bibliotheek… maar vraag gerust. Hier vind je alle spieren en wat ze doen.', 'Quiet in the library… but do ask. Here you find every muscle and what it does.'], open: ['Open de spierenatlas', 'Open the muscle atlas'] },
   hall: { name: ['Hofmeester', 'Steward'], says: ['Dit is de trofeeënhal. Alles wat je hebt verdiend hangt hier aan de muur.', 'This is the trophy hall. Everything you have earned hangs on the wall here.'], open: ['Bekijk je prijzen', 'See your trophies'] },
   board: { name: ['Bode', 'Messenger'], says: ['Nieuws van het prikbord: hier staan je missies van deze week.', 'News from the notice board: here are your missions for this week.'], open: ['Bekijk je missies', 'See your missions'] },
@@ -678,6 +681,16 @@ export function VillageWalkPage() {
   const [bossOpen, setBossOpen] = useState(false);
   const [packOpen, setPackOpen] = useState(false);
   const [gearOpen, setGearOpen] = useState(false);
+  // Playing together: friends who share and play now are seen walking in the village.
+  const friendsQ = useFriends();
+  const hasFriends = !!friendsQ.data?.sharing.enabled && (friendsQ.data?.friends ?? []).some((f) => f.kind === 'friend');
+  const live = useLive(hasFriends, (who, k) => {
+    const saying = sayingByKey(k);
+    if (saying) toast(`${who.name}: ${nl ? saying.nl : saying.en}`);
+  });
+  const [friendsOpen, setFriendsOpen] = useState(false);
+  // What the hero does just now (a blow, a shot, a spell), sent with the next step.
+  const liveAct = useRef<string | undefined>(undefined);
   // A page of the app shown over the world (see GamePage); on closing, what it changed is fetched anew.
   const [gamePage, setGamePage] = useState<string | null>(null);
   const closeGamePage = useCallback(() => {
@@ -889,6 +902,27 @@ export function VillageWalkPage() {
       setCasting(null);
     }
   };
+  useEffect(() => {
+    if (live.status !== 'on') return;
+    let last = { x: NaN, z: NaN, f: NaN, zone: '', at: 0 };
+    let prev = { x: track.current.x, z: track.current.z, at: performance.now() };
+    const id = window.setInterval(() => {
+      const now = performance.now();
+      const { x, z, facing } = track.current;
+      const speed = Math.hypot(x - prev.x, z - prev.z) / Math.max(0.05, (now - prev.at) / 1000);
+      prev = { x, z, at: now };
+      const w: 0 | 1 | 2 = speed > 4.2 ? 2 : speed > 0.3 ? 1 : 0;
+      const act = liveAct.current;
+      liveAct.current = undefined;
+      const moved = Math.hypot(x - last.x, z - last.z) > 0.02 || Math.abs(facing - last.f) > 0.05 || zoneNow.current !== last.zone;
+      // Only when something changed, and once in a while to say "still here".
+      if (!moved && !act && w === 0 && now - last.at < 2000) return;
+      last = { x, z, f: facing, zone: zoneNow.current, at: now };
+      live.send({ t: 'pos', x, z, f: facing, zone: zoneNow.current, w, ...(act ? { act } : {}) });
+    }, 120);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live.status]);
   const respawn = () => {
     const by = mob?.key;
     setDownBy(null);
@@ -939,6 +973,7 @@ export function VillageWalkPage() {
       shots.current[mob.key] = (shots.current[mob.key] ?? 0) + 1;
     }
     world.current?.strike(mob.key, fighting ? weapon.style : 'melee');
+    liveAct.current = fighting && weapon.style === 'ranged' ? 'shoot' : fighting && weapon.style === 'magic' ? 'cast' : 'strike';
     if (!provoked.includes(mob.key)) setProvoked((p) => [...p, mob.key]);
     // A higher skill in the way the hero fights hits harder.
     const skill = fighting ? skillPower(adventure.data?.skills?.[weapon.style]?.level ?? 1) : 1;
@@ -1125,6 +1160,7 @@ export function VillageWalkPage() {
             tools={adventure.data?.tools}
             ride={riding && myRide ? myRide.key : null}
             pet={d?.hero ? myPet : null}
+            friends={live.friends}
             weapon={hasTool && mobTool ? mobTool.key : mob && isHarvest(mob.kind) ? null : weapon.key === 'fists' ? null : weapon.key}
             pace={pace}
             api={world}
@@ -1176,6 +1212,14 @@ export function VillageWalkPage() {
             <Minimap track={track} landmarks={landmarks} onPlace={toPlace} onWalk={toPoint} label={t('Minikaart van het dorp. Tik op een plek of gebouw om erheen te lopen.', 'Minimap of the village. Tap a spot or a building to walk there.')} />
             <button type="button" data-testid="open-world-map" onClick={() => setPlacesOpen(true)} aria-label={t('Wereldkaart openen', 'Open the world map')} className="absolute -bottom-1 -left-1 grid h-9 w-9 place-items-center rounded-full border border-[#e4bc63] bg-[#141c18] text-[#ffd76a] shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]"><MapIcon className="h-4 w-4" aria-hidden /></button>
           </div>
+          {hasFriends && (
+            <button type="button" data-testid="friends-online" data-n={live.online.length} onClick={() => setFriendsOpen(true)}
+              aria-label={t(`Vrienden: ${live.online.length} nu in het dorp`, `Friends: ${live.online.length} in the village now`)}
+              className={`${PANEL} flex min-h-[32px] items-center gap-1 px-2 font-display text-[12.5px] font-bold text-[#9fe3ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]`}>
+              <span aria-hidden>👥</span>{live.online.length}
+              <span className={`h-2 w-2 rounded-full ${live.status === 'on' ? 'bg-[#4ade80]' : 'bg-white/40'}`} aria-hidden />
+            </button>
+          )}
           <div className={`${PANEL} ${panel === 'tasks' ? 'w-[172px]' : ''} px-1.5 py-1`} role="group" aria-label={t('Taken', 'Tasks')}>
             <button type="button" data-testid="toggle-tasks" aria-expanded={panel === 'tasks'} onClick={() => openPanel(panel === 'tasks' ? null : 'tasks')}
               className="flex min-h-[32px] w-full items-center gap-1 px-1 font-display text-[12.5px] font-bold text-[#ffd76a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]">
@@ -1540,6 +1584,44 @@ export function VillageWalkPage() {
           {d?.hero && <BackpackCard d={d} />}
           <LightCard />
           <Link to="/p/held/inventaris" className="inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">{t('Alles van je held, met trofeeën en uitrusting', 'Everything of your hero, with trophies and gear')}<ChevronRight className="h-4 w-4" aria-hidden /></Link>
+        </div>
+      </Dialog>
+      <Dialog open={friendsOpen} onClose={() => setFriendsOpen(false)} size="md" sheet title={t('Samen spelen', 'Play together')}
+        description={t('Vrienden die nu spelen, zie je lopen in het dorp. Je ziet alleen elkaars held en heldennaam.', 'Friends who play now are seen walking in the village. You only see each other’s hero and hero name.')}>
+        <div className="space-y-4" data-testid="friends-panel">
+          {live.online.length === 0 ? (
+            <p className="text-[14px] text-ink-700">{t('Er is nu geen vriend aan het spelen. Zodra er een binnenkomt, zie je die hier en in het dorp.', 'No friend is playing right now. As soon as one comes in, you see them here and in the village.')}</p>
+          ) : (
+            <ul className="space-y-2">
+              {live.online.map((f) => {
+                const at = live.friends.current.get(f.id);
+                const inVillage = at?.zone === 'village';
+                return (
+                  <li key={f.id} className="flex items-center gap-3 rounded-xl border border-line bg-white p-2.5" data-friend={f.id}>
+                    <span aria-hidden className="grid h-10 w-10 place-items-center rounded-full bg-[#e6f6fd] text-[20px]">🧑</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[14.5px] font-semibold text-ink-950">{f.name}</span>
+                      <span className="block text-[12.5px] text-ink-700">{inVillage ? t('In het dorp', 'In the village') : t('Binnen ergens', 'Inside somewhere')}</span>
+                    </span>
+                    {inVillage && at && (
+                      <Button size="sm" onClick={() => { setFriendsOpen(false); world.current?.walk({ x: at.x, z: at.z }); }}>{t('Loop erheen', 'Walk there')}</Button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <div>
+            <h3 className="text-[15px] font-semibold text-ink-950">{t('Zeg iets', 'Say something')}</h3>
+            <div className="mt-2 flex flex-wrap gap-2" data-testid="sayings">
+              {LIVE_SAYINGS.map((sy) => (
+                <Button key={sy.key} size="sm" variant="secondary" disabled={live.status !== 'on'} onClick={() => { live.send({ t: 'say', k: sy.key }); toast(t(`Je zei: ${sy.nl}`, `You said: ${sy.en}`)); }}>
+                  {nl ? sy.nl : sy.en}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <Link to="/p/held/vrienden" className="inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">{t('Vrienden toevoegen of beheren', 'Add or manage friends')}<ChevronRight className="h-4 w-4" aria-hidden /></Link>
         </div>
       </Dialog>
       <Dialog open={gearOpen} onClose={() => setGearOpen(false)} size="md" sheet title={t('Uitrusting', 'Gear')}
