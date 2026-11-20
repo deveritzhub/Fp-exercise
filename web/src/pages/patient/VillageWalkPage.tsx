@@ -43,7 +43,7 @@ const WalkVillage3D = lazy(() => import('@/components/patient/WalkVillage3D'));
 
 /** Who keeps each building, and what they say when you step up to the counter. */
 const KEEPER: Record<string, { name: [string, string]; says: [string, string]; open: [string, string] }> = {
-  smithy: { name: ['Wapensmid', 'Armourer'], says: ['Welkom in de smederij! Hier ruil je muntjes voor uitrusting. Verdien ze met trainen en je dagkist.', 'Welcome to the smithy! Here you trade coins for gear. Earn them by training and your day chest.'], open: ['Bekijk de uitrusting', 'See the gear'] },
+  smithy: { name: ['Wapensmid', 'Weaponsmith'], says: ['Welkom in de smederij! Hier koop je wapens en bogen met muntjes. Verdien ze met trainen en je dagkist.', 'Welcome to the smithy! Here you buy weapons and bows with coins. Earn them by training and your day chest.'], open: ['Naar de wapens', 'To the weapons'] },
   library: { name: ['Bibliothecaris', 'Librarian'], says: ['Stil in de bibliotheek… maar vraag gerust. Hier vind je alle spieren en wat ze doen.', 'Quiet in the library… but do ask. Here you find every muscle and what it does.'], open: ['Open de spierenatlas', 'Open the muscle atlas'] },
   hall: { name: ['Hofmeester', 'Steward'], says: ['Dit is de trofeeënhal. Alles wat je hebt verdiend hangt hier aan de muur.', 'This is the trophy hall. Everything you have earned hangs on the wall here.'], open: ['Bekijk je prijzen', 'See your trophies'] },
   board: { name: ['Bode', 'Messenger'], says: ['Nieuws van het prikbord: hier staan je missies van deze week.', 'News from the notice board: here are your missions for this week.'], open: ['Bekijk je missies', 'See your missions'] },

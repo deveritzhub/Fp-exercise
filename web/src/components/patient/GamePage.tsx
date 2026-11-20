@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
@@ -24,6 +24,7 @@ export const closeGameFrame = () => {
  */
 export function GamePage({ href, onClose }: { href: string; onClose: () => void }) {
   const { t } = useI18n();
+  const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     const onMsg = (e: MessageEvent) => {
       if (e.origin === window.location.origin && (e.data as { type?: string })?.type === 'fp-close-game-page') onClose();
@@ -43,7 +44,10 @@ export function GamePage({ href, onClose }: { href: string; onClose: () => void 
           className="flex min-h-[52px] shrink-0 items-center gap-2 border-b border-[#e4bc63] bg-[#141c18] px-4 text-left text-[15px] font-semibold text-[#f6e2a6]">
           <ArrowLeft className="h-4 w-4" aria-hidden />{t('Terug naar het spel', 'Back to the game')}
         </button>
-        <iframe src={href} title={t('Pagina in het spel', 'Page in the game')} className="min-h-0 w-full flex-1 border-0 bg-canvas" data-testid="game-page-frame" />
+        <div className="relative min-h-0 w-full flex-1">
+          {!loaded && <p className="absolute inset-0 grid place-items-center text-[15px] text-ink-700" role="status" data-testid="game-page-loading">{t('Even laden…', 'Loading…')}</p>}
+          <iframe src={href} title={t('Pagina in het spel', 'Page in the game')} onLoad={() => setLoaded(true)} className="h-full w-full border-0 bg-transparent" data-testid="game-page-frame" />
+        </div>
       </div>
     </div>
   );
