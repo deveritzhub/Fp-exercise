@@ -16,7 +16,7 @@ async function sql(q: string, params: unknown[] = []) {
 test('a strong adventurer goes down to the underworld and finds the Shame lord', async ({ browser }) => {
   test.setTimeout(450_000);
   const [emma] = await sql(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`);
-  await sql(`INSERT INTO hero_adventure(patient_id, xp) VALUES ($1, 6000) ON CONFLICT (patient_id) DO UPDATE SET xp = 6000`, [emma.id]);
+  await sql(`INSERT INTO hero_adventure(patient_id, xp) VALUES ($1, 30000) ON CONFLICT (patient_id) DO UPDATE SET xp = 30000`, [emma.id]);
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'nl-NL' });
   const page = await context.newPage();
   await page.addInitScript(() => localStorage.setItem('fp.village.tip', '1'));

@@ -1292,7 +1292,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
       spots.push({ key: b.key, door: p.door });
       // Homes stand along the street the page lays out; the others get their own path from the square.
       const k = 2.6 / Math.hypot(p.door.x, p.door.z);
-      if (stage < 0) roads.push(plan ? spur(p.door) : { a: { x: p.door.x * k, z: p.door.z * k }, b: p.door, w: 1.3 });
+      if (plan) roads.push(spur(p.door));
+      else if (stage < 0) roads.push({ a: { x: p.door.x * k, z: p.door.z * k }, b: p.door, w: 1.3 });
       if (b.kind) yard(scene, b.kind, p, obstacles);
     });
 
@@ -1964,8 +1965,8 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         for (let k = 0; k < 4; k++) prop(new THREE.BoxGeometry(0.42, 0.06, 1.1), k % 2 ? stripeB : stripeA, m.x - 0.63 + k * 0.42, 1.95, m.z, i * 0.4);
         obstacles.push({ x: m.x, z: m.z, r: 0.95 });
       });
-      // The homes of the residential district.
-      RESIDENTS.forEach((r, i) => {
+      // The homes of the residential district (in the therapist's town the patients' homes stand there).
+      if (!buildings.some((b) => b.stage != null)) RESIDENTS.forEach((r, i) => {
         const h = dwelling(r.stage, i + 7);
         h.scale.setScalar(STREET_HOME);
         h.position.set(r.at.x, 0, r.at.z);
@@ -3265,6 +3266,14 @@ export default function WalkVillage3D({ buildings, tvLabel, tvTitle, tvLines, lo
         p.x = n.x;
         p.z = n.z;
         walking = true;
+        // As with the keys on a computer, the view comes along behind the hero: the more the push
+        // points ahead, the sooner it swings round (a push sideways leaves it, so a turn stays a turn).
+        const ahead2 = Math.max(0, push.y / force);
+        if (!down && ahead2 > 0) {
+          const want = facing.current + Math.PI;
+          const turnBy = Math.atan2(Math.sin(want - camAngle.current), Math.cos(want - camAngle.current));
+          camAngle.current += turnBy * Math.min(1, dt * 2.2 * ahead2 * ahead2);
+        }
       } else if (goal) {
         // With the model the ground speed is the one its gait was made for, so the feet do not slide.
         const pace = (goal.run ? 1.12 : 1.1) * live.current.slow;

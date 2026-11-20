@@ -16,7 +16,7 @@ async function sql(q: string, params: unknown[] = []) {
 test('the boss board shows the bosses and takes the hero to one', async ({ browser }) => {
   test.setTimeout(300_000);
   const [emma] = await sql(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`);
-  await sql(`INSERT INTO hero_adventure(patient_id, xp) VALUES ($1, 1500) ON CONFLICT (patient_id) DO UPDATE SET xp = 1500`, [emma.id]);
+  await sql(`INSERT INTO hero_adventure(patient_id, xp) VALUES ($1, 4300) ON CONFLICT (patient_id) DO UPDATE SET xp = 4300`, [emma.id]);
   await sql("INSERT INTO hero_purchases(patient_id, item, price) VALUES ($1, 'slain_alpha_boar', 0) ON CONFLICT DO NOTHING", [emma.id]);
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'nl-NL' });
   const page = await context.newPage();

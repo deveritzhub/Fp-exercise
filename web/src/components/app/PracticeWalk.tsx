@@ -6,30 +6,40 @@ import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { DEFAULT_LOOK } from '@shared/hero';
 import type { Placed } from '@shared/homeDecor';
-import { HOME_STAGES, homeStage, STREET_BOUND, STREET_RING, STREET_SIZE, streetPlot, type VillageHome } from '@shared/practiceVillage';
-import { siteAt, VILLAGE_LAYOUT } from '@/components/patient/walk';
+import { HOME_STAGES, homeStage, type VillageHome } from '@shared/practiceVillage';
+import { VILLAGE_LAYOUT, type Site } from '@/components/patient/walk';
+import { HOME_PLOTS, SITES, TOWN_HOUSES, placeAt, townHouseModel } from '@/components/patient/townPlan';
 import { Minimap, type Landmark, type MapTrack } from '@/components/patient/VillageMap';
 import { EXIT_KEY, HOME_KEY, PRACTICE_KEY, type WorldApi } from '@/components/patient/WalkVillage3D';
-import { Joystick } from '@/pages/patient/VillageWalkPage';
+import { Joystick, touchFirst } from '@/pages/patient/VillageWalkPage';
 // three.js only loads on the 3D pages.
 const WalkVillage3D = lazy(() => import('@/components/patient/WalkVillage3D'));
 
 const homeKey = (id: string) => `p:${id}`;
 const BTN = 'pointer-events-auto inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-[#c9a14a] bg-[linear-gradient(180deg,#2f4a3f,#1c2f28)] px-4 text-[15px] font-semibold text-white shadow-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffd76a]';
 
-/** The ring road behind the first homes, and the two ways to it from the square. */
-const STREET_ROADS = (() => {
-  const roads: { a: { x: number; z: number }; b: { x: number; z: number }; w: number }[] = [];
-  const at = (deg: number, r: number) => ({ x: Math.cos((deg * Math.PI) / 180) * r, z: Math.sin((deg * Math.PI) / 180) * r });
-  for (let d = 0; d < 360; d += 10) roads.push({ a: at(d, STREET_RING.road), b: at(d + 10, STREET_RING.road), w: 1.7 });
-  for (const d of [0, 180]) roads.push({ a: at(d, 2.6), b: at(d, STREET_RING.road), w: 1.5 });
-  for (let i = 0; i < 6; i++) roads.push({ a: at(streetPlot(i).deg, 2.6), b: at(streetPlot(i).deg, STREET_RING.inner - 2.4), w: 1.2 });
-  return roads;
-})();
+/** The homes of one area of the town: as many as there are plots. */
+const STREET_SIZE = HOME_PLOTS.length;
+
+/** The buildings of the town, the same as in the patients' village (here only to look at). */
+const TOWN_NAMES: Record<keyof typeof SITES, [string, string]> = {
+  hall: ['Trofeeënhal', 'Trophy hall'], board: ['Prikbord', 'Notice board'], dojo: ['Dojo', 'Dojo'], kracht: ['Krachthonk', 'Strength house'],
+  smithy: ['Smederij', 'Smithy'], library: ['Bibliotheek', 'Library'], mobiliteit: ['Mobiliteitsstudio', 'Mobility studio'], guild: ['Gildehal', 'Guild hall'],
+};
+const TOWN_ROOF: Partial<Record<keyof typeof SITES, number>> = { kracht: 0x7a2f24, mobiliteit: 0x2f7f8a, dojo: 0x1d1f1e };
+const townBuildings = (nl: boolean) => [
+  ...(Object.keys(SITES) as (keyof typeof SITES)[]).map((k) => ({
+    key: `town:${k}`, label: TOWN_NAMES[k][nl ? 0 : 1], site: SITES[k] as Site, roof: TOWN_ROOF[k],
+    kind: k === 'kracht' || k === 'mobiliteit' ? k : undefined,
+    model: k === 'dojo' ? { url: '/village/buildings/dojo.glb?v=1', scale: 0.8 } : undefined,
+  })),
+  ...TOWN_HOUSES.map((h) => ({ key: `town:${h.key}`, label: nl ? h.nl : h.en, site: placeAt(h.at.x, h.at.z, 2.1 * (h.scale ?? 1)) as Site, roof: h.roof, scale: h.scale, model: townHouseModel(h.scale ?? 1) })),
+];
 
 /**
- * The practice's village on foot: the therapist starts in the practice and walks along the homes of
- * the patients. At a door: the record, or a look inside at how the patient furnished the home.
+ * The practice's village on foot: the same town the patients walk, with the homes of the patients
+ * in its residential district and on the free plots inside the wall. The therapist starts in the
+ * practice. At a door: the record, or a look inside at how the patient furnished the home.
  * Homes carry a number; a name only when the page was asked to show names.
  */
 export default function PracticeWalk({ homes, practiceName, picked, onPick, sample, className }: { homes: VillageHome[]; practiceName: string; picked: string | null; onPick: (id: string | null) => void; sample: boolean; className?: string }) {
@@ -41,7 +51,7 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
   const world = useRef<WorldApi | null>(null);
   const track = useRef<MapTrack>({ x: 0, z: 0, facing: 0 });
   const stick = useRef({ x: 0, y: 0 });
-  const [joystick, setJoystick] = useState(false);
+  const [joystick, setJoystick] = useState(touchFirst);
   const [near, setNear] = useState<string | null>(null);
   const [inside, setInside] = useState<string | null>(null);
   const [items, setItems] = useState<Placed[]>([]);
@@ -49,16 +59,17 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
   const [failed, setFailed] = useState(false);
 
   const label = (h: VillageHome) => h.name ?? t(`Huisje ${h.no}`, `Home ${h.no}`);
-  const buildings = useMemo(
+  const homeBuildings = useMemo(
     () => shown.map((h, i) => {
-      const p = streetPlot(i);
-      return { key: homeKey(h.id), label: h.name ?? (nl ? `Huisje ${h.no}` : `Home ${h.no}`), site: siteAt(p.deg, p.ring), stage: homeStage(h.level), no: h.no, flag: h.week > 0 };
+      const p = HOME_PLOTS[i % HOME_PLOTS.length];
+      return { key: homeKey(h.id), label: h.name ?? (nl ? `Huisje ${h.no}` : `Home ${h.no}`), site: placeAt(p.x, p.z), stage: homeStage(h.level), no: h.no, flag: h.week > 0 };
     }),
     [shown, nl],
   );
+  const buildings = useMemo(() => [...townBuildings(nl), ...homeBuildings], [homeBuildings, nl]);
   const landmarks: Landmark[] = [
     { key: PRACTICE_KEY, label: practiceName, x: VILLAGE_LAYOUT.gym.x, z: VILLAGE_LAYOUT.gym.z - 1.6, icon: '🏥', color: '#b4532f', wide: true },
-    ...buildings.map((b) => ({ key: b.key, label: b.label, x: b.site.x, z: b.site.z, icon: '🏠', color: b.flag ? '#2f9e44' : '#8a6038' })),
+    ...homeBuildings.map((b) => ({ key: b.key, label: b.label, x: b.site.x, z: b.site.z, icon: '🏠', color: b.flag ? '#2f9e44' : '#8a6038' })),
   ];
   const active = homes.filter((h) => h.week > 0).length;
   const atHome = near?.startsWith('p:') ? shown.find((h) => homeKey(h.id) === near) ?? null : null;
@@ -106,8 +117,7 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
         <WalkVillage3D
           className="h-full w-full"
           buildings={buildings}
-          bound={STREET_BOUND}
-          extraRoads={STREET_ROADS}
+          plan
           people={false}
           visitRoom
           homeItems={items}
@@ -116,7 +126,7 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
           startAtTv
           tvLabel={t('Oefenzaal · tv', 'Exercise room · TV')}
           tvTitle={practiceName}
-          tvLines={[t(`${homes.length} huisjes in het dorp`, `${homes.length} homes in the village`), t(`${active} deze week getraind`, `${active} trained this week`), t('Loop naar buiten voor de woonstraat', 'Walk outside for the street of homes')]}
+          tvLines={[t(`${homes.length} huisjes in het dorp`, `${homes.length} homes in the village`), t(`${active} deze week getraind`, `${active} trained this week`), t('Loop naar buiten: de huisjes staan in de woonwijk', 'Walk outside: the homes are in the residential district')]}
           practiceLabel={practiceName}
           api={world}
           track={track}

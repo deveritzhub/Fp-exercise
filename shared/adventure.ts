@@ -4,18 +4,18 @@
  * and nothing done here changes it.
  */
 export const CREATURES = {
-  slime: { nl: 'Stijfheidsslijm', en: 'Stiffness slime', hp: 3, xp: 12, weakTo: 'moving', level: 1 },
-  imp: { nl: 'Dorstduiveltje', en: 'Thirst imp', hp: 3, xp: 12, weakTo: 'hydrated', level: 1 },
-  couch: { nl: 'Bankhanger', en: 'Couch lurker', hp: 4, xp: 18, weakTo: 'trained', level: 1 },
+  slime: { nl: 'Stijfheidsslijm', en: 'Stiffness slime', hp: 5, xp: 12, weakTo: 'moving', level: 1 },
+  imp: { nl: 'Dorstduiveltje', en: 'Thirst imp', hp: 5, xp: 12, weakTo: 'hydrated', level: 1 },
+  couch: { nl: 'Bankhanger', en: 'Couch lurker', hp: 7, xp: 18, weakTo: 'trained', level: 1 },
   // Bigger ones show themselves to an adventurer who has grown: more blows, more XP.
-  giant_slime: { nl: 'Reuzenslijm', en: 'Giant slime', hp: 10, xp: 40, weakTo: 'moving', level: 3 },
-  couch_king: { nl: 'Bankkoning', en: 'Couch king', hp: 24, xp: 75, weakTo: 'trained', level: 5 },
+  giant_slime: { nl: 'Reuzenslijm', en: 'Giant slime', hp: 18, xp: 40, weakTo: 'moving', level: 3 },
+  couch_king: { nl: 'Bankkoning', en: 'Couch king', hp: 42, xp: 75, weakTo: 'trained', level: 5 },
   // Animals in the meadow, as in the old online worlds: beaten for what they drop.
-  chicken: { nl: 'Kip', en: 'Chicken', hp: 2, xp: 6, weakTo: 'moving', level: 1 },
-  cow: { nl: 'Koe', en: 'Cow', hp: 8, xp: 20, weakTo: 'trained', level: 1 },
-  boar: { nl: 'Wild zwijn', en: 'Wild boar', hp: 16, xp: 45, weakTo: 'trained', level: 4 },
+  chicken: { nl: 'Kip', en: 'Chicken', hp: 4, xp: 6, weakTo: 'moving', level: 1 },
+  cow: { nl: 'Koe', en: 'Cow', hp: 14, xp: 20, weakTo: 'trained', level: 1 },
+  boar: { nl: 'Wild zwijn', en: 'Wild boar', hp: 28, xp: 45, weakTo: 'trained', level: 4 },
   // The first Alpha: a huge boar at the edge of the meadow. It attacks by itself and can beat you.
-  alpha_boar: { nl: 'Alfazwijn', en: 'Alpha boar', hp: 60, xp: 220, weakTo: 'trained', level: 1 },
+  alpha_boar: { nl: 'Alfazwijn', en: 'Alpha boar', hp: 105, xp: 220, weakTo: 'trained', level: 1 },
   // Not creatures but things to harvest, the same way: an oak gives wood, a rock gives stone.
   oak: { nl: 'Eik', en: 'Oak', hp: 5, xp: 8, weakTo: 'moving', level: 1 },
   rock: { nl: 'Rots', en: 'Rock', hp: 7, xp: 10, weakTo: 'trained', level: 1 },
@@ -25,22 +25,22 @@ export const CREATURES = {
   pebble: { nl: 'Steentjes', en: 'Pebbles', hp: 1, xp: 2, weakTo: 'moving', level: 1 },
   twigs: { nl: 'Takken', en: 'Twigs', hp: 1, xp: 2, weakTo: 'moving', level: 1 },
   // Outside the town wall, each in its own hunting ground: they show themselves from their level on.
-  wolf: { nl: 'Wolf', en: 'Wolf', hp: 26, xp: 70, weakTo: 'trained', level: 6 },
-  bear: { nl: 'Beer', en: 'Bear', hp: 50, xp: 140, weakTo: 'trained', level: 10 },
+  wolf: { nl: 'Wolf', en: 'Wolf', hp: 46, xp: 70, weakTo: 'trained', level: 6 },
+  bear: { nl: 'Beer', en: 'Bear', hp: 88, xp: 140, weakTo: 'trained', level: 10 },
   // The boss of each hunting ground: shows itself with its pack, a fair fight only later (alphaAdvised).
-  alpha_wolf: { nl: 'Alfawolf', en: 'Alpha wolf', hp: 120, xp: 400, weakTo: 'trained', level: 6 },
-  alpha_bear: { nl: 'Alfabeer', en: 'Alpha bear', hp: 220, xp: 800, weakTo: 'trained', level: 10 },
+  alpha_wolf: { nl: 'Alfawolf', en: 'Alpha wolf', hp: 210, xp: 400, weakTo: 'trained', level: 6 },
+  alpha_bear: { nl: 'Alfabeer', en: 'Alpha bear', hp: 385, xp: 800, weakTo: 'trained', level: 10 },
   // The shadow side: heavy feelings as creatures, the heavier the stronger. The milder ones live in
   // the Shadow valley, the deeper ones in the dungeon of the underworld. What you really did today is
   // what hits them hardest: you are stronger than this.
-  pride: { nl: 'Pronkpauw', en: 'Peacock of pride', hp: 14, xp: 40, weakTo: 'trained', level: 4 },
-  rage: { nl: 'Vuurkop', en: 'Hothead', hp: 24, xp: 65, weakTo: 'hydrated', level: 6 },
-  craving: { nl: 'Graaigeest', en: 'Grabbing ghost', hp: 30, xp: 90, weakTo: 'fed', level: 8 },
-  fright: { nl: 'Schrikschim', en: 'Fright shade', hp: 40, xp: 120, weakTo: 'moving', level: 10 },
-  sorrow: { nl: 'Tranenslijk', en: 'Tear sludge', hp: 60, xp: 160, weakTo: 'rested', level: 12 },
-  apathy: { nl: 'Grijze Slaper', en: 'Grey sleeper', hp: 70, xp: 200, weakTo: 'trained', level: 14 },
-  guilt: { nl: 'Schuldketter', en: 'Guilt chainer', hp: 90, xp: 260, weakTo: 'hydrated', level: 16 },
-  shame_lord: { nl: 'Schaamtevorst', en: 'Shame lord', hp: 400, xp: 1500, weakTo: 'trained', level: 16 },
+  pride: { nl: 'Pronkpauw', en: 'Peacock of pride', hp: 24, xp: 40, weakTo: 'trained', level: 4 },
+  rage: { nl: 'Vuurkop', en: 'Hothead', hp: 42, xp: 65, weakTo: 'hydrated', level: 6 },
+  craving: { nl: 'Graaigeest', en: 'Grabbing ghost', hp: 52, xp: 90, weakTo: 'fed', level: 8 },
+  fright: { nl: 'Schrikschim', en: 'Fright shade', hp: 70, xp: 120, weakTo: 'moving', level: 10 },
+  sorrow: { nl: 'Tranenslijk', en: 'Tear sludge', hp: 105, xp: 160, weakTo: 'rested', level: 12 },
+  apathy: { nl: 'Grijze Slaper', en: 'Grey sleeper', hp: 122, xp: 200, weakTo: 'trained', level: 14 },
+  guilt: { nl: 'Schuldketter', en: 'Guilt chainer', hp: 158, xp: 260, weakTo: 'hydrated', level: 16 },
+  shame_lord: { nl: 'Schaamtevorst', en: 'Shame lord', hp: 700, xp: 1500, weakTo: 'trained', level: 16 },
 } as const;
 export type CreatureKind = keyof typeof CREATURES;
 export const CREATURE_KINDS = Object.keys(CREATURES) as CreatureKind[];
@@ -53,30 +53,30 @@ export const CREATURE_KINDS = Object.keys(CREATURES) as CreatureKind[];
 export const ATTACKS: Record<CreatureKind, { damage: number; everyMs: number; aggressive: boolean }> = {
   slime: { damage: 1, everyMs: 1600, aggressive: false },
   imp: { damage: 1, everyMs: 1300, aggressive: true },
-  couch: { damage: 2, everyMs: 1800, aggressive: false },
-  giant_slime: { damage: 3, everyMs: 1700, aggressive: false },
-  couch_king: { damage: 5, everyMs: 1800, aggressive: true },
+  couch: { damage: 3, everyMs: 1800, aggressive: false },
+  giant_slime: { damage: 4, everyMs: 1700, aggressive: false },
+  couch_king: { damage: 7, everyMs: 1800, aggressive: true },
   chicken: { damage: 1, everyMs: 1500, aggressive: false },
   cow: { damage: 2, everyMs: 1800, aggressive: false },
-  boar: { damage: 3, everyMs: 1500, aggressive: true },
-  alpha_boar: { damage: 8, everyMs: 1600, aggressive: true },
+  boar: { damage: 4, everyMs: 1500, aggressive: true },
+  alpha_boar: { damage: 11, everyMs: 1600, aggressive: true },
   oak: { damage: 0, everyMs: 1500, aggressive: false },
   rock: { damage: 0, everyMs: 1500, aggressive: false },
   bush: { damage: 0, everyMs: 1500, aggressive: false },
   pebble: { damage: 0, everyMs: 1500, aggressive: false },
   twigs: { damage: 0, everyMs: 1500, aggressive: false },
-  wolf: { damage: 5, everyMs: 1400, aggressive: true },
-  bear: { damage: 9, everyMs: 1700, aggressive: true },
-  alpha_wolf: { damage: 12, everyMs: 1500, aggressive: true },
-  alpha_bear: { damage: 18, everyMs: 1800, aggressive: true },
-  pride: { damage: 3, everyMs: 1500, aggressive: false },
-  rage: { damage: 5, everyMs: 1200, aggressive: true },
-  craving: { damage: 5, everyMs: 1400, aggressive: true },
-  fright: { damage: 7, everyMs: 1500, aggressive: true },
-  sorrow: { damage: 8, everyMs: 1800, aggressive: false },
-  apathy: { damage: 9, everyMs: 2000, aggressive: true },
-  guilt: { damage: 12, everyMs: 1600, aggressive: true },
-  shame_lord: { damage: 22, everyMs: 1800, aggressive: true },
+  wolf: { damage: 7, everyMs: 1400, aggressive: true },
+  bear: { damage: 13, everyMs: 1700, aggressive: true },
+  alpha_wolf: { damage: 17, everyMs: 1500, aggressive: true },
+  alpha_bear: { damage: 25, everyMs: 1800, aggressive: true },
+  pride: { damage: 4, everyMs: 1500, aggressive: false },
+  rage: { damage: 7, everyMs: 1200, aggressive: true },
+  craving: { damage: 7, everyMs: 1400, aggressive: true },
+  fright: { damage: 10, everyMs: 1500, aggressive: true },
+  sorrow: { damage: 11, everyMs: 1800, aggressive: false },
+  apathy: { damage: 13, everyMs: 2000, aggressive: true },
+  guilt: { damage: 17, everyMs: 1600, aggressive: true },
+  shame_lord: { damage: 31, everyMs: 1800, aggressive: true },
 };
 /** Trees and rocks: you chop them for wood and stone; they never fight back. */
 export const isHarvest = (kind: CreatureKind) => kind === 'oak' || kind === 'rock' || kind === 'bush' || kind === 'pebble' || kind === 'twigs';
@@ -96,7 +96,7 @@ export const alphaAdvised = (kind: CreatureKind): number => (kind === 'alpha_wol
  * a quarter more (what you did for real makes your hero tougher). Play only: losing costs nothing.
  */
 export function heroMaxHp(level: number, trainedToday: boolean): number {
-  const base = 40 + 10 * (Math.max(1, Math.floor(level)) - 1);
+  const base = 40 + 12 * (Math.max(1, Math.floor(level)) - 1);
   return Math.round(base * (trainedToday ? 1.25 : 1));
 }
 /** Life that comes back by itself out of a fight, per second; after a while without being hit. */
@@ -108,7 +108,7 @@ export const hitOnHero = (kind: CreatureKind, trainedToday: boolean, guard = 0) 
 };
 
 /** Wins per day that give full XP; after that every win still gives half (rounded up). */
-export const ADVENTURE_DAILY_WINS = 100;
+export const ADVENTURE_DAILY_WINS = 50;
 /** The XP of a win: full for the first wins of the day, half after that (never nothing). */
 export const winXp = (base: number, winsToday: number) => (winsToday < ADVENTURE_DAILY_WINS ? base : Math.ceil(base / 2));
 /**
@@ -122,19 +122,31 @@ export function respawnSeconds(kind: CreatureKind): number {
   return CREATURES[kind].level >= 6 ? 240 : 150;
 }
 
-/** Level from adventure XP: 1 at the start, each next level asks a little more. */
+/**
+ * XP needed to go from `level` to the next: 100 for the first, and each next level asks clearly more
+ * (the step grows too), so the later levels take real time.
+ */
+export const adventureStep = (level: number) => {
+  const k = Math.max(0, Math.floor(level) - 1);
+  return 100 + 80 * k + 8 * k * k;
+};
+/** The XP at which a level is reached. */
+export function xpForAdventureLevel(level: number): number {
+  let xp = 0;
+  for (let l = 1; l < Math.floor(level); l++) xp += adventureStep(l);
+  return xp;
+}
+/** Level from adventure XP: 1 at the start. */
 export function adventureLevel(xp: number): { level: number; from: number; to: number } {
   let level = 1;
   let from = 0;
-  let need = 60;
   let left = Math.max(0, Math.floor(xp));
-  while (left >= need) {
-    left -= need;
-    from += need;
+  while (left >= adventureStep(level)) {
+    left -= adventureStep(level);
+    from += adventureStep(level);
     level++;
-    need = 60 + (level - 1) * 30;
   }
-  return { level, from, to: from + need };
+  return { level, from, to: from + adventureStep(level) };
 }
 
 /**

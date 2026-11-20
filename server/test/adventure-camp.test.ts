@@ -70,7 +70,7 @@ describe('campfire, task of the day and the chest at home', () => {
   it('makes armour from loot (or berries), wears it and takes it off', async () => {
     const P = await login('patientA');
     const [me] = await sql(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`);
-    await sql('INSERT INTO hero_adventure(patient_id, xp) VALUES ($1, 200) ON CONFLICT (patient_id) DO UPDATE SET xp = GREATEST(hero_adventure.xp, 200)', [me.id]);
+    await sql('INSERT INTO hero_adventure(patient_id, xp) VALUES ($1, 300) ON CONFLICT (patient_id) DO UPDATE SET xp = GREATEST(hero_adventure.xp, 300)', [me.id]);
     await sql('INSERT INTO hero_loot(patient_id, item, n) VALUES ($1, $2, 3) ON CONFLICT (patient_id, item) DO UPDATE SET n = 3', [me.id, 'hide']);
     // The wolf cloak asks for adventurer 6.
     expect((await P.post('/patient/hero/adventure/craft', { key: 'wolf_cloak' })).body.error).toBe('level_too_low');
@@ -87,7 +87,7 @@ describe('campfire, task of the day and the chest at home', () => {
     const [me] = await sql(`SELECT p.id FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = 'patient@praktijk-a.test'`);
     await sql('INSERT INTO hero_adventure(patient_id, xp) VALUES ($1, 0) ON CONFLICT (patient_id) DO UPDATE SET xp = 0', [me.id]);
     expect((await P.post('/patient/hero/adventure/win', { kind: 'pride' })).status).toBe(400);
-    await sql('UPDATE hero_adventure SET xp = 6000, wins_today = 0 WHERE patient_id = $1', [me.id]);
+    await sql('UPDATE hero_adventure SET xp = 30000, wins_today = 0 WHERE patient_id = $1', [me.id]);
     const win = await P.post('/patient/hero/adventure/win', { kind: 'fright' });
     expect(win.body.gained).toBe(120);
     expect(win.body.loot.shiver_crystal).toBeGreaterThan(0);

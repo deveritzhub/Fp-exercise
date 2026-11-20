@@ -1,13 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { swingMs, WEAPONS, BOSSES, bossOfWeek, LIGHT, isShadow, lightFrom, CREATURES, ZONES, zoneAt, COOKING, DAILY_QUESTS, dailyQuest, adventureLevel, blow, boxingXp, CREATURE_KINDS, DROPS, LOOT, rollDrops, weaponAt, weaponByKey } from './adventure';
+import { swingMs, WEAPONS, BOSSES, bossOfWeek, LIGHT, isShadow, lightFrom, CREATURES, ZONES, zoneAt, COOKING, DAILY_QUESTS, dailyQuest, adventureLevel, blow, boxingXp, CREATURE_KINDS, DROPS, LOOT, rollDrops, weaponAt, weaponByKey, xpForAdventureLevel } from './adventure';
 
 describe('adventure', () => {
-  it('levels: 60 XP for the first, 30 more for each next', () => {
-    expect(adventureLevel(0)).toEqual({ level: 1, from: 0, to: 60 });
-    expect(adventureLevel(59).level).toBe(1);
-    expect(adventureLevel(60)).toEqual({ level: 2, from: 60, to: 150 });
-    expect(adventureLevel(150).level).toBe(3);
+  it('levels: 100 XP for the first, and each next asks clearly more', () => {
+    expect(adventureLevel(0)).toEqual({ level: 1, from: 0, to: 100 });
+    expect(adventureLevel(99).level).toBe(1);
+    expect(adventureLevel(100)).toEqual({ level: 2, from: 100, to: 288 });
+    expect(adventureLevel(288).level).toBe(3);
     expect(adventureLevel(-5).level).toBe(1);
+    // Level 10 takes thousands of XP: weeks of play, not an afternoon.
+    expect(xpForAdventureLevel(10)).toBeGreaterThan(5000);
+    for (const l of [2, 5, 10, 16]) expect(adventureLevel(xpForAdventureLevel(l)).level).toBe(l);
   });
   it('a creature takes a double blow when its ailment was put right today', () => {
     expect(blow('imp', new Set())).toBe(1);
@@ -45,7 +48,7 @@ describe('fighting back and the hero life', async () => {
   const { ATTACKS, CREATURES, heroMaxHp, hitOnHero, isAlpha, rollDrops } = await import('./adventure');
   it('the hero has more life with a higher adventure level and after a real workout', () => {
     expect(heroMaxHp(1, false)).toBe(40);
-    expect(heroMaxHp(5, false)).toBe(80);
+    expect(heroMaxHp(5, false)).toBe(88);
     expect(heroMaxHp(1, true)).toBe(50);
   });
   it('prey only hits back once struck, and softly; the Alpha attacks by itself, hits hardest and can beat a new hero', () => {

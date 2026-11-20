@@ -21,7 +21,7 @@ import { BOSSBOARD_KEY, BOXING_KEY, CAMP_KEY, DUNGEON_KEY, EXIT_KEY, HOME_KEY, P
 import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@shared/homeDecor';
 import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
 import { VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
-import { SITES, SPOTS, TOWN_HOUSES, WILD, placeAt } from '@/components/patient/townPlan';
+import { SITES, SPOTS, TOWN_HOUSES, WILD, placeAt, townHouseModel } from '@/components/patient/townPlan';
 import { PET_LEVEL } from '@shared/pets';
 import { DOOR_LABEL, STAFF_NAMES } from '@/components/patient/practiceFloors';
 import { openQuickLog } from '@/components/patient/Survival';
@@ -160,11 +160,6 @@ const SIGN: Record<string, [string, string]> = {
   groomer: ['✂️', '#c0607e'],
 };
 
-/** The half-timbered house for a building of the town, by its size. */
-const townHouseModel = (scale: number) =>
-  scale >= 1.2 ? { url: '/village/buildings/huis_vakwerk_groot.glb?v=1', scale: 0.72 }
-  : scale >= 1.1 ? { url: '/village/buildings/huis_vakwerk_middel.glb?v=1', scale: 0.8 }
-  : { url: '/village/buildings/huis_vakwerk_klein.glb?v=1', scale: 0.85 };
 
 const PLACE_HINT: Record<string, [string, string]> = {
   weaponshop: ['Wapens en gereedschap kopen', 'Buy weapons and tools'],
@@ -220,6 +215,9 @@ const STICK_KEY = 'fp.village.joystick';
  */
 
 /** Thumb stick: drag the knob and the hero walks that way; push it to the rim to run. */
+/** A phone or tablet: a finger is the main pointer. */
+export const touchFirst = () => typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches;
+
 export function Joystick({ stick, label }: { stick: RefObject<{ x: number; y: number }>; label: string }) {
   const knob = useRef<HTMLSpanElement>(null);
   const R = 34;
@@ -391,13 +389,15 @@ export function VillageWalkPage() {
   const track = useRef<Track>({ x: 0, z: 0, facing: 0 });
   const world = useRef<WorldApi | null>(null);
   const stick = useRef({ x: 0, y: 0 });
-  // Joystick on or off: a choice kept in this browser.
+  // Joystick on or off: a choice kept in this browser. On a touch screen it is on until switched off.
   const [joystick, setJoystick] = useState(() => {
     try {
-      return localStorage.getItem(STICK_KEY) === '1';
+      const kept = localStorage.getItem(STICK_KEY);
+      if (kept !== null) return kept === '1';
     } catch {
-      return false;
+      /* storage unavailable */
     }
+    return touchFirst();
   });
   const toggleJoystick = () => {
     setJoystick((on) => {
@@ -1361,7 +1361,7 @@ export function VillageWalkPage() {
       </section>
 
       <p className="text-[13.5px] leading-relaxed text-ink-700">
-        {t('Tik op de grond om te lopen. Sleep opzij om helemaal rond te draaien, omhoog of omlaag om te kantelen, en knijp met twee vingers (of gebruik + en −) om in en uit te zoomen. Tik op een poppetje om te praten. Liever een joystick? Zet hem aan met de knop met de gamepad. In de oefenzaal van je praktijk staan de fysiotherapeut en de tv met je oefeningen van vandaag.', 'Tap the ground to walk and drag sideways to look around. Prefer a joystick? Switch it on with the gamepad button. In the exercise room of your practice you find the physiotherapist and the TV with your exercises for today.')}
+        {t('Loop met de joystick links onderin: duw hem de kant op waar je heen wilt, tot de rand om te rennen. De camera draait vanzelf achter je held mee. Je kunt ook op de grond tikken om erheen te lopen. Sleep opzij om rond te kijken, en knijp met twee vingers (of gebruik + en −) om in en uit te zoomen. Tik op een poppetje om te praten. De joystick zet je aan of uit met de knop met de gamepad. In de oefenzaal van je praktijk staan de fysiotherapeut en de tv met je oefeningen van vandaag.', 'Walk with the joystick at the bottom left: push it where you want to go, to the rim to run. The camera turns along behind your hero. You can also tap the ground to walk there. Drag sideways to look around. The gamepad button switches the joystick on or off. In the exercise room of your practice you find the physiotherapist and the TV with your exercises for today.')}
       </p>
       {/* On a computer (a fine pointer): the keys. */}
       <p className="hidden text-[13.5px] leading-relaxed text-ink-700 [@media(pointer:fine)]:block" data-testid="village-keys">

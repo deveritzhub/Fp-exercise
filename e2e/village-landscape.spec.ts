@@ -17,7 +17,7 @@ test('the village plays in landscape: full screen by itself, controls do not ove
   expect(box.width).toBeGreaterThanOrEqual(778);
   expect(box.height).toBeGreaterThanOrEqual(358);
 
-  await page.getByTestId('slot-joystick').click();
+  // On a touch screen the joystick is on from the start.
   const parts: [string, Locator][] = [
     ['hero frame', page.getByRole('link', { name: /^Naar je held/ })],
     ['supplies', page.getByTestId('world-states')],
