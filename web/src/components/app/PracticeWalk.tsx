@@ -10,7 +10,8 @@ import { HOME_STAGES, homeStage, type VillageHome } from '@shared/practiceVillag
 import { VILLAGE_LAYOUT, type Site } from '@/components/patient/walk';
 import { HOME_PLOTS, SITES, TOWN_HOUSES, placeAt, townHouseModel } from '@/components/patient/townPlan';
 import { Minimap, type Landmark, type MapTrack } from '@/components/patient/VillageMap';
-import { EXIT_KEY, HOME_KEY, PRACTICE_KEY, type WorldApi } from '@/components/patient/WalkVillage3D';
+import { COMPUTER_KEY, EXIT_KEY, HOME_KEY, PRACTICE_KEY, type WorldApi } from '@/components/patient/WalkVillage3D';
+import { GamePage } from '@/components/patient/GamePage';
 import { Joystick, touchFirst } from '@/pages/patient/VillageWalkPage';
 // three.js only loads on the 3D pages.
 const WalkVillage3D = lazy(() => import('@/components/patient/WalkVillage3D'));
@@ -57,6 +58,8 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
   const [items, setItems] = useState<Placed[]>([]);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  // A page of the app opened at the practice computer, over the village.
+  const [screen, setScreen] = useState<string | null>(null);
 
   const label = (h: VillageHome) => h.name ?? t(`Huisje ${h.no}`, `Home ${h.no}`);
   const homeBuildings = useMemo(
@@ -127,6 +130,7 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
           plan
           people={false}
           visitRoom
+          computer
           homeItems={items}
           look={look}
           heroName={t('Jij', 'You')}
@@ -186,6 +190,14 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
         {inside && (
           <button type="button" className={BTN} data-testid="leave-home" onClick={() => world.current?.goTo(EXIT_KEY)}><LogOut className="h-5 w-5" aria-hidden />{t('Naar buiten', 'Go outside')}</button>
         )}
+        {!inside && near === COMPUTER_KEY && (
+          <div className="flex flex-wrap items-center justify-center gap-2" data-testid="computer-menu">
+            <p className="w-full rounded-xl bg-black/60 px-3 py-1.5 text-center text-[14px] font-medium text-white">{t('De praktijkcomputer: oefenschema’s maken en aan patiënten geven', 'The practice computer: make exercise programmes and give them to patients')}</p>
+            <button type="button" className={BTN} data-testid="computer-new" onClick={() => setScreen('/app/programmas/nieuw')}>{t('Nieuw oefenschema', 'New programme')}</button>
+            <button type="button" className={BTN} data-testid="computer-programs" onClick={() => setScreen('/app/programmas')}>{t('Oefenschema’s', 'Programmes')}</button>
+            <button type="button" className={BTN} data-testid="computer-patients" onClick={() => setScreen('/app/patienten')}>{t('Patiënten', 'Patients')}</button>
+          </div>
+        )}
         {!inside && near === PRACTICE_KEY && (
           <button type="button" className={BTN} data-testid="enter-practice" onClick={() => world.current?.use(PRACTICE_KEY)}><DoorOpen className="h-5 w-5" aria-hidden />{t('Naar binnen: de praktijk', 'Go in: the practice')}</button>
         )}
@@ -207,6 +219,7 @@ export default function PracticeWalk({ homes, practiceName, picked, onPick, samp
           </div>
         )}
       </div>
+      {screen && <GamePage href={screen} wide onClose={() => setScreen(null)} />}
       <span hidden data-testid="walk-picked">{picked ?? ''}</span>
       <span hidden data-home-key={HOME_KEY} />
     </div>

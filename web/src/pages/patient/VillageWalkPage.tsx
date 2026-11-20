@@ -17,12 +17,15 @@ import { GamePage } from '@/components/patient/GamePage';
 import { BackpackCard } from '@/components/patient/Backpack';
 import { LightCard } from '@/components/patient/LightSide';
 import { clearFromGame, markFromGame } from '@/components/patient/BackToGame';
-import { BOSSBOARD_KEY, BOXING_KEY, CAMP_KEY, DUNGEON_KEY, EXIT_KEY, HOME_KEY, PRACTICE_KEY, TV_KEY, WELL_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
+import { CRYPT_GATE_KEY, BOSSBOARD_KEY, BOXING_KEY, CAMP_KEY, DUNGEON_KEY, EXIT_KEY, HOME_KEY, PRACTICE_KEY, TV_KEY, WELL_KEY, boardKey, type WorldApi } from '@/components/patient/WalkVillage3D';
 import { DECOR, HOME_ROOM, decorItem, freeSpot, turn, type Placed } from '@shared/homeDecor';
 import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
 import { VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { SITES, SPOTS, TOWN_HOUSES, WILD, placeAt, townHouseModel } from '@/components/patient/townPlan';
 import { GearScreen } from '@/components/patient/GearScreen';
+import { STORY_QUERY, StoryBook, questText, useStory, type StoryState } from '@/components/patient/StoryBook';
+import { STORY, type StoryGoal } from '@shared/story';
+import { CRYPT_KEY, CRYPT_MAX_DEPTH, buildCrypt, cryptLevel } from '@shared/dungeon';
 import { useLive } from '@/lib/live';
 import { LIVE_SAYINGS, sayingByKey } from '@shared/live';
 import { useFriends } from '@/pages/patient/FriendsPage';
@@ -423,6 +426,7 @@ export function VillageWalkPage() {
   const d = heroQ.data;
   // The adventure: XP of its own (never the hero's), a level, and the weapon that comes with it.
   type Adventure = { xp: number; wins: number; winsToday: number; dailyWins: number; roundsToday: number; level: number; from: number; to: number; weapon: string | null; owned: string[]; tools?: string[]; rides?: string[]; coins: number; loot?: Record<string, number>; lootCap?: number; armour?: string | null; light?: string[]; slain?: string[]; bossOfWeek?: string | null; pos?: { x: number; z: number } | null; pet?: { key: string; coat: number; name: string | null; color?: string | null; wear?: string | null } | null;
+    crypt?: { best: number; run: { seed: number; depth: number; chests: number[] } | null };
     arrows?: number; runes?: number; skills?: Record<'melee' | 'ranged' | 'magic', { xp: number; level: number; from: number; to: number }>;
     quest?: { key: string; kind: CreatureKind; n: number; nl: string; en: string; progress: number; done: boolean; xp: number } | null };
   const adventure = useQuery({ queryKey: ['patient-adventure'], queryFn: () => api.get<Adventure>('/patient/hero/adventure'), enabled: !!d?.hero });
@@ -529,7 +533,20 @@ export function VillageWalkPage() {
       : link.startsWith('/p/held/vrienden') || link.startsWith('/p/wereld') ? 'guild'
       : link.startsWith('/p/held') ? 'board'
       : TV_KEY;
+  const story = useStory(!!heroQ.data?.hero);
+  // Where the story's quest is done: the person to talk to, the place, the creature, the shop.
+  const storyDest = (g: StoryGoal | null): string => !g ? ''
+    : g.type === 'talk' ? (g.who === 'practice' ? TV_KEY : g.who === 'treatment' ? PRACTICE_KEY : g.who)
+    : g.type === 'visit' ? (g.place === 'well' ? WELL_KEY : DUNGEON_KEY)
+    : g.type === 'win' ? `quest:${g.kind}`
+    : g.type === 'loot' ? (g.item === 'stone' ? 'quest:pebble' : g.item === 'wood' ? 'quest:twigs' : '')
+    : g.type === 'workout' ? TV_KEY
+    : g.type === 'weapon' ? 'weaponshop'
+    : g.type === 'armour' ? 'armourer'
+    : '';
+  const sq = story.data?.quest;
   const tasks: Task[] = [
+    ...(sq && storyDest(sq.goal) ? [{ id: 'story', label: `📖 ${nl ? sq.nl.title : sq.en.title}`, hint: sq.need > 1 ? `${sq.have}/${sq.need} · ${t('verhaal', 'story')}` : t('Het verhaal', 'The story'), dest: storyDest(sq.goal) }] : []),
     ...todo.map((p): Task => {
       const m = moduleOf(p);
       const n = p.today.items.length;
@@ -684,11 +701,33 @@ export function VillageWalkPage() {
   // Playing together: friends who share and play now are seen walking in the village.
   const friendsQ = useFriends();
   const hasFriends = !!friendsQ.data?.sharing.enabled && (friendsQ.data?.friends ?? []).some((f) => f.kind === 'friend');
+  const [invite, setInvite] = useState<{ name: string; depth: number; seed: number } | null>(null);
   const live = useLive(hasFriends, (who, k) => {
     const saying = sayingByKey(k);
     if (saying) toast(`${who.name}: ${nl ? saying.nl : saying.en}`);
-  });
+  }, (who, depth, seed) => setInvite({ name: who.name, depth, seed }));
   const [friendsOpen, setFriendsOpen] = useState(false);
+  // The story: the quest that is open, the book, and the moment a quest is done.
+  const [storyOpen, setStoryOpen] = useState(false);
+  const [storyDone, setStoryDone] = useState<StoryState['justDone']>([]);
+  const storyGoal = story.data?.quest?.goal ?? null;
+  useEffect(() => {
+    const done = story.data?.justDone ?? [];
+    if (done.length) {
+      setStoryDone(done);
+      void qc.invalidateQueries({ queryKey: ['patient-adventure'] });
+      void qc.invalidateQueries({ queryKey: ['patient-hero'] });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story.data]);
+  const storyEvent = async (kind: 'talk' | 'visit', key: string) => {
+    try {
+      const r = await api.post<StoryState>('/patient/hero/story/event', { kind, key });
+      qc.setQueryData(STORY_QUERY, r);
+    } catch {
+      /* the story waits; nothing lost */
+    }
+  };
   // What the hero does just now (a blow, a shot, a spell), sent with the next step.
   const liveAct = useRef<string | undefined>(undefined);
   // A page of the app shown over the world (see GamePage); on closing, what it changed is fetched anew.
@@ -759,6 +798,7 @@ export function VillageWalkPage() {
   useEffect(() => clearFromGame(), []);
   const savedAt = useRef<{ x: number; z: number } | null>(null);
   const zoneNow = useRef('village');
+  const cryptRef = useRef<ReturnType<typeof buildCrypt> | null>(null);
   useEffect(() => {
     if (!d?.hero) return;
     const save = (leaving: boolean) => {
@@ -809,11 +849,26 @@ export function VillageWalkPage() {
   const pace = (thirsty ? 0.8 : 1) * (stiff ? 0.8 : 1) * (supply.fed ? SUPPLY.fedPace : 1);
 
   // The adventure: little ailments round the village to beat, for XP of its own (never the hero's).
+  // The crypt going on (if any): built from its seed, the same for a friend who came along.
+  const cryptRun = adventure.data?.crypt?.run ?? null;
+  const runCrypt = useMemo(() => (cryptRun ? buildCrypt(cryptRun.seed, cryptRun.depth) : null), [cryptRun?.seed, cryptRun?.depth]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Cleared (the run is over), the crypt still stands round the hero until the stairs up.
+  const lastCrypt = useRef<ReturnType<typeof buildCrypt> | null>(null);
+  if (runCrypt) lastCrypt.current = runCrypt;
+  const crypt = runCrypt ?? (zone === CRYPT_KEY ? lastCrypt.current : null);
+  cryptRef.current = crypt;
+  const cryptBossKey = crypt ? `crypt:${crypt.seed}:boss` : '';
   const creatures = useMemo(
-    () => WILD.map((w, i) => ({ key: `mob:${i}`, kind: w.kind as CreatureKind, label: nl ? CREATURES[w.kind as CreatureKind].nl : CREATURES[w.kind as CreatureKind].en, x: w.x, z: w.z, zone: w.zone }))
-      // The big ones only show themselves to an adventurer of their level.
-      .filter((c) => (adventure.data?.level ?? 1) >= CREATURES[c.kind].level),
-    [nl, adventure.data?.level],
+    () => [
+      ...WILD.map((w, i) => ({ key: `mob:${i}`, kind: w.kind as CreatureKind, label: nl ? CREATURES[w.kind as CreatureKind].nl : CREATURES[w.kind as CreatureKind].en, x: w.x, z: w.z, zone: w.zone }))
+        // The big ones only show themselves to an adventurer of their level.
+        .filter((c) => (adventure.data?.level ?? 1) >= CREATURES[c.kind].level),
+      ...(crypt ? [
+        ...crypt.mobs.map((m, i) => ({ key: `crypt:${crypt.seed}:${i}`, kind: m.kind, label: nl ? CREATURES[m.kind].nl : CREATURES[m.kind].en, x: m.x, z: m.z, zone: CRYPT_KEY })),
+        { key: `crypt:${crypt.seed}:boss`, kind: crypt.boss.kind, label: `${nl ? 'Baas' : 'Boss'}: ${nl ? CREATURES[crypt.boss.kind].nl : CREATURES[crypt.boss.kind].en}`, x: crypt.boss.x, z: crypt.boss.z, zone: CRYPT_KEY },
+      ] : []),
+    ],
+    [nl, adventure.data?.level, crypt],
   );
   const [hurt, setHurt] = useState<Record<string, number>>({});
   // Beaten creatures stay away for a while (the stronger, the longer), also over a reload: the time
@@ -917,12 +972,91 @@ export function VillageWalkPage() {
       const moved = Math.hypot(x - last.x, z - last.z) > 0.02 || Math.abs(facing - last.f) > 0.05 || zoneNow.current !== last.zone;
       // Only when something changed, and once in a while to say "still here".
       if (!moved && !act && w === 0 && now - last.at < 2000) return;
+      const where = zoneNow.current === CRYPT_KEY && cryptRef.current ? `crypt:${cryptRef.current.seed}` : zoneNow.current;
       last = { x, z, f: facing, zone: zoneNow.current, at: now };
-      live.send({ t: 'pos', x, z, f: facing, zone: zoneNow.current, w, ...(act ? { act } : {}) });
+      live.send({ t: 'pos', x, z, f: facing, zone: where, w, ...(act ? { act } : {}) });
     }, 120);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [live.status]);
+  useEffect(() => {
+    if (talk && storyGoal?.type === 'talk' && storyGoal.who === talk) void storyEvent('talk', talk);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [talk]);
+  // Sent there by the story to talk to someone: arriving at their counter (or at Syabend by the TV)
+  // starts the talk by itself.
+  useEffect(() => {
+    if (storyGoal?.type !== 'talk' || talk) return;
+    const who = storyGoal.who;
+    if (near && (near === boardKey(who) || (who === 'practice' && near === TV_KEY))) setTalk(who);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [near, storyGoal]);
+  useEffect(() => {
+    if (near === WELL_KEY && storyGoal?.type === 'visit' && storyGoal.place === 'well') void storyEvent('visit', 'well');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [near]);
+  useEffect(() => {
+    if (zone === DUNGEON_KEY && storyGoal?.type === 'visit' && storyGoal.place === 'cave') void storyEvent('visit', 'cave');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zone]);
+  const [cryptOpen, setCryptOpen] = useState(false);
+  const [cryptBusy, setCryptBusy] = useState(false);
+  const [cleared, setCleared] = useState<{ depth: number; xp: number; coins: number } | null>(null);
+  // Into the crypt once the world has built it (the 3D world is rebuilt with the crypt in it).
+  const enterCrypt = useRef(false);
+  useEffect(() => {
+    if (!crypt || !enterCrypt.current) return;
+    let tries = 0;
+    const id = window.setInterval(() => {
+      tries += 1;
+      if (zoneNow.current === CRYPT_KEY || tries > 40) {
+        enterCrypt.current = false;
+        window.clearInterval(id);
+        return;
+      }
+      world.current?.enter(CRYPT_KEY);
+    }, 350);
+    return () => window.clearInterval(id);
+  }, [crypt]);
+  const goDown = async (depth: number, seed?: number) => {
+    setCryptBusy(true);
+    try {
+      const r = await api.post<Adventure>('/patient/hero/crypt/start', { depth, ...(seed ? { seed } : {}) });
+      enterCrypt.current = true;
+      qc.setQueryData(['patient-adventure'], r);
+      setCryptOpen(false);
+      setInvite(null);
+      toast(t(`⚱️ Je daalt af in crypte ${depth}…`, `⚱️ You go down into crypt ${depth}…`));
+      return r.crypt?.run ?? null;
+    } catch (e) {
+      say(e);
+      return null;
+    } finally {
+      setCryptBusy(false);
+    }
+  };
+  const openChest = async (i: number) => {
+    try {
+      const r = await api.post<Adventure & { prize: { coins: number; item: LootKey; n: number } }>('/patient/hero/crypt/chest', { index: i });
+      qc.setQueryData(['patient-adventure'], r);
+      void qc.invalidateQueries({ queryKey: ['patient-hero'] });
+      world.current?.openChest(i);
+      toast(t(`🧰 In de kist: ${r.prize.coins} muntjes en ${r.prize.n}× ${LOOT[r.prize.item].nl.toLowerCase()}!`, `🧰 In the chest: ${r.prize.coins} coins and ${r.prize.n}× ${LOOT[r.prize.item].en.toLowerCase()}!`));
+    } catch (e) {
+      say(e);
+    }
+  };
+  const clearCrypt = async () => {
+    try {
+      const r = await api.post<Adventure & { cleared: { depth: number; xp: number; coins: number } }>('/patient/hero/crypt/clear', {});
+      void qc.invalidateQueries({ queryKey: ['patient-hero'] });
+      setCleared(r.cleared);
+      // The crypt stays round the hero until the stairs up; the next run starts fresh.
+      window.setTimeout(() => qc.setQueryData(['patient-adventure'], r), 0);
+    } catch (e) {
+      say(e);
+    }
+  };
   const respawn = () => {
     const by = mob?.key;
     setDownBy(null);
@@ -998,6 +1132,7 @@ export function VillageWalkPage() {
       const fired = shots.current[key] ?? 0;
       delete shots.current[key];
       const r = await api.post<Adventure & { gained: number; questXp?: number; unlocked?: string | null; drops?: { item: LootKey; n: number }[] }>('/patient/hero/adventure/win', { kind: mob.kind, ...(fired ? { shots: fired } : {}) });
+      if (key === cryptBossKey) void clearCrypt();
       // The server's count of arrows and runes is the one that counts from here.
       spent.current = Object.values(shots.current).reduce((n, x) => n + x, 0);
       outOfAmmoSaid.current = false;
@@ -1006,6 +1141,7 @@ export function VillageWalkPage() {
       if (r.questXp) toast(t(`Taak van vandaag klaar: ${r.quest?.nl.toLowerCase() ?? ''}! +${r.questXp} avonturen-XP`, `Today’s task done: ${r.quest?.en.toLowerCase() ?? ''}! +${r.questXp} adventure XP`));
       const was = adventure.data?.level ?? 1;
       qc.setQueryData(['patient-adventure'], r);
+      void qc.invalidateQueries({ queryKey: STORY_QUERY });
       levelUp(was, r.level);
       // Every win gives adventure XP, chopping and mining too (half after the first wins of the day).
       toast(isHarvest(mob.kind) ? t(`${mob.label}: +${r.gained} avonturen-XP`, `${mob.label}: +${r.gained} adventure XP`) : t(`${mob.label} verslagen! +${r.gained} avonturen-XP`, `${mob.label} beaten! +${r.gained} adventure XP`));
@@ -1161,6 +1297,8 @@ export function VillageWalkPage() {
             ride={riding && myRide ? myRide.key : null}
             pet={d?.hero ? myPet : null}
             friends={live.friends}
+            crypt={crypt}
+            liveZone={crypt ? `crypt:${crypt.seed}` : 'village'}
             weapon={hasTool && mobTool ? mobTool.key : mob && isHarvest(mob.kind) ? null : weapon.key === 'fists' ? null : weapon.key}
             pace={pace}
             api={world}
@@ -1212,6 +1350,13 @@ export function VillageWalkPage() {
             <Minimap track={track} landmarks={landmarks} onPlace={toPlace} onWalk={toPoint} label={t('Minikaart van het dorp. Tik op een plek of gebouw om erheen te lopen.', 'Minimap of the village. Tap a spot or a building to walk there.')} />
             <button type="button" data-testid="open-world-map" onClick={() => setPlacesOpen(true)} aria-label={t('Wereldkaart openen', 'Open the world map')} className="absolute -bottom-1 -left-1 grid h-9 w-9 place-items-center rounded-full border border-[#e4bc63] bg-[#141c18] text-[#ffd76a] shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]"><MapIcon className="h-4 w-4" aria-hidden /></button>
           </div>
+          {story.data && (
+            <button type="button" data-testid="open-story" onClick={() => setStoryOpen(true)}
+              aria-label={t('Het verhaal: je quest', 'The story: your quest')}
+              className={`${PANEL} flex min-h-[32px] items-center gap-1 px-2 font-display text-[12.5px] font-bold text-[#ffd76a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]`}>
+              <span aria-hidden>📖</span>{t('Verhaal', 'Story')}
+            </button>
+          )}
           {hasFriends && (
             <button type="button" data-testid="friends-online" data-n={live.online.length} onClick={() => setFriendsOpen(true)}
               aria-label={t(`Vrienden: ${live.online.length} nu in het dorp`, `Friends: ${live.online.length} in the village now`)}
@@ -1323,6 +1468,12 @@ export function VillageWalkPage() {
             <Button size="lg" data-testid="open-camp" className="pointer-events-auto border border-[#ffc078] shadow-lift" icon={<Flame className="h-5 w-5" />} onClick={() => setCampOpen(true)}>{t('Koken op het vuur', 'Cook on the fire')}</Button>
           ) : zone === HOME_KEY && own?.layout.some((i) => i.key === 'home_lootchest') && !near ? (
             <Button size="lg" data-testid="open-lootchest" className="pointer-events-auto border border-[#e4bc63] shadow-lift" icon={<Package className="h-5 w-5" />} onClick={() => setChestOpen(true)}>{t('Open je buitkist', 'Open your loot chest')}</Button>
+          ) : near === CRYPT_GATE_KEY ? (
+            <Button size="lg" data-testid="open-crypt" className="pointer-events-auto border border-[#d8c4ff] shadow-lift" onClick={() => setCryptOpen(true)}>⚱️ {t('Daal af in de crypte', 'Go down into the crypt')}</Button>
+          ) : near?.startsWith('chest:') && crypt ? (
+            (cryptRun?.chests ?? []).includes(Number(near.slice(6)))
+              ? <p role="status" className={`${PANEL} px-3 py-2 text-[13.5px]`}>{t('Deze kist is leeg.', 'This chest is empty.')}</p>
+              : <Button size="lg" data-testid="open-chest" className="pointer-events-auto border border-[#ffd76a] shadow-lift" onClick={() => void openChest(Number(near.slice(6)))}>🧰 {t('Open de kist', 'Open the chest')}</Button>
           ) : near === BOSSBOARD_KEY ? (
             <Button size="lg" data-testid="open-bossboard" className="pointer-events-auto border border-[#ffd76a] shadow-lift" icon={<ScrollText className="h-5 w-5" />} onClick={() => setBossOpen(true)}>{t('Bekijk het bazenbord', 'Read the boss board')}</Button>
           ) : near === DUNGEON_KEY ? (
@@ -1584,6 +1735,92 @@ export function VillageWalkPage() {
           {d?.hero && <BackpackCard d={d} />}
           <LightCard />
           <Link to="/p/held/inventaris" className="inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">{t('Alles van je held, met trofeeën en uitrusting', 'Everything of your hero, with trophies and gear')}<ChevronRight className="h-4 w-4" aria-hidden /></Link>
+        </div>
+      </Dialog>
+      <Dialog open={cryptOpen} onClose={() => setCryptOpen(false)} size="md" sheet title={t('De crypte', 'The crypt')}
+        description={t('Onder het dorp liggen crypten: elke keer een nieuwe, met kamers vol wezens, schatkisten en een baas. Versla de baas en de volgende diepte gaat open.', 'Under the village lie crypts: a new one every time, with rooms full of creatures, chests and a boss. Beat the boss and the next depth opens.')}>
+        <div className="space-y-3" data-testid="crypt-panel">
+          <p className="text-[14px] text-ink-700">{t(`Diepste verslagen crypte: ${adventure.data?.crypt?.best ?? 0}`, `Deepest crypt cleared: ${adventure.data?.crypt?.best ?? 0}`)}</p>
+          {cryptRun && (
+            <Button className="w-full" variant="secondary" onClick={() => { setCryptOpen(false); enterCrypt.current = true; world.current?.enter(CRYPT_KEY); }}>{t(`Terug naar je crypte (diepte ${cryptRun.depth})`, `Back to your crypt (depth ${cryptRun.depth})`)}</Button>
+          )}
+          <ul className="space-y-2">
+            {Array.from({ length: Math.min(CRYPT_MAX_DEPTH, (adventure.data?.crypt?.best ?? 0) + 1) }, (_, i) => i + 1).reverse().map((depth) => {
+              const need = cryptLevel(depth);
+              const ok = (adventure.data?.level ?? 1) >= need;
+              return (
+                <li key={depth} className="flex items-center gap-3 rounded-xl border border-line bg-white p-2.5" data-depth={depth}>
+                  <span aria-hidden className="grid h-10 w-10 place-items-center rounded-lg bg-[#2a2440] text-[16px] font-bold text-[#d8c4ff]">{depth}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[14.5px] font-semibold text-ink-950">{t(`Diepte ${depth}`, `Depth ${depth}`)}</span>
+                    <span className="block text-[12.5px] text-ink-700">{t(`Vanaf avonturier ${need}`, `From adventurer ${need}`)}</span>
+                  </span>
+                  <Button size="sm" disabled={!ok || cryptBusy} data-testid={`crypt-go-${depth}`} onClick={() => void goDown(depth)}>{ok ? t('Daal af', 'Go down') : t(`Level ${need}`, `Level ${need}`)}</Button>
+                  {ok && live.online.length > 0 && (
+                    <Button size="sm" variant="secondary" disabled={cryptBusy} onClick={async () => {
+                      const run = await goDown(depth);
+                      if (run) {
+                        live.send({ t: 'invite', depth: run.depth, seed: run.seed });
+                        toast(t('Je vrienden zijn uitgenodigd.', 'Your friends are invited.'));
+                      }
+                    }}>{t('Met vrienden', 'With friends')}</Button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </Dialog>
+      <Dialog open={!!cleared} onClose={() => setCleared(null)} size="sm" title={t('Crypte verslagen!', 'Crypt cleared!')}>
+        {cleared && (
+          <div className="space-y-3" data-testid="crypt-cleared">
+            <p className="text-[15px] text-ink-800">{t(`Je versloeg de baas van crypte ${cleared.depth}. Diepte ${cleared.depth + 1} is nu open.`, `You beat the boss of crypt ${cleared.depth}. Depth ${cleared.depth + 1} is open now.`)}</p>
+            <p className="text-[14px] font-semibold text-[#855806]">+{cleared.xp} {t('avonturen-XP', 'adventure XP')} · +{cleared.coins} {t('muntjes', 'coins')}</p>
+            <Button onClick={() => { setCleared(null); world.current?.goTo(EXIT_KEY); }}>{t('Naar de trap omhoog', 'To the stairs up')}</Button>
+          </div>
+        )}
+      </Dialog>
+      <Dialog open={!!invite} onClose={() => setInvite(null)} size="sm" title={t('Uitnodiging', 'Invitation')}>
+        {invite && (
+          <div className="space-y-3" data-testid="crypt-invite">
+            <p className="text-[15px] text-ink-800">{t(`${invite.name} nodigt je uit voor crypte ${invite.depth}. Samen naar beneden?`, `${invite.name} invites you to crypt ${invite.depth}. Go down together?`)}</p>
+            <div className="flex gap-2">
+              <Button loading={cryptBusy} onClick={() => void goDown(invite.depth, invite.seed)}>{t('Ga mee', 'Join')}</Button>
+              <Button variant="secondary" onClick={() => setInvite(null)}>{t('Nu niet', 'Not now')}</Button>
+            </div>
+          </div>
+        )}
+      </Dialog>
+      <Dialog open={storyOpen} onClose={() => setStoryOpen(false)} size="md" sheet title={t('Het verhaal', 'The story')}>
+        {story.data && <StoryBook story={story.data} onGo={(g) => {
+          setStoryOpen(false);
+          const dest = storyDest(g);
+          if (dest) run({ id: 'story', label: '', hint: '', dest });
+        }} />}
+      </Dialog>
+      <Dialog open={storyDone.length > 0} onClose={() => setStoryDone([])} size="md" title={t('Quest voltooid!', 'Quest complete!')}>
+        <div className="space-y-3" data-testid="story-done">
+          {storyDone.map((dq) => {
+            const qt = questText(dq.key);
+            const ch = STORY[dq.chapter];
+            return (
+              <div key={dq.key} className="space-y-2">
+                <p className="text-[16px] font-semibold text-ink-950">✨ {qt ? (nl ? qt.nl.title : qt.en.title) : ''}</p>
+                {qt && <p className="text-[14.5px] leading-relaxed text-ink-800">{nl ? qt.nl.done : qt.en.done}</p>}
+                <p className="text-[13.5px] font-semibold text-[#855806]">+{dq.xp} {t('avonturen-XP', 'adventure XP')} · +{dq.coins} {t('muntjes', 'coins')}</p>
+                {dq.chapterDone && ch && (
+                  <div className="rounded-xl border border-[#e4bc63] bg-[#fbf0d9] p-3">
+                    <p className="text-[13px] font-semibold uppercase tracking-wide text-[#855806]">{t('Einde van', 'End of')} {nl ? ch.nl.title : ch.en.title}</p>
+                    <p className="mt-1 text-[14px] leading-relaxed text-ink-800">{nl ? ch.nl.outro : ch.en.outro}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button onClick={() => { setStoryDone([]); setStoryOpen(true); }} data-testid="story-next">{t('Verder met het verhaal', 'On with the story')}</Button>
+            <Button variant="secondary" onClick={() => setStoryDone([])}>{t('Later', 'Later')}</Button>
+          </div>
         </div>
       </Dialog>
       <Dialog open={friendsOpen} onClose={() => setFriendsOpen(false)} size="md" sheet title={t('Samen spelen', 'Play together')}

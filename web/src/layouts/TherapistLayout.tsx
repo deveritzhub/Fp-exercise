@@ -16,6 +16,7 @@ import { IdleGuard } from '@/components/app/IdleGuard';
 import { FeedbackButton } from '@/components/app/Feedback';
 import { UpdateNotice, WhatsNew } from '@/components/app/WhatsNew';
 import { useQueryClient } from '@tanstack/react-query';
+import { inGameFrame } from '@/components/patient/GamePage';
 
 export function TherapistLayout() {
   const { t } = useI18n();
@@ -145,6 +146,15 @@ export function TherapistLayout() {
       </div>
     </div>
   );
+
+  // Opened at the practice computer in the 3D village: only the page itself, no menu round it.
+  if (inGameFrame()) {
+    return (
+      <div className="min-h-screen bg-canvas">
+        <main className="mx-auto w-full max-w-[1100px] px-4 py-5 sm:px-6"><Outlet /></main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen lg:pl-64 print:bg-white print:pl-0">
