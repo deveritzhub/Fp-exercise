@@ -23,6 +23,8 @@ import { HOME_STAGES, homeStage, type NextHome } from '@shared/practiceVillage';
 import { VILLAGE_LAYOUT, slotPosition, type Site } from '@/components/patient/walk';
 import { SITES, SPOTS, TOWN_HOUSES, WILD, placeAt, townHouseModel } from '@/components/patient/townPlan';
 import { GearScreen } from '@/components/patient/GearScreen';
+import { STORY_QUERY, StoryBook, questText, useStory, type StoryState } from '@/components/patient/StoryBook';
+import { STORY, type StoryGoal } from '@shared/story';
 import { useLive } from '@/lib/live';
 import { LIVE_SAYINGS, sayingByKey } from '@shared/live';
 import { useFriends } from '@/pages/patient/FriendsPage';
@@ -529,7 +531,20 @@ export function VillageWalkPage() {
       : link.startsWith('/p/held/vrienden') || link.startsWith('/p/wereld') ? 'guild'
       : link.startsWith('/p/held') ? 'board'
       : TV_KEY;
+  const story = useStory(!!heroQ.data?.hero);
+  // Where the story's quest is done: the person to talk to, the place, the creature, the shop.
+  const storyDest = (g: StoryGoal | null): string => !g ? ''
+    : g.type === 'talk' ? (g.who === 'practice' ? TV_KEY : g.who === 'treatment' ? PRACTICE_KEY : g.who)
+    : g.type === 'visit' ? (g.place === 'well' ? WELL_KEY : DUNGEON_KEY)
+    : g.type === 'win' ? `quest:${g.kind}`
+    : g.type === 'loot' ? (g.item === 'stone' ? 'quest:pebble' : g.item === 'wood' ? 'quest:twigs' : '')
+    : g.type === 'workout' ? TV_KEY
+    : g.type === 'weapon' ? 'weaponshop'
+    : g.type === 'armour' ? 'armourer'
+    : '';
+  const sq = story.data?.quest;
   const tasks: Task[] = [
+    ...(sq && storyDest(sq.goal) ? [{ id: 'story', label: `📖 ${nl ? sq.nl.title : sq.en.title}`, hint: sq.need > 1 ? `${sq.have}/${sq.need} · ${t('verhaal', 'story')}` : t('Het verhaal', 'The story'), dest: storyDest(sq.goal) }] : []),
     ...todo.map((p): Task => {
       const m = moduleOf(p);
       const n = p.today.items.length;
@@ -689,6 +704,27 @@ export function VillageWalkPage() {
     if (saying) toast(`${who.name}: ${nl ? saying.nl : saying.en}`);
   });
   const [friendsOpen, setFriendsOpen] = useState(false);
+  // The story: the quest that is open, the book, and the moment a quest is done.
+  const [storyOpen, setStoryOpen] = useState(false);
+  const [storyDone, setStoryDone] = useState<StoryState['justDone']>([]);
+  const storyGoal = story.data?.quest?.goal ?? null;
+  useEffect(() => {
+    const done = story.data?.justDone ?? [];
+    if (done.length) {
+      setStoryDone(done);
+      void qc.invalidateQueries({ queryKey: ['patient-adventure'] });
+      void qc.invalidateQueries({ queryKey: ['patient-hero'] });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story.data]);
+  const storyEvent = async (kind: 'talk' | 'visit', key: string) => {
+    try {
+      const r = await api.post<StoryState>('/patient/hero/story/event', { kind, key });
+      qc.setQueryData(STORY_QUERY, r);
+    } catch {
+      /* the story waits; nothing lost */
+    }
+  };
   // What the hero does just now (a blow, a shot, a spell), sent with the next step.
   const liveAct = useRef<string | undefined>(undefined);
   // A page of the app shown over the world (see GamePage); on closing, what it changed is fetched anew.
@@ -923,6 +959,26 @@ export function VillageWalkPage() {
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [live.status]);
+  useEffect(() => {
+    if (talk && storyGoal?.type === 'talk' && storyGoal.who === talk) void storyEvent('talk', talk);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [talk]);
+  // Sent there by the story to talk to someone: arriving at their counter (or at Syabend by the TV)
+  // starts the talk by itself.
+  useEffect(() => {
+    if (storyGoal?.type !== 'talk' || talk) return;
+    const who = storyGoal.who;
+    if (near && (near === boardKey(who) || (who === 'practice' && near === TV_KEY))) setTalk(who);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [near, storyGoal]);
+  useEffect(() => {
+    if (near === WELL_KEY && storyGoal?.type === 'visit' && storyGoal.place === 'well') void storyEvent('visit', 'well');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [near]);
+  useEffect(() => {
+    if (zone === DUNGEON_KEY && storyGoal?.type === 'visit' && storyGoal.place === 'cave') void storyEvent('visit', 'cave');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zone]);
   const respawn = () => {
     const by = mob?.key;
     setDownBy(null);
@@ -1006,6 +1062,7 @@ export function VillageWalkPage() {
       if (r.questXp) toast(t(`Taak van vandaag klaar: ${r.quest?.nl.toLowerCase() ?? ''}! +${r.questXp} avonturen-XP`, `Today’s task done: ${r.quest?.en.toLowerCase() ?? ''}! +${r.questXp} adventure XP`));
       const was = adventure.data?.level ?? 1;
       qc.setQueryData(['patient-adventure'], r);
+      void qc.invalidateQueries({ queryKey: STORY_QUERY });
       levelUp(was, r.level);
       // Every win gives adventure XP, chopping and mining too (half after the first wins of the day).
       toast(isHarvest(mob.kind) ? t(`${mob.label}: +${r.gained} avonturen-XP`, `${mob.label}: +${r.gained} adventure XP`) : t(`${mob.label} verslagen! +${r.gained} avonturen-XP`, `${mob.label} beaten! +${r.gained} adventure XP`));
@@ -1212,6 +1269,13 @@ export function VillageWalkPage() {
             <Minimap track={track} landmarks={landmarks} onPlace={toPlace} onWalk={toPoint} label={t('Minikaart van het dorp. Tik op een plek of gebouw om erheen te lopen.', 'Minimap of the village. Tap a spot or a building to walk there.')} />
             <button type="button" data-testid="open-world-map" onClick={() => setPlacesOpen(true)} aria-label={t('Wereldkaart openen', 'Open the world map')} className="absolute -bottom-1 -left-1 grid h-9 w-9 place-items-center rounded-full border border-[#e4bc63] bg-[#141c18] text-[#ffd76a] shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]"><MapIcon className="h-4 w-4" aria-hidden /></button>
           </div>
+          {story.data && (
+            <button type="button" data-testid="open-story" onClick={() => setStoryOpen(true)}
+              aria-label={t('Het verhaal: je quest', 'The story: your quest')}
+              className={`${PANEL} flex min-h-[32px] items-center gap-1 px-2 font-display text-[12.5px] font-bold text-[#ffd76a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd76a]`}>
+              <span aria-hidden>📖</span>{t('Verhaal', 'Story')}
+            </button>
+          )}
           {hasFriends && (
             <button type="button" data-testid="friends-online" data-n={live.online.length} onClick={() => setFriendsOpen(true)}
               aria-label={t(`Vrienden: ${live.online.length} nu in het dorp`, `Friends: ${live.online.length} in the village now`)}
@@ -1584,6 +1648,38 @@ export function VillageWalkPage() {
           {d?.hero && <BackpackCard d={d} />}
           <LightCard />
           <Link to="/p/held/inventaris" className="inline-flex min-h-[44px] items-center gap-1 text-[14.5px] font-semibold text-accent">{t('Alles van je held, met trofeeën en uitrusting', 'Everything of your hero, with trophies and gear')}<ChevronRight className="h-4 w-4" aria-hidden /></Link>
+        </div>
+      </Dialog>
+      <Dialog open={storyOpen} onClose={() => setStoryOpen(false)} size="md" sheet title={t('Het verhaal', 'The story')}>
+        {story.data && <StoryBook story={story.data} onGo={(g) => {
+          setStoryOpen(false);
+          const dest = storyDest(g);
+          if (dest) run({ id: 'story', label: '', hint: '', dest });
+        }} />}
+      </Dialog>
+      <Dialog open={storyDone.length > 0} onClose={() => setStoryDone([])} size="md" title={t('Quest voltooid!', 'Quest complete!')}>
+        <div className="space-y-3" data-testid="story-done">
+          {storyDone.map((dq) => {
+            const qt = questText(dq.key);
+            const ch = STORY[dq.chapter];
+            return (
+              <div key={dq.key} className="space-y-2">
+                <p className="text-[16px] font-semibold text-ink-950">✨ {qt ? (nl ? qt.nl.title : qt.en.title) : ''}</p>
+                {qt && <p className="text-[14.5px] leading-relaxed text-ink-800">{nl ? qt.nl.done : qt.en.done}</p>}
+                <p className="text-[13.5px] font-semibold text-[#855806]">+{dq.xp} {t('avonturen-XP', 'adventure XP')} · +{dq.coins} {t('muntjes', 'coins')}</p>
+                {dq.chapterDone && ch && (
+                  <div className="rounded-xl border border-[#e4bc63] bg-[#fbf0d9] p-3">
+                    <p className="text-[13px] font-semibold uppercase tracking-wide text-[#855806]">{t('Einde van', 'End of')} {nl ? ch.nl.title : ch.en.title}</p>
+                    <p className="mt-1 text-[14px] leading-relaxed text-ink-800">{nl ? ch.nl.outro : ch.en.outro}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button onClick={() => { setStoryDone([]); setStoryOpen(true); }} data-testid="story-next">{t('Verder met het verhaal', 'On with the story')}</Button>
+            <Button variant="secondary" onClick={() => setStoryDone([])}>{t('Later', 'Later')}</Button>
+          </div>
         </div>
       </Dialog>
       <Dialog open={friendsOpen} onClose={() => setFriendsOpen(false)} size="md" sheet title={t('Samen spelen', 'Play together')}

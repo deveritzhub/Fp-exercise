@@ -1,4 +1,5 @@
 import { BELTS, examReady, nextItems, validItem } from '../../../shared/karate';
+import { STORY, STORY_STEPS, STORY_TITLE, storyReward, type StoryGoal } from '../../../shared/story';
 import { ADVENTURE_DAILY_WINS, winXp, BERRIES_FOR, BOXING, CREATURES, CREATURE_KINDS, LOOT_CAP, NEEDS_TOOL, ADVENTURE_QUEST_XP, armourByKey, lightFrom, lightItem, BOSS_WEEK_BONUS, bossOfWeek, isBoss, slainItem, dailyQuest, dishByKey, RECIPES, TOOLS, TOOL_BONUS, RIDES, rideItem, WEAPONS, toolFor, adventureLevel, AMMO, COMBAT_SKILLS, ammoFor, combatLevel, isHarvest, spellByKey, weaponByKey, boxingXp, builtItem, rollDrops, toolItem, weaponItem, type CreatureKind, type LootKey } from '../../../shared/adventure';
 import { homeStage, nextHome } from '../../../shared/practiceVillage';
 import { readStaffLook } from '../lib/staffLook';
@@ -260,7 +261,9 @@ export async function heroState(tx: Tx, patientId: string) {
   const journey = await aclJourneyFor(tx, patientId);
   const owned = [...boughtOwned, ...journey.wearable];
   const chests = (await tx.query("SELECT to_char(day, 'YYYY-MM-DD') AS day, coins FROM hero_daily_chests WHERE patient_id = $1 ORDER BY day", [patientId])).rows as { day: string; coins: number }[];
-  const earned = coinsEarned(xp) + chests.reduce((sum, r) => sum + r.coins, 0);
+  // The story gives coins too, quest by quest.
+  const storyCoins = Number((await tx.query('SELECT coins FROM hero_story WHERE patient_id = $1', [patientId])).rows[0]?.coins ?? 0);
+  const earned = coinsEarned(xp) + chests.reduce((sum, r) => sum + r.coins, 0) + storyCoins;
   const spent = bought.reduce((sum, r) => sum + r.price, 0);
   const equipped = onePerSlot(((heroRow?.gear ?? []) as string[]).filter((g) => owned.includes(g)));
 
@@ -841,6 +844,12 @@ heroPatient.post('/hero/adventure/win', async (c) => {
           ammo ? [patient.id, gained, shots] : [patient.id, gained],
         );
       }
+      // The story's open quest may ask for this creature.
+      {
+        const st = await storyRow(tx, patient.id);
+        const g = STORY_STEPS[st.step]?.quest.goal;
+        if (g?.type === 'win' && g.kind === body.data.kind) await tx.query('UPDATE hero_story SET count = count + 1, updated_at = now() WHERE patient_id = $1', [patient.id]);
+      }
       // What it leaves behind goes into the backpack; only for wins that still count today.
       // With the right tool (hatchet for oaks, pickaxe for rocks) the yield is doubled.
       const helps = toolFor(body.data.kind);
@@ -877,6 +886,86 @@ heroPatient.post('/hero/adventure/win', async (c) => {
         unlocked = freed.key;
       }
       return { gained, questXp, unlocked, drops, ...adventureView(await adventureRow(tx, patient.id)) };
+    }),
+  );
+});
+
+// ---- The story: one quest open at a time, done by talking, going, beating, gathering, training, growing. ----
+type StoryRow = { step: number; count: number; base: number; coins: number };
+/** How far a quest's goal is now, out of how much. */
+async function storyProgress(tx: Tx, patientId: string, goal: StoryGoal, row: StoryRow) {
+  if (goal.type === 'talk' || goal.type === 'visit') return { have: 0, need: 1 };
+  if (goal.type === 'win') return { have: row.count, need: goal.n };
+  const adv = await adventureRow(tx, patientId);
+  if (goal.type === 'loot') return { have: Math.min(goal.n, adv.loot[goal.item] ?? 0), need: goal.n };
+  if (goal.type === 'level') return { have: Math.min(goal.n, adventureLevel(Number(adv.xp ?? 0)).level), need: goal.n };
+  if (goal.type === 'weapon') return { have: adv.owned.length > 0 ? 1 : 0, need: 1 };
+  if (goal.type === 'armour') return { have: adv.built.some((k: string) => !!armourByKey(k)) ? 1 : 0, need: 1 };
+  const sessions = await sessionCount(tx, patientId);
+  return { have: Math.min(goal.n, Math.max(0, sessions - row.base)), need: goal.n };
+}
+const sessionCount = async (tx: Tx, patientId: string) =>
+  Number((await tx.query('SELECT count(*)::int AS n FROM workout_sessions WHERE patient_id = $1 AND completed_at IS NOT NULL', [patientId])).rows[0].n);
+async function storyRow(tx: Tx, patientId: string): Promise<StoryRow> {
+  const r = (await tx.query('SELECT step, count, base, coins FROM hero_story WHERE patient_id = $1', [patientId])).rows[0];
+  if (r) return { step: Number(r.step), count: Number(r.count), base: Number(r.base), coins: Number(r.coins) };
+  const base = await sessionCount(tx, patientId);
+  await tx.query('INSERT INTO hero_story(patient_id, base) VALUES ($1, $2) ON CONFLICT (patient_id) DO NOTHING', [patientId, base]);
+  return { step: 0, count: 0, base, coins: 0 };
+}
+/** Finishes the open quest: its reward, and the next quest starts counting from now. */
+async function storyAdvance(tx: Tx, patientId: string, row: StoryRow) {
+  const at = STORY_STEPS[row.step];
+  const reward = storyReward(at.chapter);
+  const base = await sessionCount(tx, patientId);
+  await tx.query('UPDATE hero_story SET step = step + 1, count = 0, base = $2, coins = coins + $3, started_at = now(), updated_at = now() WHERE patient_id = $1', [patientId, base, reward.coins]);
+  await tx.query('INSERT INTO hero_adventure(patient_id, xp) VALUES ($1, $2) ON CONFLICT (patient_id) DO UPDATE SET xp = hero_adventure.xp + EXCLUDED.xp, updated_at = now()', [patientId, reward.xp]);
+  return { key: at.quest.key, chapter: at.chapter, ...reward, chapterDone: at.index === STORY[at.chapter].quests.length - 1 };
+}
+/** The story as it stands; quests whose goal is met already (loot, a level, a weapon...) are finished on the way. */
+async function storyView(tx: Tx, patientId: string, justDone: Awaited<ReturnType<typeof storyAdvance>>[] = []) {
+  let row = await storyRow(tx, patientId);
+  for (let guard = 0; guard < STORY_STEPS.length && row.step < STORY_STEPS.length; guard++) {
+    const goal = STORY_STEPS[row.step].quest.goal;
+    if (goal.type === 'talk' || goal.type === 'visit') break;
+    const p = await storyProgress(tx, patientId, goal, row);
+    if (p.have < p.need) break;
+    justDone.push(await storyAdvance(tx, patientId, row));
+    row = await storyRow(tx, patientId);
+  }
+  const at = STORY_STEPS[row.step];
+  const progress = at ? await storyProgress(tx, patientId, at.quest.goal, row) : null;
+  return {
+    title: STORY_TITLE,
+    step: row.step,
+    total: STORY_STEPS.length,
+    finished: !at,
+    chapter: at ? at.chapter : STORY.length - 1,
+    quest: at ? { key: at.quest.key, goal: at.quest.goal, nl: at.quest.nl, en: at.quest.en, ...progress, reward: storyReward(at.chapter) } : null,
+    justDone,
+  };
+}
+
+heroPatient.get('/hero/story', async (c) => {
+  const { user, patient } = requirePatient(c);
+  return c.json(await withUser(user.id, (tx) => storyView(tx, patient.id)));
+});
+
+/** Something done in the village that a quest may ask for: talked to someone, or went somewhere. */
+heroPatient.post('/hero/story/event', async (c) => {
+  const { user, patient } = requirePatient(c);
+  const body = z.object({ kind: z.enum(['talk', 'visit']), key: z.string().regex(/^[a-z_]{2,24}$/) }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) throw badRequest('invalid_input');
+  return c.json(
+    await withUser(user.id, async (tx) => {
+      const row = await storyRow(tx, patient.id);
+      const at = STORY_STEPS[row.step];
+      const done: Awaited<ReturnType<typeof storyAdvance>>[] = [];
+      const goal = at?.quest.goal;
+      if (goal && ((goal.type === 'talk' && body.data.kind === 'talk' && goal.who === body.data.key) || (goal.type === 'visit' && body.data.kind === 'visit' && goal.place === body.data.key))) {
+        done.push(await storyAdvance(tx, patient.id, row));
+      }
+      return storyView(tx, patient.id, done);
     }),
   );
 });
